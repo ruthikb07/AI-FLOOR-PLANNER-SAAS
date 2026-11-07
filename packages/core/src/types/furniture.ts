@@ -50,6 +50,11 @@ export interface CanonicalFurnitureItem {
   readonly rotationDeg: 0 | 90 | 180 | 270;
   readonly anchorWall?: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'CENTER';
   readonly layer: 'A-FURN';
+  readonly styleId?: string;
+  readonly materialId?: string;
+  readonly heightMm?: number;
+  readonly elevationMm?: number;
+  readonly color?: string;
 }
 
 export interface PlancraftDslOutput {

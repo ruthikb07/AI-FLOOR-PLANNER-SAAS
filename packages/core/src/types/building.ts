@@ -22,6 +22,8 @@ import type {
   WindowType,
 } from './enums';
 import type { CanonicalFurnitureItem, PlancraftDslOutput } from './furniture';
+import type { OpeningStyleId } from './customizable';
+import type { StructuralBeam, CanonicalStaircase } from './structural';
 
 // ─── Site & Plot ────────────────────────────────────────────────────────────
 
@@ -172,6 +174,11 @@ export interface Door {
   readonly type: DoorType;
   readonly swingDirection: SwingDirection;
   readonly connectsRooms: readonly [string, string];
+  readonly styleId?: OpeningStyleId;
+  readonly materialId?: string;
+  readonly widthMm?: number;
+  readonly heightMm?: number;
+  readonly sillHeightMm?: number;
 }
 
 // ─── Window ─────────────────────────────────────────────────────────────────
@@ -187,6 +194,11 @@ export interface Window {
   readonly sillHeight: number;
   readonly type: WindowType;
   readonly roomId: string;
+  readonly styleId?: OpeningStyleId;
+  readonly materialId?: string;
+  readonly widthMm?: number;
+  readonly heightMm?: number;
+  readonly sillHeightMm?: number;
 }
 
 // ─── Stair ──────────────────────────────────────────────────────────────────
@@ -243,6 +255,8 @@ export interface Floor {
   readonly windows: readonly Window[];
   readonly stairs: readonly Stair[];
   readonly columns: readonly Column[];
+  readonly beams?: readonly StructuralBeam[];
+  readonly canonicalStaircases?: readonly CanonicalStaircase[];
   readonly furniture?: readonly CanonicalFurnitureItem[];
   readonly plancraftDsl?: PlancraftDslOutput;
 }
@@ -268,6 +282,8 @@ export interface Building {
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly beams?: readonly StructuralBeam[];
+  readonly canonicalStaircases?: readonly CanonicalStaircase[];
   readonly furniture?: readonly CanonicalFurnitureItem[];
   readonly plancraftDsl?: PlancraftDslOutput;
 }

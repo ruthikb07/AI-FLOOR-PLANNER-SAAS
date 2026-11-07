@@ -179,3 +179,25 @@ export * from './plancraft';
 
 // Geometry Wall Extrusion
 export { generateApartmentWalls } from '@ai-floor-planner/geometry-engine';
+
+// Zero-Error Geometry Validation & Audit Engine (ARGON 4 Phase 1)
+export {
+  GeometryValidator,
+  type GeometryValidatorOptions,
+  type GeometryAuditResult,
+  type AnnotationItem,
+} from './validator/geometry-validator';
+
+// UDCPR Statutory Compliance Engine (ARGON 4 Phase 1)
+export { evaluateUDCPRCompliance } from './validator/udcpr-engine';
+
+// Pipeline Stage Progress Emitter (ARGON 4 Phase 1)
+export {
+  PipelineProgressEmitter,
+  executeAuditedPlanningPipeline,
+  type PipelineStageId,
+  type PipelineStageStatus,
+  type PipelineStageProgressEvent,
+  type PipelineProgressCallback,
+  PIPELINE_STAGE_WEIGHTS,
+} from './pipeline/stage-progress-emitter';

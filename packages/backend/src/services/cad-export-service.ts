@@ -4,6 +4,9 @@ import {
   type Floor,
   type Site,
   type Column,
+  type StructuralBeam,
+  type IndependentExportManifest,
+  type ExportFileDescriptor,
   WallType,
   RoomType,
   DoorType,
@@ -12,6 +15,8 @@ import {
   generateApartmentWalls,
   populateCanonicalFurniture,
 } from '@ai-floor-planner/planning-engine';
+
+export type { StructuralBeam, IndependentExportManifest, ExportFileDescriptor };
 
 export type CadExportFormat = 'dwg' | 'dxf';
 
@@ -1249,20 +1254,30 @@ export class CadExportService {
     }
 
     // I. Structural Framing Beams on S-BEAM (Only for structural sheets)
-    if (options.includeStructural !== false && colsToRender.length > 1 && isColScheduleSheet) {
+    if (options.includeStructural !== false && isColScheduleSheet) {
       const beamLayer = getLayer('S-BEAM');
-      for (let i = 0; i < colsToRender.length; i++) {
-        for (let j = i + 1; j < colsToRender.length; j++) {
-          const c1 = colsToRender[i]!;
-          const c2 = colsToRender[j]!;
-          const dx = Math.abs(c1.position.x - c2.position.x);
-          const dy = Math.abs(c1.position.y - c2.position.y);
-          if ((dx < 50 && dy < 9000) || (dy < 50 && dx < 9000)) {
-            addSanitizedLine(
-              toCadX(c1.position.x), toCadY(c1.position.y),
-              toCadX(c2.position.x), toCadY(c2.position.y),
-              beamLayer,
-            );
+      if (floor.beams && floor.beams.length > 0) {
+        for (const beam of floor.beams) {
+          addSanitizedLine(
+            toCadX(beam.startPoint.x), toCadY(beam.startPoint.y),
+            toCadX(beam.endPoint.x), toCadY(beam.endPoint.y),
+            beamLayer,
+          );
+        }
+      } else if (colsToRender.length > 1) {
+        for (let i = 0; i < colsToRender.length; i++) {
+          for (let j = i + 1; j < colsToRender.length; j++) {
+            const c1 = colsToRender[i]!;
+            const c2 = colsToRender[j]!;
+            const dx = Math.abs(c1.position.x - c2.position.x);
+            const dy = Math.abs(c1.position.y - c2.position.y);
+            if ((dx < 50 && dy < 9000) || (dy < 50 && dx < 9000)) {
+              addSanitizedLine(
+                toCadX(c1.position.x), toCadY(c1.position.y),
+                toCadX(c2.position.x), toCadY(c2.position.y),
+                beamLayer,
+              );
+            }
           }
         }
       }
@@ -1813,4 +1828,20 @@ export class CadExportService {
       }
     }
   }
+}
+
+/**
+ * Creates an Independent Export Manifest (§1A) describing all exported file artifacts.
+ */
+export function createExportManifest(
+  building: Building,
+  files: readonly ExportFileDescriptor[],
+): IndependentExportManifest {
+  return {
+    buildingId: building.id,
+    projectId: building.projectId,
+    generatedAt: new Date().toISOString(),
+    files,
+    overallStatus: 'SUCCESS',
+  };
 }
