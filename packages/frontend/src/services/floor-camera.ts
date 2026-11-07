@@ -8,7 +8,10 @@ export function fitFloorToViewport(
   viewportHeight: number,
   padding = 50,
 ): ViewTransform {
-  return fitToView(getFloorContentBounds(floor), viewportWidth, viewportHeight, padding);
+  // An empty project's boundary can still describe the whole plot. Once there
+  // are rooms/walls, focus the drawing without changing that canonical boundary.
+  const content = floor.rooms.length || floor.walls.length ? { ...floor, boundary: { points: [] } } : floor;
+  return fitToView(getFloorContentBounds(content), viewportWidth, viewportHeight, padding);
 }
 
 export function rememberFloorCamera(

@@ -142,11 +142,15 @@ const DEFAULT_ROOM_STYLES: Readonly<Record<string, RoomStyle>> = {
   [RoomType.Foyer]:          { fill: '#E8EAF6', fillOpacity: 0.6 },
   [RoomType.Study]:          { fill: '#E0F2F1', fillOpacity: 0.6 },
   [RoomType.Storage]:        { fill: '#F5F5F5', fillOpacity: 0.6 },
+  [RoomType.ServiceShaft]:    { fill: '#F1F5F4', fillOpacity: 0.6 },
   [RoomType.ServantQuarter]: { fill: '#FBE9E7', fillOpacity: 0.6 },
   [RoomType.Drawing]:        { fill: '#EDE7F6', fillOpacity: 0.6 },
   [RoomType.FamilyLiving]:   { fill: '#F3E5F5', fillOpacity: 0.6 },
   [RoomType.Terrace]:        { fill: '#E0F7FA', fillOpacity: 0.6 },
   [RoomType.Garden]:         { fill: '#E8F5E9', fillOpacity: 0.6 },
+  [RoomType.OTS]:            { fill: '#E0F7FA', fillOpacity: 0.6 },
+  [RoomType.Porch]:          { fill: '#EDE7F6', fillOpacity: 0.6 },
+  [RoomType.Dressing]:       { fill: '#FCE4EC', fillOpacity: 0.6 },
   [RoomType.Custom]:         { fill: '#F5F5F5', fillOpacity: 0.6 },
 };
 
@@ -197,13 +201,14 @@ const DEFAULT_GRID_STYLE: Readonly<GridStyle> = {
 const DEFAULT_LAYERS: Readonly<Record<RenderLayer, boolean>> = {
   [RenderLayer.Grid]: true,
   [RenderLayer.Plot]: true,
+  [RenderLayer.SiteZones]: true,
   [RenderLayer.Floor]: true,
   [RenderLayer.Rooms]: true,
   [RenderLayer.Walls]: true,
   [RenderLayer.Openings]: true,
   [RenderLayer.Stairs]: true,
   [RenderLayer.Columns]: true,
-  [RenderLayer.Furniture]: false, // Not implemented yet
+  [RenderLayer.Furniture]: true, // Illustrative nominal symbols, not canonical furnishing.
   [RenderLayer.Annotations]: true,
   [RenderLayer.Selection]: false, // Interactive only
   [RenderLayer.Guides]: false,    // Interactive only

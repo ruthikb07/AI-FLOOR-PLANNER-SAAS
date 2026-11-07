@@ -1,0 +1,444 @@
+{
+  "summary": {
+    "label": "B_flux_gen_7919",
+    "model": "gemini-flash-lite-latest",
+    "latencyMs": 8598,
+    "manifest": {
+      "flats": 2,
+      "unitMix": [
+        "2BHK",
+        "3BHK"
+      ],
+      "lifts": 2,
+      "stairs": 2,
+      "lobby": true
+    },
+    "interpreted": {
+      "flats": [
+        {
+          "id": "flat_1",
+          "label": "FLAT 01",
+          "unitType": "2BHK",
+          "rooms": 7
+        },
+        {
+          "id": "flat_2",
+          "label": "FLAT 02",
+          "unitType": "3BHK",
+          "rooms": 6
+        }
+      ],
+      "commonRooms": 0,
+      "lifts": 2,
+      "stairs": 2,
+      "lobbies": 1,
+      "corridors": 0,
+      "shafts": 1,
+      "doors": 8,
+      "windows": 5
+    },
+    "status": "REJECTED",
+    "stages": {
+      "completeness": "PASS",
+      "manifestMatch": "PASS",
+      "structural": "FAIL",
+      "canonicalGeometry": "SKIPPED",
+      "geometryValidation": "SKIPPED"
+    },
+    "counts": {
+      "flats": 2,
+      "unitTypes": [
+        "2BHK",
+        "3BHK"
+      ],
+      "lifts": 2,
+      "stairs": 2,
+      "lobbies": 1,
+      "bedroomsByFlat": {
+        "flat_1": 2,
+        "flat_2": 3
+      }
+    },
+    "errors": [
+      "APARTMENT_CORE_INSIDE_UNIT: Common element \"Staircase\" lies inside FLAT 01.",
+      "APARTMENT_CORE_INSIDE_UNIT: Common element \"Staircase\" lies inside FLAT 01.",
+      "APARTMENT_CORE_INSIDE_UNIT: Common element \"Common Lobby\" lies inside FLAT 01.",
+      "APARTMENT_UNIT_ROOM_SHORTFALL: FLAT 01 (2BHK) has 0 dining space(s); manifest lists 1.",
+      "APARTMENT_UNIT_ROOM_SHORTFALL: FLAT 02 (3BHK) has 1 bathroom space(s); manifest lists 3.",
+      "APARTMENT_UNIT_ROOM_SHORTFALL: FLAT 02 (3BHK) has 0 dining space(s); manifest lists 1."
+    ],
+    "warnings": [
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 01 (2BHK) has 0 utility space(s); manifest lists 1.",
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 01 (2BHK) has 0 balcony space(s); manifest lists 1.",
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 02 (3BHK) has 0 utility space(s); manifest lists 1.",
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 02 (3BHK) has 0 balcony space(s); manifest lists 2."
+    ],
+    "canonicalRooms": 0
+  },
+  "rawInterpretation": {
+    "boundary": {
+      "points": [
+        {
+          "x": 139,
+          "y": 98
+        },
+        {
+          "x": 757,
+          "y": 98
+        },
+        {
+          "x": 913,
+          "y": 677
+        },
+        {
+          "x": 139,
+          "y": 851
+        }
+      ]
+    },
+    "rooms": [
+      {
+        "id": "room_1",
+        "name": "Bed 1",
+        "type": "bedroom",
+        "x": 202,
+        "y": 236,
+        "width": 185,
+        "height": 131,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_2",
+        "name": "Bath",
+        "type": "bathroom",
+        "x": 202,
+        "y": 367,
+        "width": 185,
+        "height": 61,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_3",
+        "name": "Living",
+        "type": "living_room",
+        "x": 387,
+        "y": 236,
+        "width": 194,
+        "height": 131,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_4",
+        "name": "Kitchen",
+        "type": "kitchen",
+        "x": 387,
+        "y": 367,
+        "width": 194,
+        "height": 105,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_5",
+        "name": "Bed 2",
+        "type": "bedroom",
+        "x": 202,
+        "y": 622,
+        "width": 185,
+        "height": 131,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_6",
+        "name": "Bath",
+        "type": "bathroom",
+        "x": 387,
+        "y": 622,
+        "width": 93,
+        "height": 131,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_7",
+        "name": "Living",
+        "type": "living_room",
+        "x": 387,
+        "y": 472,
+        "width": 93,
+        "height": 150,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "room_8",
+        "name": "Bed 1",
+        "type": "bedroom",
+        "x": 623,
+        "y": 236,
+        "width": 138,
+        "height": 131,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "room_9",
+        "name": "Bed 2",
+        "type": "bedroom",
+        "x": 623,
+        "y": 367,
+        "width": 138,
+        "height": 61,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "room_10",
+        "name": "Living",
+        "type": "living_room",
+        "x": 581,
+        "y": 428,
+        "width": 180,
+        "height": 105,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "room_11",
+        "name": "Kitchen",
+        "type": "kitchen",
+        "x": 623,
+        "y": 533,
+        "width": 138,
+        "height": 44,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "room_12",
+        "name": "Bed 3",
+        "type": "bedroom",
+        "x": 623,
+        "y": 577,
+        "width": 180,
+        "height": 105,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "room_13",
+        "name": "Bath",
+        "type": "bathroom",
+        "x": 581,
+        "y": 533,
+        "width": 42,
+        "height": 44,
+        "flatId": "flat_2"
+      }
+    ],
+    "doors": [
+      {
+        "id": "door_1",
+        "x": 372,
+        "y": 320,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_1",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_2",
+        "x": 372,
+        "y": 400,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_2",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_3",
+        "x": 480,
+        "y": 472,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_3",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_4",
+        "x": 372,
+        "y": 650,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_5",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_5",
+        "x": 480,
+        "y": 622,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_6",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_6",
+        "x": 608,
+        "y": 320,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_8",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_7",
+        "x": 608,
+        "y": 400,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_9",
+        "swingDirection": "inward"
+      },
+      {
+        "id": "door_8",
+        "x": 608,
+        "y": 577,
+        "width": 15,
+        "height": 30,
+        "type": "single",
+        "adjacentRoomId": "room_12",
+        "swingDirection": "inward"
+      }
+    ],
+    "windows": [
+      {
+        "id": "win_1",
+        "x": 250,
+        "y": 98,
+        "width": 50,
+        "height": 10,
+        "adjacentRoomId": "room_1"
+      },
+      {
+        "id": "win_2",
+        "x": 139,
+        "y": 280,
+        "width": 10,
+        "height": 40,
+        "adjacentRoomId": "room_1"
+      },
+      {
+        "id": "win_3",
+        "x": 440,
+        "y": 98,
+        "width": 60,
+        "height": 10,
+        "adjacentRoomId": "room_3"
+      },
+      {
+        "id": "win_4",
+        "x": 670,
+        "y": 98,
+        "width": 50,
+        "height": 10,
+        "adjacentRoomId": "room_8"
+      },
+      {
+        "id": "win_5",
+        "x": 757,
+        "y": 320,
+        "width": 10,
+        "height": 40,
+        "adjacentRoomId": "room_8"
+      }
+    ],
+    "stairs": [
+      {
+        "id": "stair_1",
+        "name": "Staircase",
+        "x": 202,
+        "y": 472,
+        "width": 185,
+        "height": 150,
+        "flatId": "COMMON",
+        "type": "straight"
+      },
+      {
+        "id": "stair_2",
+        "name": "Staircase",
+        "x": 480,
+        "y": 533,
+        "width": 101,
+        "height": 149,
+        "flatId": "COMMON",
+        "type": "straight"
+      }
+    ],
+    "parking": [],
+    "flats": [
+      {
+        "id": "flat_1",
+        "label": "FLAT 01",
+        "unitType": "2BHK",
+        "x": 202,
+        "y": 236,
+        "width": 379,
+        "height": 517
+      },
+      {
+        "id": "flat_2",
+        "label": "FLAT 02",
+        "unitType": "3BHK",
+        "x": 581,
+        "y": 236,
+        "width": 222,
+        "height": 446
+      }
+    ],
+    "lifts": [
+      {
+        "id": "lift_1",
+        "name": "Lift 1",
+        "x": 202,
+        "y": 753,
+        "width": 93,
+        "height": 98,
+        "flatId": "COMMON",
+        "type": "passenger"
+      },
+      {
+        "id": "lift_2",
+        "name": "Lift 2",
+        "x": 295,
+        "y": 753,
+        "width": 92,
+        "height": 98,
+        "flatId": "COMMON",
+        "type": "passenger"
+      }
+    ],
+    "lobbies": [
+      {
+        "id": "lobby_1",
+        "name": "Common Lobby",
+        "x": 387,
+        "y": 682,
+        "width": 93,
+        "height": 169,
+        "type": "entrance_lobby"
+      }
+    ],
+    "corridors": [],
+    "shafts": [
+      {
+        "id": "shaft_1",
+        "name": "Service Shaft",
+        "x": 480,
+        "y": 682,
+        "width": 101,
+        "height": 84,
+        "type": "ducting"
+      }
+    ]
+  }
+}

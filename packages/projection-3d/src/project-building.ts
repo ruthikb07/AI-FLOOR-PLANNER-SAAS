@@ -1,5 +1,5 @@
 import type { Building, Floor, Point, Polygon, Wall } from '@ai-floor-planner/core';
-import { rectToPolygon } from '@ai-floor-planner/core';
+import { rectToPolygon, RoomType } from '@ai-floor-planner/core';
 import { resolveProjectionSettings } from './settings';
 import type {
   Building3DProjection,
@@ -73,8 +73,8 @@ function wallSolidSegments(
 ): readonly WallSolidSegment3D[] {
   const clamped = openings
     .map(opening => ({
-      start: Math.max(0, opening.alongWall - opening.width / 2),
-      end: Math.min(wallLength, opening.alongWall + opening.width / 2),
+      start: Math.max(0, opening.alongWall),
+      end: Math.min(wallLength, opening.alongWall + opening.width),
       bottom: Math.max(0, opening.bottom),
       top: Math.min(wallHeight, opening.bottom + opening.height),
     }))
@@ -111,6 +111,7 @@ function projectOpenings(floor: Floor, elevation: number, settings: Building3DPr
     return [{
       sourceEntityId: door.id,
       sourceEntityType: 'door',
+      doorType: door.type,
       floorId: floor.id,
       hostWallId: wall.id,
       position: door.position,
@@ -165,6 +166,20 @@ export function projectBuildingTo3D(
       sourceEntityType: 'floor',
       floorId: floor.id,
       boundary: floor.boundary,
+      cutouts: [
+        ...floor.rooms.filter(room => room.type === RoomType.ServiceShaft).map(room => room.boundary),
+        // Cut the arrival slab from the actual lower-floor stair footprint,
+        // only when the destination has an explicitly aligned representation.
+        ...building.floors.filter(lower => lower.level < floor.level).flatMap(lower => lower.stairs
+          .filter(stair => stair.connectsFloors[0] === lower.level && stair.connectsFloors[1] === floor.level
+            && floor.stairs.some(arrival => arrival.connectsFloors[0] === lower.level
+              && arrival.connectsFloors[1] === floor.level
+              && arrival.verticalCoreId === stair.verticalCoreId
+              && arrival.boundary.points.length === stair.boundary.points.length
+              && stair.boundary.points.every(point => arrival.boundary.points.some(other =>
+                Math.abs(point.x - other.x) < EPSILON && Math.abs(point.y - other.y) < EPSILON))))
+          .map(stair => stair.boundary)),
+      ],
       elevation: levelByFloor.get(floor.id)?.elevation ?? 0,
       thickness: settings.slabThickness.value,
     })),
@@ -190,11 +205,17 @@ export function projectBuildingTo3D(
     openings,
     rooms: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
-      return floor.rooms.map(room => ({
+      return floor.rooms.filter(room => room.type !== RoomType.ServiceShaft).map(room => ({
         sourceEntityId: room.id,
         sourceEntityType: 'room' as const,
         floorId: floor.id,
         boundary: room.boundary,
+        // Prevent the optional room overlay from capping a stair opening.
+        cutouts: room.type === RoomType.Staircase ? floor.stairs
+          .filter(stair => stair.connectsFloors[1] === floor.level
+            && stair.boundary.points.every(point => point.x >= room.x && point.x <= room.x + room.width
+              && point.y >= room.y && point.y <= room.y + room.height))
+          .map(stair => stair.boundary) : [],
         elevation: (level?.elevation ?? 0) + settings.slabThickness.value,
         height: Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value)),
         name: room.name,
@@ -202,7 +223,8 @@ export function projectBuildingTo3D(
     }),
     stairs: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
-      return floor.stairs.map(stair => ({
+      return floor.stairs.filter(stair => stair.connectsFloors[0] === floor.level
+        && building.floors.some(target => target.level === stair.connectsFloors[1])).map(stair => ({
         sourceEntityId: stair.id,
         sourceEntityType: 'stair' as const,
         floorId: floor.id,
@@ -213,6 +235,7 @@ export function projectBuildingTo3D(
         connectsFloors: stair.connectsFloors,
         verticalCoreId: stair.verticalCoreId,
         representation: 'SCHEMATIC_VOLUME' as const,
+        canonicalStair: stair,
       }));
     }),
     columns: building.floors.flatMap(floor => {

@@ -7,6 +7,7 @@ import {
   RefinementError,
   type RefinementCandidate,
 } from '@ai-floor-planner/planning-engine';
+import { cleanRoomDisplayName } from '@ai-floor-planner/renderer';
 import type { EditorContextValue } from '../../stores/editor-store';
 
 interface Props { editor: EditorContextValue }
@@ -24,7 +25,7 @@ const PlanPreview: React.FC<{ building: Building; floorId: string; changed: Read
     <polygon points={points} className="refinement-floor-boundary" />
     {floor.rooms.map(room => <g key={room.id}>
       <rect x={room.x} y={room.y} width={room.width} height={room.height} className={changed.has(room.id) ? 'changed' : locked.has(room.id) ? 'locked' : 'preserved'} />
-      <text x={room.x + 120} y={room.y + 300}>{room.name}</text>
+      <text x={room.x + 120} y={room.y + 300}>{cleanRoomDisplayName(room.name)}</text>
     </g>)}
   </svg>;
 };
@@ -43,6 +44,19 @@ export const RefinementPanel: React.FC<Props> = ({ editor }) => {
   const coreIds = [...new Set(editor.building.floors.flatMap(floor => floor.stairs.map(stair => stair.verticalCoreId).filter((id): id is string => Boolean(id))))];
   const coreLocked = coreIds.length > 0 && coreIds.every(id => editor.generationControl.protectedCoreIds.includes(id));
   const floorLocked = editor.generationControl.lockedFloorIds.includes(editor.activeFloor.id);
+
+  const adjacentNeighbor = useMemo(() => {
+    if (selectedRooms.length !== 1) return null;
+    const single = selectedRooms[0]!;
+    return editor.activeFloor.rooms.find(r => {
+      if (r.id === single.id || lockedIds.has(r.id) || r.type === 'staircase') return false;
+      const xShared = Math.abs(single.x + single.width - r.x) < 2 || Math.abs(r.x + r.width - single.x) < 2;
+      const yOverlap = Math.max(single.y, r.y) < Math.min(single.y + single.height, r.y + r.height);
+      const yShared = Math.abs(single.y + single.height - r.y) < 2 || Math.abs(r.y + r.height - single.y) < 2;
+      const xOverlap = Math.max(single.x, r.x) < Math.min(single.x + single.width, r.x + r.width);
+      return (xShared && yOverlap) || (yShared && xOverlap);
+    }) ?? null;
+  }, [selectedRooms, editor.activeFloor, lockedIds]);
 
   const run = async () => {
     setIsGenerating(true); setError(null); setCandidates([]);
@@ -85,8 +99,10 @@ export const RefinementPanel: React.FC<Props> = ({ editor }) => {
     <div className="refinement-room-picker" aria-label="Room refinement selection">
       {editor.activeFloor.rooms.filter(room => room.type !== 'staircase').map(room => {
         const selected = selectedRoomIds.includes(room.id); const locked = lockedIds.has(room.id) || floorLocked;
-        return <button key={room.id} className={selected ? 'selected' : ''} aria-pressed={selected} onClick={() => editor.toggleRoomSelection(room.id, room.floorId)}>
-          <span>{room.name}</span>{locked && <Lock size={11} />}
+        const displayName = cleanRoomDisplayName(room.name);
+        const flatTag = room.tags?.find(t => t.startsWith('flat:'))?.replace('flat:', '').toUpperCase();
+        return <button key={room.id} className={selected ? 'selected' : ''} aria-pressed={selected} onClick={() => editor.toggleRoomSelection(room.id, room.floorId)} title={room.name}>
+          <span>{flatTag ? `${flatTag} · ${displayName}` : displayName}</span>{locked && <Lock size={11} />}
         </button>;
       })}
     </div>
@@ -96,6 +112,16 @@ export const RefinementPanel: React.FC<Props> = ({ editor }) => {
         <strong>{selectedRooms.length} room{selectedRooms.length === 1 ? '' : 's'} selected</strong>
         <span>{selectedRooms.map(room => room.name).join(' · ')}</span>
         <small>Ctrl/⌘ or Shift-click rooms to extend the selection.</small>
+        {adjacentNeighbor && (
+          <button
+            type="button"
+            className="refinement-expand-btn"
+            style={{ marginTop: '6px', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            onClick={() => editor.toggleRoomSelection(adjacentNeighbor.id, adjacentNeighbor.floorId)}
+          >
+            + Add adjacent "{adjacentNeighbor.name}" to editable scope
+          </button>
+        )}
       </div>
       <div className="refinement-room-actions">
         <button onClick={() => editor.setRoomLocks(selectedRoomIds, true)} disabled={selectedRoomIds.every(id => lockedIds.has(id))}><Lock size={14} /> Lock Selected</button>

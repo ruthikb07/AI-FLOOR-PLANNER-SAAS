@@ -5,7 +5,7 @@
  */
 
 export { worldToScreen, screenToWorld, fitToView, scaleToScreen } from './coordinate-transform';
-export { renderFloor, renderBuilding, exportSVG } from './svg-renderer';
+export { renderFloor, renderBuilding, exportSVG, cleanRoomDisplayName, mmToFeetInches } from './svg-renderer';
 
 // Render configuration
 export {

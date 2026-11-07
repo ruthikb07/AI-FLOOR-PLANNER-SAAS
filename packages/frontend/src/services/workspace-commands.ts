@@ -1,4 +1,4 @@
-export type WorkspaceCommandGroup = 'Tools' | 'Floors' | 'Views' | 'Selection' | 'Generation' | 'Project';
+﻿export type WorkspaceCommandGroup = 'Tools' | 'Floors' | 'Views' | 'Selection' | 'Generation' | 'Project';
 
 export interface WorkspaceCommand {
   readonly id: string;

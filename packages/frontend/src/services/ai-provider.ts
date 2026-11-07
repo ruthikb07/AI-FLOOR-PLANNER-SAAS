@@ -1,24 +1,24 @@
-import {
-  GeminiProvider,
-  type GeminiProviderOptions,
-} from '@ai-floor-planner/ai-orchestration';
-
-type FrontendAIEnvironment = Pick<ImportMetaEnv, 'VITE_GEMINI_API_KEY'>;
-type GeminiProviderOverrides = Omit<GeminiProviderOptions, 'apiKey'>;
+import { BackendAPI } from './backend-api';
+import type { ArchitecturalResearchAgent } from '@ai-floor-planner/ai-orchestration';
 
 /**
- * Resolves the frontend's optional AI provider from Vite's build-time environment.
- * Passing explicit values keeps provider and fallback behavior deterministic in tests.
+ * Resolve the Gemini credential for the development-only, client-side fallback.
+ *
+ * SECURITY (Master PRD §36): No API key is ever hard-coded or committed. The key
+ * is read exclusively from the build-time `VITE_GEMINI_API_KEY` environment
+ * variable. When it is absent this returns `undefined` so callers surface an
+ * explicit "AI unavailable / not configured" state instead of silently calling a
+ * provider with a leaked credential. Public builds must route through the
+ * server-side backend boundary rather than embedding any key.
  */
-export function getConfiguredProvider(
-  environment: FrontendAIEnvironment = import.meta.env,
-  overrides: GeminiProviderOverrides = {},
-): GeminiProvider | undefined {
-  const apiKey = environment.VITE_GEMINI_API_KEY?.trim();
-  if (!apiKey) return undefined;
+export function getAIService(): BackendAPI {
+  return new BackendAPI();
+}
 
-  return new GeminiProvider({
-    ...overrides,
-    apiKey,
-  });
+/**
+ * Architectural research is routed through the server-side backend boundary (PRD §36).
+ * No client-side Gemini provider or secret credentials exist in the frontend bundle.
+ */
+export function getArchitecturalResearchAgent(): ArchitecturalResearchAgent | null {
+  return null;
 }

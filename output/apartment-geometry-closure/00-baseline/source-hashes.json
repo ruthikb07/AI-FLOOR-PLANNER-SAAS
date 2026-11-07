@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\core\\src\\types\\building.ts",
+    "Hash": "139174F91A45C745947A15101E6B1CEB6F3A0E1472D4252213B7FFFC0B4E4619"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\geometry-engine\\src\\walls.ts",
+    "Hash": "CECF45807B3B7F6918C77BD3343D7657D1864E028076C0676B30FD71887389B8"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\planning-engine\\src\\interpretation\\apartment-plan.ts",
+    "Hash": "7047138AB35520CCE961CC3379F813F7536CDBDF37885E9AF8C9F740C073707B"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\ai-orchestration\\src\\apartment\\unit-topology-solver.ts",
+    "Hash": "4A8E1EDD52AEC36C5D96AD3672B870AF1CDA34C1A21438B05C42E57BC79CF2E7"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\ai-orchestration\\src\\apartment\\schematic.ts",
+    "Hash": "BA0FDA1D0669042FCF52AB4846A03ECF4DF5A81DA3AB9B16411629400905F201"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\ai-orchestration\\src\\apartment\\contract.ts",
+    "Hash": "9BB93EE416A6A86541C23BE42C5D037107E807E3CD374B108A01F8323E3B1CA5"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\ai-orchestration\\src\\apartment\\candidate-search.ts",
+    "Hash": "150FA5271B78FC085CC0E0291DAEAD95DB9BF99D1CED20D85B2A0D8DBA1D50CB"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\ai-orchestration\\src\\apartment\\core-optimizer.ts",
+    "Hash": "E2FE88408586B6F9141C5B3BB6F3AC076C31EA10912CF073A19DBCE4FD8D6CFA"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\packages\\frontend\\src\\services\\advanced-export.ts",
+    "Hash": "910F83ADDA81E2EABEC425E905DA48C80661B006C9AEEB7092D2337816D16810"
+  },
+  {
+    "Path": "D:\\Downloads\\AI BUILDING SAAS  FINAL 1\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\scripts\\generate-golden-phase-artifacts.ts",
+    "Hash": "E94EF676911228A75BB425B00E0C71540B56CF5F9417FE05555CBCD67DA88847"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_4242_mu9f06ah_6dda69f0",
+  "projectId": "e2e-demo-project",
+  "seed": 4242,
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "provider": "cloudflare-workers-ai",
+  "promptVersion": 1,
+  "originalPrompt": "Modern architectural blueprint floor plan of a 2-bedroom residential apartment, top-down CAD drawing, black walls on pure white background, living room, master bedroom, guest bedroom, kitchen, 2 bathrooms, clearly marked doors and windows",
+  "negativePrompt": "blurry, 3d, realistic photo, shadows, textures",
+  "width": 512,
+  "height": 512,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-20T06:07:58.166Z",
+  "latencyMs": 9226
+}

@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_42_muihwk39_e939a611",
+  "projectId": "proj_two_phase_2f_42",
+  "seed": 42,
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "provider": "cloudflare-workers-ai",
+  "promptVersion": 2,
+  "originalPrompt": "Clean 2D architectural apartment floor plan, top-down orthographic, black walls on white, thin door swings.\nCONCEPT 01 of 04 - Balanced / symmetric: Mirror-symmetric flats either side of a central common lobby; one stair and lift at each end of the lobby.\nInput image 1 is the deterministic layout: keep its flat boundaries, core position, room arrangement and doors.\nOther input images are drafting-style and organisation references only: never copy their flat count, geometry, names, numbers, text or watermarks.\nPriority: user requirements > deterministic layout > reference style.\nEXACTLY 2 flats. FLAT 01 2BHK: 2 bedrooms, 2 baths, living/dining, kitchen, utility, 1 balcony; FLAT 02 3BHK: 3 bedrooms, 3 baths, living/dining, kitchen, utility, 2 balcony.\nCommon core: EXACTLY 2 lifts drawn as boxes with X, EXACTLY 2 stairs with treads, one common lobby touching every flat entrance.\nEntry sequence in every flat: common lobby > entrance door > foyer > living/dining > passage > bedrooms. The lobby never opens into a bedroom or bath.\nBalconies outside the facade. English labels only: FLAT 01, FLAT 02, LIVING/DINING, KITCHEN, MASTER BED, BEDROOM, BATH, UTILITY, FOYER, BALCONY, LIFT, STAIR, COMMON LOBBY.\nNo 3D, no perspective, no furniture clutter, no watermark, no logo, no non-Latin text.",
+  "negativePrompt": "NO VILLA, NO SINGLE FAMILY HOUSE, NO EXTRA FLATS, NO MISSING FLATS, NO MERGED FLATS, NO WRONG UNIT MIX, NO EXTRA BEDROOMS, NO MISSING BEDROOMS, NO EXTRA LIFTS, NO MISSING LIFTS, NO EXTRA STAIRS, NO MISSING STAIRS, NO RANDOM CORE, NO RANDOM AMENITIES, NO RANDOM ROOMS, NO CYRILLIC, NO RUSSIAN, NO NON-LATIN SCRIPT, NO GIBBERISH, NO PSEUDO-TEXT, NO RANDOM NUMBERS, NO WATERMARK, NO LOGO, NO 3D, NO PERSPECTIVE, NO PHOTOREALISTIC INTERIOR, NO HAND DRAWING, NO ARTISTIC RENDERING, NO DISTORTED WALLS, NO OVERLAPPING FLATS, NO FLOATING WALLS",
+  "width": 960,
+  "height": 1088,
+  "mimeType": "image/jpeg",
+  "generatedAt": "2026-09-26T14:37:55.885Z",
+  "latencyMs": 21074
+}

@@ -65,13 +65,14 @@ describe('RenderConfig', () => {
       const layers = DEFAULT_RENDER_CONFIG.layers;
       expect(layers[RenderLayer.Grid]).toBe(true);
       expect(layers[RenderLayer.Plot]).toBe(true);
+      expect(layers[RenderLayer.SiteZones]).toBe(true);
       expect(layers[RenderLayer.Floor]).toBe(true);
       expect(layers[RenderLayer.Rooms]).toBe(true);
       expect(layers[RenderLayer.Walls]).toBe(true);
       expect(layers[RenderLayer.Openings]).toBe(true);
       expect(layers[RenderLayer.Stairs]).toBe(true);
       expect(layers[RenderLayer.Columns]).toBe(true);
-      expect(layers[RenderLayer.Furniture]).toBe(false); // Not implemented
+      expect(layers[RenderLayer.Furniture]).toBe(true); // Illustrative symbols are available.
       expect(layers[RenderLayer.Annotations]).toBe(true);
       expect(layers[RenderLayer.Selection]).toBe(false); // Interactive only
       expect(layers[RenderLayer.Guides]).toBe(false);    // Interactive only

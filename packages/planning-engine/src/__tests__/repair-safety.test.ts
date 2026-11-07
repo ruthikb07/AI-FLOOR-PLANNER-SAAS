@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   addDoor, addRoom, createBuilding, Direction, FunctionalZone, RoomType,
   AdjacencyRelationType, type Building, type InstanceDesignGraph,
 } from '@ai-floor-planner/core';
-import { ConstraintSeverity, PlanValidator } from '@ai-floor-planner/constraint-engine';
 import { evaluateInstanceGraph } from '../graph/scorer';
 import { PlanRepairEngine, swapProgramAssignments } from '../repair/engine';
 
@@ -52,21 +51,27 @@ function evidence(value: ReturnType<typeof fixture>, options: {
   initiallyInvalid?: boolean;
   failures?: (building: Building, changed: boolean) => string[];
 } = {}) {
-  const validator = new PlanValidator();
-  const template = validator.validate(value.building);
-  vi.spyOn(validator, 'validate').mockImplementation(building => {
-    const changed = building.floors[0]!.rooms.find(room => room.id === value.b.id)!.name === 'C';
-    const invalid = !!options.initiallyInvalid && !changed;
-    const failedIds = options.failures?.(building, changed) ?? [];
-    return {
-      ...template, isValid: !invalid, failed: invalid ? 1 : 0, overallScore: changed ? 90 : 50,
-      violations: failedIds.length ? [{
-        constraintId: 'SC-CIR-003', severity: ConstraintSeverity.SOFT, passed: false,
-        score: 0, maxScore: 15, affectedEntities: failedIds,
-        message: 'Supplied policy evidence', explanation: 'Not a circulation scoring implementation.',
-      }] : [],
-    };
-  });
+  const validator = {
+    validate(building: Building) {
+      const changed = building.floors[0]!.rooms.find(room => room.id === value.b.id)!.name === 'C';
+      const invalid = !!options.initiallyInvalid && !changed;
+      const failedIds = options.failures?.(building, changed) ?? [];
+      return {
+        isValid: !invalid,
+        failed: invalid ? 1 : 0,
+        passed: invalid ? 9 : 10,
+        total: 10,
+        overallScore: changed ? 90 : 50,
+        violations: failedIds.length ? [{
+          constraintId: 'SC-CIR-003', severity: 'soft', passed: false,
+          score: 0, maxScore: 15, affectedEntities: failedIds,
+          message: 'Supplied policy evidence', explanation: 'Not a circulation scoring implementation.',
+        }] : [],
+        suggestions: [],
+        categoryScores: {},
+      };
+    },
+  };
   return validator;
 }
 

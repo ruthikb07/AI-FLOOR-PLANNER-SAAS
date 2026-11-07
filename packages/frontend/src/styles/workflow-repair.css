@@ -1,0 +1,60 @@
+/* Deliberate, readable studio chrome; the drawing remains a separate surface. */
+html body {
+  --bg-app: #0b111a;
+  --bg-panel: #151e2b;
+  --bg-card: #1b2736;
+  --text-muted: #91a2b7;
+  --inspector-width: 310px;
+}
+html body .modal-card { background: #121c29; color: #edf3f9; border: 1px solid #3a4b61; box-shadow: 0 32px 100px #0009; }
+html body .ai-design-dialog { --bg-canvas: #182536; --bg-selection: #183c38; }
+html body .modal-card .modal-header { padding: 20px 24px; background: #172334; position: sticky; top: 0; z-index: 3; }
+html body .modal-card .modal-title { font-size: 20px; font-weight: 650; letter-spacing: -.025em; }
+html body .modal-card .modal-body { padding: 24px; }
+html body .modal-card .form-label { font-size: 12px; line-height: 1.5; color: #c2cfde; }
+html body .modal-card input, html body .modal-card select { min-height: 40px; }
+html body .modal-card input[readonly] { color: #a7dace; background: #102923; }
+html body .modal-card button:disabled { opacity: .48; cursor: not-allowed; }
+.design-site-notice { padding: 16px 18px; border: 1px solid #39556a; border-radius: 10px; background: #142b39; color: #cde5ed; font-size: 13px; line-height: 1.65; }
+.design-site-notice p { margin-top: 6px; color: #a9c0cc; }
+html body .workspace-view-switch { top: 10px; box-shadow: 0 4px 20px #0004; }
+html body .workspace-view-switch button { min-height: 36px; font-size: 11px; padding: 0 16px; }
+html body .workspace-left-rail { background: #111a26; }
+html body .inspector-dock { width: 310px; flex-basis: 310px; background: #131d2b; }
+html body .tool-button { min-height: 48px; }
+html body .tool-button span { font-size: 10px; }
+html body .canvas-context-card { max-width: 310px; top: 68px; background: #122130ed; pointer-events: none; }
+html body .canvas-context-card strong { font-size: 16px; }
+html body .canvas-context-card small { font-size: 11px; line-height: 1.5; color: #bbccda; white-space: normal; }
+html body .canvas-floating-actions { top: auto; bottom: 20px; }
+html body .canvas-floating-actions button { width: auto; padding: 0 12px; min-height: 38px; gap: 7px; font-size: 12px; }
+html body .model-context-card { display: none; }
+html body .model-toolbar { top: 65px; left: 14px; right: 14px; max-width: none; display: grid; justify-content: stretch; gap: 6px; pointer-events: none; }
+html body .model-control-group { width: fit-content; max-width: 100%; flex-wrap: wrap; pointer-events: auto; background: #142233eb; }
+html body .model-control-group button, html body .model-control-group.compact button { display: inline-flex; align-items: center; font-size: 11px; min-height: 34px; padding: 0 10px; text-transform: none; color: #c2d0df; }
+html body .model-control-group:first-child button:not(.active) { display: inline-flex; }
+html body .model-control-group button.active { color: #b4f3e1; background: #21483f; }
+html body .model-segmented-control button { min-height: 34px; font-size: 10px; color: #bdcbdc; }
+html body .model-level-picker span { font-size: 11px; }
+html body .model-level-picker small { font-size: 10px; color: #9dafc4; }
+.model-navigation-help { position: absolute; left: 18px; bottom: 108px; pointer-events: none; color: #c0d0df; font-size: 12px; padding: 8px 12px; border-radius: 8px; background: #122130dd; }
+html body .model-popover { top: 164px; max-height: calc(100% - 245px); background: #142233f5; }
+html body .model-popover header strong { font-size: 14px; }
+html body .model-popover header small, html body .model-layers-panel label { font-size: 11px; }
+html body .model-export-panel { width: min(450px, calc(100% - 28px)); padding-bottom: 18px; z-index: 15; }
+.model-export-panel p, .model-export-panel details, .model-export-panel > small { display: block; margin: 14px 18px; color: #c3d0e0; font-size: 12px; line-height: 1.65; }
+.model-export-panel > button { margin: 0 18px; }
+.model-export-panel code { display: block; padding: 12px; white-space: normal; overflow-wrap: anywhere; background: #0b1521; margin-top: 10px; }
+.model-export-panel header > button { margin-left: auto; padding: 8px; }
+.model-export-panel summary { cursor: pointer; color: #8fe3cd; }
+@media (max-width: 1000px) {
+  html body .inspector-dock { width: 255px; flex-basis: 255px; }
+  html body .canvas-context-card { max-width: 220px; }
+  .model-navigation-help { max-width: 70%; font-size: 11px; }
+}
+@media (max-width: 700px) {
+  html body .inspector-dock { display: none; }
+  html body .canvas-context-card { display: none; }
+  html body .model-control-group button, html body .model-control-group.compact button { min-height: 30px; padding: 0 7px; }
+  html body .model-popover { top: 205px; max-height: calc(100% - 285px); }
+}

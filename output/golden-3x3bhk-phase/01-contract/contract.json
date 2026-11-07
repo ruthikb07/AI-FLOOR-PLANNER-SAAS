@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "1.0",
+  "contractId": "contract_golden-3x3bhk-project_3x3bhk",
+  "projectId": "golden-3x3bhk-project",
+  "projectName": "Golden 3x3BHK Apartment",
+  "projectType": "MULTI_UNIT_RESIDENTIAL",
+  "floorType": "TYPICAL",
+  "flatCount": 3,
+  "flats": [
+    {
+      "unitId": "FLAT_01",
+      "unitType": "3BHK",
+      "targetBedrooms": 3,
+      "targetBathrooms": 3,
+      "targetCarpetAreaSqFt": 1100,
+      "targetCarpetAreaSqM": 102.19,
+      "mandatoryRooms": [
+        "foyer",
+        "living_dining",
+        "kitchen",
+        "utility",
+        "master_bedroom",
+        "master_toilet",
+        "bedroom_2",
+        "toilet_2",
+        "bedroom_3",
+        "common_toilet"
+      ]
+    },
+    {
+      "unitId": "FLAT_02",
+      "unitType": "3BHK",
+      "targetBedrooms": 3,
+      "targetBathrooms": 3,
+      "targetCarpetAreaSqFt": 1100,
+      "targetCarpetAreaSqM": 102.19,
+      "mandatoryRooms": [
+        "foyer",
+        "living_dining",
+        "kitchen",
+        "utility",
+        "master_bedroom",
+        "master_toilet",
+        "bedroom_2",
+        "toilet_2",
+        "bedroom_3",
+        "common_toilet"
+      ]
+    },
+    {
+      "unitId": "FLAT_03",
+      "unitType": "3BHK",
+      "targetBedrooms": 3,
+      "targetBathrooms": 3,
+      "targetCarpetAreaSqFt": 1100,
+      "targetCarpetAreaSqM": 102.19,
+      "mandatoryRooms": [
+        "foyer",
+        "living_dining",
+        "kitchen",
+        "utility",
+        "master_bedroom",
+        "master_toilet",
+        "bedroom_2",
+        "toilet_2",
+        "bedroom_3",
+        "common_toilet"
+      ]
+    }
+  ],
+  "core": {
+    "liftCount": 2,
+    "stairCount": 2,
+    "commonLobby": true,
+    "liftArrangement": "COMPACT_SHARED_BANK"
+  },
+  "site": {
+    "plotWidthM": 50,
+    "plotDepthM": 50,
+    "setbacksM": {
+      "front": 3,
+      "rear": 2,
+      "left": 2,
+      "right": 2
+    },
+    "buildableWidthM": 46,
+    "buildableDepthM": 45,
+    "buildableAreaSqM": 2070,
+    "roadFacing": "North"
+  },
+  "createdAt": "2026-09-30T00:00:00.000Z",
+  "contractHash": "7dc0a0791aa3b49266d49c91d486e302805a15ff001ba6e93fcfd6cb7c2083f9"
+}

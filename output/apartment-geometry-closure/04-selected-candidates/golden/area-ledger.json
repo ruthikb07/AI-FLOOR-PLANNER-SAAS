@@ -1,0 +1,179 @@
+[
+  {
+    "units": "mm2",
+    "convention": "CENTRELINE_CELLS_MINUS_CLIPPED_WALL_UNION",
+    "gross": 480430000,
+    "unitUsable": 356831050,
+    "balcony": 15550762.5,
+    "core": 25038750,
+    "common": 37685375,
+    "service": 800000,
+    "wall": 44524062.5,
+    "void": 0,
+    "unassigned": 0,
+    "overlap": 0,
+    "accounted": 480430000,
+    "delta": 0,
+    "roomUsable": {
+      "apt-room:flat_02__FLAT_02_master_bed": 12776006.25,
+      "apt-room:flat_02__FLAT_02_bed_2": 12973087.5,
+      "apt-room:flat_02__FLAT_02_bed_3": 19485506.25,
+      "apt-room:flat_02__FLAT_02_master_bath": 2236837.5,
+      "apt-room:flat_02__FLAT_02_suite_access_1": 3850225,
+      "apt-room:flat_02__FLAT_02_bath_2": 2333725,
+      "apt-room:flat_02__FLAT_02_suite_access_2": 3850225,
+      "apt-room:flat_02__FLAT_02_private_passage": 12444950,
+      "apt-room:flat_02__FLAT_02_common_bath": 4228087.5,
+      "apt-room:flat_02__FLAT_02_utility": 3130225,
+      "apt-room:flat_02__FLAT_02_living_dining": 16832725,
+      "apt-room:flat_02__FLAT_02_living_balcony": 5183587.5,
+      "apt-room:flat_02__FLAT_02_kitchen": 5726725,
+      "apt-room:flat_01__FLAT_01_foyer": 18923425,
+      "apt-room:flat_01__FLAT_01_common_bath": 4228087.5,
+      "apt-room:flat_01__FLAT_01_private_passage": 12444950,
+      "apt-room:flat_01__FLAT_01_master_bath": 2236837.5,
+      "apt-room:flat_01__FLAT_01_master_bed": 12776006.25,
+      "apt-room:flat_02__FLAT_02_foyer": 19151325,
+      "apt-room:flat_01__FLAT_01_kitchen": 5726725,
+      "apt-room:flat_01__FLAT_01_utility": 3130225,
+      "apt-room:flat_01__FLAT_01_suite_access_1": 3850225,
+      "apt-room:shaft_1": 400000,
+      "apt-room:stair_1": 8668125,
+      "apt-room:core_lobby": 29090500,
+      "apt-room:lift_1": 3851250,
+      "apt-room:flat_01__FLAT_01_bath_2": 2333725,
+      "apt-room:flat_01__FLAT_01_bed_2": 12973087.5,
+      "apt-room:flat_01__FLAT_01_living_dining": 16832725,
+      "apt-room:corridor_1": 8594875,
+      "apt-room:flat_01__FLAT_01_suite_access_2": 3850225,
+      "apt-room:lift_2": 3851250,
+      "apt-room:stair_2": 8668125,
+      "apt-room:flat_01__FLAT_01_bed_3": 19485506.25,
+      "apt-room:shaft_2": 400000,
+      "apt-room:flat_03__FLAT_03_foyer": 19151325,
+      "apt-room:flat_01__FLAT_01_living_balcony": 5183587.5,
+      "apt-room:flat_03__FLAT_03_common_bath": 4228087.5,
+      "apt-room:flat_03__FLAT_03_kitchen": 5726725,
+      "apt-room:flat_03__FLAT_03_living_dining": 16832725,
+      "apt-room:flat_03__FLAT_03_living_balcony": 5183587.5,
+      "apt-room:flat_03__FLAT_03_utility": 3130225,
+      "apt-room:flat_03__FLAT_03_private_passage": 12444950,
+      "apt-room:flat_03__FLAT_03_master_bath": 2236837.5,
+      "apt-room:flat_03__FLAT_03_suite_access_1": 3850225,
+      "apt-room:flat_03__FLAT_03_bath_2": 2333725,
+      "apt-room:flat_03__FLAT_03_suite_access_2": 3850225,
+      "apt-room:flat_03__FLAT_03_bed_3": 19485506.25,
+      "apt-room:flat_03__FLAT_03_master_bed": 12776006.25,
+      "apt-room:flat_03__FLAT_03_bed_2": 12973087.5
+    },
+    "unitBuiltUp": {
+      "flat_01": 136890000,
+      "flat_02": 136890000,
+      "flat_03": 136890000
+    },
+    "balconies": [
+      {
+        "id": "apt-room:flat_01__FLAT_01_living_balcony",
+        "unitId": "flat_01",
+        "boundary": {
+          "points": [
+            {
+              "x": 29050,
+              "y": 31300
+            },
+            {
+              "x": 30850,
+              "y": 31300
+            },
+            {
+              "x": 30850,
+              "y": 34600
+            },
+            {
+              "x": 29050,
+              "y": 34600
+            }
+          ]
+        },
+        "area": 5183587.5,
+        "grossArea": 5940000,
+        "usableDepth": 1570,
+        "usableWidth": 3070,
+        "accessDoorIds": [
+          "FLAT_01_door_6"
+        ],
+        "adjacentRoomIds": [
+          "apt-room:flat_01__FLAT_01_living_dining"
+        ]
+      },
+      {
+        "id": "apt-room:flat_02__FLAT_02_living_balcony",
+        "unitId": "flat_02",
+        "boundary": {
+          "points": [
+            {
+              "x": 16700,
+              "y": 27700
+            },
+            {
+              "x": 20000,
+              "y": 27700
+            },
+            {
+              "x": 20000,
+              "y": 29500
+            },
+            {
+              "x": 16700,
+              "y": 29500
+            }
+          ]
+        },
+        "area": 5183587.5,
+        "grossArea": 5940000,
+        "usableDepth": 1570,
+        "usableWidth": 3070,
+        "accessDoorIds": [
+          "FLAT_02_door_6"
+        ],
+        "adjacentRoomIds": [
+          "apt-room:flat_02__FLAT_02_living_dining"
+        ]
+      },
+      {
+        "id": "apt-room:flat_03__FLAT_03_living_balcony",
+        "unitId": "flat_03",
+        "boundary": {
+          "points": [
+            {
+              "x": 30000,
+              "y": 27700
+            },
+            {
+              "x": 33300,
+              "y": 27700
+            },
+            {
+              "x": 33300,
+              "y": 29500
+            },
+            {
+              "x": 30000,
+              "y": 29500
+            }
+          ]
+        },
+        "area": 5183587.5,
+        "grossArea": 5940000,
+        "usableDepth": 1570,
+        "usableWidth": 3070,
+        "accessDoorIds": [
+          "FLAT_03_door_6"
+        ],
+        "adjacentRoomIds": [
+          "apt-room:flat_03__FLAT_03_living_dining"
+        ]
+      }
+    ]
+  }
+]

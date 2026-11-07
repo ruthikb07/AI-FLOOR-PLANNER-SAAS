@@ -3,7 +3,8 @@
  * Strictly adheres to project envelope versioning and domain validation.
  */
 
-import type { Building, CandidatePlan, FootprintIntent, GenerationControlState, SpaceProgram } from '@ai-floor-planner/core';
+import type { Building, BuildingBudgetIntent, CandidatePlan, FootprintIntent, GenerationControlState, SpaceProgram } from '@ai-floor-planner/core';
+import type { FloorPlanImagePromptRequest } from '@ai-floor-planner/ai-orchestration';
 import {
   serializeBuilding,
   deserializeBuilding,
@@ -22,6 +23,8 @@ import {
   deriveFootprintIntent,
   createGenerationControlState,
   validateGenerationControl,
+  createUnreviewedBudget,
+  refreshBudgetApproval,
 } from '@ai-floor-planner/core';
 
 export interface ProjectEnvelope {
@@ -36,27 +39,119 @@ export interface ProjectEnvelope {
   readonly status?: ProjectLifecycleStatus;
   readonly spaceProgram?: SpaceProgram;
   readonly footprintIntent?: FootprintIntent;
+  readonly buildingBudget?: BuildingBudgetIntent;
   /** null is a save-time tombstone used to invalidate stale alternatives. */
   readonly generationSession?: GenerationSession | null;
   readonly generationControl?: GenerationControlState;
+  /** Latest AI concept image. Original artifacts remain immutable server-side. */
+  readonly floorPlanImage?: FloorPlanImageSession | null;
+  /** Gemini architectural evaluation of the accepted plan (PRD 25). Never validity. */
+  readonly architecturalEvaluation?: ArchitecturalEvaluation | null;
 }
 
 export interface GenerationSession {
+  readonly requestHash?: string;
+  readonly requestSeed?: number;
   readonly schemaVersion: 1;
   readonly generatedAt: string;
   readonly selectedCandidateId?: string;
   readonly candidates: readonly CandidatePlan[];
 }
 
+/**
+ * Persisted Gemini architectural evaluation of an accepted plan (PRD 25).
+ * Stored separately from validation: score is never treated as validity (PRD 26).
+ */
+export interface ArchitecturalEvaluation {
+  readonly schemaVersion: 1;
+  readonly projectId: string;
+  readonly planId: string;
+  readonly generatedAt: string;
+  readonly overallScore: number;
+  readonly requirementSatisfaction: number;
+  readonly spatialQuality: number;
+  readonly circulation: number;
+  readonly adjacency: number;
+  readonly zoning: number;
+  readonly privacy: number;
+  readonly daylight: number;
+  readonly efficiency: number;
+  readonly roomProportions: number;
+  readonly orientation: number;
+  readonly strengths: readonly string[];
+  readonly concerns: readonly string[];
+  readonly rationale: string;
+  readonly model: string;
+}
+
+/**
+ * Persisted AI concept image session (Master PRD Phase 2 §17/§18).
+ * Records the reproducible request plus the immutable generation identity.
+ */
+export interface FloorPlanImageSession {
+  readonly schemaVersion: 1;
+  readonly generationId: string;
+  readonly seed: number;
+  readonly attempt: number;
+  readonly generatedAt: string;
+  readonly promptVersion: number;
+  readonly model: string;
+  readonly provider: string;
+  readonly mimeType: string;
+  readonly imageBase64: string;
+  readonly request: FloorPlanImagePromptRequest;
+  /** Canonical building identity/version the image was generated from. */
+  readonly contextSignature: string;
+}
+
 export const BUILDING_CATEGORIES = ['residential', 'commercial', 'mixed_use', 'educational'] as const;
 export type BuildingCategory = (typeof BUILDING_CATEGORIES)[number];
+
+/**
+ * Tolerant reader for the persisted AI concept image session. An unknown or
+ * corrupt entry yields undefined — the UI then offers a fresh generation rather
+ * than displaying a broken image or inventing one.
+ */
+function normalizeArchitecturalEvaluation(value: unknown): ArchitecturalEvaluation | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const evaluation = value as Partial<ArchitecturalEvaluation>;
+  if (
+    evaluation.schemaVersion !== 1
+    || typeof evaluation.projectId !== 'string'
+    || typeof evaluation.planId !== 'string'
+    || typeof evaluation.overallScore !== 'number'
+    || !Array.isArray(evaluation.strengths)
+    || !Array.isArray(evaluation.concerns)
+  ) return undefined;
+  return evaluation as ArchitecturalEvaluation;
+}
+
+function normalizeFloorPlanImageSession(value: unknown): FloorPlanImageSession | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const session = value as Partial<FloorPlanImageSession>;
+  if (
+    session.schemaVersion !== 1
+    || typeof session.generationId !== 'string'
+    || typeof session.imageBase64 !== 'string'
+    || session.imageBase64.length === 0
+    || typeof session.seed !== 'number'
+    || typeof session.mimeType !== 'string'
+    || !session.request
+    || typeof session.request !== 'object'
+  ) return undefined;
+  return {
+    ...session as FloorPlanImageSession,
+    attempt: typeof session.attempt === 'number' ? session.attempt : 0,
+    contextSignature: typeof session.contextSignature === 'string' ? session.contextSignature : '',
+  };
+}
 
 export const PROJECT_LIFECYCLE_STATUSES = [
   'CONCEPT', 'DESIGNING', 'ANALYZING', 'GENERATED', 'REVIEW_REQUIRED', 'REVIEWED', 'RELEASED',
 ] as const;
 export type ProjectLifecycleStatus = (typeof PROJECT_LIFECYCLE_STATUSES)[number];
 
-export const CURRENT_PROJECT_SCHEMA_VERSION = 8;
+export const CURRENT_PROJECT_SCHEMA_VERSION = 9;
 
 export interface ProjectHeader {
   readonly id: string;
@@ -114,20 +209,31 @@ export class LocalStorageProjectStorage {
       const previousControl = previousRaw
         ? (JSON.parse(previousRaw).generationControl as GenerationControlState | undefined)
         : undefined;
+      const previousImage = previousRaw
+        ? (JSON.parse(previousRaw).floorPlanImage as FloorPlanImageSession | undefined)
+        : undefined;
       const category = normalizeBuildingCategory(envelope.category);
       const candidateProgram = envelope.spaceProgram ?? previousProgram;
       const spaceProgram = candidateProgram?.category === category
         ? candidateProgram
         : deriveSpaceProgramFromBuilding(envelope.building, category);
+      const footprintIntent = envelope.footprintIntent ?? previousFootprint ?? deriveFootprintIntent(envelope.building);
+      const generationControl = validateGenerationControl(envelope.generationControl ?? previousControl ?? createGenerationControlState(), envelope.building).state;
+      const previousBudget = previousRaw ? JSON.parse(previousRaw).buildingBudget : undefined;
+      const buildingBudget = normalizeBudget(envelope.buildingBudget ?? previousBudget, { building: envelope.building, program: spaceProgram, footprint: footprintIntent, generationControl });
       const serialized = JSON.stringify({
         ...envelope,
         schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
         category,
         spaceProgram,
+        buildingBudget,
         footprintIntent: envelope.footprintIntent ?? previousFootprint ?? deriveFootprintIntent(envelope.building),
         generationSession: envelope.generationSession === null
           ? undefined
           : envelope.generationSession ?? previousGeneration,
+        floorPlanImage: envelope.floorPlanImage === null
+          ? undefined
+          : envelope.floorPlanImage ?? previousImage,
         generationControl: validateGenerationControl(
           envelope.generationControl ?? previousControl ?? createGenerationControlState(),
           envelope.building,
@@ -153,11 +259,15 @@ export class LocalStorageProjectStorage {
       const savedFootprint = parsed.footprintIntent as FootprintIntent | undefined;
       const savedGeneration = parsed.generationSession as GenerationSession | undefined;
       const savedControl = parsed.generationControl as GenerationControlState | undefined;
+      const program = savedProgram?.category === category ? savedProgram : deriveSpaceProgramFromBuilding(building, category);
+      const footprint = savedFootprint ?? deriveFootprintIntent(building);
+      const control = validateGenerationControl(savedControl, building).state;
       return {
         ...parsed,
         schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
         building,
         requiredRoomCounts: normalizeRequiredRoomCounts(parsed.requiredRoomCounts),
+        buildingBudget: normalizeBudget(parsed.buildingBudget, { building, program, footprint, generationControl: control }),
         category,
         status: normalizeProjectStatus(parsed.status),
         spaceProgram: savedProgram?.category === category
@@ -171,6 +281,8 @@ export class LocalStorageProjectStorage {
             building: deserializeBuilding(JSON.stringify(candidate.building)),
           })),
         } : undefined,
+        floorPlanImage: normalizeFloorPlanImageSession(parsed.floorPlanImage),
+        architecturalEvaluation: normalizeArchitecturalEvaluation(parsed.architecturalEvaluation),
         generationControl: validateGenerationControl(savedControl, building).state,
       };
     } catch (err) {
@@ -232,6 +344,13 @@ export class LocalStorageProjectStorage {
 
 export const projectStorage = new LocalStorageProjectStorage();
 
+function normalizeBudget(value: unknown, context: import('@ai-floor-planner/core').ReviewedIntentContext): BuildingBudgetIntent {
+  if (!value || typeof value !== 'object') return createUnreviewedBudget();
+  const budget = value as BuildingBudgetIntent;
+  if (budget.schemaVersion !== 1 || !budget.floorTargets || typeof budget.floorTargets !== 'object' || Array.isArray(budget.floorTargets)) return createUnreviewedBudget();
+  return refreshBudgetApproval(context, budget);
+}
+
 /** Export project envelope as downloaded JSON file */
 export function exportProjectAsJsonFile(envelope: ProjectEnvelope): void {
   const data = JSON.stringify(
@@ -280,6 +399,8 @@ export function parseAndValidateProjectJson(jsonString: string): ProjectEnvelope
   const importedFootprint = record.footprintIntent as FootprintIntent | undefined;
   const importedGeneration = record.generationSession as GenerationSession | undefined;
   const importedControl = record.generationControl as GenerationControlState | undefined;
+  const program = importedProgram?.category === category ? importedProgram : deriveSpaceProgramFromBuilding(building, category);
+  const footprint = importedFootprint ?? deriveFootprintIntent(building);
   return {
     schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
     projectId,
@@ -288,6 +409,7 @@ export function parseAndValidateProjectJson(jsonString: string): ProjectEnvelope
     updatedAt: (record.updatedAt as string) ?? new Date().toISOString(),
     building,
     requiredRoomCounts: normalizeRequiredRoomCounts(record.requiredRoomCounts),
+    buildingBudget: normalizeBudget(record.buildingBudget, { building, program, footprint, generationControl: validateGenerationControl(importedControl, building).state }),
     category,
     status: normalizeProjectStatus(record.status),
     spaceProgram: importedProgram?.category === category
@@ -538,6 +660,7 @@ export function createEmptyPlot(widthMm: number, depthMm: number, name: string):
     site: {
       plotWidth: widthMm,
       plotDepth: depthMm,
+      plannedFloorCount: 1,
       roadFacing: Direction.North,
       setbacks: { front: 1500, rear: 1000, left: 1000, right: 1000 },
     },

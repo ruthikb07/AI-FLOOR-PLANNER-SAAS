@@ -1,0 +1,44 @@
+{
+  "totalCandidates": 36,
+  "validCandidatesCount": 36,
+  "rejectedHardErrorCount": 0,
+  "searchDurationMs": 6,
+  "selectedTopCandidates": [
+    {
+      "candidateId": "candidate_topo_10_circulation",
+      "strategy": "circulation",
+      "coreId": "CORE_A_SHARED_LIFT_BANK",
+      "hardErrorsCount": 0,
+      "compositeScore": 92.4,
+      "costEfficiencyScore": 100,
+      "apartmentEfficiencyRatio": 1.047
+    },
+    {
+      "candidateId": "candidate_topo_4_daylight",
+      "strategy": "daylight",
+      "coreId": "CORE_A_SHARED_LIFT_BANK",
+      "hardErrorsCount": 0,
+      "compositeScore": 92.3,
+      "costEfficiencyScore": 100,
+      "apartmentEfficiencyRatio": 1.081
+    },
+    {
+      "candidateId": "candidate_topo_1_balanced",
+      "strategy": "balanced",
+      "coreId": "CORE_A_SHARED_LIFT_BANK",
+      "hardErrorsCount": 0,
+      "compositeScore": 90.8,
+      "costEfficiencyScore": 100,
+      "apartmentEfficiencyRatio": 1.057
+    },
+    {
+      "candidateId": "candidate_topo_7_privacy",
+      "strategy": "privacy",
+      "coreId": "CORE_A_SHARED_LIFT_BANK",
+      "hardErrorsCount": 0,
+      "compositeScore": 90.8,
+      "costEfficiencyScore": 100,
+      "apartmentEfficiencyRatio": 1.051
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "flatCount": 3,
+  "unitTypes": [
+    "3BHK",
+    "3BHK",
+    "3BHK"
+  ],
+  "lifts": 2,
+  "stairs": 2,
+  "pass": true
+}

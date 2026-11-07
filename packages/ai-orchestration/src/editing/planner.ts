@@ -1,6 +1,6 @@
 import type { Building, Room, RoomType } from '@ai-floor-planner/core';
 import { moveRoom, resizeRoom, updateEntity } from '@ai-floor-planner/core';
-import { PlanValidator, type ValidationSummary } from '@ai-floor-planner/constraint-engine';
+import { diagnosticsToValidation, evaluateDesign, type ValidationSummary } from '@ai-floor-planner/planning-engine';
 import { AIEditCommand } from './command';
 import { resolveRoomTarget } from './target-resolver';
 import type { AIEditIntent, AIEditPlannerOptions, AIEditPreview } from './types';
@@ -30,14 +30,18 @@ function uniquePositions(positions: readonly { x: number; y: number }[]) {
 }
 
 export class AIEditPlanner {
-  constructor(private readonly validator = new PlanValidator()) {}
+  constructor() {}
+
+  private validate(building: Building, options: any = {}): ValidationSummary {
+    return diagnosticsToValidation(building, options);
+  }
 
   preview(building: Building, intent: AIEditIntent, options: AIEditPlannerOptions = {}): AIEditPreview {
     const validationOptions = {
       requiredRoomCounts: options.requiredRoomCounts as Partial<Record<RoomType, number>> | undefined,
       allowIncompleteDraft: options.allowIncompleteDraft ?? false,
     };
-    const beforeValidation = this.validator.validate(building, validationOptions);
+    const beforeValidation = this.validate(building, validationOptions);
     const resolution = resolveRoomTarget(
       building,
       intent.targetQuery,
@@ -104,6 +108,8 @@ export class AIEditPlanner {
       afterBuilding: chosen.building,
       beforeValidation,
       afterValidation: chosen.validation,
+      beforeDiagnostics: evaluateDesign(building),
+      afterDiagnostics: evaluateDesign(chosen.building),
       command,
       attemptedCandidates: candidates.length,
       validCandidates: valid.length,
@@ -114,7 +120,7 @@ export class AIEditPlanner {
     building: Building,
     room: Room,
     intent: AIEditIntent,
-    options: Parameters<PlanValidator['validate']>[1],
+    options: any,
   ): Candidate[] {
     let width = intent.widthMm ?? room.width;
     let height = intent.heightMm ?? room.height;
@@ -151,7 +157,7 @@ export class AIEditPlanner {
           const candidateBuilding = versioned(moved, building);
           candidates.push({
             building: candidateBuilding,
-            validation: this.validator.validate(candidateBuilding, options),
+            validation: this.validate(candidateBuilding, options),
             magnitude: Math.abs(dimensions.width * dimensions.height - room.area),
           });
         } catch {
@@ -166,7 +172,7 @@ export class AIEditPlanner {
     building: Building,
     room: Room,
     intent: AIEditIntent,
-    options: Parameters<PlanValidator['validate']>[1],
+    options: any,
   ): Candidate[] {
     const requested = Math.max(100, Math.min(intent.distanceMm ?? 500, 10000));
     const offsets: { x: number; y: number; magnitude: number }[] = [];
@@ -194,7 +200,7 @@ export class AIEditPlanner {
     return offsets.map(offset => {
       try {
         const moved = versioned(moveRoom(building, room.id, room.x + offset.x, room.y + offset.y), building);
-        return { building: moved, validation: this.validator.validate(moved, options), magnitude: offset.magnitude };
+        return { building: moved, validation: this.validate(moved, options), magnitude: offset.magnitude };
       } catch {
         return null;
       }
@@ -205,12 +211,12 @@ export class AIEditPlanner {
     building: Building,
     room: Room,
     intent: AIEditIntent,
-    options: Parameters<PlanValidator['validate']>[1],
+    options: any,
   ): Candidate[] {
     const name = intent.newName?.trim().slice(0, 80);
     if (!name || name === room.name) return [];
     const renamed = versioned(updateEntity(building, 'room', room.id, { name }), building);
-    return [{ building: renamed, validation: this.validator.validate(renamed, options), magnitude: 1 }];
+    return [{ building: renamed, validation: this.validate(renamed, options), magnitude: 1 }];
   }
 
   private rejected(
@@ -225,7 +231,10 @@ export class AIEditPlanner {
     return {
       status: 'rejected', message, intent, targetRoom: room,
       beforeBuilding: building, afterBuilding: null,
-      beforeValidation, afterValidation, command: null,
+      beforeValidation, afterValidation,
+      beforeDiagnostics: evaluateDesign(building),
+      afterDiagnostics: null,
+      command: null,
       attemptedCandidates, validCandidates: 0,
     };
   }

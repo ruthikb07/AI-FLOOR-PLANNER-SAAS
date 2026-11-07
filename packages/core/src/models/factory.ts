@@ -23,9 +23,12 @@ import type {
   AccessPoint,
   SiteDevelopmentControls,
   SiteUnitSystem,
+  SiteZone,
   AdjacencyRequirement,
   Point,
   Polygon,
+  CanonicalFurnitureItem,
+  PlancraftFurnitureElementType,
 } from '../types';
 
 import {
@@ -76,6 +79,7 @@ export function rectToPolygon(x: number, y: number, width: number, height: numbe
 /** Default human-readable name for a room type. */
 function defaultRoomName(type: RoomType): string {
   const names: Record<RoomType, string> = {
+    [RoomType.ServiceShaft]: 'Service Shaft',
     [RoomType.Bedroom]: 'Bedroom',
     [RoomType.Bathroom]: 'Bathroom',
     [RoomType.Kitchen]: 'Kitchen',
@@ -96,6 +100,9 @@ function defaultRoomName(type: RoomType): string {
     [RoomType.FamilyLiving]: 'Family Living',
     [RoomType.Terrace]: 'Terrace',
     [RoomType.Garden]: 'Garden',
+    [RoomType.OTS]: 'Open to Sky (OTS)',
+    [RoomType.Porch]: 'Entrance Porch',
+    [RoomType.Dressing]: 'Dressing Room',
     [RoomType.Custom]: 'Room',
   };
   return names[type];
@@ -117,6 +124,7 @@ export interface CreateSiteParams {
   secondaryRoadFacing?: Direction;
   developmentControls?: SiteDevelopmentControls;
   unitSystem?: SiteUnitSystem;
+  siteZones?: readonly SiteZone[];
 }
 
 export interface CreateBuildingParams {
@@ -133,6 +141,21 @@ export interface CreateFloorParams {
   name?: string;
   floorHeight?: number;
   boundary?: Polygon;
+  furniture?: readonly CanonicalFurnitureItem[];
+}
+
+export interface CreateFurnitureItemParams {
+  id?: string;
+  type: PlancraftFurnitureElementType;
+  roomId: string;
+  siteZoneId?: string;
+  flatId?: string;
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  depthMm: number;
+  rotationDeg?: 0 | 90 | 180 | 270;
+  anchorWall?: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'CENTER';
 }
 
 export interface CreateRoomParams {
@@ -247,6 +270,7 @@ export function createSite(params: CreateSiteParams): Site {
     secondaryRoadFacing: params.secondaryRoadFacing,
     developmentControls: params.developmentControls,
     unitSystem: params.unitSystem ?? 'metric',
+    siteZones: params.siteZones,
   };
 }
 
@@ -293,6 +317,7 @@ export function createFloor(params: CreateFloorParams): Floor {
     windows: [],
     stairs: [],
     columns: [],
+    ...(params.furniture ? { furniture: [...params.furniture] } : {}),
   };
 }
 
@@ -435,5 +460,28 @@ export function createColumn(params: CreateColumnParams): Column {
     shape: params.shape ?? ColumnShape.Rectangular,
     isStructural: params.isStructural ?? true,
     gridReference: params.gridReference,
+  };
+}
+
+/** Create a new CanonicalFurnitureItem on layer A-FURN. */
+export function createFurnitureItem(params: CreateFurnitureItemParams): CanonicalFurnitureItem {
+  assertFinite('xMm', params.xMm);
+  assertFinite('yMm', params.yMm);
+  assertPositive('widthMm', params.widthMm);
+  assertPositive('depthMm', params.depthMm);
+
+  return {
+    id: params.id ?? generateId(),
+    type: params.type,
+    roomId: params.roomId,
+    siteZoneId: params.siteZoneId,
+    flatId: params.flatId,
+    xMm: params.xMm,
+    yMm: params.yMm,
+    widthMm: params.widthMm,
+    depthMm: params.depthMm,
+    rotationDeg: params.rotationDeg ?? 0,
+    anchorWall: params.anchorWall,
+    layer: 'A-FURN',
   };
 }

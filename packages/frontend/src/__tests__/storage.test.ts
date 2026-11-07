@@ -6,7 +6,7 @@ import {
   parseAndValidateProjectJson,
 } from '../services/storage';
 import { createGenerationControlState, serializeBuilding, updateGenerationControl, type CandidatePlan } from '@ai-floor-planner/core';
-import { PlanValidator } from '@ai-floor-planner/constraint-engine';
+import { diagnosticsToValidation } from '@ai-floor-planner/planning-engine';
 
 describe('Frontend Persistence & Storage Service', () => {
   let storage: LocalStorageProjectStorage;
@@ -35,7 +35,7 @@ describe('Frontend Persistence & Storage Service', () => {
     expect(building.floors[0]!.rooms.length).toBe(6);
     expect(building.site.plotWidth).toBe(9144);
     expect(building.site.plotDepth).toBe(15240);
-    const validation = new PlanValidator().validate(building, {
+    const validation = diagnosticsToValidation(building, {
       requiredRoomCounts: {
         living: 1,
         dining: 1,
@@ -137,7 +137,7 @@ describe('Frontend Persistence & Storage Service', () => {
     }));
 
     const loaded = storage.load('legacy-program');
-    expect(loaded?.schemaVersion).toBe(8);
+    expect(loaded?.schemaVersion).toBe(9);
     expect(loaded?.spaceProgram?.provenance).toBe('DERIVED_FROM_EXISTING_DESIGN');
     expect(loaded?.spaceProgram?.items.length).toBeGreaterThan(0);
   });

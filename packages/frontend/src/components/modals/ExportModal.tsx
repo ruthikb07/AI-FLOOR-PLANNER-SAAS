@@ -14,9 +14,11 @@ import {
   X,
 } from 'lucide-react';
 import type { Building, Floor, PaperSize } from '@ai-floor-planner/core';
-import type { ValidationSummary } from '@ai-floor-planner/constraint-engine';
+import type { ValidationSummary } from '@ai-floor-planner/planning-engine';
 import {
   createExportArtifact,
+  exportCadArtifact,
+  persistArtifactToServer,
   DEFAULT_ADVANCED_EXPORT_SETTINGS,
   downloadExportArtifact,
   formatExportSize,
@@ -38,9 +40,13 @@ const FORMAT_OPTIONS: Array<{
   description: string;
   icon: React.ReactNode;
 }> = [
+  { id: 'dwg', label: 'AutoCAD DWG', description: 'Genuine AC1032 editable drawing', icon: <Layers3 size={18} /> },
+  { id: 'dxf', label: 'AutoCAD DXF', description: 'Universal CAD vector exchange', icon: <FileCode2 size={18} /> },
   { id: 'pdf', label: 'PDF Sheet', description: 'Print-ready vector document', icon: <FileText size={18} /> },
   { id: 'svg', label: 'SVG Vector', description: 'Editable infinite-resolution drawing', icon: <FileCode2 size={18} /> },
   { id: 'json', label: 'Project JSON', description: 'Complete canonical building model', icon: <FileJson size={18} /> },
+  { id: 'pc', label: 'Plancraft Structure (.pc)', description: 'Declarative wall, door, and room DSL', icon: <FileCode2 size={18} /> },
+  { id: 'pcf', label: 'Plancraft Furniture (.pcf)', description: 'Wall-anchored furniture layout manifest', icon: <Layers3 size={18} /> },
 ];
 
 const LAYER_OPTIONS: Array<{
@@ -51,6 +57,7 @@ const LAYER_OPTIONS: Array<{
     | 'includeRoomLabels'
     | 'includeRoomAreas'
     | 'includeOpenings'
+    | 'includeFurniture'
     | 'includeNorthArrow'
     | 'includeScaleBar'
     | 'includeTitleBlock'
@@ -61,6 +68,7 @@ const LAYER_OPTIONS: Array<{
   { key: 'includeRoomLabels', label: 'Room labels' },
   { key: 'includeRoomAreas', label: 'Room areas' },
   { key: 'includeOpenings', label: 'Doors & windows' },
+  { key: 'includeFurniture', label: 'Furniture & Fixtures (A-FURN)' },
   { key: 'includeGrid', label: 'Planning grid' },
   { key: 'includeNorthArrow', label: 'North arrow' },
   { key: 'includeScaleBar', label: 'Scale bar' },
@@ -79,6 +87,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     floorId: floor?.id ?? building.floors[0]?.id,
   });
   const [exportedMessage, setExportedMessage] = useState<string | null>(null);
+  const [exportedPaths, setExportedPaths] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [lastExportedArtifact, setLastExportedArtifact] = useState<{
+    filename: string;
+    blobUrl: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -87,6 +101,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       floorId: floor?.id ?? building.floors[0]?.id,
     }));
     setExportedMessage(null);
+    setExportedPaths([]);
+    setLastExportedArtifact(null);
   }, [building.floors, floor?.id, isOpen]);
 
   const artifactResult = useMemo(() => {
@@ -116,12 +132,72 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   ) => {
     setSettings(current => ({ ...current, [key]: value }));
     setExportedMessage(null);
+    setExportedPaths([]);
+    setLastExportedArtifact(null);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    // DWG and DXF formats: use the real backend CAD export pipeline
+    if (settings.format === 'dwg' || settings.format === 'dxf') {
+      try {
+        setIsExporting(true);
+        setExportedMessage(`Generating and validating ${settings.format.toUpperCase()} CAD drawing from canonical model...`);
+        const cadArtifact = await exportCadArtifact(building, settings);
+        await downloadExportArtifact(cadArtifact);
+        const verificationLabel = settings.format === 'dwg' ? 'AC1032 binary verified' : 'ASCII DXF standard verified';
+        setExportedMessage(
+          `${cadArtifact.filename} exported (${formatExportSize(cadArtifact.byteSize)} · ` +
+          `${cadArtifact.validation?.layerCount ?? 27} layers · ` +
+          `${cadArtifact.validation?.entityCount ?? 0} entities · ${verificationLabel}).`
+        );
+        const userDownloadPaths = (cadArtifact.savedPaths || []).filter(
+          p => !p.includes('output') && !p.includes('cad-export')
+        );
+        setExportedPaths(userDownloadPaths);
+
+        const blobParts: BlobPart[] = cadArtifact.content
+          ? [cadArtifact.content instanceof Uint8Array ? cadArtifact.content : String(cadArtifact.content)]
+          : [];
+        const blob = new Blob(blobParts, {
+          type: 'application/octet-stream',
+        });
+        const blobUrl = URL.createObjectURL(blob);
+        setLastExportedArtifact({ filename: cadArtifact.filename, blobUrl });
+      } catch (err) {
+        setExportedMessage(err instanceof Error ? err.message : 'CAD export failed.');
+      } finally {
+        setIsExporting(false);
+      }
+      return;
+    }
+
+    // SVG, PDF, JSON formats: generate locally and persist via backend
     if (!artifactResult.artifact) return;
-    downloadExportArtifact(artifactResult.artifact);
-    setExportedMessage(`${artifactResult.artifact.filename} is ready.`);
+    try {
+      setIsExporting(true);
+      const persistRes = await persistArtifactToServer(
+        artifactResult.artifact.filename,
+        artifactResult.artifact.content,
+      );
+      const artifactToDownload = persistRes
+        ? { ...artifactResult.artifact, savedPaths: persistRes.savedPaths, downloadUrl: persistRes.downloadUrl }
+        : artifactResult.artifact;
+      await downloadExportArtifact(artifactToDownload);
+      setExportedMessage(`${artifactResult.artifact.filename} exported successfully.`);
+      const userDownloadPaths = (persistRes?.savedPaths || []).filter(
+        p => !p.includes('output') && !p.includes('cad-export')
+      );
+      setExportedPaths(userDownloadPaths);
+
+      const blobParts: BlobPart[] = [String(artifactResult.artifact.content)];
+      const blob = new Blob(blobParts, { type: artifactResult.artifact.mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+      setLastExportedArtifact({ filename: artifactResult.artifact.filename, blobUrl });
+    } catch (err) {
+      setExportedMessage(err instanceof Error ? err.message : 'Export failed.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const selectedFormat = FORMAT_OPTIONS.find(option => option.id === settings.format)!;
@@ -171,6 +247,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 {FORMAT_OPTIONS.map(option => (
                   <button
                     key={option.id}
+                    id={`btn-format-${option.id}`}
+                    data-testid={`format-${option.id}`}
                     className={settings.format === option.id ? 'active' : ''}
                     onClick={() => updateSetting('format', option.id)}
                     aria-pressed={settings.format === option.id}
@@ -191,14 +269,28 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
               <div className="export-field-grid">
                 <label className="export-field full">
-                  <span>Floor</span>
+                  <span>Sheet / Drawing Target</span>
                   <select
                     aria-label="Floor to export"
                     value={settings.floorId}
-                    onChange={event => updateSetting('floorId', event.target.value)}
+                    onChange={event => {
+                      const val = event.target.value;
+                      updateSetting('floorId', val);
+                      if (val === 'complete_project' || val === 'all') {
+                        updateSetting('exportScope', 'complete_project');
+                      } else if (val === 'site') {
+                        updateSetting('exportScope', 'site_plan');
+                      } else {
+                        updateSetting('exportScope', 'current_floor');
+                      }
+                    }}
                   >
-                    {building.floors.map(candidate => (
-                      <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
+                    <option value="complete_project">Complete 5-Drawing CAD Sheet Set (All Sheets)</option>
+                    <option value="site">Sheet 01: Site &amp; Plot Allotment Plan</option>
+                    {building.floors.map((candidate, idx) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.name.startsWith('Sheet') ? candidate.name : `Sheet 0${idx + 2}: ${candidate.name}`}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -250,6 +342,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   </select>
                 </label>
 
+                <label className="export-field">
+                  <span>Scale mode</span>
+                  <select aria-label="PDF scale mode" value={settings.scaleMode ?? 'EXACT'} onChange={event=>updateSetting('scaleMode',event.target.value as 'EXACT'|'FIT_TO_PAGE')}>
+                    <option value="EXACT">Exact architectural scale</option>
+                    <option value="FIT_TO_PAGE">Fit to page (not to scale)</option>
+                  </select>
+                </label>
                 <label className="export-field">
                   <span>Revision</span>
                   <input
@@ -354,20 +453,73 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <footer className="export-studio-footer">
           <div className="export-footer-message">
             {exportedMessage ? (
-              <><BadgeCheck size={15} /> <span><strong>Export complete</strong>{exportedMessage}</span></>
+              <div className="export-footer-message-content">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <BadgeCheck size={15} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span><strong>Export complete:</strong> {exportedMessage}</span>
+                </div>
+                {exportedPaths.length > 0 && (
+                  <div style={{ marginTop: '4px', fontSize: '11px', color: '#94a3b8' }}>
+                    <span style={{ fontWeight: 600, color: '#cbd5e1' }}>Downloaded to: </span>
+                    {exportedPaths.map((p, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          display: 'inline-block',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontFamily: 'monospace',
+                          marginRight: '6px',
+                          marginTop: '2px',
+                          color: '#38bdf8',
+                        }}
+                      >
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
-              <><ShieldCheck size={15} /> <span><strong>Deterministic output</strong>No design data leaves your browser.</span></>
+              <><ShieldCheck size={15} /> <span><strong>Deterministic output</strong>CAD drawings conform to 1:1 metric AutoCAD standards.</span></>
             )}
           </div>
           <div className="export-footer-actions">
             <button className="btn-secondary" onClick={onClose}>Close</button>
+            {lastExportedArtifact && (
+              <a
+                id="btn-direct-download"
+                data-testid="btn-direct-download"
+                href={lastExportedArtifact.blobUrl}
+                download={lastExportedArtifact.filename}
+                className="btn-primary"
+                style={{
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#16a34a',
+                  color: '#ffffff',
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                }}
+              >
+                <Download size={15} />
+                Download {lastExportedArtifact.filename}
+              </a>
+            )}
             <button
+              id="btn-export-cad-action"
+              data-testid="btn-export-cad-action"
               className="btn-primary export-download-button"
               onClick={handleDownload}
-              disabled={!artifactResult.artifact}
+              disabled={!artifactResult.artifact || isExporting}
             >
               <Download size={15} />
-              Export {selectedFormat.label}
+              {isExporting ? `Generating ${selectedFormat.label}...` : `Export ${selectedFormat.label}`}
               <ChevronRight size={14} />
             </button>
           </div>

@@ -1,0 +1,51 @@
+{
+  "historicalState": "Unstabilized 3BHK Multi-Unit Pipeline",
+  "flatsRequested": 3,
+  "bhkRequested": "3BHK",
+  "detectedFlatCount": 4,
+  "detectedExtraFlats": [
+    "FLAT_04_HALLUCINATED_VOID"
+  ],
+  "totalValidationErrors": 23,
+  "errorsByCategory": {
+    "PROGRAM": 3,
+    "AREA": 1,
+    "ROOM_DIMENSIONS": 2,
+    "CORE": 3,
+    "CIRCULATION": 2,
+    "CONNECTIVITY": 2,
+    "OVERLAP": 4,
+    "BOUNDARY": 0,
+    "EXPOSURE": 1,
+    "FURNISHABILITY": 1,
+    "IMAGE_INTERPRETATION": 2,
+    "VALIDATOR_FALSE_POSITIVE": 2
+  },
+  "topRootCauses": [
+    {
+      "rank": 1,
+      "rootCause": "Asymmetric 2:1 column grouping (left=[0,2], right=[1]) in layout-planner.ts leaving a large void on the East wing",
+      "downstreamEffect": "FLUX filled the unallocated void with a spurious Flat 04; vision detected 4 flats"
+    },
+    {
+      "rank": 2,
+      "rootCause": "Zero-tolerance collision checking (<0mm) on shared 115mm/230mm partition walls in detectRoomCollisions",
+      "downstreamEffect": "Generated 12-16 false-positive overlap errors across adjacent rooms sharing a wall line"
+    },
+    {
+      "rank": 3,
+      "rootCause": "Uncoordinated independent lift lobbies in Core generator",
+      "downstreamEffect": "Double lobby footprint (36m² vs 18m²), stranding Flat 02 entrance without legal corridor connection"
+    },
+    {
+      "rank": 4,
+      "rootCause": "Missing mandatory room schedule enforcement in 3BHK program",
+      "downstreamEffect": "Unit was generated with only 2 bedrooms, silently degrading 3BHK to 2BHK"
+    },
+    {
+      "rank": 5,
+      "rootCause": "Prompt lacking hard architectural contract header",
+      "downstreamEffect": "FLUX interpreted reference images with 4-6 flats as permission to subdivide floor plate"
+    }
+  ]
+}

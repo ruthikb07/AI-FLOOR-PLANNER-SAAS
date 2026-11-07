@@ -60,6 +60,8 @@ export {
   DeleteEntityCommand,
   BatchCommand,
   ReplaceBuildingCommand,
+  UpdateSiteCommand,
+  type UpdateSiteParams,
 } from './commands/index';
 
 // Editor Engine

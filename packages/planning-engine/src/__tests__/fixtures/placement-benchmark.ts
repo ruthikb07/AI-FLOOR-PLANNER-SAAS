@@ -7,7 +7,8 @@ export function recordPlacementBenchmark(candidates: readonly CandidatePlan[]) {
   writeFileSync(process.env.PLACEMENT_REPORT, JSON.stringify(candidates.map(candidate => {
     const evidence = candidate.architecturalEvidence!;
     const rooms = candidate.building.floors.flatMap(floor => floor.rooms);
-    return { strategy: candidate.strategy, rank: candidate.rank, score: candidate.metrics.overallQualityScore,
+    return { id: candidate.id, name: candidate.name, description: candidate.description,
+      strategy: candidate.strategy, rank: candidate.rank, score: candidate.metrics.overallQualityScore,
       hardValid: candidate.validation.isValid, required: evidence.requiredFloors,
       suites: evidence.suites, wet: evidence.wetStacking, closeout: evidence.closeout,
       openSpace: evidence.openSpace, repair: candidate.optimization,

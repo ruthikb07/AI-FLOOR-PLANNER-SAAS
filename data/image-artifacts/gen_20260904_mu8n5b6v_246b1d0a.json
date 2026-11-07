@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_20260904_mu8n5b6v_246b1d0a",
+  "projectId": "e2e-phase2",
+  "seed": 20260904,
+  "model": "schematic-stub",
+  "provider": "local-stub",
+  "promptVersion": 1,
+  "originalPrompt": "top-down orthographic 2D architectural floor plan, residential 3BHK home",
+  "negativePrompt": "perspective, photorealistic",
+  "width": 256,
+  "height": 256,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-19T17:08:08.529Z",
+  "latencyMs": 8
+}

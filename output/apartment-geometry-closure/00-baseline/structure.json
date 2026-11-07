@@ -1,0 +1,1210 @@
+{
+  "source": "DETERMINISTIC_SCHEMATIC",
+  "boundary": [
+    {
+      "x": 9100,
+      "y": 11810
+    },
+    {
+      "x": 36900,
+      "y": 11810
+    },
+    {
+      "x": 36900,
+      "y": 33200
+    },
+    {
+      "x": 9100,
+      "y": 33200
+    }
+  ],
+  "flats": [
+    {
+      "id": "flat_01",
+      "label": "FLAT_01 (NORTH WING - 3BHK)",
+      "unitType": "3BHK",
+      "rect": {
+        "x": 17250,
+        "y": 22710,
+        "width": 11500,
+        "height": 10490
+      },
+      "rooms": [
+        {
+          "id": "flat_01__FLAT_01_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "rect": {
+            "x": 20250,
+            "y": 22710,
+            "width": 3500,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "rect": {
+            "x": 17250,
+            "y": 22710,
+            "width": 3000,
+            "height": 3800
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "rect": {
+            "x": 17250,
+            "y": 26510,
+            "width": 1800,
+            "height": 1800
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "rect": {
+            "x": 23750,
+            "y": 22710,
+            "width": 2200,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "rect": {
+            "x": 19050,
+            "y": 25110,
+            "width": 5900,
+            "height": 3890
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_private_passage",
+          "name": "Private Passage",
+          "type": "foyer",
+          "rect": {
+            "x": 24950,
+            "y": 25110,
+            "width": 1200,
+            "height": 3890
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "rect": {
+            "x": 26150,
+            "y": 25110,
+            "width": 2600,
+            "height": 3890
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "rect": {
+            "x": 25950,
+            "y": 22710,
+            "width": 2000,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "rect": {
+            "x": 17250,
+            "y": 29000,
+            "width": 4400,
+            "height": 4200
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "rect": {
+            "x": 21650,
+            "y": 30800,
+            "width": 2200,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "rect": {
+            "x": 24850,
+            "y": 29000,
+            "width": 3900,
+            "height": 4200
+          }
+        },
+        {
+          "id": "flat_01__FLAT_01_living_balcony",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "rect": {
+            "x": 21650,
+            "y": 29000,
+            "width": 3200,
+            "height": 1800
+          }
+        }
+      ]
+    },
+    {
+      "id": "flat_02",
+      "label": "FLAT_02 (WEST WING - 3BHK)",
+      "unitType": "3BHK",
+      "rect": {
+        "x": 9100,
+        "y": 12220,
+        "width": 11500,
+        "height": 10490
+      },
+      "rooms": [
+        {
+          "id": "flat_02__FLAT_02_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "rect": {
+            "x": 17600,
+            "y": 19510,
+            "width": 3000,
+            "height": 3200
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "rect": {
+            "x": 17600,
+            "y": 14620,
+            "width": 3000,
+            "height": 3600
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "rect": {
+            "x": 19000,
+            "y": 12220,
+            "width": 1600,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "rect": {
+            "x": 17600,
+            "y": 12220,
+            "width": 1400,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "rect": {
+            "x": 13300,
+            "y": 14020,
+            "width": 4300,
+            "height": 6890
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "rect": {
+            "x": 9100,
+            "y": 18510,
+            "width": 4200,
+            "height": 4200
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "rect": {
+            "x": 11500,
+            "y": 16510,
+            "width": 1800,
+            "height": 2000
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "rect": {
+            "x": 9100,
+            "y": 15620,
+            "width": 4200,
+            "height": 3600
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "rect": {
+            "x": 11500,
+            "y": 15620,
+            "width": 1800,
+            "height": 1800
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "rect": {
+            "x": 9100,
+            "y": 12220,
+            "width": 4200,
+            "height": 3400
+          }
+        },
+        {
+          "id": "flat_02__FLAT_02_living_balcony",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "rect": {
+            "x": 13300,
+            "y": 20910,
+            "width": 4300,
+            "height": 1800
+          }
+        }
+      ]
+    },
+    {
+      "id": "flat_03",
+      "label": "FLAT_03 (EAST WING - 3BHK)",
+      "unitType": "3BHK",
+      "rect": {
+        "x": 25400,
+        "y": 12220,
+        "width": 11500,
+        "height": 10490
+      },
+      "rooms": [
+        {
+          "id": "flat_03__FLAT_03_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "rect": {
+            "x": 33900,
+            "y": 19510,
+            "width": 3000,
+            "height": 3200
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "rect": {
+            "x": 33900,
+            "y": 14620,
+            "width": 3000,
+            "height": 3600
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "rect": {
+            "x": 35300,
+            "y": 12220,
+            "width": 1600,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "rect": {
+            "x": 33900,
+            "y": 12220,
+            "width": 1400,
+            "height": 2400
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "rect": {
+            "x": 29600,
+            "y": 14020,
+            "width": 4300,
+            "height": 6890
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "rect": {
+            "x": 25400,
+            "y": 18510,
+            "width": 4200,
+            "height": 4200
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "rect": {
+            "x": 27800,
+            "y": 16510,
+            "width": 1800,
+            "height": 2000
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "rect": {
+            "x": 25400,
+            "y": 15620,
+            "width": 4200,
+            "height": 3600
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "rect": {
+            "x": 27800,
+            "y": 15620,
+            "width": 1800,
+            "height": 1800
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "rect": {
+            "x": 25400,
+            "y": 12220,
+            "width": 4200,
+            "height": 3400
+          }
+        },
+        {
+          "id": "flat_03__FLAT_03_living_balcony",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "rect": {
+            "x": 29600,
+            "y": 20910,
+            "width": 4300,
+            "height": 1800
+          }
+        }
+      ]
+    }
+  ],
+  "commonRooms": [],
+  "ungroupedRooms": [],
+  "lifts": [
+    {
+      "id": "lift_01",
+      "name": "LIFT 01 (PASSENGER)",
+      "rect": {
+        "x": 22900,
+        "y": 22400,
+        "width": 2100,
+        "height": 2100
+      },
+      "assignedFlatId": null
+    },
+    {
+      "id": "lift_02",
+      "name": "LIFT 02 (PASSENGER)",
+      "rect": {
+        "x": 25000,
+        "y": 22400,
+        "width": 2100,
+        "height": 2100
+      },
+      "assignedFlatId": null
+    }
+  ],
+  "stairs": [
+    {
+      "id": "stair_01",
+      "name": "STAIR 01 (MAIN)",
+      "rect": {
+        "x": 22600,
+        "y": 18400,
+        "width": 2400,
+        "height": 4000
+      },
+      "assignedFlatId": null
+    },
+    {
+      "id": "stair_02",
+      "name": "STAIR 02 (FIRE ESCAPE)",
+      "rect": {
+        "x": 25000,
+        "y": 18400,
+        "width": 2400,
+        "height": 4000
+      },
+      "assignedFlatId": null
+    }
+  ],
+  "lobbies": [
+    {
+      "id": "core_lobby",
+      "name": "COMMON LOBBY",
+      "rect": {
+        "x": 22600,
+        "y": 24500,
+        "width": 4800,
+        "height": 4800
+      },
+      "assignedFlatId": null
+    }
+  ],
+  "corridors": [],
+  "shafts": [
+    {
+      "id": "shaft_1",
+      "name": "SHAFT",
+      "rect": {
+        "x": 22600,
+        "y": 22400,
+        "width": 300,
+        "height": 2100
+      },
+      "assignedFlatId": null
+    },
+    {
+      "id": "shaft_2",
+      "name": "SHAFT",
+      "rect": {
+        "x": 27100,
+        "y": 22400,
+        "width": 300,
+        "height": 2100
+      },
+      "assignedFlatId": null
+    }
+  ],
+  "openings": [
+    {
+      "id": "FLAT_01_door_1",
+      "kind": "door",
+      "rect": {
+        "x": 21500,
+        "y": 22610,
+        "width": 1000,
+        "height": 200
+      },
+      "adjacentRoomId": "common_lobby",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "common_lobby",
+        "flat_01__FLAT_01_foyer"
+      ],
+      "isFlatEntrance": true
+    },
+    {
+      "id": "FLAT_01_door_2",
+      "kind": "door",
+      "rect": {
+        "x": 21300,
+        "y": 25010,
+        "width": 1400,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_foyer",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_foyer",
+        "flat_01__FLAT_01_living_dining"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_3",
+      "kind": "door",
+      "rect": {
+        "x": 18950,
+        "y": 25010,
+        "width": 200,
+        "height": 1000
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_living_dining",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_living_dining",
+        "flat_01__FLAT_01_kitchen"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_4",
+      "kind": "door",
+      "rect": {
+        "x": 17850,
+        "y": 26410,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_kitchen",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_kitchen",
+        "flat_01__FLAT_01_utility"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_5",
+      "kind": "door",
+      "rect": {
+        "x": 24850,
+        "y": 26500,
+        "width": 200,
+        "height": 1100
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_living_dining",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_living_dining",
+        "flat_01__FLAT_01_private_passage"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_6",
+      "kind": "door",
+      "rect": {
+        "x": 26050,
+        "y": 26600,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_private_passage",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_private_passage",
+        "flat_01__FLAT_01_bed_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_7",
+      "kind": "door",
+      "rect": {
+        "x": 26850,
+        "y": 25010,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_bed_2",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_bed_2",
+        "flat_01__FLAT_01_bath_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_8",
+      "kind": "door",
+      "rect": {
+        "x": 23650,
+        "y": 23510,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_foyer",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_foyer",
+        "flat_01__FLAT_01_common_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_9",
+      "kind": "door",
+      "rect": {
+        "x": 18800,
+        "y": 28900,
+        "width": 900,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_living_dining",
+        "flat_01__FLAT_01_master_bed"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_10",
+      "kind": "door",
+      "rect": {
+        "x": 21550,
+        "y": 31600,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_master_bed",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_master_bed",
+        "flat_01__FLAT_01_master_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_11",
+      "kind": "door",
+      "rect": {
+        "x": 22250,
+        "y": 28900,
+        "width": 2000,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_living_dining",
+      "doorType": "sliding",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_living_dining",
+        "flat_01__FLAT_01_living_balcony"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_01_door_12",
+      "kind": "door",
+      "rect": {
+        "x": 24800,
+        "y": 28900,
+        "width": 900,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_01__FLAT_01_private_passage",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_01__FLAT_01_private_passage",
+        "flat_01__FLAT_01_bed_3"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_1",
+      "kind": "door",
+      "rect": {
+        "x": 20500,
+        "y": 20610,
+        "width": 200,
+        "height": 1000
+      },
+      "adjacentRoomId": "common_lobby",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "common_lobby",
+        "flat_02__FLAT_02_foyer"
+      ],
+      "isFlatEntrance": true
+    },
+    {
+      "id": "FLAT_02_door_2",
+      "kind": "door",
+      "rect": {
+        "x": 17500,
+        "y": 20010,
+        "width": 200,
+        "height": 1400
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_foyer",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_foyer",
+        "flat_02__FLAT_02_living_dining"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_3",
+      "kind": "door",
+      "rect": {
+        "x": 17500,
+        "y": 15920,
+        "width": 200,
+        "height": 1000
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_kitchen"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_4",
+      "kind": "door",
+      "rect": {
+        "x": 18900,
+        "y": 13020,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_kitchen",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_kitchen",
+        "flat_02__FLAT_02_utility"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_5",
+      "kind": "door",
+      "rect": {
+        "x": 18200,
+        "y": 13920,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_common_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_6",
+      "kind": "door",
+      "rect": {
+        "x": 14450,
+        "y": 20810,
+        "width": 2000,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "sliding",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_living_balcony"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_7",
+      "kind": "door",
+      "rect": {
+        "x": 13200,
+        "y": 19760,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_master_bed"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_8",
+      "kind": "door",
+      "rect": {
+        "x": 11700,
+        "y": 18410,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_master_bed",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_master_bed",
+        "flat_02__FLAT_02_master_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_9",
+      "kind": "door",
+      "rect": {
+        "x": 13200,
+        "y": 16770,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_bed_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_10",
+      "kind": "door",
+      "rect": {
+        "x": 11400,
+        "y": 15820,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_bed_2",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_bed_2",
+        "flat_02__FLAT_02_bath_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_02_door_11",
+      "kind": "door",
+      "rect": {
+        "x": 13200,
+        "y": 13570,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_02__FLAT_02_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_02__FLAT_02_living_dining",
+        "flat_02__FLAT_02_bed_3"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_1",
+      "kind": "door",
+      "rect": {
+        "x": 36800,
+        "y": 20610,
+        "width": 200,
+        "height": 1000
+      },
+      "adjacentRoomId": "common_lobby",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "common_lobby",
+        "flat_03__FLAT_03_foyer"
+      ],
+      "isFlatEntrance": true
+    },
+    {
+      "id": "FLAT_03_door_2",
+      "kind": "door",
+      "rect": {
+        "x": 33800,
+        "y": 20010,
+        "width": 200,
+        "height": 1400
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_foyer",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_foyer",
+        "flat_03__FLAT_03_living_dining"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_3",
+      "kind": "door",
+      "rect": {
+        "x": 33800,
+        "y": 15920,
+        "width": 200,
+        "height": 1000
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "open_passage",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_kitchen"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_4",
+      "kind": "door",
+      "rect": {
+        "x": 35200,
+        "y": 13020,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_kitchen",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_kitchen",
+        "flat_03__FLAT_03_utility"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_5",
+      "kind": "door",
+      "rect": {
+        "x": 34500,
+        "y": 13920,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_common_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_6",
+      "kind": "door",
+      "rect": {
+        "x": 30750,
+        "y": 20810,
+        "width": 2000,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "sliding",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_living_balcony"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_7",
+      "kind": "door",
+      "rect": {
+        "x": 29500,
+        "y": 19760,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_master_bed"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_8",
+      "kind": "door",
+      "rect": {
+        "x": 28000,
+        "y": 18410,
+        "width": 800,
+        "height": 200
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_master_bed",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_master_bed",
+        "flat_03__FLAT_03_master_bath"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_9",
+      "kind": "door",
+      "rect": {
+        "x": 29500,
+        "y": 16770,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_bed_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_10",
+      "kind": "door",
+      "rect": {
+        "x": 27700,
+        "y": 15820,
+        "width": 200,
+        "height": 800
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_bed_2",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_bed_2",
+        "flat_03__FLAT_03_bath_2"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "FLAT_03_door_11",
+      "kind": "door",
+      "rect": {
+        "x": 29500,
+        "y": 13570,
+        "width": 200,
+        "height": 900
+      },
+      "adjacentRoomId": "flat_03__FLAT_03_living_dining",
+      "doorType": "single",
+      "swingDirection": "inward",
+      "connects": [
+        "flat_03__FLAT_03_living_dining",
+        "flat_03__FLAT_03_bed_3"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "door_lift_01",
+      "kind": "door",
+      "rect": {
+        "x": 23450,
+        "y": 24400,
+        "width": 1000,
+        "height": 200
+      },
+      "adjacentRoomId": "core_lobby",
+      "doorType": "sliding",
+      "swingDirection": "right",
+      "connects": [
+        "core_lobby",
+        "lift_01"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "door_lift_02",
+      "kind": "door",
+      "rect": {
+        "x": 25550,
+        "y": 24400,
+        "width": 1000,
+        "height": 200
+      },
+      "adjacentRoomId": "core_lobby",
+      "doorType": "sliding",
+      "swingDirection": "right",
+      "connects": [
+        "core_lobby",
+        "lift_02"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "door_stair_01",
+      "kind": "door",
+      "rect": {
+        "x": 27300,
+        "y": 19800,
+        "width": 200,
+        "height": 1200
+      },
+      "adjacentRoomId": "core_lobby",
+      "doorType": "single",
+      "swingDirection": "outward",
+      "connects": [
+        "core_lobby",
+        "stair_01"
+      ],
+      "isFlatEntrance": false
+    },
+    {
+      "id": "door_stair_02",
+      "kind": "door",
+      "rect": {
+        "x": 27300,
+        "y": 19800,
+        "width": 200,
+        "height": 1200
+      },
+      "adjacentRoomId": "core_lobby",
+      "doorType": "single",
+      "swingDirection": "outward",
+      "connects": [
+        "core_lobby",
+        "stair_02"
+      ],
+      "isFlatEntrance": false
+    }
+  ]
+}

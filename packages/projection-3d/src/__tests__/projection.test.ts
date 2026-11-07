@@ -59,6 +59,44 @@ function createThreeFloorBuilding(boundaries?: readonly Polygon[]): Building {
 }
 
 describe('canonical Building 3D projection', () => {
+  it.each([false, true])('cuts hosted openings from their canonical start edge, reversed=%s', reversed => {
+    let building = createThreeFloorBuilding();
+    const floor = building.floors[0]!;
+    const original = floor.walls[0]!;
+    const wall = reversed ? { ...original, startPoint: original.endPoint, endPoint: original.startPoint } : original;
+    const start = interpolate(wall.startPoint, wall.endPoint, 0.1);
+    const door = { ...floor.doors[0]!, position: start, type: DoorType.OpenPassage, width: 1200 };
+    building = { ...building, floors: [{ ...floor, walls: [wall], doors: [door], windows: [] }, ...building.floors.slice(1)] };
+    const projection = projectBuildingTo3D(building);
+    expect(projection.openings[0]).toMatchObject({ position: start, alongWall: 1000, doorType: DoorType.OpenPassage });
+    const solids = projection.walls[0]!.solidSegments;
+    expect(solids).toContainEqual({ alongStart: 0, alongEnd: 1000, bottom: 0, top: 2700 });
+    expect(solids).toContainEqual({ alongStart: 1000, alongEnd: 2200, bottom: 2100, top: 2700 });
+    expect(solids).toContainEqual({ alongStart: 2200, alongEnd: 10000, bottom: 0, top: 2700 });
+  });
+
+  it('keeps an aligned service court empty and cuts only the receiving stair slab', () => {
+    const source = createThreeFloorBuilding();
+    const lower = source.floors[0]!;
+    const upper = source.floors[1]!;
+    const floors = [lower, upper].map(floor => ({ ...floor,
+      rooms: [...floor.rooms, createRoom({ floorId: floor.id, type: RoomType.ServiceShaft, x: 6000, y: 5000, width: 1000, height: 1500 })],
+      stairs: floor.stairs.map(stair => ({ ...stair, connectsFloors: [0, 1] as const })),
+    }));
+    const building = { ...source, floors };
+    const before = JSON.stringify(building);
+    const projection = projectBuildingTo3D(building);
+    expect(projection.floorPlates[0]!.cutouts).toEqual([floors[0]!.rooms[1]!.boundary]);
+    expect(projection.floorPlates[1]!.cutouts).toEqual([floors[1]!.rooms[1]!.boundary, lower.stairs[0]!.boundary]);
+    expect(projection.rooms).toHaveLength(2);
+    expect(projection.stairs).toHaveLength(1);
+    expect(projection.stairs[0]!.floorId).toBe(lower.id);
+    expect(projection.columns).toHaveLength(0);
+    expect(JSON.stringify(building)).toBe(before);
+    const misaligned = { ...building, floors: [floors[0]!, { ...floors[1]!, stairs: floors[1]!.stairs.map(stair => ({ ...stair, boundary: rectToPolygon(2000, 1000, 1000, 2600) })) }] };
+    expect(projectBuildingTo3D(misaligned).floorPlates[1]!.cutouts).toHaveLength(1);
+  });
+
   it('places floor levels cumulatively and formats architectural datums', () => {
     const projection = projectBuildingTo3D(createThreeFloorBuilding());
     expect(projection.levels.map(level => level.elevation)).toEqual([0, 3000, 6200]);

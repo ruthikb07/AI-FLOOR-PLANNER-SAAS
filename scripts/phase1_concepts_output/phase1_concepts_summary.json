@@ -1,0 +1,2810 @@
+[
+  {
+    "scenario": "n2_acceptance",
+    "candidate": 1,
+    "strategy": "balanced",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.399,
+      "y": 17.096,
+      "width": 20.202,
+      "height": 14.809
+    },
+    "checks": {
+      "passed": 33,
+      "total": 33,
+      "failed": []
+    },
+    "doors": 30,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 65.03,
+          "actualCarpetSqM": 69.46,
+          "deviationPct": 6.81,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 20.21,
+              "actualSqM": 21.16,
+              "deviationPct": 4.7,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 15.39,
+              "actualSqM": 15.7,
+              "deviationPct": 2.01,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.07,
+              "actualSqM": 6.07,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.52,
+              "actualSqM": 8.22,
+              "deviationPct": 48.91,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.45,
+              "actualSqM": 4,
+              "deviationPct": 63.27,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 7.65,
+              "actualSqM": 7.67,
+              "deviationPct": 0.26,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.21,
+              "actualSqM": 3.21,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.43,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 92.9,
+          "actualCarpetSqM": 94.87,
+          "deviationPct": 2.12,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 32.4,
+              "actualSqM": 33.68,
+              "deviationPct": 3.95,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 17.98,
+              "actualSqM": 17.98,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.93,
+              "actualSqM": 6.93,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 9.13,
+              "actualSqM": 11.5,
+              "deviationPct": 25.96,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.88,
+              "actualSqM": 3.73,
+              "deviationPct": 29.51,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 10.31,
+              "actualSqM": 7.4,
+              "deviationPct": -28.23,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 6.75,
+              "actualSqM": 6.75,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 6.9,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 299.17,
+        "unitsSqM": 164.33,
+        "coreSqM": 32.4,
+        "lobbySqM": 13.5,
+        "openSqM": 88.94,
+        "fits": true,
+        "message": "balanced: 2 flats (164.33 m²) + core 32.4 m² + lobby 13.5 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n2_acceptance",
+    "candidate": 2,
+    "strategy": "daylight",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.5,
+      "y": 16.663,
+      "width": 20,
+      "height": 15.673
+    },
+    "checks": {
+      "passed": 33,
+      "total": 33,
+      "failed": []
+    },
+    "doors": 30,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 65.03,
+          "actualCarpetSqM": 68.74,
+          "deviationPct": 5.71,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 20.21,
+              "actualSqM": 21.16,
+              "deviationPct": 4.7,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 15.39,
+              "actualSqM": 16.55,
+              "deviationPct": 7.54,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.07,
+              "actualSqM": 6.07,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.52,
+              "actualSqM": 7.36,
+              "deviationPct": 33.33,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.45,
+              "actualSqM": 3.84,
+              "deviationPct": 56.73,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 7.65,
+              "actualSqM": 7.23,
+              "deviationPct": -5.49,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.21,
+              "actualSqM": 3.21,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.32,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 92.9,
+          "actualCarpetSqM": 93.16,
+          "deviationPct": 0.28,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 32.4,
+              "actualSqM": 32.85,
+              "deviationPct": 1.39,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 17.98,
+              "actualSqM": 18.02,
+              "deviationPct": 0.22,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.93,
+              "actualSqM": 6.93,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 9.13,
+              "actualSqM": 10.66,
+              "deviationPct": 16.76,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.88,
+              "actualSqM": 3.84,
+              "deviationPct": 33.33,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 10.31,
+              "actualSqM": 7.23,
+              "deviationPct": -29.87,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 6.75,
+              "actualSqM": 6.75,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 6.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 313.46,
+        "unitsSqM": 161.9,
+        "coreSqM": 32.4,
+        "lobbySqM": 12.15,
+        "openSqM": 107.01,
+        "fits": true,
+        "message": "daylight: 2 flats (161.9 m²) + core 32.4 m² + lobby 12.15 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n2_acceptance",
+    "candidate": 3,
+    "strategy": "privacy",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.349,
+      "y": 15.698,
+      "width": 20.302,
+      "height": 17.604
+    },
+    "checks": {
+      "passed": 33,
+      "total": 33,
+      "failed": []
+    },
+    "doors": 30,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 65.03,
+          "actualCarpetSqM": 70.06,
+          "deviationPct": 7.73,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 20.21,
+              "actualSqM": 21.16,
+              "deviationPct": 4.7,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 15.39,
+              "actualSqM": 16.12,
+              "deviationPct": 4.74,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.07,
+              "actualSqM": 6.07,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.52,
+              "actualSqM": 8.22,
+              "deviationPct": 48.91,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.45,
+              "actualSqM": 4,
+              "deviationPct": 63.27,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 7.65,
+              "actualSqM": 8.03,
+              "deviationPct": 4.97,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.21,
+              "actualSqM": 3.21,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.25,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 92.9,
+          "actualCarpetSqM": 95.63,
+          "deviationPct": 2.94,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 32.4,
+              "actualSqM": 33.68,
+              "deviationPct": 3.95,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 17.98,
+              "actualSqM": 17.98,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.93,
+              "actualSqM": 6.93,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 9.13,
+              "actualSqM": 11.65,
+              "deviationPct": 27.6,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.88,
+              "actualSqM": 3.86,
+              "deviationPct": 34.03,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 10.31,
+              "actualSqM": 7.88,
+              "deviationPct": -23.57,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 6.75,
+              "actualSqM": 6.75,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 6.9,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 357.4,
+        "unitsSqM": 165.69,
+        "coreSqM": 32.4,
+        "lobbySqM": 20.47,
+        "openSqM": 138.84,
+        "fits": true,
+        "message": "privacy: 2 flats (165.69 m²) + core 32.4 m² + lobby 20.47 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n2_acceptance",
+    "candidate": 4,
+    "strategy": "circulation",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 11.719,
+      "y": 16.937,
+      "width": 21.562,
+      "height": 15.126
+    },
+    "checks": {
+      "passed": 33,
+      "total": 33,
+      "failed": []
+    },
+    "doors": 29,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 65.03,
+          "actualCarpetSqM": 63.58,
+          "deviationPct": -2.23,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 20.21,
+              "actualSqM": 21.59,
+              "deviationPct": 6.83,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 15.39,
+              "actualSqM": 15.83,
+              "deviationPct": 2.86,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.07,
+              "actualSqM": 6.07,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.52,
+              "actualSqM": 7.08,
+              "deviationPct": 28.26,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.45,
+              "actualSqM": 3.28,
+              "deviationPct": 33.88,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 7.65,
+              "actualSqM": 3.64,
+              "deviationPct": -52.42,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.21,
+              "actualSqM": 3.21,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 2.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 92.9,
+          "actualCarpetSqM": 93.57,
+          "deviationPct": 0.72,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 32.4,
+              "actualSqM": 33.3,
+              "deviationPct": 2.78,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 17.98,
+              "actualSqM": 17.98,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.93,
+              "actualSqM": 6.93,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 9.13,
+              "actualSqM": 11,
+              "deviationPct": 20.48,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.88,
+              "actualSqM": 3.71,
+              "deviationPct": 28.82,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 10.31,
+              "actualSqM": 7.03,
+              "deviationPct": -31.81,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 6.75,
+              "actualSqM": 6.75,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 6.87,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 326.15,
+        "unitsSqM": 157.15,
+        "coreSqM": 32.4,
+        "lobbySqM": 15.84,
+        "openSqM": 120.76,
+        "fits": true,
+        "message": "circulation: 2 flats (157.15 m²) + core 32.4 m² + lobby 15.84 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n3",
+    "candidate": 1,
+    "strategy": "balanced",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.218,
+      "y": 11.98,
+      "width": 20.564,
+      "height": 25.04
+    },
+    "checks": {
+      "passed": 47,
+      "total": 47,
+      "failed": []
+    },
+    "doors": 41,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.98,
+          "deviationPct": 2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.07,
+              "deviationPct": 38.66,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.87,
+              "deviationPct": 47.15,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.54,
+              "deviationPct": -8.38,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.73,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.98,
+          "deviationPct": 2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.07,
+              "deviationPct": 38.66,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.87,
+              "deviationPct": 47.15,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.54,
+              "deviationPct": -8.38,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.73,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 103.34,
+          "deviationPct": -1.58,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.43,
+              "deviationPct": 13.62,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.88,
+              "deviationPct": 17.58,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.44,
+              "deviationPct": -36.41,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 514.92,
+        "unitsSqM": 247.3,
+        "coreSqM": 32.4,
+        "lobbySqM": 29.03,
+        "openSqM": 206.19,
+        "fits": true,
+        "message": "balanced: 3 flats (247.3 m²) + core 32.4 m² + lobby 29.03 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n3",
+    "candidate": 2,
+    "strategy": "daylight",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.381,
+      "y": 11.175,
+      "width": 20.239,
+      "height": 26.65
+    },
+    "checks": {
+      "passed": 47,
+      "total": 47,
+      "failed": []
+    },
+    "doors": 41,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.46,
+          "deviationPct": 2.09,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 17.32,
+              "deviationPct": 2.97,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.36,
+              "deviationPct": 26.46,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.84,
+              "deviationPct": 46.01,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.23,
+              "deviationPct": -12.15,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.76,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.46,
+          "deviationPct": 2.09,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 17.32,
+              "deviationPct": 2.97,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.36,
+              "deviationPct": 26.46,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.84,
+              "deviationPct": 46.01,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.23,
+              "deviationPct": -12.15,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.76,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 101.85,
+          "deviationPct": -3,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.23,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.89,
+              "deviationPct": 8.25,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4.01,
+              "deviationPct": 21.52,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.28,
+              "deviationPct": -37.78,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.1,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 539.37,
+        "unitsSqM": 244.77,
+        "coreSqM": 32.4,
+        "lobbySqM": 30.17,
+        "openSqM": 232.03,
+        "fits": true,
+        "message": "daylight: 3 flats (244.77 m²) + core 32.4 m² + lobby 30.17 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n3",
+    "candidate": 3,
+    "strategy": "privacy",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.214,
+      "y": 11.871,
+      "width": 20.572,
+      "height": 25.258
+    },
+    "checks": {
+      "passed": 47,
+      "total": 47,
+      "failed": []
+    },
+    "doors": 41,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 72.77,
+          "deviationPct": 3.96,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.85,
+              "deviationPct": 0.18,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.22,
+              "deviationPct": 41.24,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 4,
+              "deviationPct": 52.09,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 8.03,
+              "deviationPct": -2.43,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.72,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 72.77,
+          "deviationPct": 3.96,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.85,
+              "deviationPct": 0.18,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.22,
+              "deviationPct": 41.24,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 4,
+              "deviationPct": 52.09,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 8.03,
+              "deviationPct": -2.43,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.72,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 104.07,
+          "deviationPct": -0.89,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.57,
+              "deviationPct": 15.01,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4,
+              "deviationPct": 21.21,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.91,
+              "deviationPct": -32.39,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 519.61,
+        "unitsSqM": 249.61,
+        "coreSqM": 32.4,
+        "lobbySqM": 30.15,
+        "openSqM": 207.45,
+        "fits": true,
+        "message": "privacy: 3 flats (249.61 m²) + core 32.4 m² + lobby 30.15 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n3",
+    "candidate": 4,
+    "strategy": "circulation",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 11.561,
+      "y": 12.039,
+      "width": 21.878,
+      "height": 24.922
+    },
+    "checks": {
+      "passed": 47,
+      "total": 47,
+      "failed": []
+    },
+    "doors": 39,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 66.6,
+          "deviationPct": -4.86,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 22.51,
+              "deviationPct": 4.36,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.27,
+              "deviationPct": 24.91,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.45,
+              "deviationPct": 31.18,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 3.64,
+              "deviationPct": -55.77,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 2.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 66.6,
+          "deviationPct": -4.86,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 22.51,
+              "deviationPct": 4.36,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.27,
+              "deviationPct": 24.91,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.45,
+              "deviationPct": 31.18,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 3.64,
+              "deviationPct": -55.77,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 2.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 102.03,
+          "deviationPct": -2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.55,
+              "deviationPct": 0.88,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.94,
+              "deviationPct": 8.75,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.86,
+              "deviationPct": 16.97,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.08,
+              "deviationPct": -39.49,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.26,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 545.24,
+        "unitsSqM": 235.23,
+        "coreSqM": 32.4,
+        "lobbySqM": 61.15,
+        "openSqM": 216.46,
+        "fits": true,
+        "message": "circulation: 3 flats (235.23 m²) + core 32.4 m² + lobby 61.15 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n4",
+    "candidate": 1,
+    "strategy": "balanced",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.028,
+      "y": 11.98,
+      "width": 20.944,
+      "height": 25.04
+    },
+    "checks": {
+      "passed": 62,
+      "total": 62,
+      "failed": []
+    },
+    "doors": 56,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.98,
+          "deviationPct": 2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.07,
+              "deviationPct": 38.66,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.87,
+              "deviationPct": 47.15,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.54,
+              "deviationPct": -8.38,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.73,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.98,
+          "deviationPct": 2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.07,
+              "deviationPct": 38.66,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.87,
+              "deviationPct": 47.15,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.54,
+              "deviationPct": -8.38,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.73,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 103.34,
+          "deviationPct": -1.58,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.43,
+              "deviationPct": 13.62,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.88,
+              "deviationPct": 17.58,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.44,
+              "deviationPct": -36.41,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_04",
+          "flatLabel": "Flat 04",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 103.34,
+          "deviationPct": -1.58,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.43,
+              "deviationPct": 13.62,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.88,
+              "deviationPct": 17.58,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.44,
+              "deviationPct": -36.41,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 524.44,
+        "unitsSqM": 350.64,
+        "coreSqM": 32.4,
+        "lobbySqM": 29.03,
+        "openSqM": 112.37,
+        "fits": true,
+        "message": "balanced: 4 flats (350.64 m²) + core 32.4 m² + lobby 29.03 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n4",
+    "candidate": 2,
+    "strategy": "daylight",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.261,
+      "y": 11.175,
+      "width": 20.478,
+      "height": 26.65
+    },
+    "checks": {
+      "passed": 62,
+      "total": 62,
+      "failed": []
+    },
+    "doors": 56,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.46,
+          "deviationPct": 2.09,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 17.32,
+              "deviationPct": 2.97,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.36,
+              "deviationPct": 26.46,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.84,
+              "deviationPct": 46.01,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.23,
+              "deviationPct": -12.15,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.76,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 71.46,
+          "deviationPct": 2.09,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 17.32,
+              "deviationPct": 2.97,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.36,
+              "deviationPct": 26.46,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.84,
+              "deviationPct": 46.01,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 7.23,
+              "deviationPct": -12.15,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.76,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 101.85,
+          "deviationPct": -3,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.23,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.89,
+              "deviationPct": 8.25,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4.01,
+              "deviationPct": 21.52,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.28,
+              "deviationPct": -37.78,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.1,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_04",
+          "flatLabel": "Flat 04",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 101.85,
+          "deviationPct": -3,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.23,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.89,
+              "deviationPct": 8.25,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4.01,
+              "deviationPct": 21.52,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.28,
+              "deviationPct": -37.78,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.1,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 545.74,
+        "unitsSqM": 346.62,
+        "coreSqM": 32.4,
+        "lobbySqM": 30.17,
+        "openSqM": 136.55,
+        "fits": true,
+        "message": "daylight: 4 flats (346.62 m²) + core 32.4 m² + lobby 30.17 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n4",
+    "candidate": 3,
+    "strategy": "privacy",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 12.028,
+      "y": 10.671,
+      "width": 20.944,
+      "height": 27.658
+    },
+    "checks": {
+      "passed": 62,
+      "total": 62,
+      "failed": []
+    },
+    "doors": 56,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 72.77,
+          "deviationPct": 3.96,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.85,
+              "deviationPct": 0.18,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.22,
+              "deviationPct": 41.24,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 4,
+              "deviationPct": 52.09,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 8.03,
+              "deviationPct": -2.43,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.72,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 72.77,
+          "deviationPct": 3.96,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 21.92,
+              "deviationPct": 1.62,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.85,
+              "deviationPct": 0.18,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 8.22,
+              "deviationPct": 41.24,
+              "status": "WARN"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 4,
+              "deviationPct": 52.09,
+              "status": "WARN"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 8.03,
+              "deviationPct": -2.43,
+              "status": "OK"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 3.72,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 104.07,
+          "deviationPct": -0.89,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.57,
+              "deviationPct": 15.01,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4,
+              "deviationPct": 21.21,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.91,
+              "deviationPct": -32.39,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_04",
+          "flatLabel": "Flat 04",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 104.07,
+          "deviationPct": -0.89,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.97,
+              "deviationPct": 2.04,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 11.57,
+              "deviationPct": 15.01,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 4,
+              "deviationPct": 21.21,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.91,
+              "deviationPct": -32.39,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.28,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 579.27,
+        "unitsSqM": 353.68,
+        "coreSqM": 32.4,
+        "lobbySqM": 39.82,
+        "openSqM": 153.37,
+        "fits": true,
+        "message": "privacy: 4 flats (353.68 m²) + core 32.4 m² + lobby 39.82 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  },
+  {
+    "scenario": "n4",
+    "candidate": 4,
+    "strategy": "circulation",
+    "fits": true,
+    "adaptations": [],
+    "footprint": {
+      "x": 11.38,
+      "y": 12.039,
+      "width": 22.24,
+      "height": 24.922
+    },
+    "checks": {
+      "passed": 62,
+      "total": 62,
+      "failed": []
+    },
+    "doors": 54,
+    "areas": {
+      "units": [
+        {
+          "flatId": "flat_01",
+          "flatLabel": "Flat 01",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 66.6,
+          "deviationPct": -4.86,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 22.51,
+              "deviationPct": 4.36,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.27,
+              "deviationPct": 24.91,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.45,
+              "deviationPct": 31.18,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 3.64,
+              "deviationPct": -55.77,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 2.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_02",
+          "flatLabel": "Flat 02",
+          "unitType": "2BHK",
+          "targetCarpetSqM": 70,
+          "actualCarpetSqM": 66.6,
+          "deviationPct": -4.86,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 21.57,
+              "actualSqM": 22.51,
+              "deviationPct": 4.36,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 16.82,
+              "actualSqM": 16.82,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 6.52,
+              "actualSqM": 6.52,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 5.82,
+              "actualSqM": 7.27,
+              "deviationPct": 24.91,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 2.63,
+              "actualSqM": 3.45,
+              "deviationPct": 31.18,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 8.23,
+              "actualSqM": 3.64,
+              "deviationPct": -55.77,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 3.51,
+              "actualSqM": 3.51,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 2.88,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_03",
+          "flatLabel": "Flat 03",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 102.03,
+          "deviationPct": -2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.55,
+              "deviationPct": 0.88,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.94,
+              "deviationPct": 8.75,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.86,
+              "deviationPct": 16.97,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.08,
+              "deviationPct": -39.49,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.26,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        },
+        {
+          "flatId": "flat_04",
+          "flatLabel": "Flat 04",
+          "unitType": "3BHK",
+          "targetCarpetSqM": 105,
+          "actualCarpetSqM": 102.03,
+          "deviationPct": -2.83,
+          "status": "OK",
+          "lines": [
+            {
+              "category": "bedrooms",
+              "targetSqM": 36.23,
+              "actualSqM": 36.55,
+              "deviationPct": 0.88,
+              "status": "OK"
+            },
+            {
+              "category": "living_dining",
+              "targetSqM": 20.87,
+              "actualSqM": 20.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "kitchen",
+              "targetSqM": 7.87,
+              "actualSqM": 7.87,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "baths",
+              "targetSqM": 10.06,
+              "actualSqM": 10.94,
+              "deviationPct": 8.75,
+              "status": "OK"
+            },
+            {
+              "category": "utility",
+              "targetSqM": 3.3,
+              "actualSqM": 3.86,
+              "deviationPct": 16.97,
+              "status": "OK"
+            },
+            {
+              "category": "circulation",
+              "targetSqM": 11.7,
+              "actualSqM": 7.08,
+              "deviationPct": -39.49,
+              "status": "WARN"
+            },
+            {
+              "category": "balconies",
+              "targetSqM": 7.6,
+              "actualSqM": 7.6,
+              "deviationPct": 0,
+              "status": "OK"
+            },
+            {
+              "category": "storage_dressing_study",
+              "targetSqM": 0,
+              "actualSqM": 7.26,
+              "deviationPct": null,
+              "status": "OK"
+            }
+          ]
+        }
+      ],
+      "floor": {
+        "buildableSqM": 1845,
+        "footprintSqM": 554.27,
+        "unitsSqM": 337.26,
+        "coreSqM": 32.4,
+        "lobbySqM": 61.15,
+        "openSqM": 123.46,
+        "fits": true,
+        "message": "circulation: 4 flats (337.26 m²) + core 32.4 m² + lobby 61.15 m² fit the 1845 m² buildable envelope."
+      }
+    }
+  }
+]

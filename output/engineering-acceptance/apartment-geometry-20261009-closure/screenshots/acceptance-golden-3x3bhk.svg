@@ -1,0 +1,1457 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1191 842" class="floor-plan" width="1191" height="842">
+  <defs>
+    <pattern id="tile-hatch" width="16.973633605401478" height="16.973633605401478" patternUnits="userSpaceOnUse"><path d="M 16.973633605401478 0 H 0 V 16.973633605401478" fill="none" stroke="#bd9d76" stroke-width="0.4"/></pattern>
+    <pattern id="wet-hatch" width="8.486816802700739" height="8.486816802700739" patternUnits="userSpaceOnUse"><path d="M0 0V6.223665655313876H6.223665655313876" fill="none" stroke="#6f86c0" stroke-width="0.55"/></pattern>
+    <pattern id="outdoor-hatch" width="11.31575573693432" height="11.31575573693432" patternUnits="userSpaceOnUse"><path d="M0 0L11.31575573693432 11.31575573693432 M5.65787786846716 0L11.31575573693432 5.65787786846716" fill="none" stroke="#b2b5b5" stroke-width="0.5"/></pattern>
+    <pattern id="quilt-hatch" width="140" height="140" patternUnits="userSpaceOnUse"><rect width="140" height="140" fill="#f5f2eb"/><path d="M0 0L140 140M140 0L0 140" stroke="#a29382" stroke-width="10"/></pattern>
+    <pattern id="site-setback-hatch" width="28.289389342335795" height="28.289389342335795" patternUnits="userSpaceOnUse"><path d="M 0 28.289389342335795 L 28.289389342335795 0" fill="none" stroke="#cbd5e1" stroke-width="0.5" stroke-dasharray="2,2"/></pattern>
+    <pattern id="site-garden-pattern" width="22.63151147386864" height="22.63151147386864" patternUnits="userSpaceOnUse"><circle cx="5.65787786846716" cy="5.65787786846716" r="1.2" fill="#86efac" opacity="0.6"/><circle cx="16.973633605401478" cy="16.973633605401478" r="1.5" fill="#4ade80" opacity="0.5"/></pattern>
+    <pattern id="site-parking-pattern" width="70.72347335583949" height="141.44694671167898" patternUnits="userSpaceOnUse"><rect width="70.72347335583949" height="141.44694671167898" fill="none" stroke="#cbd5e1" stroke-width="0.4"/></pattern>
+    <pattern id="site-pedestrian-pattern" width="16.973633605401478" height="16.973633605401478" patternUnits="userSpaceOnUse"><path d="M 0 0 H 16.973633605401478 V 16.973633605401478" fill="none" stroke="#e2e8f0" stroke-width="0.4"/></pattern>
+    <pattern id="site-service-pattern" width="16.973633605401478" height="16.973633605401478" patternUnits="userSpaceOnUse"><path d="M 0 0 L 16.973633605401478 16.973633605401478 M 16.973633605401478 0 L 0 16.973633605401478" fill="none" stroke="#fed7aa" stroke-width="0.4"/></pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <style>
+      .door-group { pointer-events: all; cursor: pointer; }
+      .door-group .door-leaf {
+        transform-origin: var(--hinge-x, 0) var(--hinge-y, 0);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .door-group.is-closed .door-leaf {
+        transform: rotate(calc(-90deg * var(--swing-sign, 1)));
+      }
+      .door-group.is-closed .door-swing-arc {
+        opacity: 0.15;
+        transition: opacity 0.28s ease;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .door-group .door-leaf, .door-group.is-closed .door-swing-arc {
+          transition: none;
+        }
+      }
+    </style>
+  </defs>
+  <g class="layer-plot" data-layer="plot">
+  <polygon points="-111.7,-413.6 1302.7,-413.6 1302.7,1283.8 -111.7,1283.8" fill="none" stroke="#999" stroke-width="1" stroke-dasharray="8,4"/>
+  <polygon points="-55.2,-328.7 1246.2,-328.7 1246.2,1227.2 -55.2,1227.2" fill="none" stroke="#cc6600" stroke-width="0.5" stroke-dasharray="4,4"/>
+</g>
+  <g class="layer-site-zones" data-layer="site_zones">
+<polygon points="-111.7,-413.6 1302.7,-413.6 1302.7,-328.7 -111.7,-328.7" fill="#f1f5f9" fill-opacity="0.55" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="4,3" data-entity-type="site-zone" data-site-zone-id="site_zone_setback_1" data-site-zone-kind="setback"><title>Required development control reserve establishing zoning offset and road buffer</title></polygon>
+<polygon points="-111.7,-413.6 1302.7,-413.6 1302.7,-328.7 -111.7,-328.7" fill="url(#site-setback-hatch)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="595.5" y="-377.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Front Road Setback</text>
+  <text x="595.5" y="-363.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">150.0 m²</text>
+</g>
+<polygon points="-111.7,1227.2 1302.7,1227.2 1302.7,1283.8 -111.7,1283.8" fill="#ecfdf5" fill-opacity="0.75" stroke="#86efac" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_garden_2" data-site-zone-kind="garden"><title>Required development control reserve establishing zoning offset and landscaped private buffer</title></polygon>
+<polygon points="-111.7,1227.2 1302.7,1227.2 1302.7,1283.8 -111.7,1283.8" fill="url(#site-garden-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="595.5" y="1249.5" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">South Landscaped Garden Lawn</text>
+  <text x="595.5" y="1263.5" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">100.0 m²</text>
+</g>
+<polygon points="-111.7,-328.7 -55.2,-328.7 -55.2,1227.2 -111.7,1227.2" fill="#f1f5f9" fill-opacity="0.55" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="4,3" data-entity-type="site-zone" data-site-zone-id="site_zone_setback_3" data-site-zone-kind="setback"><title>Side property clearance for light, ventilation, and fire buffer</title></polygon>
+<polygon points="-111.7,-328.7 -55.2,-328.7 -55.2,1227.2 -111.7,1227.2" fill="url(#site-setback-hatch)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="-83.4" y="448.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">West Side Setback</text>
+  <text x="-83.4" y="458.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">110.0 m²</text>
+</g>
+<polygon points="1246.2,-328.7 1302.7,-328.7 1302.7,1227.2 1246.2,1227.2" fill="#f1f5f9" fill-opacity="0.55" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="4,3" data-entity-type="site-zone" data-site-zone-id="site_zone_setback_4" data-site-zone-kind="setback"><title>Side property clearance for light, ventilation, and fire buffer</title></polygon>
+<polygon points="1246.2,-328.7 1302.7,-328.7 1302.7,1227.2 1246.2,1227.2" fill="url(#site-setback-hatch)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="1274.4" y="448.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">East Side Setback</text>
+  <text x="1274.4" y="458.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">110.0 m²</text>
+</g>
+<polygon points="-55.2,-328.7 29.7,-328.7 29.7,90.0 -55.2,90.0" fill="#f8fafc" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_parking_5" data-site-zone-kind="parking"><title>Off-street dedicated vehicular parking stall connected directly to road arrival</title></polygon>
+<polygon points="-55.2,-328.7 29.7,-328.7 29.7,90.0 -55.2,90.0" fill="url(#site-parking-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="-12.7" y="-125.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Parking Bay 1</text>
+  <text x="-12.7" y="-111.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">44.4 m²</text>
+</g>
+<polygon points="29.7,-328.7 114.6,-328.7 114.6,90.0 29.7,90.0" fill="#f8fafc" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_parking_6" data-site-zone-kind="parking"><title>Off-street dedicated vehicular parking stall connected directly to road arrival</title></polygon>
+<polygon points="29.7,-328.7 114.6,-328.7 114.6,90.0 29.7,90.0" fill="url(#site-parking-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="72.1" y="-125.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Parking Bay 2</text>
+  <text x="72.1" y="-111.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">44.4 m²</text>
+</g>
+<polygon points="114.6,-328.7 199.4,-328.7 199.4,90.0 114.6,90.0" fill="#f8fafc" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_parking_7" data-site-zone-kind="parking"><title>Off-street dedicated vehicular parking stall connected directly to road arrival</title></polygon>
+<polygon points="114.6,-328.7 199.4,-328.7 199.4,90.0 114.6,90.0" fill="url(#site-parking-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="157.0" y="-125.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Parking Bay 3</text>
+  <text x="157.0" y="-111.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">44.4 m²</text>
+</g>
+<polygon points="199.4,-328.7 284.3,-328.7 284.3,90.0 199.4,90.0" fill="#f8fafc" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_parking_8" data-site-zone-kind="parking"><title>Off-street dedicated vehicular parking stall connected directly to road arrival</title></polygon>
+<polygon points="199.4,-328.7 284.3,-328.7 284.3,90.0 199.4,90.0" fill="url(#site-parking-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="241.9" y="-125.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Parking Bay 4</text>
+  <text x="241.9" y="-111.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">44.4 m²</text>
+</g>
+<polygon points="284.3,-328.7 340.9,-328.7 340.9,90.0 284.3,90.0" fill="#fffbeb" fill-opacity="0.75" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="4,2" data-entity-type="site-zone" data-site-zone-id="site_zone_pedestrian_circulation_9" data-site-zone-kind="pedestrian_circulation"><title>Segregated pedestrian arrival ensuring safe access away from vehicle path</title></polygon>
+<polygon points="284.3,-328.7 340.9,-328.7 340.9,90.0 284.3,90.0" fill="url(#site-pedestrian-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="312.6" y="-120.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Main Arrival Walkway</text>
+  <text x="312.6" y="-110.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">29.6 m²</text>
+</g>
+<polygon points="340.9,-328.7 1246.2,-328.7 1246.2,90.0 340.9,90.0" fill="#ecfdf5" fill-opacity="0.75" stroke="#86efac" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_garden_10" data-site-zone-kind="garden"><title>Street-facing permeable green cover and frontage enhancement</title></polygon>
+<polygon points="340.9,-328.7 1246.2,-328.7 1246.2,90.0 340.9,90.0" fill="url(#site-garden-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="793.5" y="-125.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Front Landscape Buffer</text>
+  <text x="793.5" y="-111.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">473.6 m²</text>
+</g>
+<polygon points="-55.2,752.0 1246.2,752.0 1246.2,1227.2 -55.2,1227.2" fill="#ecfdf5" fill-opacity="0.75" stroke="#86efac" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_garden_11" data-site-zone-kind="garden"><title>Recreational private outdoor green space and permeable ground recharge</title></polygon>
+<polygon points="-55.2,752.0 1246.2,752.0 1246.2,1227.2 -55.2,1227.2" fill="url(#site-garden-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="595.5" y="983.6" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">Private Backyard Garden</text>
+  <text x="595.5" y="997.6" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">772.8 m²</text>
+</g>
+<polygon points="-55.2,90.0 174.0,90.0 174.0,752.0 -55.2,752.0" fill="#ecfdf5" fill-opacity="0.75" stroke="#86efac" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_garden_12" data-site-zone-kind="garden"><title>Permeable landscaped ground preserving side aeration and privacy buffer</title></polygon>
+<polygon points="-55.2,90.0 174.0,90.0 174.0,752.0 -55.2,752.0" fill="url(#site-garden-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="59.4" y="415.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">West Garden Buffer</text>
+  <text x="59.4" y="429.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">189.5 m²</text>
+</g>
+<polygon points="1017.0,90.0 1246.2,90.0 1246.2,752.0 1017.0,752.0" fill="#ecfdf5" fill-opacity="0.75" stroke="#86efac" stroke-width="0.8" data-entity-type="site-zone" data-site-zone-id="site_zone_garden_13" data-site-zone-kind="garden"><title>Permeable landscaped ground preserving side aeration and morning light</title></polygon>
+<polygon points="1017.0,90.0 1246.2,90.0 1246.2,752.0 1017.0,752.0" fill="url(#site-garden-pattern)" stroke="none" pointer-events="none"/>
+<g class="site-zone-label" pointer-events="none">
+  <text x="1131.6" y="415.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="600" fill="#1e293b" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">East Garden Buffer</text>
+  <text x="1131.6" y="429.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8.5" font-weight="500" fill="#475569" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">189.5 m²</text>
+</g>
+</g>
+  <g class="layer-floor" data-layer="floor">
+  <polygon points="174.0,90.0 275.8,90.0 326.8,90.0 360.7,90.0 454.1,90.0 505.0,90.0 505.0,112.6 513.5,112.6 572.9,112.6 618.1,112.6 677.5,112.6 686.0,112.6 686.0,90.0 736.9,90.0 830.3,90.0 864.2,90.0 915.2,90.0 1017.0,90.0 1017.0,200.3 1017.0,310.7 1017.0,421.0 864.2,421.0 830.3,421.0 761.0,421.0 761.0,471.9 761.0,565.3 761.0,599.2 761.0,752.0 650.7,752.0 540.3,752.0 430.0,752.0 430.0,650.1 430.0,599.2 430.0,565.3 430.0,471.9 430.0,421.0 360.7,421.0 326.8,421.0 174.0,421.0 174.0,310.7 174.0,200.3" fill="#ffffff" stroke="#333" stroke-width="0.5"/>
+</g>
+  <g class="layer-rooms" data-layer="rooms">
+<polygon points="430.0,421.0 761.0,421.0 761.0,471.9 430.0,471.9" fill="#E8EAF6" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_foyer"/>
+<polygon points="430.0,421.0 761.0,421.0 761.0,471.9 430.0,471.9" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="430.0,471.9 472.4,471.9 472.4,565.3 430.0,565.3" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_common_bath"/>
+<polygon points="430.0,471.9 472.4,471.9 472.4,565.3 430.0,565.3" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="472.4,471.9 557.3,471.9 557.3,531.3 472.4,531.3" fill="#FFF3E0" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_kitchen"/>
+<polygon points="472.4,471.9 557.3,471.9 557.3,531.3 472.4,531.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="472.4,531.3 557.3,531.3 557.3,565.3 472.4,565.3" fill="#FAFAFA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_utility"/>
+<polygon points="472.4,531.3 557.3,531.3 557.3,565.3 472.4,565.3" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="557.3,471.9 710.1,471.9 710.1,565.3 557.3,565.3" fill="#F3E5F5" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_living_dining"/>
+<polygon points="557.3,471.9 710.1,471.9 710.1,565.3 557.3,565.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="430.0,565.3 761.0,565.3 761.0,599.2 430.0,599.2" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_private_passage"/>
+<polygon points="430.0,565.3 761.0,565.3 761.0,599.2 430.0,599.2" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="430.0,650.1 540.3,650.1 540.3,752.0 430.0,752.0" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_master_bed"/>
+<polygon points="430.0,650.1 540.3,650.1 540.3,752.0 430.0,752.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="430.0,599.2 472.4,599.2 472.4,650.1 430.0,650.1" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_master_bath"/>
+<polygon points="430.0,599.2 472.4,599.2 472.4,650.1 430.0,650.1" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="472.4,599.2 540.3,599.2 540.3,650.1 472.4,650.1" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_suite_access_1"/>
+<polygon points="472.4,599.2 540.3,599.2 540.3,650.1 472.4,650.1" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="540.3,650.1 650.7,650.1 650.7,752.0 540.3,752.0" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_bed_2"/>
+<polygon points="540.3,650.1 650.7,650.1 650.7,752.0 540.3,752.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="540.3,599.2 582.8,599.2 582.8,650.1 540.3,650.1" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_bath_2"/>
+<polygon points="540.3,599.2 582.8,599.2 582.8,650.1 540.3,650.1" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="582.8,599.2 650.7,599.2 650.7,650.1 582.8,650.1" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_suite_access_2"/>
+<polygon points="582.8,599.2 650.7,599.2 650.7,650.1 582.8,650.1" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="650.7,599.2 761.0,599.2 761.0,752.0 650.7,752.0" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_bed_3"/>
+<polygon points="650.7,599.2 761.0,599.2 761.0,752.0 650.7,752.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="710.1,471.9 761.0,471.9 761.0,565.3 710.1,565.3" fill="#E0F7FA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_01__FLAT_01_living_balcony"/>
+<polygon points="710.1,471.9 761.0,471.9 761.0,565.3 710.1,565.3" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="454.1,90.0 505.0,90.0 505.0,421.0 454.1,421.0" fill="#E8EAF6" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_foyer"/>
+<polygon points="454.1,90.0 505.0,90.0 505.0,421.0 454.1,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="360.7,90.0 454.1,90.0 454.1,132.4 360.7,132.4" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_common_bath"/>
+<polygon points="360.7,90.0 454.1,90.0 454.1,132.4 360.7,132.4" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="394.6,132.4 454.1,132.4 454.1,217.3 394.6,217.3" fill="#FFF3E0" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_kitchen"/>
+<polygon points="394.6,132.4 454.1,132.4 454.1,217.3 394.6,217.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="360.7,132.4 394.6,132.4 394.6,217.3 360.7,217.3" fill="#FAFAFA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_utility"/>
+<polygon points="360.7,132.4 394.6,132.4 394.6,217.3 360.7,217.3" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="360.7,217.3 454.1,217.3 454.1,370.1 360.7,370.1" fill="#F3E5F5" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_living_dining"/>
+<polygon points="360.7,217.3 454.1,217.3 454.1,370.1 360.7,370.1" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="326.8,90.0 360.7,90.0 360.7,421.0 326.8,421.0" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_private_passage"/>
+<polygon points="326.8,90.0 360.7,90.0 360.7,421.0 326.8,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="174.0,90.0 275.8,90.0 275.8,200.3 174.0,200.3" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_master_bed"/>
+<polygon points="174.0,90.0 275.8,90.0 275.8,200.3 174.0,200.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="275.8,90.0 326.8,90.0 326.8,132.4 275.8,132.4" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_master_bath"/>
+<polygon points="275.8,90.0 326.8,90.0 326.8,132.4 275.8,132.4" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="275.8,132.4 326.8,132.4 326.8,200.3 275.8,200.3" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_suite_access_1"/>
+<polygon points="275.8,132.4 326.8,132.4 326.8,200.3 275.8,200.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="174.0,200.3 275.8,200.3 275.8,310.7 174.0,310.7" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_bed_2"/>
+<polygon points="174.0,200.3 275.8,200.3 275.8,310.7 174.0,310.7" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="275.8,200.3 326.8,200.3 326.8,242.8 275.8,242.8" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_bath_2"/>
+<polygon points="275.8,200.3 326.8,200.3 326.8,242.8 275.8,242.8" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="275.8,242.8 326.8,242.8 326.8,310.7 275.8,310.7" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_suite_access_2"/>
+<polygon points="275.8,242.8 326.8,242.8 326.8,310.7 275.8,310.7" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="174.0,310.7 326.8,310.7 326.8,421.0 174.0,421.0" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_bed_3"/>
+<polygon points="174.0,310.7 326.8,310.7 326.8,421.0 174.0,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="360.7,370.1 454.1,370.1 454.1,421.0 360.7,421.0" fill="#E0F7FA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_02__FLAT_02_living_balcony"/>
+<polygon points="360.7,370.1 454.1,370.1 454.1,421.0 360.7,421.0" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="686.0,90.0 736.9,90.0 736.9,421.0 686.0,421.0" fill="#E8EAF6" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_foyer"/>
+<polygon points="686.0,90.0 736.9,90.0 736.9,421.0 686.0,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="736.9,90.0 830.3,90.0 830.3,132.4 736.9,132.4" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_common_bath"/>
+<polygon points="736.9,90.0 830.3,90.0 830.3,132.4 736.9,132.4" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="736.9,132.4 796.4,132.4 796.4,217.3 736.9,217.3" fill="#FFF3E0" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_kitchen"/>
+<polygon points="736.9,132.4 796.4,132.4 796.4,217.3 736.9,217.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="796.4,132.4 830.3,132.4 830.3,217.3 796.4,217.3" fill="#FAFAFA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_utility"/>
+<polygon points="796.4,132.4 830.3,132.4 830.3,217.3 796.4,217.3" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="736.9,217.3 830.3,217.3 830.3,370.1 736.9,370.1" fill="#F3E5F5" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_living_dining"/>
+<polygon points="736.9,217.3 830.3,217.3 830.3,370.1 736.9,370.1" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="830.3,90.0 864.2,90.0 864.2,421.0 830.3,421.0" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_private_passage"/>
+<polygon points="830.3,90.0 864.2,90.0 864.2,421.0 830.3,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="915.2,90.0 1017.0,90.0 1017.0,200.3 915.2,200.3" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_master_bed"/>
+<polygon points="915.2,90.0 1017.0,90.0 1017.0,200.3 915.2,200.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="864.2,90.0 915.2,90.0 915.2,132.4 864.2,132.4" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_master_bath"/>
+<polygon points="864.2,90.0 915.2,90.0 915.2,132.4 864.2,132.4" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="864.2,132.4 915.2,132.4 915.2,200.3 864.2,200.3" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_suite_access_1"/>
+<polygon points="864.2,132.4 915.2,132.4 915.2,200.3 864.2,200.3" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="915.2,200.3 1017.0,200.3 1017.0,310.7 915.2,310.7" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_bed_2"/>
+<polygon points="915.2,200.3 1017.0,200.3 1017.0,310.7 915.2,310.7" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="864.2,200.3 915.2,200.3 915.2,242.8 864.2,242.8" fill="#E8F5E9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_bath_2"/>
+<polygon points="864.2,200.3 915.2,200.3 915.2,242.8 864.2,242.8" fill="url(#wet-hatch)" pointer-events="none"/>
+<polygon points="864.2,242.8 915.2,242.8 915.2,310.7 864.2,310.7" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_suite_access_2"/>
+<polygon points="864.2,242.8 915.2,242.8 915.2,310.7 864.2,310.7" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="864.2,310.7 1017.0,310.7 1017.0,421.0 864.2,421.0" fill="#E3F2FD" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_bed_3"/>
+<polygon points="864.2,310.7 1017.0,310.7 1017.0,421.0 864.2,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="736.9,370.1 830.3,370.1 830.3,421.0 736.9,421.0" fill="#E0F7FA" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:flat_03__FLAT_03_living_balcony"/>
+<polygon points="736.9,370.1 830.3,370.1 830.3,421.0 736.9,421.0" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="513.5,112.6 572.9,112.6 572.9,172.0 513.5,172.0" fill="#E1F5FE" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:lift_1"/>
+<polygon points="618.1,112.6 677.5,112.6 677.5,172.0 618.1,172.0" fill="#E1F5FE" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:lift_2"/>
+<polygon points="505.0,172.0 572.9,172.0 572.9,285.2 505.0,285.2" fill="#EFEBE9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:stair_1"/>
+<polygon points="618.1,172.0 686.0,172.0 686.0,285.2 618.1,285.2" fill="#EFEBE9" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:stair_2"/>
+<polygon points="505.0,285.2 686.0,285.2 686.0,421.0 505.0,421.0" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:core_lobby"/>
+<polygon points="505.0,285.2 686.0,285.2 686.0,421.0 505.0,421.0" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="572.9,112.6 618.1,112.6 618.1,285.2 572.9,285.2" fill="#ECEFF1" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:corridor_1"/>
+<polygon points="572.9,112.6 618.1,112.6 618.1,285.2 572.9,285.2" fill="url(#tile-hatch)" pointer-events="none"/>
+<polygon points="505.0,112.6 513.5,112.6 513.5,172.0 505.0,172.0" fill="#F5F5F5" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:shaft_1"/>
+<polygon points="505.0,112.6 513.5,112.6 513.5,172.0 505.0,172.0" fill="url(#outdoor-hatch)" pointer-events="none"/>
+<polygon points="677.5,112.6 686.0,112.6 686.0,172.0 677.5,172.0" fill="#F5F5F5" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="apt-room:shaft_2"/>
+<polygon points="677.5,112.6 686.0,112.6 686.0,172.0 677.5,172.0" fill="url(#outdoor-hatch)" pointer-events="none"/>
+</g>
+  <g class="layer-furniture" data-layer="furniture" pointer-events="none"><title>Illustrative nominal furniture and fixtures; not reviewed furnishing or vehicle-manoeuvre clearance.</title><g data-source-room-id="apt-room:flat_01__FLAT_01_common_bath" data-illustrative="true" transform="translate(461.12540062390497 517.1697790692706) scale(0.028289389342335797) rotate(90)" stroke="#555046" stroke-width="15"><rect x="100" y="60" width="450" height="240" rx="40" fill="#eee"/><ellipse cx="325" cy="530" rx="220" ry="320" fill="#fff"/><ellipse cx="325" cy="530" rx="135" ry="210" fill="#dbe5ed"/><rect x="900" y="80" width="550" height="550" rx="80" fill="#c5dcd3"/><ellipse cx="1175" cy="355" rx="180" ry="170" fill="#fff"/></g>
+<g data-source-room-id="apt-room:flat_01__FLAT_01_living_dining" data-illustrative="true" transform="translate(613.8881030725182 477.56463399000046) scale(0.028289389342335797) rotate(90)" stroke="#555046" stroke-width="15"><rect width="2400" height="850" rx="150" fill="#737982"/><rect y="400" width="850" height="1400" rx="120" fill="#737982"/><rect x="160" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="880" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="1600" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="150" y="840" width="550" height="760" rx="100" fill="#d6d7da"/><rect x="1250" y="1200" width="1000" height="550" rx="80" fill="#b8d8d5"/></g>
+<g data-source-room-id="apt-room:flat_01__FLAT_01_master_bed" data-illustrative="true" transform="translate(435.6649502158027 686.9061151232852) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_01__FLAT_01_bed_2" data-illustrative="true" transform="translate(545.9935686509123 686.9061151232852) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_01__FLAT_01_bed_3" data-illustrative="true" transform="translate(656.3221870860219 686.9061151232852) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_02__FLAT_02_common_bath" data-illustrative="true" transform="translate(366.35594632708 95.65787786846715) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect x="100" y="60" width="450" height="240" rx="40" fill="#eee"/><ellipse cx="325" cy="530" rx="220" ry="320" fill="#fff"/><ellipse cx="325" cy="530" rx="135" ry="210" fill="#dbe5ed"/><rect x="900" y="80" width="550" height="550" rx="80" fill="#c5dcd3"/><ellipse cx="1175" cy="355" rx="180" ry="170" fill="#fff"/></g>
+<g data-source-room-id="apt-room:flat_02__FLAT_02_living_dining" data-illustrative="true" transform="translate(366.35594632708 222.96012990897822) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="2400" height="850" rx="150" fill="#737982"/><rect y="400" width="850" height="1400" rx="120" fill="#737982"/><rect x="160" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="880" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="1600" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="150" y="840" width="550" height="760" rx="100" fill="#d6d7da"/><rect x="1250" y="1200" width="1000" height="550" rx="80" fill="#b8d8d5"/></g>
+<g data-source-room-id="apt-room:flat_02__FLAT_02_master_bed" data-illustrative="true" transform="translate(179.64597666766372 95.65787786846715) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_02__FLAT_02_bed_2" data-illustrative="true" transform="translate(179.64597666766372 205.98649630357676) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_02__FLAT_02_bed_3" data-illustrative="true" transform="translate(179.64597666766372 316.3151147386864) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_03__FLAT_03_common_bath" data-illustrative="true" transform="translate(782.2099696594162 95.65787786846715) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect x="100" y="60" width="450" height="240" rx="40" fill="#eee"/><ellipse cx="325" cy="530" rx="220" ry="320" fill="#fff"/><ellipse cx="325" cy="530" rx="135" ry="210" fill="#dbe5ed"/><rect x="900" y="80" width="550" height="550" rx="80" fill="#c5dcd3"/><ellipse cx="1175" cy="355" rx="180" ry="170" fill="#fff"/></g>
+<g data-source-room-id="apt-room:flat_03__FLAT_03_living_dining" data-illustrative="true" transform="translate(742.6048245801461 222.96012990897822) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="2400" height="850" rx="150" fill="#737982"/><rect y="400" width="850" height="1400" rx="120" fill="#737982"/><rect x="160" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="880" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="1600" y="150" width="630" height="540" rx="100" fill="#d6d7da"/><rect x="150" y="840" width="550" height="760" rx="100" fill="#d6d7da"/><rect x="1250" y="1200" width="1000" height="550" rx="80" fill="#b8d8d5"/></g>
+<g data-source-room-id="apt-room:flat_03__FLAT_03_master_bed" data-illustrative="true" transform="translate(960.4331225161318 95.65787786846715) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_03__FLAT_03_bed_2" data-illustrative="true" transform="translate(960.4331225161318 205.98649630357676) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g>
+<g data-source-room-id="apt-room:flat_03__FLAT_03_bed_3" data-illustrative="true" transform="translate(960.4331225161318 316.3151147386864) scale(0.028289389342335797) rotate(0)" stroke="#555046" stroke-width="15"><rect width="1800" height="2100" rx="70" fill="#675443"/><rect x="80" y="150" width="1640" height="1870" rx="60" fill="#fffdf8"/><rect x="120" y="750" width="1560" height="1220" fill="url(#quilt-hatch)"/><path d="M120 750H1680V1080H120Z" fill="#ba819c"/><rect x="180" y="270" width="630" height="340" rx="90" fill="#dae5d0"/><rect x="990" y="270" width="630" height="340" rx="90" fill="#dae5d0"/></g></g>
+  <g class="layer-rooms" data-layer="rooms">
+<g data-room-name="Entrance Foyer" pointer-events="none">
+<text x="595.5" y="444.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Foyer</text>
+<text x="595.5" y="454.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">21.1 sq m</text>
+</g>
+<g data-room-name="Common Toilet" pointer-events="none">
+<text x="451.2" y="550.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Common</text>
+<text x="451.2" y="561.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath</text>
+</g>
+<g data-room-name="Kitchen" pointer-events="none">
+<text x="514.9" y="499.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Kitchen</text>
+<text x="514.9" y="509.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">6.3 sq m</text>
+</g>
+<g data-room-name="Utility" pointer-events="none">
+<text x="514.9" y="545.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Utility</text>
+<text x="514.9" y="556.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">3.6 sq m</text>
+</g>
+<g data-room-name="Living and Dining" pointer-events="none">
+<text x="633.7" y="551.5" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Living &amp; Dining</text>
+<text x="633.7" y="562.3" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">17.8 sq m</text>
+</g>
+<g data-room-name="Private Passage" pointer-events="none">
+<text x="595.5" y="579.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Private Passage</text>
+<text x="595.5" y="590.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Master Bedroom" pointer-events="none">
+<text x="485.2" y="738.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master Bedroom</text>
+<text x="485.2" y="749.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Master En-suite Toilet" pointer-events="none">
+<text x="451.2" y="621.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master</text>
+<text x="451.2" y="632.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath</text>
+</g>
+<g data-room-name="Private Suite Access" pointer-events="none">
+<text x="506.4" y="622.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+<text x="506.4" y="633.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">4.3 sq m</text>
+</g>
+<g data-room-name="Bedroom 2" pointer-events="none">
+<text x="595.5" y="738.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 2</text>
+<text x="595.5" y="749.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Attached Toilet 2" pointer-events="none">
+<text x="561.6" y="626.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath 2</text>
+</g>
+<g data-room-name="Private Suite Access" pointer-events="none">
+<text x="616.7" y="622.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+<text x="616.7" y="633.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">4.3 sq m</text>
+</g>
+<g data-room-name="Bedroom 3" pointer-events="none">
+<text x="705.8" y="610.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 3</text>
+<text x="705.8" y="621.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">21.1 sq m</text>
+</g>
+<g data-room-name="Living Balcony" pointer-events="none">
+<text x="735.5" y="520.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Balcony</text>
+</g>
+<g data-room-name="Entrance Foyer" pointer-events="none">
+<text x="479.5" y="257.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Foyer</text>
+</g>
+<g data-room-name="Common Toilet" pointer-events="none">
+<text x="407.4" y="118.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Common Bath</text>
+<text x="407.4" y="129.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">5.0 sq m</text>
+</g>
+<g data-room-name="Kitchen" pointer-events="none">
+<text x="424.3" y="172.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Kitchen</text>
+<text x="424.3" y="183.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">6.3 sq m</text>
+</g>
+<g data-room-name="Utility" pointer-events="none">
+<text x="377.7" y="176.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Utility</text>
+</g>
+<g data-room-name="Living and Dining" pointer-events="none">
+<text x="407.4" y="356.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;stroke-linecap:round">Living &amp; Dining</text>
+<text x="407.4" y="366.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.2" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">17.8 sq m</text>
+</g>
+<g transform="rotate(-90 343.72443485321133 255.49292765266438)" data-room-name="Private Passage" pointer-events="none">
+<text x="343.7" y="253.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Private</text>
+<text x="343.7" y="261.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Master Bedroom" pointer-events="none">
+<text x="224.9" y="186.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master Bedroom</text>
+<text x="224.9" y="197.3" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Master En-suite Toilet" pointer-events="none">
+<text x="301.3" y="107.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master</text>
+<text x="301.3" y="118.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath</text>
+</g>
+<g transform="rotate(-90 301.2903508397077 166.38135122430668)" data-room-name="Private Suite Access" pointer-events="none">
+<text x="301.3" y="168.5" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Bedroom 2" pointer-events="none">
+<text x="224.9" y="296.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 2</text>
+<text x="224.9" y="307.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Attached Toilet 2" pointer-events="none">
+<text x="301.3" y="223.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath 2</text>
+</g>
+<g transform="rotate(-90 301.2903508397077 276.70996965941623)" data-room-name="Private Suite Access" pointer-events="none">
+<text x="301.3" y="278.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Bedroom 3" pointer-events="none">
+<text x="250.4" y="407.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 3</text>
+<text x="250.4" y="418.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">21.1 sq m</text>
+</g>
+<g data-room-name="Living Balcony" pointer-events="none">
+<text x="407.4" y="393.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Balcony</text>
+<text x="407.4" y="403.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">5.9 sq m</text>
+</g>
+<g data-room-name="Entrance Foyer" pointer-events="none">
+<text x="711.5" y="257.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Foyer</text>
+</g>
+<g data-room-name="Common Toilet" pointer-events="none">
+<text x="783.6" y="118.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Common Bath</text>
+<text x="783.6" y="129.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">5.0 sq m</text>
+</g>
+<g data-room-name="Kitchen" pointer-events="none">
+<text x="766.7" y="172.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Kitchen</text>
+<text x="766.7" y="183.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">6.3 sq m</text>
+</g>
+<g data-room-name="Utility" pointer-events="none">
+<text x="813.3" y="176.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Utility</text>
+</g>
+<g data-room-name="Living and Dining" pointer-events="none">
+<text x="783.6" y="356.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;stroke-linecap:round">Living &amp; Dining</text>
+<text x="783.6" y="366.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.2" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">17.8 sq m</text>
+</g>
+<g transform="rotate(-90 847.2755651467885 255.49292765266438)" data-room-name="Private Passage" pointer-events="none">
+<text x="847.3" y="253.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Private</text>
+<text x="847.3" y="261.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.0" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.0px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Master Bedroom" pointer-events="none">
+<text x="966.1" y="186.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master Bedroom</text>
+<text x="966.1" y="197.3" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Master En-suite Toilet" pointer-events="none">
+<text x="889.7" y="107.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Master</text>
+<text x="889.7" y="118.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath</text>
+</g>
+<g transform="rotate(-90 889.7096491602922 166.38135122430668)" data-room-name="Private Suite Access" pointer-events="none">
+<text x="889.7" y="168.5" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Bedroom 2" pointer-events="none">
+<text x="966.1" y="296.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 2</text>
+<text x="966.1" y="307.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">14.0 sq m</text>
+</g>
+<g data-room-name="Attached Toilet 2" pointer-events="none">
+<text x="889.7" y="223.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bath 2</text>
+</g>
+<g transform="rotate(-90 889.7096491602922 276.70996965941623)" data-room-name="Private Suite Access" pointer-events="none">
+<text x="889.7" y="278.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Passage</text>
+</g>
+<g data-room-name="Bedroom 3" pointer-events="none">
+<text x="940.6" y="407.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Bedroom 3</text>
+<text x="940.6" y="418.0" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">21.1 sq m</text>
+</g>
+<g data-room-name="Living Balcony" pointer-events="none">
+<text x="783.6" y="393.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">Balcony</text>
+<text x="783.6" y="403.8" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">5.9 sq m</text>
+</g>
+<g data-room-name="LIFT 1" pointer-events="none">
+<text x="543.2" y="139.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">LIFT 1</text>
+<text x="543.2" y="150.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">4.4 sq m</text>
+</g>
+<g data-room-name="LIFT 2" pointer-events="none">
+<text x="647.8" y="139.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">LIFT 2</text>
+<text x="647.8" y="150.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">4.4 sq m</text>
+</g>
+<g transform="rotate(-90 519.1186487756933 228.61800777744537)" data-room-name="STAIR 1" pointer-events="none">
+<text x="519.1" y="226.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">STAIR 1</text>
+<text x="519.1" y="236.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">9.6 sq m</text>
+</g>
+<g transform="rotate(-90 632.2762061450364 228.61800777744537)" data-room-name="STAIR 2" pointer-events="none">
+<text x="632.3" y="226.2" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">STAIR 2</text>
+<text x="632.3" y="236.9" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">9.6 sq m</text>
+</g>
+<g data-room-name="COMMON LOBBY" pointer-events="none">
+<text x="595.5" y="350.7" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.3" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.6px;stroke-linejoin:round;stroke-linecap:round">COMMON LOBBY</text>
+<text x="595.5" y="361.4" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.1px;stroke-linejoin:round;stroke-linecap:round">30.7 sq m</text>
+</g>
+<g transform="rotate(-90 595.5 198.91414896799284)" data-room-name="COMMON ACCESS SPINE" pointer-events="none">
+<text x="595.5" y="196.6" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="6.5" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:1.8px;stroke-linejoin:round;stroke-linecap:round">COMMON ACCESS</text>
+<text x="595.5" y="204.1" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="6.5" fill="#0f172a" font-weight="600" letter-spacing="0.01em" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:1.8px;stroke-linejoin:round;stroke-linecap:round">SPINE</text>
+</g>
+</g>
+  <g class="layer-walls" data-layer="walls">
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:10100:13700" data-thickness-mm="230">
+  <line x1="174.0" y1="90.0" x2="275.8" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="174.0,86.7 275.8,86.7 275.8,93.3 174.0,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:13700:15500" data-thickness-mm="230">
+  <line x1="275.8" y1="90.0" x2="326.8" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="275.8,86.7 326.8,86.7 326.8,93.3 275.8,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:15500:16700" data-thickness-mm="230">
+  <line x1="326.8" y1="90.0" x2="360.7" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="326.8,86.7 360.7,86.7 360.7,93.3 326.8,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:16700:20000" data-thickness-mm="230">
+  <line x1="360.7" y1="90.0" x2="454.1" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3300.000" points="360.7,86.7 454.1,86.7 454.1,93.3 360.7,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:20000:21800" data-thickness-mm="230">
+  <line x1="454.1" y1="90.0" x2="505.0" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="454.1,86.7 505.0,86.7 505.0,93.3 454.1,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:28200:30000" data-thickness-mm="230">
+  <line x1="686.0" y1="90.0" x2="736.9" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="686.0,86.7 736.9,86.7 736.9,93.3 686.0,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:30000:33300" data-thickness-mm="230">
+  <line x1="736.9" y1="90.0" x2="830.3" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3300.000" points="736.9,86.7 830.3,86.7 830.3,93.3 736.9,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:33300:34500" data-thickness-mm="230">
+  <line x1="830.3" y1="90.0" x2="864.2" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="830.3,86.7 864.2,86.7 864.2,93.3 830.3,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:34500:36300" data-thickness-mm="230">
+  <line x1="864.2" y1="90.0" x2="915.2" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="864.2,86.7 915.2,86.7 915.2,93.3 864.2,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:17800:36300:39900" data-thickness-mm="230">
+  <line x1="915.2" y1="90.0" x2="1017.0" y2="90.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="915.2,86.7 1017.0,86.7 1017.0,93.3 915.2,93.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:18600:21800:22100" data-thickness-mm="230">
+  <line x1="505.0" y1="112.6" x2="513.5" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="300.000" points="505.0,109.4 513.5,109.4 513.5,115.9 505.0,115.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:18600:22100:24200" data-thickness-mm="230">
+  <line x1="513.5" y1="112.6" x2="572.9" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="513.5,109.4 572.9,109.4 572.9,115.9 513.5,115.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:18600:24200:25800" data-thickness-mm="230">
+  <line x1="572.9" y1="112.6" x2="618.1" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1600.000" points="572.9,109.4 618.1,109.4 618.1,115.9 572.9,115.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:18600:25800:27900" data-thickness-mm="230">
+  <line x1="618.1" y1="112.6" x2="677.5" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="618.1,109.4 677.5,109.4 677.5,115.9 618.1,115.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:18600:27900:28200" data-thickness-mm="230">
+  <line x1="677.5" y1="112.6" x2="686.0" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="300.000" points="677.5,109.4 686.0,109.4 686.0,115.9 677.5,115.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:13700:15500" data-thickness-mm="150">
+  <line x1="275.8" y1="132.4" x2="326.8" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="275.8,130.3 326.8,130.3 326.8,134.6 275.8,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:16700:17900" data-thickness-mm="150">
+  <line x1="360.7" y1="132.4" x2="394.6" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="360.7,130.3 394.6,130.3 394.6,134.6 360.7,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:17900:20000" data-thickness-mm="150">
+  <line x1="394.6" y1="132.4" x2="454.1" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="394.6,130.3 454.1,130.3 454.1,134.6 394.6,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:30000:32100" data-thickness-mm="150">
+  <line x1="736.9" y1="132.4" x2="796.4" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="736.9,130.3 796.4,130.3 796.4,134.6 736.9,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:32100:33300" data-thickness-mm="150">
+  <line x1="796.4" y1="132.4" x2="830.3" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="796.4,130.3 830.3,130.3 830.3,134.6 796.4,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:19300:34500:36300" data-thickness-mm="150">
+  <line x1="864.2" y1="132.4" x2="915.2" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="864.2,130.3 915.2,130.3 915.2,134.6 864.2,134.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:20700:21800:22100" data-thickness-mm="230">
+  <line x1="505.0" y1="172.0" x2="513.5" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="300.000" points="505.0,168.8 513.5,168.8 513.5,175.3 505.0,175.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:20700:22100:24200" data-thickness-mm="230">
+  <line x1="513.5" y1="172.0" x2="572.9" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="513.5,168.8 572.9,168.8 572.9,175.3 513.5,175.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:20700:25800:27900" data-thickness-mm="230">
+  <line x1="618.1" y1="172.0" x2="677.5" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="618.1,168.8 677.5,168.8 677.5,175.3 618.1,175.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:20700:27900:28200" data-thickness-mm="230">
+  <line x1="677.5" y1="172.0" x2="686.0" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="300.000" points="677.5,168.8 686.0,168.8 686.0,175.3 677.5,175.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:21700:10100:13700" data-thickness-mm="150">
+  <line x1="174.0" y1="200.3" x2="275.8" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="174.0,198.2 275.8,198.2 275.8,202.5 174.0,202.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:21700:13700:15500" data-thickness-mm="150">
+  <line x1="275.8" y1="200.3" x2="326.8" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="275.8,198.2 326.8,198.2 326.8,202.5 275.8,202.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:21700:34500:36300" data-thickness-mm="150">
+  <line x1="864.2" y1="200.3" x2="915.2" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="864.2,198.2 915.2,198.2 915.2,202.5 864.2,202.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:21700:36300:39900" data-thickness-mm="150">
+  <line x1="915.2" y1="200.3" x2="1017.0" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="915.2,198.2 1017.0,198.2 1017.0,202.5 915.2,202.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:22300:16700:17900" data-thickness-mm="150">
+  <line x1="360.7" y1="217.3" x2="394.6" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="360.7,215.2 394.6,215.2 394.6,219.4 360.7,219.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:22300:17900:20000" data-thickness-mm="150">
+  <line x1="394.6" y1="217.3" x2="454.1" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="394.6,215.2 454.1,215.2 454.1,219.4 394.6,219.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:22300:30000:32100" data-thickness-mm="150">
+  <line x1="736.9" y1="217.3" x2="796.4" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="736.9,215.2 796.4,215.2 796.4,219.4 736.9,219.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:22300:32100:33300" data-thickness-mm="150">
+  <line x1="796.4" y1="217.3" x2="830.3" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="796.4,215.2 830.3,215.2 830.3,219.4 796.4,219.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:23200:13700:15500" data-thickness-mm="150">
+  <line x1="275.8" y1="242.8" x2="326.8" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="275.8,240.6 326.8,240.6 326.8,244.9 275.8,244.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:23200:34500:36300" data-thickness-mm="150">
+  <line x1="864.2" y1="242.8" x2="915.2" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="864.2,240.6 915.2,240.6 915.2,244.9 864.2,244.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:24700:21800:24200" data-thickness-mm="230">
+  <line x1="505.0" y1="285.2" x2="572.9" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="505.0,281.9 538.9,281.9 538.9,288.5 505.0,288.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2200.000" data-end-mm="2400.000" points="567.2,281.9 572.9,281.9 572.9,288.5 567.2,288.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:24700:24200:25800" data-thickness-mm="150">
+  <line x1="572.9" y1="285.2" x2="618.1" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="300.000" points="572.9,283.1 581.4,283.1 581.4,287.3 572.9,287.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1300.000" data-end-mm="1600.000" points="609.6,283.1 618.1,283.1 618.1,287.3 609.6,287.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:24700:25800:28200" data-thickness-mm="230">
+  <line x1="618.1" y1="285.2" x2="686.0" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="618.1,281.9 652.1,281.9 652.1,288.5 618.1,288.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2200.000" data-end-mm="2400.000" points="680.4,281.9 686.0,281.9 686.0,288.5 680.4,288.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:25600:10100:13700" data-thickness-mm="150">
+  <line x1="174.0" y1="310.7" x2="275.8" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="174.0,308.5 275.8,308.5 275.8,312.8 174.0,312.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:25600:13700:15500" data-thickness-mm="150">
+  <line x1="275.8" y1="310.7" x2="326.8" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="275.8,308.5 326.8,308.5 326.8,312.8 275.8,312.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:25600:34500:36300" data-thickness-mm="150">
+  <line x1="864.2" y1="310.7" x2="915.2" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="864.2,308.5 915.2,308.5 915.2,312.8 864.2,312.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:25600:36300:39900" data-thickness-mm="150">
+  <line x1="915.2" y1="310.7" x2="1017.0" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="915.2,308.5 1017.0,308.5 1017.0,312.8 915.2,312.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:27700:16700:20000" data-thickness-mm="230">
+  <line x1="360.7" y1="370.1" x2="454.1" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="750.000" points="360.7,366.8 381.9,366.8 381.9,373.3 360.7,373.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2550.000" data-end-mm="3300.000" points="432.8,366.8 454.1,366.8 454.1,373.3 432.8,373.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:27700:30000:33300" data-thickness-mm="230">
+  <line x1="736.9" y1="370.1" x2="830.3" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="750.000" points="736.9,366.8 758.2,366.8 758.2,373.3 736.9,373.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2550.000" data-end-mm="3300.000" points="809.1,366.8 830.3,366.8 830.3,373.3 809.1,373.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:10100:15500" data-thickness-mm="230">
+  <line x1="174.0" y1="421.0" x2="326.8" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="174.0,417.7 250.4,417.7 250.4,424.2 174.0,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="4200.000" data-end-mm="5400.000" points="292.8,417.7 326.8,417.7 326.8,424.2 292.8,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:15500:16700" data-thickness-mm="230">
+  <line x1="326.8" y1="421.0" x2="360.7" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="326.8,417.7 360.7,417.7 360.7,424.2 326.8,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:16700:19150" data-thickness-mm="230">
+  <line x1="360.7" y1="421.0" x2="430.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2450.000" points="360.7,417.7 430.0,417.7 430.0,424.2 360.7,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:19150:20000" data-thickness-mm="230">
+  <line x1="430.0" y1="421.0" x2="454.1" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="850.000" points="430.0,417.7 454.1,417.7 454.1,424.2 430.0,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:20000:21800" data-thickness-mm="230">
+  <line x1="454.1" y1="421.0" x2="505.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="454.1,417.7 505.0,417.7 505.0,424.2 454.1,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:21800:28200" data-thickness-mm="230">
+  <line x1="505.0" y1="421.0" x2="686.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3200.000" points="505.0,417.7 595.5,417.7 595.5,424.2 505.0,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="4200.000" data-end-mm="6400.000" points="623.8,417.7 686.0,417.7 686.0,424.2 623.8,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:28200:30000" data-thickness-mm="230">
+  <line x1="686.0" y1="421.0" x2="736.9" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="686.0,417.7 736.9,417.7 736.9,424.2 686.0,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:30000:30850" data-thickness-mm="230">
+  <line x1="736.9" y1="421.0" x2="761.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="850.000" points="736.9,417.7 761.0,417.7 761.0,424.2 736.9,424.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:30850:33300" data-thickness-mm="230">
+  <line x1="761.0" y1="421.0" x2="830.3" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2450.000" points="761.0,417.7 830.3,417.7 830.3,424.2 761.0,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:33300:34500" data-thickness-mm="230">
+  <line x1="830.3" y1="421.0" x2="864.2" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="830.3,417.7 864.2,417.7 864.2,424.2 830.3,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:29500:34500:39900" data-thickness-mm="230">
+  <line x1="864.2" y1="421.0" x2="1017.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="864.2,417.7 940.6,417.7 940.6,424.2 864.2,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="4200.000" data-end-mm="5400.000" points="983.1,417.7 1017.0,417.7 1017.0,424.2 983.1,424.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:31300:19150:20650" data-thickness-mm="150">
+  <line x1="430.0" y1="471.9" x2="472.4" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="430.0,469.8 439.9,469.8 439.9,474.0 430.0,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="462.5,469.8 472.4,469.8 472.4,474.0 462.5,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:31300:20650:23650" data-thickness-mm="150">
+  <line x1="472.4" y1="471.9" x2="557.3" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="472.4,469.8 514.9,469.8 514.9,474.0 472.4,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="537.5,469.8 557.3,469.8 557.3,474.0 537.5,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:31300:23650:29050" data-thickness-mm="150">
+  <line x1="557.3" y1="471.9" x2="710.1" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="557.3,469.8 633.7,469.8 633.7,474.0 557.3,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="662.0,469.8 710.1,469.8 710.1,474.0 662.0,474.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:31300:29050:30850" data-thickness-mm="230">
+  <line x1="710.1" y1="471.9" x2="761.0" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="710.1,468.7 761.0,468.7 761.0,475.2 710.1,475.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:33400:20650:23650" data-thickness-mm="150">
+  <line x1="472.4" y1="531.3" x2="557.3" y2="531.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="472.4,529.2 514.9,529.2 514.9,533.4 472.4,533.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="537.5,529.2 557.3,529.2 557.3,533.4 537.5,533.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:34600:19150:20650" data-thickness-mm="150">
+  <line x1="430.0" y1="565.3" x2="472.4" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="430.0,563.1 472.4,563.1 472.4,567.4 430.0,567.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:34600:20650:23650" data-thickness-mm="150">
+  <line x1="472.4" y1="565.3" x2="557.3" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3000.000" points="472.4,563.1 557.3,563.1 557.3,567.4 472.4,567.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:34600:23650:29050" data-thickness-mm="150">
+  <line x1="557.3" y1="565.3" x2="710.1" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="557.3,563.1 633.7,563.1 633.7,567.4 557.3,567.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="662.0,563.1 710.1,563.1 710.1,567.4 662.0,567.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:34600:29050:30850" data-thickness-mm="230">
+  <line x1="710.1" y1="565.3" x2="761.0" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="710.1,562.0 761.0,562.0 761.0,568.5 710.1,568.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:35800:19150:20650" data-thickness-mm="150">
+  <line x1="430.0" y1="599.2" x2="472.4" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="430.0,597.1 472.4,597.1 472.4,601.3 430.0,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:35800:20650:23050" data-thickness-mm="150">
+  <line x1="472.4" y1="599.2" x2="540.3" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="472.4,597.1 506.4,597.1 506.4,601.3 472.4,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="529.0,597.1 540.3,597.1 540.3,601.3 529.0,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:35800:23050:24550" data-thickness-mm="150">
+  <line x1="540.3" y1="599.2" x2="582.8" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="540.3,597.1 582.8,597.1 582.8,601.3 540.3,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:35800:24550:26950" data-thickness-mm="150">
+  <line x1="582.8" y1="599.2" x2="650.7" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="582.8,597.1 616.7,597.1 616.7,601.3 582.8,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="639.3,597.1 650.7,597.1 650.7,601.3 639.3,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:35800:26950:30850" data-thickness-mm="150">
+  <line x1="650.7" y1="599.2" x2="761.0" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="650.7,597.1 705.8,597.1 705.8,601.3 650.7,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2750.000" data-end-mm="3900.000" points="728.5,597.1 761.0,597.1 761.0,601.3 728.5,601.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:37600:19150:20650" data-thickness-mm="150">
+  <line x1="430.0" y1="650.1" x2="472.4" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="430.0,648.0 439.9,648.0 439.9,652.3 430.0,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="462.5,648.0 472.4,648.0 472.4,652.3 462.5,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:37600:20650:23050" data-thickness-mm="150">
+  <line x1="472.4" y1="650.1" x2="540.3" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="472.4,648.0 506.4,648.0 506.4,652.3 472.4,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="529.0,648.0 540.3,648.0 540.3,652.3 529.0,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:37600:23050:24550" data-thickness-mm="150">
+  <line x1="540.3" y1="650.1" x2="582.8" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="540.3,648.0 550.2,648.0 550.2,652.3 540.3,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="572.9,648.0 582.8,648.0 582.8,652.3 572.9,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:37600:24550:26950" data-thickness-mm="150">
+  <line x1="582.8" y1="650.1" x2="650.7" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="582.8,648.0 616.7,648.0 616.7,652.3 582.8,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="639.3,648.0 650.7,648.0 650.7,652.3 639.3,652.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:41200:19150:23050" data-thickness-mm="230">
+  <line x1="430.0" y1="752.0" x2="540.3" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="430.0,748.7 485.2,748.7 485.2,755.2 430.0,755.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="523.8,748.7 540.3,748.7 540.3,755.2 523.8,755.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:41200:23050:26950" data-thickness-mm="230">
+  <line x1="540.3" y1="752.0" x2="650.7" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="540.3,748.7 595.5,748.7 595.5,755.2 540.3,755.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="634.1,748.7 650.7,748.7 650.7,755.2 634.1,755.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:x:41200:26950:30850" data-thickness-mm="230">
+  <line x1="650.7" y1="752.0" x2="761.0" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3900.000" points="650.7,748.7 761.0,748.7 761.0,755.2 650.7,755.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:10100:17800:21700" data-thickness-mm="230">
+  <line x1="174.0" y1="90.0" x2="174.0" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="177.2,90.0 177.2,145.2 170.7,145.2 170.7,90.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="177.2,183.8 177.2,200.3 170.7,200.3 170.7,183.8" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:10100:21700:25600" data-thickness-mm="230">
+  <line x1="174.0" y1="200.3" x2="174.0" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="177.2,200.3 177.2,255.5 170.7,255.5 170.7,200.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="177.2,294.1 177.2,310.7 170.7,310.7 170.7,294.1" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:10100:25600:29500" data-thickness-mm="230">
+  <line x1="174.0" y1="310.7" x2="174.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3900.000" points="177.2,310.7 177.2,421.0 170.7,421.0 170.7,310.7" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:13700:17800:19300" data-thickness-mm="150">
+  <line x1="275.8" y1="90.0" x2="275.8" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="278.0,90.0 278.0,99.9 273.7,99.9 273.7,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="278.0,122.5 278.0,132.4 273.7,132.4 273.7,122.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:13700:19300:21700" data-thickness-mm="150">
+  <line x1="275.8" y1="132.4" x2="275.8" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="278.0,132.4 278.0,166.4 273.7,166.4 273.7,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="278.0,189.0 278.0,200.3 273.7,200.3 273.7,189.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:13700:21700:23200" data-thickness-mm="150">
+  <line x1="275.8" y1="200.3" x2="275.8" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="278.0,200.3 278.0,210.2 273.7,210.2 273.7,200.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="278.0,232.9 278.0,242.8 273.7,242.8 273.7,232.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:13700:23200:25600" data-thickness-mm="150">
+  <line x1="275.8" y1="242.8" x2="275.8" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="278.0,242.8 278.0,276.7 273.7,276.7 273.7,242.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="278.0,299.3 278.0,310.7 273.7,310.7 273.7,299.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:15500:17800:19300" data-thickness-mm="150">
+  <line x1="326.8" y1="90.0" x2="326.8" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="328.9,90.0 328.9,132.4 324.6,132.4 324.6,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:15500:19300:21700" data-thickness-mm="150">
+  <line x1="326.8" y1="132.4" x2="326.8" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="328.9,132.4 328.9,166.4 324.6,166.4 324.6,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="328.9,189.0 328.9,200.3 324.6,200.3 324.6,189.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:15500:21700:23200" data-thickness-mm="150">
+  <line x1="326.8" y1="200.3" x2="326.8" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="328.9,200.3 328.9,242.8 324.6,242.8 324.6,200.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:15500:23200:25600" data-thickness-mm="150">
+  <line x1="326.8" y1="242.8" x2="326.8" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="328.9,242.8 328.9,276.7 324.6,276.7 324.6,242.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="328.9,299.3 328.9,310.7 324.6,310.7 324.6,299.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:15500:25600:29500" data-thickness-mm="150">
+  <line x1="326.8" y1="310.7" x2="326.8" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="328.9,310.7 328.9,365.8 324.6,365.8 324.6,310.7" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2750.000" data-end-mm="3900.000" points="328.9,388.5 328.9,421.0 324.6,421.0 324.6,388.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:16700:17800:19300" data-thickness-mm="150">
+  <line x1="360.7" y1="90.0" x2="360.7" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="362.8,90.0 362.8,132.4 358.6,132.4 358.6,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:16700:19300:22300" data-thickness-mm="150">
+  <line x1="360.7" y1="132.4" x2="360.7" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3000.000" points="362.8,132.4 362.8,217.3 358.6,217.3 358.6,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:16700:22300:27700" data-thickness-mm="150">
+  <line x1="360.7" y1="217.3" x2="360.7" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="362.8,217.3 362.8,293.7 358.6,293.7 358.6,217.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="362.8,322.0 362.8,370.1 358.6,370.1 358.6,322.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:16700:27700:29500" data-thickness-mm="230">
+  <line x1="360.7" y1="370.1" x2="360.7" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="364.0,370.1 364.0,421.0 357.4,421.0 357.4,370.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:17900:19300:22300" data-thickness-mm="150">
+  <line x1="394.6" y1="132.4" x2="394.6" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="396.8,132.4 396.8,174.9 392.5,174.9 392.5,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="396.8,197.5 396.8,217.3 392.5,217.3 392.5,197.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:19150:29500:31300" data-thickness-mm="230">
+  <line x1="430.0" y1="421.0" x2="430.0" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="433.3,421.0 433.3,471.9 426.8,471.9 426.8,421.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:19150:31300:34600" data-thickness-mm="230">
+  <line x1="430.0" y1="471.9" x2="430.0" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3300.000" points="433.3,471.9 433.3,565.3 426.8,565.3 426.8,471.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:19150:34600:35800" data-thickness-mm="230">
+  <line x1="430.0" y1="565.3" x2="430.0" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="433.3,565.3 433.3,599.2 426.8,599.2 426.8,565.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:19150:35800:37600" data-thickness-mm="230">
+  <line x1="430.0" y1="599.2" x2="430.0" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="433.3,599.2 433.3,650.1 426.8,650.1 426.8,599.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:19150:37600:41200" data-thickness-mm="230">
+  <line x1="430.0" y1="650.1" x2="430.0" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="433.3,650.1 433.3,752.0 426.8,752.0 426.8,650.1" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20000:17800:19300" data-thickness-mm="150">
+  <line x1="454.1" y1="90.0" x2="454.1" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="456.2,90.0 456.2,99.9 451.9,99.9 451.9,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="456.2,122.5 456.2,132.4 451.9,132.4 451.9,122.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20000:19300:22300" data-thickness-mm="150">
+  <line x1="454.1" y1="132.4" x2="454.1" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="456.2,132.4 456.2,174.9 451.9,174.9 451.9,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="456.2,197.5 456.2,217.3 451.9,217.3 451.9,197.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20000:22300:27700" data-thickness-mm="150">
+  <line x1="454.1" y1="217.3" x2="454.1" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="456.2,217.3 456.2,293.7 451.9,293.7 451.9,217.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="456.2,322.0 456.2,370.1 451.9,370.1 451.9,322.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20000:27700:29500" data-thickness-mm="230">
+  <line x1="454.1" y1="370.1" x2="454.1" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="457.3,370.1 457.3,421.0 450.8,421.0 450.8,370.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20650:31300:33400" data-thickness-mm="150">
+  <line x1="472.4" y1="471.9" x2="472.4" y2="531.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="474.6,471.9 474.6,531.3 470.3,531.3 470.3,471.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20650:33400:34600" data-thickness-mm="150">
+  <line x1="472.4" y1="531.3" x2="472.4" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="474.6,531.3 474.6,565.3 470.3,565.3 470.3,531.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:20650:35800:37600" data-thickness-mm="150">
+  <line x1="472.4" y1="599.2" x2="472.4" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="474.6,599.2 474.6,650.1 470.3,650.1 470.3,599.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:21800:17800:18600" data-thickness-mm="230">
+  <line x1="505.0" y1="90.0" x2="505.0" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="800.000" points="508.2,90.0 508.2,112.6 501.7,112.6 501.7,90.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:21800:18600:20700" data-thickness-mm="230">
+  <line x1="505.0" y1="112.6" x2="505.0" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="508.2,112.6 508.2,172.0 501.7,172.0 501.7,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:21800:20700:24700" data-thickness-mm="230">
+  <line x1="505.0" y1="172.0" x2="505.0" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="4000.000" points="508.2,172.0 508.2,285.2 501.7,285.2 501.7,172.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:21800:24700:29500" data-thickness-mm="230">
+  <line x1="505.0" y1="285.2" x2="505.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2400.000" points="508.2,285.2 508.2,353.1 501.7,353.1 501.7,285.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3400.000" data-end-mm="4800.000" points="508.2,381.4 508.2,421.0 501.7,421.0 501.7,381.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:22100:18600:20700" data-thickness-mm="230">
+  <line x1="513.5" y1="112.6" x2="513.5" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="516.7,112.6 516.7,172.0 510.2,172.0 510.2,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:23050:35800:37600" data-thickness-mm="150">
+  <line x1="540.3" y1="599.2" x2="540.3" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="542.5,599.2 542.5,650.1 538.2,650.1 538.2,599.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:23050:37600:41200" data-thickness-mm="150">
+  <line x1="540.3" y1="650.1" x2="540.3" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="542.5,650.1 542.5,752.0 538.2,752.0 538.2,650.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:23650:31300:33400" data-thickness-mm="150">
+  <line x1="557.3" y1="471.9" x2="557.3" y2="531.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="559.4,471.9 559.4,531.3 555.2,531.3 555.2,471.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:23650:33400:34600" data-thickness-mm="150">
+  <line x1="557.3" y1="531.3" x2="557.3" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="559.4,531.3 559.4,565.3 555.2,565.3 555.2,531.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:24200:18600:20700" data-thickness-mm="230">
+  <line x1="572.9" y1="112.6" x2="572.9" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1050.000" points="576.1,112.6 576.1,142.3 569.6,142.3 569.6,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2050.000" data-end-mm="2100.000" points="576.1,170.6 576.1,172.0 569.6,172.0 569.6,170.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:24200:20700:24700" data-thickness-mm="230">
+  <line x1="572.9" y1="172.0" x2="572.9" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2000.000" points="576.1,172.0 576.1,228.6 569.6,228.6 569.6,172.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3000.000" data-end-mm="4000.000" points="576.1,256.9 576.1,285.2 569.6,285.2 569.6,256.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:24550:35800:37600" data-thickness-mm="150">
+  <line x1="582.8" y1="599.2" x2="582.8" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="584.9,599.2 584.9,650.1 580.6,650.1 580.6,599.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:25800:18600:20700" data-thickness-mm="230">
+  <line x1="618.1" y1="112.6" x2="618.1" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1050.000" points="621.4,112.6 621.4,142.3 614.9,142.3 614.9,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2050.000" data-end-mm="2100.000" points="621.4,170.6 621.4,172.0 614.9,172.0 614.9,170.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:25800:20700:24700" data-thickness-mm="230">
+  <line x1="618.1" y1="172.0" x2="618.1" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2000.000" points="621.4,172.0 621.4,228.6 614.9,228.6 614.9,172.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3000.000" data-end-mm="4000.000" points="621.4,256.9 621.4,285.2 614.9,285.2 614.9,256.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:26950:35800:37600" data-thickness-mm="150">
+  <line x1="650.7" y1="599.2" x2="650.7" y2="650.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="652.8,599.2 652.8,650.1 648.5,650.1 648.5,599.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:26950:37600:41200" data-thickness-mm="150">
+  <line x1="650.7" y1="650.1" x2="650.7" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3600.000" points="652.8,650.1 652.8,752.0 648.5,752.0 648.5,650.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:27900:18600:20700" data-thickness-mm="230">
+  <line x1="677.5" y1="112.6" x2="677.5" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="680.8,112.6 680.8,172.0 674.3,172.0 674.3,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:28200:17800:18600" data-thickness-mm="230">
+  <line x1="686.0" y1="90.0" x2="686.0" y2="112.6" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="800.000" points="689.3,90.0 689.3,112.6 682.8,112.6 682.8,90.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:28200:18600:20700" data-thickness-mm="230">
+  <line x1="686.0" y1="112.6" x2="686.0" y2="172.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2100.000" points="689.3,112.6 689.3,172.0 682.8,172.0 682.8,112.6" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:28200:20700:24700" data-thickness-mm="230">
+  <line x1="686.0" y1="172.0" x2="686.0" y2="285.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="4000.000" points="689.3,172.0 689.3,285.2 682.8,285.2 682.8,172.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:28200:24700:29500" data-thickness-mm="230">
+  <line x1="686.0" y1="285.2" x2="686.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2400.000" points="689.3,285.2 689.3,353.1 682.8,353.1 682.8,285.2" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3400.000" data-end-mm="4800.000" points="689.3,381.4 689.3,421.0 682.8,421.0 682.8,381.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:29050:31300:34600" data-thickness-mm="230">
+  <line x1="710.1" y1="471.9" x2="710.1" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="750.000" points="713.3,471.9 713.3,493.1 706.8,493.1 706.8,471.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2550.000" data-end-mm="3300.000" points="713.3,544.0 713.3,565.3 706.8,565.3 706.8,544.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30000:17800:19300" data-thickness-mm="150">
+  <line x1="736.9" y1="90.0" x2="736.9" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="739.1,90.0 739.1,99.9 734.8,99.9 734.8,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="739.1,122.5 739.1,132.4 734.8,132.4 734.8,122.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30000:19300:22300" data-thickness-mm="150">
+  <line x1="736.9" y1="132.4" x2="736.9" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="739.1,132.4 739.1,174.9 734.8,174.9 734.8,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="739.1,197.5 739.1,217.3 734.8,217.3 734.8,197.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30000:22300:27700" data-thickness-mm="150">
+  <line x1="736.9" y1="217.3" x2="736.9" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="739.1,217.3 739.1,293.7 734.8,293.7 734.8,217.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="739.1,322.0 739.1,370.1 734.8,370.1 734.8,322.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30000:27700:29500" data-thickness-mm="230">
+  <line x1="736.9" y1="370.1" x2="736.9" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="740.2,370.1 740.2,421.0 733.7,421.0 733.7,370.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30850:29500:31300" data-thickness-mm="230">
+  <line x1="761.0" y1="421.0" x2="761.0" y2="471.9" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="764.2,421.0 764.2,471.9 757.7,471.9 757.7,421.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30850:31300:34600" data-thickness-mm="230">
+  <line x1="761.0" y1="471.9" x2="761.0" y2="565.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3300.000" points="764.2,471.9 764.2,565.3 757.7,565.3 757.7,471.9" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30850:34600:35800" data-thickness-mm="230">
+  <line x1="761.0" y1="565.3" x2="761.0" y2="599.2" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="764.2,565.3 764.2,599.2 757.7,599.2 757.7,565.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:30850:35800:41200" data-thickness-mm="230">
+  <line x1="761.0" y1="599.2" x2="761.0" y2="752.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="764.2,599.2 764.2,675.6 757.7,675.6 757.7,599.2" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="4200.000" data-end-mm="5400.000" points="764.2,718.0 764.2,752.0 757.7,752.0 757.7,718.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:32100:19300:22300" data-thickness-mm="150">
+  <line x1="796.4" y1="132.4" x2="796.4" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="798.5,132.4 798.5,174.9 794.2,174.9 794.2,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2300.000" data-end-mm="3000.000" points="798.5,197.5 798.5,217.3 794.2,217.3 794.2,197.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:33300:17800:19300" data-thickness-mm="150">
+  <line x1="830.3" y1="90.0" x2="830.3" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="832.4,90.0 832.4,132.4 828.2,132.4 828.2,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:33300:19300:22300" data-thickness-mm="150">
+  <line x1="830.3" y1="132.4" x2="830.3" y2="217.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3000.000" points="832.4,132.4 832.4,217.3 828.2,217.3 828.2,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:33300:22300:27700" data-thickness-mm="150">
+  <line x1="830.3" y1="217.3" x2="830.3" y2="370.1" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="2700.000" points="832.4,217.3 832.4,293.7 828.2,293.7 828.2,217.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3700.000" data-end-mm="5400.000" points="832.4,322.0 832.4,370.1 828.2,370.1 828.2,322.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:33300:27700:29500" data-thickness-mm="230">
+  <line x1="830.3" y1="370.1" x2="830.3" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1800.000" points="833.6,370.1 833.6,421.0 827.0,421.0 827.0,370.1" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:34500:17800:19300" data-thickness-mm="150">
+  <line x1="864.2" y1="90.0" x2="864.2" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="866.4,90.0 866.4,132.4 862.1,132.4 862.1,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:34500:19300:21700" data-thickness-mm="150">
+  <line x1="864.2" y1="132.4" x2="864.2" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="866.4,132.4 866.4,166.4 862.1,166.4 862.1,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="866.4,189.0 866.4,200.3 862.1,200.3 862.1,189.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:34500:21700:23200" data-thickness-mm="150">
+  <line x1="864.2" y1="200.3" x2="864.2" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1500.000" points="866.4,200.3 866.4,242.8 862.1,242.8 862.1,200.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:34500:23200:25600" data-thickness-mm="150">
+  <line x1="864.2" y1="242.8" x2="864.2" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="866.4,242.8 866.4,276.7 862.1,276.7 862.1,242.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="866.4,299.3 866.4,310.7 862.1,310.7 862.1,299.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:34500:25600:29500" data-thickness-mm="150">
+  <line x1="864.2" y1="310.7" x2="864.2" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="866.4,310.7 866.4,365.8 862.1,365.8 862.1,310.7" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2750.000" data-end-mm="3900.000" points="866.4,388.5 866.4,421.0 862.1,421.0 862.1,388.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:36300:17800:19300" data-thickness-mm="150">
+  <line x1="915.2" y1="90.0" x2="915.2" y2="132.4" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="917.3,90.0 917.3,99.9 913.0,99.9 913.0,90.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="917.3,122.5 917.3,132.4 913.0,132.4 913.0,122.5" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:36300:19300:21700" data-thickness-mm="150">
+  <line x1="915.2" y1="132.4" x2="915.2" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="917.3,132.4 917.3,166.4 913.0,166.4 913.0,132.4" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="917.3,189.0 917.3,200.3 913.0,200.3 913.0,189.0" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:36300:21700:23200" data-thickness-mm="150">
+  <line x1="915.2" y1="200.3" x2="915.2" y2="242.8" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="350.000" points="917.3,200.3 917.3,210.2 913.0,210.2 913.0,200.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="1150.000" data-end-mm="1500.000" points="917.3,232.9 917.3,242.8 913.0,242.8 913.0,232.9" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:36300:23200:25600" data-thickness-mm="150">
+  <line x1="915.2" y1="242.8" x2="915.2" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1200.000" points="917.3,242.8 917.3,276.7 913.0,276.7 913.0,242.8" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="2000.000" data-end-mm="2400.000" points="917.3,299.3 917.3,310.7 913.0,310.7 913.0,299.3" fill="#aa8256" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:39900:17800:21700" data-thickness-mm="230">
+  <line x1="1017.0" y1="90.0" x2="1017.0" y2="200.3" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="1020.3,90.0 1020.3,145.2 1013.8,145.2 1013.8,90.0" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="1020.3,183.8 1020.3,200.3 1013.8,200.3 1013.8,183.8" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:39900:21700:25600" data-thickness-mm="230">
+  <line x1="1017.0" y1="200.3" x2="1017.0" y2="310.7" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="1950.000" points="1020.3,200.3 1020.3,255.5 1013.8,255.5 1013.8,200.3" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+<polygon class="wall-solid" data-start-mm="3315.000" data-end-mm="3900.000" points="1020.3,294.1 1020.3,310.7 1013.8,310.7 1013.8,294.1" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+<g data-entity-type="wall" data-entity-id="apt-wall:y:39900:25600:29500" data-thickness-mm="230">
+  <line x1="1017.0" y1="310.7" x2="1017.0" y2="421.0" stroke="transparent" stroke-width="14" pointer-events="stroke"/>
+  <polygon class="wall-solid" data-start-mm="0.000" data-end-mm="3900.000" points="1020.3,310.7 1020.3,421.0 1013.8,421.0 1013.8,310.7" fill="#956b3e" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>
+</g>
+</g>
+  <g class="layer-openings" data-layer="openings">
+<g data-entity-type="door" data-entity-id="FLAT_01_door_1" data-door-type="single" transform="translate(647.835 471.907) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_2" data-door-type="single" transform="translate(526.191 471.907) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_3" data-door-type="single" transform="translate(451.224 471.907) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_3 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_4" data-door-type="single" transform="translate(526.191 531.314) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_4 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_5" data-door-type="single" transform="translate(647.835 565.262) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_5 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_6" data-door-type="sliding" transform="translate(710.072 518.584) rotate(90.000)" class="door-group" style="cursor: pointer;">
+  <title>Sliding Door FLAT_01_door_6</title>
+  <line x1="-25.5" y1="-2" x2="0" y2="-2" stroke="#0066cc" stroke-width="1.2"/>
+  <line x1="0" y1="2" x2="25.5" y2="2" stroke="#0066cc" stroke-width="1.2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_7" data-door-type="single" transform="translate(517.704 599.209) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_7 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_8" data-door-type="single" transform="translate(517.704 650.130) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_8 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_9" data-door-type="single" transform="translate(451.224 650.130) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_9 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_10" data-door-type="single" transform="translate(628.033 599.209) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_10 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_11" data-door-type="single" transform="translate(628.033 650.130) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_11 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_12" data-door-type="single" transform="translate(561.553 650.130) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_12 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_door_13" data-door-type="single" transform="translate(717.144 599.209) rotate(0.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_door_13 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_01_entrance" data-door-type="single" transform="translate(609.645 420.986) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_01_entrance (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_1" data-door-type="single" transform="translate(454.053 307.828) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_2" data-door-type="single" transform="translate(454.053 186.184) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_3" data-door-type="single" transform="translate(454.053 111.217) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_3 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_4" data-door-type="single" transform="translate(394.645 186.184) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_4 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_5" data-door-type="single" transform="translate(360.698 307.828) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_5 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_6" data-door-type="sliding" transform="translate(407.376 370.065) rotate(0.000)" class="door-group" style="cursor: pointer;">
+  <title>Sliding Door FLAT_02_door_6</title>
+  <line x1="-25.5" y1="-2" x2="0" y2="-2" stroke="#0066cc" stroke-width="1.2"/>
+  <line x1="0" y1="2" x2="25.5" y2="2" stroke="#0066cc" stroke-width="1.2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_7" data-door-type="single" transform="translate(326.751 177.697) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_7 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_8" data-door-type="single" transform="translate(275.830 177.697) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_8 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_9" data-door-type="single" transform="translate(275.830 111.217) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_9 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_10" data-door-type="single" transform="translate(326.751 288.026) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_10 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_11" data-door-type="single" transform="translate(275.830 288.026) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_11 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_12" data-door-type="single" transform="translate(275.830 221.546) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_12 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_door_13" data-door-type="single" transform="translate(326.751 377.137) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_door_13 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_02_entrance" data-door-type="single" transform="translate(504.974 367.236) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_02_entrance (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_1" data-door-type="single" transform="translate(736.947 307.828) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_2" data-door-type="single" transform="translate(736.947 186.184) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_3" data-door-type="single" transform="translate(736.947 111.217) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_3 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_4" data-door-type="single" transform="translate(796.355 186.184) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_4 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_5" data-door-type="single" transform="translate(830.302 307.828) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_5 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_6" data-door-type="sliding" transform="translate(783.624 370.065) rotate(0.000)" class="door-group" style="cursor: pointer;">
+  <title>Sliding Door FLAT_03_door_6</title>
+  <line x1="-25.5" y1="-2" x2="0" y2="-2" stroke="#0066cc" stroke-width="1.2"/>
+  <line x1="0" y1="2" x2="25.5" y2="2" stroke="#0066cc" stroke-width="1.2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_7" data-door-type="single" transform="translate(864.249 177.697) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_7 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_8" data-door-type="single" transform="translate(915.170 177.697) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_8 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_9" data-door-type="single" transform="translate(915.170 111.217) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_9 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_10" data-door-type="single" transform="translate(864.249 288.026) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_10 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_11" data-door-type="single" transform="translate(915.170 288.026) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_11 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_12" data-door-type="single" transform="translate(915.170 221.546) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_12 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_door_13" data-door-type="single" transform="translate(864.249 377.137) rotate(90.000)" class="door-group" style="--hinge-x: -11.3px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_door_13 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -11 0 L -11 23" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -11.3 22.6 A 22.6 22.6 0 0 0 11.3 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="FLAT_03_entrance" data-door-type="single" transform="translate(686.026 367.236) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door FLAT_03_entrance (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_corridor_1_lift_1" data-door-type="single" transform="translate(572.868 156.480) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_corridor_1_lift_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_corridor_1_lift_2" data-door-type="single" transform="translate(618.132 156.480) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_corridor_1_lift_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_core_lobby_stair_1" data-door-type="single" transform="translate(553.066 285.197) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_core_lobby_stair_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_corridor_1_stair_1" data-door-type="single" transform="translate(572.868 242.763) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_corridor_1_stair_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_core_lobby_stair_2" data-door-type="single" transform="translate(666.223 285.197) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_core_lobby_stair_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_corridor_1_stair_2" data-door-type="single" transform="translate(618.132 242.763) rotate(90.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_corridor_1_stair_2 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+<g data-entity-type="door" data-entity-id="core_door_core_lobby_corridor_1" data-door-type="single" transform="translate(595.500 285.197) rotate(0.000)" class="door-group" style="--hinge-x: -14.1px; --hinge-y: 0px; --swing-sign: 1; cursor: pointer;">
+  <title>Single Door core_door_core_lobby_corridor_1 (click to toggle open/closed)</title>
+  <path class="door-leaf" d="M -14 0 L -14 28" stroke="#0066cc" stroke-width="0.8"/>
+  <path class="door-swing-arc" d="M -14.1 28.3 A 28.3 28.3 0 0 0 14.1 0" fill="none" stroke="#0066cc" stroke-width="0.5" stroke-dasharray="2,2"/>
+</g>
+</g>
+  <g class="layer-windows" data-layer="openings">
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_01__FLAT_01_master_bed" transform="translate(504.479 751.972) rotate(0.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_01__FLAT_01_bed_2" transform="translate(614.808 751.972) rotate(0.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_01__FLAT_01_bed_3" transform="translate(760.993 696.807) rotate(90.000)">
+  <line x1="-21.2" y1="-2" x2="21.2" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-21.2" y1="0" x2="21.2" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-21.2" y1="2" x2="21.2" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_02__FLAT_02_master_bed" transform="translate(173.988 164.472) rotate(90.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_02__FLAT_02_bed_2" transform="translate(173.988 274.800) rotate(90.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_02__FLAT_02_bed_3" transform="translate(271.586 420.986) rotate(0.000)">
+  <line x1="-21.2" y1="-2" x2="21.2" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-21.2" y1="0" x2="21.2" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-21.2" y1="2" x2="21.2" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_03__FLAT_03_master_bed" transform="translate(1017.012 164.472) rotate(90.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_03__FLAT_03_bed_2" transform="translate(1017.012 274.800) rotate(90.000)">
+  <line x1="-19.3" y1="-2" x2="19.3" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-19.3" y1="0" x2="19.3" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-19.3" y1="2" x2="19.3" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+<g data-entity-type="window" data-entity-id="apt-window:apt-room:flat_03__FLAT_03_bed_3" transform="translate(961.848 420.986) rotate(0.000)">
+  <line x1="-21.2" y1="-2" x2="21.2" y2="-2" stroke="#4488cc" stroke-width="1"/>
+  <line x1="-21.2" y1="0" x2="21.2" y2="0" stroke="#4488cc" stroke-width="1.5"/>
+  <line x1="-21.2" y1="2" x2="21.2" y2="2" stroke="#4488cc" stroke-width="1"/>
+</g>
+</g>
+  <g class="layer-stairs" data-layer="stairs">
+
+</g>
+  <g class="layer-annotations" data-layer="annotations">
+<line x1="-111.7" y1="-438.6" x2="1302.7" y2="-438.6" stroke="#0066cc" stroke-width="0.5"/>
+<line x1="-111.7" y1="-441.6" x2="-111.7" y2="-435.6" stroke="#0066cc" stroke-width="0.5"/>
+<line x1="1302.7" y1="-441.6" x2="1302.7" y2="-435.6" stroke="#0066cc" stroke-width="0.5"/>
+<text x="595.5" y="-442.6" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#0066cc">164.0' (50.0m)</text>
+<line x1="-136.7" y1="-413.6" x2="-136.7" y2="1283.8" stroke="#0066cc" stroke-width="0.5"/>
+<line x1="-139.7" y1="-413.6" x2="-133.7" y2="-413.6" stroke="#0066cc" stroke-width="0.5"/>
+<line x1="-139.7" y1="1283.8" x2="-133.7" y2="1283.8" stroke="#0066cc" stroke-width="0.5"/>
+<text x="-144.7" y="435.1" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="9" fill="#0066cc" transform="rotate(-90 -144.7 435.1)">196.9' (60.0m)</text>
+<text x="595.5" y="483.9" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">38.4' × 5.9'</text>
+<text x="514.9" y="543.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">9.8' × 6.9'</text>
+<text x="514.9" y="577.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">9.8' × 3.9'</text>
+<text x="633.7" y="577.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">17.7' × 10.8'</text>
+<text x="595.5" y="611.2" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">38.4' × 3.9'</text>
+<text x="485.2" y="764.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">12.8' × 11.8'</text>
+<text x="506.4" y="662.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">7.9' × 5.9'</text>
+<text x="595.5" y="764.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">12.8' × 11.8'</text>
+<text x="616.7" y="662.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">7.9' × 5.9'</text>
+<text x="705.8" y="764.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">12.8' × 17.7'</text>
+<text x="735.5" y="577.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 10.8'</text>
+<text x="479.5" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 38.4'</text>
+<text x="407.4" y="144.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 4.9'</text>
+<text x="424.3" y="229.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">6.9' × 9.8'</text>
+<text x="407.4" y="382.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 17.7'</text>
+<text x="224.9" y="212.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">11.8' × 12.8'</text>
+<text x="301.3" y="144.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 4.9'</text>
+<text x="301.3" y="212.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 7.9'</text>
+<text x="224.9" y="322.7" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">11.8' × 12.8'</text>
+<text x="301.3" y="254.8" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 4.9'</text>
+<text x="301.3" y="322.7" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 7.9'</text>
+<text x="250.4" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">17.7' × 12.8'</text>
+<text x="407.4" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 5.9'</text>
+<text x="711.5" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 38.4'</text>
+<text x="783.6" y="144.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 4.9'</text>
+<text x="766.7" y="229.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">6.9' × 9.8'</text>
+<text x="783.6" y="382.1" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 17.7'</text>
+<text x="966.1" y="212.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">11.8' × 12.8'</text>
+<text x="889.7" y="144.4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 4.9'</text>
+<text x="889.7" y="212.3" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 7.9'</text>
+<text x="966.1" y="322.7" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">11.8' × 12.8'</text>
+<text x="889.7" y="254.8" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 4.9'</text>
+<text x="889.7" y="322.7" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.9' × 7.9'</text>
+<text x="940.6" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">17.7' × 12.8'</text>
+<text x="783.6" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">10.8' × 5.9'</text>
+<text x="543.2" y="184.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">6.9' × 6.9'</text>
+<text x="647.8" y="184.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">6.9' × 6.9'</text>
+<text x="538.9" y="297.2" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">7.9' × 13.1'</text>
+<text x="652.1" y="297.2" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">7.9' × 13.1'</text>
+<text x="595.5" y="433.0" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">21.0' × 15.7'</text>
+<text x="595.5" y="297.2" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="7.1" fill="#0066cc">5.2' × 20.0'</text>
+</g>
+  <g class="north-arrow" transform="translate(1141,50) rotate(0)">
+  <polygon points="0,-20 -8,8 0,2 8,8" fill="#333" stroke="#333" stroke-width="1"/>
+  <text x="0" y="-24" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" fill="#333" font-weight="bold">N</text>
+</g>
+  <g class="scale-bar" aria-label="Drawing scale 1:100">
+  <line x1="32" y1="788" x2="132" y2="788" stroke="#222" stroke-width="2"/>
+  <line x1="32" y1="784" x2="32" y2="792" stroke="#222"/>
+  <line x1="82" y1="784" x2="82" y2="792" stroke="#222"/>
+  <line x1="132" y1="784" x2="132" y2="792" stroke="#222"/>
+  <text x="32" y="803" font-family="Inter, Arial, sans-serif" font-size="9" fill="#333">0</text>
+  <text x="82" y="803" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#333">1:100</text>
+</g>
+  <g class="title-block">
+  <rect x="813" y="740" width="360" height="84" fill="#fff" stroke="#222" stroke-width="1"/>
+  <line x1="813" y1="790" x2="1173" y2="790" stroke="#555" stroke-width="0.6"/>
+  <line x1="1036.2" y1="790" x2="1036.2" y2="824" stroke="#555" stroke-width="0.6"/>
+  <text x="823" y="757" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#111">Golden 3x3BHK Residential Floor Plan</text>
+  <text x="823" y="771" font-family="Inter, Arial, sans-serif" font-size="9" fill="#555">Typical Residential Floor • Architectural floor plan</text>
+  <text x="823" y="784" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="700" fill="#b42318">CONCEPT / SCHEMATIC DESIGN • NOT FOR CONSTRUCTION</text>
+  <text x="823" y="805" font-family="Inter, Arial, sans-serif" font-size="8" fill="#555">DRAWN BY</text>
+  <text x="823" y="818" font-family="Inter, Arial, sans-serif" font-size="9" fill="#111">FORMA AI Planner</text>
+  <text x="1047" y="805" font-family="Inter, Arial, sans-serif" font-size="8" fill="#555">SCALE / REV</text>
+  <text x="1047" y="818" font-family="Inter, Arial, sans-serif" font-size="9" fill="#111">1:100 / 01</text>
+</g>
+</svg>

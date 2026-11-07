@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_20260904_mu8s1z0j_f78e55fd",
+  "projectId": "e2e-phase3",
+  "seed": 20260904,
+  "model": "schematic-stub",
+  "provider": "local-stub",
+  "promptVersion": 1,
+  "originalPrompt": "top-down orthographic floor plan, 2BHK",
+  "negativePrompt": "perspective",
+  "width": 256,
+  "height": 256,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-19T19:25:30.880Z",
+  "latencyMs": 5
+}

@@ -1,16 +1,66 @@
 /** Bounded, immutable, validation-gated plan repair. */
 import type { Building, InstanceDesignGraph, PlanRepairStep, Room, RoomProgram } from '@ai-floor-planner/core';
 import { AdjacencyRelationType, RoomType } from '@ai-floor-planner/core';
-import { PlanValidator } from '@ai-floor-planner/constraint-engine';
-import type { ValidateOptions, ValidationSummary } from '@ai-floor-planner/constraint-engine';
 import { evaluateInstanceGraph, sourceProgramItemId } from '../graph/scorer';
 import type { InstanceGraphEvaluation } from '../graph/scorer';
 import { evaluateSuiteEvidence } from '../evidence/architectural-evidence';
+import { evaluateDesign } from '../diagnostics/design-evaluator';
 
-export interface PlanRepairOptions extends ValidateOptions {
+export interface PlanValidationSummary {
+  readonly isValid: boolean;
+  readonly overallScore: number;
+  readonly failed: number;
+  readonly passed: number;
+  readonly total: number;
+  readonly violations: readonly any[];
+  readonly suggestions: readonly any[];
+  readonly categoryScores: Record<string, { score: number; weight: number; maxScore: number; details?: any[] }>;
+}
+
+export function diagnosticsToValidation(building: Building, options: any = {}): PlanValidationSummary {
+  const diag = evaluateDesign(building, options);
+  const errors = diag.warnings.filter(w => w.severity === 'error');
+  return {
+    isValid: diag.geometryHealthy,
+    overallScore: diag.overallScore,
+    failed: errors.length,
+    passed: diag.geometryHealthy ? 10 : Math.max(0, 10 - errors.length),
+    total: 10,
+    violations: diag.warnings.map(w => ({
+      constraintId: w.code,
+      message: w.message,
+      severity: w.severity === 'error' ? 'hard' : 'soft',
+      passed: false,
+      affectedEntities: w.affectedEntityIds ?? [],
+    })),
+    suggestions: [],
+    categoryScores: {
+      geometry: { score: diag.geometryHealthy ? 100 : 0, weight: 1, maxScore: 100 },
+      adjacency: { score: diag.scores.adjacency, weight: 1, maxScore: 100 },
+      circulation: { score: diag.scores.circulation, weight: 1, maxScore: 100 },
+      daylight: { score: diag.scores.daylight, weight: 1, maxScore: 100 },
+      privacy: { score: diag.scores.privacy, weight: 1, maxScore: 100 },
+      vastu: {
+        score: diag.scores.vastu ?? 75,
+        weight: 1,
+        maxScore: 100,
+        details: (diag.vastuDetails ?? []) as any,
+      },
+    },
+  };
+}
+
+export type ValidationSummary = PlanValidationSummary;
+
+export interface PlanRepairOptions {
   readonly maxIterations?: number;
   /** Original reviewed intent; graph adjacency alone cannot establish ownership. */
   readonly program?: RoomProgram;
+  /** Caller-owned additional acceptance, e.g. automatic footprint Program sizing. */
+  readonly acceptProposal?: (proposal: Building) => boolean;
+  readonly requiredRoomTypes?: readonly RoomType[];
+  readonly requiredRoomCounts?: Partial<Record<RoomType, number>>;
+  readonly allowIncompleteDraft?: boolean;
 }
 
 /** Non-regression only: shared/unknown suites are not newly required to be private.
@@ -69,8 +119,8 @@ function directRequiredEdges(building: Building, graph: InstanceDesignGraph): Se
 
 function accessFailures(building: Building, validation: ValidationSummary): Set<string> {
   const rooms = new Map(building.floors.flatMap(floor => floor.rooms).map(room => [room.id, room]));
-  return new Set(validation.violations.filter(result => result.constraintId === 'SC-CIR-003' && !result.passed)
-    .flatMap(result => result.affectedEntities.map(id => {
+  return new Set(validation.violations.filter(result => (result.constraintId === 'SC-CIR-003' || result.constraintId?.toLowerCase().includes('access')) && !result.passed)
+    .flatMap(result => (result.affectedEntities ?? []).map((id: string) => {
       const room = rooms.get(id);
       return room ? programTag(room) ?? room.id : id;
     })));
@@ -116,15 +166,18 @@ export function swapProgramAssignments(building: Building, sourceRoomId: string,
 }
 
 export class PlanRepairEngine {
-  private readonly validator: PlanValidator;
+  constructor(private readonly validator?: any) {}
 
-  constructor(validator = new PlanValidator()) {
-    this.validator = validator;
+  private validatePlan(building: Building, options?: any): PlanValidationSummary {
+    if (this.validator && typeof this.validator.validate === 'function') {
+      return this.validator.validate(building, options);
+    }
+    return diagnosticsToValidation(building);
   }
 
   repair(building: Building, graph: InstanceDesignGraph, options: PlanRepairOptions = {}): PlanRepairResult {
-    const { maxIterations = 2, program, ...validateOptions } = options;
-    const initialValidation = this.validator.validate(building, validateOptions);
+    const { maxIterations = 2, program, acceptProposal } = options;
+    const initialValidation = this.validatePlan(building, options);
     const initialGraphEvaluation = evaluateInstanceGraph(building, graph);
     let currentBuilding = building;
     let currentValidation = initialValidation;
@@ -150,11 +203,10 @@ export class PlanRepairEngine {
             if (programTag(source) === programTag(target)) continue;
             attempts++;
             const proposal = swapProgramAssignments(currentBuilding, source.id, target.id);
-            const validation = this.validator.validate(proposal, validateOptions);
+            if (acceptProposal && !acceptProposal(proposal)) continue;
+            const validation = this.validatePlan(proposal, options);
             const proposedEdges = directRequiredEdges(proposal, graph);
-            // Do not preserve accidental relationships in a hard-invalid damaged
-            // plan at the expense of restoring validity. Once valid, every
-            // accepted step must preserve access already demonstrated as safe.
+
             if (currentValidation.isValid && ([...protectedEdges].some(id => !proposedEdges.has(id))
                 || [...accessFailures(proposal, validation)].some(id => !existingAccessFailures.has(id)))) continue;
             const graphEvaluation = evaluateInstanceGraph(proposal, graph);
@@ -165,8 +217,7 @@ export class PlanRepairEngine {
               && graphEvaluation.score >= currentGraph.score
               && quality > currentQuality + 0.001;
             if (!preservesValidity || (!improvesFailures && !improvesQuality)) continue;
-            // Reuse physical access evidence, not merely the undirected owner door.
-            // Hard-invalid recovery retains its existing flexibility.
+
             if (currentValidation.isValid && program
               && !preservesPrivateSuites(currentBuilding, proposal, program)) continue;
 

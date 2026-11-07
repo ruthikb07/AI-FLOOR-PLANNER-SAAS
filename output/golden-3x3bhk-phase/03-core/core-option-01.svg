@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 233" width="200" height="233" style="background:#F8FAFC; font-family:sans-serif;">
+  <rect x="10" y="10" width="180" height="213" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" rx="6" />
+  <text x="20" y="30" font-size="12" font-weight="700" fill="#1E293B">CORE OPTION 01: COMPACT SHARED LIFT BANK (Compact Shared Lift Bank)</text>
+  <rect x="40" y="192.50000000000003" width="120" height="120" fill="#F1F5F9" stroke="#64748B" stroke-width="2" stroke-dasharray="4,4" />
+  <text x="100" y="256.5" font-size="10" font-weight="700" fill="#475569" text-anchor="middle">SHARED LOBBY (23.04 m²)</text>
+  
+      <g>
+        <rect x="47.500000000000014" y="140" width="52.5" height="52.5" fill="#E0F2FE" stroke="#0284C7" stroke-width="2" />
+        <line x1="47.500000000000014" y1="140" x2="100.00000000000001" y2="192.5" stroke="#0284C7" stroke-width="1.5" stroke-dasharray="3,3" />
+        <line x1="100.00000000000001" y1="140" x2="47.500000000000014" y2="192.5" stroke="#0284C7" stroke-width="1.5" stroke-dasharray="3,3" />
+        <text x="73.75000000000001" y="170.25" font-size="10" font-weight="700" fill="#0369A1" text-anchor="middle">LIFT 01</text>
+      </g>
+      <g>
+        <rect x="100.00000000000006" y="140" width="52.5" height="52.5" fill="#E0F2FE" stroke="#0284C7" stroke-width="2" />
+        <line x1="100.00000000000006" y1="140" x2="152.50000000000006" y2="192.5" stroke="#0284C7" stroke-width="1.5" stroke-dasharray="3,3" />
+        <line x1="152.50000000000006" y1="140" x2="100.00000000000006" y2="192.5" stroke="#0284C7" stroke-width="1.5" stroke-dasharray="3,3" />
+        <text x="126.25000000000006" y="170.25" font-size="10" font-weight="700" fill="#0369A1" text-anchor="middle">LIFT 02</text>
+      </g>
+  
+      <g>
+        <rect x="40" y="40" width="60" height="100" fill="#FEF3C7" stroke="#D97706" stroke-width="2" />
+        <text x="70" y="94" font-size="10" font-weight="700" fill="#B45309" text-anchor="middle">STAIR 01</text>
+      </g>
+      <g>
+        <rect x="99.99999999999997" y="40" width="60" height="100" fill="#FEF3C7" stroke="#D97706" stroke-width="2" />
+        <text x="129.99999999999997" y="94" font-size="10" font-weight="700" fill="#B45309" text-anchor="middle">STAIR 02</text>
+      </g>
+</svg>

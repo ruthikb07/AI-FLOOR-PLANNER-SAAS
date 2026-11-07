@@ -27,11 +27,24 @@ export interface ModelInfo {
   readonly supportsStreaming: boolean;
 }
 
+/**
+ * An explicit image input for multimodal requests (recovery Phase 4, P8).
+ * Images travel as typed parts — never embedded in prompt text.
+ */
+export interface AIImageInput {
+  /** IANA media type, e.g. image/png or image/jpeg. */
+  readonly mimeType: string;
+  /** Raw base64 bytes (no data-URL prefix, no whitespace requirements). */
+  readonly data: string;
+}
+
 /** An AI request payload. */
 export interface AIRequest {
   readonly taskType: AITaskType;
   readonly systemPrompt: string;
   readonly userPrompt: string;
+  /** Explicit image parts sent alongside the text prompt (vision tasks). */
+  readonly images?: readonly AIImageInput[];
   readonly context?: AIContext;
   readonly responseFormat?: 'json' | 'text';
   /** Optional strict JSON schema selected by the orchestration task. */

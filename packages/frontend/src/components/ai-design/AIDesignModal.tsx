@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { withProjectSite, generationStatus, createQuickDesignRequirements } from '../../services/design-site-context';
+import { fitFloorToViewport } from '../../services/floor-camera';
 import { ArchitecturalEvidencePanel } from '../generation/ArchitecturalEvidencePanel';
 import {
   Sparkles,
@@ -13,63 +15,43 @@ import type {
   DesignRequirementSpecification,
   CandidatePlan,
   RequirementValidationResult,
+  Building,
 } from '@ai-floor-planner/core';
 import {
   SUPPORTED_FLOOR_COUNTS,
   Direction,
   formatBuildingFloorCount,
-  PlotShape,
-  PreferenceLevel,
   normalizeDesignRequirementSpecification,
 } from '@ai-floor-planner/core';
 import {
   RequirementValidator,
   RoomProgramGenerator,
-  CandidateGenerator,
 } from '@ai-floor-planner/planning-engine';
 import {
-  AIOrchestrationService,
   type RequirementParseResult,
 } from '@ai-floor-planner/ai-orchestration';
 import { renderFloor } from '@ai-floor-planner/renderer';
-import { getConfiguredProvider } from '../../services/ai-provider';
+import { getAIService } from '../../services/ai-provider';
 
 interface AIDesignModalProps {
+  building: Building;
   isOpen: boolean;
   onClose: () => void;
   onSelectCandidate: (candidate: CandidatePlan) => void;
+  onReviewRequirements: () => void;
 }
 
 export const AIDesignModal: React.FC<AIDesignModalProps> = ({
+  building,
   isOpen,
   onClose,
   onSelectCandidate,
+  onReviewRequirements,
 }) => {
-  const initialPrompt = '30x50 ft plot, 2 bedrooms with 1 master bedroom, 2 bathrooms, living room, kitchen connected to dining, east road, prefer natural light and vastu.';
+  const initialPrompt = '2 bedrooms with 1 master bedroom, 2 bathrooms, living room, kitchen connected to dining. Edit this example brief before generating.';
   const [promptText, setPromptText] = useState(initialPrompt);
   const [spec, setSpec] = useState<DesignRequirementSpecification>(() =>
-    normalizeDesignRequirementSpecification({
-      projectName: '2BHK Plan (30×50 ft)',
-      rawUserPrompt: initialPrompt,
-      plotShape: PlotShape.Rectangular,
-      orientationDegrees: 90,
-      hard: {
-        plotWidthMm: Math.round(30 * 304.8),
-        plotDepthMm: Math.round(50 * 304.8),
-        roadFacing: Direction.East,
-        floorsCount: 1,
-        bedroomCount: 2,
-        bathroomCount: 2,
-        parkingSpacesCount: 0,
-      },
-      soft: {
-        vastuCompliance: true,
-        naturalLightPreference: PreferenceLevel.High,
-        privacyPreference: PreferenceLevel.High,
-        circulationEfficiency: PreferenceLevel.High,
-        balconyPreferred: true,
-      },
-    }),
+    createQuickDesignRequirements(building, initialPrompt),
   );
 
   // Generated state
@@ -82,12 +64,21 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
 
   // Instantiate engines
   const orchestrationService = useMemo(
-    () => new AIOrchestrationService(getConfiguredProvider()),
+    () => getAIService(),
     [],
   );
   const requirementValidator = useMemo(() => new RequirementValidator(), []);
   const roomProgramGenerator = useMemo(() => new RoomProgramGenerator(), []);
-  const candidateGenerator = useMemo(() => new CandidateGenerator(), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSpec(current => withProjectSite(current, building));
+    setCandidates([]);
+    setSelectedCandidateId(null);
+    setValidationResult(null);
+    setGenerationError(null);
+    setParseResult(null);
+  }, [isOpen, building]);
 
   if (!isOpen) return null;
 
@@ -122,11 +113,12 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
     try {
       const result = await orchestrationService.parseRequirementsDetailed(promptText);
       setParseResult(result);
-      setSpec(result.requirements);
+      const requirements = withProjectSite(result.requirements, building);
+      setSpec(requirements);
       setCandidates([]);
       setSelectedCandidateId(null);
 
-      const validation = requirementValidator.validate(result.requirements);
+      const validation = requirementValidator.validate(requirements);
       setValidationResult(validation);
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : 'Requirements could not be analyzed.');
@@ -135,53 +127,24 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
     }
   };
 
-  // Generate Ranked Candidate Plans
-  const handleGenerateCandidates = () => {
-    setIsGenerating(true);
-    setGenerationError(null);
-    try {
-      const currentSpec = normalizeDesignRequirementSpecification({
-        ...spec,
-        rawUserPrompt: promptText,
-      });
-      setSpec(currentSpec);
-      const validation = requirementValidator.validate(currentSpec);
-      setValidationResult(validation);
-
-      if (!validation.isFeasible) {
-        setCandidates([]);
-        return;
-      }
-
-      const program = roomProgramGenerator.generateProgram(currentSpec);
-      const generatedCandidates = candidateGenerator.generateCandidates(currentSpec, program, 42);
-      setCandidates(generatedCandidates);
-      if (generatedCandidates.length > 0) {
-        setSelectedCandidateId(generatedCandidates[0]!.id);
-      }
-    } catch (error) {
-      setCandidates([]);
-      setSelectedCandidateId(null);
-      setGenerationError(error instanceof Error ? error.message : 'Candidate plans could not be generated.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  // Quick interpretation is advisory; it cannot author an independent default Program.
+  const handleGenerateCandidates = () => { onClose(); onReviewRequirements(); };
 
   const selectedCandidate = candidates.find(c => c.id === selectedCandidateId) ?? candidates[0];
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card"
+        className="modal-card ai-design-dialog"
+        role="dialog" aria-modal="true" aria-label="Design alternatives"
         style={{ width: '92vw', maxWidth: '1180px', maxHeight: '90vh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sparkles size={18} color="var(--accent-cyan)" />
-            <span className="modal-title">AI Building Design Intelligence</span>
-            <span className="badge badge-cyan" style={{ fontSize: 11 }}>Requirements v1</span>
+            <span className="modal-title">Explore a residential layout</span>
+            <span className="badge badge-cyan" style={{ fontSize: 11 }}>Concept study</span>
           </div>
           <button className="btn-icon" onClick={onClose}>
             <X size={16} />
@@ -189,6 +152,8 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
         </div>
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="design-site-notice"><strong>Current site · {building.site.plotWidth / 1000} × {building.site.plotDepth / 1000} metres · {(building.site.plotArea / 1e6).toLocaleString()} m²</strong>
+            <p>The plot is not the house size. The room brief determines the proposed building; remaining land stays unassigned. Change plot dimensions in Site setup, not in this dialog. Existing reviewed Program/footprint work belongs in the full generation workflow.</p></div>
           {/* Section 1: Natural Language Prompt Input */}
           <div className="panel" style={{ padding: 14, background: 'var(--bg-canvas)' }}>
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -233,7 +198,7 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
                 style={{ fontSize: 12, padding: '6px 16px' }}
               >
                 <Sparkles size={13} />
-                Generate Candidate Plans
+                {isGenerating ? 'Working…' : 'Review saved requirements & budget'}
               </button>
             </div>
             {parseResult && (
@@ -267,23 +232,19 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
           {/* Section 2: Structured Parameter Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
             <div className="form-group">
-              <label className="form-label">Plot Width (ft)</label>
+              <label className="form-label">Site width (metres · fixed)</label>
               <input
                 type="number"
-                min="15"
-                max="200"
-                value={Math.round(spec.hard.plotWidthMm / 304.8)}
-                onChange={e => updateHard({ plotWidthMm: Math.round(Number(e.target.value) * 304.8) })}
+                readOnly
+                value={building.site.plotWidth / 1000}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Plot Depth (ft)</label>
+              <label className="form-label">Site depth (metres · fixed)</label>
               <input
                 type="number"
-                min="20"
-                max="300"
-                value={Math.round(spec.hard.plotDepthMm / 304.8)}
-                onChange={e => updateHard({ plotDepthMm: Math.round(Number(e.target.value) * 304.8) })}
+                readOnly
+                value={building.site.plotDepth / 1000}
               />
             </div>
             <div className="form-group">
@@ -310,6 +271,7 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
             <div className="form-group">
               <label className="form-label">Road Facing</label>
               <select
+                disabled title="Change road facing in Site setup"
                 value={spec.hard.roadFacing}
                 onChange={e => {
                   invalidateGeneratedState();
@@ -333,6 +295,12 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
               <select value={spec.soft.vastuCompliance ? 'yes' : 'no'} onChange={e => updateSoft({ vastuCompliance: e.target.value === 'yes' })}>
                 <option value="yes">Vastu Aligned</option>
                 <option value="no">Standard Modern</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Balcony requested</label>
+              <select value={spec.soft.balconyPreferred ? 'yes' : 'no'} onChange={event => updateSoft({ balconyPreferred: event.target.value === 'yes' })}>
+                <option value="no">No balcony requested</option><option value="yes">Include balcony</option>
               </select>
             </div>
             <div className="form-group">
@@ -425,12 +393,13 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
                 fontSize: 12,
               }}
             >
-              <strong>Generation blocked:</strong> {generationError}
+              <strong>No valid layout was generated.</strong> The area estimate does not prove the requested rooms fit. Review room counts, minimum dimensions and setbacks in the project workflow.
+              <details><summary>Technical details</summary>{generationError}</details>
             </div>
           )}
 
           {/* Section 3: Requirement Validation Summary */}
-          {validationResult && (
+          {validationResult && !generationError && (
             <div
               style={{
                 padding: '10px 14px',
@@ -461,11 +430,7 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
                   <AlertTriangle size={16} color="var(--accent-red)" />
                 )}
                 <span>
-                  <strong>{validationResult.status === 'feasible'
-                    ? 'REQUIREMENTS FEASIBLE'
-                    : validationResult.status === 'tight'
-                      ? 'REQUIREMENTS TIGHT — WARNINGS APPLY'
-                      : 'INFEASIBLE REQUIREMENTS'}</strong> •{' '}
+                  <strong>{generationStatus(false, validationResult.isFeasible, candidates.length)}</strong> •{' '}
                   Plot Area: {Math.round(validationResult.plotAreaMm2 / 1e6)} sq m (~
                   {Math.round(validationResult.plotAreaMm2 / 92903)} sq ft) • Estimated utilization:{' '}
                   {Math.round(validationResult.groundCoverageRatio * 100)}%
@@ -533,7 +498,7 @@ export const AIDesignModal: React.FC<AIDesignModalProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
                 {candidates.map(cand => {
                   const isSelected = cand.id === selectedCandidate?.id;
-                  const thumbSvg = renderFloor(cand.building.floors[0]!, cand.building, { scale: 0.022, offsetX: 35, offsetY: 25 }, 300, 220);
+                  const thumbSvg = renderFloor(cand.building.floors[0]!, cand.building, fitFloorToViewport(cand.building.floors[0]!, 300, 220, 20), 300, 220);
 
                   return (
                     <div

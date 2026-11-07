@@ -5,9 +5,9 @@
  * The original is NEVER mutated.
  */
 
-import type { Building, Room, Floor, Point, Door, Window, Column, Stair, Wall } from '../types';
+import type { Building, Room, Floor, Point, Polygon, Door, Window, Column, Stair, Wall } from '../types';
 import { EntityNotFoundError, InvalidDimensionError, InvalidCoordinateError } from './errors';
-import { createRoom, createWall, createDoor, createWindow, createColumn, createStair, rectToPolygon } from './factory';
+import { createRoom, createFloor, createWall, createDoor, createWindow, createColumn, createStair, rectToPolygon } from './factory';
 import type { CreateRoomParams, CreateWallParams, CreateDoorParams, CreateWindowParams, CreateColumnParams, CreateStairParams } from './factory';
 
 // ─── Internal Helpers ───────────────────────────────────────────────────────
@@ -71,6 +71,7 @@ function updateRoomInBuilding(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -138,6 +139,7 @@ export function addRoom(
         ? { ...floor, rooms: [...floor.rooms, newRoom] }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -156,6 +158,7 @@ export function removeRoom(
         ? { ...floor, rooms: floor.rooms.filter(r => r.id !== roomId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -180,6 +183,7 @@ export function moveDoor(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -204,6 +208,7 @@ export function moveWindow(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -224,6 +229,7 @@ export function addDoor(
     floors: building.floors.map((floor, fi) =>
       fi === floorIdx ? { ...floor, doors: [...floor.doors, door] } : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -239,6 +245,7 @@ export function removeDoor(building: Building, doorId: string): Building {
         ? { ...floor, doors: floor.doors.filter(d => d.id !== doorId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -263,6 +270,7 @@ export function updateDoor(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -283,6 +291,7 @@ export function addWindow(
     floors: building.floors.map((floor, fi) =>
       fi === floorIdx ? { ...floor, windows: [...floor.windows, win] } : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -298,6 +307,7 @@ export function removeWindow(building: Building, windowId: string): Building {
         ? { ...floor, windows: floor.windows.filter(w => w.id !== windowId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -322,6 +332,7 @@ export function updateWindow(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -342,6 +353,7 @@ export function addColumn(
     floors: building.floors.map((floor, fi) =>
       fi === floorIdx ? { ...floor, columns: [...floor.columns, column] } : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -358,6 +370,7 @@ export function removeColumn(building: Building, columnId: string): Building {
         ? { ...floor, columns: floor.columns.filter(c => c.id !== columnId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -383,6 +396,7 @@ export function updateColumn(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -403,6 +417,7 @@ export function addStair(
     floors: building.floors.map((floor, fi) =>
       fi === floorIdx ? { ...floor, stairs: [...floor.stairs, stair] } : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -419,6 +434,7 @@ export function removeStair(building: Building, stairId: string): Building {
         ? { ...floor, stairs: floor.stairs.filter(s => s.id !== stairId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -444,6 +460,7 @@ export function updateStair(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -464,6 +481,7 @@ export function addWall(
     floors: building.floors.map((floor, fi) =>
       fi === floorIdx ? { ...floor, walls: [...floor.walls, wall] } : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -480,6 +498,7 @@ export function removeWall(building: Building, wallId: string): Building {
         ? { ...floor, walls: floor.walls.filter(w => w.id !== wallId) }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -505,6 +524,7 @@ export function updateWall(
           }
         : floor,
     ),
+    version: building.version + 1,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -567,7 +587,8 @@ export function updateEntity<T extends keyof EntityMap>(
       floors: building.floors.map((floor, fi) =>
         fi === floorIdx ? { ...floor, ...updates } : floor,
       ),
-      updatedAt: new Date().toISOString(),
+      version: building.version + 1,
+    updatedAt: new Date().toISOString(),
     };
   }
 
@@ -592,4 +613,60 @@ export function updateEntity<T extends keyof EntityMap>(
   }
 
   throw new Error(`Unknown entity type: ${String(entityType)}`);
+}
+
+/** Add a new floor to the building at the top level. */
+export function addFloorToBuilding(
+  building: Building,
+  params?: {
+    name?: string;
+    floorHeight?: number;
+    boundary?: Polygon;
+  },
+): { building: Building; floor: Floor } {
+  const nextLevel = building.floors.length;
+  const groundFloor = building.floors.find(f => f.level === 0) ?? building.floors[0];
+  const floor = createFloor({
+    buildingId: building.id,
+    level: nextLevel,
+    name: params?.name ?? `Floor ${nextLevel}`,
+    floorHeight: params?.floorHeight ?? groundFloor?.floorHeight,
+    boundary: params?.boundary ?? (groundFloor?.boundary
+      ? { points: groundFloor.boundary.points.map(p => ({ ...p })) }
+      : { points: [] }),
+  });
+
+  const nextBuilding: Building = {
+    ...building,
+    floors: [...building.floors, floor],
+    version: building.version + 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return { building: nextBuilding, floor };
+}
+
+/** Remove a floor by ID from the building. Preserves at least 1 floor and re-indexes levels. */
+export function removeFloorFromBuilding(
+  building: Building,
+  floorId: string,
+): Building {
+  if (building.floors.length <= 1) {
+    throw new Error('Cannot remove the only floor in a building.');
+  }
+
+  const remainingFloors = building.floors
+    .filter(f => f.id !== floorId)
+    .map((floor, idx) => ({
+      ...floor,
+      level: idx,
+      name: idx === 0 ? 'Ground Floor' : `Floor ${idx}`,
+    }));
+
+  return {
+    ...building,
+    floors: remainingFloors,
+    version: building.version + 1,
+    updatedAt: new Date().toISOString(),
+  };
 }

@@ -7,18 +7,18 @@ import type {
   VastuPlanningSummary,
 } from '@ai-floor-planner/core';
 import { RoomType } from '@ai-floor-planner/core';
-import {
-  ConstraintCategory,
-  PlanValidator,
-} from '@ai-floor-planner/constraint-engine';
-import type { ValidateOptions, ValidationSummary } from '@ai-floor-planner/constraint-engine';
 import { evaluateInstanceGraph } from '../graph/scorer';
 import type { InstanceGraphEvaluation } from '../graph/scorer';
-import { swapProgramAssignments } from '../repair/engine';
+import { swapProgramAssignments, diagnosticsToValidation, preservesPrivateSuites, type ValidationSummary } from '../repair/engine';
+import type { RoomProgram } from '@ai-floor-planner/core';
 
-export interface VastuOptimizationOptions extends ValidateOptions {
+export interface VastuOptimizationOptions {
   readonly enabled: boolean;
   readonly maxIterations?: number;
+  readonly requiredRoomTypes?: readonly RoomType[];
+  readonly requiredRoomCounts?: Partial<Record<RoomType, number>>;
+  readonly allowIncompleteDraft?: boolean;
+  readonly program?: RoomProgram;
 }
 
 export interface VastuOptimizationResult {
@@ -33,14 +33,14 @@ const EXCLUDED_TYPES = new Set<RoomType>([
 ]);
 
 function vastuScore(validation: ValidationSummary): number {
-  return validation.categoryScores[ConstraintCategory.VASTU]?.score ?? 0;
+  return validation.categoryScores['vastu']?.score ?? 75;
 }
 
 function functionalQuality(validation: ValidationSummary): number {
   let weighted = 0;
   let totalWeight = 0;
   for (const [category, score] of Object.entries(validation.categoryScores)) {
-    if (category === ConstraintCategory.VASTU || !score || score.weight <= 0) continue;
+    if (category === 'vastu' || !score || score.weight <= 0) continue;
     weighted += score.score * score.weight;
     totalWeight += score.weight;
   }
@@ -53,25 +53,16 @@ function isOptimizable(room: Room): boolean {
     && room.tags.some(tag => tag.startsWith('program:'));
 }
 
-function evidence(validation: ValidationSummary) {
-  return (validation.categoryScores[ConstraintCategory.VASTU]?.details ?? []).map(detail => ({
-    ruleId: detail.factor,
-    points: detail.points,
-    maxPoints: detail.maxPoints,
-    description: detail.description,
-  }));
-}
-
 export class VastuOptimizer {
-  constructor(private readonly validator = new PlanValidator()) {}
+  constructor(_validator?: any) {}
 
   optimize(
     building: Building,
     graph: InstanceDesignGraph,
     options: VastuOptimizationOptions,
   ): VastuOptimizationResult {
-    const { enabled, maxIterations = 2, ...validateOptions } = options;
-    const initialValidation = this.validator.validate(building, validateOptions);
+    const { enabled, maxIterations = 2 } = options;
+    const initialValidation = diagnosticsToValidation(building, { vastuEnabled: enabled, ...options });
     const initialGraph = evaluateInstanceGraph(building, graph);
     if (!enabled) {
       return {
@@ -115,11 +106,12 @@ export class VastuOptimizer {
             if (source.type === target.type && source.name === target.name) continue;
             attempts++;
             const proposal = swapProgramAssignments(currentBuilding, source.id, target.id);
-            const validation = this.validator.validate(proposal, validateOptions);
+            const validation = diagnosticsToValidation(proposal, { vastuEnabled: true, ...options });
             if (!validation.isValid) continue;
             const graphEvaluation = evaluateInstanceGraph(proposal, graph);
             const proposalVastu = vastuScore(validation);
             const proposalFunctional = functionalQuality(validation);
+            if (options.program && !preservesPrivateSuites(currentBuilding, proposal, options.program)) continue;
             if (proposalVastu <= currentVastu
               || graphEvaluation.score < currentGraph.score
               || proposalFunctional + 0.001 < currentFunctional) continue;
@@ -157,6 +149,13 @@ export class VastuOptimizer {
       currentGraph = best.graph;
     }
 
+    const rules = (currentValidation.categoryScores['vastu']?.details ?? []).map((detail: any) => ({
+      ruleId: detail.factor,
+      points: detail.points,
+      maxPoints: detail.maxPoints,
+      description: detail.description,
+    }));
+
     return {
       building: currentBuilding,
       validation: currentValidation,
@@ -170,7 +169,7 @@ export class VastuOptimizer {
         graphScoreBefore: initialGraph.score,
         graphScoreAfter: currentGraph.score,
         functionalGraphPreserved: currentGraph.score >= initialGraph.score,
-        rules: evidence(currentValidation),
+        rules,
       },
     };
   }

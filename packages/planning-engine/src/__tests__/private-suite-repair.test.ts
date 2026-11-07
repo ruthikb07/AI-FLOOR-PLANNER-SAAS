@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBuilding, createRoom, createWall, createDoor, createProgramItem, getSpaceDefinition,
   createEmptySpaceProgram, adaptSpaceProgramToPlannerProgram, rectToPolygon, RoomType,
   type Building, type RoomProgram } from '@ai-floor-planner/core';
-import { PlanValidator } from '@ai-floor-planner/constraint-engine';
 import { evaluateSuiteEvidence } from '../evidence/architectural-evidence';
 import { DesignGraphBuilder } from '../graph/builder';
 import { PlanRepairEngine, preservesPrivateSuites, swapProgramAssignments } from '../repair/engine';
@@ -50,15 +49,21 @@ function extraBathEntry(value: ReturnType<typeof fixture>, type: RoomType): Buil
 }
 
 function rewardingValidator(value: ReturnType<typeof fixture>, initiallyInvalid = false) {
-  const validator = new PlanValidator();
-  const template = validator.validate(value.building);
-  vi.spyOn(validator, 'validate').mockImplementation(building => {
-    const swapped = building.floors[0]!.rooms.find(room => room.id === value.owner.id)!.type === RoomType.Bathroom;
-    const invalid = initiallyInvalid && !swapped;
-    return { ...template, isValid: !invalid, failed: invalid ? 1 : 0,
-      overallScore: swapped ? 90 : 50, violations: [] };
-  });
-  return validator;
+  return {
+    validate: vi.fn((building: Building) => {
+      const swapped = building.floors[0]!.rooms.find(room => room.id === value.owner.id)?.type === RoomType.Bathroom;
+      const invalid = initiallyInvalid && !swapped;
+      return {
+        isValid: !invalid,
+        overallScore: swapped ? 90 : 50,
+        failed: invalid ? 1 : 0,
+        passed: 10,
+        violations: [],
+        suggestions: [],
+        categoryScores: {},
+      };
+    }),
+  } as any;
 }
 
 describe('explicit private-suite repair non-regression', () => {

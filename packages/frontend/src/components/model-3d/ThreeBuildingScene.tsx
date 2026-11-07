@@ -1,7 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { getModelBounds, isModelClick, modelFitDistance } from '../../services/model-camera';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { EditorSelection, Polygon } from '@ai-floor-planner/core';
+import { DoorType } from '@ai-floor-planner/core';
+import { computeStairSolids } from '@ai-floor-planner/geometry-engine';
+import { makeProjectionShape as makeShape } from './projection-shape';
 import { millimetersToSceneUnits, type Building3DProjection, type ProjectionSource } from '@ai-floor-planner/projection-3d';
 import { shouldRenderRoomProjection, type ModelCameraPreset, type ModelFloorMode, type ModelLayerVisibility, type ModelViewMode } from '../../services/projection-preferences';
 
@@ -18,22 +22,13 @@ interface ThreeBuildingSceneProps {
   readonly exploded: boolean;
   readonly layers: ModelLayerVisibility;
   readonly fitRequest: number;
+  readonly fitSite?: boolean;
+  readonly snapshotRequest?: number;
   readonly onSelect: (source: ProjectionSource) => void;
   readonly onClearSelection: () => void;
 }
 
 type SelectableObject = THREE.Object3D & { userData: ProjectionSource };
-
-function makeShape(polygon: Polygon): THREE.Shape {
-  const shape = new THREE.Shape();
-  polygon.points.forEach((point, index) => {
-    const x = point.x * MM_TO_M;
-    const y = -point.y * MM_TO_M;
-    if (index === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
-  });
-  shape.closePath();
-  return shape;
-}
 
 function floorOffset(projection: Building3DProjection, floorId: string | undefined, exploded: boolean): number {
   if (!exploded || !floorId) return 0;
@@ -77,10 +72,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   exploded,
   layers,
   fitRequest,
+  fitSite = false,
+  snapshotRequest = 0,
   onSelect,
   onClearSelection,
 }) => {
   const hostRef = useRef<HTMLDivElement>(null);
+  const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null);
+  const [renderError, setRenderError] = useState('');
   const runtimeRef = useRef<{ camera: THREE.PerspectiveCamera; controls: OrbitControls; renderer: THREE.WebGLRenderer; scene: THREE.Scene } | null>(null);
 
   useEffect(() => {
@@ -88,9 +87,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     if (!host) return;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a1120);
-    scene.fog = new THREE.Fog(0x0a1120, 35, 85);
     const camera = new THREE.PerspectiveCamera(38, Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight), 0.05, 500);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    } catch {
+      setRenderError('3D could not start. Enable browser hardware acceleration and reload. Your 2D project is unchanged; Blender export is still available.');
+      return;
+    }
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(host.clientWidth, host.clientHeight);
@@ -101,8 +105,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
     controls.screenSpacePanning = true;
-    controls.minDistance = 3;
-    controls.maxDistance = 120;
+    controls.minDistance = 0.3;
+    controls.maxDistance = 2000;
     controls.target.set(5, 2, 5);
     scene.add(new THREE.HemisphereLight(0xddeeff, 0x182235, 2.2));
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
@@ -150,16 +154,21 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const addSelectable = (mesh: THREE.Mesh, source: ProjectionSource) => { mesh.userData = source; group.add(mesh); };
 
     if (layers.site) {
+      const siteContext = new THREE.Group();
+      siteContext.name = 'site-context';
+      group.add(siteContext);
       const siteGeometry = new THREE.ShapeGeometry(makeShape(projection.site.plotBoundary));
       siteGeometry.rotateX(-Math.PI / 2);
       const site = new THREE.Mesh(siteGeometry, material(0x162a3f, 0.72));
       site.userData = projection.site;
       addEdges(site, 0x36a3d9);
-      group.add(site);
+      siteContext.add(site);
       if (projection.site.buildableEnvelope) {
         const points = projection.site.buildableEnvelope.points.map(point => new THREE.Vector3(point.x * MM_TO_M, 0.015, point.y * MM_TO_M));
         points.push(points[0]!.clone());
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineDashedMaterial({ color: 0x2dd4bf, dashSize: 0.25, gapSize: 0.15 })));
+        const envelope = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineDashedMaterial({ color: 0x2dd4bf, dashSize: 0.25, gapSize: 0.15 }));
+        envelope.computeLineDistances();
+        siteContext.add(envelope);
       }
       if (projection.site.roadWidth) {
         const xs = projection.site.plotBoundary.points.map(point => point.x);
@@ -176,13 +185,13 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         roadGeometry.rotateX(-Math.PI / 2);
         const road = new THREE.Mesh(roadGeometry, material(0x243447, 0.78));
         road.position.y = -0.01;
-        group.add(road);
+        siteContext.add(road);
       }
     }
 
     if (layers.floorPlates) projection.floorPlates.forEach(plate => {
       if (!shouldShowFloor(plate.floorId, activeFloorId, floorMode)) return;
-      const geometry = new THREE.ExtrudeGeometry(makeShape(plate.boundary), { depth: plate.thickness * MM_TO_M, bevelEnabled: false });
+      const geometry = new THREE.ExtrudeGeometry(makeShape(plate.boundary, plate.cutouts), { depth: plate.thickness * MM_TO_M, bevelEnabled: false });
       geometry.rotateX(-Math.PI / 2);
       const sourceSelected = selected(plate, selection);
       const mesh = new THREE.Mesh(geometry, material(sourceSelected ? 0x22d3ee : 0x94a3b8, 0.9 * floorContextOpacity(plate.floorId, activeFloorId, floorMode)));
@@ -196,8 +205,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       if (!shouldRenderRoomProjection(room.sourceEntityId, layers.rooms, viewMode, selection)) return;
       if (!shouldShowFloor(room.floorId, activeFloorId, floorMode)) return;
       const geometry = viewMode === 'rooms'
-        ? new THREE.ExtrudeGeometry(makeShape(room.boundary), { depth: room.height * MM_TO_M * 0.88, bevelEnabled: false })
-        : new THREE.ShapeGeometry(makeShape(room.boundary));
+        ? new THREE.ExtrudeGeometry(makeShape(room.boundary, room.cutouts), { depth: room.height * MM_TO_M * 0.88, bevelEnabled: false })
+        : new THREE.ShapeGeometry(makeShape(room.boundary, room.cutouts));
       geometry.rotateX(-Math.PI / 2);
       const roomSelected = selected(room, selection);
       const roomMaterial = roomSelected
@@ -233,6 +242,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     });
 
     if (layers.openings) projection.openings.forEach(opening => {
+      if (opening.doorType === DoorType.OpenPassage) return;
       if (!shouldShowFloor(opening.floorId, activeFloorId, floorMode)) return;
       const wall = projection.walls.find(candidate => candidate.sourceEntityId === opening.hostWallId);
       if (!wall) return;
@@ -242,19 +252,23 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       const geometry = new THREE.BoxGeometry(opening.width * MM_TO_M, opening.height * MM_TO_M, Math.max(0.035, wall.thickness * MM_TO_M * 0.25));
       const color = selected(opening, selection) ? 0xfacc15 : opening.sourceEntityType === 'window' ? 0x38bdf8 : 0x8b5e3c;
       const mesh = new THREE.Mesh(geometry, material(color, (opening.sourceEntityType === 'window' ? 0.48 : 0.86) * floorContextOpacity(opening.floorId, activeFloorId, floorMode)));
-      mesh.position.set(opening.position.x * MM_TO_M, (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M + floorOffset(projection, opening.floorId, exploded), opening.position.y * MM_TO_M);
+      const centerAlong = opening.alongWall + opening.width / 2;
+      mesh.position.set((wall.startPoint.x + dx / wall.length * centerAlong) * MM_TO_M, (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M + floorOffset(projection, opening.floorId, exploded), (wall.startPoint.y + dy / wall.length * centerAlong) * MM_TO_M);
       mesh.rotation.y = angle;
       addSelectable(mesh, opening);
     });
 
     if (layers.stairs) projection.stairs.forEach(stair => {
       if (!shouldShowFloor(stair.floorId, activeFloorId, floorMode)) return;
-      const geometry = new THREE.ExtrudeGeometry(makeShape(stair.boundary), { depth: stair.verticalExtent * MM_TO_M * 0.72, bevelEnabled: false });
+      const result = computeStairSolids(stair.canonicalStair, stair.verticalExtent);
+      result.solids.forEach(part => {
+      const geometry = new THREE.ExtrudeGeometry(makeShape(part.boundary), { depth: (part.top - part.bottom) * MM_TO_M, bevelEnabled: false });
       geometry.rotateX(-Math.PI / 2);
-      const mesh = new THREE.Mesh(geometry, material(selected(stair, selection) ? 0xfacc15 : 0xd4a373, 0.46 * floorContextOpacity(stair.floorId, activeFloorId, floorMode)));
-      mesh.position.y = stair.elevation * MM_TO_M + floorOffset(projection, stair.floorId, exploded);
+      const mesh = new THREE.Mesh(geometry, material(selected(stair, selection) ? 0xfacc15 : 0xd4a373, floorContextOpacity(stair.floorId, activeFloorId, floorMode)));
+      mesh.position.y = (stair.elevation + part.bottom) * MM_TO_M + floorOffset(projection, stair.floorId, exploded);
       addEdges(mesh);
       addSelectable(mesh, stair);
+      });
     });
 
     scene.add(group);
@@ -264,17 +278,18 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime) return;
-    const box = new THREE.Box3().setFromObject(runtime.scene.getObjectByName('building-projection') ?? runtime.scene);
+    const group = runtime.scene.getObjectByName('building-projection');
+    if (!group) return;
+    const box = getModelBounds(group, fitSite);
     if (box.isEmpty()) return;
     const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const distance = Math.max(size.x, size.y, size.z, 5) * 1.65;
+    const distance = modelFitDistance(box, runtime.camera.fov, runtime.camera.aspect);
     const roadOffsets = { north: 0, east: 90, south: 180, west: 270 } as const;
     const siteAngle = (projection.site.northDegrees + roadOffsets[projection.site.roadFacing]) * Math.PI / 180;
     const front = new THREE.Vector3(Math.sin(siteAngle), 0, -Math.cos(siteAngle));
     const right = new THREE.Vector3(-front.z, 0, front.x);
     const positions: Record<ModelCameraPreset, THREE.Vector3> = {
-      isometric: new THREE.Vector3(center.x + distance, center.y + distance * 0.7, center.z + distance),
+      isometric: center.clone().addScaledVector(new THREE.Vector3(1, 0.8, 1).normalize(), distance),
       front: center.clone().addScaledVector(front, distance).add(new THREE.Vector3(0, distance * 0.2, 0)),
       back: center.clone().addScaledVector(front, -distance).add(new THREE.Vector3(0, distance * 0.2, 0)),
       left: center.clone().addScaledVector(right, -distance).add(new THREE.Vector3(0, distance * 0.2, 0)),
@@ -282,12 +297,28 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       top: new THREE.Vector3(center.x, center.y + distance, center.z + 0.001),
     };
     runtime.camera.position.copy(positions[cameraPreset]);
+    runtime.camera.far = Math.max(500, distance * 10);
+    runtime.camera.updateProjectionMatrix();
+    runtime.controls.maxDistance = Math.max(2000, distance * 5);
     runtime.controls.target.copy(center);
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
-  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded]);
+  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded, fitSite]);
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!runtime || !snapshotRequest) return;
+    runtime.renderer.render(runtime.scene, runtime.camera);
+    const link = document.createElement('a');
+    link.download = 'architectural-model-view.png';
+    link.href = runtime.renderer.domElement.toDataURL('image/png');
+    link.click();
+  }, [snapshotRequest]);
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const click = isModelClick(pointerStart.current, event.clientX, event.clientY, event.pointerId);
+    pointerStart.current = null;
+    if (!click || event.button !== 0) return;
     const runtime = runtimeRef.current;
     if (!runtime) return;
     const rect = runtime.renderer.domElement.getBoundingClientRect();
@@ -302,5 +333,10 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     onSelect((hit.object as SelectableObject).userData);
   };
 
-  return <div ref={hostRef} className="three-building-scene" onPointerDown={handlePointerDown} />;
+  return <div ref={hostRef} className="three-building-scene"
+    onPointerDown={event => { pointerStart.current = event.button === 0 && event.isPrimary ? { x: event.clientX, y: event.clientY, id: event.pointerId } : null; }}
+    onPointerMove={event => { if (pointerStart.current && !isModelClick(pointerStart.current, event.clientX, event.clientY, event.pointerId)) pointerStart.current = null; }}
+    onPointerCancel={() => { pointerStart.current = null; }} onPointerUp={handlePointerUp}>
+    {renderError && <div className="model-empty-state" role="alert">{renderError}</div>}
+  </div>;
 };

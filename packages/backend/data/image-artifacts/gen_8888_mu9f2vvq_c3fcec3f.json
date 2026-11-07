@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_8888_mu9f2vvq_c3fcec3f",
+  "projectId": "user-demo-project",
+  "seed": 8888,
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "provider": "cloudflare-workers-ai",
+  "promptVersion": 1,
+  "originalPrompt": "Architectural blueprint 2-bedroom residential apartment floor plan, clean 2D CAD layout, black boundary lines on white background, living room, master bedroom, second bedroom, kitchen, 2 bathrooms, clear door openings",
+  "negativePrompt": "blurry, 3d, realistic photo, shadows",
+  "width": 512,
+  "height": 512,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-20T06:10:04.636Z",
+  "latencyMs": 12399
+}

@@ -55,7 +55,7 @@ function corePlacements(
     const rowWidth = dimensions.reduce((sum, item) => sum + item.width, 0);
     const rowHeight = Math.max(...dimensions.map(item => item.height));
     if (rowWidth <= region.width && rowHeight <= region.height) {
-      let x = profile.strategy === 'vastu_aligned' ? region.x + region.width - rowWidth : region.x;
+      let x = profile.strategy === 'vastu_aligned' || profile.strategy === 'linear_split' ? region.x + region.width - rowWidth : region.x;
       const y = profile.strategy === 'open_circulation' ? region.y + region.height - rowHeight : region.y;
       return dimensions.map(({ item, width, height }, index) => {
         const placement = { id: `core_${index + 1}`, sourceId: item.id, type: item.type, x, y, width, height, area: width * height };
@@ -66,7 +66,7 @@ function corePlacements(
     const columnWidth = Math.max(...dimensions.map(item => item.width));
     const columnHeight = dimensions.reduce((sum, item) => sum + item.height, 0);
     if (columnWidth <= region.width && columnHeight <= region.height) {
-      const x = profile.strategy === 'vastu_aligned' ? region.x + region.width - columnWidth : region.x;
+      const x = profile.strategy === 'vastu_aligned' || profile.strategy === 'linear_split' ? region.x + region.width - columnWidth : region.x;
       let y = profile.strategy === 'open_circulation' ? region.y + region.height - columnHeight : region.y;
       return dimensions.map(({ item, width, height }, index) => {
         const placement = { id: `core_${index + 1}`, sourceId: item.id, type: item.type, x, y, width, height, area: width * height };
@@ -431,6 +431,8 @@ function addFloorGeometry(
   const connectionPriority = (a: RoomPlacement, b: RoomPlacement): number => {
     if (a.item.attachedToRoomId === b.item.id || b.item.attachedToRoomId === a.item.id) return 0;
     if (a.item.attachedToRoomId || b.item.attachedToRoomId) return 100;
+    const publicRooms = [RoomType.Living, RoomType.FamilyLiving, RoomType.Drawing, RoomType.Dining, RoomType.Kitchen];
+    if (profile.commonAccess === 'direct_chain' && publicRooms.includes(a.item.type) && publicRooms.includes(b.item.type)) return 0.5;
     if (common.has(a.item.type) && common.has(b.item.type)) return 1;
     if ((a.item.type === RoomType.Kitchen && [RoomType.Dining, RoomType.Utility, RoomType.Storage].includes(b.item.type))
       || (b.item.type === RoomType.Kitchen && [RoomType.Dining, RoomType.Utility, RoomType.Storage].includes(a.item.type))) return 2;
@@ -502,6 +504,50 @@ function addFloorGeometry(
   return next;
 }
 
+/** Complete explicit enclosed uses independently of the access spanning tree.
+ * Common/open/outdoor uses are not inferred to be enclosed. Existing walls and
+ * their hosted openings remain authoritative; only uncovered intervals are added.
+ * This generator emits orthogonal rooms. Non-orthogonal boundaries are left alone.
+ */
+export function completeEnclosedRoomWalls(building: Building, floorId: string): Building {
+  const floor = building.floors.find(value => value.id === floorId);
+  if (!floor) return building;
+  const enclosed = new Set([RoomType.Bedroom, RoomType.Bathroom, RoomType.Storage, RoomType.Study, RoomType.ServantQuarter]);
+  type Edge = { start: Point; end: Point; roomId: string };
+  const edges: Edge[] = floor.rooms.flatMap(room => room.boundary.points.map((start, index) => ({
+    start, end: room.boundary.points[(index + 1) % room.boundary.points.length]!, roomId: room.id,
+  })));
+  let next = building;
+  for (const edge of edges.filter(value => enclosed.has(floor.rooms.find(room => room.id === value.roomId)!.type))) {
+    const vertical = Math.abs(edge.start.x - edge.end.x) < EPSILON;
+    if (!vertical && Math.abs(edge.start.y - edge.end.y) >= EPSILON) continue;
+    const along = (point: Point) => vertical ? point.y : point.x;
+    const across = (point: Point) => vertical ? point.x : point.y;
+    const line = across(edge.start);
+    const collinear = (start: Point, end: Point) => Math.abs(across(start) - line) < EPSILON && Math.abs(across(end) - line) < EPSILON;
+    const low = Math.min(along(edge.start), along(edge.end)), high = Math.max(along(edge.start), along(edge.end));
+    const walls = next.floors.find(value => value.id === floorId)!.walls;
+    const existing = walls.filter(wall => collinear(wall.startPoint, wall.endPoint));
+    const neighbors = edges.filter(value => collinear(value.start, value.end));
+    const cuts = [...new Set([low, high,
+      ...existing.flatMap(wall => [along(wall.startPoint), along(wall.endPoint)]),
+      ...neighbors.flatMap(value => [along(value.start), along(value.end)]),
+    ].filter(value => value >= low && value <= high))].sort((a, b) => a - b);
+    for (let index = 1; index < cuts.length; index++) {
+      const start = cuts[index - 1]!, end = cuts[index]!;
+      if (end - start < EPSILON) continue;
+      const covers = (a: Point, b: Point) => Math.min(along(a), along(b)) <= start + EPSILON && Math.max(along(a), along(b)) >= end - EPSILON;
+      if (existing.some(wall => covers(wall.startPoint, wall.endPoint))) continue;
+      const point = (value: number): Point => vertical ? { x: line, y: value } : { x: value, y: line };
+      next = addWall(next, floorId, { floorId, startPoint: point(start), endPoint: point(end),
+        type: WallType.Internal, thickness: 115,
+        roomIds: [...new Set(neighbors.filter(value => covers(value.start, value.end)).map(value => value.roomId))],
+      });
+    }
+  }
+  return next;
+}
+
 /** Generates directly from authoritative per-floor polygons. */
 export class PolygonLayoutGenerator {
   private readonly floorPlanner = new FloorProgramPlanner();
@@ -551,6 +597,9 @@ export class PolygonLayoutGenerator {
       const floor = building.floors[index]!;
       building = addFloorGeometry(building, floor, floor.boundary, allocation.floors[index]!, cores, profile);
     }
+    // Complete enclosures after every floor's original entities are allocated,
+    // preserving existing room/opening IDs as well as their geometry.
+    for (const floor of building.floors) building = completeEnclosedRoomWalls(building, floor.id);
     return building;
   }
 }

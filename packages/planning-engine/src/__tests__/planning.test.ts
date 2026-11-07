@@ -411,7 +411,7 @@ describe('Structured Planning Engine', () => {
       }
     });
 
-    it('restores a directionally damaged plan without reducing functional graph quality', () => {
+    it('restores a directionally damaged plan without reducing functional graph quality', async () => {
       const program = programGen.generateProgram(valid30x50Spec);
       const candidate = candidateGen.generateCandidates(valid30x50Spec, program, 42)[0]!;
       const rooms = candidate.building.floors.flatMap(floor => floor.rooms);

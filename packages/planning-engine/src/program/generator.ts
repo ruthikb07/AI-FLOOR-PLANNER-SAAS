@@ -26,6 +26,28 @@ export class RoomProgramGenerator {
     const items: RoomProgramItem[] = [];
     const { hard, soft } = spec;
 
+    const isFullPlot = !!hard.fullPlotCoverage;
+    const setbacks = isFullPlot
+      ? { front: 0, rear: 0, left: 0, right: 0 }
+      : (spec.setbacksMm ?? {
+          front: Math.min(2000, Math.max(1000, Math.round(hard.plotDepthMm * 0.1))),
+          rear: Math.min(1500, Math.max(1000, Math.round(hard.plotDepthMm * 0.08))),
+          left: Math.min(1200, Math.max(900, Math.round(hard.plotWidthMm * 0.08))),
+          right: Math.min(1200, Math.max(900, Math.round(hard.plotWidthMm * 0.08))),
+        });
+    const buildableW = isFullPlot ? hard.plotWidthMm : Math.max(3000, hard.plotWidthMm - setbacks.left - setbacks.right);
+    const buildableD = isFullPlot ? hard.plotDepthMm : Math.max(3000, hard.plotDepthMm - setbacks.front - setbacks.rear);
+    const floorsCount = Math.max(1, hard.floorsCount);
+    const plateCapacityMm2 = isFullPlot
+      ? (buildableW * buildableD)
+      : ((buildableW * buildableD) / floorsCount);
+    // Standard baseline plate for a compact 30x50 ft (approx 96 m2)
+    const baselinePlateMm2 = 96_000_000;
+    // Area scale applies when plot capacity exceeds standard residential baseline
+    const areaScale = (isFullPlot || hard.plotWidthMm > 10000 || hard.plotDepthMm > 16000)
+      ? Math.max(1.0, Math.min(3.0, plateCapacityMm2 / baselinePlateMm2))
+      : 1.0;
+
     let totalTargetArea = 0;
     let totalMinArea = 0;
     let totalMaxArea = 0;
@@ -41,6 +63,24 @@ export class RoomProgramGenerator {
       totalMaxArea += fullItem.maxAreaMm2;
     };
 
+    // 0. Entrance Foyer (when full plot construction is requested)
+    if (isFullPlot && !hard.customRooms?.some(r => r.type === RoomType.Foyer)) {
+      addItem({
+        type: RoomType.Foyer,
+        name: 'Entrance Foyer',
+        zone: FunctionalZone.Public,
+        floorLevel: 0,
+        targetAreaMm2: Math.round(10_000_000 * Math.min(1.6, areaScale)),
+        minAreaMm2: 6_000_000,
+        maxAreaMm2: Math.round(22_000_000 * areaScale),
+        minWidthMm: 2400,
+        minHeightMm: 2500,
+        daylight: DaylightLevel.Medium,
+        privacy: PrivacyLevel.None,
+        ventilationRequired: true,
+      });
+    }
+
     // 1. Living Room (Public Zone)
     if (hard.livingRoomRequired) {
       addItem({
@@ -48,11 +88,11 @@ export class RoomProgramGenerator {
         name: 'Living Room',
         zone: FunctionalZone.Public,
         floorLevel: 0,
-        targetAreaMm2: 18_000_000,   // ~18.0 sq m (4.5m x 4.0m)
+        targetAreaMm2: Math.round(18_000_000 * areaScale),
         minAreaMm2: 12_000_000,
-        maxAreaMm2: 26_000_000,
-        minWidthMm: 3200,
-        minHeightMm: 3600,
+        maxAreaMm2: Math.round(26_000_000 * Math.max(areaScale, isFullPlot ? 2.5 : 1.0)),
+        minWidthMm: isFullPlot ? 3400 : 3200,
+        minHeightMm: isFullPlot ? 3800 : 3600,
         daylight: DaylightLevel.High,
         privacy: PrivacyLevel.None,
         ventilationRequired: true,
@@ -66,9 +106,9 @@ export class RoomProgramGenerator {
         name: 'Dining Hall',
         zone: FunctionalZone.SemiPublic,
         floorLevel: 0,
-        targetAreaMm2: 12_000_000,   // ~12.0 sq m (3.8m x 3.2m)
+        targetAreaMm2: Math.round(12_000_000 * areaScale),
         minAreaMm2: 8_000_000,
-        maxAreaMm2: 18_000_000,
+        maxAreaMm2: Math.round(18_000_000 * Math.max(areaScale, isFullPlot ? 2.5 : 1.0)),
         minWidthMm: 2800,
         minHeightMm: 3000,
         daylight: DaylightLevel.Medium,
@@ -84,15 +124,32 @@ export class RoomProgramGenerator {
         name: 'Kitchen',
         zone: FunctionalZone.Service,
         floorLevel: 0,
-        targetAreaMm2: 9_000_000,    // ~9.0 sq m (3.0m x 3.0m)
+        targetAreaMm2: Math.round(9_000_000 * Math.min(isFullPlot ? 2.0 : 1.5, areaScale)),
         minAreaMm2: 5_500_000,
-        maxAreaMm2: 14_000_000,
+        maxAreaMm2: Math.round(14_000_000 * Math.min(isFullPlot ? 2.4 : 1.6, areaScale)),
         minWidthMm: 2400,
         minHeightMm: 2400,
         daylight: DaylightLevel.Medium,
         privacy: PrivacyLevel.Low,
         ventilationRequired: true,
       });
+
+      if (isFullPlot && !hard.customRooms?.some(r => r.type === RoomType.Utility)) {
+        addItem({
+          type: RoomType.Utility,
+          name: 'Utility / Pantry',
+          zone: FunctionalZone.Service,
+          floorLevel: 0,
+          targetAreaMm2: Math.round(7_000_000 * Math.min(1.5, areaScale)),
+          minAreaMm2: 4_500_000,
+          maxAreaMm2: Math.round(14_000_000 * areaScale),
+          minWidthMm: 2000,
+          minHeightMm: 2200,
+          daylight: DaylightLevel.Medium,
+          privacy: PrivacyLevel.Low,
+          ventilationRequired: true,
+        });
+      }
     }
 
     // 4. Master Bedroom (Private Zone)
@@ -102,9 +159,9 @@ export class RoomProgramGenerator {
         name: 'Master Bedroom',
         zone: FunctionalZone.Private,
         floorLevel: 0,
-        targetAreaMm2: 16_000_000,   // ~16.0 sq m (4.0m x 4.0m)
-        minAreaMm2: 12_000_000,
-        maxAreaMm2: 24_000_000,
+        targetAreaMm2: Math.round(16_000_000 * areaScale),
+        minAreaMm2: 11_000_000,
+        maxAreaMm2: Math.round(24_000_000 * Math.max(areaScale, isFullPlot ? 2.5 : 1.0)),
         minWidthMm: 3400,
         minHeightMm: 3600,
         daylight: DaylightLevel.High,
@@ -120,9 +177,9 @@ export class RoomProgramGenerator {
         name: `Bedroom ${i}`,
         zone: FunctionalZone.Private,
         floorLevel: 0,
-        targetAreaMm2: 13_000_000,   // ~13.0 sq m (3.6m x 3.6m)
+        targetAreaMm2: Math.round(13_000_000 * areaScale),
         minAreaMm2: 9_500_000,
-        maxAreaMm2: 18_000_000,
+        maxAreaMm2: Math.round(18_000_000 * Math.max(areaScale, isFullPlot ? 2.4 : 1.0)),
         minWidthMm: 3000,
         minHeightMm: 3200,
         daylight: DaylightLevel.High,
@@ -134,6 +191,7 @@ export class RoomProgramGenerator {
     // 6. Bathrooms
     const attachedCount = Math.min(soft.attachedBathroomsCount, hard.bathroomCount);
     const bedroomItems = items.filter(item => item.type === RoomType.Bedroom);
+    const bathroomMaxScale = isFullPlot ? 3.0 : ((hard.plotWidthMm < 30000 && hard.plotWidthMm > 10000) ? Math.min(2.0, areaScale * 1.35) : 1.0);
     for (let b = 1; b <= hard.bathroomCount; b++) {
       const isAttached = b <= attachedCount;
       addItem({
@@ -141,9 +199,9 @@ export class RoomProgramGenerator {
         name: isAttached ? `Attached Bath ${b}` : `Common Bath ${b}`,
         zone: FunctionalZone.Service,
         floorLevel: 0,
-        targetAreaMm2: 4_500_000,    // ~4.5 sq m (2.2m x 2.0m)
+        targetAreaMm2: Math.round(4_500_000 * (bathroomMaxScale > 1 ? 1.4 : 1.0)),
         minAreaMm2: 2_500_000,
-        maxAreaMm2: 7_000_000,
+        maxAreaMm2: Math.round(7_000_000 * bathroomMaxScale),
         minWidthMm: 1500,
         minHeightMm: 1800,
         daylight: DaylightLevel.Low,
@@ -160,9 +218,9 @@ export class RoomProgramGenerator {
         name: 'Staircase',
         zone: FunctionalZone.Circulation,
         floorLevel: 0,
-        targetAreaMm2: 7_500_000,    // ~7.5 sq m (2.4m x 3.1m)
+        targetAreaMm2: isFullPlot ? 18_000_000 : 7_500_000,
         minAreaMm2: 5_000_000,
-        maxAreaMm2: 12_000_000,
+        maxAreaMm2: isFullPlot ? 32_000_000 : 12_000_000,
         minWidthMm: 2000,
         minHeightMm: 2800,
         daylight: DaylightLevel.Medium,

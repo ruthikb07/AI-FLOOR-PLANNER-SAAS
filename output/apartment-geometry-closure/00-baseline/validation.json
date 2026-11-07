@@ -1,0 +1,138 @@
+{
+  "isValid": false,
+  "recommendedForEditing": false,
+  "geometryHealthy": false,
+  "overallScore": 73,
+  "verificationIssues": [
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Entrance Foyer\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Kitchen\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Common Toilet\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Living & Dining Room\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_SUB_MINIMUM_DIMENSION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Private Passage\" dimension is below minimum 1500."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Private Passage\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_SUB_MINIMUM_DIMENSION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Bedroom 02\" dimension is below minimum 2700."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Bedroom 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Attached Toilet 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Bedroom 03\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_01 (NORTH WING - 3BHK) Living Balcony\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_02 (WEST WING - 3BHK) Master Bedroom\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_02 (WEST WING - 3BHK) Master En-suite Toilet\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_02 (WEST WING - 3BHK) Bedroom 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_02 (WEST WING - 3BHK) Attached Toilet 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_03 (EAST WING - 3BHK) Master Bedroom\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_03 (EAST WING - 3BHK) Master En-suite Toilet\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_03 (EAST WING - 3BHK) Bedroom 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"FLAT_03 (EAST WING - 3BHK) Attached Toilet 02\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"LIFT 01 (PASSENGER)\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"LIFT 02 (PASSENGER)\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"STAIR 02 (FIRE ESCAPE)\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"COMMON LOBBY\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"SHAFT\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_GEOMETRY_ROOM_COLLISION",
+      "severity": "error",
+      "message": "Room \"SHAFT\" overlaps with another room on Level 0."
+    },
+    {
+      "code": "CANONICAL_ROOM_COLLISIONS",
+      "severity": "error",
+      "message": "27 room overlap(s): FLAT_01 (NORTH WING - 3BHK) Entrance Foyer ↔ LIFT 01 (PASSENGER); FLAT_01 (NORTH WING - 3BHK) Entrance Foyer ↔ COMMON LOBBY; FLAT_01 (NORTH WING - 3BHK) Entrance Foyer ↔ SHAFT; FLAT_01 (NORTH WING - 3BHK) Kitchen ↔ FLAT_01 (NORTH WING - 3BHK) Living & Dining Room."
+    }
+  ]
+}

@@ -7,10 +7,13 @@ import {
   validateFootprint,
   validateSpaceProgram,
 } from '@ai-floor-planner/core';
-import { PlanValidator } from '@ai-floor-planner/constraint-engine';
+import { evaluateDesign } from '../diagnostics/design-evaluator';
+import { diagnosticsToValidation } from '../repair/engine';
 import { evaluateArchitecturalEvidence } from '../evidence/architectural-evidence';
 import { containsPolygon } from '@ai-floor-planner/geometry-engine';
 import { CandidateGenerator } from '../generator/candidate-generator';
+import { completeEnclosedRoomWalls } from '../generator/polygon-layout';
+import { RequirementValidator } from '../requirements/validator';
 
 export type GenerationStageId =
   | 'validate_inputs'
@@ -37,6 +40,7 @@ export interface GenerationReadinessReport {
 }
 
 export interface GenerationWorkflowInput {
+  readonly seed?: number;
   readonly building: Building;
   readonly category: SpaceBuildingCategory;
   readonly program: SpaceProgram;
@@ -52,9 +56,9 @@ export interface GenerationWorkflowResult {
 export const GENERATION_STAGES: readonly GenerationStage[] = Object.freeze([
   { id: 'validate_inputs', label: 'Validate approved inputs', detail: 'Checks Site, Program, Footprint, category and engine compatibility.' },
   { id: 'prepare_program', label: 'Prepare room instances', detail: 'Preserves reviewed quantities and room-area targets.' },
-  { id: 'generate_candidates', label: 'Generate and repair options', detail: 'Runs deterministic allocation, geometry, repair and constraint evaluation.' },
+  { id: 'generate_candidates', label: 'Generate and repair options', detail: 'Runs deterministic allocation, geometry, repair and quality evaluation.' },
   { id: 'validate_candidates', label: 'Validate against footprint', detail: 'Rechecks every room against its approved per-floor boundary.' },
-  { id: 'rank_options', label: 'Rank hard-valid options', detail: 'Orders candidates using calculated constraint, graph and multi-floor evidence.' },
+  { id: 'rank_options', label: 'Rank design options', detail: 'Orders candidates using calculated architectural, graph and multi-floor evidence.' },
 ]);
 
 export function assessGenerationReadiness(input: GenerationWorkflowInput): GenerationReadinessReport {
@@ -86,16 +90,16 @@ function withApprovedFootprint(candidate: CandidatePlan, source: Building): Cand
     return !approved || JSON.stringify(floor.boundary) !== JSON.stringify(approved)
       || floor.rooms.some(room => !containsPolygon(approved, room.boundary));
   })) return null;
-  const building: Building = {
+  let building: Building = {
     ...candidate.building,
     site: source.site,
     updatedAt: new Date().toISOString(),
   };
-  const validation = new PlanValidator(undefined, { enableVastu: candidate.vastuPlanning.enabled }).validate(building, {
-    requiredRoomCounts: candidate.requiredRoomCounts,
-  });
-  if (!validation.isValid) return null;
-  return { ...candidate, building, validation, metrics: { ...candidate.metrics, hardValidity: true } };
+  for (const floor of building.floors) building = completeEnclosedRoomWalls(building, floor.id);
+  const diagnostics = evaluateDesign(building, { vastuEnabled: candidate.vastuPlanning.enabled });
+  if (!diagnostics.geometryHealthy) return null;
+  const validation = diagnosticsToValidation(building);
+  return { ...candidate, building, validation, diagnostics, metrics: { ...candidate.metrics, hardValidity: true } };
 }
 
 const yieldToUi = () => new Promise<void>(resolve => setTimeout(resolve, 0));
@@ -107,11 +111,30 @@ export async function runGenerationWorkflow(
   onStage?.('validate_inputs', 'ACTIVE');
   const readiness = assessGenerationReadiness(input);
   if (readiness.status === 'BLOCKED') throw new Error(readiness.issues.map(issue => issue.message).join(' '));
+
+  // Phase 1B / Master PRD §13: deterministic feasibility screen BEFORE any
+  // candidate geometry is produced. An infeasible program (e.g. the requested
+  // area/setbacks cannot fit the buildable envelope) must stop generation with
+  // an actionable error. User requirements are never silently relaxed — no
+  // bedroom, parking space or mandatory space is removed to force a fit.
+  const adapter = adaptSpaceProgramToResidentialRequirements(input.program, input.building);
+  if (adapter.requirements) {
+    const feasibility = new RequirementValidator().validate(adapter.requirements);
+    if (!feasibility.isFeasible) {
+      const detail = feasibility.issues
+        .filter(issue => issue.severity === 'error')
+        .map(issue => `${issue.code}: ${issue.message}${issue.suggestion ? ` (${issue.suggestion})` : ''}`)
+        .join(' ');
+      throw new Error(
+        `PLAN_NOT_FEASIBLE: The requested program does not fit the available planning capacity. ${detail} ` +
+        `Adjust the plot, setbacks, floor count or room program; requirements were left unchanged.`,
+      );
+    }
+  }
   onStage?.('validate_inputs', 'COMPLETE');
   await yieldToUi();
 
   onStage?.('prepare_program', 'ACTIVE');
-  const adapter = adaptSpaceProgramToResidentialRequirements(input.program, input.building);
   if (!adapter.requirements) throw new Error('The reviewed Program could not be adapted to residential generation requirements.');
   const floorCount = input.building.site.plannedFloorCount ?? Math.max(1, input.building.floors.length);
   const program = adaptSpaceProgramToPlannerProgram(input.program, floorCount);
@@ -121,7 +144,7 @@ export async function runGenerationWorkflow(
   await yieldToUi();
 
   onStage?.('generate_candidates', 'ACTIVE');
-  const rawCandidates = new CandidateGenerator().generateCandidates(requirements, program, 42, {
+  const rawCandidates = new CandidateGenerator().generateCandidates(requirements, program, input.seed ?? 42, {
     sourceBuilding: approvedBuilding,
   });
   onStage?.('generate_candidates', 'COMPLETE');
@@ -133,7 +156,7 @@ export async function runGenerationWorkflow(
     return approvedCandidate ? [{ ...approvedCandidate,
       architecturalEvidence: evaluateArchitecturalEvidence(approvedCandidate.building, program) }] : [];
   });
-  if (!candidates.length) throw new Error('No candidate remained hard-valid inside the approved Footprint. Review the Program or enlarge the Footprint.');
+  if (!candidates.length) throw new Error('No candidate remained valid inside the approved Footprint. Review the Program or enlarge the Footprint.');
   onStage?.('validate_candidates', 'COMPLETE');
   await yieldToUi();
 

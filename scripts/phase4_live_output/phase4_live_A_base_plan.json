@@ -1,0 +1,403 @@
+{
+  "summary": {
+    "label": "A_base_plan",
+    "model": "gemini-flash-lite-latest",
+    "latencyMs": 6828,
+    "manifest": {
+      "flats": 2,
+      "unitMix": [
+        "2BHK",
+        "3BHK"
+      ],
+      "lifts": 2,
+      "stairs": 2,
+      "lobby": true
+    },
+    "interpreted": {
+      "flats": [
+        {
+          "id": "flat_1",
+          "label": "FLAT 01",
+          "unitType": "2BHK",
+          "rooms": 9
+        },
+        {
+          "id": "flat_2",
+          "label": "FLAT 02",
+          "unitType": "3BHK",
+          "rooms": 14
+        }
+      ],
+      "commonRooms": 0,
+      "lifts": 2,
+      "stairs": 2,
+      "lobbies": 1,
+      "corridors": 0,
+      "shafts": 0,
+      "doors": 0,
+      "windows": 0
+    },
+    "status": "ACCEPTED",
+    "stages": {
+      "completeness": "PASS",
+      "manifestMatch": "PASS",
+      "structural": "PASS",
+      "canonicalGeometry": "PASS",
+      "geometryValidation": "PASS"
+    },
+    "counts": {
+      "flats": 2,
+      "unitTypes": [
+        "2BHK",
+        "3BHK"
+      ],
+      "lifts": 2,
+      "stairs": 2,
+      "lobbies": 1,
+      "bedroomsByFlat": {
+        "flat_1": 2,
+        "flat_2": 3
+      }
+    },
+    "errors": [],
+    "warnings": [
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 01 (2BHK) has 0 utility space(s); manifest lists 1.",
+      "APARTMENT_UNIT_OPTIONAL_ROOM_SHORTFALL: FLAT 02 (3BHK) has 0 utility space(s); manifest lists 1."
+    ],
+    "canonicalRooms": 28
+  },
+  "rawInterpretation": {
+    "boundary": {
+      "points": [
+        {
+          "x": 120,
+          "y": 91
+        },
+        {
+          "x": 884,
+          "y": 91
+        },
+        {
+          "x": 884,
+          "y": 918
+        },
+        {
+          "x": 120,
+          "y": 918
+        }
+      ]
+    },
+    "rooms": [
+      {
+        "id": "r_flat1_living",
+        "name": "LIVING/DINING",
+        "type": "living",
+        "x": 120,
+        "y": 149,
+        "width": 242,
+        "height": 178,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_mbed",
+        "name": "MASTER BED",
+        "type": "bedroom",
+        "x": 120,
+        "y": 327,
+        "width": 242,
+        "height": 178,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_bed",
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "x": 120,
+        "y": 505,
+        "width": 242,
+        "height": 178,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_kitchen",
+        "name": "KITCHEN",
+        "type": "kitchen",
+        "x": 120,
+        "y": 683,
+        "width": 151,
+        "height": 105,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_balc1",
+        "name": "BALC",
+        "type": "balcony",
+        "x": 271,
+        "y": 683,
+        "width": 91,
+        "height": 105,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_bath1",
+        "name": "BATH",
+        "type": "bathroom",
+        "x": 120,
+        "y": 788,
+        "width": 121,
+        "height": 89,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_foyer",
+        "name": "FOYER",
+        "type": "foyer",
+        "x": 241,
+        "y": 788,
+        "width": 121,
+        "height": 89,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_bath2",
+        "name": "BATH",
+        "type": "bathroom",
+        "x": 120,
+        "y": 877,
+        "width": 121,
+        "height": 41,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat1_balc2",
+        "name": "BALCONY",
+        "type": "balcony",
+        "x": 241,
+        "y": 877,
+        "width": 121,
+        "height": 41,
+        "flatId": "flat_1"
+      },
+      {
+        "id": "r_flat2_living",
+        "name": "LIVING/DINING",
+        "type": "living",
+        "x": 542,
+        "y": 91,
+        "width": 342,
+        "height": 236,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_mbed",
+        "name": "MASTER BED",
+        "type": "bedroom",
+        "x": 542,
+        "y": 327,
+        "width": 171,
+        "height": 178,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_bed1",
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "x": 713,
+        "y": 327,
+        "width": 171,
+        "height": 178,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_bed2",
+        "name": "BEDROOM",
+        "type": "bedroom",
+        "x": 542,
+        "y": 505,
+        "width": 171,
+        "height": 178,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_kitchen",
+        "name": "KITCHEN",
+        "type": "kitchen",
+        "x": 713,
+        "y": 505,
+        "width": 171,
+        "height": 178,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_balc1",
+        "name": "BALC",
+        "type": "balcony",
+        "x": 542,
+        "y": 683,
+        "width": 91,
+        "height": 105,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_bath1",
+        "name": "BATH",
+        "type": "bathroom",
+        "x": 633,
+        "y": 683,
+        "width": 115,
+        "height": 105,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_bath2",
+        "name": "BATH",
+        "type": "bathroom",
+        "x": 748,
+        "y": 683,
+        "width": 136,
+        "height": 105,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_balc2",
+        "name": "BALC",
+        "type": "balcony",
+        "x": 542,
+        "y": 788,
+        "width": 91,
+        "height": 89,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_bath3",
+        "name": "BATH",
+        "type": "bathroom",
+        "x": 633,
+        "y": 788,
+        "width": 115,
+        "height": 89,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_foyer",
+        "name": "FOYER",
+        "type": "foyer",
+        "x": 748,
+        "y": 788,
+        "width": 136,
+        "height": 89,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_balc3",
+        "name": "BALCONY",
+        "type": "balcony",
+        "x": 542,
+        "y": 877,
+        "width": 91,
+        "height": 41,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_balc4",
+        "name": "BALCONY",
+        "type": "balcony",
+        "x": 633,
+        "y": 877,
+        "width": 115,
+        "height": 41,
+        "flatId": "flat_2"
+      },
+      {
+        "id": "r_flat2_balc5",
+        "name": "BALCONY",
+        "type": "balcony",
+        "x": 748,
+        "y": 877,
+        "width": 136,
+        "height": 41,
+        "flatId": "flat_2"
+      }
+    ],
+    "doors": [],
+    "windows": [],
+    "stairs": [
+      {
+        "id": "stair_1",
+        "name": "STAIR 01 (MAIN)",
+        "x": 362,
+        "y": 91,
+        "width": 100,
+        "height": 100,
+        "flatId": "COMMON",
+        "type": "straight"
+      },
+      {
+        "id": "stair_2",
+        "name": "STAIR 02 (FIRE ESCAPE)",
+        "x": 362,
+        "y": 818,
+        "width": 100,
+        "height": 100,
+        "flatId": "COMMON",
+        "type": "fire_escape"
+      }
+    ],
+    "parking": [],
+    "flats": [
+      {
+        "id": "flat_1",
+        "label": "FLAT 01",
+        "unitType": "2BHK",
+        "x": 120,
+        "y": 91,
+        "width": 242,
+        "height": 827
+      },
+      {
+        "id": "flat_2",
+        "label": "FLAT 02",
+        "unitType": "3BHK",
+        "x": 542,
+        "y": 91,
+        "width": 342,
+        "height": 827
+      }
+    ],
+    "lifts": [
+      {
+        "id": "lift_1",
+        "name": "LIFT 01",
+        "x": 362,
+        "y": 412,
+        "width": 48,
+        "height": 55,
+        "flatId": "COMMON",
+        "type": "passenger"
+      },
+      {
+        "id": "lift_2",
+        "name": "LIFT 02",
+        "x": 362,
+        "y": 467,
+        "width": 48,
+        "height": 55,
+        "flatId": "COMMON",
+        "type": "passenger"
+      }
+    ],
+    "lobbies": [
+      {
+        "id": "lobby_1",
+        "name": "LOBBY",
+        "x": 410,
+        "y": 191,
+        "width": 132,
+        "height": 627,
+        "type": "common_lobby"
+      }
+    ],
+    "corridors": [],
+    "shafts": []
+  }
+}

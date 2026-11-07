@@ -4,7 +4,7 @@ import { polygonArea } from '@ai-floor-planner/geometry-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { calculateFloorPlatePercentage } from '../../services/workspace-commands';
 
-export type WorkspaceLayer = 'rooms' | 'walls' | 'openings' | 'stairs' | 'dimensions' | 'grid' | 'validation';
+export type WorkspaceLayer = 'rooms' | 'walls' | 'openings' | 'stairs' | 'dimensions' | 'grid' | 'validation' | 'siteZones';
 
 interface BuildingNavigatorProps {
   editor: EditorContextValue;
@@ -15,6 +15,7 @@ interface BuildingNavigatorProps {
 }
 
 const layerLabels: Array<{ id: WorkspaceLayer; label: string }> = [
+  { id: 'siteZones', label: 'Site zones & plot' },
   { id: 'rooms', label: 'Rooms' }, { id: 'walls', label: 'Walls' },
   { id: 'openings', label: 'Doors & windows' }, { id: 'stairs', label: 'Stairs' },
   { id: 'dimensions', label: 'Dimensions' }, { id: 'grid', label: 'Grid' },
@@ -36,7 +37,7 @@ export const BuildingNavigator: React.FC<BuildingNavigatorProps> = ({ editor, la
             {[...editor.building.floors].sort((a, b) => b.level - a.level).map(floor => {
               const scale = calculateFloorPlatePercentage(baseArea, polygonArea(floor.boundary));
               const locked = editor.generationControl.lockedFloorIds.includes(floor.id);
-              const issueCount = editor.validationSummary.violations.filter(issue => issue.affectedEntities.some(id =>
+              const issueCount = editor.validationSummary.violations.filter(issue => issue.affectedEntities.some((id: string) =>
                 floor.rooms.some(room => room.id === id) || floor.doors.some(door => door.id === id) || floor.windows.some(window => window.id === id),
               )).length;
               return <button key={floor.id} className={editor.activeFloor.id === floor.id ? 'active' : ''} onClick={() => editor.switchFloor(floor.id)}>

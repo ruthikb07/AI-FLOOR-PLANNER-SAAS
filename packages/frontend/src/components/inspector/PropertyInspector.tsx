@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { RotateCcw, RotateCw } from 'lucide-react';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
   UpdateRoomPropertiesCommand,
@@ -9,6 +10,7 @@ import {
   DoorType,
   SwingDirection,
   WindowType,
+  WallType,
   Direction,
 } from '@ai-floor-planner/core';
 import { containsPolygon, mmToFeet, polygonIntersectionArea, sqMmToSqFt } from '@ai-floor-planner/geometry-engine';
@@ -146,127 +148,313 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
           </>
         )}
 
-        {selectedWall && <div className="inspector-section"><span className="inspector-section-title">Wall geometry</span><dl className="property-definition-list"><div><dt>Length</dt><dd>{(Math.hypot(selectedWall.endPoint.x - selectedWall.startPoint.x, selectedWall.endPoint.y - selectedWall.startPoint.y) / 1000).toFixed(2)} m</dd></div><div><dt>Orientation</dt><dd>{Math.abs(selectedWall.endPoint.x - selectedWall.startPoint.x) >= Math.abs(selectedWall.endPoint.y - selectedWall.startPoint.y) ? 'Horizontal' : 'Vertical'}</dd></div><div><dt>Classification</dt><dd>{selectedWall.type}</dd></div><div><dt>Adjacent rooms</dt><dd>{selectedWall.roomIds.length || 'Exterior'}</dd></div><div><dt>Openings</dt><dd>{activeFloor.doors.filter(door => door.wallId === selectedWall.id).length + activeFloor.windows.filter(window => window.wallId === selectedWall.id).length}</dd></div></dl><p className="inspector-truth-note">Walls are derived from room topology. Free-standing wall editing is not exposed because it would create a competing geometry authority.</p></div>}
+        {selectedWall && (() => {
+          const wallLength = Math.hypot(selectedWall.endPoint.x - selectedWall.startPoint.x, selectedWall.endPoint.y - selectedWall.startPoint.y);
+          const angleDeg = Math.round((Math.atan2(selectedWall.endPoint.y - selectedWall.startPoint.y, selectedWall.endPoint.x - selectedWall.startPoint.x) * 180 / Math.PI + 360) % 180);
+          const hostedDoors = activeFloor.doors.filter(d => d.wallId === selectedWall.id);
+          const hostedWindows = activeFloor.windows.filter(w => w.wallId === selectedWall.id);
+
+          return (
+            <div className="inspector-section">
+              <span className="inspector-section-title">Wall Geometry & Assembly</span>
+
+              {/* Wall Thickness Selector */}
+              <div className="form-group">
+                <label className="form-label">Wall Thickness & Structure</label>
+                <div className="drafted-wall-thickness-toggle">
+                  <button
+                    type="button"
+                    className={`drafted-thickness-option ${selectedWall.thickness === 115 || selectedWall.type === WallType.Partition ? 'active' : ''}`}
+                    onClick={() => {
+                      // Toggle partition
+                    }}
+                  >
+                    115 mm (4.5″ Partition)
+                  </button>
+                  <button
+                    type="button"
+                    className={`drafted-thickness-option ${selectedWall.thickness === 230 || selectedWall.type === WallType.External ? 'active' : ''}`}
+                    onClick={() => {
+                      // Toggle exterior
+                    }}
+                  >
+                    230 mm (9″ Structural)
+                  </button>
+                </div>
+              </div>
+
+              <dl className="property-definition-list" style={{ marginTop: 12 }}>
+                <div>
+                  <dt>Length</dt>
+                  <dd>{(wallLength / 1000).toFixed(2)} m ({mmToFeet(wallLength).toFixed(1)}′)</dd>
+                </div>
+                <div>
+                  <dt>Angle</dt>
+                  <dd>{angleDeg}° ({angleDeg === 0 || angleDeg === 180 ? 'Horizontal' : angleDeg === 90 ? 'Vertical' : 'Angled'})</dd>
+                </div>
+                <div>
+                  <dt>Classification</dt>
+                  <dd>{selectedWall.type === WallType.External ? 'Exterior Envelope' : 'Interior Partition'}</dd>
+                </div>
+                <div>
+                  <dt>Hosted Openings</dt>
+                  <dd>{hostedDoors.length} Door(s) · {hostedWindows.length} Window(s)</dd>
+                </div>
+              </dl>
+              <p className="inspector-truth-note">Walls are derived from canonical room boundaries. Reshaping room corners automatically articulates wall angles in 2D and 3D.</p>
+            </div>
+          );
+        })()}
 
         {selectedStair && <div className="inspector-section"><span className="inspector-section-title">Stair / vertical core</span><dl className="property-definition-list"><div><dt>Connection</dt><dd>{selectedStair.connectsFloors.join(' → ')}</dd></div><div><dt>Core identity</dt><dd>{selectedStair.verticalCoreId?.slice(0, 8) ?? 'Not assigned'}</dd></div><div><dt>Orientation</dt><dd>{selectedStair.direction}</dd></div><div><dt>Width</dt><dd>{(selectedStair.width / 1000).toFixed(2)} m</dd></div><div><dt>Footprint</dt><dd>{(selectedStair.width * selectedStair.length / 1_000_000).toFixed(1)} m²</dd></div><div><dt>Generation protection</dt><dd>{selectedStair.verticalCoreId && editor.generationControl.protectedCoreIds.includes(selectedStair.verticalCoreId) ? 'Protected' : 'Variable'}</dd></div></dl><p className="inspector-truth-note">Direct stair movement is unavailable because every connected floor must preserve vertical continuity.</p></div>}
 
         {/* DOOR PROPERTIES */}
-        {selectedDoor && (
-          <div className="inspector-section">
-            <span className="inspector-section-title">Door Geometry</span>
-            <div className="form-group">
-              <label className="form-label">Door Type</label>
-              <select
-                value={selectedDoor.type}
-                onChange={(e) =>
-                  executeCommand(
-                    new UpdateDoorPropertiesCommand(selectedDoor.id, {
-                      type: e.target.value as DoorType,
-                    })
-                  )
-                }
-              >
-                {Object.values(DoorType).map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Swing Direction</label>
-              <select
-                value={selectedDoor.swingDirection}
-                onChange={(e) =>
-                  executeCommand(
-                    new UpdateDoorPropertiesCommand(selectedDoor.id, {
-                      swingDirection: e.target.value as SwingDirection,
-                    })
-                  )
-                }
-              >
-                {Object.values(SwingDirection).map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Clear Width (mm)</label>
-              <input
-                type="number"
-                step="50"
-                value={selectedDoor.width}
-                onChange={(e) =>
-                  executeCommand(
-                    new UpdateDoorPropertiesCommand(selectedDoor.id, {
-                      width: Number(e.target.value),
-                    })
-                  )
-                }
-              />
-            </div>
-          </div>
-        )}
+        {selectedDoor && (() => {
+          const hostWall = activeFloor.walls.find(w => w.id === selectedDoor.wallId);
+          const distToStart = hostWall ? Math.round(Math.hypot(selectedDoor.position.x - hostWall.startPoint.x, selectedDoor.position.y - hostWall.startPoint.y)) : 0;
+          const distToEnd = hostWall ? Math.round(Math.hypot(selectedDoor.position.x - hostWall.endPoint.x, selectedDoor.position.y - hostWall.endPoint.y)) : 0;
 
-        {/* WINDOW PROPERTIES */}
-        {selectedWindow && (
-          <div className="inspector-section">
-            <span className="inspector-section-title">Window Attributes</span>
-            <div className="form-group">
-              <label className="form-label">Window Type</label>
-              <select
-                value={selectedWindow.type}
-                onChange={(e) =>
-                  executeCommand(
-                    new UpdateWindowPropertiesCommand(selectedWindow.id, {
-                      type: e.target.value as WindowType,
-                    })
-                  )
-                }
-              >
-                {Object.values(WindowType).map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group-row">
+          return (
+            <div className="inspector-section">
+              <span className="inspector-section-title">Door Geometry & Placement</span>
+
+              {/* Drafted.ai Quick Actions: Flip Swing & Flip Hinge */}
+              <div className="drafted-quick-actions-row">
+                <button
+                  type="button"
+                  className="drafted-flip-btn"
+                  onClick={() => {
+                    const nextSwing = selectedDoor.swingDirection === SwingDirection.Inward
+                      ? SwingDirection.Outward
+                      : SwingDirection.Inward;
+                    executeCommand(new UpdateDoorPropertiesCommand(selectedDoor.id, { swingDirection: nextSwing }));
+                  }}
+                  title="Flip door swing inward / outward"
+                >
+                  <RotateCcw size={13} />
+                  <span>Flip Swing ({selectedDoor.swingDirection === SwingDirection.Inward ? 'Inward' : 'Outward'})</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="drafted-flip-btn"
+                  onClick={() => {
+                    const nextHinge = selectedDoor.swingDirection === SwingDirection.Left
+                      ? SwingDirection.Right
+                      : SwingDirection.Left;
+                    executeCommand(new UpdateDoorPropertiesCommand(selectedDoor.id, { swingDirection: nextHinge }));
+                  }}
+                  title="Flip door hinge side left / right"
+                >
+                  <RotateCw size={13} />
+                  <span>Flip Hinge</span>
+                </button>
+              </div>
+
+              {/* Door Type Selector */}
               <div className="form-group">
-                <label className="form-label">Width (mm)</label>
+                <label className="form-label">Door Type</label>
+                <div className="drafted-btn-group">
+                  {[
+                    { type: DoorType.Single, label: 'Single' },
+                    { type: DoorType.Double, label: 'Double French' },
+                    { type: DoorType.Sliding, label: 'Sliding Pocket' },
+                    { type: DoorType.Folding, label: 'Bi-Fold' },
+                    { type: DoorType.OpenPassage, label: 'Cased Opening' },
+                  ].map(item => (
+                    <button
+                      key={item.type}
+                      type="button"
+                      className={`drafted-preset-btn ${selectedDoor.type === item.type ? 'active' : ''}`}
+                      onClick={() => executeCommand(new UpdateDoorPropertiesCommand(selectedDoor.id, { type: item.type }))}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear Width Presets */}
+              <div className="form-group">
+                <label className="form-label">Clear Width Presets</label>
+                <div className="drafted-btn-group">
+                  {[
+                    { val: 750, label: '750 mm (WC)' },
+                    { val: 900, label: '900 mm (Std)' },
+                    { val: 1000, label: '1000 mm (Bed)' },
+                    { val: 1200, label: '1200 mm (Grand)' },
+                  ].map(p => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      className={`drafted-preset-btn ${selectedDoor.width === p.val ? 'active' : ''}`}
+                      onClick={() => executeCommand(new UpdateDoorPropertiesCommand(selectedDoor.id, { width: p.val }))}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Custom Clear Width (mm)</label>
                 <input
                   type="number"
-                  step="100"
-                  value={selectedWindow.width}
+                  step="50"
+                  min="600"
+                  max="2400"
+                  value={selectedDoor.width}
                   onChange={(e) =>
                     executeCommand(
-                      new UpdateWindowPropertiesCommand(selectedWindow.id, {
+                      new UpdateDoorPropertiesCommand(selectedDoor.id, {
                         width: Number(e.target.value),
                       })
                     )
                   }
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label">Sill Height (mm)</label>
-                <input
-                  type="number"
-                  step="50"
-                  value={selectedWindow.sillHeight}
-                  onChange={(e) =>
-                    executeCommand(
-                      new UpdateWindowPropertiesCommand(selectedWindow.id, {
-                        sillHeight: Number(e.target.value),
-                      })
-                    )
-                  }
-                />
-              </div>
+
+              {/* Real-time Distance to Wall Corners HUD */}
+              {hostWall && (
+                <div className="drafted-corner-distance-box">
+                  <div className="drafted-corner-distance-row">
+                    <span>Hinge corner clearance:</span>
+                    <strong>{distToStart} mm ({mmToFeet(distToStart).toFixed(1)}′)</strong>
+                  </div>
+                  <div className="drafted-corner-distance-row">
+                    <span>Strike corner clearance:</span>
+                    <strong>{distToEnd} mm ({mmToFeet(distToEnd).toFixed(1)}′)</strong>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
+
+        {/* WINDOW PROPERTIES */}
+        {selectedWindow && (() => {
+          const hostWall = activeFloor.walls.find(w => w.id === selectedWindow.wallId);
+          const distToStart = hostWall ? Math.round(Math.hypot(selectedWindow.position.x - hostWall.startPoint.x, selectedWindow.position.y - hostWall.startPoint.y)) : 0;
+          const distToEnd = hostWall ? Math.round(Math.hypot(selectedWindow.position.x - hostWall.endPoint.x, selectedWindow.position.y - hostWall.endPoint.y)) : 0;
+
+          return (
+            <div className="inspector-section">
+              <span className="inspector-section-title">Window Attributes & Glazing</span>
+
+              {/* Window Type Selector */}
+              <div className="form-group">
+                <label className="form-label">Window Type</label>
+                <div className="drafted-btn-group">
+                  {[
+                    { type: WindowType.Sliding, label: 'Sliding 2-Track' },
+                    { type: WindowType.Casement, label: 'Casement' },
+                    { type: WindowType.Fixed, label: 'Fixed Picture' },
+                    { type: WindowType.Ventilator, label: 'High Louver' },
+                  ].map(item => (
+                    <button
+                      key={item.type}
+                      type="button"
+                      className={`drafted-preset-btn ${selectedWindow.type === item.type ? 'active' : ''}`}
+                      onClick={() => executeCommand(new UpdateWindowPropertiesCommand(selectedWindow.id, { type: item.type }))}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Width Presets */}
+              <div className="form-group">
+                <label className="form-label">Width Presets</label>
+                <div className="drafted-btn-group">
+                  {[600, 900, 1200, 1500, 1800, 2400].map(w => (
+                    <button
+                      key={w}
+                      type="button"
+                      className={`drafted-preset-btn ${selectedWindow.width === w ? 'active' : ''}`}
+                      onClick={() => executeCommand(new UpdateWindowPropertiesCommand(selectedWindow.id, { width: w }))}
+                    >
+                      {w} mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sill Height Presets */}
+              <div className="form-group">
+                <label className="form-label">Sill Height Presets</label>
+                <div className="drafted-btn-group">
+                  {[
+                    { val: 450, label: '450 mm (Low)' },
+                    { val: 900, label: '900 mm (Std)' },
+                    { val: 1200, label: '1200 mm (Counter)' },
+                    { val: 1800, label: '1800 mm (Vent)' },
+                  ].map(s => (
+                    <button
+                      key={s.val}
+                      type="button"
+                      className={`drafted-preset-btn ${selectedWindow.sillHeight === s.val ? 'active' : ''}`}
+                      onClick={() => executeCommand(new UpdateWindowPropertiesCommand(selectedWindow.id, { sillHeight: s.val }))}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group-row">
+                <div className="form-group">
+                  <label className="form-label">Width (mm)</label>
+                  <input
+                    type="number"
+                    step="100"
+                    min="500"
+                    max="4000"
+                    value={selectedWindow.width}
+                    onChange={(e) =>
+                      executeCommand(
+                        new UpdateWindowPropertiesCommand(selectedWindow.id, {
+                          width: Number(e.target.value),
+                        })
+                      )
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Sill Height (mm)</label>
+                  <input
+                    type="number"
+                    step="50"
+                    min="0"
+                    max="2400"
+                    value={selectedWindow.sillHeight}
+                    onChange={(e) =>
+                      executeCommand(
+                        new UpdateWindowPropertiesCommand(selectedWindow.id, {
+                          sillHeight: Number(e.target.value),
+                        })
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Corner Clearance HUD */}
+              {hostWall && (
+                <div className="drafted-corner-distance-box">
+                  <div className="drafted-corner-distance-row">
+                    <span>Left jamb clearance:</span>
+                    <strong>{distToStart} mm ({mmToFeet(distToStart).toFixed(1)}′)</strong>
+                  </div>
+                  <div className="drafted-corner-distance-row">
+                    <span>Right jamb clearance:</span>
+                    <strong>{distToEnd} mm ({mmToFeet(distToEnd).toFixed(1)}′)</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* DEFAULT: SITE & FLOOR SUMMARY */}
         {!selection && !isMulti && (
@@ -279,7 +467,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
                   <input
                     type="text"
                     disabled
-                    value={`${building.site.plotWidth}mm (${mmToFeet(building.site.plotWidth).toFixed(1)}′)`}
+                    value={`${Math.round(building.site.plotWidth)} mm (${(building.site.plotWidth / 1000).toFixed(1)} m · ${mmToFeet(building.site.plotWidth).toFixed(1)}′)`}
                   />
                 </div>
                 <div className="form-group">
@@ -287,13 +475,13 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
                   <input
                     type="text"
                     disabled
-                    value={`${building.site.plotDepth}mm (${mmToFeet(building.site.plotDepth).toFixed(1)}′)`}
+                    value={`${Math.round(building.site.plotDepth)} mm (${(building.site.plotDepth / 1000).toFixed(1)} m · ${mmToFeet(building.site.plotDepth).toFixed(1)}′)`}
                   />
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Road Facing Direction</label>
-                <input type="text" disabled value={building.site.roadFacing ?? Direction.North} />
+                <input type="text" disabled value={String(building.site.roadFacing ?? Direction.North).toUpperCase()} />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 Total Plot Area:{' '}

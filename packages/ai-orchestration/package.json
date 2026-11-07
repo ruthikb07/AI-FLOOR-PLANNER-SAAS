@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@ai-floor-planner/core": "workspace:*",
+    "@ai-floor-planner/planning-engine": "workspace:*",
     "@ai-floor-planner/constraint-engine": "workspace:*"
   },
   "devDependencies": {

@@ -18,6 +18,7 @@ describe('Performance Benchmarks', () => {
 
   it('validates standard 2BHK plan in under 50ms (MUST requirement)', () => {
     const building = loadFixture('30x50-2bhk');
+    validator.validate(building, { allowIncompleteDraft: true });
     const start = performance.now();
     const summary = validator.validate(building, { allowIncompleteDraft: true });
     const duration = performance.now() - start;
@@ -28,6 +29,7 @@ describe('Performance Benchmarks', () => {
 
   it('validates 3BHK plan in under 50ms', () => {
     const building = loadFixture('30x50-3bhk');
+    validator.validate(building, { allowIncompleteDraft: true });
     const start = performance.now();
     const summary = validator.validate(building, { allowIncompleteDraft: true });
     const duration = performance.now() - start;
@@ -38,6 +40,7 @@ describe('Performance Benchmarks', () => {
 
   it('HARD-only fast validity check runs in under 10ms (MUST requirement)', () => {
     const building = loadFixture('30x50-2bhk');
+    validator.isValid(building, { allowIncompleteDraft: true });
     const start = performance.now();
     const valid = validator.isValid(building, { allowIncompleteDraft: true });
     const duration = performance.now() - start;

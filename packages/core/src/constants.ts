@@ -7,10 +7,18 @@
 export const DEFAULTS = {
   WALL_THICKNESS_EXTERNAL: 230,    // mm
   WALL_THICKNESS_INTERNAL: 150,    // mm
-  WALL_THICKNESS_PARTITION: 100,   // mm
+  WALL_THICKNESS_PARTITION: 115,   // mm
+  WALL_THICKNESS_PARTY: 230,       // mm
+  WALL_THICKNESS_CORRIDOR: 150,    // mm
+  WALL_THICKNESS_SHAFT: 100,       // mm
   FLOOR_HEIGHT: 3000,              // mm (floor-to-floor)
   DOOR_WIDTH: 900,                 // mm
+  DOOR_WIDTH_MAIN_ENTRANCE: 1050,  // mm
+  DOOR_WIDTH_HABITABLE: 900,       // mm
+  DOOR_WIDTH_SERVICE: 750,         // mm
   DOOR_HEIGHT: 2100,               // mm
+  BALCONY_MIN_DEPTH: 1200,         // mm
+  BALCONY_TARGET_DEPTH: 1570,      // mm
   WINDOW_WIDTH: 1200,              // mm
   WINDOW_HEIGHT: 1200,             // mm
   WINDOW_SILL_HEIGHT: 900,         // mm
@@ -41,6 +49,11 @@ export const MINIMUM_ROOM_AREAS: Record<string, number> = {
   bathroom: 2_500_000,        // 2.5 sq m
   living: 12_000_000,         // 12 sq m
   dining: 9_000_000,          // 9 sq m
+  utility: 3_000_000,         // 3 sq m
+  dressing: 3_000_000,        // 3 sq m
+  foyer: 3_500_000,           // 3.5 sq m
+  porch: 4_000_000,           // 4 sq m
+  ots: 1_000_000,             // 1 sq m (Open to Sky shaft)
 };
 
 /**
@@ -54,6 +67,11 @@ export const MINIMUM_DIMENSIONS: Record<string, number> = {
   bathroom: 1200,
   living: 3000,
   dining: 2700,
+  utility: 1200,
+  dressing: 1500,
+  foyer: 1500,
+  porch: 1800,
+  ots: 900,
   corridor: 900,
   staircase: 900,
 };

@@ -45,6 +45,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [name, setName] = useState('My Building Project');
   const [plotWidthFt, setPlotWidthFt] = useState(30);
   const [plotDepthFt, setPlotDepthFt] = useState(50);
+  const [unit, setUnit] = useState<'ft' | 'm'>('ft');
 
   useEffect(() => {
     if (isOpen) setStep(1);
@@ -53,9 +54,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   if (!isOpen) return null;
 
   const safeName = name.trim() || 'Untitled Building Project';
-  const dimensionsValid = plotWidthFt >= 10 && plotDepthFt >= 10;
+  const factor = unit === 'm' ? 1000 : 304.8;
+  const dimensionsValid = Number.isFinite(plotWidthFt) && Number.isFinite(plotDepthFt) && plotWidthFt * factor >= 3048 && plotDepthFt * factor >= 3048;
+  const starterMatches = Math.abs(plotWidthFt * factor - 9144) < 1 && Math.abs(plotDepthFt * factor - 15240) < 1;
 
   const createCanonical = () => {
+    if (!starterMatches) return;
     const building = createCanonical30x50_2BHK(safeName);
     onSelectBuilding(building, safeName, category);
     onClose();
@@ -64,11 +68,11 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const createBlank = () => {
     if (!dimensionsValid) return;
     const building = createEmptyPlot(
-      Math.round(plotWidthFt * 304.8),
-      Math.round(plotDepthFt * 304.8),
+      Math.round(plotWidthFt * factor),
+      Math.round(plotDepthFt * factor),
       safeName,
     );
-    onSelectBuilding(building, safeName, category);
+    onSelectBuilding({ ...building, site: { ...building.site, unitSystem: unit === 'm' ? 'metric' : 'imperial' } }, safeName, category);
     onClose();
   };
 
@@ -110,28 +114,39 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   <input id="project-name" value={name} onChange={event => setName(event.target.value)} placeholder="e.g. East Avenue Residence" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="plot-width">Plot frontage (ft)</label>
+                  <label className="form-label" htmlFor="plot-units">Units (choose before entering sizes)</label>
+                  <select id="plot-units" value={unit} onChange={event => {
+                    const next = event.target.value as 'ft' | 'm';
+                    const nextFactor = next === 'm' ? 1000 : 304.8;
+                    setPlotWidthFt(value => Number((value * factor / nextFactor).toFixed(4)));
+                    setPlotDepthFt(value => Number((value * factor / nextFactor).toFixed(4)));
+                    setUnit(next);
+                  }}><option value="ft">Feet (ft)</option><option value="m">Metres (m)</option></select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="plot-width">Plot frontage ({unit})</label>
                   <input id="plot-width" type="number" min="10" value={plotWidthFt} onChange={event => setPlotWidthFt(Number(event.target.value))} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="plot-depth">Plot depth (ft)</label>
+                  <label className="form-label" htmlFor="plot-depth">Plot depth ({unit})</label>
                   <input id="plot-depth" type="number" min="10" value={plotDepthFt} onChange={event => setPlotDepthFt(Number(event.target.value))} />
                 </div>
               </div>
 
-              {!dimensionsValid && <p className="field-warning" role="alert">Plot dimensions must be at least 10 ft.</p>}
+              {!dimensionsValid && <p className="field-warning" role="alert">Plot dimensions must be finite and at least 3.048 m (10 ft).</p>}
+              {dimensionsValid && <p className="design-site-notice">Site: {plotWidthFt} × {plotDepthFt} {unit} · {(plotWidthFt * plotDepthFt * factor * factor / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 })} m². This is land area, not a requested building area.</p>}
 
               <div className="project-template-grid">
                 {category === 'residential' && (
-                  <button className="project-template-card featured" onClick={createCanonical}>
+                  <button className="project-template-card" onClick={createCanonical} disabled={!starterMatches} title={starterMatches ? 'Load the example model' : 'This fixed example is only available for a 30 × 50 ft site. Your custom site will not be replaced.'}>
                     <span className="project-template-icon"><Sparkles size={19} /></span>
-                    <span><strong>30×50 residential starter</strong><small>Existing deterministic 2BHK model with rooms, walls, doors and windows.</small></span>
+                    <span><strong>Example only · 30×50 ft starter</strong><small>{starterMatches ? 'Example 2BHK model, not a custom generated plan.' : 'Unavailable for your custom dimensions. Create your site below.'}</small></span>
                     <ArrowRight size={16} />
                   </button>
                 )}
-                <button className="project-template-card" onClick={createBlank} disabled={!dimensionsValid}>
+                <button className="project-template-card featured" onClick={createBlank} disabled={!dimensionsValid}>
                   <span className="project-template-icon"><LayoutGrid size={19} /></span>
-                  <span><strong>Blank plot</strong><small>Canonical site boundary ready for professional drafting.</small></span>
+                  <span><strong>Create my {plotWidthFt} × {plotDepthFt} {unit} site</strong><small>Next: specify rooms and target areas in Program, then review a building footprint.</small></span>
                   <ArrowRight size={16} />
                 </button>
               </div>

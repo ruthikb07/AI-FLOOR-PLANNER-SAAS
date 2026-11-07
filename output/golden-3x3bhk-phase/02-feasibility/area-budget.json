@@ -1,0 +1,397 @@
+{
+  "unitBudgets": [
+    {
+      "unitId": {
+        "unitId": "FLAT_01",
+        "targetCarpetSqFt": 1100,
+        "includeUtility": true,
+        "balconyCount": 2
+      },
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "[object Object]_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    },
+    {
+      "unitId": {
+        "unitId": "FLAT_02",
+        "targetCarpetSqFt": 1100,
+        "includeUtility": true,
+        "balconyCount": 2
+      },
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "[object Object]_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    },
+    {
+      "unitId": {
+        "unitId": "FLAT_03",
+        "targetCarpetSqFt": 1100,
+        "includeUtility": true,
+        "balconyCount": 2
+      },
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "[object Object]_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "[object Object]_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    }
+  ]
+}

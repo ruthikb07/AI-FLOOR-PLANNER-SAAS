@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_8971_muidpvsq_f9d676c7",
+  "projectId": "proj_1790426347914",
+  "seed": 8971,
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "provider": "cloudflare-workers-ai",
+  "promptVersion": 2,
+  "originalPrompt": "CREATE ONE PROFESSIONAL 2D INDIAN APARTMENT FLOOR PLAN.\n\nPROJECT: Multi-unit residential apartment (4 floors).\nCURRENT FLOOR: TYPICAL RESIDENTIAL FLOOR.\nJURISDICTION: Pune Municipal Corporation (PMC) (UDCPR 2020 Chapter 6 & Rule 6.2.3).\nPLOT PROPORTIONS: 50m width × 50m depth.\n\nREFERENCE PRIORITY:\n1. USER/MANIFEST REQUIREMENTS (authoritative for counts & mix)\n2. DETERMINISTIC SCHEMATIC (primary structural reference for layout & core)\n3. REFERENCE IMAGE VISUAL STYLE (architectural drafting style only)\n\nHARD REQUIREMENTS:\n1. Generate EXACTLY 4 separate residential flats (FLAT 01: 2BHK, FLAT 02: 2BHK, FLAT 03: 3BHK, FLAT 04: 3BHK).\n2. Exact unit mix: 2 x 2BHK, 2 x 3BHK. Total bedrooms across floor: 10.\n3. Common core: EXACTLY 1 separate elevator shaft(s) [X], EXACTLY 2 staircase(s), common lobby and corridor.\n4. Clean 2D orthographic technical drafting, crisp black architectural linework on white background.\n5. English only: readable English architectural labels only (FLAT, LIVING, BEDROOM, KITCHEN, BATH, BALCONY, LIFT, STAIR, COMMON LOBBY).\n\nDO NOT GENERATE:\nNo villa, no single-family house, no extra flats, no missing flats, no merged flats. No 3D, no perspective, no photorealism, no furniture clutter, no Cyrillic or non-Latin script.",
+  "negativePrompt": "NO VILLA, NO SINGLE FAMILY HOUSE, NO EXTRA FLATS, NO MISSING FLATS, NO MERGED FLATS, NO WRONG UNIT MIX, NO EXTRA BEDROOMS, NO MISSING BEDROOMS, NO EXTRA LIFTS, NO MISSING LIFTS, NO EXTRA STAIRS, NO MISSING STAIRS, NO RANDOM CORE, NO RANDOM AMENITIES, NO RANDOM ROOMS, NO CYRILLIC, NO RUSSIAN, NO NON-LATIN SCRIPT, NO GIBBERISH, NO PSEUDO-TEXT, NO RANDOM NUMBERS, NO WATERMARK, NO LOGO, NO 3D, NO PERSPECTIVE, NO PHOTOREALISTIC INTERIOR, NO HAND DRAWING, NO ARTISTIC RENDERING, NO DISTORTED WALLS, NO OVERLAPPING FLATS, NO FLOATING WALLS",
+  "width": 1024,
+  "height": 1024,
+  "mimeType": "image/jpeg",
+  "generatedAt": "2026-09-26T12:41:47.332Z",
+  "latencyMs": 10598
+}

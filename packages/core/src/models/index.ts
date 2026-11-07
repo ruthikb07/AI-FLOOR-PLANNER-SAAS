@@ -24,6 +24,7 @@ export {
   createWindow,
   createStair,
   createColumn,
+  createFurnitureItem,
   createSite,
   rectToPolygon,
 } from './factory';
@@ -37,6 +38,7 @@ export type {
   CreateWindowParams,
   CreateStairParams,
   CreateColumnParams,
+  CreateFurnitureItemParams,
   CreateSiteParams,
 } from './factory';
 

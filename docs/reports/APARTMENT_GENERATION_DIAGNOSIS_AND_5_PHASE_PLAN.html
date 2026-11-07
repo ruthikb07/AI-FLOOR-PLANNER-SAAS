@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apartment Generation Diagnosis & 5-Phase Recovery Plan</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#555; --line:#ddd; --accent:#7a3b1d; --crit:#b3261e; --warn:#8a6d00; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: var(--ink);
+         max-width: 900px; margin: 0 auto; padding: 40px 32px 80px; line-height: 1.55; font-size: 15px; }
+  h1 { font-size: 26px; line-height:1.2; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 34px 0 8px; padding-top: 14px; border-top: 2px solid var(--line); }
+  h3 { font-size: 16px; margin: 22px 0 6px; color: var(--accent); }
+  p, li { color: var(--ink); }
+  code { background:#f4f4f4; padding:1px 5px; border-radius:4px; font-size: 90%; }
+  pre { background:#f6f8fa; border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow:auto; font-size:12.5px; line-height:1.4; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13.5px; }
+  th, td { border:1px solid var(--line); padding:7px 9px; text-align:left; vertical-align: top; }
+  th { background:#f4efe9; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 0; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:10px; color:#fff; }
+  .crit { background: var(--crit); } .high { background:#c25e00; } .med { background:#8a6d00; } .low { background:#5a6b5a; }
+  blockquote { border-left:4px solid var(--accent); margin:12px 0; padding:6px 14px; background:#faf6f2; color:#333; }
+  hr { border:none; border-top:1px solid var(--line); margin: 24px 0; }
+  .note { font-size:12.5px; color:var(--muted); }
+  @media print {
+    body { padding: 0 8px; font-size: 11.5pt; max-width:none; }
+    h2 { page-break-after: avoid; } h3 { page-break-after: avoid; }
+    pre, table, blockquote { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>AI Architectural Floor Planner — Apartment Generation Diagnosis &amp; 5-Phase Recovery Plan</h1>
+<p class="sub"><strong>Diagnostic report only — no code was changed to produce this document.</strong><br/>
+Why the current apartment (and house/villa) image generation produces overlapping, zero-scoring, or no valid output — and a phased path to fix it.<br/>
+Authority order used (project memory §69): <em>Actual repository &gt; Master PRD &gt; Historical memory &gt; Assumption.</em> Claims are tied to specific files or verified Cloudflare docs.</p>
+
+<p class="note">A Markdown copy of this report lives at <code>docs/reports/APARTMENT_GENERATION_DIAGNOSIS_AND_5_PHASE_PLAN.md</code>. To make a PDF: open this HTML in a browser → <strong>Print</strong> → <strong>Save as PDF</strong>.</p>
+
+<hr/>
+
+<h2>Part 1 — What the system actually is</h2>
+<p>A pnpm monorepo. Packages relevant to generation:</p>
+<table>
+<tr><th>Package</th><th>Role in generation</th></tr>
+<tr><td><code>ai-orchestration</code></td><td>Prompt compiler, apartment manifest/schematic/typologies, FLUX provider, Gemini provider, preflight, vision interpretation, architectural evaluation.</td></tr>
+<tr><td><code>backend</code></td><td>HTTP routes, <code>GenerationOrchestrator</code>, env/credentials, artifact store, reference-image loading.</td></tr>
+<tr><td><code>frontend</code></td><td><code>StudioShell.tsx</code> drives Generate; <code>backend-api.ts</code> calls the orchestrator.</td></tr>
+<tr><td><code>planning/geometry/constraint-engine</code></td><td>Deterministic feasibility, geometry, hard validation.</td></tr>
+</table>
+
+<h3>Intended pipeline (from <code>generation-orchestrator.ts</code>)</h3>
+<pre>USER INPUT
+  → (apartment) completeness gate → deterministic feasibility gate
+  → deterministic SCHEMATIC + MANIFEST (must agree, or STOP)
+  → compile FLUX prompt (+ reference images + schematic PNG)
+  → FLUX (@cf/black-forest-labs/flux-2-klein-4b) → raw PNG
+  → image quality gate (bytes/format/variance)
+  → Gemini apartment PREFLIGHT (zero-tolerance count checks)
+  → [if pass] persist → Gemini INTERPRETATION → geometry + HARD VALIDATION
+  → Gemini architectural EVALUATION (0–100)
+  → candidate (image + validated 2D + score)</pre>
+<p>The architecture on paper matches the memory. The problems are in <em>how</em> several stages are implemented, plus one hard structural limit that blocks most flat counts before FLUX is even called.</p>
+
+<h3>What already works</h3>
+<ul>
+<li><strong>FLUX transport design is correct</strong> — multipart/form-data, runtime-generated boundary, up to four image inputs. Matches Cloudflare's documented klein contract. <span class="note">(Verified against Cloudflare Workers AI docs; content rephrased for licensing compliance.)</span></li>
+<li><strong>Reference assets exist</strong>: <code>backend/data/reference-images/normalized_512/</code> holds three apartment PNGs (+ <code>originals/</code>).</li>
+<li><strong>Manifest</strong> computes exact per-floor counts correctly.</li>
+<li><strong>Completeness + feasibility gates</strong> are substantive.</li>
+<li>Stage state machine and resumable interpretation are present.</li>
+</ul>
+<p>This is <strong>not a rebuild</strong> — it is targeted defects on a sound skeleton.</p>
+
+<h2>Part 2 — The problems</h2>
+
+<h3>P1 — Schematic hard-fails for any flat count other than 2, 3, or 4 <span class="tag crit">CRITICAL</span></h3>
+<p><strong>Evidence:</strong> <code>schematic.ts</code> branches <code>length===2 / ===3 / else</code>; the <code>else</code> always builds exactly 4 quadrant units. <code>flatCount = finalFlats.length</code>, but units pushed = 4. Then <code>validateSchematicMatchesManifest</code> checks <code>schematic.units.length === manifest.units.exactCount</code>.</p>
+<ul>
+<li><strong>1 flat</strong> → schematic builds 4 → mismatch → <code>schematic_validation</code> error → <strong>no image at all</strong>.</li>
+<li><strong>5, 6, …</strong> → builds only 4 → mismatch → <strong>hard stop</strong>.</li>
+<li>Only <strong>2/3/4</strong> ever reach FLUX.</li>
+</ul>
+<p><strong>Effect:</strong> Directly blocks your "1, 2, 3, 4, 6, any … villas too" requirement.</p>
+
+<h3>P2 — A ~120-line prose prompt sent to a distilled 4-step model <span class="tag crit">CRITICAL</span></h3>
+<p><strong>Evidence:</strong> <code>compileApartmentFloorPlanImagePrompt()</code> assembles priority rules, per-unit breakdowns, "HARD REQUIREMENTS 1–11", organisation sentences, forbidden-text lists. <code>flux-2-klein-4b</code> is a distilled model with <strong>fixed 4-step inference</strong> (Cloudflare confirms <code>steps</code> can't be changed). Few-step models follow long instructions and render exact counts/text poorly.</p>
+<p><strong>Effect:</strong> Overlapping rooms, wrong flat/lift/stair counts, villa-like/gibberish output — exactly what memory §55 warned about.</p>
+
+<h3>P3 — Square 1024×1024 output, no aspect adaptation <span class="tag high">HIGH</span></h3>
+<p><strong>Evidence:</strong> both compilers default <code>width/height = 1024</code>; plot aspect ratio is never mapped to image size. <strong>Effect:</strong> Real plates (and your references) are rectangular/portrait; a square canvas cramps multi-flat layouts → overlap. klein supports non-square output up to ~4 MP.</p>
+
+<h3>P4 — Zero-tolerance preflight is what stamps "score 0" <span class="tag high">HIGH</span></h3>
+<p><strong>Evidence:</strong> <code>evaluateApartmentPreflight</code> fails on any deviation; the orchestrator then pushes the candidate with <code>overallScore: 0, status: REJECTED, evaluation: null</code> — interpretation/validation/real scoring never run. <strong>Effect:</strong> Because P1–P3 make output structurally wrong, nearly everything is rejected and shows as <strong>0</strong>. That "0" is a gate placeholder, not an architectural score. Gemini also miscounts on garbled images, compounding rejects.</p>
+
+<h3>P5 — Gemini model IDs are fragile / likely invalid → all Gemini stages can 404 <span class="tag high">HIGH</span></h3>
+<p><strong>Evidence:</strong> <code>.env</code> has <code>GEMINI_MODEL=gemini-flash-lite-latest</code>, fallback <code>gemini-3.1-flash-lite</code>; <code>env.ts</code> default <code>gemini-3.6-flash</code>. In <code>gemini.ts</code>, 400/404 throws immediately. <code>gemini-3.1-flash-lite</code>/<code>gemini-3.6-flash</code> are not real Google IDs. <strong>Effect:</strong> If the primary alias is unavailable, understanding + preflight + interpretation + evaluation all fail — independent of image quality.</p>
+
+<h3>P6 — References are weak and can be silently dropped <span class="tag high">HIGH</span></h3>
+<p><strong>Evidence:</strong> the schematic PNG (<code>schematic-renderer.ts</code>) is a crude colored-rectangle diagram; rooms are placed on a naive 3×3 grid regardless of adjacency. On a 400 with references present, the provider <strong>silently retries without any references</strong> (only a <code>console.warn</code>). <strong>Effect:</strong> The style-enforcement mechanism is both low-value and unreliable; a 4-flat reference also fights a 2-flat request.</p>
+
+<h3>P7 — Unsupported request fields may cause the UI "fetch failed" <span class="tag high">MED-HIGH</span></h3>
+<p><strong>Evidence:</strong> <code>buildCloudflareImageRequestBody()</code> adds <code>steps</code> and (by default) <code>negative_prompt</code>. klein's documented multipart params are <code>prompt/width/height</code> (+ images); <code>steps</code> is fixed and <code>negative_prompt</code> isn't documented. The 400-fallback only fires when references are present and never strips these fields. <strong>Effect:</strong> A 400 on unknown fields (or a timeout on 4 large images) surfaces as generic <code>fetch failed</code>. Transport <em>design</em> is fine; the <em>payload</em> is over-specified.</p>
+
+<h3>P8 — Image handed to Gemini via a brittle regex <span class="tag med">MEDIUM</span></h3>
+<p><strong>Evidence:</strong> preflight/interpretation/evaluation embed the image as text <code>IMAGE (base64 mime):\n…</code>; <code>buildGeminiParts()</code> regex converts it to <code>inlineData</code>. Any wording change silently sends a multi-MB base64 <em>string</em> as text → vision fails. <strong>Effect:</strong> Latent failure on the next refactor.</p>
+
+<h3>P9 — Villa / bungalow path is under-served <span class="tag med">MEDIUM</span></h3>
+<p><strong>Evidence:</strong> <code>residential_independent</code> uses <code>compileFloorPlanImagePrompt()</code> — reasonable, but still square 1024, no references, weaker label guards. <strong>Effect:</strong> "Adapt for villas/bungalows" is only partially met.</p>
+
+<h3>P10 — Consistency / typing niggles <span class="tag low">LOW</span></h3>
+<ul>
+<li>Default setbacks differ: <code>manifest.ts</code> {3,2,2,2} m vs <code>schematic.ts</code> {4.5,3,3,3} m.</li>
+<li>Two <code>DeterministicApartmentSchematic</code> definitions (renderer imports from <code>types/apartment</code>); confirm identical shape.</li>
+<li><code>image-quality-gate.ts</code> uses byte-variance as a detail proxy — coarse, not structural.</li>
+</ul>
+
+<h3>Severity summary</h3>
+<table>
+<tr><th>#</th><th>Problem</th><th>Severity</th><th>Symptom explained</th></tr>
+<tr><td>P1</td><td>Schematic supports only 2/3/4 flats</td><td>Critical</td><td>only some counts work; 1/5/6 blocked</td></tr>
+<tr><td>P2</td><td>Giant prose prompt to distilled model</td><td>Critical</td><td>overlapping, wrong counts, gibberish</td></tr>
+<tr><td>P3</td><td>Square 1024×1024</td><td>High</td><td>cramping / overlap</td></tr>
+<tr><td>P4</td><td>Zero-tolerance preflight → 0</td><td>High</td><td>"scoring 0", rejected</td></tr>
+<tr><td>P5</td><td>Fragile/invalid Gemini model IDs</td><td>High</td><td>nothing progresses, 0s</td></tr>
+<tr><td>P6</td><td>Weak / silently-dropped references</td><td>High</td><td>style not apartment-like</td></tr>
+<tr><td>P7</td><td>Unsupported FLUX fields</td><td>Med-High</td><td>"fetch failed"</td></tr>
+<tr><td>P8</td><td>Regex image passing</td><td>Medium</td><td>latent vision failure</td></tr>
+<tr><td>P9</td><td>Villa path untuned</td><td>Medium</td><td>weak non-apartment output</td></tr>
+<tr><td>P10</td><td>Setback/type inconsistencies</td><td>Low</td><td>subtle area drift</td></tr>
+</table>
+
+<h2>Part 3 — Reference images</h2>
+<p><strong>What you uploaded</strong> is the right visual language: top-down orthographic, black-on-white technical linework, central lift/stair core, dry balconies, sit-outs, ducts/OTS, English labels. Images #1–#3 are 4-flat, mostly <strong>portrait</strong> plates.</p>
+<p><strong>The catch:</strong> all show <strong>4 flats</strong>. A 4-flat reference pulls a weak model toward 4 even when the user asks for 2. Memory §27: <em>user count wins</em>. So references must be <strong>selected to match the requested count</strong>, not thrown in blindly.</p>
+<h3>Upload a small, labelled reference library</h3>
+<table>
+<tr><th>Bucket</th><th>Show</th></tr>
+<tr><td><code>flats_1</code></td><td>Single large unit per floor (or a villa plate for house mode).</td></tr>
+<tr><td><code>flats_2</code></td><td>Two mirrored units either side of a central core (lift + 2 stairs).</td></tr>
+<tr><td><code>flats_3</code></td><td>Three units around a core.</td></tr>
+<tr><td><code>flats_4</code></td><td>Quad/pinwheel around a central core — your image #1 is ideal.</td></tr>
+<tr><td><code>flats_6</code></td><td>Six units, double-loaded corridor or two cores.</td></tr>
+<tr><td><code>villa</code></td><td>Single-family bungalow/villa plan for independent-house mode.</td></tr>
+</table>
+<p>2–3 clean images per bucket, 512×512 normalised, cropped to remove title blocks/watermarks/PII (memory §26), labelled <code>LIVING / DINING / KITCHEN / MASTER BEDROOM / BEDROOM 2 / BATH / BALCONY / UTILITY / LIFT / STAIR / COMMON LOBBY / DUCT</code>. Keep originals untouched (§28). <strong>Count and organisation come from the deterministic schematic/manifest, not the reference (§27, §30).</strong></p>
+
+<h2>Part 4 — Solution direction (the decision that shapes everything)</h2>
+<p>Memory §60 already gives the escape hatch. Two architectures:</p>
+<p><strong>Option A — Reference/schematic-guided FLUX (current intent).</strong> Short structured instruction + strong schematic image + count-matched references. Ceiling: nicer plates, but exact counts stay probabilistic on a distilled model, so the strict gate still rejects a share.</p>
+<p><strong>Option B — Deterministic base-plan → FLUX as styling layer (§60 fallback).</strong> The engine already produces exact geometry; render it to a clean base plan, use FLUX only to stylise (or skip FLUX for the authoritative 2D). Reliable when counts are non-negotiable — which is your requirement.</p>
+<blockquote><strong>Recommendation:</strong> Pursue <strong>A for visual quality but make B the guarantee of correctness.</strong> The deterministic schematic is the source of truth for counts/zoning; FLUX renders <em>that</em> layout (image-to-image / strong reference) rather than inventing one from text. If FLUX misses after a bounded retry, fall back to the deterministic base-plan render so the user still gets a correct, editable plan. This satisfies "exactly N flats for any N" and villa adaptation without betting correctness on a 4-step model.</blockquote>
+
+<h2>Part 5 — The five phases</h2>
+<p>Each phase is shippable and ends with an acceptance gate. Order follows memory §67.</p>
+
+<h3>Phase 1 — Unblock arbitrary flat counts + fix transport &amp; model config</h3>
+<p><strong>Goal:</strong> Make any configuration (incl. 1/5/6 flats and villas) reach FLUX and return a byte-valid image; stop generating on invalid model IDs / rejected payloads. <strong>Addresses:</strong> P1, P5, P7, P10.</p>
+<ol>
+<li>Generalise <code>schematic.ts</code> to partition the plate for <strong>N</strong> flats (drop hard-coded 2/3/4/else); ensure <code>schematic.units.length === flatsPerFloor === manifest.units.exactCount</code> for all N. Add single-unit and villa paths.</li>
+<li>Pin real Gemini model IDs in <code>.env</code>/<code>env.ts</code>; verify with a smoke call; remove fictional fallbacks.</li>
+<li>Trim FLUX payload to documented klein params (<code>prompt/width/height</code> + images); drop <code>steps</code>/<code>negative_prompt</code> or gate them; add a transport log so "fetch failed" is diagnosable.</li>
+<li>Reconcile setback defaults; unify the schematic type.</li>
+</ol>
+<p><strong>Gate:</strong> flat counts {1,2,3,4,6} and villa reach the FLUX call (no schematic stop) and return a byte-valid PNG; a no-reference/no-negative klein request returns 200+PNG; a one-shot Gemini call returns text.</p>
+
+<h3>Phase 2 — Replace prose with a compact instruction + count-matched references</h3>
+<p><strong>Goal:</strong> Stop asking a distilled model to read an essay; let the schematic image carry structure. <strong>Addresses:</strong> P2, P3, P6, P9.</p>
+<ol>
+<li>Rewrite <code>compileApartmentFloorPlanImagePrompt</code> to a short directive; keep the manifest as metadata/logging, not prose.</li>
+<li>Derive <code>width/height</code> from plot aspect (portrait/landscape), within klein limits; never force square.</li>
+<li>Upgrade the schematic scaffold into a readable line drawing (labelled rooms, core, <code>[X][X]</code> lifts, hatched stairs) worth sending as <code>input_image</code>.</li>
+<li>Select references from the <code>flats_N</code>/<code>villa</code> bucket that matches the request.</li>
+<li>Record silent reference drops on candidate diagnostics.</li>
+<li>Apply the same aspect + reference logic to the villa compiler.</li>
+</ol>
+<p><strong>Gate:</strong> On the §65 scenario (2 flats: 1×2BHK+1×3BHK, 2 lifts, 2 stairs, lobby), at least one seed yields an image a human agrees looks like a 2-flat Indian plate (manual acceptance — 200 ≠ success); output aspect matches the plot.</p>
+
+<h3>Phase 3 — Make the gate honest + add the deterministic fallback</h3>
+<p><strong>Goal:</strong> Distinguish "gate-rejected" from "scored"; guarantee a correct editable plan even when FLUX misses. <strong>Addresses:</strong> P4 + the correctness guarantee.</p>
+<ol>
+<li>UI/state: a preflight rejection reads "Rejected at visual preflight: reasons", not "Score 0/100". Reserve 0–100 for real evaluation.</li>
+<li>Bounded seeded retry (memory §20); if still failing, fall back to rendering the deterministic schematic as the authoritative base plan, marked <code>FALLBACK_DETERMINISTIC</code> (never claim FLUX succeeded — §45).</li>
+<li>Let preflight advise rather than hard-block once the fallback enforces exact counts — without weakening count guarantees.</li>
+</ol>
+<p><strong>Gate:</strong> The §65 scenario always yields exactly the requested flats/lifts/stairs (FLUX pass or deterministic fallback); no gate-rejected image ever shows "0" as an architectural score.</p>
+
+<h3>Phase 4 — Strengthen image→2D interpretation &amp; hard validation</h3>
+<p><strong>Goal:</strong> Turn the accepted image (or base plan) into a validated canonical 2D model reliably. <strong>Addresses:</strong> P8 + apartment validation depth (§41–§43).</p>
+<ol>
+<li>Pass images to Gemini as real image parts (explicit field on <code>complete()</code>); retire the regex dependency.</li>
+<li>Apartment-aware interpretation: capture per-flat grouping, core, lifts, stairs, lobby; normalise into canonical geometry.</li>
+<li>Apartment-specific hard validation: verify unit count, party-wall separation, core presence, and manifest-match before acceptance. Deterministic validation stays authoritative (§42).</li>
+</ol>
+<p><strong>Gate:</strong> An accepted plan interprets into geometry that passes hard validation, with validated counts equal to the manifest; interpretation no longer depends on prompt wording.</p>
+
+<h3>Phase 5 — Gemini evaluation, honest stage UX, and the scale sweep</h3>
+<p><strong>Goal:</strong> Advisory 0–100 on valid plans; unmistakable stage UI; prove scaling across counts and building types. <strong>Addresses:</strong> P9 completion, §48–§49, §66.</p>
+<ol>
+<li>Run <code>evaluatePlanArchitecturally</code> only after hard validation; show categories as advisory (§43).</li>
+<li>Honest stage UI (§49): true current stage with real per-stage state; never fake progress or show a failed stage as success.</li>
+<li>Scale sweep as acceptance: run the full loop for 1/2/3/4/6 flats and a villa, confirming exact counts and adaptation.</li>
+</ol>
+<p><strong>Gate:</strong> The §66 end-to-end loop works for §65 and the scale sweep; quality-gate discipline recorded (focused/package tests, typecheck, lint, real smoke test) using <code>INTERNAL ENGINEERING GATE PASSED</code> / <code>PROFESSIONAL REVIEW REQUIRED</code> language, never "should pass."</p>
+
+<h2>Appendix</h2>
+<h3>A. Security — act now (§15/§36)</h3>
+<p><code>backend/.env</code> currently holds <strong>live</strong> <code>GEMINI_API_KEY</code>, <code>CLOUDFLARE_ACCOUNT_ID</code>, and <code>CLOUDFLARE_API_TOKEN</code> in the working tree. Even though <code>.env</code> is git-ignored, these are real secrets and should be <strong>rotated</strong> (regenerate the Cloudflare token and Gemini key) and kept only in the secure server environment. Do not paste them into docs/issues/logs. (Values intentionally not reproduced here.)</p>
+<h3>B. Model configuration reality check</h3>
+<ul>
+<li><strong>FLUX:</strong> <code>@cf/black-forest-labs/flux-2-klein-4b</code> is real, distilled, fixed-4-step, multipart, up to 4×512×512 image inputs, base64 output. Keep it (§4); the limitation is instruction-following, not availability. If reference-guided quality is insufficient, <code>flux-2-dev</code>/<code>flux-2-klein-9b</code> follow prompts better at higher latency — change only with evidence (§61).</li>
+<li><strong>Gemini:</strong> replace fictional <code>gemini-3.x</code> IDs with real, currently-available IDs; verify with a smoke call.</li>
+</ul>
+<h3>C. Per-phase verification checklist (§63)</h3>
+<ol>
+<li>Focused unit tests for the changed module.</li>
+<li>Package test suite.</li>
+<li>Typecheck + lint.</li>
+<li>Real (non-mocked) provider smoke test for FLUX and Gemini.</li>
+<li>Manual visual acceptance where quality matters — HTTP 200 ≠ success.</li>
+<li>Diff review; no unrelated scope (don't touch <code>projection-3d</code> for 2D work).</li>
+</ol>
+<h3>D. Out of scope (§61)</h3>
+<p>No app rebuild; no removing AiDesignSpec/deterministic geometry/feasibility/validation; no making FLUX/Gemini the CAD engine; no silent image repair or silent requirement edits; no copying reference geometry; no code-compliance or structural claims; no premature BIM/IFC or load analysis.</p>
+
+<hr/>
+<p class="note">End of report. No repository code was modified in producing this analysis.</p>
+
+</body>
+</html>

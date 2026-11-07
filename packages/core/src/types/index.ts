@@ -31,7 +31,33 @@ export {
   ChangeSource,
   PlotShape,
   AITaskType,
+  BuildingTypologyCategory,
 } from './enums';
+
+export type {
+  FlatPerFloorTopology,
+  LotAllotmentMode,
+  ApartmentBhkType,
+  ApartmentJurisdictionCode,
+} from './enums';
+
+// Dynamic Apartment Manifest & Programmatic Schedules
+export {
+  APARTMENT_METRIC_CLEARANCES,
+  PROGRAMMATIC_1BHK_MANIFEST,
+  PROGRAMMATIC_2BHK_MANIFEST,
+  PROGRAMMATIC_3BHK_MANIFEST,
+  PROGRAMMATIC_4BHK_MANIFEST,
+  getProgrammaticBhkManifest,
+  getFlatPerFloorTopology,
+  createDynamicApartmentManifest,
+} from './apartment-manifest';
+
+export type {
+  DynamicApartmentUnitSpec,
+  DynamicApartmentManifest,
+  ProgrammaticRoomSpec,
+} from './apartment-manifest';
 
 // Building model
 export type {
@@ -41,6 +67,8 @@ export type {
   SiteUnitSystem,
   SitePlanningValue,
   SiteDevelopmentControls,
+  SiteZoneKind,
+  SiteZone,
   Site,
   AdjacencyRequirement,
   Room,
@@ -80,6 +108,7 @@ export type {
 export type {
   TokenUsage,
   ModelInfo,
+  AIImageInput,
   AIRequest,
   AIResponse,
   AIChunk,
@@ -159,8 +188,15 @@ export type {
   DesignRequirementSpecification,
   RequirementValidationIssue,
   RequirementValidationResult,
+  DesignDiagnostics,
+  DiagnosticIssue,
+  DesignObservation,
   DesignSpecification,
+  DesignStrategy,
+  FootprintStrategyKind,
   CandidateMetrics,
+  SiteZoneCategoryBreakdown,
+  SiteUtilizationAudit,
   CandidatePlan,
   ArchitecturalEvidence,
   CandidateOptimizationSummary,
@@ -174,3 +210,9 @@ export type {
   ProjectMetadata,
   HistoricalProject,
 } from './design-intelligence';
+
+// Multi-Sheet Coordinated Apartment Engine (§1C)
+export * from './multi-sheet-apartment';
+
+// Plancraft Canonical Furniture & DSL Contracts
+export * from './furniture';

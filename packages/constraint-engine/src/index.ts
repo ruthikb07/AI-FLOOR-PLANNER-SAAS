@@ -115,3 +115,4 @@ export {
   WallAlignment,
   ColumnGrid,
 } from './constraints/soft/index';
+export { validateApartmentClosure } from './apartment-closure';

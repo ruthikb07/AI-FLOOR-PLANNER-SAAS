@@ -1,0 +1,14 @@
+{
+  "runNumber": 3,
+  "seed": 1001,
+  "requestedFlats": 3,
+  "generatedFlats": 3,
+  "requested3Bhk": 3,
+  "generatedValid3Bhk": 3,
+  "coreLifts": 2,
+  "coreStairs": 2,
+  "hardErrors": 0,
+  "preflight": "PASS",
+  "status": "ACCEPTED",
+  "source": "DETERMINISTIC_SCHEMATIC"
+}

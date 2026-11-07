@@ -1,0 +1,468 @@
+`# AI BUILDING SAAS — PROJECT MEMORY & PHASE TRACKER
+# File: .memory
+# Last Updated: 2026-09-17
+# Based on: Phased Product Requirements Document (PRD)
+
+================================================================================
+EXECUTIVE SUMMARY & PRODUCT VISION
+================================================================================
+Core Mission:
+Real plan generation, complete site utilization (100% plot accounting), and
+conceptual structural coordination with columns and beams.
+
+Non-Negotiable Product Principles:
+1. Canonical Building Model remains the sole source of truth for site, floors,
+   rooms, walls, openings, structural concepts, and audit metadata. 2D SVG,
+   Three.js 3D scenes, and UI components are projections of this model.
+2. The 100% Site-Utilization Invariant:
+   Plot area = Setbacks / Protected Reserve
+             + Building Footprint
+             + Parking (with road-connected maneuvering)
+             + Landscape / Garden
+             + Circulation (Pedestrian + Vehicle)
+             + Services
+             + Future Expansion / Declared Open Space
+   *No residual site area may be displayed as unexplained blank space.*
+   *Full plot classification is mandatory; full building coverage is not.*
+   *The 50x50 plot issue: The generator sizes the footprint to the requested
+   program rather than stretching rooms. The bug is leaving residual land
+   unassigned, not failing to stretch the building.*
+3. Safety & Professional Boundaries:
+   Columns and beams are conceptual planning aids only. They must be explicitly
+   labeled "Conceptual / Engineer Review Required" until approved by a licensed
+   structural engineer. No code compliance or member adequacy may be claimed.
+4. Truthful AI & Generation Provenance:
+   Studio generation runs locally and deterministically; external LLMs are
+   optional and backend-dependent. The UI and candidate records must truthfully
+   report provenance (direct user brief, rule-based parser, local fallback, or
+   provider LLM), never implying AI generation when running locally.
+
+================================================================================
+CANONICAL MODEL SPECIFICATION (TARGET STATE)
+================================================================================
+Entities to exist in `@ai-floor-planner/core`:
+- SiteZone:
+    id: string
+    kind: 'setback' | 'parking' | 'garden' | 'pedestrian_circulation' |
+          'vehicle_circulation' | 'service' | 'future_expansion'
+    boundary: Polygon
+    area: number
+    accessLinks: readonly string[]
+    source: 'RULE_BASED' | 'USER_DEFINED' | 'GENERATED'
+    reviewStatus: 'UNREVIEWED' | 'REVIEWED' | 'LOCKED'
+- StructuralGrid:
+    id: string
+    floorScope: readonly number[]
+    gridlinesX: readonly { id: string; x: number; label: string; locked: boolean }[]
+    gridlinesY: readonly { id: string; y: number; label: string; locked: boolean }[]
+    spacing: { min: number; max: number; target: number }
+    provenance: string
+    lockState: boolean
+    reviewStatus: 'CONCEPTUAL' | 'REVIEWED'
+- Column:
+    id: string
+    position: Point
+    footprint: Polygon | { width: number; depth: number }
+    supportedLevels: readonly number[]
+    gridReference?: string
+    conceptualDimensions: { widthMm: number; depthMm: number; shape: 'rectangular' | 'circular' }
+    status: 'CONCEPTUAL' | 'LOCKED' | 'ENGINEER_REVIEW_REQUIRED'
+- Beam:
+    id: string
+    floorLevel: number
+    startSupport: { entityId: string; type: 'column' | 'wall' }
+    endSupport: { entityId: string; type: 'column' | 'wall' }
+    sectionPlaceholders: { widthMm: number; depthMm: number }
+    spanMm: number
+    status: 'CONCEPTUAL' | 'UNSUPPORTED' | 'EXCESSIVE_SPAN' | 'VALID'
+- GenerationAudit:
+    seed: number
+    requirementsHash: string
+    engineVersions: { core: string; planning: string; geometry: string }
+    providerProvenance: 'DIRECT_BRIEF' | 'RULE_BASED' | 'PROVIDER_LLM' | 'LOCAL_FALLBACK'
+    providerModel?: string
+    diagnostics: readonly DiagnosticIssue[]
+    siteUtilizationBalance: {
+      plotAreaMm2: number
+      allocatedAreaMm2: number
+      unallocatedAreaMm2: number
+      categories: Record<string, number>
+    }
+    approvalState: 'UNREVIEWED' | 'REVIEWED' | 'EXPORTED'
+
+================================================================================
+PHASED PROGRESS TRACKER: DONE vs. NOT DONE
+================================================================================
+
+--------------------------------------------------------------------------------
+PHASE 0: ESTABLISH A TRUTHFUL BASELINE
+--------------------------------------------------------------------------------
+Goal: Clean dev environment, truthful provenance, eliminate silent fallbacks,
+      and establish 50x50 deterministic baseline fixture.
+Exit Gate: A tester can prove which engine produced a plan, reproduce it with
+           the same seed and requirements, and distinguish it from a starter plan.
+
+[DONE TILL NOW]:
+  [x] Workspace package dependencies restored and built (pnpm 9.7.0 installed
+      globally, corepack/turbo configured).
+  [x] Build passes across all 7 workspace packages (`pnpm run build` - 7/7 success).
+  [x] Test suite passes cleanly across packages (`pnpm test` - 14/14 tasks, 500+ tests).
+  [x] Dev server starts and serves application on http://localhost:3000/ with
+      active watching and HMR (Vite + tsc --watch).
+  [x] Rule-based requirement parser exists in `@ai-floor-planner/ai-orchestration`.
+  [x] CandidateGenerator supports deterministic seeds (42, 20260904, etc.).
+
+[NOT DONE / PENDING]:
+  [ ] Backend package resolution: `packages/backend` is empty (no package.json,
+      empty api/db/services). Either implement the lightweight backend or
+      explicitly configure Studio to run in explicit deterministic-only mode
+      without phantom fetch requests to 127.0.0.1:4200.
+  [ ] Add GenerationAudit metadata to every CandidatePlan and Building.
+  [ ] Visible UI provenance badge in Studio (distinguishing Direct Brief,
+      Rule-Based, Provider LLM, and Local Fallback).
+  [ ] Clean separation in Studio between starter/saved projects and newly
+      generated candidates in UI and history.
+  [ ] 50x50 regression fixture recording the exact brief and verifying deterministic
+      output reproducibility.
+
+--------------------------------------------------------------------------------
+PHASE 1: SITE UTILIZATION AND COMPLETE PLOT ACCOUNTING
+--------------------------------------------------------------------------------
+Goal: Introduce SiteZone, complete 100% plot accounting, and eliminate
+      unexplained blank space on the plot.
+Exit Gate: For the 50x50 scenario, 100% of the plot is classified and every
+           zone has a valid polygon, label, area, and rationale.
+Status: [x] COMPLETED & VERIFIED (2026-09-17)
+
+[DONE]:
+  [x] Add `SiteZone`, `SiteZoneKind`, `SiteUtilizationAudit`, and
+      `SiteZoneCategoryBreakdown` types to `packages/core/src/types/building.ts`
+      and `design-intelligence.ts`.
+  [x] Implement Site Layout Planner (`packages/planning-engine/src/site/site-planner.ts`)
+      that partitions 100% of the plot into setbacks, building footprint envelope,
+      parking, garden/landscape, pedestrian/vehicle circulation, services, and future expansion.
+  [x] Collect explicit site constraints in brief: parking count, garden preference,
+      service yard need, future expansion preference, road access, and circulation.
+  [x] Replace area-only residual accounting with non-overlapping, validated site-zone
+      polygons with explicit architectural and municipal rationale.
+  [x] Enforce Site Utilization Invariant:
+      Plot Area == sum of non-overlapping site zones + building ground footprint
+      (strictly 0.0 m² unallocated space; validated to epsilon < 1e-4).
+  [x] Render site zones and their labels in 2D with distinct architectural pattern
+      hatches (`svg-renderer.ts`, `render-config.ts`, and `ArchitecturalCanvas.tsx`).
+  [x] Add Plot Accounting Ledger & Complete Site Utilization Inspector in Studio
+      (`StudioShell.tsx` Stage 2: `Site & Plot`), featuring:
+      - Prominent status badge: "100.0% OF PLOT ACCOUNTED" (0.0 m² unallocated).
+      - Metric cards (Plot Area, Footprint, Site Zones, Parking Spaces).
+      - Category Breakdown Table (m², sq ft, % plot share, municipal rationale).
+      - Individual Zone Inventory with dedicated status chips.
+  [x] 50x50 regression test (`packages/planning-engine/src/__tests__/site-utilization-50x50.test.ts`)
+      proving 100% classified plot area with 0 blank space (Phase 1 Exit Gate passed).
+  [x] Implement Full Plot Construction Mode for 50x50 ft plots (User Specification: 100% Building Footprint):
+      - Ground Floor occupies 100% of the plot footprint (2,500 sq ft / 232.26 m²) with zero unbuilt residual space.
+      - Hierarchical floor area invariant: Ground Floor is strictly the most space-occupied area (Area(Ground) >= Area(Floor 1) >= Area(Floor 2)).
+      - Garden is strictly optional and default OFF; when disabled, the entire plot is utilized for building construction.
+      - Vertical core (staircase shaft) locked to identical (x, y, w, h) across all floors for structural integrity.
+      - Added Foyer, Utility/Pantry, expanded living & bedroom dimensions to realistically fill 2,500 sq ft plate without layout gaps.
+      - Interactive toggles in Studio UI Stage 3 ("Brief & Program") for Full Plot Coverage and Optional Garden.
+      - Full automated regression test suite: `packages/planning-engine/src/__tests__/full-plot-50x50.test.ts` (100% pass).
+      - Visual verification in real browser: 2D CAD & 3D Studio screenshots and WebP recording generated.
+  [x] Comprehensive test suites passed:
+      - `packages/core`: 177/177 tests
+      - `packages/planning-engine`: 233/233 tests (including full-plot-50x50 suite)
+      - `packages/renderer`: 88/88 tests
+      - `packages/frontend`: 81/81 tests
+      - Full Monorepo: 14/14 tasks, 579 tests passed cleanly.
+  [x] Visual verification in browser: Saved screenshots and recording proving
+      clean rendering of the 100% plot accounting visualizer and ledger, as well as full-plot 2D and 3D floor plans.
+
+--------------------------------------------------------------------------------
+PHASE 2: ARCHITECTURAL PLANNING ENGINE & REAL DETERMINISTIC GENERATION
+--------------------------------------------------------------------------------
+Goal: Overhaul generator from "rectangle packing" to an Architectural Planning Engine
+      derived from the 3 reference sets (Row house with front parking, 29.5 ft
+      frontage with central OTS, stepped multi-wing massing).
+Exit Gate: Generates articulated, non-square footprints with human-scale rooms,
+           dedicated off-street parking bay (>= 15 m2), central OTS light well,
+           grouped wet zones, entrance foyer, living daylight frontage, locked
+           vertical stair core, and 100% plot residual allocation.
+Status: [x] COMPLETED & VERIFIED (2026-09-17)
+
+[DONE]:
+  [x] Architectural Planning Engine pipeline:
+      SITE -> SITE ANALYSIS -> BUILDABLE ENVELOPE -> LAND-USE STRATEGY ->
+      MASSING -> ZONING & CIRCULATION -> VERTICAL CORE & LIGHT SHAFTS ->
+      ROOM GEOMETRY -> OPENINGS -> RESIDUAL ALLOCATION -> CANDIDATE EVALUATION.
+  [x] Articulated massing generator (`massing-generator.ts`):
+      - 6-point L-shape with front parking court notch.
+      - Central courtyard with OTS (Open to Sky) light well.
+      - 8-point offset stepped wings for service and garden pockets.
+      - Compact frontage for narrow urban plots.
+  [x] Architectural layout engine (`architectural-layout-engine.ts`):
+      - Entrance Foyer & Verandah at arrival.
+      - Living Room with front road daylight exposure.
+      - Dog-legged Staircase placed off arrival foyer, vertically locked across floors.
+      - Central Distribution Lobby preventing through-traffic inside rooms.
+      - Grouped wet zones (baths/toilets) backing directly onto OTS light well.
+      - Rear Kitchen connected to Utility / Wash Yard with exterior service door.
+      - Perimeter Bedrooms with exterior wall exposures for operable windows.
+  [x] Site residual partitioner (`site-planner.ts`):
+      - Off-street parking bay (min 3.0m x 5.0m, >= 15 m2) + pedestrian walkway.
+      - Stepped wing setbacks allocated to garden courts and service yards.
+      - 100% residual plot accounting with strictly 0.0 m2 unallocated space.
+  [x] Mandatory 50x50 Benchmark Suite (`architectural-generation-benchmark.test.ts`):
+      - Case A: Articulated non-square footprints with human-scale rooms (PASS).
+      - Case B: Dedicated parking bay with front access and pedestrian arrival (PASS).
+      - Case C: 100% site zoning, front garden, rear service yard, >= 3 setbacks (PASS).
+      - Case D: Multi-floor duplex, identical stair core (x,y,w,h), upper balconies (PASS).
+      - Strategy Differentiation: Distinct strategies rather than minor offsets (PASS).
+  [x] Full Monorepo verification:
+      - `@ai-floor-planner/planning-engine`: 238/238 tests passing.
+      - `@ai-floor-planner/core`: 177/177 tests passing.
+      - `@ai-floor-planner/renderer`: 88/88 tests passing.
+      - `@ai-floor-planner/frontend`: 81/81 tests passing.
+      - Turbo build: 7/7 packages clean build.
+  [x] Visual browser verification:
+      - 4 candidate cards with distinct architectural strategies and scores.
+      - Applied 2D CAD floor plan with foyer, stair, OTS, living, and bedrooms.
+      - Extruded 3D model in Three.js with wall penetrations and stepped massing.
+      - 100% Plot Accounting Ledger inspector with 0.0 m2 unallocated space.
+
+--------------------------------------------------------------------------------
+PHASE 3: COLUMN AND BEAM CONCEPTUAL COORDINATION
+--------------------------------------------------------------------------------
+Goal: Generate structural grid, conceptual columns, and beams; run clash &
+      coordination checks; label as Conceptual / Engineer Review Required.
+Exit Gate: Every generated candidate either has a coherent conceptual grid/column/beam
+           representation with no geometry clashes, or is visibly rejected with
+           actionable structural diagnostics.
+
+[DONE TILL NOW]:
+  [x] Primitive `Column` interface in `packages/core/src/types/building.ts`.
+
+[NOT DONE / PENDING]:
+  [ ] Add `StructuralGrid` and `Beam` interfaces to canonical building model.
+  [ ] Implement Structural Concept Planner in `packages/planning-engine` to:
+      - Generate grid from footprint edges, room spans, and stair cores.
+      - Place columns at grid intersections or vetted support points.
+      - Place beams between compatible supports; detect unsupported or excessive spans.
+  [ ] Hard coordination checks:
+      - No column in a door swing or required clear path.
+      - No unsupported beam ends.
+      - No column outside floor slab or plot boundary.
+      - No clash with stairs, elevators, or locked openings.
+  [ ] Provide structural overlay in 2D renderer and 3D projection.
+  [ ] Allow locking/unlocking and moving of conceptual gridlines in UI.
+  [ ] Enforce safety labeling: "Conceptual / Engineer Review Required".
+
+--------------------------------------------------------------------------------
+PHASE 4: PRODUCT UI, REVIEW AND EXPORT
+--------------------------------------------------------------------------------
+Goal: Rebuild Studio workflow around Site -> Structure lifecycle; add plot
+      utilization ledger, layer toggles, and truthful concept exports.
+Exit Gate: User can understand why each square metre exists, inspect structure
+           separately, compare candidates, and export a truthful concept document.
+
+[DONE TILL NOW]:
+  [x] Studio shell with navigation tabs (Overview, Site & Plot, Brief & Program,
+      Generate (AI), Floor Plans (2D), 3D Studio, Insights).
+  [x] 2D SVG canvas with pan, zoom, fit, and basic layer toggling.
+  [x] 3D Three.js viewer for extruded building model.
+
+[NOT DONE / PENDING]:
+  [ ] Realign Studio stages to match site-to-structure workflow:
+      Site -> Brief -> Site Plan -> Building Plan -> Structure -> Review -> Export.
+  [ ] Plot utilization ledger in UI displaying exact breakdown of plot area.
+  [ ] Site-zone legend and unallocated-area alert banner.
+  [ ] Expose 2D/3D layers for Site Zones, Structural Grid, Columns, Beams,
+      Dimensions, and Diagnostics.
+  [ ] Candidate comparison view showing plot ledger and structural readiness.
+  [ ] Export package generator (SVG/PDF/DXF) containing Floor Plan, Site Plan,
+      Structural Concept Overlay, Assumptions Ledger, and Diagnostic Audit.
+
+--------------------------------------------------------------------------------
+PHASE 5: OPTIONAL PROVIDER-BACKED AI
+--------------------------------------------------------------------------------
+Goal: Secure backend service for external AI providers; LLM used only for
+      intake and explanation; strict fallback and provenance transparency.
+Exit Gate: Configured AI and deterministic fallback paths produce normalized,
+           auditable requirements and never conceal an unavailable provider.
+
+[DONE TILL NOW]:
+  [x] Provider-neutral requirement extraction schema in `packages/ai-orchestration`.
+  [x] RuleBasedRequirementParser for deterministic local operation.
+
+[NOT DONE / PENDING]:
+  [ ] Implement backend API service in `packages/backend` with provider configuration,
+      rate limiting, and schema validation.
+  [ ] Ensure LLMs are strictly bounded to requirement extraction, brief explanation,
+      and guided edits (never directly generating authoritative geometry).
+  [ ] Display exact provider name, model, latency, and parse warnings in UI.
+
+--------------------------------------------------------------------------------
+PHASE 6: HARDENING AND RELEASE READINESS
+--------------------------------------------------------------------------------
+Goal: Comprehensive test coverage, multi-scenario regression fixtures,
+      visual regression, and professional review boundaries.
+Exit Gate: All acceptance tests pass in a clean environment, regressions are
+           blocked in CI, and professional review boundaries are present in-product
+           and in exports.
+
+[DONE TILL NOW]:
+  [x] Unit tests for core geometry, versioning, footprint, and room layout.
+
+[NOT DONE / PENDING]:
+  [ ] Scenario regression fixtures:
+      - 50x50 plot (15.24m x 15.24m) complete site utilization.
+      - Compact urban plots with tight setbacks.
+      - Corner plots with dual road access.
+      - Large residential estates with extensive landscaping.
+      - Multi-floor homes with vertical core and wet-stack alignment.
+  [ ] Visual regression tests for 2D SVG and 3D projection renders.
+  [ ] End-to-end integration test verifying generation -> site accounting ->
+      structural concept -> persistence -> export.
+  [ ] Formal architectural and structural review gates in product documentation.
+
+================================================================================
+IMMEDIATE EXECUTION FOCUS: PHASE 3 — COLUMN AND BEAM CONCEPTUAL COORDINATION
+================================================================================
+Goal: Generate structural grid, conceptual columns, and beams; run clash &
+      coordination checks; label as "Conceptual / Engineer Review Required".
+
+Key Objectives:
+1. Structural Grid & Members Domain Model:
+   Implement `StructuralGrid` and `Beam` models in `@ai-floor-planner/core`.
+2. Structural Concept Planner:
+   Generate structural bays from room perimeter walls, major spans, and stair cores;
+   place conceptual columns and connecting beams.
+3. Coordination & Clash Engine:
+   Enforce structural clearance: no columns blocking door swings, circulation paths,
+   or stairs; unsupported beam ends detected and flagged.
+4. Visualization & Projections:
+   Provide structural layer toggle in 2D SVG canvas and conceptual column/beam
+   solids in 3D Three.js scene.
+5. Professional Safety Standard:
+   Strictly enforce disclaimer: "Conceptual / Engineer Review Required".
+
+================================================================================
+2026-09-20 — PHASE 2 + PHASE 3 + PHASE 4 CORE: COMPLETED & VERIFIED
+================================================================================
+Scope note: this work implements the NEW four-phase product loop from the current
+Master PRD (Smart Input → FLUX → Image→2D + Gemini → 3D/2D/Doors/UI). The older
+structural-coordination phase numbering in this file is historical and does NOT
+describe the current four-phase sequence (PRD wins over memory). Structural/BIM
+coordination remains DEFERRED_POST_V1 future work (PRD §35).
+
+PHASE 1 (already complete): unified input, feasibility gate (PLAN_NOT_FEASIBLE),
+deterministic prompt compiler, security hardening (no hardcoded keys).
+
+PHASE 2 — FLUX Image Generation (COMPLETE):
+  [x] ImageGenerationProvider + CloudflareImageProvider (@cf/black-forest-labs/flux-2-klein-4b)
+  [x] Deterministic request builder: same input+seed → identical request; new seed → new candidate
+  [x] packages/backend server: /api/v1/image/floor-plan, /api/v1/health, immutable ImageArtifactStore (never overwrites original image)
+  [x] Frontend AiConceptImagePanel in GenerationWorkspace; floorPlanImage session persisted (schema v1)
+  [x] LocalStubImageProvider (explicit IMAGE_PROVIDER=local-stub dev opt-in; truthful provenance, real deterministic PNG)
+  [x] Backend runtime: esbuild JS-API bundle → packages/backend/dist-server/server.cjs (Node ESM removes directory extension guessing)
+
+PHASE 3 — Image → 2D + Gemini Evaluation (COMPLETE):
+  [x] planning-engine/interpretation: ExtractedPlan IR, normalizeExtractedPlan (site-dimension mm mapping, aspect-mismatch warning, no distortion), parseExtractionPayload (untrusted vision JSON), extractPlanToBuilding, attachExtractedOpenings, validateExtractedPlan (hard validation, REJECT never repair)
+  [x] ai-orchestration: interpretPlanImageWithGemini (vision schema), evaluatePlanArchitecturally (structured scores, never free-form)
+  [x] Backend routes: POST /api/v1/image/interpret (returns geometry ONLY when ACCEPTED), POST /api/v1/architecture/evaluate (503 honestly when unconfigured)
+  [x] Frontend: useImageToPlan hook (real stage tracking: reading → interpreting → validating → evaluating), ImageToPlanPanel in GenerationWorkspace, persisted architecturalEvaluation (schema v1)
+  [x] Live E2E verified: real backend HTTP span, generated image → interpret → ACCEPTED with canonical Building (5 rooms, 1 floor)
+
+PHASE 4 CORE — 2D↔3D consistency + Door system integrity (COMPLETE):
+  [x] projection-3d consistency tests: exact room + opening identity match (no spontaneous/vanished geometry), door customization reflected in 3D without model recreation
+  [x] core door-system-integrity tests: add/update-type/width/swing/move/remove all reversible via canonical commands (Single/Double/Sliding/Folding/OpenPassage)
+  [x] 3D remains a projection of the canonical Building Model (never independent truth)
+
+VERIFIED GATES (2026-09-20): pnpm test 18/18 tasks, typecheck 15/15, lint 15/15, build 9/9, E2E 9/9 root tests.
+
+================================================================================
+2026-09-26 — RECOVERY PLAN PHASE 3 (docs/reports/APARTMENT_GENERATION_DIAGNOSIS_AND_5_PHASE_PLAN.md)
+HONEST GATE + DETERMINISTIC FALLBACK — INTERNAL ENGINEERING GATE PASSED (live FLUX blocked, see below)
+================================================================================
+  [x] Preflight rejection = REJECTED at VISUAL_PREFLIGHT, validation.overallScore null, evaluation null,
+      no interpretation/validation/scoring. Preflight that throws = UNAVAILABLE (never a pass).
+  [x] Bounded deterministic retry: deriveVisualAttemptSeed(slot, i) = slot + i*7919 (i=0..2), max 3/slot
+      (deps.maxVisualAttempts, clamped 1..3). Only seed changes between attempts.
+  [x] Fallback: services/deterministic-fallback.ts — schematic -> Building (tags flat:/core:*),
+      validateApartmentPlan WITHOUT preflight, counts re-measured on Building vs manifest (mismatch = REJECTED),
+      base-plan PNG via renderSchematicPng512 saved as NEW artifact provider 'deterministic-planner'.
+      Candidate source FALLBACK_DETERMINISTIC, visualSource DETERMINISTIC_SCHEMATIC; real Gemini eval if available.
+  [x] Result: candidateSource, fallback{...}, visualAttempts; stages.visualPreflight, imageGeneration EXHAUSTED.
+  [x] Frontend: services/two-ai-candidates.ts; StudioShell shows 'Gemini: N/100' only with real evaluation,
+      'Not scored' otherwise; fallback banner lists rejected FLUX attempts + reasons.
+  [ ] KNOWN (Phase 4 scope): schematic room layout is a crude 3x3 grid; unit rooms overlap the core and
+      3BHK rows spill outside the footprint. Counts are exact; geometry quality is not.
+  [ ] Live Cloudflare Klein timed out (>110s) on 2026-09-26; live run used real Gemini + replayed real FLUX
+      recordings (phase3-live-replay.test.ts, PHASE3_LIVE=1). Re-run scripts/test-phase3-acceptance-live.mjs
+      when Workers AI responds.
+
+================================================================================
+2026-09-26 — RECOVERY PLAN PHASE 4: IMAGE → 2D INTERPRETATION + APARTMENT HARD VALIDATION
+INTERNAL ENGINEERING GATE PASSED (live Cloudflare FLUX still timing out; not an image→2D issue)
+================================================================================
+  [x] P8: core AIRequest.images (AIImageInput); gemini buildGeminiParts(request) → text + inlineData,
+      mime allow-list, rejects data URLs/non-base64; regex removed. Preflight/interpretation/evaluation use it.
+      OpenAI provider throws on images (no silent drop).
+  [x] APARTMENT_IMAGE_INTERPRETATION_SCHEMA extends base schema: flats[], rooms/stairs/lifts.flatId
+      ("COMMON" for shared), lobbies, corridors, shafts; normalized 0–1000 frame; manifest context as JSON.
+  [x] planning-engine interpretation/apartment-plan.ts: ApartmentPlanStructure (source IMAGE_INTERPRETATION |
+      DETERMINISTIC_SCHEMATIC) → runApartmentPlanValidation: completeness → manifest match (exact) →
+      structural (party walls, core ownership, nBHK program) → canonical Building → evaluateDesign/collisions/
+      containment + re-measured counts. Never repairs.
+  [x] Schematic geometry fixed (full-length core spine, units never overlap core, squarified rooms) so the
+      FALLBACK_DETERMINISTIC plan passes the same canonical validator.
+  [x] Backend: extraction-pipeline apartment branch uses the interpretation (schematic substitution removed);
+      services/apartment-structure.ts adapters; candidates carry apartmentValidation{source,stages}.
+  [x] Live: real Gemini on the rendered 2-flat base plan → ACCEPTED 3/3 runs (2 flats 2BHK+3BHK, 2 lifts,
+      2 stairs, lobby, 28 canonical rooms). Real FLUX gen_7919 (JPEG) and reference plate #1 → REJECTED
+      with explicit reasons (lift/stair counts, overlapping flat boxes, bedroom counts).
+  [ ] Limitations: utility/balcony shortfalls are warnings; units fill the footprint (not target carpet
+      area); constraint-engine perf benchmarks are wall-clock flaky under turbo load.
+
+================================================================================
+2026-09-26 — RECOVERY PLAN PHASE 5: EVALUATION GATE, HONEST STAGE UX, SCALE SWEEP
+INTERNAL ENGINEERING GATE PASSED (live FLUX unavailable → REPLAY; live villa replay REJECTED)
+================================================================================
+  [x] evaluateIfHardValid(gemini, hardValid, opts) is the ONLY path to evaluatePlanArchitecturally
+      (FLUX path, fallback, resume). Candidate.evaluationStatus: SCORED | NOT_SCORED_REJECTED |
+      NOT_CONFIGURED | UNAVAILABLE; evaluation failure → stage FAILED, never a score.
+  [x] Per-candidate `stages` snapshot; imageTo2D/validation can be SKIPPED (never built/run).
+  [x] Frontend: removed time-driven GENERATION_STAGES/percent/setTimeout milestones; StageChecklist
+      renders only server-reported state; score states SCORED / NOT_SCORED / REJECTED; advisory
+      categories + notice; "you choose which plan to apply".
+  [x] Automated sweep (mocked providers, real pipeline): 1/2/3/4/6 flats FLUX + fallback, villa: exact counts.
+  [x] Live sweep (PHASE5_LIVE=1, phase5-live-sweep.test.ts): FLUX probe timed out (90 s) → REPLAY of recorded
+      real FLUX; real Gemini. 1/2/3/4/6 → PASS via FALLBACK_DETERMINISTIC (exact counts, advisory 82/100);
+      villa (replayed gen_1306) → REJECTED at hard validation (room overlaps), NOT SCORED, no villa fallback.
+      Results: scripts/phase5_sweep_output/phase5_sweep_results.json
+
+================================================================================
+2026-09-26 — TWO-PHASE APARTMENT GENERATION UPGRADE — PHASE 1 (deterministic planning + 4 FLUX concepts)
+INTERNAL ENGINEERING GATE PASSED for deterministic stages; LIVE 4-concept gate NOT MET (Cloudflare quota)
+================================================================================
+  [x] ai-orchestration/apartment/layout-planner.ts: planApartmentLayout — 4 strategies (balanced, daylight,
+      privacy, circulation; APARTMENT_CONCEPT_STRATEGIES), zoned 3-band flats (service/passage/facade),
+      LOBBY→ENTRANCE→FOYER→LIVING/DINING→PASSAGE→BEDROOMS, en-suites, balconies as projections, real doors
+      (connects/type/width/swing), spatial graph + 16 check codes, per-flat area report, floor area balance,
+      deterministic compaction ladder, FEASIBILITY FAIL when it cannot fit. Meets core MINIMUM_ROOM_AREAS/DIMS (+margin).
+  [x] schematic.ts rebuilt on the planner (strategy option; doors, spatialChecks, areaReport, layoutFits, bodyBounds).
+  [x] validateSchematicMatchesManifest: programme, area, spatial checks, feasibilityFail (stops before FLUX).
+  [x] Orchestrator concept mode (apartment candidateCount>1, ≤4): per-strategy schematic, seeds base+i*137,
+      1 FLUX attempt per concept, schematic = input image 1 + 3 rotating refs (≤4 Klein inputs),
+      concept-references/normalized_512 preferred when present, compact concept prompt, conceptSlots
+      (GENERATED | GENERATION_FAILED), candidate.concept; server.requestTimeout 15 min.
+  [x] Frontend: ConceptCardsPanel (4 cards, schematic + FLUX image, preflight, score state, reasons, user Apply only);
+      apartments request candidateCount 4; client safety limit 15 min.
+  [x] planning-engine: 'passage' role (private, not core); opening connects/isFlatEntrance; fallback carries doors.
+  [x] Gates: typecheck 15/15, lint 15/15, build 9/9; tests all pass except live real-provider-smoke (Klein live).
+  [ ] LIVE (scripts/test-two-phase-concepts-live.mjs, seed 42): Candidate 01 generated by klein-4b (21 s),
+      preflight PASS, REJECTED at hard validation (garbled labels → 1 stair, missing kitchen/dining/baths read),
+      NOT SCORED. Candidates 02–04: HTTP 429 "daily free allocation of 10,000 neurons" used up. Fallback ACCEPTED,
+      Gemini advisory 85/100. Output: scripts/two_phase_live_output/.
+  [ ] Blocked on user: Cloudflare quota (wait for daily reset or Workers Paid); model choice klein-4b vs klein-9b
+      (9b answered 3 s today; 4b 21–38 s); place the 4 user reference PNGs (≤512²) in
+      packages/backend/data/reference-images/concept-references/normalized_512.
+  [ ] Phase 2 not started (per instruction: verify Phase 1, stop).

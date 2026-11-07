@@ -31,6 +31,7 @@ import {
   DEFAULT_VALIDATION_DISPLAY,
 } from './types';
 import { CommandHistory } from './history';
+import { AddFloorCommand, RemoveFloorCommand } from './commands/floor-commands';
 
 export interface EditorEngineOptions {
   historyDepth?: number;
@@ -268,6 +269,16 @@ export class EditorEngine {
 
     this.emit('floor_changed', undefined, prevState);
     this.emit('render_requested');
+  }
+
+  /** Add a new floor level. */
+  addFloor(name?: string, floorHeight?: number): void {
+    this.execute(new AddFloorCommand({ name, floorHeight }));
+  }
+
+  /** Remove a floor by ID. */
+  removeFloor(floorId: string): void {
+    this.execute(new RemoveFloorCommand(floorId));
   }
 
   /** Switch active tool. */

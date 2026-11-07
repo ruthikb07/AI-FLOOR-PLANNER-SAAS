@@ -1,4 +1,4 @@
-import type { Direction, Point, Polygon } from '@ai-floor-planner/core';
+import type { Direction, DoorType, Point, Polygon, Stair } from '@ai-floor-planner/core';
 
 export type ProjectionSourceEntityType =
   | 'site'
@@ -52,6 +52,8 @@ export interface Level3D {
 export interface FloorPlate3D extends ProjectionSource {
   readonly sourceEntityType: 'floor';
   readonly boundary: Polygon;
+  /** Architectural voids only; not a structural slab design. */
+  readonly cutouts: readonly Polygon[];
   readonly elevation: number;
   readonly thickness: number;
 }
@@ -78,7 +80,9 @@ export interface Opening3D extends ProjectionSource {
   readonly sourceEntityType: 'door' | 'window';
   readonly hostWallId: string;
   readonly position: Point;
+  /** Start offset along the directed host wall, matching canonical 2D openings. */
   readonly alongWall: number;
+  readonly doorType?: DoorType;
   readonly width: number;
   readonly bottom: number;
   readonly height: number;
@@ -88,12 +92,14 @@ export interface Opening3D extends ProjectionSource {
 export interface RoomSurface3D extends ProjectionSource {
   readonly sourceEntityType: 'room';
   readonly boundary: Polygon;
+  readonly cutouts: readonly Polygon[];
   readonly elevation: number;
   readonly height: number;
   readonly name: string;
 }
 
 export interface Stair3D extends ProjectionSource {
+  readonly canonicalStair: Stair;
   readonly sourceEntityType: 'stair';
   readonly boundary: Polygon;
   readonly elevation: number;
@@ -101,6 +107,7 @@ export interface Stair3D extends ProjectionSource {
   readonly direction: Direction;
   readonly connectsFloors: readonly [number, number];
   readonly verticalCoreId?: string;
+  /** Legacy envelope category; consumers derive flights from canonicalStair. */
   readonly representation: 'SCHEMATIC_VOLUME';
 }
 

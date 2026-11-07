@@ -1,0 +1,104 @@
+[
+  {
+    "id": "apt-room:flat_01__FLAT_01_living_balcony",
+    "unitId": "flat_01",
+    "boundary": {
+      "points": [
+        {
+          "x": 29050,
+          "y": 31300
+        },
+        {
+          "x": 30850,
+          "y": 31300
+        },
+        {
+          "x": 30850,
+          "y": 34600
+        },
+        {
+          "x": 29050,
+          "y": 34600
+        }
+      ]
+    },
+    "area": 5183587.5,
+    "grossArea": 5940000,
+    "usableDepth": 1570,
+    "usableWidth": 3070,
+    "accessDoorIds": [
+      "FLAT_01_door_6"
+    ],
+    "adjacentRoomIds": [
+      "apt-room:flat_01__FLAT_01_living_dining"
+    ]
+  },
+  {
+    "id": "apt-room:flat_02__FLAT_02_living_balcony",
+    "unitId": "flat_02",
+    "boundary": {
+      "points": [
+        {
+          "x": 16700,
+          "y": 27700
+        },
+        {
+          "x": 20000,
+          "y": 27700
+        },
+        {
+          "x": 20000,
+          "y": 29500
+        },
+        {
+          "x": 16700,
+          "y": 29500
+        }
+      ]
+    },
+    "area": 5183587.5,
+    "grossArea": 5940000,
+    "usableDepth": 1570,
+    "usableWidth": 3070,
+    "accessDoorIds": [
+      "FLAT_02_door_6"
+    ],
+    "adjacentRoomIds": [
+      "apt-room:flat_02__FLAT_02_living_dining"
+    ]
+  },
+  {
+    "id": "apt-room:flat_03__FLAT_03_living_balcony",
+    "unitId": "flat_03",
+    "boundary": {
+      "points": [
+        {
+          "x": 30000,
+          "y": 27700
+        },
+        {
+          "x": 33300,
+          "y": 27700
+        },
+        {
+          "x": 33300,
+          "y": 29500
+        },
+        {
+          "x": 30000,
+          "y": 29500
+        }
+      ]
+    },
+    "area": 5183587.5,
+    "grossArea": 5940000,
+    "usableDepth": 1570,
+    "usableWidth": 3070,
+    "accessDoorIds": [
+      "FLAT_03_door_6"
+    ],
+    "adjacentRoomIds": [
+      "apt-room:flat_03__FLAT_03_living_dining"
+    ]
+  }
+]

@@ -9,23 +9,24 @@ import { NewProjectModal } from '../modals/NewProjectModal';
 import { ExportModal } from '../modals/ExportModal';
 import { AIDesignModal } from '../ai-design/AIDesignModal';
 import { AIEditPanel } from '../ai-edit/AIEditPanel';
-import { ValidationPanel } from '../validation/ValidationPanel';
+import { DesignDiagnosticsPanel } from '../diagnostics/DesignDiagnosticsPanel';
 import { BarChart3, Box, DraftingCompass, SlidersHorizontal } from 'lucide-react';
 import { BuildingNavigator, type WorkspaceLayer } from '../workspace/BuildingNavigator';
 import { CommandPalette } from '../workspace/CommandPalette';
 import { floorSearchKeywords, isEditableKeyboardTarget, type WorkspaceCommand } from '../../services/workspace-commands';
-
 type InspectorView = 'properties' | 'quality';
 type WorkspaceView = '2d' | '3d';
 
 const ModelWorkspace = lazy(() => import('../model-3d/ModelWorkspace'));
 
 interface AppShellProps {
+  onNewProject: (projectId: string) => void;
+  onReviewRequirements: () => void;
   onBackToProjects: () => void;
   onOpenSite: () => void;
 }
 
-export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite }) => {
+export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite, onReviewRequirements, onNewProject }) => {
   const editor = useEditorStore();
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -35,10 +36,10 @@ export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite
   const [cursorWorldPos, setCursorWorldPos] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.05);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
+  const [navigatorCollapsed, setNavigatorCollapsed] = useState(true);
   const [fitRequest, setFitRequest] = useState(0);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [layers, setLayers] = useState<Record<WorkspaceLayer, boolean>>({ rooms: true, walls: true, openings: true, stairs: true, dimensions: true, grid: true, validation: true });
+  const [layers, setLayers] = useState<Record<WorkspaceLayer, boolean>>({ rooms: true, walls: true, openings: true, stairs: true, dimensions: true, grid: true, validation: true, siteZones: true });
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('2d');
 
   useEffect(() => {
@@ -121,6 +122,8 @@ export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite
             : <Suspense fallback={<div className="model-loading-state"><Box size={30} /><strong>Loading structured 3D projection…</strong><span>Three.js is downloaded only when 3D mode opens.</span></div>}>
                 <ModelWorkspace
                   building={editor.building}
+                  generationControl={editor.generationControl}
+                  onApplyBuilding={editor.applyRefinement}
                   activeFloorId={editor.activeFloor.id}
                   selection={editor.selection}
                   onSelectEntity={editor.selectEntity}
@@ -156,7 +159,7 @@ export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite
           <div className="inspector-dock-content">
             {inspectorView === 'properties'
               ? <PropertyInspector editor={editor} embedded />
-              : <ValidationPanel editor={editor} />}
+              : <DesignDiagnosticsPanel editor={editor} />}
           </div>
         </aside>
       </main>
@@ -176,7 +179,7 @@ export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite
       <NewProjectModal
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
-        onSelectBuilding={(building, name, category) => editor.setBuilding(building, name, {}, category)}
+        onSelectBuilding={(building, name, category) => { editor.setBuilding(building, name, {}, category); onNewProject(building.projectId); }}
       />
 
       <ExportModal
@@ -189,6 +192,8 @@ export const AppShell: React.FC<AppShellProps> = ({ onBackToProjects, onOpenSite
 
       {/* AI design requirements and candidate-generation modal */}
       <AIDesignModal
+        onReviewRequirements={() => { editor.saveProject(); onReviewRequirements(); }}
+        building={editor.building}
         isOpen={isAIDesignModalOpen}
         onClose={() => setIsAIDesignModalOpen(false)}
         onSelectCandidate={(cand) => {

@@ -1,0 +1,191 @@
+{
+  "mode": "LIVE",
+  "note": "Real Cloudflare FLUX and real Gemini responses in this run (no replay).",
+  "seed": 42,
+  "flats": 2,
+  "elapsedS": 207.5,
+  "success": true,
+  "conceptMode": true,
+  "conceptSlots": [
+    {
+      "candidateNumber": 1,
+      "strategy": "balanced",
+      "label": "Balanced / symmetric",
+      "seed": 42,
+      "status": "GENERATED",
+      "candidateId": "cand_two_ai_42_0",
+      "referenceIds": [
+        "ref_apartment_01_multi_unit_typical",
+        "ref_apartment_02_multi_unit_first",
+        "ref_apartment_03_residential_floors"
+      ]
+    },
+    {
+      "candidateNumber": 2,
+      "strategy": "daylight",
+      "label": "Daylight / external edge",
+      "seed": 179,
+      "status": "GENERATION_FAILED",
+      "candidateId": null,
+      "referenceIds": [
+        "ref_apartment_02_multi_unit_first",
+        "ref_apartment_03_residential_floors",
+        "ref_apartment_01_multi_unit_typical"
+      ],
+      "error": "Cloudflare image generation failed with HTTP 429. AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (7306c134-9edf-4711-91ef-949c019f68c2)"
+    },
+    {
+      "candidateNumber": 3,
+      "strategy": "privacy",
+      "label": "Privacy-oriented",
+      "seed": 316,
+      "status": "GENERATION_FAILED",
+      "candidateId": null,
+      "referenceIds": [
+        "ref_apartment_03_residential_floors",
+        "ref_apartment_01_multi_unit_typical",
+        "ref_apartment_02_multi_unit_first"
+      ],
+      "error": "Cloudflare image generation failed with HTTP 429. AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (e378e6c9-bbec-4bdc-b74a-c53ebc044199)"
+    },
+    {
+      "candidateNumber": 4,
+      "strategy": "circulation",
+      "label": "Circulation / efficiency",
+      "seed": 453,
+      "status": "GENERATION_FAILED",
+      "candidateId": null,
+      "referenceIds": [
+        "ref_apartment_01_multi_unit_typical",
+        "ref_apartment_02_multi_unit_first",
+        "ref_apartment_03_residential_floors"
+      ],
+      "error": "Cloudflare image generation failed with HTTP 429. AiError: AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage. (b393efa2-34a3-462f-9907-1eb2d0602cfa)"
+    }
+  ],
+  "candidateSource": "FALLBACK_DETERMINISTIC",
+  "fallback": {
+    "used": true,
+    "reason": "FLUX_CANDIDATES_REJECTED"
+  },
+  "error": null,
+  "candidates": [
+    {
+      "id": "cand_two_ai_42_0",
+      "candidate": "Candidate 01 — Balanced / symmetric",
+      "strategy": "balanced",
+      "seed": 42,
+      "source": "FLUX",
+      "model": "@cf/black-forest-labs/flux-2-klein-4b",
+      "provider": "cloudflare-workers-ai",
+      "latencyMs": 21074,
+      "references": [
+        "ref_apartment_01_multi_unit_typical",
+        "ref_apartment_02_multi_unit_first",
+        "ref_apartment_03_residential_floors"
+      ],
+      "layoutChecks": "33/33",
+      "status": "REJECTED",
+      "rejectionStage": "HARD_VALIDATION",
+      "preflight": {
+        "pass": true,
+        "summary": "Visual acceptance PASS: 2 flats, 2 lifts, 2 stairs, English labels, verified central core.",
+        "reasons": []
+      },
+      "stages": {
+        "imageGeneration": "SUCCESS",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "PASSED",
+        "imageInterpretation": "SUCCESS",
+        "imageTo2D": "SKIPPED",
+        "validation": "FAILED",
+        "geminiEvaluation": "SKIPPED"
+      },
+      "apartmentValidation": {
+        "source": "IMAGE_INTERPRETATION",
+        "stages": {
+          "completeness": "PASS",
+          "manifestMatch": "FAIL",
+          "structural": "FAIL",
+          "canonicalGeometry": "SKIPPED",
+          "geometryValidation": "SKIPPED"
+        }
+      },
+      "score": "NOT SCORED (rejected at hard validation)",
+      "evaluation": null,
+      "errors": [
+        "Requested 2 stair(s), plan has 1.",
+        "FLAT 01 (2BHK) has 1 bathroom space(s); manifest lists 2.",
+        "FLAT 01 (2BHK) has 0 dining space(s); manifest lists 1.",
+        "FLAT 02 (3BHK) has 0 bathroom space(s); manifest lists 3.",
+        "FLAT 02 (3BHK) has 0 dining space(s); manifest lists 1.",
+        "FLAT 02 (3BHK) has 0 kitchen space(s); manifest lists 1."
+      ],
+      "rejectedReason": "Candidate rejected by deterministic validation: geometric overlap, boundary violation, or room criteria unmet. Image preserved immutable."
+    },
+    {
+      "id": "cand_fallback_deterministic_42",
+      "candidate": "FALLBACK_DETERMINISTIC",
+      "strategy": null,
+      "seed": 42,
+      "source": "FALLBACK_DETERMINISTIC",
+      "model": "deterministic-apartment-schematic-v1",
+      "provider": "deterministic-planner",
+      "latencyMs": 5,
+      "references": [],
+      "layoutChecks": null,
+      "status": "ACCEPTED",
+      "rejectionStage": null,
+      "preflight": null,
+      "stages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "apartmentValidation": {
+        "source": "DETERMINISTIC_SCHEMATIC",
+        "stages": {
+          "completeness": "PASS",
+          "manifestMatch": "PASS",
+          "structural": "PASS",
+          "canonicalGeometry": "PASS",
+          "geometryValidation": "PASS"
+        }
+      },
+      "score": "Gemini (advisory) 85/100",
+      "evaluation": {
+        "overallScore": 85,
+        "requirementSatisfaction": 100,
+        "spatialQuality": 80,
+        "circulation": 85,
+        "adjacency": 85,
+        "zoning": 90,
+        "privacy": 80,
+        "daylight": 80,
+        "efficiency": 85,
+        "roomProportions": 85,
+        "orientation": 80,
+        "strengths": [
+          "Clear separation of public and private zones within both flats",
+          "Dual core vertical circulation (2 lifts, 2 stairs) provides excellent egress and redundancy",
+          "Well-proportioned rooms with dedicated utility spaces and attached bathrooms",
+          "Balanced floor plate layout with symmetrical core arrangement"
+        ],
+        "concerns": [
+          "Kitchen and utility spaces rely partially on internal duct ventilation",
+          "Some bedroom entry doors open directly off main living or foyer spaces",
+          "Long internal corridors within individual flats could be tightened for better circulation efficiency"
+        ],
+        "rationale": "The floor plan successfully fulfills all programmatic requirements for a multi-family layout containing a 2BHK and a 3BHK unit served by dual lifts, dual stairs, and a central common lobby. Vertical circulation is exceptionally well-planned. Zoning within the apartments creates good separation between living and sleeping areas, though minor internal circulation inefficiencies and reliance on mechanical ventilation/ducts for secondary wet spaces slightly reduce the spatial quality score.",
+        "model": "gemini-flash-lite-latest",
+        "latencyMs": 6093
+      },
+      "errors": [],
+      "rejectedReason": null
+    }
+  ]
+}

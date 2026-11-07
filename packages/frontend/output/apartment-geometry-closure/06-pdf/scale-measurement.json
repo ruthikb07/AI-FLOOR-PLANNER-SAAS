@@ -1,0 +1,8 @@
+{
+  "sourceLengthMm": 10000,
+  "requestedScale": "1:100",
+  "expectedPaperMm": 100,
+  "measuredPaperMm": 99.9983888888889,
+  "toleranceMm": 0.01,
+  "passed": true
+}

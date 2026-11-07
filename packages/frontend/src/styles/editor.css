@@ -1,4 +1,5 @@
 @import './design-tokens.css';
+@import './workflow-repair.css';
 
 /* Project shell */
 .project-shell {
@@ -1195,3 +1196,7 @@
 @media(max-width:1440px){.model-control-group:first-child button{padding-inline:5px}.model-context-card{min-width:190px}.model-toolbar{max-width:72%;flex-wrap:wrap;justify-content:flex-end}.model-floor-controls{left:10px;right:10px}.model-level-picker{max-width:42%}}
 @media(max-width:1180px){.model-context-card{display:none}.model-control-group:first-child button:not(.active){display:none}.model-level-picker{max-width:36%}.model-floor-controls{bottom:10px}.workspace-view-switch{top:8px}}
 @media(prefers-reduced-motion:reduce){.model-workspace *{transition-duration:.01ms!important;animation-duration:.01ms!important}.model-loading-state svg{animation:none}}
+.model-stair-panel{top:146px;right:16px;width:min(400px,calc(100% - 32px));max-height:calc(100% - 245px);overflow:auto;z-index:12;padding-bottom:12px}
+.model-stair-panel p,.model-stair-panel li{font-size:12px;line-height:1.55;color:#bdcbd8}
+.model-stair-panel p{margin:12px 16px}.model-stair-panel ul{padding:0 18px 0 32px}.model-stair-panel li{margin:8px 0;color:#f3bf89}
+.model-stair-panel>.btn{margin:0 16px;max-width:calc(100% - 32px)}.model-stair-panel header>button{margin-left:auto;padding:5px 10px;color:#fff}

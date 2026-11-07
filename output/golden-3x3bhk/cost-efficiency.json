@@ -1,0 +1,80 @@
+[
+  {
+    "coreId": "CORE_A_SHARED_LIFT_BANK",
+    "coreName": "Compact Shared Lift Bank",
+    "metrics": {
+      "grossFloorAreaSqM": 438.35,
+      "apartmentAreaSqM": 352.35,
+      "coreAreaSqM": 32.5,
+      "commonCirculationAreaSqM": 23.04,
+      "wallAreaProxySqM": 15,
+      "externalPerimeterM": 110,
+      "shaftCount": 2,
+      "apartmentEfficiencyRatio": 0.804,
+      "coreRatio": 0.074,
+      "circulationRatio": 0.053,
+      "costEfficiencyScore": 100,
+      "positiveFactors": [
+        "High apartment carpet efficiency (80% of gross floor plate)",
+        "Compact paired lift bank sharing a single common lobby (no redundant lift foyers)",
+        "Minimal common corridor area (5% of plate) with short travel paths",
+        "All 3 units share aligned vertical plumbing shafts and wet zones for low piping complexity",
+        "Compact external envelope (shape factor 1.31) minimizing thermal and facade cost"
+      ],
+      "penaltyFactors": [],
+      "rationale": "Design Cost-Efficiency Rating: 100/100. Usable apartment area accounts for 80.4% of typical plate. Core occupies 7.4% and circulation 5.3%. Note: This is an architectural efficiency proxy, NOT a contractor construction quote."
+    }
+  },
+  {
+    "coreId": "CORE_B_CENTRAL_THROUGH",
+    "coreName": "Central Through Lobby Core",
+    "metrics": {
+      "grossFloorAreaSqM": 438.35,
+      "apartmentAreaSqM": 352.35,
+      "coreAreaSqM": 32.5,
+      "commonCirculationAreaSqM": 23.04,
+      "wallAreaProxySqM": 15,
+      "externalPerimeterM": 110,
+      "shaftCount": 2,
+      "apartmentEfficiencyRatio": 0.804,
+      "coreRatio": 0.074,
+      "circulationRatio": 0.053,
+      "costEfficiencyScore": 100,
+      "positiveFactors": [
+        "High apartment carpet efficiency (80% of gross floor plate)",
+        "Compact paired lift bank sharing a single common lobby (no redundant lift foyers)",
+        "Minimal common corridor area (5% of plate) with short travel paths",
+        "Partial wet-stack alignment between adjacent units",
+        "Compact external envelope (shape factor 1.31) minimizing thermal and facade cost"
+      ],
+      "penaltyFactors": [],
+      "rationale": "Design Cost-Efficiency Rating: 100/100. Usable apartment area accounts for 80.4% of typical plate. Core occupies 7.4% and circulation 5.3%. Note: This is an architectural efficiency proxy, NOT a contractor construction quote."
+    }
+  },
+  {
+    "coreId": "CORE_C_COMPACT_INLINE",
+    "coreName": "Linear Compact Core",
+    "metrics": {
+      "grossFloorAreaSqM": 438.35,
+      "apartmentAreaSqM": 352.35,
+      "coreAreaSqM": 32.5,
+      "commonCirculationAreaSqM": 23.04,
+      "wallAreaProxySqM": 15,
+      "externalPerimeterM": 110,
+      "shaftCount": 2,
+      "apartmentEfficiencyRatio": 0.804,
+      "coreRatio": 0.074,
+      "circulationRatio": 0.053,
+      "costEfficiencyScore": 100,
+      "positiveFactors": [
+        "High apartment carpet efficiency (80% of gross floor plate)",
+        "Compact paired lift bank sharing a single common lobby (no redundant lift foyers)",
+        "Minimal common corridor area (5% of plate) with short travel paths",
+        "Partial wet-stack alignment between adjacent units",
+        "Compact external envelope (shape factor 1.31) minimizing thermal and facade cost"
+      ],
+      "penaltyFactors": [],
+      "rationale": "Design Cost-Efficiency Rating: 100/100. Usable apartment area accounts for 80.4% of typical plate. Core occupies 7.4% and circulation 5.3%. Note: This is an architectural efficiency proxy, NOT a contractor construction quote."
+    }
+  }
+]

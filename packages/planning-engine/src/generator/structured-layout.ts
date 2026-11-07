@@ -12,6 +12,7 @@ import { FloorProgramPlanner } from '../multi-floor/planner';
 import {
   Direction,
   DoorType,
+  FunctionalZone,
   RoomType,
   WallType,
   WindowType,
@@ -23,7 +24,7 @@ import {
   createBuilding,
 } from '@ai-floor-planner/core';
 
-export type LayoutStrategy = 'compact_zoning' | 'open_circulation' | 'vastu_aligned';
+export type LayoutStrategy = 'compact_zoning' | 'open_circulation' | 'vastu_aligned' | 'linear_split';
 
 export interface LayoutStrategyProfile {
   readonly strategy: LayoutStrategy;
@@ -31,6 +32,8 @@ export interface LayoutStrategyProfile {
   readonly description: string;
   readonly columnRatio: number;
   readonly priority: Readonly<Partial<Record<RoomType, number>>>;
+  /** Public-room chain rather than independent public spokes off a corridor. */
+  readonly commonAccess?: 'direct_chain';
 }
 
 export const LAYOUT_STRATEGIES: readonly LayoutStrategyProfile[] = [
@@ -75,6 +78,21 @@ export const LAYOUT_STRATEGIES: readonly LayoutStrategyProfile[] = [
     },
   },
 ];
+
+/** Preserve legacy placement for unreviewed programs. Explicit suites can use
+ * the public-chain organization without relying on inferred bathroom owners. */
+export function planningStrategies(vastuRequested: boolean, reviewedPolygon: boolean): readonly LayoutStrategyProfile[] {
+  const common = { ...LAYOUT_STRATEGIES[2]!,
+    strategy: (vastuRequested ? 'vastu_aligned' : 'linear_split') as LayoutStrategy,
+    name: vastuRequested ? 'Vastu-influenced Common-led' : 'Common-led Cluster',
+    description: 'Groups living, dining and kitchen through their own shared edges where feasible; private rooms retain distribution access.',
+    priority: LAYOUT_STRATEGIES[0]!.priority,
+    commonAccess: 'direct_chain' as const,
+  };
+  return [LAYOUT_STRATEGIES[0]!, { ...LAYOUT_STRATEGIES[1]!, name: 'Split Common / Service',
+    description: 'Explores separate common and service banks with shared distribution; exposure is measured, not certified.' },
+  reviewedPolygon ? common : vastuRequested ? LAYOUT_STRATEGIES[2]! : { ...common, commonAccess: undefined }];
+}
 
 interface ColumnPlacement {
   readonly item: RoomProgramItem;
@@ -200,6 +218,71 @@ function packColumns(
   }
 
   if (minimumLoads[0] > depth || minimumLoads[1] > depth) {
+    // Attempt deterministic load rebalancing before giving up:
+    // If one column slightly exceeds depth due to greedy affinity clustering,
+    // search for a single move or a single pairwise swap between columns
+    // that brings both columns within buildable depth while respecting minWidth constraints.
+    const overCol: 0 | 1 = (minimumLoads[0] ?? 0) > depth ? 0 : 1;
+    const underCol: 0 | 1 = overCol === 0 ? 1 : 0;
+    const colOver = columns[overCol];
+    const colUnder = columns[underCol];
+
+    // 1. Try moving a single non-fixed room from overflowing column to under-capacity column
+    let balanced = false;
+    for (let i = 0; i < colOver.length; i++) {
+      const placement = colOver[i]!;
+      if (placement.item.isFixed) continue;
+      const targetWidth = underCol === 0 ? leftWidth : rightWidth;
+      if (targetWidth < placement.item.minWidthMm) continue;
+      const hUnder = minimumHeight(placement.item, targetWidth);
+      const hOver = placement.minimumHeight;
+      const currentUnder = minimumLoads[underCol] ?? 0;
+      const currentOver = minimumLoads[overCol] ?? 0;
+      if (currentUnder + hUnder <= depth && currentOver - hOver <= depth) {
+        colUnder.push({ item: placement.item, minimumHeight: hUnder });
+        colOver.splice(i, 1);
+        minimumLoads[underCol] = currentUnder + hUnder;
+        minimumLoads[overCol] = currentOver - hOver;
+        balanced = true;
+        break;
+      }
+    }
+
+    // 2. If single move didn't balance, try a pairwise swap between columns
+    if (!balanced) {
+      for (let i = 0; i < colOver.length && !balanced; i++) {
+        const itemOver = colOver[i]!;
+        if (itemOver.item.isFixed) continue;
+        const widthUnder = underCol === 0 ? leftWidth : rightWidth;
+        if (widthUnder < itemOver.item.minWidthMm) continue;
+
+        for (let j = 0; j < colUnder.length; j++) {
+          const itemUnder = colUnder[j]!;
+          if (itemUnder.item.isFixed) continue;
+          const widthOver = overCol === 0 ? leftWidth : rightWidth;
+          if (widthOver < itemUnder.item.minWidthMm) continue;
+
+          const newHOverInUnder = minimumHeight(itemOver.item, widthUnder);
+          const newHUnderInOver = minimumHeight(itemUnder.item, widthOver);
+          const currentOver = minimumLoads[overCol] ?? 0;
+          const currentUnder = minimumLoads[underCol] ?? 0;
+          const nextLoadOver = currentOver - itemOver.minimumHeight + newHUnderInOver;
+          const nextLoadUnder = currentUnder - itemUnder.minimumHeight + newHOverInUnder;
+
+          if (nextLoadOver <= depth && nextLoadUnder <= depth) {
+            colUnder[j] = { item: itemOver.item, minimumHeight: newHOverInUnder };
+            colOver[i] = { item: itemUnder.item, minimumHeight: newHUnderInOver };
+            minimumLoads[overCol] = nextLoadOver;
+            minimumLoads[underCol] = nextLoadUnder;
+            balanced = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (minimumLoads[0] > depth || minimumLoads[1] > depth) {
     throw new Error('The room program cannot fit the buildable depth while preserving minimum room dimensions.');
   }
 
@@ -231,12 +314,50 @@ function packColumns(
   return [arrange(columns[0]), arrange(columns[1])];
 }
 
-function allocatedHeights(column: readonly ColumnPlacement[], width: number, depth: number): number[] {
+function allocatedHeights(column: readonly ColumnPlacement[], width: number, depth: number, fullCoverage = false): number[] {
   if (column.length === 0) return [];
   const minimumTotal = column.reduce((sum, placement) => sum + placement.minimumHeight, 0);
   const desired = column.map(placement => desiredHeight(placement.item, width));
   const desiredTotalHeight = desired.reduce((sum, height) => sum + height, 0);
-  if (desiredTotalHeight <= depth) return desired;
+  if (desiredTotalHeight <= depth) {
+    const remaining = depth - desiredTotalHeight;
+    const flexibleIndices = column
+      .map((p, i) => (!p.item.isFixed && p.item.type !== RoomType.Bathroom && p.item.type !== RoomType.Pooja ? i : -1))
+      .filter(i => i >= 0);
+    if (fullCoverage && flexibleIndices.length > 0 && remaining > 0) {
+      const perRoom = Math.floor(remaining / flexibleIndices.length);
+      const remainder = remaining % flexibleIndices.length;
+      const heights = [...desired];
+      flexibleIndices.forEach((idx, i) => {
+        heights[idx] = (heights[idx] ?? 0) + perRoom + (i === 0 ? remainder : 0);
+      });
+      return heights;
+    }
+    if (flexibleIndices.length > 0 && remaining > 200) {
+      const perRoom = Math.floor(remaining / flexibleIndices.length);
+      const heights = [...desired];
+      for (const idx of flexibleIndices) {
+        const item = column[idx]!.item;
+        const currentH = heights[idx] ?? 0;
+        const maxH = Math.max(currentH, Math.floor((item.maxAreaMm2 + width * 10) / width));
+        const extra = Math.min(perRoom, maxH - currentH);
+        if (extra > 0) heights[idx] = currentH + extra;
+      }
+      return heights;
+    }
+    if (fullCoverage && remaining > 0) {
+      const anyNonFixed = column.map((p, i) => (!p.item.isFixed ? i : -1)).filter(i => i >= 0);
+      const targetIndices = anyNonFixed.length > 0 ? anyNonFixed : column.map((_, i) => i);
+      const perRoom = Math.floor(remaining / targetIndices.length);
+      const remainder = remaining % targetIndices.length;
+      const heights = [...desired];
+      targetIndices.forEach((idx, i) => {
+        heights[idx] = (heights[idx] ?? 0) + perRoom + (i === 0 ? remainder : 0);
+      });
+      return heights;
+    }
+    return desired;
+  }
 
   const remaining = Math.max(0, depth - minimumTotal);
   const desiredExtras = desired.map((height, index) =>
@@ -258,14 +379,15 @@ function requiredFloorFootprint(
   maximumDepth: number,
   profile: LayoutStrategyProfile,
   graph: InstanceDesignGraph,
+  fullCoverage = false,
 ): FloorFootprintPlan {
   const leftWidth = Math.round(width * profile.columnRatio);
   const rightWidth = width - leftWidth;
   const [leftColumn, rightColumn] = packColumns(items, leftWidth, rightWidth, maximumDepth, profile, graph);
-  const leftHeights = allocatedHeights(leftColumn, leftWidth, maximumDepth);
-  const rightHeights = allocatedHeights(rightColumn, rightWidth, maximumDepth);
-  const leftDepth = leftHeights.reduce((sum, value) => sum + value, 0);
-  const rightDepth = rightHeights.reduce((sum, value) => sum + value, 0);
+  const leftHeights = allocatedHeights(leftColumn, leftWidth, maximumDepth, fullCoverage);
+  const rightHeights = allocatedHeights(rightColumn, rightWidth, maximumDepth, fullCoverage);
+  const leftDepth = fullCoverage ? maximumDepth : leftHeights.reduce((sum, value) => sum + value, 0);
+  const rightDepth = fullCoverage ? maximumDepth : rightHeights.reduce((sum, value) => sum + value, 0);
   return {
     leftDepth: Math.max(3000, Math.min(maximumDepth, leftDepth)),
     rightDepth: Math.max(3000, Math.min(maximumDepth, rightDepth)),
@@ -362,7 +484,14 @@ function roomTouchingEdge(
     if (direction === Direction.East) return Math.abs(room.x + room.width - (x + width)) <= epsilon;
     return Math.abs(room.x - x) <= epsilon;
   });
-  return (touching.find(({ room }) => room.type === RoomType.Living) ?? touching[0] ?? rooms[0]!).room;
+  const preferred = touching.find(({ room }) => room.type === RoomType.Living)
+    ?? touching.find(({ room }) => room.type === RoomType.Foyer)
+    ?? touching.find(({ room }) => room.type === RoomType.Dining)
+    ?? touching.find(({ room }) => room.type === RoomType.Drawing)
+    ?? touching.find(({ room }) => room.type !== RoomType.Bathroom && room.type !== RoomType.Bedroom)
+    ?? touching[0]
+    ?? rooms[0]!;
+  return preferred.room;
 }
 
 function addEntrance(
@@ -437,10 +566,13 @@ export class StructuredLayoutGenerator {
     profile: LayoutStrategyProfile,
     graph: InstanceDesignGraph,
   ): Building {
-    const setbacks = resolvedSetbacks(spec);
+    const isFullPlot = !!spec.hard.fullPlotCoverage;
+    const setbacks = isFullPlot
+      ? { front: 0, rear: 0, left: 0, right: 0 }
+      : resolvedSetbacks(spec);
     const x = setbacks.left;
     const y = setbacks.front;
-    const width = spec.hard.plotWidthMm - setbacks.left - setbacks.right;
+    let width = spec.hard.plotWidthMm - setbacks.left - setbacks.right;
     const depth = spec.hard.plotDepthMm - setbacks.front - setbacks.rear;
     if (width < 3000 || depth < 3000) {
       throw new Error('Buildable envelope is too small for structured residential generation.');
@@ -456,15 +588,90 @@ export class StructuredLayoutGenerator {
           ? 'top_master'
           : 'upper_private',
     });
-    const floorFootprints = allocation.floors.map((items, floorLevel) => {
+
+    // Determine active floor items:
+    // Outdoor spaces (parking, garden) are site-level amenities provided by SitePlanner.
+    // If packing them as enclosed rooms inside the building causes the floor to exceed buildable depth,
+    // defer them to the site zones so the residential building can be planned without failure.
+    let activeFloorItems = allocation.floors;
+    const testFit = (floors: readonly (readonly RoomProgramItem[])[]) => {
       try {
-        return requiredFloorFootprint(items, width, depth, profile, graph);
+        floors.forEach((items, floorLevel) => requiredFloorFootprint(items, width, depth, profile, graph, isFullPlot && floorLevel === 0));
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    if (!testFit(activeFloorItems)) {
+      const withoutParking = activeFloorItems.map(items => items.filter(i => i.type !== RoomType.Parking));
+      if (testFit(withoutParking)) {
+        activeFloorItems = withoutParking;
+      } else {
+        const withoutOutdoor = activeFloorItems.map(items => items.filter(i => i.zone !== FunctionalZone.Outdoor && i.type !== RoomType.Parking && i.type !== RoomType.Garden));
+        if (testFit(withoutOutdoor)) {
+          activeFloorItems = withoutOutdoor;
+        }
+      }
+    }
+
+    const planAtWidth = (trialWidth: number) => activeFloorItems.map((items, floorLevel) => {
+      try {
+        const fullCoverage = isFullPlot && floorLevel === 0;
+        return requiredFloorFootprint(items, trialWidth, depth, profile, graph, fullCoverage);
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         throw new Error(`PARTIAL_GENERATION_FAILURE: Floor ${floorLevel} sizing failed. ${reason}`);
       }
     });
+    let floorFootprints = planAtWidth(width);
+    // A large site is not an instruction to stretch every room across it.
+    // Only the automatic (non-reviewed-footprint) generator takes this path.
+    const fitsProgramAreas = (plans: readonly FloorFootprintPlan[], trialWidth: number) => {
+      const left = Math.round(trialWidth * profile.columnRatio);
+      return plans.every(plan => [
+        { column: plan.leftColumn, heights: plan.leftHeights, width: left },
+        { column: plan.rightColumn, heights: plan.rightHeights, width: trialWidth - left },
+      ].every(bank => bank.column.every((placement, index) =>
+        bank.width * bank.heights[index]! <= placement.item.maxAreaMm2 + bank.width * 10,
+      )));
+    };
+    if (!isFullPlot && !fitsProgramAreas(floorFootprints, width)) {
+      // Bounded deterministic width search, not a new placement/ranking engine.
+      // Derive the upper bound from this Program, not the size of the land.
+      const activeItems = activeFloorItems.flat();
+      const maxRoomWidth = Math.max(...activeItems.map(item => item.maxAreaMm2 / Math.max(item.minHeightMm, 1)));
+      const upper = Math.min(width, maxRoomWidth / Math.min(profile.columnRatio, 1 - profile.columnRatio));
+      const step = Math.max(100, roundUp((upper - 3000) / 96, 100));
+      const trialWidths = new Set<number>();
+      for (let trial = 3000; trial <= upper; trial += step) trialWidths.add(trial);
+      // Include exact Program thresholds: coarse sampling can otherwise miss a
+      // narrow interval between a large bedroom minimum and a small pooja maximum.
+      for (const item of activeItems) for (const ratio of [profile.columnRatio, 1 - profile.columnRatio]) {
+        const low = Math.ceil(item.minWidthMm / ratio);
+        const high = Math.floor(item.maxAreaMm2 / Math.max(item.minHeightMm, 1) / ratio);
+        for (const value of [low, low + 1, high, high - 1]) if (value >= 3000 && value <= upper) trialWidths.add(value);
+      }
+      let proposal: { width: number; plans: FloorFootprintPlan[] } | undefined;
+      for (const trial of [...trialWidths].sort((a, b) => b - a)) {
+        try {
+          const plans = planAtWidth(trial);
+          if (fitsProgramAreas(plans, trial)) { proposal = { width: trial, plans }; break; }
+        } catch { /* This width cannot hold the unchanged room minima; try the next bounded width. */ }
+      }
+      if (!proposal) throw new Error('PROGRAM_FOOTPRINT_REQUIRED: No automatic footprint fits the requested room dimensions and maximum areas. Review the Program and define a building footprint; the plot will not be filled by stretching rooms.');
+      width = proposal.width;
+      floorFootprints = proposal.plans;
+    }
     const leftWidth = Math.round(width * profile.columnRatio);
+    const footDepth = Math.max(...floorFootprints.map(p => Math.max(p.leftDepth, p.rightDepth)));
+    const extraDepth = Math.max(0, depth - footDepth);
+    const parkingRequested = spec.hard.parkingRequired || spec.hard.parkingSpacesCount > 0;
+    const frontBuffer = (!isFullPlot && spec.hard.roadFacing === Direction.North && parkingRequested && extraDepth >= 2000)
+      ? Math.min(extraDepth, Math.max(2000, Math.min(3000, extraDepth - 1000)))
+      : 0;
+    const buildingY = y + frontBuffer;
+
     const building = createBuilding({
       projectId: spec.projectId ?? `generated_${profile.strategy}`,
       name: `${spec.projectName} — ${profile.name}`,
@@ -480,7 +687,7 @@ export class StructuredLayoutGenerator {
         buildingId: '',
         level,
         name: level === 0 ? 'Ground Floor' : `Floor ${level}`,
-        boundary: footprintBoundary(x, y, width, leftWidth, floorFootprints[level]!),
+        boundary: footprintBoundary(x, buildingY, width, leftWidth, floorFootprints[level]!),
       })),
     });
 
@@ -494,7 +701,7 @@ export class StructuredLayoutGenerator {
           floor.id,
           profile,
           x,
-          y,
+          buildingY,
           width,
           floorFootprints[floorLevel]!,
           floorLevel === 0 ? spec.hard.roadFacing : Direction.North,

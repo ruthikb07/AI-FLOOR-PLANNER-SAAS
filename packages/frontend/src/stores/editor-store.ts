@@ -17,11 +17,14 @@ import {
   EditorSelection,
   SetSelectionsCommand,
   ReplaceBuildingCommand,
+  UpdateSiteCommand,
+  type UpdateSiteParams,
   createGenerationControlState,
   updateGenerationControl,
   validateGenerationControl,
+  type DesignDiagnostics,
 } from '@ai-floor-planner/core';
-import { PlanValidator, ValidationSummary } from '@ai-floor-planner/constraint-engine';
+import { evaluateDesign, diagnosticsToValidation, type ValidationSummary } from '@ai-floor-planner/planning-engine';
 import {
   CURRENT_PROJECT_SCHEMA_VERSION,
   projectStorage,
@@ -42,6 +45,7 @@ export interface EditorContextValue {
   canUndo: boolean;
   canRedo: boolean;
   validationSummary: ValidationSummary;
+  diagnostics: DesignDiagnostics;
   projectName: string;
   projectId: string;
   projectCategory: BuildingCategory;
@@ -69,6 +73,10 @@ export interface EditorContextValue {
     requiredRoomCounts?: Partial<Record<RoomType, number>>,
     category?: BuildingCategory,
   ) => void;
+  updateSite: (params: UpdateSiteParams) => void;
+  setRequiredRoomCounts: (counts: Partial<Record<RoomType, number>>) => void;
+  addFloor: (name?: string, floorHeight?: number) => void;
+  removeFloor: (floorId: string) => void;
 }
 
 export function useEditorStore() {
@@ -130,16 +138,16 @@ export function useEditorStore() {
   ).state;
   const [generationControl, setGenerationControlState] = useState<GenerationControlState>(initialControl);
   const generationControlRef = useRef(initialControl);
-  // Vastu is opt-in guidance. A project that did not request it must not receive
-  // an authoritative-looking score by default.
-  const planValidator = useMemo(() => new PlanValidator(undefined, { enableVastu: false }), []);
   const requiredRoomCountsRef = useRef<Partial<Record<RoomType, number>>>(
     initialEnvelope.requiredRoomCounts ?? {},
   );
 
-  // Real-time Constraint Engine validation summary
+  // Real-time non-blocking design diagnostics & legacy-compatible validation summary
+  const [diagnostics, setDiagnostics] = useState<DesignDiagnostics>(() => {
+    return evaluateDesign(engine.getBuilding());
+  });
   const [validationSummary, setValidationSummary] = useState<ValidationSummary>(() => {
-    return planValidator.validate(engine.getBuilding(), {
+    return diagnosticsToValidation(engine.getBuilding(), {
       requiredRoomCounts: requiredRoomCountsRef.current,
     });
   });
@@ -154,9 +162,11 @@ export function useEditorStore() {
       setEditorState(s);
 
       if (event.type === 'building_changed' || event.type === 'history_changed') {
-        const report = planValidator.validate(b, {
+        const diag = evaluateDesign(b);
+        const report = diagnosticsToValidation(b, {
           requiredRoomCounts: requiredRoomCountsRef.current,
         });
+        setDiagnostics(diag);
         setValidationSummary(report);
 
         // Auto-save to LocalStorage on mutations
@@ -180,7 +190,7 @@ export function useEditorStore() {
     });
 
     return () => unsubscribe();
-  }, [engine, planValidator]);
+  }, [engine]);
 
   const activeFloor = useMemo(() => {
     const currentFloor = building.floors.find(f => f.id === editorState.activeFloorId);
@@ -287,10 +297,11 @@ export function useEditorStore() {
   }, [engine]);
 
   const revalidate = useCallback(() => {
-    setValidationSummary(planValidator.validate(building, {
+    setDiagnostics(evaluateDesign(building));
+    setValidationSummary(diagnosticsToValidation(building, {
       requiredRoomCounts: requiredRoomCountsRef.current,
     }));
-  }, [building, planValidator]);
+  }, [building]);
 
   const loadProject = useCallback((newProjectId: string) => {
     const loaded = projectStorage.load(newProjectId);
@@ -348,6 +359,35 @@ export function useEditorStore() {
     engine.setBuilding(newBuilding);
   }, [engine]);
 
+  const updateSite = useCallback((params: UpdateSiteParams) => {
+    engine.execute(new UpdateSiteCommand(engine.getBuilding(), params));
+  }, [engine]);
+
+  const setRequiredRoomCounts = useCallback((counts: Partial<Record<RoomType, number>>) => {
+    requiredRoomCountsRef.current = counts;
+    const b = engine.getBuilding();
+    projectStorage.save({
+      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+      projectId: projectIdentityRef.current.id,
+      name: projectIdentityRef.current.name,
+      createdAt: b.createdAt,
+      updatedAt: new Date().toISOString(),
+      building: b,
+      requiredRoomCounts: counts,
+      category: projectIdentityRef.current.category,
+      status: projectIdentityRef.current.status,
+      generationControl: generationControlRef.current,
+    });
+  }, [engine]);
+
+  const addFloor = useCallback((name?: string, floorHeight?: number) => {
+    engine.addFloor(name, floorHeight);
+  }, [engine]);
+
+  const removeFloor = useCallback((floorId: string) => {
+    engine.removeFloor(floorId);
+  }, [engine]);
+
   return {
     engine,
     building,
@@ -359,6 +399,7 @@ export function useEditorStore() {
     canUndo: editorState.historySummary.canUndo,
     canRedo: editorState.historySummary.canRedo,
     validationSummary,
+    diagnostics,
     projectName,
     projectId,
     projectCategory,
@@ -381,5 +422,9 @@ export function useEditorStore() {
     applyRefinement,
     loadProject,
     setBuilding,
+    updateSite,
+    setRequiredRoomCounts,
+    addFloor,
+    removeFloor,
   };
 }

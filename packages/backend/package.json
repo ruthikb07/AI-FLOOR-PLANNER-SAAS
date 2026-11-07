@@ -1,0 +1,35 @@
+{
+  "name": "@ai-floor-planner/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Server-side AI boundary: image generation (Cloudflare FLUX), Gemini vision/evaluation proxies and immutable image artifact storage. All provider credentials live here, never in the frontend.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "afp-backend": "./dist-server/server.cjs"
+  },
+  "scripts": {
+    "build": "tsc --build && node ../../scripts/bundle-backend.mjs",
+    "bundle": "node ../../scripts/bundle-backend.mjs",
+    "prepublishOnly": "pnpm bundle",
+    "dev": "node ../../scripts/bundle-backend.mjs --run",
+    "start": "node ../../scripts/bundle-backend.mjs --run",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ --no-error-on-unmatched-pattern",
+    "clean": "rm -rf dist dist-server *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@ai-floor-planner/ai-orchestration": "workspace:*",
+    "@ai-floor-planner/core": "workspace:*",
+    "@ai-floor-planner/geometry-engine": "workspace:*",
+    "@ai-floor-planner/planning-engine": "workspace:*",
+    "@node-projects/acad-ts": "^3.2.0"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "vitest": "2.0.5"
+  }
+}

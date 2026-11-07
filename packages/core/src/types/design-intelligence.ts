@@ -12,7 +12,7 @@
  */
 
 import type { RoomType, Direction, PlotShape, PreferenceLevel, DaylightLevel, PrivacyLevel } from './enums';
-import type { Building } from './building';
+import type { Building, SiteZoneKind } from './building';
 import type { ValidationSummary } from './constraints';
 import type { SpaceFloorPreference } from './space-program';
 
@@ -129,6 +129,9 @@ export interface HardDesignRequirements {
   readonly parkingRequired: boolean;
   readonly parkingSpacesCount: number;
   readonly liftRequired: boolean;
+  readonly serviceYardRequired?: boolean;
+  readonly futureExpansionAllowed?: boolean;
+  readonly fullPlotCoverage?: boolean;
   readonly customRooms?: readonly { type: RoomType; count: number; name?: string }[];
 }
 
@@ -195,6 +198,26 @@ export interface RequirementValidationResult {
 
 // ─── 6. Intermediate Design Specification ───────────────────────────────────
 
+export type FootprintStrategyKind =
+  | 'compact_frontage'
+  | 'l_shape_court'
+  | 'offset_stepped'
+  | 'courtyard_centered'
+  | 'irregular_fit';
+
+export interface DesignStrategy {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly footprintStrategy: FootprintStrategyKind;
+  readonly zoningStrategy: 'public_front_private_rear' | 'split_wings' | 'central_living_lateral_private';
+  readonly circulationStrategy: 'central_lobby' | 'linear_spine' | 'foyer_hub';
+  readonly parkingStrategy: 'front_left_bay' | 'front_right_bay' | 'front_forecourt' | 'none';
+  readonly outdoorStrategy: 'front_court_rear_utility' | 'side_court_garden' | 'central_ots' | 'perimeter_open';
+  readonly stairLocation: 'arrival_adjacent' | 'central_core' | 'side_independent';
+  readonly wetCoreGrouping: 'clustered_rear_service' | 'split_ensuite_central_service';
+}
+
 export interface DesignSpecification {
   readonly requirements: DesignRequirementSpecification;
   readonly program: RoomProgram;
@@ -206,6 +229,7 @@ export interface DesignSpecification {
     readonly width: number;
     readonly height: number;
   };
+  readonly strategy?: DesignStrategy;
 }
 
 // ─── 7. Candidate Plans & Multi-Dimensional Ranking ─────────────────────────
@@ -226,6 +250,30 @@ export interface CandidateMetrics {
   readonly totalCarpetAreaMm2: number;
   readonly totalBuiltupAreaMm2: number;
   readonly roomCount: number;
+  readonly zoningScore?: number;
+  readonly shapeScore?: number;
+  readonly siteUtilization?: SiteUtilizationAudit;
+}
+
+export interface SiteZoneCategoryBreakdown {
+  readonly kind: SiteZoneKind;
+  readonly name: string;
+  readonly areaMm2: number;
+  readonly percent: number;
+  readonly count: number;
+}
+
+/** Complete plot area accounting and site utilization audit. */
+export interface SiteUtilizationAudit {
+  readonly plotAreaMm2: number;
+  readonly buildingFootprintAreaMm2: number;
+  readonly classifiedZonesAreaMm2: number;
+  readonly unallocatedAreaMm2: number;
+  readonly coverageRatio: number;
+  readonly isComplete: boolean;
+  readonly breakdown: readonly SiteZoneCategoryBreakdown[];
+  readonly parkingFeasible: boolean;
+  readonly parkingIssues: readonly string[];
 }
 
 export interface CandidateOptimizationSummary {
@@ -254,14 +302,55 @@ export interface PlanRepairStep {
   readonly afterQualityScore: number;
 }
 
+export interface DiagnosticIssue {
+  readonly code: string;
+  readonly message: string;
+  readonly severity: 'error' | 'warning' | 'info';
+  readonly affectedEntityIds?: readonly string[];
+}
+
+export interface DesignObservation {
+  readonly category: 'strength' | 'opportunity' | 'preference';
+  readonly title: string;
+  readonly description: string;
+  readonly scoreImpact?: number;
+  readonly affectedEntityIds?: readonly string[];
+}
+
+export interface DesignDiagnostics {
+  readonly geometryHealthy: boolean;
+  readonly overallScore: number;
+  readonly warnings: readonly DiagnosticIssue[];
+  readonly observations: readonly DesignObservation[];
+  readonly scores: {
+    readonly overall: number;
+    readonly areaEfficiency: number;
+    readonly circulation: number;
+    readonly privacy: number;
+    readonly daylight: number;
+    readonly adjacency: number;
+    readonly vastu?: number;
+    readonly multiFloor?: number;
+    readonly zoning?: number;
+    readonly shape?: number;
+  };
+  readonly vastuDetails?: readonly {
+    readonly factor: string;
+    readonly points: number;
+    readonly maxPoints: number;
+    readonly description: string;
+  }[];
+}
+
 export interface CandidatePlan {
   readonly id: string;
   readonly name: string;
-  readonly strategy: 'compact_zoning' | 'open_circulation' | 'vastu_aligned' | 'linear_split' | 'perimeter_courtyard';
+  readonly strategy: 'compact_zoning' | 'open_circulation' | 'vastu_aligned' | 'linear_split' | 'perimeter_courtyard' | 'parking_first_l_shape' | 'courtyard_ots' | 'offset_wings' | 'compact_frontage' | (string & {});
   readonly description: string;
   readonly building: Building;
   readonly metrics: CandidateMetrics;
   readonly validation: ValidationSummary;
+  readonly diagnostics?: DesignDiagnostics;
   readonly requiredRoomCounts: Partial<Record<RoomType, number>>;
   readonly designGraph: InstanceDesignGraph;
   readonly optimization: CandidateOptimizationSummary;
@@ -270,6 +359,8 @@ export interface CandidatePlan {
   readonly rank: number;
   /** Optional for old saved candidates; absence must never be presented as a pass. */
   readonly architecturalEvidence?: ArchitecturalEvidence;
+  /** Complete plot site-use allocation and audit. */
+  readonly siteUtilization?: SiteUtilizationAudit;
 }
 
 /** Versioned observations, independent of legacy ranking and professional approval. */

@@ -1,0 +1,22 @@
+{
+  "seed": 42,
+  "success": false,
+  "candidateSource": null,
+  "stages": {
+    "imageGeneration": "FAILED",
+    "imageArtifact": "FAILED",
+    "visualPreflight": "PENDING",
+    "imageInterpretation": "PENDING",
+    "imageTo2D": "PENDING",
+    "validation": "PENDING",
+    "geminiEvaluation": "PENDING"
+  },
+  "fallback": null,
+  "error": {
+    "code": "CLOUDFLARE_GENERATION_ERROR",
+    "stage": "image_generation",
+    "message": "Cloudflare FLUX image generation failed: Cloudflare image generation timed out."
+  },
+  "schematic": null,
+  "candidates": []
+}

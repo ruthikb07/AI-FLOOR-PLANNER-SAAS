@@ -1,9 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { reviewedWorkflowInput, isGenerationSessionCurrent, acceptGenerationResult } from '../../services/reviewed-generation';
+import { BackendAPI } from '../../services/backend-api';
 import { ArchitecturalEvidencePanel } from './ArchitecturalEvidencePanel';
+import { AiConceptImagePanel } from './AiConceptImagePanel';
+import { ImageToPlanPanel } from './ImageToPlanPanel';
 import type { CandidatePlan, Floor, RoomType } from '@ai-floor-planner/core';
 import { buildingHasDesignedGeometry, adaptSpaceProgramToPlannerProgram } from '@ai-floor-planner/core';
 import {
-  GENERATION_STAGES, assessGenerationReadiness, runGenerationWorkflow,
+  GENERATION_STAGES, assessGenerationReadiness,
   type GenerationStageId,
 } from '@ai-floor-planner/planning-engine';
 import {
@@ -64,6 +68,10 @@ function metricRows(candidate: CandidatePlan) {
 }
 
 export const GenerationWorkspace: React.FC<GenerationWorkspaceProps> = props => {
+  const mounted = useRef(true);
+  const running = useRef<AbortController>();
+  const backend = useMemo(() => new BackendAPI(), []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; running.current?.abort(); }; }, []);
   const [envelope, setEnvelope] = useState<ProjectEnvelope>(() => {
     const loaded = projectStorage.load(props.projectId);
     if (!loaded) throw new Error('Project not found.');
@@ -76,34 +84,43 @@ export const GenerationWorkspace: React.FC<GenerationWorkspaceProps> = props => 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  useEffect(() => {
+    const refresh = () => {
+      const latest = projectStorage.load(props.projectId);
+      if (latest) { setEnvelope(latest); setSession(latest.generationSession ?? undefined); }
+    };
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    return () => { window.removeEventListener('storage', refresh); window.removeEventListener('focus', refresh); };
+  }, [props.projectId]);
   const program = envelope.spaceProgram;
   const evidenceProgram = useMemo(() => {
     try { return program ? adaptSpaceProgramToPlannerProgram(program, envelope.building.site.plannedFloorCount ?? envelope.building.floors.length) : undefined; }
     catch { return undefined; }
   }, [program, envelope.building]);
-  const footprint = envelope.footprintIntent;
-  const input = program && footprint ? { building: envelope.building, category: envelope.category ?? 'residential', program, footprint } : undefined;
+  const input = reviewedWorkflowInput(envelope);
   const readiness = useMemo(() => input ? assessGenerationReadiness(input) : {
     status: 'BLOCKED' as const,
     issues: [{ code: 'INPUTS_MISSING', severity: 'BLOCKING' as const, message: 'A saved Space Program and Footprint are required before generation.' }],
   }, [input]);
-  const candidates = session?.candidates ?? [];
+  const candidates = isGenerationSessionCurrent(envelope, session) ? session?.candidates ?? [] : [];
   const selected = candidates.find(candidate => candidate.id === selectedId) ?? candidates[0];
 
   const generate = async () => {
     if (!input || readiness.status === 'BLOCKED') return;
     setBusy(true);
+    const controller = new AbortController(); running.current = controller;
     setError(undefined);
     setStageStates(Object.fromEntries(GENERATION_STAGES.map(stage => [stage.id, 'PENDING'])) as Record<GenerationStageId, StageState>);
     try {
-      const result = await runGenerationWorkflow(input, (stage, state) => {
-        setStageStates(previous => ({ ...previous, [stage]: state === 'ACTIVE' ? 'ACTIVE' : 'COMPLETE' }));
+      const result = await backend.generate(input, controller.signal, job => {
+        if (job.stage) setStageStates(previous => ({ ...previous, [job.stage!]: job.status === 'SUCCEEDED' ? 'COMPLETE' : 'ACTIVE' }));
       });
-      const generationSession: GenerationSession = { schemaVersion: 1, generatedAt: result.generatedAt, candidates: result.candidates };
-      const updated: ProjectEnvelope = {
-        ...envelope, schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION, status: 'GENERATED',
-        generationSession, updatedAt: result.generatedAt,
-      };
+      if (!mounted.current) return;
+      const generationSession: GenerationSession = { schemaVersion: 1, generatedAt: result.generatedAt, candidates: result.candidates, requestHash: result.requestHash, requestSeed: input.request!.seed };
+      const current = projectStorage.load(props.projectId);
+      if (!current) throw new Error('Project no longer exists.');
+      const updated = acceptGenerationResult(current, generationSession);
       projectStorage.save(updated);
       setEnvelope(updated);
       setSession(generationSession);
@@ -113,14 +130,17 @@ export const GenerationWorkspace: React.FC<GenerationWorkspaceProps> = props => 
       setError(cause instanceof Error ? cause.message : 'Generation could not complete.');
     } finally {
       setBusy(false);
+      running.current = undefined;
     }
   };
 
   const select = (candidate: CandidatePlan) => {
     setSelectedId(candidate.id);
     if (!session) return;
+    const current = projectStorage.load(props.projectId);
+    if (!current || !isGenerationSessionCurrent(current, session)) { setError('These options are stale. Review Requirements and Budget again.'); return; }
     const nextSession = { ...session, selectedCandidateId: candidate.id };
-    const updated = { ...envelope, generationSession: nextSession };
+    const updated = { ...current, generationSession: nextSession };
     projectStorage.save(updated);
     setSession(nextSession);
     setEnvelope(updated);
@@ -128,8 +148,10 @@ export const GenerationWorkspace: React.FC<GenerationWorkspaceProps> = props => 
 
   const applyCandidate = () => {
     if (!selected) return;
+    const current = projectStorage.load(props.projectId);
+    if (!current || !isGenerationSessionCurrent(current, session)) { setError('These options are stale. Review Requirements and Budget again.'); return; }
     const updated: ProjectEnvelope = {
-      ...envelope,
+      ...current,
       schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
       building: selected.building,
       requiredRoomCounts: selected.requiredRoomCounts,
@@ -151,22 +173,55 @@ export const GenerationWorkspace: React.FC<GenerationWorkspaceProps> = props => 
       <button className="btn-icon" aria-label="Back to projects" onClick={props.onBackToProjects}><ArrowLeft size={17} /></button>
       <div className="generation-brand"><Layers3 size={18} /><div><strong>FORMA</strong><small>DESIGN GENERATION</small></div></div>
       <nav className="generation-stage-nav" aria-label="Project workflow">
-        {['PROJECT', 'SITE', 'PROGRAM', 'FOOTPRINT', 'GENERATE'].map((stage, index) => <React.Fragment key={stage}>
-          <button className={stage === 'GENERATE' ? 'active' : ''} disabled={stage === 'PROJECT'} onClick={stage === 'SITE' ? props.onBackToSite : stage === 'PROGRAM' ? props.onBackToProgram : stage === 'FOOTPRINT' ? props.onBackToFootprint : undefined}>{stage}</button>
+        {['PROJECT', 'SITE', 'REQUIREMENTS', 'BUDGET', 'GENERATE'].map((stage, index) => <React.Fragment key={stage}>
+          <button className={stage === 'GENERATE' ? 'active' : ''} disabled={stage === 'PROJECT'} onClick={stage === 'SITE' ? props.onBackToSite : stage === 'REQUIREMENTS' ? props.onBackToProgram : stage === 'BUDGET' ? props.onBackToFootprint : undefined}>{stage}</button>
           {index < 4 && <ChevronRight size={13} />}
         </React.Fragment>)}
       </nav>
-      <span className="generation-save-state">{session ? `${candidates.length} options saved locally` : 'No generated options'}</span>
+      <span className="generation-save-state">{session && !isGenerationSessionCurrent(envelope, session) ? 'Saved options are stale — review inputs' : session ? `${candidates.length} options saved locally` : 'No generated options'}</span>
     </header>
 
     <main className="generation-main">
       <section className="generation-title">
-        <div><span className="eyebrow">Project / Generate</span><h1>{envelope.name}</h1><p>Generate deterministic, hard-valid concept alternatives from the reviewed Program and approved Footprint.</p></div>
-        <div><button className="btn-secondary" onClick={props.onBackToFootprint}>Back to Footprint</button><button className="btn-primary" disabled={busy || readiness.status === 'BLOCKED'} onClick={generate}><Play size={14} />{session ? 'Regenerate Options' : 'Generate Options'}</button></div>
+        <div><span className="eyebrow">Project / Generate</span><h1>{envelope.name}</h1><p>Use exactly the reviewed requirements, approved building area and boundary policy. An unsupported result stops here; your brief is not relaxed.</p></div>
+        <div><button className="btn-secondary" onClick={props.onBackToFootprint}>Back to Budget</button><button className="btn-primary" disabled={busy || readiness.status === 'BLOCKED'} onClick={generate}><Play size={14} />{busy ? 'Generating…' : session ? 'Regenerate Options' : 'Generate Options'}</button>{busy && <button className="btn-secondary" onClick={() => running.current?.abort()}>Cancel generation</button>}</div>
       </section>
 
+      {input?.request && <section className="intent-card" aria-label="Exact approved generation summary">
+        <h2>Exact approved brief</h2>
+        <p>Site {input.request.site.plotWidth / 1000} × {input.request.site.plotDepth / 1000} m · {input.request.instances.length} reviewed spaces · ±{input.request.budget.acceptedTolerance * 100}% planning tolerance</p>
+        <p>{Object.entries(input.request.floorTargets).map(([level, target]) => `${floorName(Number(level))}: ${(target / 1e6).toFixed(2)} m²`).join(' · ')} · Total {(Object.values(input.request.floorTargets).reduce((sum, target) => sum + target, 0) / 1e6).toFixed(2)} m²</p>
+        <p>Boundary: {input.request.budget.footprintFreedom.replaceAll('_', ' ').toLowerCase()} · Seed {input.request.seed}</p>
+        <small>Brief reference {input.request.requestHash} · Preliminary architectural concept only</small>
+      </section>}
+
+      <AiConceptImagePanel projectId={props.projectId} envelope={envelope} />
+
+      <ImageToPlanPanel
+        projectId={props.projectId}
+        envelope={envelope}
+        session={envelope.floorPlanImage ? {
+          imageBase64: envelope.floorPlanImage.imageBase64,
+          mimeType: envelope.floorPlanImage.mimeType,
+          width: envelope.floorPlanImage.request.width,
+          height: envelope.floorPlanImage.request.height,
+        } : null}
+        onAcceptBuilding={building => {
+          const current = projectStorage.load(props.projectId);
+          if (!current) return;
+          projectStorage.save({
+            ...current,
+            schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+            building: building as typeof current.building,
+            status: 'GENERATED',
+            updatedAt: new Date().toISOString(),
+          });
+        }}
+        onConverted={props.onOpenEditor}
+      />
+
       <section className={`generation-readiness ${readiness.status.toLowerCase()}`}>
-        <div>{readiness.status === 'READY' ? <ShieldCheck size={20} /> : <TriangleAlert size={20} />}<span><strong>{readiness.status === 'READY' ? 'READY FOR VERIFIED GENERATION' : 'GENERATION BLOCKED'}</strong><small>{readiness.status === 'READY' ? 'Residential · Polygon-aware floor plates · Per-floor capacity · deterministic engine' : 'The current engine contract cannot safely consume these inputs.'}</small></span></div>
+        <div>{readiness.status === 'READY' ? <ShieldCheck size={20} /> : <TriangleAlert size={20} />}<span><strong>{readiness.status === 'READY' ? 'APPROVED INPUTS READY' : 'GENERATION BLOCKED'}</strong><small>{readiness.status === 'READY' ? 'The current engine will attempt this exact brief. A valid architectural solution is not guaranteed.' : 'Review the reasons below. Existing geometry and approved targets stay unchanged.'}</small></span></div>
         {readiness.issues.map(issue => <p key={issue.code}><strong>{issue.code.replaceAll('_', ' ')}</strong>{issue.message}</p>)}
       </section>
 

@@ -1,0 +1,296 @@
+[
+  {
+    "id": "CORE_A_SHARED_LIFT_BANK",
+    "name": "Compact Shared Lift Bank",
+    "description": "Paired elevators sharing single lobby face with direct entrance access to 3 wings.",
+    "bounds": {
+      "x": 20.6,
+      "y": 16.4,
+      "width": 4.8,
+      "height": 6.1
+    },
+    "lobbyBounds": {
+      "x": 20.6,
+      "y": 22.5,
+      "width": 4.8,
+      "height": 4.8
+    },
+    "liftBank": {
+      "id": "lift_bank_01",
+      "lifts": [
+        {
+          "id": "lift_01",
+          "label": "LIFT 01 (PASSENGER)",
+          "bounds": {
+            "x": 20.900000000000002,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        },
+        {
+          "id": "lift_02",
+          "label": "LIFT 02 (PASSENGER)",
+          "bounds": {
+            "x": 23.000000000000004,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        }
+      ],
+      "totalBounds": {
+        "x": 20.900000000000002,
+        "y": 20.4,
+        "width": 4.2,
+        "height": 2.1
+      },
+      "isSharedBank": true
+    },
+    "stairs": [
+      {
+        "id": "stair_01",
+        "label": "STAIR 01 (MAIN)",
+        "type": "main",
+        "bounds": {
+          "x": 20.6,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      },
+      {
+        "id": "stair_02",
+        "label": "STAIR 02 (FIRE ESCAPE)",
+        "type": "fire_escape",
+        "bounds": {
+          "x": 23,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      }
+    ],
+    "shafts": [
+      {
+        "id": "shaft_01",
+        "bounds": {
+          "x": 20.6,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      },
+      {
+        "id": "shaft_02",
+        "bounds": {
+          "x": 25.1,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      }
+    ],
+    "totalCoreAreaSqM": 32.5,
+    "lobbyAreaSqM": 23.04,
+    "commonCirculationLengthM": 4.8,
+    "averageEntranceDistanceM": 2.8,
+    "repeatedPlumbingWetStacks": 3
+  },
+  {
+    "id": "CORE_B_CENTRAL_THROUGH",
+    "name": "Central Through Lobby Core",
+    "description": "Opposing stairs and elevators flanking central arrival foyer.",
+    "bounds": {
+      "x": 20.6,
+      "y": 16.4,
+      "width": 4.8,
+      "height": 6.1
+    },
+    "lobbyBounds": {
+      "x": 20.6,
+      "y": 22.5,
+      "width": 4.8,
+      "height": 4.8
+    },
+    "liftBank": {
+      "id": "lift_bank_02",
+      "lifts": [
+        {
+          "id": "lift_01",
+          "label": "LIFT 01 (PASSENGER)",
+          "bounds": {
+            "x": 20.900000000000002,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        },
+        {
+          "id": "lift_02",
+          "label": "LIFT 02 (PASSENGER)",
+          "bounds": {
+            "x": 23.000000000000004,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        }
+      ],
+      "totalBounds": {
+        "x": 20.900000000000002,
+        "y": 20.4,
+        "width": 4.2,
+        "height": 2.1
+      },
+      "isSharedBank": true
+    },
+    "stairs": [
+      {
+        "id": "stair_01",
+        "label": "STAIR 01 (MAIN)",
+        "type": "main",
+        "bounds": {
+          "x": 20.6,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      },
+      {
+        "id": "stair_02",
+        "label": "STAIR 02 (FIRE ESCAPE)",
+        "type": "fire_escape",
+        "bounds": {
+          "x": 23,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      }
+    ],
+    "shafts": [
+      {
+        "id": "shaft_01",
+        "bounds": {
+          "x": 20.6,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      },
+      {
+        "id": "shaft_02",
+        "bounds": {
+          "x": 25.1,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      }
+    ],
+    "totalCoreAreaSqM": 32.5,
+    "lobbyAreaSqM": 23.04,
+    "commonCirculationLengthM": 4.8,
+    "averageEntranceDistanceM": 3,
+    "repeatedPlumbingWetStacks": 2
+  },
+  {
+    "id": "CORE_C_COMPACT_INLINE",
+    "name": "Linear Compact Core",
+    "description": "All core utilities along one structural spine for maximum continuous floor plate.",
+    "bounds": {
+      "x": 20.6,
+      "y": 16.4,
+      "width": 4.8,
+      "height": 6.1
+    },
+    "lobbyBounds": {
+      "x": 20.6,
+      "y": 22.5,
+      "width": 4.8,
+      "height": 4.8
+    },
+    "liftBank": {
+      "id": "lift_bank_03",
+      "lifts": [
+        {
+          "id": "lift_01",
+          "label": "LIFT 01 (PASSENGER)",
+          "bounds": {
+            "x": 20.900000000000002,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        },
+        {
+          "id": "lift_02",
+          "label": "LIFT 02 (PASSENGER)",
+          "bounds": {
+            "x": 23.000000000000004,
+            "y": 20.4,
+            "width": 2.1,
+            "height": 2.1
+          }
+        }
+      ],
+      "totalBounds": {
+        "x": 20.900000000000002,
+        "y": 20.4,
+        "width": 4.2,
+        "height": 2.1
+      },
+      "isSharedBank": true
+    },
+    "stairs": [
+      {
+        "id": "stair_01",
+        "label": "STAIR 01 (MAIN)",
+        "type": "main",
+        "bounds": {
+          "x": 20.6,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      },
+      {
+        "id": "stair_02",
+        "label": "STAIR 02 (FIRE ESCAPE)",
+        "type": "fire_escape",
+        "bounds": {
+          "x": 23,
+          "y": 16.4,
+          "width": 2.4,
+          "height": 4
+        }
+      }
+    ],
+    "shafts": [
+      {
+        "id": "shaft_01",
+        "bounds": {
+          "x": 20.6,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      },
+      {
+        "id": "shaft_02",
+        "bounds": {
+          "x": 25.1,
+          "y": 20.4,
+          "width": 0.3,
+          "height": 2.1
+        }
+      }
+    ],
+    "totalCoreAreaSqM": 32.5,
+    "lobbyAreaSqM": 23.04,
+    "commonCirculationLengthM": 4.8,
+    "averageEntranceDistanceM": 3.2,
+    "repeatedPlumbingWetStacks": 2
+  }
+]

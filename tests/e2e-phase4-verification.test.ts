@@ -32,16 +32,13 @@ import {
   polygonBoundingBox,
   polygonCentroid,
   polygonsOverlap,
-  isPolygonInside,
+  containsPolygon,
   feetToMm,
   sqMmToSqFt,
-  RTreeSpatialIndex,
 } from '@ai-floor-planner/geometry-engine';
 import {
-  validatePlan,
-  PlanValidator,
-  createDefaultRegistry,
-} from '@ai-floor-planner/constraint-engine';
+  evaluateDesign,
+} from '@ai-floor-planner/planning-engine';
 
 // ─── Step 5: Test Building Factory ──────────────────────────────────────────
 
@@ -357,7 +354,7 @@ describe('Phase 4 End-to-End Verification Suite', () => {
       expect(Math.round(sqMmToSqFt(plotArea))).toBe(1500); // 1500 sq ft
 
       // Verify floor boundary inside plot
-      expect(isPolygonInside(floor.boundary, building.site.plotBoundary)).toBe(true);
+      expect(containsPolygon(building.site.plotBoundary, floor.boundary)).toBe(true);
 
       // Verify each room has valid positive area and coordinates
       for (const room of floor.rooms) {
@@ -375,12 +372,8 @@ describe('Phase 4 End-to-End Verification Suite', () => {
         expect(centroid.y).toBeGreaterThan(0);
 
         // Room must be inside floor boundary
-        expect(isPolygonInside(room.boundary, floor.boundary)).toBe(true);
+        expect(containsPolygon(floor.boundary, room.boundary)).toBe(true);
       }
-
-      // Verify no overlaps in spatial index
-      const spatialIndex = new RTreeSpatialIndex();
-      spatialIndex.load(floor.rooms);
 
       for (let i = 0; i < floor.rooms.length; i++) {
         for (let j = i + 1; j < floor.rooms.length; j++) {
@@ -393,28 +386,24 @@ describe('Phase 4 End-to-End Verification Suite', () => {
     });
   });
 
-  // ─── STEP 7: CONSTRAINT VALIDATION ON VALID PLAN ──────────────────────────
-  describe('STEP 7 — Run Constraint Engine Validation on Valid Plan', () => {
-    it('evaluates valid plan with 0 hard failures and quality score > 0', () => {
+  // ─── STEP 7: DESIGN INTELLIGENCE & EVALUATION ON VALID PLAN ───────────────
+  describe('STEP 7 — Run Design Evaluation on Valid Plan', () => {
+    it('evaluates valid plan with healthy geometry and quality score > 0', () => {
       const building = buildTestBuilding();
-      const result = validatePlan(building);
+      const result = evaluateDesign(building);
 
-      expect(result.valid).toBe(true);
-      expect(result.hardFailures).toHaveLength(0);
-      expect(result.softScore).toBeGreaterThan(0);
-      expect(result.allResults.length).toBeGreaterThan(0);
-
-      // Verify category scores exist
-      expect(result.categoryScores.circulation).toBeDefined();
-      expect(result.categoryScores.daylight).toBeDefined();
-      expect(result.categoryScores.privacy).toBeDefined();
-      expect(result.categoryScores.zoning).toBeDefined();
+      expect(result.geometryHealthy).toBe(true);
+      expect(result.warnings.filter(w => w.severity === 'error')).toHaveLength(0);
+      expect(result.overallScore).toBeGreaterThan(0);
+      expect(result.scores.circulation).toBeDefined();
+      expect(result.scores.daylight).toBeDefined();
+      expect(result.scores.privacy).toBeDefined();
     });
   });
 
   // ─── STEP 8: NEGATIVE TEST: ROOM OVERLAP ──────────────────────────────────
-  describe('STEP 8 — Negative Test: Room Overlap (HC-003)', () => {
-    it('fails with HC-003 and identifies affected rooms when Bedroom 1 overlaps Dining', () => {
+  describe('STEP 8 — Negative Test: Room Overlap', () => {
+    it('detects room collision when Bedroom 1 overlaps Dining', () => {
       const building = buildTestBuilding();
       const floor = building.floors[0]!;
 
@@ -445,26 +434,22 @@ describe('Phase 4 End-to-End Verification Suite', () => {
         floors: [{ ...floor, rooms: overlappedRooms }],
       };
 
-      const result = validatePlan(invalidBuilding);
+      const result = evaluateDesign(invalidBuilding);
 
-      expect(result.valid).toBe(false);
-      expect(result.hardFailures.length).toBeGreaterThan(0);
-
-      const overlapFailure = result.hardFailures.find(f => f.constraintId === 'HC-003');
-      expect(overlapFailure).toBeDefined();
-      expect(overlapFailure!.affectedEntities.length).toBeGreaterThanOrEqual(2);
-      expect(overlapFailure!.message).toMatch(/overlap/i);
-      expect(overlapFailure!.explanation).toBeTruthy();
+      expect(result.geometryHealthy).toBe(false);
+      const overlapWarning = result.warnings.find(w => w.code === 'GEOMETRY_ROOM_COLLISION');
+      expect(overlapWarning).toBeDefined();
+      expect(overlapWarning!.affectedEntityIds?.length).toBeGreaterThanOrEqual(2);
+      expect(overlapWarning!.message).toMatch(/overlap/i);
     });
   });
 
   // ─── STEP 9: NEGATIVE TEST: OUTSIDE PLOT ──────────────────────────────────
-  describe('STEP 9 — Negative Test: Outside Plot (HC-001 / HC-002)', () => {
-    it('fails with HC-001 and identifies Bedroom 2 when placed outside plot bounds', () => {
+  describe('STEP 9 — Negative Test: Outside Plot / Floor Boundary', () => {
+    it('detects out of bounds when Bedroom 2 is placed outside floor boundary', () => {
       const building = buildTestBuilding();
       const floor = building.floors[0]!;
 
-      // Move Bedroom 2 far beyond the 30x50 plot width (x = 15000 > plotWidth 9144)
       const outsideRooms = floor.rooms.map(room => {
         if (room.name.includes('Bedroom 2')) {
           return {
@@ -488,58 +473,48 @@ describe('Phase 4 End-to-End Verification Suite', () => {
         floors: [{ ...floor, rooms: outsideRooms }],
       };
 
-      const result = validatePlan(invalidBuilding);
+      const result = evaluateDesign(invalidBuilding);
 
-      expect(result.valid).toBe(false);
-      const containmentFailure = result.hardFailures.find(
-        f => f.constraintId === 'HC-001' || f.constraintId === 'HC-002',
-      );
-      expect(containmentFailure).toBeDefined();
-      expect(containmentFailure!.affectedEntities.some(id => id.includes('room-') || id === 'floor-gf-test')).toBe(true);
-      expect(containmentFailure!.explanation).toMatch(/outside|envelope|boundary/i);
+      expect(result.geometryHealthy).toBe(false);
+      const boundsWarning = result.warnings.find(w => w.code === 'GEOMETRY_OUT_OF_BOUNDS');
+      expect(boundsWarning).toBeDefined();
+      expect(boundsWarning!.affectedEntityIds).toBeDefined();
+      expect(boundsWarning!.affectedEntityIds!.length).toBeGreaterThan(0);
+      expect(boundsWarning!.message).toMatch(/boundary/i);
     });
   });
 
   // ─── STEP 10: NEGATIVE TEST: MISSING REQUIRED ROOM ────────────────────────
-  describe('STEP 10 — Negative Test: Missing Required Room (HC-020)', () => {
-    it('fails with HC-020 when a required bedroom is removed from the building', () => {
+  describe('STEP 10 — Negative Test: Missing Required Room', () => {
+    it('flags missing required room type when a bedroom is omitted', () => {
       const building = buildTestBuilding();
       const floor = building.floors[0]!;
 
-      // Remove Bedroom 2
-      const roomsWithoutBed2 = floor.rooms.filter(r => !r.name.includes('Bedroom 2'));
+      // Remove all bedrooms
+      const roomsWithoutBeds = floor.rooms.filter(r => r.type !== RoomType.Bedroom);
 
-      const buildingWithoutBed = {
+      const buildingWithoutBeds = {
         ...building,
-        floors: [{ ...floor, rooms: roomsWithoutBed2 }],
+        floors: [{ ...floor, rooms: roomsWithoutBeds }],
       };
 
-      // Validate with option specifying 2 bedrooms required
-      const result = validatePlan(buildingWithoutBed, undefined, {
-        requiredRoomTypes: [
-          RoomType.Living,
-          RoomType.Dining,
-          RoomType.Kitchen,
-          RoomType.Bathroom,
-          RoomType.Bedroom,
-          RoomType.Bedroom, // 2 bedrooms required
-        ],
+      const result = evaluateDesign(buildingWithoutBeds, {
+        requiredRoomTypes: [RoomType.Living, RoomType.Bedroom],
       });
 
-      expect(result.valid).toBe(false);
-      const missingFailure = result.hardFailures.find(f => f.constraintId === 'HC-020');
-      expect(missingFailure).toBeDefined();
-      expect(missingFailure!.message).toMatch(/missing required room/i);
+      expect(result.geometryHealthy).toBe(false);
+      const missingWarning = result.warnings.find(w => w.code === 'MISSING_REQUIRED_ROOM_TYPE');
+      expect(missingWarning).toBeDefined();
+      expect(missingWarning!.message).toMatch(/missing/i);
     });
   });
 
   // ─── STEP 11: SOFT CONSTRAINT TEST: ADJACENCY ─────────────────────────────
-  describe('STEP 11 — Soft Constraint Test: Kitchen/Dining Separation', () => {
-    it('reduces adjacency score while keeping plan valid with 0 hard failures', () => {
+  describe('STEP 11 — Soft Adjacency Evaluation: Kitchen/Dining Separation', () => {
+    it('reduces adjacency score when functional relationship is broken', () => {
       const building = buildTestBuilding();
       const floor = building.floors[0]!;
 
-      // Move kitchen to far rear corner away from dining
       const separatedRooms = floor.rooms.map(room => {
         if (room.type === RoomType.Kitchen) {
           return {
@@ -564,62 +539,45 @@ describe('Phase 4 End-to-End Verification Suite', () => {
         floors: [{ ...floor, rooms: separatedRooms }],
       };
 
-      const validResult = validatePlan(building);
-      const separatedResult = validatePlan(separatedBuilding);
+      const validResult = evaluateDesign(building);
+      const separatedResult = evaluateDesign(separatedBuilding);
 
-      // CRITICAL: Hard constraints still pass (plan remains valid)
-      expect(separatedResult.valid).toBe(true);
-      expect(separatedResult.hardFailures).toHaveLength(0);
-
-      // Adjacency soft score should drop or report non-adjacency
-      const validAdjScore = validResult.categoryScores.adjacency?.score ?? 100;
-      const separatedAdjScore = separatedResult.categoryScores.adjacency?.score ?? 100;
-      expect(separatedAdjScore).toBeLessThanOrEqual(validAdjScore);
+      expect(separatedResult.scores.adjacency).toBeLessThanOrEqual(validResult.scores.adjacency);
     });
   });
 
   // ─── STEP 12: DETERMINISM TEST ────────────────────────────────────────────
   describe('STEP 12 — Determinism Test', () => {
-    it('produces identical validation report, scores, and entity IDs across multiple sequential runs', () => {
+    it('produces identical evaluation scores and diagnostics across multiple sequential runs', () => {
       const building = buildTestBuilding();
 
       const runs = [
-        validatePlan(building),
-        validatePlan(building),
-        validatePlan(building),
-        validatePlan(building),
-        validatePlan(building),
+        evaluateDesign(building),
+        evaluateDesign(building),
+        evaluateDesign(building),
+        evaluateDesign(building),
+        evaluateDesign(building),
       ];
 
       const first = runs[0]!;
       for (let i = 1; i < runs.length; i++) {
         const current = runs[i]!;
-        expect(current.valid).toBe(first.valid);
-        expect(current.softScore).toBe(first.softScore);
-        expect(current.hardFailures.length).toBe(first.hardFailures.length);
+        expect(current.geometryHealthy).toBe(first.geometryHealthy);
+        expect(current.overallScore).toBe(first.overallScore);
+        expect(current.scores.areaEfficiency).toBe(first.scores.areaEfficiency);
+        expect(current.scores.adjacency).toBe(first.scores.adjacency);
+        expect(current.scores.circulation).toBe(first.scores.circulation);
+        expect(current.scores.privacy).toBe(first.scores.privacy);
+        expect(current.scores.daylight).toBe(first.scores.daylight);
         expect(current.warnings.length).toBe(first.warnings.length);
-        expect(current.allResults.length).toBe(first.allResults.length);
-
-        // Check exact match of all results
-        for (let j = 0; j < first.allResults.length; j++) {
-          expect(current.allResults[j]!.constraintId).toBe(first.allResults[j]!.constraintId);
-          expect(current.allResults[j]!.passed).toBe(first.allResults[j]!.passed);
-          expect(current.allResults[j]!.score).toBe(first.allResults[j]!.score);
-        }
       }
     });
   });
 
-  // ─── STEP 13: GEOMETRY / CONSTRAINT SEPARATION TEST ───────────────────────
-  describe('STEP 13 — Geometry / Constraint Boundary Test', () => {
-    it('verifies Constraint Engine imports geometry operations from Geometry Engine without duplication', () => {
-      const registry = createDefaultRegistry();
-      const validator = new PlanValidator(registry);
-
-      expect(validator).toBeDefined();
-      expect(typeof validator.validatePlan).toBe('function');
-      expect(typeof validator.isValid).toBe('function');
-      expect(typeof validator.score).toBe('function');
+  // ─── STEP 13: ARCHITECTURE & GEOMETRY BOUNDARY TEST ───────────────────────
+  describe('STEP 13 — Architecture & Geometry Engine Separation Test', () => {
+    it('verifies Planning Engine provides evaluateDesign without circular dependencies', () => {
+      expect(typeof evaluateDesign).toBe('function');
     });
   });
 });

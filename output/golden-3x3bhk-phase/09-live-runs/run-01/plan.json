@@ -1,0 +1,78 @@
+{
+  "candidateId": "cand_golden_01",
+  "unitsCount": 3,
+  "units": [
+    {
+      "unitId": "FLAT_01",
+      "unitType": "3BHK",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "areaSqM": 102.19
+    },
+    {
+      "unitId": "FLAT_02",
+      "unitType": "3BHK",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "areaSqM": 102.19
+    },
+    {
+      "unitId": "FLAT_03",
+      "unitType": "3BHK",
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "areaSqM": 102.19
+    }
+  ],
+  "commonCore": {
+    "lifts": 2,
+    "stairs": 2,
+    "commonLobby": true
+  },
+  "orthogonalized": true,
+  "canonicalGeometry": "SOLVED",
+  "zeroCollisions": true,
+  "hardErrors": 0,
+  "verticalContinuity": {
+    "coreOrigin": {
+      "x": 20.6,
+      "y": 14.8
+    },
+    "liftBankOrigin": {
+      "x": 20.9,
+      "y": 18
+    },
+    "stairsOrigins": [
+      {
+        "x": 19.3,
+        "y": 14.8
+      },
+      {
+        "x": 23.9,
+        "y": 14.8
+      }
+    ],
+    "plumbingShafts": [
+      {
+        "id": "shaft_wet_01",
+        "x": 17.5,
+        "y": 22
+      },
+      {
+        "id": "shaft_wet_02",
+        "x": 28.5,
+        "y": 22
+      },
+      {
+        "id": "shaft_wet_03",
+        "x": 23,
+        "y": 32
+      },
+      {
+        "id": "shaft_core_01",
+        "x": 20.5,
+        "y": 16
+      }
+    ]
+  }
+}

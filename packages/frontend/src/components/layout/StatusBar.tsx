@@ -46,7 +46,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             <AlertTriangle size={13} />
             <span>
               {validationSummary.failed} HARD {validationSummary.failed === 1 ? 'ISSUE' : 'ISSUES'} • Quality{' '}
-              {validationSummary.overallScore}/100 • {validationSummary.warnings} warnings
+              {validationSummary.overallScore}/100 • {editor.diagnostics.warnings.length} warnings
             </span>
             <ChevronUp size={12} />
           </button>
@@ -60,7 +60,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="status-right">
         <button className={`status-control ${snapEnabled ? 'active' : ''}`} onClick={onToggleSnap} aria-pressed={snapEnabled}>SNAP {snapEnabled ? 'ON' : 'OFF'}</button>
         <span>{selectionCount} SELECTED</span>
-        <span>{validationSummary.failed} HARD · {validationSummary.warnings} WARNINGS</span>
+        <span>{validationSummary.failed} HARD · {editor.diagnostics.warnings.length} WARNINGS</span>
         {/* World Coordinates Display */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <Crosshair size={13} color="var(--text-muted)" />

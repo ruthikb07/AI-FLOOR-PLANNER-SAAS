@@ -98,6 +98,9 @@ export function normalizeDesignRequirementSpecification(
     parkingRequired: explicitParkingRequired || parkingSpacesCount > 0,
     parkingSpacesCount,
     liftRequired: booleanValue(rawHard.liftRequired, false),
+    serviceYardRequired: booleanValue(rawHard.serviceYardRequired, false),
+    futureExpansionAllowed: booleanValue(rawHard.futureExpansionAllowed, false),
+    fullPlotCoverage: booleanValue(rawHard.fullPlotCoverage, false),
     ...(customRooms.length > 0 ? { customRooms } : {}),
   };
 

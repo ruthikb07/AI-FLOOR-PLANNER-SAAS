@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Bot, CheckCircle2, Send, ShieldCheck, X } from 'lucide-react';
 import {
   AIEditPlanner,
-  AIOrchestrationService,
   type AIEditParseResult,
   type AIEditPreview,
 } from '@ai-floor-planner/ai-orchestration';
 import type { EditorContextValue } from '../../stores/editor-store';
-import { getConfiguredProvider } from '../../services/ai-provider';
+import { getAIService } from '../../services/ai-provider';
 
 interface AIEditPanelProps {
   readonly isOpen: boolean;
@@ -23,7 +22,7 @@ interface ChatMessage {
 
 export const AIEditPanel: React.FC<AIEditPanelProps> = ({ isOpen, onClose, editor }) => {
   const service = useMemo(
-    () => new AIOrchestrationService(getConfiguredProvider()),
+    () => getAIService(),
     [],
   );
   const planner = useMemo(() => new AIEditPlanner(), []);

@@ -41,3 +41,5 @@ export {
 } from './batch-command';
 
 export { ReplaceBuildingCommand } from './replace-building-command';
+export { UpdateSiteCommand, type UpdateSiteParams } from './update-site-command';
+export { AddFloorCommand, RemoveFloorCommand, type AddFloorParams } from './floor-commands';

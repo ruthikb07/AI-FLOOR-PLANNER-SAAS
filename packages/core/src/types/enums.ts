@@ -4,6 +4,8 @@
 
 /** Types of rooms supported in the system. */
 export enum RoomType {
+  /** Non-walkable service/ventilation void; never a circulation shortcut. */
+  ServiceShaft = 'service_shaft',
   Bedroom = 'bedroom',
   Bathroom = 'bathroom',
   Kitchen = 'kitchen',
@@ -24,6 +26,9 @@ export enum RoomType {
   FamilyLiving = 'family_living',
   Terrace = 'terrace',
   Garden = 'garden',
+  OTS = 'ots',
+  Porch = 'porch',
+  Dressing = 'dressing',
   Custom = 'custom',
 }
 
@@ -75,6 +80,8 @@ export enum WallType {
 
 /** Door types. */
 export enum DoorType {
+  /** A hosted, traversable opening with no door leaf or swing. */
+  OpenPassage = 'open_passage',
   Single = 'single',
   Double = 'double',
   Sliding = 'sliding',
@@ -144,3 +151,37 @@ export enum AITaskType {
   ImageUnderstanding = 'image_understanding',
   ComplexReasoning = 'complex_reasoning',
 }
+
+/**
+ * High-level building typology classification.
+ * Canonical enum locked to ResidentialApartment for Phase 1A,
+ * with full future typology extensibility hooks.
+ */
+export enum BuildingTypologyCategory {
+  ResidentialApartment = 'RESIDENTIAL_APARTMENT',
+  ResidentialBungalow = 'RESIDENTIAL_BUNGALOW',
+  ResidentialRowHouse = 'RESIDENTIAL_ROW_HOUSE',
+  CommercialOffice = 'COMMERCIAL_OFFICE',
+  MercantileMarket = 'MERCANTILE_MARKET',
+  Educational = 'EDUCATIONAL',
+  Assembly = 'ASSEMBLY',
+  StorageWarehouse = 'STORAGE_WAREHOUSE',
+  Industrial = 'INDUSTRIAL',
+}
+
+/** Flats per floor topology classification. */
+export type FlatPerFloorTopology = 'DOUBLE_FLAT' | 'TRIPLE_FLAT' | 'QUAD_FLAT';
+
+/** Lot utilization / allotment policy for building generation. */
+export type LotAllotmentMode = 'FULL_LOT_100_PERCENT' | 'STATUTORY_SETBACK_100_PERCENT';
+
+/** Standard residential apartment unit BHK configurations. */
+export type ApartmentBhkType = '1BHK' | '2BHK' | '3BHK' | '4BHK';
+
+/** Standard Indian / Maharashtra statutory planning jurisdictions. */
+export type ApartmentJurisdictionCode =
+  | 'pune_pmc'
+  | 'pune_pmrda'
+  | 'mumbai_mcgm'
+  | 'generic_maharashtra'
+  | 'generic_indian';

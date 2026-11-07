@@ -27,6 +27,7 @@ export interface ExportOptions {
   readonly includeNorthArrow: boolean;
   readonly includeScaleBar: boolean;
   readonly includeTitleBlock: boolean;
+  readonly includeFurniture?: boolean;
   readonly scale: string;          // e.g., "1:100"
   readonly paperSize: PaperSize;
   readonly orientation: 'portrait' | 'landscape';
@@ -45,6 +46,7 @@ export type PaperSize = 'A4' | 'A3' | 'A2' | 'A1' | 'A0' | 'letter' | 'tabloid';
 export enum RenderLayer {
   Grid = 'grid',
   Plot = 'plot',
+  SiteZones = 'site_zones',
   Floor = 'floor',
   Rooms = 'rooms',
   Walls = 'walls',

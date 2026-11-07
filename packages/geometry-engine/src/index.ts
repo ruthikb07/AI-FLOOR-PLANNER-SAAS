@@ -203,6 +203,7 @@ export type { WindowGeometryInfo } from './windows';
 // Staircase geometry
 export {
   computeStairGeometry,
+  computeStairSolids,
   computeStairClearanceEnvelope,
   validateStairDimensions,
 } from './stairs';
@@ -253,6 +254,8 @@ export {
 
 // Floor-scoped content bounds for editor cameras and floor-specific exports.
 export { getFloorContentBounds } from './floor-bounds';
+export { generateApartmentWalls, apartmentFloorOutline, apartmentFloorRegions, openingFitsApartmentWall, ARCHITECTURAL_STANDARDS_PROFILE, APARTMENT_GEOMETRY_TOLERANCES } from './apartment-walls';
+export { measureApartmentAreaLedger, roomSpaceUse } from './apartment-ledger';
 
 // Unit conversions & formatting
 export {

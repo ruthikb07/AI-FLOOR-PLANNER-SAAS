@@ -107,6 +107,12 @@ export function evaluateCloseout(building: Building, program: RoomProgram, evide
     // Vertical cores legitimately repeat once per floor in the existing planner.
     if (item.type === RoomType.Staircase || item.type === RoomType.Lift) return !rooms.length
       || new Set(rooms.map(room => room.floorId)).size !== rooms.length;
+    // Outdoor spaces (parking, garden) can be fulfilled as site zones rather than enclosed rooms.
+    if (item.type === RoomType.Parking || item.type === RoomType.Garden) {
+      if (rooms.length === 1 && rooms[0]!.type === item.type) return false;
+      const zoneKind = item.type === RoomType.Parking ? 'parking' : 'garden';
+      if (building.site.siteZones?.some(z => z.kind === zoneKind)) return false;
+    }
     return rooms.length !== 1 || rooms[0]!.type !== item.type;
   })) blockers.push('Program room identity missing or ambiguous.');
   if (evidence.requiredFloors.some(item => !item.passed)) blockers.push('Required floor intent not satisfied.');

@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_1_mu8s3pjh_64a03aa5",
+  "projectId": "e2e-phase3-rej",
+  "seed": 1,
+  "model": "schematic-stub",
+  "provider": "local-stub",
+  "promptVersion": 1,
+  "originalPrompt": "plan",
+  "negativePrompt": "p",
+  "width": 256,
+  "height": 256,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-19T19:26:51.916Z",
+  "latencyMs": 2
+}

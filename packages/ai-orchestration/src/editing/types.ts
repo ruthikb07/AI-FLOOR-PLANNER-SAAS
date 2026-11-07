@@ -1,5 +1,5 @@
-import type { Building, Room } from '@ai-floor-planner/core';
-import type { ValidationSummary } from '@ai-floor-planner/constraint-engine';
+import type { Building, Room, DesignDiagnostics } from '@ai-floor-planner/core';
+import type { ValidationSummary } from '@ai-floor-planner/planning-engine';
 import type { AIEditCommand } from './command';
 
 export type AIEditAction = 'resize_room' | 'move_room' | 'rename_room';
@@ -76,6 +76,8 @@ export interface AIEditPreview {
   readonly afterBuilding: Building | null;
   readonly beforeValidation: ValidationSummary;
   readonly afterValidation: ValidationSummary | null;
+  readonly beforeDiagnostics?: DesignDiagnostics;
+  readonly afterDiagnostics?: DesignDiagnostics | null;
   readonly command: AIEditCommand | null;
   readonly attemptedCandidates: number;
   readonly validCandidates: number;

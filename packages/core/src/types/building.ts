@@ -21,6 +21,7 @@ import type {
   WallType,
   WindowType,
 } from './enums';
+import type { CanonicalFurnitureItem, PlancraftDslOutput } from './furniture';
 
 // ─── Site & Plot ────────────────────────────────────────────────────────────
 
@@ -54,6 +55,29 @@ export interface SiteDevelopmentControls {
   readonly maxHeight: SitePlanningValue;
 }
 
+export type SiteZoneKind =
+  | 'setback'
+  | 'parking'
+  | 'garden'
+  | 'pedestrian_circulation'
+  | 'vehicle_circulation'
+  | 'service'
+  | 'future_expansion';
+
+/** A classified, non-overlapping functional zone within the site/plot. */
+export interface SiteZone {
+  readonly id: string;
+  readonly kind: SiteZoneKind;
+  readonly name: string;
+  readonly boundary: Polygon;
+  readonly area: number;
+  readonly accessLinks: readonly string[];
+  readonly source: 'RULE_BASED' | 'USER_DEFINED' | 'GENERATED';
+  readonly reviewStatus: 'UNREVIEWED' | 'REVIEWED' | 'LOCKED';
+  readonly description?: string;
+  readonly rationale?: string;
+}
+
 /** Site/plot information for a building project. */
 export interface Site {
   readonly id: string;
@@ -73,6 +97,8 @@ export interface Site {
   readonly secondaryRoadFacing?: Direction;
   readonly developmentControls?: SiteDevelopmentControls;
   readonly unitSystem?: SiteUnitSystem;
+  /** Classified non-overlapping site zones accounting for 100% of the plot area. */
+  readonly siteZones?: readonly SiteZone[];
 }
 
 // ─── Room ───────────────────────────────────────────────────────────────────
@@ -85,6 +111,11 @@ export interface AdjacencyRequirement {
 
 /** A room within a floor. */
 export interface Room {
+  readonly unitId?: string;
+  readonly spaceUse?: 'UNIT' | 'COMMON' | 'CORE' | 'SERVICE' | 'OUTDOOR' | 'VOID';
+  readonly planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR';
+  readonly bathroomOwnerRoomId?: string;
+  readonly bathroomAccessClass?: 'COMMON' | 'ATTACHED' | 'UNKNOWN';
   readonly id: string;
   readonly floorId: string;
   readonly type: RoomType;
@@ -111,6 +142,11 @@ export interface Room {
 
 /** A wall segment on a floor. */
 export interface Wall {
+  readonly wallUse?: 'EXTERNAL' | 'INTERNAL_PARTITION' | 'UNIT_SEPARATION' | 'COMMON_CORRIDOR' | 'CORE' | 'SHAFT' | 'BALCONY' | 'PARAPET';
+  readonly leftRoomId?: string;
+  readonly rightRoomId?: string;
+  readonly unitIds?: readonly string[];
+  readonly provenance?: 'PROVISIONAL_HEURISTIC' | 'USER_PROVIDED';
   readonly id: string;
   readonly floorId: string;
   readonly startPoint: Point;
@@ -193,6 +229,8 @@ export interface Column {
 
 /** A single floor/level in the building. */
 export interface Floor {
+  readonly voidBoundaries?: readonly Polygon[];
+  readonly apartmentUnits?: readonly { id: string; boundary: Polygon; unitType: string }[];
   readonly id: string;
   readonly buildingId: string;
   readonly level: number;
@@ -205,6 +243,8 @@ export interface Floor {
   readonly windows: readonly Window[];
   readonly stairs: readonly Stair[];
   readonly columns: readonly Column[];
+  readonly furniture?: readonly CanonicalFurnitureItem[];
+  readonly plancraftDsl?: PlancraftDslOutput;
 }
 
 // ─── Building ───────────────────────────────────────────────────────────────
@@ -228,6 +268,8 @@ export interface Building {
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly furniture?: readonly CanonicalFurnitureItem[];
+  readonly plancraftDsl?: PlancraftDslOutput;
 }
 
 // ─── Project ────────────────────────────────────────────────────────────────

@@ -6,7 +6,58 @@
 
 import type { Stair, Polygon, BoundingBox, LineSegment } from '@ai-floor-planner/core';
 import { createRect } from './rectangle';
-import { polygonArea, polygonBoundingBox } from './polygon';
+import { containsPolygon, polygonArea, polygonBoundingBox } from './polygon';
+import { Direction, StairType } from '@ai-floor-planner/core';
+
+export interface StairSolid {
+  readonly boundary: Polygon;
+  readonly bottom: number;
+  readonly top: number;
+  readonly kind: 'tread' | 'landing';
+}
+
+/** Architectural geometry only. No headroom, reinforcement or code certification. */
+export function computeStairSolids(stair: Stair, rise = stair.riserCount * stair.riserHeight): {
+  solids: StairSolid[]; issues: string[];
+} {
+  const issues: string[] = [];
+  const sideways = stair.direction === Direction.East || stair.direction === Direction.West;
+  const width = sideways ? stair.length : stair.width;
+  const length = sideways ? stair.width : stair.length;
+  const n = stair.riserCount, r = stair.riserHeight, t = stair.treadDepth;
+  if (![width, length, n, r, t, rise].every(value => Number.isFinite(value) && value > 0)
+    || !Number.isInteger(n) || n < 2 || n > 200) return { solids: [], issues: ['Invalid stair dimensions or riser count.'] };
+  if (Math.abs(n * r - rise) > 1) issues.push('Stair rise does not match the connected floor elevation.');
+  if (!containsPolygon(stair.boundary, createRect(stair.x, stair.y, stair.width, stair.length))
+    || Math.abs(polygonArea(stair.boundary) - stair.width * stair.length) > 1) issues.push('Stair boundary and rectangular flight envelope disagree.');
+  if (stair.type === StairType.UShaped && n % 2 !== 0) issues.push('Unequal U-stair flights require a reviewed landing model.');
+  if (![StairType.Straight, StairType.UShaped].includes(stair.type)) issues.push('This stair type needs a reviewed flight model; no substitute flight is fabricated.');
+  const first = Math.ceil(n / 2), second = n - first;
+  const landing = stair.landingWidth;
+  const run = stair.type === StairType.UShaped ? Math.max(first - 1, second - 1) * t + landing : (n - 1) * t;
+  if (run > length + 1 || (stair.type === StairType.UShaped && (!(landing > 0) || landing > length))) issues.push('Flights and turning landing do not fit the stair envelope.');
+  if (issues.length) return { solids: [], issues };
+  const point = (x: number, y: number) => {
+    if (stair.direction === Direction.South) return { x: stair.x + width - x, y: stair.y + length - y };
+    if (stair.direction === Direction.East) return { x: stair.x + length - y, y: stair.y + x };
+    if (stair.direction === Direction.West) return { x: stair.x + y, y: stair.y + width - x };
+    return { x: stair.x + x, y: stair.y + y };
+  };
+  const solids: StairSolid[] = [];
+  const add = (x: number, y: number, w: number, h: number, top: number, kind: StairSolid['kind'], bottom = 0) => {
+    solids.push({ boundary: { points: [point(x, y), point(x + w, y), point(x + w, y + h), point(x, y + h)] }, bottom, top, kind });
+  };
+  if (stair.type === StairType.UShaped) {
+    const flight = width / 2;
+    for (let i = 1; i < first; i++) add(0, length - i * t, flight, t, i * r, 'tread');
+    // Use all available turning space; never stretch the specified treads.
+    add(0, 0, width, length - (first - 1) * t, first * r, 'landing');
+    for (let i = 1; i < second; i++) add(flight, length - (second - i) * t, flight, t, (first + i) * r, 'tread', first * r);
+  } else {
+    for (let i = 1; i < n; i++) add(0, length - i * t, width, t, i * r, 'tread');
+  }
+  return { solids, issues };
+}
 
 export interface StairGeometryInfo {
   readonly boundary: Polygon;

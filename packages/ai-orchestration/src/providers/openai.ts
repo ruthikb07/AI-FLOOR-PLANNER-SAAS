@@ -29,6 +29,10 @@ export class OpenAIProvider extends BaseAIProvider {
 
   async complete(request: AIRequest): Promise<AIResponse> {
     if (!this.options.apiKey.trim()) throw new Error('OpenAI API key is not configured.');
+    // Vision inputs are not wired for this provider; refuse rather than silently drop the image.
+    if (request.images && request.images.length > 0) {
+      throw new AISafetyError('OpenAIProvider does not support image inputs; use a vision-capable provider.');
+    }
     const wantsJson = request.responseFormat === 'json';
     const extractsRequirements = request.taskType === AITaskType.RequirementExtraction;
     const responseSchema = request.responseSchema ?? (extractsRequirements ? REQUIREMENT_RESPONSE_SCHEMA : undefined);

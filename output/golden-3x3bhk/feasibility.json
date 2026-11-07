@@ -1,0 +1,400 @@
+{
+  "floorPlateAreaSqM": 482.18500000000006,
+  "availableBuildableAreaSqM": 2070,
+  "floorPlateAvailableSqM": 2070,
+  "marginSqM": 1631.65,
+  "unitsBudget": [
+    {
+      "unitId": "FLAT_01",
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "FLAT_01_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_01_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    },
+    {
+      "unitId": "FLAT_02",
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "FLAT_02_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_02_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    },
+    {
+      "unitId": "FLAT_03",
+      "unitType": "3BHK",
+      "roomUsableAreaSqM": 96,
+      "internalCirculationSqM": 8.18,
+      "wallAllowanceSqM": 12.26,
+      "utilityAreaSqM": 3.5,
+      "balconyAreaSqM": 6,
+      "targetCarpetAreaSqM": 102.19,
+      "targetBuiltUpAreaSqM": 117.45,
+      "targetCarpetAreaSqFt": 1100,
+      "targetBuiltUpAreaSqFt": 1264,
+      "lines": [
+        {
+          "id": "FLAT_03_foyer",
+          "name": "Entrance Foyer",
+          "type": "foyer",
+          "minAreaSqM": 3,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 6,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_living_dining",
+          "name": "Living & Dining Room",
+          "type": "living_dining",
+          "minAreaSqM": 22,
+          "targetAreaSqM": 28,
+          "maxAreaSqM": 36,
+          "minWidthM": 3.6,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_kitchen",
+          "name": "Kitchen",
+          "type": "kitchen",
+          "minAreaSqM": 7.5,
+          "targetAreaSqM": 9.5,
+          "maxAreaSqM": 12,
+          "minWidthM": 2.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_utility",
+          "name": "Utility / Dry Balcony",
+          "type": "utility",
+          "minAreaSqM": 2.5,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.2,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_master_bed",
+          "name": "Master Bedroom",
+          "type": "master_bedroom",
+          "minAreaSqM": 14,
+          "targetAreaSqM": 16.5,
+          "maxAreaSqM": 20,
+          "minWidthM": 3.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_master_bath",
+          "name": "Master En-suite Toilet",
+          "type": "master_toilet",
+          "minAreaSqM": 3.8,
+          "targetAreaSqM": 4.5,
+          "maxAreaSqM": 5.5,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_bed_2",
+          "name": "Bedroom 02",
+          "type": "bedroom",
+          "minAreaSqM": 11.5,
+          "targetAreaSqM": 13.5,
+          "maxAreaSqM": 16,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_bath_2",
+          "name": "Attached Toilet 02",
+          "type": "master_toilet",
+          "minAreaSqM": 3.2,
+          "targetAreaSqM": 4,
+          "maxAreaSqM": 5,
+          "minWidthM": 1.4,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_bed_3",
+          "name": "Bedroom 03",
+          "type": "bedroom",
+          "minAreaSqM": 10.5,
+          "targetAreaSqM": 12,
+          "maxAreaSqM": 14.5,
+          "minWidthM": 3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_common_bath",
+          "name": "Common Toilet",
+          "type": "common_toilet",
+          "minAreaSqM": 2.8,
+          "targetAreaSqM": 3.5,
+          "maxAreaSqM": 4.5,
+          "minWidthM": 1.3,
+          "verificationStatus": "UNVERIFIED"
+        },
+        {
+          "id": "FLAT_03_balcony_main",
+          "name": "Living Balcony",
+          "type": "balcony",
+          "minAreaSqM": 4.5,
+          "targetAreaSqM": 6,
+          "maxAreaSqM": 8,
+          "minWidthM": 1.5,
+          "verificationStatus": "UNVERIFIED"
+        }
+      ],
+      "verificationStatus": "VERIFIED_FROM_SOURCE"
+    }
+  ],
+  "totalApartmentEnvelopeAreaSqM": 352.35,
+  "coreAreaSqM": 61,
+  "liftsAreaSqM": 9,
+  "stairsAreaSqM": 28,
+  "lobbyAreaSqM": 18,
+  "commonCirculationAreaSqM": 10,
+  "shaftsAreaSqM": 6,
+  "wallAllowanceAreaSqM": 15,
+  "totalRequiredAreaSqM": 438.35,
+  "totalFloorPlateRequiredSqM": 438.35,
+  "remainingResidualAreaSqM": 1631.65,
+  "isFeasible": true,
+  "feasibilityCode": "FEASIBLE",
+  "explanation": "Feasibility APPROVED: 3 x 3BHK units (352.35 m² built-up) + compact core (61 m²) + circulation (10 m²) require 438.35 m², which fits comfortably within the 2070 m² buildable envelope (1631.65 m² open site remaining)."
+}

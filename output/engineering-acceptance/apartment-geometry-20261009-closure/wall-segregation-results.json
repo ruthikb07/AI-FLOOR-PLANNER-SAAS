@@ -1,0 +1,57 @@
+{
+  "floorId": "golden-3x3bhk-acceptance:typical-floor",
+  "totalWalls": 152,
+  "wallBreakdown": {
+    "external": 34,
+    "unitSeparation": 2,
+    "commonCorridor": 3,
+    "internalPartition": 79,
+    "core": 12,
+    "shaft": 8,
+    "balconyParapet": 14
+  },
+  "standardThicknessesMm": {
+    "external": 230,
+    "unitSeparation": 230,
+    "commonCorridor": 150,
+    "internalPartition": 115,
+    "core": 230,
+    "shaft": 100,
+    "balconyParapet": 115
+  },
+  "doors": {
+    "total": 49,
+    "entrances": 12,
+    "internal": 37
+  },
+  "windows": {
+    "total": 9,
+    "externalHosted": 9,
+    "shaftHosted": 0
+  },
+  "tenancyUnits": [
+    {
+      "id": "flat_01",
+      "unitType": "3BHK",
+      "areaSqM": 136.89,
+      "roomCount": 14,
+      "hasPrivateEntrance": true
+    },
+    {
+      "id": "flat_02",
+      "unitType": "3BHK",
+      "areaSqM": 136.89,
+      "roomCount": 14,
+      "hasPrivateEntrance": true
+    },
+    {
+      "id": "flat_03",
+      "unitType": "3BHK",
+      "areaSqM": 136.89,
+      "roomCount": 14,
+      "hasPrivateEntrance": true
+    }
+  ],
+  "hardErrors": 0,
+  "warnings": 0
+}

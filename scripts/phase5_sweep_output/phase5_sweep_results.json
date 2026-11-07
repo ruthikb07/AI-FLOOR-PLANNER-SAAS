@@ -1,0 +1,575 @@
+{
+  "generatedAt": "2026-09-26T12:29:24.209Z",
+  "fluxProbe": {
+    "status": "LIVE_UNAVAILABLE",
+    "detail": "TIMEOUT/ERROR after 90008 ms: probe timeout 90s"
+  },
+  "fluxMode": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+  "gemini": {
+    "model": "gemini-flash-lite-latest",
+    "mode": "LIVE"
+  },
+  "rows": [
+    {
+      "case": "1 flat",
+      "requested": 1,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_7919_mui7f0ff_c36370c5",
+        "gen_42_muh2krwf_d2cdd112",
+        "gen_101_muhfk5cn_18e75c41"
+      ],
+      "fluxAttempts": 3,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Generated image resembles a standalone single-family villa rather than a multi-unit apartment building.",
+              "Common central core (shared lobby/corridor) is missing or illegible.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 0.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Generated image resembles a standalone single-family villa rather than a multi-unit apartment building.",
+            "VISUAL_PREFLIGHT_FAIL: Common central core (shared lobby/corridor) is missing or illegible.",
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0.",
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_7961_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Flat count mismatch: Requested 1 flats, but image shows 2 flats.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 0.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Flat count mismatch: Requested 1 flats, but image shows 2 flats.",
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0.",
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_15880_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Flat count mismatch: Requested 1 flats, but image shows 4 flats.",
+              "Unit mix mismatch: Expected 1 x 2BHK, but detected 3 x 2BHK.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 0.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Flat count mismatch: Requested 1 flats, but image shows 4 flats.",
+            "VISUAL_PREFLIGHT_FAIL: Unit mix mismatch: Expected 1 x 2BHK, but detected 3 x 2BHK.",
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0.",
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        }
+      ],
+      "manifest": 1,
+      "schematic": 1,
+      "validated": {
+        "flats": 1,
+        "lifts": 2,
+        "stairs": 2,
+        "lobbies": 1,
+        "bedrooms": 2
+      },
+      "candidateSource": "FALLBACK_DETERMINISTIC",
+      "fallback": {
+        "reason": "FLUX_PREFLIGHT_EXHAUSTED",
+        "fallbackArtifactId": "gen_42_muid8e3a_dba0741b"
+      },
+      "validation": "PASS",
+      "evaluation": "SCORED 82/100 (advisory)",
+      "acceptedStages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "runStages": {
+        "imageGeneration": "EXHAUSTED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "REJECTED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "error": null,
+      "rejectedButScored": [],
+      "latencyMs": 12921
+    },
+    {
+      "case": "2 flats",
+      "requested": 2,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_7919_mui7f0ff_c36370c5",
+        "gen_42_muh2krwf_d2cdd112",
+        "gen_101_muhfk5cn_18e75c41"
+      ],
+      "fluxAttempts": 3,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 0."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0."
+          ]
+        },
+        {
+          "id": "cand_two_ai_7961_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 1.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 1.",
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_15880_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 0."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0."
+          ]
+        }
+      ],
+      "manifest": 2,
+      "schematic": 2,
+      "validated": {
+        "flats": 2,
+        "lifts": 2,
+        "stairs": 2,
+        "lobbies": 1,
+        "bedrooms": 5
+      },
+      "candidateSource": "FALLBACK_DETERMINISTIC",
+      "fallback": {
+        "reason": "FLUX_PREFLIGHT_EXHAUSTED",
+        "fallbackArtifactId": "gen_42_muid8me0_f9b0f6f4"
+      },
+      "validation": "PASS",
+      "evaluation": "SCORED 82/100 (advisory)",
+      "acceptedStages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "runStages": {
+        "imageGeneration": "EXHAUSTED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "REJECTED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "error": null,
+      "rejectedButScored": [],
+      "latencyMs": 10328
+    },
+    {
+      "case": "3 flats",
+      "requested": 3,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_7919_mui7f0ff_c36370c5",
+        "gen_42_muh2krwf_d2cdd112",
+        "gen_101_muhfk5cn_18e75c41"
+      ],
+      "fluxAttempts": 3,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_7961_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_15880_0",
+          "status": "REJECTED",
+          "rejectionStage": "HARD_VALIDATION",
+          "preflight": {
+            "pass": true,
+            "reasons": []
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "APARTMENT_STAIR_COUNT_MISMATCH: Requested 2 stair(s), plan has 1.",
+            "APARTMENT_ROOM_OUTSIDE_UNIT: \"Bathroom\" lies outside the FLAT 02 boundary (0% inside).",
+            "APARTMENT_ROOM_OUTSIDE_UNIT: \"Bedroom\" lies outside the FLAT 02 boundary (94% inside).",
+            "APARTMENT_UNITS_NOT_SEPARATED: FLAT 02 and FLAT 03 overlap (2%); no party-wall separation between units."
+          ]
+        }
+      ],
+      "manifest": 3,
+      "schematic": 3,
+      "validated": {
+        "flats": 3,
+        "lifts": 2,
+        "stairs": 2,
+        "lobbies": 1,
+        "bedrooms": 6
+      },
+      "candidateSource": "FALLBACK_DETERMINISTIC",
+      "fallback": {
+        "reason": "FLUX_CANDIDATES_REJECTED",
+        "fallbackArtifactId": "gen_42_muid91vz_cee5df09"
+      },
+      "validation": "PASS",
+      "evaluation": "SCORED 82/100 (advisory)",
+      "acceptedStages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "runStages": {
+        "imageGeneration": "SUCCESS",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "PASSED",
+        "imageInterpretation": "SUCCESS",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "error": null,
+      "rejectedButScored": [],
+      "latencyMs": 20224
+    },
+    {
+      "case": "4 flats",
+      "requested": 4,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_7919_mui7f0ff_c36370c5",
+        "gen_42_muh2krwf_d2cdd112",
+        "gen_101_muhfk5cn_18e75c41"
+      ],
+      "fluxAttempts": 3,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 0."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0."
+          ]
+        },
+        {
+          "id": "cand_two_ai_7961_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 1.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 1.",
+            "VISUAL_PREFLIGHT_FAIL: Staircase count insufficient: Requested 2 stair(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_15880_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Lift count insufficient: Requested 2 lift(s), but detected 0."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0."
+          ]
+        }
+      ],
+      "manifest": 4,
+      "schematic": 4,
+      "validated": {
+        "flats": 4,
+        "lifts": 2,
+        "stairs": 2,
+        "lobbies": 1,
+        "bedrooms": 8
+      },
+      "candidateSource": "FALLBACK_DETERMINISTIC",
+      "fallback": {
+        "reason": "FLUX_PREFLIGHT_EXHAUSTED",
+        "fallbackArtifactId": "gen_42_muid9ahu_dcc150fc"
+      },
+      "validation": "PASS",
+      "evaluation": "SCORED 82/100 (advisory)",
+      "acceptedStages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "runStages": {
+        "imageGeneration": "EXHAUSTED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "REJECTED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "error": null,
+      "rejectedButScored": [],
+      "latencyMs": 10922
+    },
+    {
+      "case": "6 flats",
+      "requested": 6,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_7919_mui7f0ff_c36370c5",
+        "gen_42_muh2krwf_d2cdd112",
+        "gen_101_muhfk5cn_18e75c41"
+      ],
+      "fluxAttempts": 3,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Flat count mismatch: Requested 6 flats, but image shows 4 flats.",
+              "Unit mix mismatch: Expected 6 x 2BHK, but detected 3 x 2BHK.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Flat count mismatch: Requested 6 flats, but image shows 4 flats.",
+            "VISUAL_PREFLIGHT_FAIL: Unit mix mismatch: Expected 6 x 2BHK, but detected 3 x 2BHK.",
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 1."
+          ]
+        },
+        {
+          "id": "cand_two_ai_7961_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Flat count mismatch: Requested 6 flats, but image shows 3 flats.",
+              "Unit mix mismatch: Expected 6 x 2BHK, but detected 1 x 2BHK.",
+              "Common central core (shared lobby/corridor) is missing or illegible.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 0.",
+              "Staircase count insufficient: Requested 2 stair(s), but detected 1."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Flat count mismatch: Requested 6 flats, but image shows 3 flats.",
+            "VISUAL_PREFLIGHT_FAIL: Unit mix mismatch: Expected 6 x 2BHK, but detected 1 x 2BHK.",
+            "VISUAL_PREFLIGHT_FAIL: Common central core (shared lobby/corridor) is missing or illegible.",
+            "VISUAL_PREFLIGHT_FAIL: Lift count insufficient: Requested 2 lift(s), but detected 0."
+          ]
+        },
+        {
+          "id": "cand_two_ai_15880_0",
+          "status": "REJECTED",
+          "rejectionStage": "VISUAL_PREFLIGHT",
+          "preflight": {
+            "pass": false,
+            "reasons": [
+              "Generated image resembles a standalone single-family villa rather than a multi-unit apartment building.",
+              "Flat count mismatch: Requested 6 flats, but image shows 1 flats.",
+              "Unit mix mismatch: Expected 6 x 2BHK, but detected 0 x 2BHK.",
+              "Common central core (shared lobby/corridor) is missing or illegible.",
+              "Flats lack clear separation; boundary walls between units are ambiguous.",
+              "Lift count insufficient: Requested 2 lift(s), but detected 0."
+            ]
+          },
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "VISUAL_PREFLIGHT_FAIL: Generated image resembles a standalone single-family villa rather than a multi-unit apartment building.",
+            "VISUAL_PREFLIGHT_FAIL: Flat count mismatch: Requested 6 flats, but image shows 1 flats.",
+            "VISUAL_PREFLIGHT_FAIL: Unit mix mismatch: Expected 6 x 2BHK, but detected 0 x 2BHK.",
+            "VISUAL_PREFLIGHT_FAIL: Common central core (shared lobby/corridor) is missing or illegible."
+          ]
+        }
+      ],
+      "manifest": 6,
+      "schematic": 6,
+      "validated": {
+        "flats": 6,
+        "lifts": 2,
+        "stairs": 2,
+        "lobbies": 1,
+        "bedrooms": 12
+      },
+      "candidateSource": "FALLBACK_DETERMINISTIC",
+      "fallback": {
+        "reason": "FLUX_PREFLIGHT_EXHAUSTED",
+        "fallbackArtifactId": "gen_42_muid9m2h_2ada032a"
+      },
+      "validation": "PASS",
+      "evaluation": "SCORED 82/100 (advisory)",
+      "acceptedStages": {
+        "imageGeneration": "SKIPPED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "runStages": {
+        "imageGeneration": "EXHAUSTED",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "REJECTED",
+        "imageInterpretation": "SKIPPED",
+        "imageTo2D": "SUCCESS",
+        "validation": "SUCCESS",
+        "geminiEvaluation": "SUCCESS"
+      },
+      "error": null,
+      "rejectedButScored": [],
+      "latencyMs": 15424
+    },
+    {
+      "case": "villa",
+      "requested": 3,
+      "flux": "REPLAY (FLUX = LIVE UNAVAILABLE / TIMEOUT)",
+      "replayedRecordings": [
+        "gen_1306_muh6rq3y_0e9fcf79"
+      ],
+      "fluxAttempts": 1,
+      "attempts": [
+        {
+          "id": "cand_two_ai_42_0",
+          "status": "REJECTED",
+          "rejectionStage": "HARD_VALIDATION",
+          "preflight": null,
+          "evaluationStatus": "NOT_SCORED_REJECTED",
+          "firstErrors": [
+            "EXTRACTION_GEOMETRY_UNHEALTHY: The extracted plan fails the deterministic geometry health check. It cannot be installed as a canonical 2D plan.",
+            "EXTRACTION_GEOMETRY_ERROR: Room \"BEDROOM\" overlaps with another room on Level 0.",
+            "EXTRACTION_GEOMETRY_ERROR: Room \"LIVING\" overlaps with another room on Level 0.",
+            "EXTRACTION_ROOM_COLLISIONS: Detected 2 room collision(s): 69215743-3bb9-44ba-b469-35c833635a66, f5634004-f877-41cf-ae31-386e7630d430; f5634004-f877-41cf-ae31-386e7630d430, 69215743-3bb9-44ba-b469-35c833635a66."
+          ]
+        }
+      ],
+      "manifest": "N/A (villa path)",
+      "schematic": "N/A (villa path)",
+      "validated": {
+        "bedrooms": null
+      },
+      "candidateSource": null,
+      "fallback": null,
+      "validation": "FAIL",
+      "evaluation": "NOT SCORED (no valid plan)",
+      "acceptedStages": null,
+      "runStages": {
+        "imageGeneration": "SUCCESS",
+        "imageArtifact": "AVAILABLE",
+        "visualPreflight": "SKIPPED",
+        "imageInterpretation": "SUCCESS",
+        "imageTo2D": "FAILED",
+        "validation": "FAILED",
+        "geminiEvaluation": "SKIPPED"
+      },
+      "error": "GEOMETRY_VALIDATION_ERROR @ hard_validation: Generated candidate(s) failed deterministic architectural validation. Try adjusting setbacks or generating with a different seed.",
+      "rejectedButScored": [],
+      "latencyMs": 5953
+    }
+  ]
+}

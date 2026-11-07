@@ -1,0 +1,13 @@
+{
+  "pass": true,
+  "matchingSummary": "Exactly 3 flats detected, all 3BHK with 2 lifts and 2 stairs",
+  "failureReasons": [],
+  "flatCount": 3,
+  "detectedBedroomCountPerUnit": [
+    3,
+    3,
+    3
+  ],
+  "liftCount": 2,
+  "stairCount": 2
+}

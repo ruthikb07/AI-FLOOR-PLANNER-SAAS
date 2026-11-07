@@ -1,0 +1,15 @@
+{
+  "generationId": "gen_101_mufrvgl6_ba5c1e6f",
+  "projectId": "proj_1789407044709",
+  "seed": 101,
+  "model": "@cf/black-forest-labs/flux-2-klein-4b",
+  "provider": "cloudflare-workers-ai",
+  "promptVersion": 1,
+  "originalPrompt": "top-down orthographic 2D architectural floor plan, clean technical drafting style, crisp black walls, white background, clearly defined rooms, door swings and window openings, room labels, dimension annotations, north arrow, schematic plan drawing, a residential Compact Space-Efficient 2BHK, rectangular plot 15.24 m (width) x 15.24 m (depth), road facing North, north up, setbacks: front 0 mm, rear 0 mm, left 0 mm, right 0 mm, building placed inside the buildable envelope, 2 storeys (G+1), room program: 2 bedroom(s), 2 bathroom(s), living room, kitchen, dining room, staircase, balconies on the facade, vastu-aligned room orientation, daylight high priority, privacy high priority, circulation efficiency high priority, additional requirements: 2 bedrooms, 2 bathrooms, living room, dining room, kitchen, balcony, vastu compliant orientation. Plot size 50x50 ft, road facing north., accurate relative room proportions and adjacency; show all floors stacked if multi-storey",
+  "negativePrompt": "perspective, 3d render, photorealistic, isometric, furniture, landscaping, people, cars, textures, shadows, artistic, watercolor, decorative, blurry, colored photo",
+  "width": 1024,
+  "height": 1024,
+  "mimeType": "image/png",
+  "generatedAt": "2026-09-24T16:54:50.295Z",
+  "latencyMs": 21127
+}
