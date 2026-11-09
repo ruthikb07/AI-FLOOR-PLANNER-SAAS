@@ -2,6 +2,7 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
+> **Phase 2 Verification:** Complete (`feature/phase2-room-area-regeneration`)  
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Verified By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
@@ -42,6 +43,7 @@
 | | `ArchitecturalCADWorkspace` | Layer Toggles (7 layers) | Real | Canvas render | Dynamically shows/hides rooms, walls, openings, stairs, dimensions, grid. |
 | | `ArchitecturalCADWorkspace` | Entity Layer Toggles (3 layers) | Real | Canvas render | Toggles columns (`S-COLS`), beams (`S-BEAM`), furniture (`A-FURN`). |
 | | `ArchitecturalCADWorkspace` | Property Inspector Inputs | Real | Editor commands | Mutates selected entity dimensions, names, and room categories. |
+| | `PropertyInspector` | `RoomAreaCustomizerPanel` | Real | `optimizeRoomArea` / `ApplyRoomAreaRegenerationCommand` | Configures target room area ($m^2$ / sq ft), sliders, locks, and regeneration preferences. Generates Candidates A/B/C, interactive SVG preview modal, and applies reversible canonical command. |
 | | `ArchitecturalCADWorkspace` | Geometry Audit Display | Real | `GeometryValidator` | Live audit of active building with measured delta in $\text{mm}^2$. |
 | **03 Floor Editor** | `FloorIsometricEditor` | Floor Selector Buttons | Real | `editor.switchFloor` | Reads actual floors dynamically from `editor.building.floors`; switches active floor in canonical editor store. |
 | | `FloorIsometricEditor` | Viewport Canvas | Real | `ThreeBuildingScene` | Genuine orthographic/isometric Three.js presentation in isolated floor mode (`floorMode="isolate"`), with preserved 2D drafting plan mode toggle. |

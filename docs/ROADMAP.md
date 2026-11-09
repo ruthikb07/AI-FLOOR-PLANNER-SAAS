@@ -2,6 +2,7 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
+> **Phase 2 Verification:** Complete (`feature/phase2-room-area-regeneration`)  
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Audited By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
@@ -62,7 +63,32 @@ The project targets high-quality, editable residential architectural 2D generati
 
 ---
 
-### Phase 2 — Multi-Floor Cadastral & Site Coordination (Next Phase)
+### Phase 2 — Room Area Customization, Constraint-Aware Regeneration & Architectural Validation (Complete)
+- [x] **Task 2.1 — Canonical Command & Metadata:**
+  - Implemented `ApplyRoomAreaRegenerationCommand` in `@ai-floor-planner/core` with typed `RoomAreaRegenerationMetadata`.
+  - Full undo/redo integration with `EditorEngine`, updating canonical building version.
+- [x] **Task 2.2 — Deterministic Room Area Optimizer (`optimizeRoomArea`):**
+  - Implemented `packages/planning-engine/src/refinement/room-area-optimizer.ts`.
+  - Supports local envelope expansion and adjacent room partition shifting.
+  - Enforces envelope containment, column/beam clearances (`S-COLS`, `S-BEAM`), staircase/core protection, door re-anchoring, and statutory minimums.
+  - Generates up to 3 distinct alternatives (Candidate A: Minimum Disturbance, Candidate B: Circulation & Adjacency, Candidate C: Space Optimization).
+  - Tolerance rule: $\pm\max(0.10\text{ m}^2, 1.0\%)$.
+- [x] **Task 2.3 — Room Area Customizer UI & Interactive Preview:**
+  - Implemented `RoomAreaCustomizerPanel.tsx` and connected to `PropertyInspector.tsx`.
+  - Supports metric/imperial unit conversion ($m^2 \leftrightarrow \text{sq ft}$), sliders, room/neighbor locks, and structural protection toggles.
+  - Interactive SVG candidate preview modal with safety validation checklist, impact ledger, and revision staleness detection.
+- [x] **Task 2.4 — Comprehensive Regression Test Suites:**
+  - Implemented all 16 regression tests in `packages/planning-engine/src/__tests__/room-area-optimizer.test.ts`.
+  - Added 5 frontend integration tests in `packages/frontend/src/__tests__/room-area-customizer.test.tsx`.
+  - Added 3D projection test in `packages/projection-3d/src/__tests__/room-area-projection.test.ts`.
+  - Full quality gates verified: `pnpm test:unit`, `pnpm typecheck`, `pnpm lint`, `pnpm build`.
+- [x] **Task 2.5 — Documentation:**
+  - Created `docs/PHASE2_ROOM_REGENERATION.md`.
+  - Updated `docs/FEATURE_MATRIX.md` and `docs/ROADMAP.md`.
+
+---
+
+### Phase 3 — Multi-Floor Cadastral & Site Coordination (Next Phase)
 - [ ] **Task 2.1 — Site Boundary Snapping & Setback Offsets:**
   - Enforce site boundary polygon vertex snapping in 2D and 3D overlays.
   - Calculate dynamic statutory marginal distances ($H/5$ front, $H/4$ rear/side) directly on site polygon offsets.

@@ -2339,6 +2339,14 @@ var init_room_commands = __esm({
   }
 });
 
+// ../core/dist/editor/commands/room-area-command.js
+var init_room_area_command = __esm({
+  "../core/dist/editor/commands/room-area-command.js"() {
+    "use strict";
+    init_id();
+  }
+});
+
 // ../core/dist/editor/commands/door-commands.js
 var init_door_commands = __esm({
   "../core/dist/editor/commands/door-commands.js"() {
@@ -2414,6 +2422,7 @@ var init_commands = __esm({
     "use strict";
     init_selection_commands();
     init_room_commands();
+    init_room_area_command();
     init_door_commands();
     init_window_commands();
     init_delete_commands();
@@ -33337,7 +33346,7 @@ var init_dist3 = __esm({
 
 // ../planning-engine/dist/multi-floor/planner.js
 function roomProgramId(room) {
-  const tag = room.tags.find((value) => value.startsWith("program:"));
+  const tag = room.tags?.find((value) => value.startsWith("program:"));
   return tag ? sourceProgramItemId(tag.slice("program:".length)) : void 0;
 }
 function footprintOverlapRatio(a, b) {
@@ -33688,8 +33697,8 @@ function evaluateDesign(building, options = {}) {
   for (const floor of building.floors) {
     for (const room of floor.rooms) {
       if (room.type === RoomType.Bedroom) {
-        const connectedDoors = floor.doors.filter((d) => d.connectsRooms.includes(room.id));
-        const otherRoomIds = connectedDoors.flatMap((d) => d.connectsRooms.filter((id) => id !== room.id && id !== "__outside__" && id !== "outside"));
+        const connectedDoors = floor.doors.filter((d) => Boolean(d.connectsRooms?.includes(room.id)));
+        const otherRoomIds = connectedDoors.flatMap((d) => d.connectsRooms ? d.connectsRooms.filter((id) => id !== room.id && id !== "__outside__" && id !== "outside") : []);
         const nonBathOtherRooms = otherRoomIds.map((id) => floor.rooms.find((r) => r.id === id)).filter((r) => r && r.type !== RoomType.Bathroom);
         if (nonBathOtherRooms.length > 1) {
           observations.push({
@@ -33704,8 +33713,8 @@ function evaluateDesign(building, options = {}) {
     }
   }
   let zoningScore = 80;
-  const entranceDoor = building.floors[0]?.doors.find((d) => d.connectsRooms.includes("__outside__") || d.connectsRooms.includes("outside"));
-  if (entranceDoor) {
+  const entranceDoor = building.floors[0]?.doors.find((d) => Boolean(d.connectsRooms && (d.connectsRooms.includes("__outside__") || d.connectsRooms.includes("outside"))));
+  if (entranceDoor && entranceDoor.connectsRooms) {
     const enteredRoomId = entranceDoor.connectsRooms.find((id) => id !== "__outside__" && id !== "outside");
     const enteredRoom = allRooms.find((r) => r.id === enteredRoomId);
     if (enteredRoom) {
@@ -35617,6 +35626,45 @@ var init_targeted_regeneration = __esm({
     init_dist2();
     init_design_evaluator();
     init_engine2();
+  }
+});
+
+// ../planning-engine/dist/refinement/room-area-optimizer.js
+var STATUTORY_MIN_ROOM_AREAS, STATUTORY_MIN_ROOM_WIDTH;
+var init_room_area_optimizer = __esm({
+  "../planning-engine/dist/refinement/room-area-optimizer.js"() {
+    "use strict";
+    init_dist();
+    init_dist2();
+    init_design_evaluator();
+    init_targeted_regeneration();
+    STATUTORY_MIN_ROOM_AREAS = {
+      [RoomType.Living]: 11e6,
+      // 11.0 m² (UDCPR habitable living)
+      [RoomType.Bedroom]: 95e5,
+      // 9.5 m² (UDCPR standard bedroom)
+      [RoomType.Kitchen]: 55e5,
+      // 5.5 m² (UDCPR kitchen)
+      [RoomType.Bathroom]: 18e5,
+      // 1.8 m² (UDCPR combined bath/WC)
+      [RoomType.Utility]: 15e5,
+      // 1.5 m² (utility yard)
+      [RoomType.Balcony]: 2e6,
+      // 2.0 m²
+      [RoomType.Corridor]: 2e6,
+      [RoomType.Dining]: 6e6,
+      [RoomType.Study]: 75e5,
+      [RoomType.Pooja]: 15e5,
+      [RoomType.Storage]: 15e5,
+      [RoomType.Foyer]: 15e5
+    };
+    STATUTORY_MIN_ROOM_WIDTH = {
+      [RoomType.Living]: 2400,
+      [RoomType.Bedroom]: 2400,
+      [RoomType.Kitchen]: 1800,
+      [RoomType.Bathroom]: 1200,
+      [RoomType.Balcony]: 1200
+    };
   }
 });
 
@@ -40594,6 +40642,7 @@ var init_dist4 = __esm({
     init_workflow();
     init_reviewed_workflow();
     init_targeted_regeneration();
+    init_room_area_optimizer();
     init_stair_coordination();
     init_design_evaluator();
     init_engine2();

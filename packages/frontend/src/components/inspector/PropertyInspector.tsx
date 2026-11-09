@@ -15,6 +15,7 @@ import {
 } from '@ai-floor-planner/core';
 import { containsPolygon, mmToFeet, polygonIntersectionArea, sqMmToSqFt } from '@ai-floor-planner/geometry-engine';
 import { RefinementPanel } from '../refinement/RefinementPanel';
+import { RoomAreaCustomizerPanel } from '../argon/RoomAreaCustomizerPanel';
 
 interface PropertyInspectorProps {
   editor: EditorContextValue;
@@ -98,6 +99,10 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
         {/* ROOM PROPERTIES */}
         {selectedRoom && (
           <>
+            <div className="inspector-section" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+              <RoomAreaCustomizerPanel editor={editor} room={selectedRoom} />
+            </div>
+
             <div className="inspector-section">
               <span className="inspector-section-title">Identity</span>
               <div className="form-group">

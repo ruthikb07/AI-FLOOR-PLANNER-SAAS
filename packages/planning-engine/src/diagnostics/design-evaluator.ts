@@ -318,8 +318,8 @@ export function evaluateDesign(
   for (const floor of building.floors) {
     for (const room of floor.rooms) {
       if (room.type === RoomType.Bedroom) {
-        const connectedDoors = floor.doors.filter(d => d.connectsRooms.includes(room.id));
-        const otherRoomIds = connectedDoors.flatMap(d => d.connectsRooms.filter(id => id !== room.id && id !== '__outside__' && id !== 'outside'));
+        const connectedDoors = floor.doors.filter(d => Boolean(d.connectsRooms?.includes(room.id)));
+        const otherRoomIds = connectedDoors.flatMap(d => d.connectsRooms ? d.connectsRooms.filter(id => id !== room.id && id !== '__outside__' && id !== 'outside') : []);
         const nonBathOtherRooms = otherRoomIds.map(id => floor.rooms.find(r => r.id === id)).filter(r => r && r.type !== RoomType.Bathroom);
         if (nonBathOtherRooms.length > 1) {
           observations.push({
@@ -337,9 +337,9 @@ export function evaluateDesign(
   // 7. Functional Zoning & Entrance Alignment
   let zoningScore = 80;
   const entranceDoor = building.floors[0]?.doors.find(d =>
-    d.connectsRooms.includes('__outside__') || d.connectsRooms.includes('outside')
+    Boolean(d.connectsRooms && (d.connectsRooms.includes('__outside__') || d.connectsRooms.includes('outside')))
   );
-  if (entranceDoor) {
+  if (entranceDoor && entranceDoor.connectsRooms) {
     const enteredRoomId = entranceDoor.connectsRooms.find(id => id !== '__outside__' && id !== 'outside');
     const enteredRoom = allRooms.find(r => r.id === enteredRoomId);
     if (enteredRoom) {

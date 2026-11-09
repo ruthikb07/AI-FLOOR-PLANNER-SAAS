@@ -49,6 +49,8 @@ export {
   ResizeRoomCommand,
   UpdateRoomGeometryCommand,
   UpdateRoomPropertiesCommand,
+  ApplyRoomAreaRegenerationCommand,
+  type RoomAreaRegenerationMetadata,
   AddDoorCommand,
   MoveDoorCommand,
   UpdateDoorPropertiesCommand,

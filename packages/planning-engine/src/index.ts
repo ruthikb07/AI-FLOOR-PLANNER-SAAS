@@ -59,6 +59,15 @@ export type {
   RefinementCandidate,
   TargetedRegenerationInput,
 } from './refinement/targeted-regeneration';
+export {
+  optimizeRoomArea,
+  STATUTORY_MIN_ROOM_AREAS,
+  STATUTORY_MIN_ROOM_WIDTH,
+  type RoomAreaRegenerationOptions,
+  type RoomAreaCandidate,
+  type RoomAreaOptimizationResult,
+  type ModifiedRoomDetail,
+} from './refinement/room-area-optimizer';
 export { coordinateStairAccess, stairModelIssues } from './generator/stair-coordination';
 export { evaluateDesign, type DesignEvaluationOptions } from './diagnostics/design-evaluator';
 export { diagnosticsToValidation, type ValidationSummary } from './repair/engine';
