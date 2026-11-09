@@ -207,3 +207,4 @@ pnpm --filter @ai-floor-planner/frontend dev
 ```
 
 > **Note:** The frontend Vite dev server automatically proxies `/api/*` requests to the backend at `http://127.0.0.1:4200`.
+

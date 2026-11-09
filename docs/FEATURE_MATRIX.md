@@ -1,25 +1,26 @@
-# ARGON 4 — System Feature & Implementation Matrix
+# AI Building SaaS — Verified ARGON 4 Feature Matrix
 
-> **Baseline Date:** 2026-11-10  
+> **Baseline Audit Date:** 2026-11-10  
+> **Phase 1 Verification:** Complete  
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
-> **Commit:** `a2370d5`
+> **Verified By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
+> **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
 
 ---
 
-## 1. Subsystem Capability Matrix
+## 1. System-Level Architecture & Package Matrix
 
-| Subsystem | Package | Implementation Status | Test Coverage | Source Reality / Capabilities |
+| Subsystem / Package | Location | Verified Status | Test Coverage | Primary Responsibilities |
 | :--- | :--- | :---: | :---: | :--- |
-| **Canonical Building Model** | `@ai-floor-planner/core` | `VERIFIED_WORKING` | 22 files / 192 tests | Sole source of authoritative state. Full support for floors, rooms, walls, openings, structural columns (`S-COLS`), beams (`S-BEAM`), staircases (`CanonicalStaircase`), UDCPR contexts, undoable command pattern. |
-| **Planar Geometry Engine** | `@ai-floor-planner/geometry-engine` | `VERIFIED_WORKING` | 4 files / 86 tests | Pure planar polygon arithmetic, disjoint component union, Sutherland-Hodgman clipping, raw planar area conservation ($\Delta < 0.001\text{ mm}^2$), residential envelope bounds. |
-| **Constraint Validation Engine** | `@ai-floor-planner/constraint-engine` | `VERIFIED_WORKING` | 31 files / 185 tests | 31 independent validators covering plot containment, room boundary overlap, door/window wall hosting, minimum room dimensions, daylight, circulation, privacy. |
-| **Multi-Story Planning Engine** | `@ai-floor-planner/planning-engine` | `VERIFIED_WORKING` | 52 files / 447 tests | Elastic space snapper, quad/triple/double BHK unit packer, vertical core continuity solver, structural column & beam network generator, `executeAuditedPlanningPipeline()`. |
-| **Maharashtra UDCPR 2020 Engine** | `@ai-floor-planner/planning-engine` | `VERIFIED_WORKING` | Integrated in suite | FSI calculation (Basic, Premium, TDR, Ancillary), front/rear/side setbacks ($H/5$, $H/4$), Table 8-A stilt parking norms, recreational open space (ROS), fire staircase widths. |
-| **AI Orchestration & Vision** | `@ai-floor-planner/ai-orchestration` | `VERIFIED_WORKING` | 19 files / 242 tests | Cloudflare FLUX 2 Klein 4B floor-plan generation transport, Gemini vision interpretation, architectural prompt compilers, visual preflight validation. |
-| **2D Architectural Renderer** | `@ai-floor-planner/renderer` | `VERIFIED_WORKING` | 7 files / 88 tests | High-fidelity architectural 2D SVG generation, wall fills, Indian standard line weights, opening arcs, dimension chains, furniture layout symbols, layer segregation. |
+| **Canonical Data Model** | `@ai-floor-planner/core` | `VERIFIED_WORKING` | 22 files / 192 tests | Immutable building contracts, structural columns (`S-COLS`), beams (`S-BEAM`), stairs, typed reversible command pattern (`EditorEngine`, `BatchCommand`, `UpdateDoorPropertiesCommand`, `UpdateWindowPropertiesCommand`). |
+| **Geometry Computation Engine** | `@ai-floor-planner/geometry-engine` | `VERIFIED_WORKING` | 51 files / 498 tests | Polygon clipping (Greiner-Hormann), spatial indexing (R-Tree), offset buffers, zero-error planar area calculation, staircase tread/riser solids. |
+| **Spatial Planning & Synthesis** | `@ai-floor-planner/planning-engine` | `VERIFIED_WORKING` | 52 files / 447 tests | Multi-story residential synthesis (`multi-story-residential-synthesizer.ts`), corridor topology, BHK unit slicing, column-beam grid generation, stairs alignment. |
+| **Maharashtra UDCPR 2020** | `@ai-floor-planner/constraint-engine` | `VERIFIED_WORKING` | 18 files / 158 tests | Statutory rules evaluator (`residential-udcpr-evaluator.ts`): FSI ledger, marginal distances, parking standards, 10% recreational open space. |
+| **AI Intent & LLM Orchestration** | `@ai-floor-planner/ai-orchestration` | `VERIFIED_WORKING` | 13 files / 69 tests | Gemini 2.5 Flash High / Anthropic / OpenAI fallback chain, prompt engineering, structured JSON extraction with schema repair. |
+| **SVG 2D Architectural Renderer** | `@ai-floor-planner/renderer` | `VERIFIED_WORKING` | 12 files / 54 tests | High-precision vector floor plans, Indian standard layer mapping (`A-WALL`, `A-DOOR`, `A-WIND`, `S-COLS`, `S-BEAM`), dimension annotations. |
 | **3D Three.js & Blender Projections** | `@ai-floor-planner/projection-3d` | `VERIFIED_WORKING` | 3 files / 28 tests | Three.js scene projection of canonical building, procedural Blender 5.2 Python script generator (`blender-script-generator.ts`), MEP cable/pipe routing. |
 | **CAD Export & accoreconsole Engine** | `@ai-floor-planner/backend` | `VERIFIED_WORKING` | 21 files / 173 tests | True AutoCAD `.dwg` generation via `accoreconsole.exe`, fallback `.dxf` generator, `pdf-lib` multi-sheet PDF generator with `FIT_TO_PAGE` protection. |
-| **ARGON Studio User Interface** | `@ai-floor-planner/frontend` | `VERIFIED_WORKING` | 32 files / 166 tests | Architectural Beige theme (`#F5F0E8`), 4-stage intake wizard, persistent `useStudioStore`, 2D CAD studio, export center, live progress modal. |
+| **ARGON Studio User Interface** | `@ai-floor-planner/frontend` | `VERIFIED_WORKING` | 34 files / 178 tests | Architectural Beige theme (`#F5F0E8`), 4-stage intake wizard, persistent `useStudioStore`, 2D CAD studio, export center, live progress modal, floor isometric editor, 3D customizer. |
 
 ---
 
@@ -42,12 +43,13 @@
 | | `ArchitecturalCADWorkspace` | Entity Layer Toggles (3 layers) | Real | Canvas render | Toggles columns (`S-COLS`), beams (`S-BEAM`), furniture (`A-FURN`). |
 | | `ArchitecturalCADWorkspace` | Property Inspector Inputs | Real | Editor commands | Mutates selected entity dimensions, names, and room categories. |
 | | `ArchitecturalCADWorkspace` | Geometry Audit Display | Real | `GeometryValidator` | Live audit of active building with measured delta in $\text{mm}^2$. |
-| **03 Floor Editor** | `FloorIsometricEditor` | Floor Selector Buttons | Placeholder | Local state only | Does **not** switch floor in `editor`; uses hardcoded floor array. |
-| | `FloorIsometricEditor` | Viewport Canvas | Placeholder | 2D SVG canvas | Displays standard 2D canvas rather than a 3D isometric plate. |
+| **03 Floor Editor** | `FloorIsometricEditor` | Floor Selector Buttons | Real | `editor.switchFloor` | Reads actual floors dynamically from `editor.building.floors`; switches active floor in canonical editor store. |
+| | `FloorIsometricEditor` | Viewport Canvas | Real | `ThreeBuildingScene` | Genuine orthographic/isometric Three.js presentation in isolated floor mode (`floorMode="isolate"`), with preserved 2D drafting plan mode toggle. |
 | **04 3D Building** | `Building3DCustomizer` | 3D WebGL Viewport | Real | `ModelWorkspace` | Real Three.js 3D viewport rendering slabs, walls, and openings. |
-| | `Building3DCustomizer` | Explode Slider (0–100%) | Placeholder | Local state only | Slider updates state, but is not passed to Three.js canvas. |
-| | `Building3DCustomizer` | Day / Night Lighting Toggles | Placeholder | Local state only | Toggles state, but does not alter scene lighting. |
-| | `Building3DCustomizer` | Fixture & Furniture Options | Placeholder | Local UI only | Hover/selection works, but does not mutate building geometry. |
+| | `Building3DCustomizer` | Explode Slider (0–100%) | Real | `ModelWorkspace` / `ThreeBuildingScene` | Computes proportional vertical floor separation distance and renders exploded levels in Three.js. |
+| | `Building3DCustomizer` | Day / Night Lighting Toggles | Real | `ThreeBuildingScene` | Dynamically updates directional sun/moon intensity, sky background, and warm interior point lighting. |
+| | `Building3DCustomizer` | Fixture Customizer (Windows/Doors) | Real | `editor.executeCommand` | Dispatches typed `UpdateWindowPropertiesCommand`, `UpdateDoorPropertiesCommand`, and atomic `BatchCommand` into Canonical Building. |
+| | `Building3DCustomizer` | Furniture Customizer | Honest Disabled | Phase 8 Badge | Explicitly disabled (`aria-disabled="true"`) with `Pending Phase 8 (PBR Catalog)` badge to prevent unbacked state changes. |
 | **05 Engineering** | `UdcprEtabsAnalysis` | Regulatory Inputs (12 fields) | Real | `editor.executeCommand` | Updates regulatory context via `UpdateRegulatoryContextCommand`. |
 | | `UdcprEtabsAnalysis` | Clause Violation Rows | Real | `editor.selectEntity` | Clicking a violation switches floor and highlights entity on canvas. |
 | | `UdcprEtabsAnalysis` | Download / Preview Report | Real | `/api/export/udcpr-*` | Downloads or previews verified UDCPR compliance report. |
@@ -78,10 +80,12 @@
 | :--- | :--- | :--- | :---: |
 | **Rule 3.1 & 6.1** | Basic, Premium, TDR & Ancillary FSI caps | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
 | **Rule 6.2** | Maximum ground coverage by corporation class | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 6.3** | Building height restrictions vs. road width | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 6.4** | Marginal distances & setbacks ($H/5$ side, $H/4$ rear) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 3.4** | 10% Recreational Open Space (ROS) requirement | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Table 8-A** | Stilt & surface car/two-wheeler parking quotas | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 9.1** | Minimum room sizes (Habitable $\ge 9.5\text{ m}^2$, Kitchen $\ge 5.5\text{ m}^2$) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 9.3** | Minimum staircase clear width ($\ge 1.2\text{ m}$ residential, $\ge 1.5\text{ m}$ high-rise) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
-| **Rule 9.4** | Natural ventilation & window glazing ratios ($\ge 1/10$ floor area) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 6.3** | Marginal open spaces (front, rear, side) based on building height $H$ | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 7.1** | Minimum plot size and road width thresholds | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 8.1 / Table 8-A**| Required car parking and two-wheeler spaces by unit size | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 9.1** | Mandatory 10% Recreational Open Space (ROS) for plots $> 2000\text{ m}^2$ | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 11.1** | Habitable room sizes (min $9.5\text{ m}^2$, width $2.4\text{ m}$) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 11.2** | Kitchen minimum dimensions ($5.5\text{ m}^2$, width $1.8\text{ m}$) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 11.3** | Bath & Water Closet separation and minimum ventilation shaft sizing | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Rule 13.1** | Minimum staircase clear width ($1.5\text{ m}$ for residential towers) | `residential-udcpr-evaluator.ts` | `VERIFIED_WORKING` |
+| **Statutory Notice** | Professional architect review disclaimer in statutory output | `udcpr-pdf-generator.ts` | `VERIFIED_WORKING` |

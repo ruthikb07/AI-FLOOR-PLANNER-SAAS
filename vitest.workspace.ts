@@ -17,7 +17,7 @@ export default defineWorkspace([
     },
     test: {
       name: 'integration',
-      include: ['tests/**/*.test.ts'],
+      include: ['tests/**/*.test.ts', 'packages/backend/src/__tests__/real-provider-smoke.test.ts'],
     },
   },
 ]);

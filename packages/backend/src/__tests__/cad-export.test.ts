@@ -439,11 +439,16 @@ describe('Comprehensive AutoCAD Binary DWG & DXF Round-Trip HTTP Verification Ga
       config,
     };
     server = createBackendServer(deps);
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      server.on('error', reject);
       server.listen(0, '127.0.0.1', () => {
-        const addr = server.address() as any;
-        serverUrl = `http://127.0.0.1:${addr.port}`;
-        resolve();
+        const addr = server.address();
+        if (addr && typeof addr === 'object') {
+          serverUrl = `http://127.0.0.1:${addr.port}`;
+          resolve();
+        } else {
+          reject(new Error('Failed to obtain server address'));
+        }
       });
     });
   });

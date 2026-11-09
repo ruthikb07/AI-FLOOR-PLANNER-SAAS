@@ -17,6 +17,7 @@
     "start": "node ../../scripts/bundle-backend.mjs --run",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --no-error-on-unmatched-pattern",
     "clean": "rm -rf dist dist-server *.tsbuildinfo"

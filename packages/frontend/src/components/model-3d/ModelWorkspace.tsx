@@ -14,7 +14,7 @@ import {
   type ModelViewPreferences,
 } from '../../services/projection-preferences';
 
-interface ModelWorkspaceProps {
+export interface ModelWorkspaceProps {
   readonly generationControl: GenerationControlState;
   readonly onApplyBuilding: (building: Building, description: string) => void;
   readonly building: Building;
@@ -23,6 +23,8 @@ interface ModelWorkspaceProps {
   readonly onSelectEntity: (entityType: string, entityId: string, floorId: string) => void;
   readonly onClearSelection: () => void;
   readonly onSwitchFloor: (floorId: string) => void;
+  readonly explodeValue?: number;
+  readonly lightingMode?: 'day' | 'night';
 }
 
 const projector = new Building3DProjector();
@@ -33,7 +35,18 @@ function updateParameter(settings: Building3DProjectionSettings, key: keyof Buil
   return { ...settings, [key]: { value, provenance: 'USER_PROVIDED' } satisfies ProjectionParameter };
 }
 
-export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({ building, generationControl, onApplyBuilding, activeFloorId, selection, onSelectEntity, onClearSelection, onSwitchFloor }) => {
+export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
+  building,
+  generationControl,
+  onApplyBuilding,
+  activeFloorId,
+  selection,
+  onSelectEntity,
+  onClearSelection,
+  onSwitchFloor,
+  explodeValue,
+  lightingMode = 'day',
+}) => {
   const [coordinationMessage, setCoordinationMessage] = useState('');
   const [stairReviewOpen, setStairReviewOpen] = useState(false);
   const stairIssues = useMemo(() => stairModelIssues(building), [building]);
@@ -59,6 +72,11 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({ building, genera
     onSelectEntity(mapped.entityType, mapped.entityId, mapped.floorId);
   };
 
+  const effectiveExplodeDistance = (explodeValue !== undefined && explodeValue > 0)
+    ? (explodeValue / 100) * 4.5
+    : (preferences.exploded ? 1.8 : 0);
+  const effectiveExploded = effectiveExplodeDistance > 0;
+
   if (projection.floorPlates.every(plate => plate.boundary.points.length < 3)) {
     return <div className="model-empty-state"><Box size={38} /><strong>NO BUILDING GEOMETRY AVAILABLE</strong><p>Create or load valid floor geometry before opening the structured model.</p></div>;
   }
@@ -79,6 +97,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({ building, genera
       setExportMessage(windowsLauncher ? 'Downloaded. Run the .cmd in your Downloads folder. It creates a new .blend alongside it and opens Blender. On failure the console stays open with the error. Only run exports you trust.' : 'Downloaded Python script. Do not double-click it in Windows: open Blender → Scripting → Open, then Run Script in a new scene, or use the command below.');
     } catch (error) { setExportMessage(error instanceof Error ? error.message : 'Blender export failed.'); }
   };
+
   return <section className="model-workspace" aria-label="Canonical 3D building model workspace">
     <ThreeBuildingScene
       projection={projection}
@@ -87,7 +106,9 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({ building, genera
       viewMode={preferences.viewMode}
       cameraPreset={preferences.cameraPreset}
       floorMode={preferences.floorMode}
-      exploded={preferences.exploded}
+      exploded={effectiveExploded}
+      explodeDistance={effectiveExplodeDistance}
+      lightingMode={lightingMode}
       layers={preferences.layers}
       fitRequest={fitRequest}
       fitSite={fitSite}

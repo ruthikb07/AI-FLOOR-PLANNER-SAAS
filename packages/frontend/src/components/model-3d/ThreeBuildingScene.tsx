@@ -12,7 +12,7 @@ import { shouldRenderRoomProjection, type ModelCameraPreset, type ModelFloorMode
 const MM_TO_M = millimetersToSceneUnits(1);
 const EXPLODED_GAP_M = 1.8;
 
-interface ThreeBuildingSceneProps {
+export interface ThreeBuildingSceneProps {
   readonly projection: Building3DProjection;
   readonly activeFloorId: string;
   readonly selection: EditorSelection | null;
@@ -20,6 +20,8 @@ interface ThreeBuildingSceneProps {
   readonly cameraPreset: ModelCameraPreset;
   readonly floorMode: ModelFloorMode;
   readonly exploded: boolean;
+  readonly explodeDistance?: number;
+  readonly lightingMode?: 'day' | 'night';
   readonly layers: ModelLayerVisibility;
   readonly fitRequest: number;
   readonly fitSite?: boolean;
@@ -30,10 +32,11 @@ interface ThreeBuildingSceneProps {
 
 type SelectableObject = THREE.Object3D & { userData: ProjectionSource };
 
-function floorOffset(projection: Building3DProjection, floorId: string | undefined, exploded: boolean): number {
+function floorOffset(projection: Building3DProjection, floorId: string | undefined, exploded: boolean, customGapM?: number): number {
   if (!exploded || !floorId) return 0;
   const index = projection.levels.findIndex(level => level.floorId === floorId);
-  return Math.max(0, index) * EXPLODED_GAP_M;
+  const gap = customGapM !== undefined && customGapM > 0 ? customGapM : EXPLODED_GAP_M;
+  return Math.max(0, index) * gap;
 }
 
 function shouldShowFloor(floorId: string | undefined, activeFloorId: string, mode: ModelFloorMode): boolean {
@@ -70,6 +73,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   cameraPreset,
   floorMode,
   exploded,
+  explodeDistance,
+  lightingMode = 'day',
   layers,
   fitRequest,
   fitSite = false,
@@ -81,6 +86,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null);
   const [renderError, setRenderError] = useState('');
   const runtimeRef = useRef<{ camera: THREE.PerspectiveCamera; controls: OrbitControls; renderer: THREE.WebGLRenderer; scene: THREE.Scene } | null>(null);
+
+  const isExploded = Boolean(exploded || (explodeDistance !== undefined && explodeDistance > 0));
 
   useEffect(() => {
     const host = hostRef.current;
@@ -108,11 +115,17 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     controls.minDistance = 0.3;
     controls.maxDistance = 2000;
     controls.target.set(5, 2, 5);
-    scene.add(new THREE.HemisphereLight(0xddeeff, 0x182235, 2.2));
+
+    const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x182235, 2.2);
+    hemiLight.name = 'hemi-light';
+    scene.add(hemiLight);
+
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    keyLight.name = 'key-light';
     keyLight.position.set(-12, 22, -8);
     keyLight.castShadow = true;
     scene.add(keyLight);
+
     const grid = new THREE.GridHelper(60, 60, 0x36506d, 0x17263a);
     grid.position.y = -0.02;
     scene.add(grid);
@@ -139,6 +152,53 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       runtimeRef.current = null;
     };
   }, []);
+
+  // Dynamic Day/Night Lighting Mode
+  useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!runtime) return;
+    const { scene, renderer, camera } = runtime;
+    const hemi = scene.getObjectByName('hemi-light') as THREE.HemisphereLight | undefined;
+    const key = scene.getObjectByName('key-light') as THREE.DirectionalLight | undefined;
+    const nightGlowName = 'night-glow-light';
+    let nightGlow = scene.getObjectByName(nightGlowName) as THREE.PointLight | undefined;
+
+    if (lightingMode === 'night') {
+      scene.background = new THREE.Color(0x030712);
+      if (hemi) {
+        hemi.color.setHex(0x1e1b4b);
+        hemi.groundColor.setHex(0x0f172a);
+        hemi.intensity = 0.8;
+      }
+      if (key) {
+        key.color.setHex(0x818cf8);
+        key.intensity = 0.9;
+      }
+      if (!nightGlow) {
+        nightGlow = new THREE.PointLight(0xfbbf24, 2.5, 30);
+        nightGlow.name = nightGlowName;
+        nightGlow.position.set(5, 4, 5);
+        scene.add(nightGlow);
+      } else {
+        nightGlow.visible = true;
+      }
+    } else {
+      scene.background = new THREE.Color(0x0a1120);
+      if (hemi) {
+        hemi.color.setHex(0xddeeff);
+        hemi.groundColor.setHex(0x182235);
+        hemi.intensity = 2.2;
+      }
+      if (key) {
+        key.color.setHex(0xffffff);
+        key.intensity = 2.8;
+      }
+      if (nightGlow) {
+        nightGlow.visible = false;
+      }
+    }
+    renderer.render(scene, camera);
+  }, [lightingMode]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -195,7 +255,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       geometry.rotateX(-Math.PI / 2);
       const sourceSelected = selected(plate, selection);
       const mesh = new THREE.Mesh(geometry, material(sourceSelected ? 0x22d3ee : 0x94a3b8, 0.9 * floorContextOpacity(plate.floorId, activeFloorId, floorMode)));
-      mesh.position.y = plate.elevation * MM_TO_M + floorOffset(projection, plate.floorId, exploded);
+      mesh.position.y = plate.elevation * MM_TO_M + floorOffset(projection, plate.floorId, isExploded, explodeDistance);
       mesh.receiveShadow = true;
       addEdges(mesh);
       addSelectable(mesh, plate);
@@ -213,7 +273,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         ? new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.68, side: THREE.DoubleSide, depthTest: false })
         : material(0x38bdf8, (viewMode === 'rooms' ? 0.16 : 0.46) * floorContextOpacity(room.floorId, activeFloorId, floorMode));
       const mesh = new THREE.Mesh(geometry, roomMaterial);
-      mesh.position.y = room.elevation * MM_TO_M + 0.012 + floorOffset(projection, room.floorId, exploded);
+      mesh.position.y = room.elevation * MM_TO_M + 0.012 + floorOffset(projection, room.floorId, isExploded, explodeDistance);
       mesh.renderOrder = roomSelected ? 20 : 0;
       addSelectable(mesh, room);
     });
@@ -231,7 +291,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         const alongMid = (segment.alongStart + segment.alongEnd) / 2;
         const geometry = new THREE.BoxGeometry(segmentLength, segmentHeight, wall.thickness * MM_TO_M);
         const mesh = new THREE.Mesh(geometry, material(selected(wall, selection) ? 0x22d3ee : 0xe2e8f0, 0.96 * floorContextOpacity(wall.floorId, activeFloorId, floorMode)));
-        mesh.position.set((wall.startPoint.x + ux * alongMid) * MM_TO_M, (wall.elevation + segment.bottom) * MM_TO_M + segmentHeight / 2 + floorOffset(projection, wall.floorId, exploded), (wall.startPoint.y + uy * alongMid) * MM_TO_M);
+        mesh.position.set((wall.startPoint.x + ux * alongMid) * MM_TO_M, (wall.elevation + segment.bottom) * MM_TO_M + segmentHeight / 2 + floorOffset(projection, wall.floorId, isExploded, explodeDistance), (wall.startPoint.y + uy * alongMid) * MM_TO_M);
         mesh.rotation.y = angle;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -253,7 +313,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       const color = selected(opening, selection) ? 0xfacc15 : opening.sourceEntityType === 'window' ? 0x38bdf8 : 0x8b5e3c;
       const mesh = new THREE.Mesh(geometry, material(color, (opening.sourceEntityType === 'window' ? 0.48 : 0.86) * floorContextOpacity(opening.floorId, activeFloorId, floorMode)));
       const centerAlong = opening.alongWall + opening.width / 2;
-      mesh.position.set((wall.startPoint.x + dx / wall.length * centerAlong) * MM_TO_M, (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M + floorOffset(projection, opening.floorId, exploded), (wall.startPoint.y + dy / wall.length * centerAlong) * MM_TO_M);
+      mesh.position.set((wall.startPoint.x + dx / wall.length * centerAlong) * MM_TO_M, (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M + floorOffset(projection, opening.floorId, isExploded, explodeDistance), (wall.startPoint.y + dy / wall.length * centerAlong) * MM_TO_M);
       mesh.rotation.y = angle;
       addSelectable(mesh, opening);
     });
@@ -262,18 +322,18 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       if (!shouldShowFloor(stair.floorId, activeFloorId, floorMode)) return;
       const result = computeStairSolids(stair.canonicalStair, stair.verticalExtent);
       result.solids.forEach(part => {
-      const geometry = new THREE.ExtrudeGeometry(makeShape(part.boundary), { depth: (part.top - part.bottom) * MM_TO_M, bevelEnabled: false });
-      geometry.rotateX(-Math.PI / 2);
-      const mesh = new THREE.Mesh(geometry, material(selected(stair, selection) ? 0xfacc15 : 0xd4a373, floorContextOpacity(stair.floorId, activeFloorId, floorMode)));
-      mesh.position.y = (stair.elevation + part.bottom) * MM_TO_M + floorOffset(projection, stair.floorId, exploded);
-      addEdges(mesh);
-      addSelectable(mesh, stair);
+        const geometry = new THREE.ExtrudeGeometry(makeShape(part.boundary), { depth: (part.top - part.bottom) * MM_TO_M, bevelEnabled: false });
+        geometry.rotateX(-Math.PI / 2);
+        const mesh = new THREE.Mesh(geometry, material(selected(stair, selection) ? 0xfacc15 : 0xd4a373, floorContextOpacity(stair.floorId, activeFloorId, floorMode)));
+        mesh.position.y = (stair.elevation + part.bottom) * MM_TO_M + floorOffset(projection, stair.floorId, isExploded, explodeDistance);
+        addEdges(mesh);
+        addSelectable(mesh, stair);
       });
     });
 
     scene.add(group);
     renderer.render(scene, camera);
-  }, [activeFloorId, exploded, floorMode, layers, projection, selection, viewMode]);
+  }, [activeFloorId, exploded, explodeDistance, isExploded, floorMode, layers, projection, selection, viewMode]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
@@ -303,7 +363,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     runtime.controls.target.copy(center);
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
-  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded, fitSite]);
+  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded, explodeDistance, isExploded, fitSite]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
