@@ -144,12 +144,9 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     const modelHeight = Math.max(1, bounds.height);
     const denominator = Number(settings.scale.split(':')[1]);
     const exactScale = 72 / 25.4 / denominator;
-    const fit = settings.scaleMode === 'FIT_TO_PAGE';
-    if (!fit && (modelWidth * exactScale > usableWidth || modelHeight * exactScale > usableHeight)) {
-      throw new Error('PDF_SCALE_DOES_NOT_FIT_SHEET: choose a larger sheet, smaller scale, or FIT_TO_PAGE');
-    }
+    const fit = settings.scaleMode === 'FIT_TO_PAGE' || modelWidth * exactScale > usableWidth || modelHeight * exactScale > usableHeight;
     const fitScale = fit ? Math.min(usableWidth / modelWidth, usableHeight / modelHeight) : exactScale;
-    const scaleLabel = fit ? 'FIT TO PAGE - NOT TO SCALE' : settings.scale;
+    const scaleLabel = fit ? `FIT TO PAGE (NOT TO SCALE - APPROX 1:${Math.round(72/25.4/fitScale)})` : settings.scale;
     const ledger = floor.apartmentUnits ? measureApartmentAreaLedger(floor) : undefined;
     const validation = floor.apartmentUnits ? validateApartmentClosure(building) : undefined;
     if (validation && validation.hardErrors > 0) throw new Error(`PDF_GEOMETRY_HARD_ERRORS: ${validation.hardErrors}`);
@@ -160,7 +157,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     const originY = margin + titleHeight + (usableHeight - modelHeight * fitScale) / 2;
     const commands: string[] = ['0 J', '0 j', `% CANONICAL ${ascii(building.id)} REV ${building.version} FLOOR ${ascii(floor.id)} ROOMS ${floor.rooms.length} WALLS ${floor.walls.length} DOORS ${floor.doors.length} WINDOWS ${floor.windows.length}`, `% POINTS_PER_MM ${fitScale.toFixed(9)} SCALE_MODE ${fit ? 'FIT_TO_PAGE' : 'EXACT'}`];
     const px = (x: number) => originX + (x - bounds.x) * fitScale;
-    const py = (y: number) => pageHeight - (originY + (y - bounds.y) * fitScale);
+    const py = (y: number) => originY + (bounds.y + modelHeight - y) * fitScale;
 
     if (settings.includeGrid) {
       commands.push('0.92 0.94 0.96 RG', '0.3 w');
@@ -268,7 +265,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
       '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
       `<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`,
-      `<< /Title (${ascii(building.name)}) /Author (${ascii(settings.drawnBy)}) /Subject (Concept schematic floor plan - NOT FOR CONSTRUCTION) /Creator (FORMA AI Planner) /BuildingId (${ascii(building.id)}) /BuildingRevision (${building.version}) /ProgramRevision (${ascii(settings.programRevision ?? 'NOT_PROVIDED')}) /ValidationRevision (${settings.validationRevision ?? building.version}) /FloorId (${ascii(floor.id)}) /ScaleMode (${fit ? 'FIT_TO_PAGE' : 'EXACT'}) /Scale (${ascii(scaleLabel)}) /Sheet (${settings.paperSize}) >>`,
+      `<< /Title (${ascii(building.name)}) /Author (${ascii(settings.drawnBy)}) /Subject (Concept schematic floor plan - NOT FOR CONSTRUCTION) /Creator (FORMA AI Planner) /BuildingId (${ascii(building.id)}) /BuildingRevision (${building.version}) /ProgramRevision (${ascii(settings.programRevision ?? 'NOT_PROVIDED')}) /ValidationRevision (${settings.validationRevision ?? building.version}) /FloorId (${ascii(floor.id)}) /ScaleMode (${fit ? 'FIT_TO_PAGE_NOT_TO_SCALE' : 'EXACT_SCALE'}) /Scale (${ascii(scaleLabel)}) /Sheet (${settings.paperSize}) >>`,
     ];
     let pdf = '%PDF-1.4\n%FORMA\n';
     const offsets = [0];
@@ -298,13 +295,17 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     const bounds = getFloorContentBounds(floor);
     const modelWidth = Math.max(1, bounds.width);
     const modelHeight = Math.max(1, bounds.height);
-    const fitScale = Math.min(usableWidth / modelWidth, usableHeight / modelHeight);
+    const fitting=Math.min(usableWidth/modelWidth,usableHeight/modelHeight);
+    const exact=72/25.4/Number(settings.scale.split(':')[1]);
+    const fit=settings.scaleMode==='FIT_TO_PAGE'||!Number.isFinite(exact)||exact>fitting;
+    const fitScale=fit?fitting:exact;
+    const scaleLabel=fit?`FIT TO PAGE (NOT TO SCALE - APPROX 1:${Math.round(72/25.4/fitScale)})`:settings.scale;
     const originX = margin + (usableWidth - modelWidth * fitScale) / 2;
     const originY = margin + titleHeight + (usableHeight - modelHeight * fitScale) / 2;
     const px = (x: number) => originX + (x - bounds.x) * fitScale;
-    const py = (y: number) => pageHeight - (originY + (y - bounds.y) * fitScale);
+    const py = (y: number) => originY + (bounds.y + modelHeight - y) * fitScale;
 
-    const commands: string[] = ['0 J', '0 j'];
+    const commands: string[] = ['0 J', '0 j',`% SCALE_MODE ${fit?'FIT_TO_PAGE_NOT_TO_SCALE':'EXACT_SCALE'} PAPER ${settings.paperSize}`];
 
     for (const room of floor.rooms) {
       const [r, g, b] = pdfColorForRoom(room.type);
@@ -357,7 +358,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
       const sheetNum = `Sheet ${pIdx + 1} of ${floorsToExport.length}`;
       commands.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
       commands.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
-      commands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (${ascii(floor.name)} | ${sheetNum} | 1:100 ISO A3) Tj ET`);
+      commands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (${ascii(floor.name)} | ${sheetNum} | ${ascii(scaleLabel)} ISO ${settings.paperSize}) Tj ET`);
       commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 29} Td (Drawn by ${ascii(settings.drawnBy)}) Tj ET`);
       commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 14} Td (Project ${ascii(settings.projectNumber)}) Tj ET`);
       commands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 43} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION) Tj ET`);
@@ -503,7 +504,7 @@ export async function exportCadArtifact(
     includeRoomAreas: settings.includeRoomAreas,
     includeOpenings: settings.includeOpenings,
     includeFurniture: settings.includeFurniture ?? true,
-    includeSite: settings.includeNorthArrow || isMultiSheet || settings.floorId === 'site',
+    includeSite: isMultiSheet || settings.floorId === 'site',
     includeTitleBlock: settings.includeTitleBlock,
     scale: settings.scale,
     drawnBy: settings.drawnBy,

@@ -43,3 +43,5 @@ export {
 export { ReplaceBuildingCommand } from './replace-building-command';
 export { UpdateSiteCommand, type UpdateSiteParams } from './update-site-command';
 export { AddFloorCommand, RemoveFloorCommand, type AddFloorParams } from './floor-commands';
+
+export { UpdateRegulatoryContextCommand } from './update-regulatory-context-command';

@@ -195,6 +195,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -228,6 +231,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -277,6 +283,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -305,6 +314,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -348,6 +360,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -381,6 +396,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -414,6 +432,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -442,6 +463,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
@@ -475,6 +499,9 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       );
 
       const closure = validateApartmentClosure(building, manifest);
+      console.log('TEST ISSUES 3x 2BHK:', closure.issues);
+      const mbDoors = building.floors[0]!.doors.filter(d => d.connectsRooms.some(r => r.includes('master_bath')));
+      console.log('MB DOORS:', mbDoors);
       expect(closure.hardErrors).toBe(0);
       expect(closure.issues.filter(i => i.severity === 'error')).toEqual([]);
 

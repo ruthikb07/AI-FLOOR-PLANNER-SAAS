@@ -135,7 +135,7 @@ describe.runIf(LIVE)('Phase 4 live — real Gemini image interpretation → cano
 
   it('B: recorded real Cloudflare FLUX image for the 2-flat request (gen_7919)', async () => {
     // The stored artifact is a JPEG — exercised live through the explicit image part.
-    const img = fs.readFileSync(path.join(repoRoot, 'data', 'image-artifacts', 'gen_7919_mui7f0ff_c36370c5.jpg'));
+    const img = fs.readFileSync(path.join(repoRoot, 'tests', 'fixtures', 'flux-recordings', 'gen_7919_mui7f0ff_c36370c5.jpg'));
     const { extraction } = await interpretAndValidate(
       'B_flux_gen_7919',
       img.toString('base64'),

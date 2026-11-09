@@ -1,0 +1,472 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R] /Count 8 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 3416 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 1 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (UDCPR 2020 / NBC 2016 - ENGINEERING ASSISTANCE REPORT) Tj ET
+BT /F1 8 Tf 32 785 Td (PROFESSIONAL REVIEW REQUIRED - NOT A MUNICIPAL COMPLIANCE CERTIFICATE) Tj ET
+BT /F1 8 Tf 32 770 Td (Automated checks provide engineering design assistance and require verification by a licensed) Tj ET
+BT /F1 8 Tf 32 755 Td (Architect/Engineer before municipal submission.) Tj ET
+BT /F1 8 Tf 32 740 Td (Building: 3f5ef8bd-248b-480e-b169-75a9a7eb4458 | Revision: 1) Tj ET
+BT /F1 8 Tf 32 725 Td (Canonical SHA-256: 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d) Tj ET
+BT /F1 8 Tf 32 710 Td (Context SHA-256: 4208bde7953dc1c47b53e8b958ee29c9ff6ea5ba2bb8207fbe9a538951aa7db2) Tj ET
+BT /F1 8 Tf 32 695 Td (Generated: 2026-11-09T17:45:09.071Z | Result: VIOLATION) Tj ET
+BT /F1 8 Tf 32 680 Td (INTERNAL_ENGINEERING_GATE | PROFESSIONAL_REVIEW_REQUIRED) Tj ET
+BT /F1 8 Tf 32 665 Td (REGULATORY CONTEXT \(m, m2; canonical measurements in mm, mm2\)) Tj ET
+BT /F1 8 Tf 32 650 Td (authorityType: MUNICIPAL_COUNCIL) Tj ET
+BT /F1 8 Tf 32 635 Td (congestionZone: NON_CONGESTED) Tj ET
+BT /F1 8 Tf 32 620 Td (roadWidthM: 12) Tj ET
+BT /F1 8 Tf 32 605 Td (buildingHeightM: 3.1) Tj ET
+BT /F1 8 Tf 32 590 Td (numFloors: 1) Tj ET
+BT /F1 8 Tf 32 575 Td (buildingUsage: RESIDENTIAL_APARTMENT) Tj ET
+BT /F1 8 Tf 32 560 Td (stiltParkingEnabled: false) Tj ET
+BT /F1 8 Tf 32 545 Td (plotAreaSqm: 400) Tj ET
+BT /F1 8 Tf 32 530 Td (Missing critical inputs: none) Tj ET
+BT /F1 8 Tf 32 515 Td (INPUT PROVENANCE) Tj ET
+BT /F1 8 Tf 32 500 Td (authorityType: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 485 Td (congestionZone: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 470 Td (roadWidthM: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 455 Td (buildingHeightM: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 440 Td (numFloors: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 425 Td (buildingUsage: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 410 Td (stiltParkingEnabled: ASSERTED_FROM_BRIEF) Tj ET
+BT /F1 8 Tf 32 395 Td (plotAreaSqm: MEASURED_CANONICAL_POLYGON) Tj ET
+BT /F1 8 Tf 32 380 Td (FSI BREAKDOWN - POTENTIAL DOES NOT ESTABLISH PURCHASED RIGHTS) Tj ET
+BT /F1 8 Tf 32 365 Td (basicFsi: 1.1) Tj ET
+BT /F1 8 Tf 32 350 Td (premiumFsi: 0.3) Tj ET
+BT /F1 8 Tf 32 335 Td (tdrFsi: 0.6) Tj ET
+BT /F1 8 Tf 32 320 Td (ancillaryFsi: 1.2) Tj ET
+BT /F1 8 Tf 32 305 Td (approvedFsi: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 290 Td (permissibleFsi: 3.2) Tj ET
+BT /F1 8 Tf 32 275 Td (consumedFsi: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 260 Td (builtUpAreaMm2: 100000000) Tj ET
+BT /F1 8 Tf 32 245 Td (candidateCoreAreaMm2: 0) Tj ET
+BT /F1 8 Tf 32 230 Td (candidateStiltAreaMm2: 0) Tj ET
+BT /F1 8 Tf 32 215 Td (exemptedAreaMm2: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 200 Td (netFsiAreaMm2: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 185 Td (maxPermissibleBuiltUpAreaMm2: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 170 Td (compliant: false) Tj ET
+BT /F1 8 Tf 32 155 Td (SETBACKS / MARGINS - required mm | measured mm | result) Tj ET
+BT /F1 8 Tf 32 140 Td (front: 3000 | 5000 | PASS) Tj ET
+BT /F1 8 Tf 32 125 Td (rear: 1500 | 5000 | PASS) Tj ET
+BT /F1 8 Tf 32 110 Td (left: 1500 | 5000 | PASS) Tj ET
+BT /F1 8 Tf 32 95 Td (right: 1500 | 5000 | PASS) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 3449 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 2 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (PARKING AND DRIVEWAY) Tj ET
+BT /F1 8 Tf 32 785 Td (requiredCars: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 770 Td (providedCars: 0) Tj ET
+BT /F1 8 Tf 32 755 Td (requiredTwoWheelers: 1) Tj ET
+BT /F1 8 Tf 32 740 Td (providedTwoWheelers: 0) Tj ET
+BT /F1 8 Tf 32 725 Td (drivewayWidthMm: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 710 Td (compliant: false) Tj ET
+BT /F1 8 Tf 32 695 Td (ROS / GROUND COVERAGE) Tj ET
+BT /F1 8 Tf 32 680 Td (requiredPercent: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 665 Td (providedPercent: 0) Tj ET
+BT /F1 8 Tf 32 650 Td (areaMm2: 0) Tj ET
+BT /F1 8 Tf 32 635 Td (coveragePercent: 25) Tj ET
+BT /F1 8 Tf 32 620 Td (compliant: false) Tj ET
+BT /F1 8 Tf 32 605 Td (STAIRCASE / FIRE TRAVEL) Tj ET
+BT /F1 8 Tf 32 590 Td (minWidthMm: 1500) Tj ET
+BT /F1 8 Tf 32 575 Td (providedWidthMm: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 560 Td (maxTravelDistanceMm: 22500) Tj ET
+BT /F1 8 Tf 32 545 Td (actualTravelDistanceMm: NOT VERIFIED) Tj ET
+BT /F1 8 Tf 32 530 Td (compliant: false) Tj ET
+BT /F1 8 Tf 32 515 Td (CLAUSE AUDIT - status | required | measured | affected IDs | remediation) Tj ET
+BT /F1 8 Tf 32 500 Td (NOT_VERIFIED | source.applicability) Tj ET
+BT /F1 8 Tf 32 485 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 470 Td (Jurisdiction, scheme and post-2025 amendments reviewed) Tj ET
+BT /F1 8 Tf 32 455 Td (Required: true | Measured: false ) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 425 Td (Action: Confirm the standard greenfield scheme and current local/amendment applicability. Source snapshot is) Tj ET
+BT /F1 8 Tf 32 410 Td (pinned to 2025-01-30.) Tj ET
+BT /F1 8 Tf 32 395 Td (NOT_VERIFIED | source.nbc) Tj ET
+BT /F1 8 Tf 32 380 Td (NBC 2016 Part 3 and Part 4) Tj ET
+BT /F1 8 Tf 32 365 Td (NBC Part 3 and Part 4 clause verification) Tj ET
+BT /F1 8 Tf 32 350 Td (Required: Original applicable NBC clauses reviewed | Measured: NOT VERIFIED ) Tj ET
+BT /F1 8 Tf 32 335 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 320 Td (Action: Verify original NBC 2016 clauses and local adoption. UDCPR measurements do not establish NBC) Tj ET
+BT /F1 8 Tf 32 305 Td (compliance.) Tj ET
+BT /F1 8 Tf 32 290 Td (PASS | geometry.roles) Tj ET
+BT /F1 8 Tf 32 275 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 260 Td (Physical residential/stilt/roof roles are explicit) Tj ET
+BT /F1 8 Tf 32 245 Td (Required: true | Measured: true ) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 215 Td (Action: Assign floorUse; roof drawing sheets must not be counted as residential storeys.) Tj ET
+BT /F1 8 Tf 32 200 Td (PASS | geometry.floor-count) Tj ET
+BT /F1 8 Tf 32 185 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 170 Td (Physical level count agrees with the regulatory input) Tj ET
+BT /F1 8 Tf 32 155 Td (Required: 1 | Measured: 1 ) Tj ET
+BT /F1 8 Tf 32 140 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 125 Td (Action: Reconcile physical storeys and the brief; drawing-only roof sheets are excluded.) Tj ET
+BT /F1 8 Tf 32 110 Td (PASS | geometry.stilt) Tj ET
+BT /F1 8 Tf 32 95 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 4087 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 3 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (Explicit stilt flag agrees with physical floor roles) Tj ET
+BT /F1 8 Tf 32 785 Td (Required: false | Measured: false ) Tj ET
+BT /F1 8 Tf 32 770 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 755 Td (Action: Reconcile stilt parking inputs with physical floor roles.) Tj ET
+BT /F1 8 Tf 32 740 Td (PASS | geometry.ledger) Tj ET
+BT /F1 8 Tf 32 725 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 710 Td (Canonical disjoint centreline-cell ledger \(no unassigned or overlap\)) Tj ET
+BT /F1 8 Tf 32 695 Td (Required: true | Measured: true ) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 665 Td (Action: Resolve unsupported polygons, overlaps or unassigned ledger cells; no area rounding is used.) Tj ET
+BT /F1 8 Tf 32 650 Td (PASS | fsi.roof) Tj ET
+BT /F1 8 Tf 32 635 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 620 Td (Covered roof structures and roof FSI applicability reviewed) Tj ET
+BT /F1 8 Tf 32 605 Td (Required: true | Measured: true ) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 575 Td (Action: Review roof structure sections; a roof drawing is not automatically an exempt floor.) Tj ET
+BT /F1 8 Tf 32 560 Td (PASS | fsi.entitlements) Tj ET
+BT /F1 8 Tf 32 545 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 530 Td (Basic / premium / TDR / ancillary potential \(not purchased rights\)) Tj ET
+BT /F1 8 Tf 32 515 Td (Required: Source road/authority/zone table | Measured:) Tj ET
+BT /F1 8 Tf 32 500 Td ({"basic":1.1,"premium":0.3,"tdr":0.6,"ancillary":1.2,"total":2} ) Tj ET
+BT /F1 8 Tf 32 485 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 470 Td (Action: Review this clause with a licensed Architect/Engineer.) Tj ET
+BT /F1 8 Tf 32 455 Td (NOT_VERIFIED | fsi.approvals) Tj ET
+BT /F1 8 Tf 32 440 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 425 Td (Premium, TDR, ancillary approvals and net plot deductions) Tj ET
+BT /F1 8 Tf 32 410 Td (Required: Explicit approved rights within source caps | Measured: NOT VERIFIED ) Tj ET
+BT /F1 8 Tf 32 395 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 380 Td (Action: Supply netPlotAreaSqm and separately reviewed approvedPremiumFsi, approvedTdrFsi and) Tj ET
+BT /F1 8 Tf 32 365 Td (approvedAncillaryFsi \(explicit zero permitted\).) Tj ET
+BT /F1 8 Tf 32 350 Td (NOT_VERIFIED | fsi.exemptions) Tj ET
+BT /F1 8 Tf 32 335 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 320 Td (Reviewed exempt areas; measured core/stilt are only candidates) Tj ET
+BT /F1 8 Tf 32 305 Td (Required: Explicit floor areas and exemption clauses | Measured: NOT VERIFIED mm2) Tj ET
+BT /F1 8 Tf 32 290 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 275 Td (Action: Review FSI exemptions, including explicit none; never auto-exempt an entire core/stilt by name.) Tj ET
+BT /F1 8 Tf 32 260 Td (NOT_VERIFIED | fsi.consumed) Tj ET
+BT /F1 8 Tf 32 245 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 230 Td (Net FSI consumed without a 1% overrun allowance) Tj ET
+BT /F1 8 Tf 32 215 Td (Required: NOT VERIFIED | Measured: NOT VERIFIED ratio) Tj ET
+BT /F1 8 Tf 32 200 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 185 Td (Action: Reduce reckonable area or provide reviewed entitlements/exemptions; exact unrounded ratio is) Tj ET
+BT /F1 8 Tf 32 170 Td (compared.) Tj ET
+BT /F1 8 Tf 32 155 Td (PASS | setback.front) Tj ET
+BT /F1 8 Tf 32 140 Td (UDCPR 6.1.1 Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 125 Td (Measured front outer wall / plinth clearance) Tj ET
+BT /F1 8 Tf 32 110 Td (Required: 3000 | Measured: 5000 mm) Tj ET
+BT /F1 8 Tf 32 95 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 4445 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 4 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (Action: Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate.) Tj ET
+BT /F1 8 Tf 32 785 Td (Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 770 Td (PASS | setback.rear) Tj ET
+BT /F1 8 Tf 32 755 Td (UDCPR 6.1.1 Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 740 Td (Measured rear outer wall / plinth clearance) Tj ET
+BT /F1 8 Tf 32 725 Td (Required: 1500 | Measured: 5000 mm) Tj ET
+BT /F1 8 Tf 32 710 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 695 Td (Action: Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate.) Tj ET
+BT /F1 8 Tf 32 680 Td (Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 665 Td (PASS | setback.left) Tj ET
+BT /F1 8 Tf 32 650 Td (UDCPR 6.1.1 Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 635 Td (Measured left outer wall / plinth clearance) Tj ET
+BT /F1 8 Tf 32 620 Td (Required: 1500 | Measured: 5000 mm) Tj ET
+BT /F1 8 Tf 32 605 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 590 Td (Action: Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate.) Tj ET
+BT /F1 8 Tf 32 575 Td (Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 560 Td (PASS | setback.right) Tj ET
+BT /F1 8 Tf 32 545 Td (UDCPR 6.1.1 Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 530 Td (Measured right outer wall / plinth clearance) Tj ET
+BT /F1 8 Tf 32 515 Td (Required: 1500 | Measured: 5000 mm) Tj ET
+BT /F1 8 Tf 32 500 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 485 Td (Action: Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate.) Tj ET
+BT /F1 8 Tf 32 470 Td (Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 455 Td (NOT_VERIFIED | coverage.measured) Tj ET
+BT /F1 8 Tf 32 440 Td (UDCPR 3.4.1, 3.4.6 and 3.4.8) Tj ET
+BT /F1 8 Tf 32 425 Td (Plinth ground coverage \(independent of ROS\)) Tj ET
+BT /F1 8 Tf 32 410 Td (Required: Authority/scheme-specific coverage limit | Measured: 25 %) Tj ET
+BT /F1 8 Tf 32 395 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 380 Td (Action: Confirm applicable ground-coverage restrictions; residual plot area is never counted as ROS.) Tj ET
+BT /F1 8 Tf 32 365 Td (NOT_VERIFIED | ros.area) Tj ET
+BT /F1 8 Tf 32 350 Td (UDCPR 3.4.1, 3.4.6 and 3.4.8) Tj ET
+BT /F1 8 Tf 32 335 Td (Dedicated non-overlapping ROS with 10m minimum dimension and aspect limits and access) Tj ET
+BT /F1 8 Tf 32 320 Td (Required: NOT VERIFIED | Measured: 0 %) Tj ET
+BT /F1 8 Tf 32 305 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 290 Td (Action: Designate reviewed ROS polygons, verify independent/common access, original holding and DP/RP) Tj ET
+BT /F1 8 Tf 32 275 Td (deductions. A generic garden or residual driveway is not certified ROS.) Tj ET
+BT /F1 8 Tf 32 260 Td (PASS | parking.carpet.2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 245 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 230 Td (Per-unit measured carpet including internal partitions) Tj ET
+BT /F1 8 Tf 32 215 Td (Required: RERA 2\(k\) geometry convention; explicit wall ownership | Measured:) Tj ET
+BT /F1 8 Tf 32 200 Td ([{"unitId":"unit1","areaMm2":100000000,"usableAreaMm2":100000000,"internalWallAreaMm2":0,"supported":true}]) Tj ET
+BT /F1 8 Tf 32 185 Td (mm2) Tj ET
+BT /F1 8 Tf 32 170 Td (Elements: unit1 | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 155 Td (Action: Resolve wall classifications/ownership and verify the carpet convention for the parking schedule.) Tj ET
+BT /F1 8 Tf 32 140 Td (VIOLATION | parking.missing) Tj ET
+BT /F1 8 Tf 32 125 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 110 Td (No marked car or two-wheeler stalls exist) Tj ET
+BT /F1 8 Tf 32 95 Td (Required: Actual marked parking provision | Measured: 0 ) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 4321 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 5 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 785 Td (Action: Provide actual marked stalls and a verified parking schedule.) Tj ET
+BT /F1 8 Tf 32 770 Td (NOT_VERIFIED | parking.cars) Tj ET
+BT /F1 8 Tf 32 755 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 740 Td (Valid non-overlapping 2500 x 5000mm car bays) Tj ET
+BT /F1 8 Tf 32 725 Td (Required: NOT VERIFIED | Measured: 0 bays) Tj ET
+BT /F1 8 Tf 32 710 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 695 Td (Action: Provide marked accessible car stalls, reviewed unit carpet areas and the correct Table 8-C) Tj ET
+BT /F1 8 Tf 32 680 Td (city/class factor.) Tj ET
+BT /F1 8 Tf 32 665 Td (VIOLATION | parking.bikes) Tj ET
+BT /F1 8 Tf 32 650 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 635 Td (Valid non-overlapping 1000 x 2000mm two-wheeler bays) Tj ET
+BT /F1 8 Tf 32 620 Td (Required: 1 | Measured: 0 bays) Tj ET
+BT /F1 8 Tf 32 605 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 590 Td (Action: Provide actual marked two-wheeler stalls; the software does not invent provided counts.) Tj ET
+BT /F1 8 Tf 32 575 Td (NOT_VERIFIED | parking.driveway) Tj ET
+BT /F1 8 Tf 32 560 Td (PROJECT BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 545 Td (Measured driveway width against requested project policy) Tj ET
+BT /F1 8 Tf 32 530 Td (Required: NOT VERIFIED | Measured: NOT VERIFIED mm) Tj ET
+BT /F1 8 Tf 32 515 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 500 Td (Action: Tag dedicated driveway polygons and specify traffic flow. Verify manoeuvring, connectivity and) Tj ET
+BT /F1 8 Tf 32 485 Td (source 8.1.1\(iv\) separately; source minimum car drive is 3m.) Tj ET
+BT /F1 8 Tf 32 470 Td (NOT_VERIFIED | parking.access) Tj ET
+BT /F1 8 Tf 32 455 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 440 Td (Street access / turning and stilt beam clearance) Tj ET
+BT /F1 8 Tf 32 425 Td (Required: Verified access geometry and 2.4m below beams | Measured: NOT VERIFIED ) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 395 Td (Action: Verify connected street access, swept paths and section headroom; width alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 380 Td (VIOLATION | stairs.2451ddc6-749f-42ac-9e33-04099766c4fb.missing) Tj ET
+BT /F1 8 Tf 32 365 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 350 Td (At least one canonical staircase per physical floor) Tj ET
+BT /F1 8 Tf 32 335 Td (Required: 1 | Measured: 0 ) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: 2451ddc6-749f-42ac-9e33-04099766c4fb | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 305 Td (Action: Provide canonical staircase and OPEN_PASSAGE circulation access.) Tj ET
+BT /F1 8 Tf 32 290 Td (VIOLATION | travel.2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 275 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 260 Td (Constrained room/door/corridor route: No canonical staircase.) Tj ET
+BT /F1 8 Tf 32 245 Td (Required: 22500 | Measured: NOT VERIFIED mm) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: 024b5cfa-97be-4ee8-9710-5282b4daa071 | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 215 Td (Action: Provide complete door topology and unobstructed common circulation to OPEN_PASSAGE. Residential) Tj ET
+BT /F1 8 Tf 32 200 Td (limit is 22.5m; no assumed 18m or 30m.) Tj ET
+BT /F1 8 Tf 32 185 Td (PASS | lift.2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 170 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 155 Td (Measured lift shaft provision) Tj ET
+BT /F1 8 Tf 32 140 Td (Required: 0 | Measured: 0 shafts) Tj ET
+BT /F1 8 Tf 32 125 Td (Elements: project | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 110 Td (Action: Provide required lift shafts and verify lift capacity/accessibility; lifts are not fire exits.) Tj ET
+BT /F1 8 Tf 32 95 Td (NOT_VERIFIED | room.024b5cfa-97be-4ee8-9710-5282b4daa071.height) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 4660 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 6 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 785 Td (Explicit clear room height below slab/beam) Tj ET
+BT /F1 8 Tf 32 770 Td (Required: 2750 | Measured: NOT VERIFIED mm) Tj ET
+BT /F1 8 Tf 32 755 Td (Elements: 024b5cfa-97be-4ee8-9710-5282b4daa071 | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 740 Td (Action: Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 725 Td (NOT_VERIFIED | room.024b5cfa-97be-4ee8-9710-5282b4daa071.size) Tj ET
+BT /F1 8 Tf 32 710 Td (UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 695 Td (Clear area / width / aspect: Living Room) Tj ET
+BT /F1 8 Tf 32 680 Td (Required: UDCPR 9.2.1 / 9.3.1 owner requirements; NBC review pending | Measured:) Tj ET
+BT /F1 8 Tf 32 665 Td ({"areaSqm":100,"widthM":10,"aspectRatio":1} ) Tj ET
+BT /F1 8 Tf 32 650 Td (Elements: 024b5cfa-97be-4ee8-9710-5282b4daa071 | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 635 Td (Action: Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 620 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 605 Td (VIOLATION | room.024b5cfa-97be-4ee8-9710-5282b4daa071.ventilation) Tj ET
+BT /F1 8 Tf 32 590 Td (UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 575 Td (Actual exterior/balcony/shaft window openings: Living Room) Tj ET
+BT /F1 8 Tf 32 560 Td (Required: 10 | Measured: 0 m2) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: 024b5cfa-97be-4ee8-9710-5282b4daa071 | Floor: 2451ddc6-749f-42ac-9e33-04099766c4fb) Tj ET
+BT /F1 8 Tf 32 530 Td (Action: Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 515 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 500 Td (NOT_VERIFIED | stairs.alignment) Tj ET
+BT /F1 8 Tf 32 485 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 470 Td (Vertical canonical staircase footprint alignment) Tj ET
+BT /F1 8 Tf 32 455 Td (Required: true | Measured: false ) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 425 Td (Action: Align canonical cores across physical floors; separately verify landings, flight direction and) Tj ET
+BT /F1 8 Tf 32 410 Td (vertical clearances.) Tj ET
+BT /F1 8 Tf 32 395 Td (NOT_VERIFIED | fire.review) Tj ET
+BT /F1 8 Tf 32 380 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 365 Td (Special-building classification, exit capacity, enclosure and fire systems) Tj ET
+BT /F1 8 Tf 32 350 Td (Required: Verified fire strategy and section data | Measured: NOT VERIFIED ) Tj ET
+BT /F1 8 Tf 32 335 Td (Elements: project) Tj ET
+BT /F1 8 Tf 32 320 Td (Action: Obtain professional fire/accessibility review; planar egress measurements do not verify enclosure,) Tj ET
+BT /F1 8 Tf 32 305 Td (smoke protection, exit capacity or required second exits.) Tj ET
+BT /F1 8 Tf 32 290 Td (VERSIONED SOURCE REGISTRY - snapshot is not proof of later amendments) Tj ET
+BT /F1 8 Tf 32 275 Td (fsi | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 260 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 245 Td (PDF pages: 128, 138, 139) Tj ET
+BT /F1 8 Tf 32 230 Td (Standard residential greenfield; separate congested/non-congested and corporation/remaining authority) Tj ET
+BT /F1 8 Tf 32 215 Td (tables. Purchased rights and scheme/local amendments require review.) Tj ET
+BT /F1 8 Tf 32 200 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 185 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 170 Td (margins | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 155 Td (UDCPR 6.1.1 Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3 | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 140 Td (PDF pages: 128, 129, 130, 131, 136, 137) Tj ET
+BT /F1 8 Tf 32 125 Td (Congested: original holding/height exceptions. Non-congested: road band and city class, H/5 only above table) Tj ET
+BT /F1 8 Tf 32 110 Td (height/floor limits; special buildings require separate review.) Tj ET
+BT /F1 8 Tf 32 95 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 4835 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 7 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 785 Td (ros | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 770 Td (UDCPR 3.4.1, 3.4.6 and 3.4.8 | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 755 Td (PDF pages: 70, 71, 72, 73) Tj ET
+BT /F1 8 Tf 32 740 Td (Layout/group housing and original holding rules; net area after road/reservation deductions, approved layout) Tj ET
+BT /F1 8 Tf 32 725 Td (exemptions; dedicated accessible ROS \(10m minimum, aspect <=2.5 if width <20m\), not residual margins.) Tj ET
+BT /F1 8 Tf 32 710 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 695 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 680 Td (parking | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 665 Td (UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 650 Td (PDF pages: 167, 168, 169, 172, 173, 174) Tj ET
+BT /F1 8 Tf 32 635 Td (Apartment carpet bands, 5% visitors and city/class car factors \(not apartment two-wheelers\); fractions) Tj ET
+BT /F1 8 Tf 32 620 Td (strictly above 0.5 round up; standard marked stalls; no automatic composite/mechanical substitution.) Tj ET
+BT /F1 8 Tf 32 605 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 590 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 575 Td (rooms | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 560 Td (UDCPR 9.2, 9.3, 9.4 | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 545 Td (PDF pages: 175, 176) Tj ET
+BT /F1 8 Tf 32 530 Td (Standard apartment habitable/kitchen sizes are owner requirements; bath/WC minima and clear heights are) Tj ET
+BT /F1 8 Tf 32 515 Td (statutory. NBC sizes require separate verification.) Tj ET
+BT /F1 8 Tf 32 500 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 485 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 470 Td (ventilation | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 455 Td (UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3 | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 440 Td (PDF pages: 176, 182) Tj ET
+BT /F1 8 Tf 32 425 Td (Habitable/kitchen openings >=1/10 floor area, wet ventilation >=0.30 m2; adjacency and shaft size mandatory;) Tj ET
+BT /F1 8 Tf 32 410 Td (depth beyond 7.5m requires further assessment.) Tj ET
+BT /F1 8 Tf 32 395 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 380 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 365 Td (egress | Maharashtra UDCPR 2020 | VERIFIED_FROM_SOURCE) Tj ET
+BT /F1 8 Tf 32 350 Td (UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3 | consolidated through 2025-01-30) Tj ET
+BT /F1 8 Tf 32 335 Td (PDF pages: 184, 185, 186, 187, 188) Tj ET
+BT /F1 8 Tf 32 320 Td (Residential travel 22.5m; stair clear widths 1.0/1.2/1.5m by height. Project brief separately requires 1.5m.) Tj ET
+BT /F1 8 Tf 32 305 Td (Residential tread 250mm/riser 190mm/headroom 2.2m. Fire enclosure and special-building applicability require) Tj ET
+BT /F1 8 Tf 32 290 Td (review.) Tj ET
+BT /F1 8 Tf 32 275 Td (https://dtp.maharashtra.gov.in/wp-content/uploads/2025/01/UDCPR%20Updated%2030.01.25%20with%20earlier%20prov) Tj ET
+BT /F1 8 Tf 32 260 Td (isions%20%26%20corrections_compressed.pdf) Tj ET
+BT /F1 8 Tf 32 245 Td (nbc | NBC 2016 | NOT_VERIFIED) Tj ET
+BT /F1 8 Tf 32 230 Td (NBC 2016 Part 3 and Part 4 | consolidated through not verified) Tj ET
+BT /F1 8 Tf 32 215 Td (PDF pages: not verified) Tj ET
+BT /F1 8 Tf 32 200 Td (Official edition confirmed; original licensed clause text and local adoption/amendments have not been) Tj ET
+BT /F1 8 Tf 32 185 Td (verified. No NBC compliance result may be inferred from UDCPR checks.) Tj ET
+BT /F1 8 Tf 32 170 Td (https://www.bis.gov.in/standards/national-building-code/?lang=en) Tj ET
+BT /F1 8 Tf 32 155 Td (brief | ARGON Phase 3 brief | NOT_VERIFIED) Tj ET
+BT /F1 8 Tf 32 140 Td (PROJECT BRIEF - engineering design policy | consolidated through not verified) Tj ET
+BT /F1 8 Tf 32 125 Td (PDF pages: not verified) Tj ET
+BT /F1 8 Tf 32 110 Td (Explicit requested stricter 1500mm stair and 6000/3600mm driveway policy; not presented as a UDCPR/NBC) Tj ET
+BT /F1 8 Tf 32 95 Td (quotation.) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 468 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 75b693fd4c13d52521c2c1d83fe82203089c3b55fb8e28607b2fba906243c83d
+BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision 1 - page 8 of 8) Tj ET
+BT /F1 8 Tf 32 800 Td () Tj ET
+BT /F1 8 Tf 32 785 Td (Automated checks provide engineering design assistance and require verification by a licensed) Tj ET
+BT /F1 8 Tf 32 770 Td (Architect/Engineer before municipal submission.) Tj ET
+endstream
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000162 00000 n 
+0000000230 00000 n 
+0000000356 00000 n 
+0000003823 00000 n 
+0000003949 00000 n 
+0000007449 00000 n 
+0000007575 00000 n 
+0000011713 00000 n 
+0000011841 00000 n 
+0000016338 00000 n 
+0000016466 00000 n 
+0000020839 00000 n 
+0000020967 00000 n 
+0000025679 00000 n 
+0000025807 00000 n 
+0000030694 00000 n 
+0000030822 00000 n 
+trailer
+<< /Size 20 /Root 1 0 R >>
+startxref
+31341
+%%EOF

@@ -333,7 +333,7 @@ describe('Phase 1 — Geometry, CAD Correctness and Export Acceptance Gate', () 
 
     expect(result.format).toBe('dwg');
     expect(result.mimeType).toBe('application/x-dwg');
-    expect(result.filename).toMatch(/rectangular_office_pavilion_ground_floor_r01\.dwg/);
+    expect(result.filename).toMatch(/bldg_rect_1_r1_current_floor_fl_rect_1_[a-f0-9]{64}\.dwg/);
     expect(result.filename).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/); // No UUID!
 
     // Verify binary magic bytes
@@ -405,12 +405,7 @@ describe('Phase 1 — Geometry, CAD Correctness and Export Acceptance Gate', () 
       floors: [],
     };
 
-    expect(() => {
-      cadService.exportCad(emptyBuilding, 'dwg');
-    }).not.toThrow();
-
-    const emptyResult = cadService.exportCad(emptyBuilding, 'dwg');
-    expect(emptyResult.validation.isValid).toBe(true);
-    expect(emptyResult.data.length).toBeGreaterThan(0);
+    expect(() => cadService.exportCad(emptyBuilding,'dwg')).toThrow('No canonical floors available');
+    expect(() => cadService.exportCad(createSimpleRectangularBuilding(),'dxf',{floorId:'unknown'})).toThrow('Unknown floorId');
   });
 });

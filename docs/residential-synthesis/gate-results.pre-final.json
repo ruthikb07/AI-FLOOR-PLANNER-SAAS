@@ -1,0 +1,37 @@
+[
+  {
+    "exitCode": 0,
+    "gate": "geometry-tests",
+    "seconds": 3.0,
+    "command": "pnpm --filter @ai-floor-planner/geometry-engine run test --pool=threads --maxWorkers=1 --minWorkers=1",
+    "attempts": 1
+  },
+  {
+    "exitCode": 0,
+    "gate": "planning-tests",
+    "seconds": 35.58,
+    "command": "pnpm --filter @ai-floor-planner/planning-engine run test --pool=threads --maxWorkers=1 --minWorkers=1",
+    "attempts": 1
+  },
+  {
+    "exitCode": 0,
+    "gate": "typecheck",
+    "seconds": 28.22,
+    "command": "pnpm typecheck --concurrency=1",
+    "attempts": 1
+  },
+  {
+    "exitCode": 0,
+    "gate": "lint",
+    "seconds": 24.16,
+    "command": "pnpm lint --concurrency=1",
+    "attempts": 1
+  },
+  {
+    "exitCode": 1,
+    "gate": "full-tests",
+    "seconds": 138.01,
+    "command": "pnpm run test --concurrency=1 -- -- --pool=threads --maxWorkers=1 --minWorkers=1",
+    "attempts": 2
+  }
+]

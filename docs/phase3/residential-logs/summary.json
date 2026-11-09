@@ -1,0 +1,70 @@
+{
+  "passed": 1481,
+  "skipped": 7,
+  "failures": 0,
+  "packages": {
+    "@ai-floor-planner/core": {
+      "passed": 192,
+      "skipped": 0
+    },
+    "@ai-floor-planner/geometry-engine": {
+      "passed": 82,
+      "skipped": 0
+    },
+    "@ai-floor-planner/projection-3d": {
+      "passed": 22,
+      "skipped": 0
+    },
+    "@ai-floor-planner/constraint-engine": {
+      "passed": 185,
+      "skipped": 0
+    },
+    "@ai-floor-planner/renderer": {
+      "passed": 88,
+      "skipped": 0
+    },
+    "@ai-floor-planner/planning-engine": {
+      "passed": 365,
+      "skipped": 0
+    },
+    "@ai-floor-planner/ai-orchestration": {
+      "passed": 242,
+      "skipped": 2
+    },
+    "@ai-floor-planner/backend": {
+      "passed": 153,
+      "skipped": 5
+    },
+    "@ai-floor-planner/frontend": {
+      "passed": 152,
+      "skipped": 0
+    }
+  },
+  "gates": [
+    {
+      "gate": "build",
+      "exitCode": 0,
+      "attempts": 1
+    },
+    {
+      "gate": "planning",
+      "exitCode": 0,
+      "attempts": 1
+    },
+    {
+      "gate": "typecheck",
+      "exitCode": 0,
+      "attempts": 1
+    },
+    {
+      "gate": "test",
+      "exitCode": 0,
+      "attempts": 1
+    },
+    {
+      "gate": "lint",
+      "exitCode": 0,
+      "attempts": 1
+    }
+  ]
+}

@@ -32,7 +32,7 @@ import {
   distance,
   pointToSegmentDistance,
   pointInPolygon,
-  polygonArea,
+  measureApartmentAreaLedger,
   polygonIntersectionArea,
 } from '@ai-floor-planner/geometry-engine';
 
@@ -60,13 +60,11 @@ export interface AnnotationItem {
  */
 export class GeometryValidator {
   private readonly autoCorrect: boolean;
-  private readonly toleranceMm: number;
   private readonly columnMergeThresholdMm: number;
   private readonly minOpeningSeparationMm: number;
 
   constructor(options: GeometryValidatorOptions = {}) {
     this.autoCorrect = options.autoCorrect ?? true;
-    this.toleranceMm = options.toleranceMm ?? 1.0;
     this.columnMergeThresholdMm = options.columnMergeThresholdMm ?? 2000;
     this.minOpeningSeparationMm = options.minOpeningSeparationMm ?? 150;
   }
@@ -103,10 +101,12 @@ export class GeometryValidator {
     currentBuilding = annoResult.building;
     allErrors.push(...annoResult.errors);
 
+    const finalGeometry = this.auditRoomAndWallOverlaps(currentBuilding, false);
+    allErrors.push(...finalGeometry.errors.filter(e => !allErrors.some(old => old.code === e.code && old.floorId === e.floorId && !old.autoCorrected)));
     const criticalCount = allErrors.filter(e => e.severity === 'CRITICAL' && !e.autoCorrected).length;
     const report: GeometryValidationReport = {
       isValid: criticalCount === 0,
-      planarDeltaMm2: overlapResult.planarDeltaMm2,
+      planarDeltaMm2: finalGeometry.planarDeltaMm2,
       errors: Object.freeze(allErrors),
     };
 
@@ -128,7 +128,7 @@ export class GeometryValidator {
     let totalPlanarDelta = 0;
 
     const updatedFloors = building.floors.map(floor => {
-      let rooms = [...floor.rooms];
+      const rooms = [...floor.rooms];
 
       // Pairwise room-room overlap check
       for (let i = 0; i < rooms.length; i++) {
@@ -137,7 +137,7 @@ export class GeometryValidator {
           const roomB = rooms[j]!;
 
           const overlapArea = polygonIntersectionArea(roomA.boundary, roomB.boundary);
-          if (overlapArea > this.toleranceMm) {
+          if (overlapArea >= 0.001) {
             const locX = (roomA.x + roomB.x) / 2;
             const locY = (roomA.y + roomB.y) / 2;
 
@@ -192,16 +192,26 @@ export class GeometryValidator {
         }
       }
 
-      // Planar Delta check: Gross Area vs Sum(Components)
-      const grossArea = polygonArea(floor.boundary);
-      const componentsArea = rooms.reduce((sum, r) => sum + polygonArea(r.boundary), 0);
-      let floorDelta = Math.abs(grossArea - componentsArea);
-
-      // In auto-correct mode, verify mathematical planar closure: Delta = 0.000 mm²
-      if (autoCorrect && floorDelta > 0.001) {
-        floorDelta = 0.0;
-      }
+      const measuredFloor = { ...floor, rooms };
+      const ledger = measureApartmentAreaLedger(measuredFloor);
+      const floorDelta = Math.abs(ledger.delta);
       totalPlanarDelta += floorDelta;
+      for (const [code, area, description] of [
+        ['PLANAR_DELTA_NONZERO', floorDelta, 'Disjoint component area differs from gross floor area'],
+        ['UNASSIGNED_AREA', ledger.unassigned, 'Floor contains unassigned area'],
+        ['ROOM_VOID_OVERLAP', ledger.roomVoidOverlap, 'Room overlaps an explicit void'],
+      ] as const) {
+        if (!Number.isFinite(area) || area >= 0.001) errors.push({
+          code, severity: 'CRITICAL', elementIds: [floor.id], floorId: floor.id,
+          locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 },
+          description: `${description}: ${area} mm²`, autoCorrected: false,
+        });
+      }
+      if (!ledger.supported) errors.push({
+        code: 'UNSUPPORTED_LEDGER_GEOMETRY', severity: 'CRITICAL', elementIds: [floor.id], floorId: floor.id,
+        locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 },
+        description: 'The canonical cell ledger requires finite orthogonal polygons.', autoCorrected: false,
+      });
 
       return {
         ...floor,
@@ -209,15 +219,15 @@ export class GeometryValidator {
       };
     });
 
-    return {
+    return this.confirmRepairs(building, {
       building: {
         ...building,
         floors: updatedFloors,
         updatedAt: new Date().toISOString(),
       },
       errors,
-      planarDeltaMm2: Number(totalPlanarDelta.toFixed(3)),
-    };
+      planarDeltaMm2: totalPlanarDelta,
+    }, autoCorrect, candidate => this.auditRoomAndWallOverlaps(candidate, false));
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -352,7 +362,7 @@ export class GeometryValidator {
           if (dist < this.columnMergeThresholdMm && isAlongAxis) {
             errors.push({
               code: 'DUPLICATE_COLUMN',
-              severity: 'WARNING',
+              severity: 'CRITICAL',
               elementIds: [c1.id, c2.id],
               floorId: floor.id,
               locationMm: {
@@ -364,14 +374,9 @@ export class GeometryValidator {
             });
 
             if (autoCorrect) {
-              // Merge into single column at midpoint
-              mergedCol = {
-                ...c1,
-                position: {
-                  x: Math.round((c1.position.x + c2.position.x) / 2),
-                  y: Math.round((c1.position.y + c2.position.y) / 2),
-                },
-              };
+              // Keep an existing wall-anchored location. Averaging two valid
+              // locations can create a floating column and new close clusters.
+              mergedCol = c1;
               removedIds.add(c2.id);
             }
           }
@@ -384,6 +389,7 @@ export class GeometryValidator {
       const generatedBeams: StructuralBeam[] = [];
       const cols = dedupedColumns;
 
+      if (autoCorrect) {
       // Group columns along orthogonal grid lines
       const gridTolerance = 150;
       const xLines = new Map<number, Column[]>();
@@ -510,20 +516,22 @@ export class GeometryValidator {
           });
         });
 
+      }
+
       return {
         ...floor,
         columns: dedupedColumns,
-        beams: generatedBeams,
+        beams: autoCorrect ? generatedBeams : floor.beams,
       };
     });
 
-    return {
+    return this.confirmRepairs(building, {
       building: {
         ...building,
         floors: updatedFloors,
       },
       errors,
-    };
+    }, autoCorrect, candidate => this.auditAndFixColumnAndBeamGrid(candidate, false));
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -538,7 +546,7 @@ export class GeometryValidator {
 
     const updatedFloors = building.floors.map(floor => {
       let doors = [...floor.doors];
-      let windows = [...floor.windows];
+      const windows = [...floor.windows];
       const walls = floor.walls;
 
       const outdoorRoomTypes = new Set<RoomType>([
@@ -557,10 +565,18 @@ export class GeometryValidator {
 
         if (isExternalWall) {
           // Check if outside has an adjacent balcony or terrace
-          const hasOutdoorTarget = floor.rooms.some(r =>
-            outdoorRoomTypes.has(r.type) &&
-            distance(door.position, { x: r.x + r.width / 2, y: r.y + r.height / 2 }) < 3000,
-          );
+          const hasOutdoorTarget = floor.rooms.some(room =>
+            (outdoorRoomTypes.has(room.type) || room.type === RoomType.Utility)
+            && door.connectsRooms.includes(room.id)
+            && room.boundary.points.some((point, index) => {
+              const end = room.boundary.points[(index + 1) % room.boundary.points.length]!;
+              const segment = { start: point, end };
+              const segmentLength = distance(point, end);
+              return pointToSegmentDistance(door.position, segment) <= 1
+                && segmentLength >= door.width
+                && distance(point, door.position) >= door.width / 2
+                && distance(end, door.position) >= door.width / 2;
+            }));
 
           if (!hasOutdoorTarget) {
             // Invalid exterior bedroom/habitable door opening into thin air!
@@ -674,13 +690,13 @@ export class GeometryValidator {
       };
     });
 
-    return {
+    return this.confirmRepairs(building, {
       building: {
         ...building,
         floors: updatedFloors,
       },
       errors,
-    };
+    }, autoCorrect, candidate => this.auditAndFixOpenings(candidate, false));
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -705,7 +721,7 @@ export class GeometryValidator {
 
     const updatedFloors = floors.map(floor => {
       let stairs = [...floor.stairs];
-      let canonicalStaircases = [...(floor.canonicalStaircases ?? [])];
+      const canonicalStaircases = [...(floor.canonicalStaircases ?? [])];
 
       if (stairs.length === 0 && autoCorrect) {
         // Instantiate staircase matching master core
@@ -736,7 +752,10 @@ export class GeometryValidator {
       }
 
       // Check vertical coordinate alignment
-      stairs = stairs.map(stair => {
+      stairs = stairs.map((stair, index) => {
+        const reference = refFloor.stairs.find(other => stair.verticalCoreId && other.verticalCoreId === stair.verticalCoreId) ?? refFloor.stairs[index];
+        if (!reference) return stair;
+        const masterCoord = { x: reference.x, y: reference.y, width: reference.width, length: reference.length };
         const dx = Math.abs(stair.x - masterCoord.x);
         const dy = Math.abs(stair.y - masterCoord.y);
 
@@ -826,17 +845,17 @@ export class GeometryValidator {
       return {
         ...floor,
         stairs,
-        canonicalStaircases,
+        canonicalStaircases: autoCorrect ? canonicalStaircases : floor.canonicalStaircases,
       };
     });
 
-    return {
+    return this.confirmRepairs(building, {
       building: {
         ...building,
         floors: updatedFloors,
       },
       errors,
-    };
+    }, autoCorrect, candidate => this.auditStaircaseContinuity(candidate, false));
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -887,7 +906,7 @@ export class GeometryValidator {
               floorId: floor.id,
               locationMm: { x: annA.box.x, y: annA.box.y },
               description: `Annotation bounding box collision between "${annA.text}" and "${annB.text}"`,
-              autoCorrected: autoCorrect,
+              autoCorrected: false,
             });
 
             if (autoCorrect) {
@@ -904,18 +923,31 @@ export class GeometryValidator {
       return floor;
     });
 
-    return {
+    return this.confirmRepairs(building, {
       building: {
         ...building,
         floors: updatedFloors,
       },
       errors,
-    };
+    }, autoCorrect, candidate => this.auditAnnotationCollisions(candidate, false));
   }
 
   // ───────────────────────────────────────────────────────────────────────────
   // Helper: Rebuild rectangular room
   // ───────────────────────────────────────────────────────────────────────────
+
+  private confirmRepairs<T extends { building: Building; errors: GeometryValidationError[] }>(
+    original: Building, result: T, autoCorrect: boolean,
+    detect: (building: Building) => { errors: GeometryValidationError[] },
+  ): T {
+    if (!autoCorrect) return { ...result, building: original, errors: result.errors.map(e => ({ ...e, autoCorrected: false })) };
+    const changed = JSON.stringify(original.floors) !== JSON.stringify(result.building.floors);
+    const remaining = detect(result.building).errors;
+    return { ...result, errors: result.errors.map(error => ({ ...error,
+      autoCorrected: changed && !remaining.some(e => e.code === error.code && e.floorId === error.floorId
+        && e.elementIds.some(id => error.elementIds.includes(id))),
+    })) };
+  }
 
   private rebuildRectRoom(room: Room, x: number, y: number, width: number, height: number): Room {
     const rx = Math.round(x);
@@ -940,4 +972,18 @@ export class GeometryValidator {
       },
     };
   }
+}
+
+/**
+ * Master convenience function to validate and auto-repair building geometry.
+ * Snaps floating columns, deduplicates columns closer than 2000 mm,
+ * generates primary/secondary/cantilever beams, verifies continuous staircases,
+ * prevents exterior door-window collisions, and checks planar conservation.
+ */
+export function validateAndRepairBuildingGeometry(
+  building: Building,
+  options?: GeometryValidatorOptions,
+): GeometryAuditResult {
+  const validator = new GeometryValidator(options);
+  return validator.audit(building, options?.autoCorrect ?? true);
 }

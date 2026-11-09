@@ -116,3 +116,5 @@ export {
   ColumnGrid,
 } from './constraints/soft/index';
 export { validateApartmentClosure } from './apartment-closure';
+
+export * from './raw-planar-conservation';

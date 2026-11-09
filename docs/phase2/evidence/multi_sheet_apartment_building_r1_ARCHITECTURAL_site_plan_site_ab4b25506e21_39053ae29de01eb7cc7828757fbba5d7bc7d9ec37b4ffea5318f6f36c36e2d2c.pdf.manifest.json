@@ -1,0 +1,44 @@
+{
+  "buildingId": "multi_sheet_apartment_building",
+  "projectId": "apartment_project",
+  "revision": 1,
+  "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+  "generatedAt": "2026-11-08T10:09:52.689Z",
+  "files": [
+    {
+      "fileId": "39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c",
+      "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_site_plan_site_ab4b25506e21_39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c.pdf",
+      "fileType": "PDF",
+      "discipline": "ARCHITECTURAL",
+      "title": "site_plan: site",
+      "mimeType": "application/pdf",
+      "sizeBytes": 7575,
+      "sha256": "39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c",
+      "buildingId": "multi_sheet_apartment_building",
+      "revision": 1,
+      "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+      "scope": "ARCHITECTURAL:site_plan:site",
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "pageCount": 1,
+          "scaleModes": [
+            "FIT_TO_PAGE_NOT_TO_SCALE"
+          ],
+          "sizeBytes": 7575
+        }
+      },
+      "downloadUrl": "/api/v1/export/download/multi_sheet_apartment_building_r1_ARCHITECTURAL_site_plan_site_ab4b25506e21_39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c.pdf",
+      "metadata": {
+        "options": {
+          "exportScope": "site_plan",
+          "floorId": "site"
+        },
+        "floorIds": [],
+        "units": "mm"
+      }
+    }
+  ],
+  "overallStatus": "SUCCESS"
+}

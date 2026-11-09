@@ -35,3 +35,31 @@ pnpm-debug.log*
 _tmp_*
 playwright-report/
 test-results/
+
+# Verified export runtime data and local Phase 2 inspection copies
+/output/cad-export/artifacts/
+/packages/backend/output/cad-export/artifacts/
+/tmp/phase2-native/
+/tmp/pdfs/
+!docs/phase2/logs/*.log
+
+/tmp/phase3-sources/
+/tmp/phase3-ui/
+!docs/phase3/logs/*.log
+
+# Generated exports, image artifacts and legacy review/sweep dumps
+output/
+dist-server/
+build/
+/data/image-artifacts/
+/packages/backend/data/image-artifacts/
+/packages/backend/data/reference-images/
+/scripts/phase1_concepts_output/
+/scripts/phase3_live_output/
+/scripts/phase4_live_output/
+/scripts/phase5_sweep_output/
+/scripts/two_phase_live_output/
+/scripts/acceptance_result.json
+/scripts/last_exit_gate_result.json
+/scripts/phase2_seed_7919_output.png
+/scripts/test_schematic_512.png

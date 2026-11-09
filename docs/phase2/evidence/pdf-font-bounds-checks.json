@@ -1,0 +1,26 @@
+[
+  {
+    "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_all_floors_geometry-report_ab4b25506e21_3cba7143010183de4d676c1f956b0032f5b291adc08bbd5f85053dfaa6a163c1.pdf",
+    "pages": 15,
+    "characters": 43864,
+    "characterBoxOverlaps": []
+  },
+  {
+    "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_stilt_00_ab4b25506e21_e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5.pdf",
+    "pages": 1,
+    "characters": 1422,
+    "characterBoxOverlaps": []
+  },
+  {
+    "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0.pdf",
+    "pages": 1,
+    "characters": 1304,
+    "characterBoxOverlaps": []
+  },
+  {
+    "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_site_plan_site_ab4b25506e21_39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c.pdf",
+    "pages": 1,
+    "characters": 1049,
+    "characterBoxOverlaps": []
+  }
+]

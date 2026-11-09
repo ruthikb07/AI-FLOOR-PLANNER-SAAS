@@ -14,3 +14,9 @@ export * from './architectural-review';
 export * from './types/building-budget';
 export * from './models/building-budget';
 export * from './models/reviewed-generation';
+export * from './models/canonical-revision';
+
+export * from './compliance/udcpr-residential-types';
+export * from './compliance/vastu-advisory-types';
+export * from './mep/mep-contracts';
+export * from './mep/mep-validation';

@@ -1,3 +1,4 @@
+import type { RegulatoryContextInput } from './udcpr';
 /**
  * Multi-Sheet Apartment Project Domain & Configuration Contracts (§1C).
  *
@@ -21,7 +22,8 @@ import type {
   ApartmentJurisdictionCode,
 } from './enums';
 import type { DynamicApartmentUnitSpec } from './apartment-manifest';
-import type { Floor, Site, Building } from './building';
+import type { Floor, Site, Building, Setbacks } from './building';
+import type { GeometryValidationReport } from './geometry-validation';
 
 export type VerticalStackType = 'G_PLUS_N' | 'STILT_PLUS_N' | 'BASEMENT_STILT_PLUS_N';
 export type ParkingMode = 'STILT_AND_SURFACE' | 'STILT_ONLY' | 'MECHANICAL_STACK';
@@ -61,6 +63,12 @@ export interface TerraceAmenitiesConfig {
 
 /** Comprehensive configuration for a multi-sheet residential apartment project. */
 export interface MultiSheetApartmentConfig {
+  readonly regulatoryContext?: RegulatoryContextInput;
+  readonly projectId?: string;
+  readonly projectName?: string;
+  readonly aiPrompt?: string;
+  readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
+  readonly setbacksMm?: Setbacks;
   readonly plotWidthMm: number;
   readonly plotDepthMm: number;
   readonly roadWidthMm: number;
@@ -195,6 +203,7 @@ export interface MultiSheetApartmentResult {
   readonly building: Building;
   readonly sheets: readonly CoordinatedApartmentSheet[];
   readonly schedule: ApartmentProjectSchedule;
+  readonly validationReport?: GeometryValidationReport;
   readonly totalBuildingHeightMm: number;
   readonly hasRefugeFloor: boolean;
   readonly refugeFloorLevels: readonly number[];

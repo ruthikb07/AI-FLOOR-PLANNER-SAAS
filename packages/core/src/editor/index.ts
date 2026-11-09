@@ -61,6 +61,7 @@ export {
   BatchCommand,
   ReplaceBuildingCommand,
   UpdateSiteCommand,
+  UpdateRegulatoryContextCommand,
   type UpdateSiteParams,
 } from './commands/index';
 

@@ -1,0 +1,38 @@
+[
+  {
+    "page": 1,
+    "characters": 1743,
+    "overlaps": 0,
+    "outOfBounds": 0
+  },
+  {
+    "page": 2,
+    "characters": 1819,
+    "overlaps": 0,
+    "outOfBounds": 0
+  },
+  {
+    "page": 3,
+    "characters": 2599,
+    "overlaps": 0,
+    "outOfBounds": 0
+  },
+  {
+    "page": 4,
+    "characters": 2561,
+    "overlaps": 0,
+    "outOfBounds": 0
+  },
+  {
+    "page": 5,
+    "characters": 3037,
+    "overlaps": 0,
+    "outOfBounds": 0
+  },
+  {
+    "page": 6,
+    "characters": 2556,
+    "overlaps": 0,
+    "outOfBounds": 0
+  }
+]

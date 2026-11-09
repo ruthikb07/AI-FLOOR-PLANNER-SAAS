@@ -53,6 +53,7 @@ export enum RenderLayer {
   Openings = 'openings',
   Stairs = 'stairs',
   Columns = 'columns',
+  Beams = 'beams',
   Furniture = 'furniture',
   Annotations = 'annotations',
   Selection = 'selection',

@@ -24,7 +24,7 @@ import { ImageArtifactStore } from '../services/image-artifact-store.js';
 
 const LIVE = process.env.PHASE5_LIVE === '1';
 const repoRoot = path.resolve(__dirname, '../../../..');
-const recordedDir = path.join(repoRoot, 'data', 'image-artifacts');
+const recordedDir = path.join(repoRoot, 'tests', 'fixtures', 'flux-recordings');
 const outDir = path.join(repoRoot, 'scripts', 'phase5_sweep_output');
 
 const APARTMENT_RECORDINGS = ['gen_7919_mui7f0ff_c36370c5', 'gen_42_muh2krwf_d2cdd112', 'gen_101_muhfk5cn_18e75c41'];

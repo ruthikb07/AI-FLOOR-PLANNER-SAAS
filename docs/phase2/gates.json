@@ -1,0 +1,44 @@
+[
+  {
+    "Command": "pnpm --filter @ai-floor-planner/frontend test",
+    "Ended": "2026-11-08T15:37:07.0189482+05:30",
+    "Name": "frontend-test",
+    "ExitCode": 0,
+    "Started": "2026-11-08T15:36:44.3850669+05:30"
+  },
+  {
+    "ExitCode": 0,
+    "Started": "2026-11-08T15:58:38.8150526+05:30",
+    "Ended": "2026-11-08T15:59:28.4422364+05:30",
+    "Name": "backend-test",
+    "Command": "pnpm --filter @ai-floor-planner/backend test"
+  },
+  {
+    "ExitCode": 0,
+    "Started": "2026-11-08T15:59:28.4553067+05:30",
+    "Ended": "2026-11-08T16:00:02.281957+05:30",
+    "Name": "full-test",
+    "Command": "pnpm run test --concurrency=1"
+  },
+  {
+    "ExitCode": 0,
+    "Started": "2026-11-08T16:00:02.2842393+05:30",
+    "Ended": "2026-11-08T16:00:09.7736956+05:30",
+    "Name": "typecheck",
+    "Command": "pnpm typecheck --concurrency=1"
+  },
+  {
+    "ExitCode": 0,
+    "Started": "2026-11-08T16:00:09.7757152+05:30",
+    "Ended": "2026-11-08T16:00:21.8016273+05:30",
+    "Name": "build",
+    "Command": "pnpm build --concurrency=1"
+  },
+  {
+    "ExitCode": 0,
+    "Started": "2026-11-08T16:00:21.8032418+05:30",
+    "Ended": "2026-11-08T16:00:30.5819345+05:30",
+    "Name": "lint",
+    "Command": "pnpm lint --concurrency=1"
+  }
+]

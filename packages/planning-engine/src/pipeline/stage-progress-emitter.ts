@@ -1,3 +1,4 @@
+import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
 /**
  * Pipeline Stage Progress Emitter & Observable Coordinator (§1A).
  *
@@ -9,12 +10,14 @@
 
 import {
   type Building,
+  type MultiSheetApartmentConfig,
   type GeometryValidationReport,
   type GeometryValidationError,
   type UDCPRComplianceReport,
 } from '@ai-floor-planner/core';
 import { GeometryValidator } from '../validator/geometry-validator';
-import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
+import { solveMultiSheetApartmentProject } from '../apartment/multi-sheet-apartment-solver';
+import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 
 export type PipelineStageId =
   | 'PLOT_BOUNDARY_SOLVE'
@@ -37,6 +40,8 @@ export interface PipelineStageProgressEvent {
   readonly report?: GeometryValidationReport;
   readonly udcprReport?: UDCPRComplianceReport;
   readonly timestamp: string;
+  readonly stageStatuses: Readonly<Record<PipelineStageId, PipelineStageStatus>>;
+  readonly regulatoryStatus?: 'NOT_RUN' | UDCPRComplianceReport['status'];
 }
 
 export type PipelineProgressCallback = (event: PipelineStageProgressEvent) => void;
@@ -65,6 +70,8 @@ export class PipelineProgressEmitter {
     UDCPR_CHECK: 0,
     COMPLETE: 0,
   };
+  private statuses = Object.fromEntries(Object.keys(PIPELINE_STAGE_WEIGHTS).map(stage => [stage, 'PENDING'])) as Record<PipelineStageId, PipelineStageStatus>;
+  private progress = 0;
   private stageStartTime: number = performance.now();
   private currentStage: PipelineStageId = 'PLOT_BOUNDARY_SOLVE';
   private currentStatus: PipelineStageStatus = 'PENDING';
@@ -80,18 +87,20 @@ export class PipelineProgressEmitter {
   public startStage(stage: PipelineStageId): void {
     this.currentStage = stage;
     this.currentStatus = 'RUNNING';
+    this.statuses[stage] = 'RUNNING';
     this.stageStartTime = performance.now();
 
     this.emit({
       stage,
       status: 'RUNNING',
-      progressPercent: PIPELINE_STAGE_WEIGHTS[stage] - 5,
+      progressPercent: this.progress,
       stageTimingsMs: { ...this.timings },
       currentStageDurationMs: 0,
       errors: [...this.collectedErrors],
       report: this.lastReport,
       udcprReport: this.lastUdcprReport,
       timestamp: new Date().toISOString(),
+      stageStatuses: { ...this.statuses }, regulatoryStatus: this.lastUdcprReport?.status ?? 'NOT_RUN',
     });
   }
 
@@ -104,6 +113,8 @@ export class PipelineProgressEmitter {
     const duration = Math.round(performance.now() - this.stageStartTime);
     this.timings[stage] = duration;
     this.currentStatus = 'COMPLETED';
+    this.statuses[stage] = 'COMPLETED';
+    this.progress = PIPELINE_STAGE_WEIGHTS[stage];
     this.collectedErrors.push(...newErrors);
     if (report) this.lastReport = report;
     if (udcprReport) this.lastUdcprReport = udcprReport;
@@ -111,13 +122,14 @@ export class PipelineProgressEmitter {
     this.emit({
       stage,
       status: 'COMPLETED',
-      progressPercent: PIPELINE_STAGE_WEIGHTS[stage],
+      progressPercent: this.progress,
       stageTimingsMs: { ...this.timings },
       currentStageDurationMs: duration,
       errors: [...this.collectedErrors],
       report: this.lastReport,
       udcprReport: this.lastUdcprReport,
       timestamp: new Date().toISOString(),
+      stageStatuses: { ...this.statuses }, regulatoryStatus: this.lastUdcprReport?.status ?? 'NOT_RUN',
     });
   }
 
@@ -125,11 +137,12 @@ export class PipelineProgressEmitter {
     const duration = Math.round(performance.now() - this.stageStartTime);
     this.timings[stage] = duration;
     this.currentStatus = 'FAILED';
+    this.statuses[stage] = 'FAILED';
 
     this.emit({
       stage,
       status: 'FAILED',
-      progressPercent: PIPELINE_STAGE_WEIGHTS[stage],
+      progressPercent: this.progress,
       stageTimingsMs: { ...this.timings },
       currentStageDurationMs: duration,
       errors: [
@@ -147,6 +160,7 @@ export class PipelineProgressEmitter {
       report: this.lastReport,
       udcprReport: this.lastUdcprReport,
       timestamp: new Date().toISOString(),
+      stageStatuses: { ...this.statuses }, regulatoryStatus: this.lastUdcprReport?.status ?? 'NOT_RUN',
     });
   }
 
@@ -154,13 +168,14 @@ export class PipelineProgressEmitter {
     return {
       stage: this.currentStage,
       status: this.currentStatus,
-      progressPercent: PIPELINE_STAGE_WEIGHTS[this.currentStage],
+      progressPercent: this.progress,
       stageTimingsMs: { ...this.timings },
       currentStageDurationMs: Math.round(performance.now() - this.stageStartTime),
       errors: [...this.collectedErrors],
       report: this.lastReport,
       udcprReport: this.lastUdcprReport,
       timestamp: new Date().toISOString(),
+      stageStatuses: { ...this.statuses }, regulatoryStatus: this.lastUdcprReport?.status ?? 'NOT_RUN',
     };
   }
 
@@ -180,60 +195,57 @@ export class PipelineProgressEmitter {
  * Executes the full audited planning pipeline with deterministic stage progress emission.
  */
 export async function executeAuditedPlanningPipeline(
-  building: Building,
+  input: Building | MultiSheetApartmentConfig,
   onProgress?: PipelineProgressCallback,
-): Promise<{
-  building: Building;
-  validationReport: GeometryValidationReport;
-  udcprReport: UDCPRComplianceReport;
-}> {
+): Promise<{ building: Building; validationReport: GeometryValidationReport; regulatoryStatus: UDCPRComplianceReport['status']; udcprReport: UDCPRComplianceReport }> {
   const emitter = new PipelineProgressEmitter();
   if (onProgress) emitter.subscribe(onProgress);
-
-  const validator = new GeometryValidator({ autoCorrect: true });
-  let currentBuilding = building;
-
-  // 1. PLOT_BOUNDARY_SOLVE
-  emitter.startStage('PLOT_BOUNDARY_SOLVE');
-  emitter.completeStage('PLOT_BOUNDARY_SOLVE');
-
-  // 2. UNIT_SPATIAL_SLICING
-  emitter.startStage('UNIT_SPATIAL_SLICING');
-  const overlapAudit = validator.auditRoomAndWallOverlaps(currentBuilding, true);
-  currentBuilding = overlapAudit.building;
-  emitter.completeStage('UNIT_SPATIAL_SLICING', overlapAudit.errors);
-
-  // 3. WALL_AND_OPENING_TOPOLOGY
-  emitter.startStage('WALL_AND_OPENING_TOPOLOGY');
-  const openingAudit = validator.auditAndFixOpenings(currentBuilding, true);
-  currentBuilding = openingAudit.building;
-  emitter.completeStage('WALL_AND_OPENING_TOPOLOGY', openingAudit.errors);
-
-  // 4. COLUMN_AND_BEAM_GRID
-  emitter.startStage('COLUMN_AND_BEAM_GRID');
-  const colAudit = validator.auditAndFixColumnAndBeamGrid(currentBuilding, true);
-  currentBuilding = colAudit.building;
-  emitter.completeStage('COLUMN_AND_BEAM_GRID', colAudit.errors);
-
-  // 5. GEOMETRY_ZERO_ERROR_AUDIT
-  emitter.startStage('GEOMETRY_ZERO_ERROR_AUDIT');
-  const fullAudit = validator.audit(currentBuilding, true);
-  currentBuilding = fullAudit.building;
-  emitter.completeStage('GEOMETRY_ZERO_ERROR_AUDIT', fullAudit.report.errors, fullAudit.report);
-
-  // 6. UDCPR_CHECK
-  emitter.startStage('UDCPR_CHECK');
-  const udcprReport = evaluateUDCPRCompliance(currentBuilding);
-  emitter.completeStage('UDCPR_CHECK', [], fullAudit.report, udcprReport);
-
-  // 7. COMPLETE
-  emitter.startStage('COMPLETE');
-  emitter.completeStage('COMPLETE', [], fullAudit.report, udcprReport);
-
-  return {
-    building: currentBuilding,
-    validationReport: fullAudit.report,
-    udcprReport,
-  };
+  let stage: PipelineStageId = 'PLOT_BOUNDARY_SOLVE';
+  const next = (newStage: PipelineStageId) => { emitter.completeStage(stage); stage = newStage; emitter.startStage(stage); };
+  emitter.startStage(stage);
+  try {
+    const isRequest = 'plotWidthMm' in input;
+    let building: Building;
+    if (isRequest) {
+      const config = input;
+      const dimensions = [config.plotWidthMm, config.plotDepthMm, config.roadWidthMm];
+      if (dimensions.some(value => !Number.isFinite(value) || value <= 0)
+        || !Number.isInteger(config.numTypicalFloors) || config.numTypicalFloors < 1 || config.numTypicalFloors > 40
+        || ![2, 3, 4].includes(config.flatsPerFloor)
+        || config.units?.length !== config.flatsPerFloor
+        || config.units.some(unit => !/^[1-4]BHK$/.test(unit.bhkType))
+        || (config.setbacksMm && Object.values(config.setbacksMm).some(value => !Number.isFinite(value) || value < 0))) {
+        throw new Error('Provide positive plot/road dimensions, 1–40 floors, valid setbacks and an exact 2–4 unit BHK mix.');
+      }
+      const solved = solveMultiSheetApartmentProject(config, next);
+      building = solved.building;
+      // Drawing-only column schedule sheets must not become physical storeys.
+      building = { ...building, floors: building.floors.filter(floor => !floor.name.includes('COLUMN_SCHEDULE')) };
+    } else {
+      building = input;
+      next('UNIT_SPATIAL_SLICING');
+      next('WALL_AND_OPENING_TOPOLOGY');
+      next('COLUMN_AND_BEAM_GRID');
+    }
+    next('GEOMETRY_ZERO_ERROR_AUDIT');
+    const validator = new GeometryValidator({ autoCorrect: false });
+    const audit = validator.audit(building, false);
+    const closureErrors = building.floors.filter(f => f.apartmentUnits?.length).flatMap(floor =>
+      validateApartmentClosure({ ...building, floors: [floor] }).issues.filter(issue => issue.severity === 'error')
+        .map(issue => ({ code: issue.code, severity: 'CRITICAL' as const, elementIds: [floor.id], floorId: floor.id,
+          locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 }, description: issue.message, autoCorrected: false })));
+    const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length,
+      errors: [...audit.report.errors, ...closureErrors] };
+    emitter.completeStage(stage, validationReport.errors, validationReport);
+    if (isRequest && !validationReport.isValid) throw new Error(
+      `Geometry requires correction: ${validationReport.errors.filter(e => e.severity === 'CRITICAL' && !e.autoCorrected).slice(0, 5).map(e => e.description).join('; ')}`);
+    stage = 'UDCPR_CHECK'; emitter.startStage(stage);
+    const udcprReport = evaluateUDCPRCompliance(building);
+    emitter.completeStage(stage, [], validationReport, udcprReport);
+    stage = 'COMPLETE'; emitter.startStage(stage); emitter.completeStage(stage);
+    return { building, validationReport, regulatoryStatus: udcprReport.status, udcprReport };
+  } catch (error) {
+    emitter.failStage(stage, error instanceof Error ? error : new Error(String(error)));
+    throw error;
+  }
 }
-

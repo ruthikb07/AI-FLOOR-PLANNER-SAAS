@@ -1,0 +1,51 @@
+{
+  "passed": 1567,
+  "skipped": 7,
+  "packages": [
+    {
+      "package": "@ai-floor-planner/core",
+      "passed": 192,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/projection-3d",
+      "passed": 22,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/geometry-engine",
+      "passed": 86,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/renderer",
+      "passed": 88,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/constraint-engine",
+      "passed": 185,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/planning-engine",
+      "passed": 447,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/ai-orchestration",
+      "passed": 242,
+      "skipped": 2
+    },
+    {
+      "package": "@ai-floor-planner/frontend",
+      "passed": 152,
+      "skipped": 0
+    },
+    {
+      "package": "@ai-floor-planner/backend",
+      "passed": 153,
+      "skipped": 5
+    }
+  ]
+}

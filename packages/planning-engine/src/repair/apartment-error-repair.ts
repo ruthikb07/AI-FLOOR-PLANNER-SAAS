@@ -33,6 +33,7 @@ import {
   openingFitsApartmentWall,
   measureApartmentAreaLedger,
   roomSpaceUse,
+  pointInPolygon,
 } from '@ai-floor-planner/geometry-engine';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 
@@ -327,7 +328,15 @@ function repairManifestMismatch(params: ManifestRepairParams): {
     return { rooms: params.rooms, doors: params.doors, repaired: false, repairs: [] };
   }
 
-  let workingRooms = [...params.rooms];
+  let workingRooms = params.rooms.map(room => {
+    // Canonical polygons win over stale rectangle metadata after an edit.
+    if (room.boundary.points.length !== 4) return room;
+    const xs = [...new Set(room.boundary.points.map(p => p.x))];
+    const ys = [...new Set(room.boundary.points.map(p => p.y))];
+    if (xs.length !== 2 || ys.length !== 2) return room;
+    const x = Math.min(...xs), y = Math.min(...ys), width = Math.max(...xs) - x, height = Math.max(...ys) - y;
+    return { ...room, x, y, width, height, area: width * height };
+  });
   const workingDoors = [...params.doors];
   const repairs: AppliedRepair[] = [];
   let repaired = false;
@@ -340,7 +349,7 @@ function repairManifestMismatch(params: ManifestRepairParams): {
 
   for (const u of units) {
     const unitSpec = manifestUnits.find((item: any) =>
-      item.unitIndex === (u as { unitIndex?: number }).unitIndex ||
+      (item.unitIndex !== undefined && item.unitIndex === (u as { unitIndex?: number }).unitIndex) ||
       (item.id && (u.id === item.id || u.id.endsWith(String(item.id)) || String(item.id).endsWith(u.id))) ||
       (item.unitIndex !== undefined && u.id.endsWith(String(item.unitIndex)))
     );
@@ -448,6 +457,15 @@ function repairManifestMismatch(params: ManifestRepairParams): {
     // 4. Bathrooms check
     let bathCount = unitRooms.filter(r => r.type === RoomType.Bathroom || r.tags.includes('role:bathroom')).length;
     while (bathCount < expectedBaths) {
+      const gap = findUnoccupiedUnitRectangle(u.boundary, workingRooms);
+      if (gap && Math.min(gap.w, gap.h) >= 1200 && gap.w * gap.h >= 2_200_000) {
+        const created = createRoom({ floorId, type: RoomType.Bathroom, name: `${u.id} Common Toilet ${bathCount + 1}`,
+          x: gap.x, y: gap.y, width: gap.w, height: gap.h, tags: [`flat:${u.id}`, 'role:bathroom', 'repaired:gap'] });
+        const restored: Room = { ...created, unitId: u.id, spaceUse: 'UNIT', bathroomAccessClass: 'COMMON' };
+        workingRooms.push(restored); unitRooms.push(restored); bathCount++; repaired = true;
+        repairs.push({ category: 'MANIFEST_SYNTHESIS', description: `Restored missing bathroom in measured vacant unit polygon`, targetEntities: [restored.id] });
+        continue;
+      }
       // Determine if attached to an existing bedroom without attached bath
       const beds = unitRooms.filter(r => r.type === RoomType.Bedroom);
       const existingAttachedOwners = new Set(
@@ -509,6 +527,28 @@ function repairManifestMismatch(params: ManifestRepairParams): {
   }
 
   return { rooms: workingRooms, doors: workingDoors, repaired, repairs };
+}
+
+/** Largest uncovered rectangle on the existing orthogonal room partition. */
+function findUnoccupiedUnitRectangle(boundary: Polygon, rooms: readonly Room[]): Rect2D | null {
+  const xs = [...new Set([...boundary.points, ...rooms.flatMap(r => r.boundary.points)].map(p => p.x))].sort((a,b) => a-b);
+  const ys = [...new Set([...boundary.points, ...rooms.flatMap(r => r.boundary.points)].map(p => p.y))].sort((a,b) => a-b);
+  let best: Rect2D | null = null;
+  for (let y = 0; y < ys.length - 1; y++) for (let x = 0; x < xs.length - 1; x++) {
+    let maxX = xs.length - 1;
+    for (let bottom = y; bottom < ys.length - 1; bottom++) {
+      let right = x;
+      for (; right < maxX; right++) {
+        const center = { x: (xs[right]! + xs[right + 1]!) / 2, y: (ys[bottom]! + ys[bottom + 1]!) / 2 };
+        if (!pointInPolygon(center, boundary) || rooms.some(r => pointInPolygon(center, r.boundary))) break;
+      }
+      maxX = right;
+      if (right === x) break;
+      const rect = { x: xs[x]!, y: ys[y]!, w: xs[right]! - xs[x]!, h: ys[bottom + 1]! - ys[y]! };
+      if (!best || rect.w * rect.h > best.w * best.h) best = rect;
+    }
+  }
+  return best;
 }
 
 function findOversizedRoom(rooms: readonly Room[], targetForSynthesis: RoomType): Room | null {
@@ -732,6 +772,7 @@ function repairMinDimensions(params: MinDimRepairParams): {
         const minAreaB = (MINIMUM_ROOM_AREAS as Record<string, number | undefined>)[roomB.type] ?? 0;
 
         if (shared.axis === 'y') {
+          if (rA.y !== rB.y || rA.h !== rB.h) continue;
           // Vertical shared boundary: can adjust widths
           const deficit = standardLimit - rA.w;
           if (deficit > 0) {
@@ -766,6 +807,7 @@ function repairMinDimensions(params: MinDimRepairParams): {
             }
           }
         } else {
+          if (rA.x !== rB.x || rA.w !== rB.w) continue;
           // Horizontal shared boundary: can adjust heights
           const deficit = standardLimit - rA.h;
           if (deficit > 0) {
@@ -976,6 +1018,7 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
       // Check for orphan rooms inside this unit
       const unreachable = unitRooms.filter(r => !visited.has(r.id));
       for (const orphan of unreachable) {
+        if (visited.has(orphan.id)) continue;
         // Connect orphan to a reachable room sharing a wall segment
         let targetReachable: Room | null = null;
 
@@ -996,7 +1039,7 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
         }
 
         // Otherwise find any reachable room sharing longest boundary (never route through a bathroom)
-        if (!targetReachable) {
+        if (!targetReachable && !orphan.bathroomOwnerRoomId) {
           const candidates = unitRooms.filter(r => visited.has(r.id) && !r.bathroomOwnerRoomId && r.type !== RoomType.Bathroom && findSharedWallSegment(orphan, r));
           if (candidates.length > 0) {
             candidates.sort((a, b) => {
@@ -1036,6 +1079,11 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
           visited.add(orphan.id);
           graph.get(orphan.id)!.add(targetReachable.id);
           graph.get(targetReachable.id)!.add(orphan.id);
+          // Connecting a component reaches its existing attached bathrooms too.
+          const pending = [orphan.id];
+          for (let i = 0; i < pending.length; i++) for (const id of graph.get(pending[i]!) ?? []) {
+            if (!visited.has(id) && unitRooms.some(r => r.id === id)) { visited.add(id); pending.push(id); }
+          }
           repaired = true;
           repairs.push({
             category: 'PRIVACY_CIRCULATION',

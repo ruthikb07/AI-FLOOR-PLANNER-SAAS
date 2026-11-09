@@ -332,20 +332,41 @@ export function furnishRoom(
     }
   }
 
-  // ─── 4. Kitchen & Utility ──────────────────────────────────────────────────
-  else if (room.type === RoomType.Kitchen || rName.includes('KITCHEN')) {
+  // ─── 4. Main Kitchen (Strictly No Utility Balcony Collision) ──────────────
+  else if (
+    (room.type === RoomType.Kitchen || rName.includes('KITCHEN')) &&
+    !rName.includes('UTILITY') &&
+    !rName.includes('BALCONY') &&
+    room.type !== RoomType.Balcony && room.type !== RoomType.Utility
+  ) {
     const counterD = 600;
     const counterW = Math.min(3000, rw - 400);
 
-    const counterCandidates = [
+    // Filter candidate walls to those free of door clearance collisions:
+    const rawCounterCandidates = [
       { x: rx + 200, y: ry + rh - counterD - 150, w: counterW, d: counterD, wall: 'SOUTH' as const, isHoriz: true },
       { x: rx + 200, y: ry + 150, w: counterW, d: counterD, wall: 'NORTH' as const, isHoriz: true },
       { x: rx + rw - counterD - 150, y: ry + 200, w: counterD, d: Math.min(3000, rh - 400), wall: 'EAST' as const, isHoriz: false },
       { x: rx + 150, y: ry + 200, w: counterD, d: Math.min(3000, rh - 400), wall: 'WEST' as const, isHoriz: false },
     ];
 
+    // Search shorter wall runs as well; a full-length counter may cross a door
+    // even though a usable worktop exists farther along the same wall.
+    for (const run of [1800, 1500, 1400]) {
+      for (let offset = 150; offset + run <= rh - 100; offset += 100) {
+        rawCounterCandidates.push(
+          { x: rx + 100, y: ry + offset, w: counterD, d: run, wall: 'WEST', isHoriz: false },
+          { x: rx + rw - counterD - 100, y: ry + offset, w: counterD, d: run, wall: 'EAST', isHoriz: false },
+        );
+      }
+    }
+    const counterCandidates = rawCounterCandidates.filter(cc =>
+      !collidesWithDoorClearance({ x: cc.x, y: cc.y, w: cc.w, h: cc.d }, doorBoxes),
+    );
+    const finalCandidates = counterCandidates.length > 0 ? counterCandidates : rawCounterCandidates;
+
     let placedCounter: { x: number; y: number; w: number; d: number; isHoriz: boolean } | null = null;
-    for (const cc of counterCandidates) {
+    for (const cc of finalCandidates) {
       if (rw >= cc.w + 100 && rh >= cc.d + 100) {
         const init = items.length;
         addItem('counter', cc.x, cc.y, cc.w, cc.d, 0, cc.wall);
@@ -358,18 +379,34 @@ export function furnishRoom(
 
     if (placedCounter) {
       if (placedCounter.isHoriz) {
-        addItem('stove', placedCounter.x + 200, placedCounter.y, 600, 600, 0, 'NORTH');
-        addItem('sink', placedCounter.x + Math.min(placedCounter.w - 700, 1000), placedCounter.y, 600, 500, 0, 'NORTH');
-        addItem('oven', placedCounter.x + Math.min(placedCounter.w - 600, 1800), placedCounter.y, 600, 600, 0, 'NORTH');
+        // Place 4-burner stove and sink along the unbroken counter clear of door arcs
+        const stoveX = placedCounter.x + 200;
+        const sinkX = placedCounter.x + Math.min(placedCounter.w - 700, 1000);
+        const ovenX = placedCounter.x + Math.min(placedCounter.w - 600, 1800);
+        addItem('stove', stoveX, placedCounter.y, 600, 600, 0, 'NORTH');
+        addItem('sink', sinkX, placedCounter.y, 600, 500, 0, 'NORTH');
+        addItem('oven', ovenX, placedCounter.y, 600, 600, 0, 'NORTH');
       } else {
-        addItem('stove', placedCounter.x, placedCounter.y + 200, 600, 600, 0, 'WEST');
-        addItem('sink', placedCounter.x, placedCounter.y + Math.min(placedCounter.d - 700, 1000), 500, 600, 0, 'WEST');
-        addItem('oven', placedCounter.x, placedCounter.y + Math.min(placedCounter.d - 600, 1800), 600, 600, 0, 'WEST');
+        const stoveY = placedCounter.y + 200;
+        const sinkY = placedCounter.y + Math.min(placedCounter.d - 700, 1000);
+        const ovenY = placedCounter.y + Math.min(placedCounter.d - 600, 1800);
+        addItem('stove', placedCounter.x, stoveY, 600, 600, 0, 'WEST');
+        addItem('sink', placedCounter.x, sinkY, 500, 600, 0, 'WEST');
+        addItem('oven', placedCounter.x, ovenY, 600, 600, 0, 'WEST');
       }
     }
 
-    // Fridge (700 x 700 mm) in corner
+    // Refrigerator (700 x 700 mm) in corner clear of doorway arcs
     addItem('fridge', rx + rw - 850, ry + 150, 700, 700, 0, 'EAST');
+  }
+
+  // ─── 4b. Kitchen Utility Balcony & Architectural Sit-Outs (Zero Stove/Sink) ───
+  else if (
+    room.type === RoomType.Balcony ||
+    rName.includes('UTILITY') ||
+    rName.includes('BALCONY')
+  ) {
+    // Strictly NO kitchen counters, 4-burner stoves, sinks, or cooking ranges on utility balconies
   }
 
   // ─── 5. Bathrooms & Toilets ────────────────────────────────────────────────

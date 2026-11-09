@@ -79,6 +79,7 @@ export {
 // Validation
 export {
   validateBuildingSchema,
+  validateRegulatoryContextSchema,
   validateRoomSchema,
   isValidBuilding,
 } from './validation';

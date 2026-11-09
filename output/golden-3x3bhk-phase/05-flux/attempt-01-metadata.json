@@ -1,7 +1,0 @@
-{
-  "model": "@cf/black-forest-labs/flux-2-klein-4b",
-  "seed": 7919,
-  "width": 1024,
-  "height": 1024,
-  "promptHeader": "HARD ARCHITECTURAL CONTRACT: EXACTLY THREE AND ONLY THREE APARTMENTS. FLAT 01 = 3BHK, FLAT 02 = 3BHK, FLAT 03 = 3BHK."
-}

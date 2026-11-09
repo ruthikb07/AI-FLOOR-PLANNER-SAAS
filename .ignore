@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-server/
+build/
+.turbo/
+*.tsbuildinfo
+pnpm-lock.yaml
+output/
+data/image-artifacts/
+packages/backend/data/image-artifacts/
+packages/backend/data/reference-images/
+docs/phase0/inventory.json
+# Binary inputs retained only for opt-in recording replay tests.
+tests/fixtures/flux-recordings/

@@ -1,0 +1,147 @@
+[
+  {
+    "path": "packages/constraint-engine/src/apartment-closure.ts",
+    "new": false,
+    "sha256": "f1de67aa6c3f7b75efa5167d730231a602ac8a3efcb3432ae9ece2fd0b4b01b8"
+  },
+  {
+    "path": "packages/core/src/types/building.ts",
+    "new": false,
+    "sha256": "d64fec5eb7445687583f1447b70f52b4ab2f508722bdbbff21238847e2dae1f5"
+  },
+  {
+    "path": "packages/core/src/types/multi-sheet-apartment.ts",
+    "new": false,
+    "sha256": "7c4efc1a64fc7703763514eb5003109a7045670195049ef23c87de960ac467d4"
+  },
+  {
+    "path": "packages/frontend/src/App.tsx",
+    "new": false,
+    "sha256": "0dda2c3b86c7b978743b2e80c34a3b8379cf20ff8d0d4fcbe1cdc1d9f7e20a09"
+  },
+  {
+    "path": "packages/frontend/src/services/argon-planning.worker.ts",
+    "new": true,
+    "sha256": "f3d1739ef6a380e8c2965c4cc812908ecf42052f7dbf93e48409aaad5ee8cc53"
+  },
+  {
+    "path": "packages/frontend/src/services/argon-request.ts",
+    "new": true,
+    "sha256": "7794aaca7bf6f6402a77211907f569c2f6146cfc01b5d8c6dd596dd0c27fc29a"
+  },
+  {
+    "path": "packages/frontend/src/styles/argon.css",
+    "new": true,
+    "sha256": "7ecc847fb6c6b3760e2d2a3cb36da41712c9ff28bcd06045958f44f3f9a284f4"
+  },
+  {
+    "path": "packages/frontend/src/__tests__/argon-phase1.test.tsx",
+    "new": true,
+    "sha256": "8a2baa5f7dfa800558bc34c2a4e1d6ab75549385fb5628be1eb10f64dcb7744b"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/ArchitecturalCADWorkspace.tsx",
+    "new": false,
+    "sha256": "1980ffe273770011b2768cded7e61a6d91080556fe103874189ccba1e3b0d7aa"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/ArgonStudioShell.tsx",
+    "new": false,
+    "sha256": "8ac27c5cc419814af4961e46d5399674cd4faeaacb89744313bb0edaf73923e3"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/ExportCenterWorkspace.tsx",
+    "new": false,
+    "sha256": "4a2311c9b2d1a5e825a08789290363dd7219c18d1de7c48aaa22a178b328c0c1"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/GenerationProgressModal.tsx",
+    "new": false,
+    "sha256": "c99492b98ee6943fa6be1af082ba492a12e52cd8c502d4a7c9d43d0145ec9080"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/ProjectSetupWizard.tsx",
+    "new": false,
+    "sha256": "af88c1530aa20dad7d749ed595025ba16fa8f9f35a89cc84658210fcf2544964"
+  },
+  {
+    "path": "packages/frontend/src/components/argon/UdcprEtabsAnalysis.tsx",
+    "new": false,
+    "sha256": "5991a9d33f763bf8f4852bc2df206b0040987180a01df3c134facd8ae60c9ad3"
+  },
+  {
+    "path": "packages/frontend/src/components/canvas/ArchitecturalCanvas.tsx",
+    "new": false,
+    "sha256": "32c56f84e51ef2af0d68e7e50d21cf70fb27b82f95dbcfb32873a42c7a25cf71"
+  },
+  {
+    "path": "packages/geometry-engine/src/apartment-ledger.ts",
+    "new": false,
+    "sha256": "2e26186a4721ee81f4bd8b6cc23f6a59bd9e36183d68c6d37d5e5f74b25fcb9e"
+  },
+  {
+    "path": "packages/geometry-engine/src/apartment-walls.ts",
+    "new": false,
+    "sha256": "b4b37154ebddc6d0e8dacfcdfd9abf934a5df6c4b6e38f76389c5a5079ed6ad8"
+  },
+  {
+    "path": "packages/planning-engine/src/apartment/multi-sheet-apartment-solver.ts",
+    "new": false,
+    "sha256": "36212ce6731c1ea999d3905f041d337df7a7b4b19326af2cf9ab25b0ba3b61df"
+  },
+  {
+    "path": "packages/planning-engine/src/interpretation/apartment-plan.ts",
+    "new": false,
+    "sha256": "f45ffbaa310f467ac312d5ba2315801652438ad158e0b61c19cbd80a9316a66d"
+  },
+  {
+    "path": "packages/planning-engine/src/interpretation/space-filling-snapper.ts",
+    "new": false,
+    "sha256": "d4e938bca220e541b2924fadf862a876ba83422d87aeed5090ba3941587406dc"
+  },
+  {
+    "path": "packages/planning-engine/src/pipeline/stage-progress-emitter.ts",
+    "new": false,
+    "sha256": "1bfc420dcb46205bf97dfdc594497713140572dd6a1550531900527a81f1ab10"
+  },
+  {
+    "path": "packages/planning-engine/src/plancraft/auto-furnish-apartment.ts",
+    "new": false,
+    "sha256": "a35c8884e627d35a122c829dab9022bd3208ac52a53999e1d5ae6efd4cadfb4c"
+  },
+  {
+    "path": "packages/planning-engine/src/repair/apartment-error-repair.ts",
+    "new": false,
+    "sha256": "405739a64ef943c623b356ea70ed15862e1c40c8de86672d5d6f7f834cbcb938"
+  },
+  {
+    "path": "packages/planning-engine/src/validator/geometry-validator.ts",
+    "new": false,
+    "sha256": "83a09263bc33b7f57a83ad3acd698647b2b26b24a9674161004e234760f69f3d"
+  },
+  {
+    "path": "packages/planning-engine/src/__tests__/apartment-error-repair.test.ts",
+    "new": false,
+    "sha256": "54e7418476380ffcfa32c22c6462d8570943564887c43baea19af54ea788e13e"
+  },
+  {
+    "path": "packages/planning-engine/src/__tests__/geometry-validator.test.ts",
+    "new": false,
+    "sha256": "51298b8db68d7ce2274626f8da1821b5a334693c0ba9ad4db998ba17ca759f04"
+  },
+  {
+    "path": "packages/planning-engine/src/__tests__/multi-sheet-apartment-solver.test.ts",
+    "new": false,
+    "sha256": "72e79969b20de49216f22643d34198424ec314b775962808dfadbb19f87092ef"
+  },
+  {
+    "path": "packages/planning-engine/src/__tests__/phase1-generation.test.ts",
+    "new": true,
+    "sha256": "406b8d44cb288eccf7e44894590c080eaea5bfbc316de50f42f52270618953d9"
+  },
+  {
+    "path": "packages/planning-engine/src/__tests__/phase1-honest-geometry.test.ts",
+    "new": true,
+    "sha256": "f057b9295b2dfce85cf6364db645014feb19b2751983e94182604a5463e8bc87"
+  }
+]

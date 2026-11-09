@@ -1,0 +1,956 @@
+
+> ai-floor-planner@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run test "--concurrency=1" "--" "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running test in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:build: cache hit, replaying logs 7d5650043717d724
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:test: cache hit, replaying logs fed0e4f06085d45b
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: > @ai-floor-planner/core@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/core[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/editor-foundation.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/footprint.test.ts [2m ([22m[2m22 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/space-program.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/factory.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/building-budget.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[90m 179[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/dynamic-apartment-manifest.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/editor-commands.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 44[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/door-system-integrity.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/updaters.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 37[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/program-intent.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/serialization.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 91[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/versioning.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/site-intelligence.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/requirements-normalization.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/multi-floor-invariants.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architecture-workspace.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/generation-control.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/update-site-command.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architectural-review.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/floor-commands.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architectural-opening-semantics.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 20[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/generation-control-editor.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 15[2mms[22m[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [2m Test Files [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+@ai-floor-planner/core:test: [2m      Tests [22m [1m[32m192 passed[39m[22m[90m (192)[39m
+@ai-floor-planner/core:test: [2m   Start at [22m 21:48:10
+@ai-floor-planner/core:test: [2m   Duration [22m 46.14s[2m (transform 791ms, setup 0ms, collect 9.04s, tests 736ms, environment 15ms, prepare 20.64s)[22m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/projection-3d:build: cache hit, replaying logs ae697ca05cbaa2a0
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/geometry-engine:build: cache hit, replaying logs f8b8f15fd7da9a5b
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/projection-3d:test: cache miss, executing 3c21cbfbb2e76b26
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/projection-3d:test: > @ai-floor-planner/projection-3d@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/projection-3d:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/projection-3d:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/projection-3d[39m
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/projection-3d:test:  [32m✓[39m src/__tests__/projection.test.ts [2m ([22m[2m19 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+@ai-floor-planner/projection-3d:test:  [32m✓[39m src/__tests__/phase4-consistency.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/projection-3d:test: [2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+@ai-floor-planner/projection-3d:test: [2m      Tests [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+@ai-floor-planner/projection-3d:test: [2m   Start at [22m 21:49:03
+@ai-floor-planner/projection-3d:test: [2m   Duration [22m 1.17s[2m (transform 299ms, setup 0ms, collect 419ms, tests 17ms, environment 0ms, prepare 391ms)[22m
+@ai-floor-planner/projection-3d:test: 
+@ai-floor-planner/constraint-engine:build: cache hit, replaying logs e601465924ae0b29
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/geometry-engine:test: cache miss, executing b2481bdbd77ff701
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: > @ai-floor-planner/geometry-engine@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/geometry-engine[39m
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test:  [32m✓[39m src/__tests__/geometry.test.ts [2m ([22m[2m65 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+@ai-floor-planner/geometry-engine:test:  [32m✓[39m src/__tests__/coordinates.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+@ai-floor-planner/geometry-engine:test:  [32m✓[39m src/__tests__/stair-solids.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+@ai-floor-planner/geometry-engine:test:  [32m✓[39m src/__tests__/residential-envelope.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: [2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+@ai-floor-planner/geometry-engine:test: [2m      Tests [22m [1m[32m86 passed[39m[22m[90m (86)[39m
+@ai-floor-planner/geometry-engine:test: [2m   Start at [22m 21:49:07
+@ai-floor-planner/geometry-engine:test: [2m   Duration [22m 2.10s[2m (transform 449ms, setup 0ms, collect 702ms, tests 30ms, environment 1ms, prepare 662ms)[22m
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/renderer:build: cache hit, replaying logs 41b0237ebac1a61e
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/constraint-engine:test: cache miss, executing 75c8b5ddd6dc0a35
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/constraint-engine:test: > @ai-floor-planner/constraint-engine@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/constraint-engine:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/constraint-engine:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/constraint-engine[39m
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/e2e-phase4-verification.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/validator.test.ts [2m ([22m[2m48 tests[22m[2m)[22m[90m 54[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/dynamic-apartment-closure.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 96[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/accessibility.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/registry.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/scoring.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/constraint.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 204[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/stair-validity.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/window-validity.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/geometry-validity.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/daylight.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 57[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/minimum-size.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/multi-floor-constraints.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/door-validity.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 47[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/plot-containment.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/required-rooms.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 37[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/helpers/direction.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/context.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 42[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/providers/vastu-provider.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/adjacency.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/circulation.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/helpers/zone-classification.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/performance.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 358[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/privacy.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 40[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/floor-consistency.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/hard/room-overlap.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/zoning.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/geometry-proportion.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/soft/structural.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/helpers/connectivity.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test:  [32m✓[39m src/__tests__/providers/regulatory-provider.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/constraint-engine:test: [2m Test Files [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+@ai-floor-planner/constraint-engine:test: [2m      Tests [22m [1m[32m185 passed[39m[22m[90m (185)[39m
+@ai-floor-planner/constraint-engine:test: [2m   Start at [22m 21:49:11
+@ai-floor-planner/constraint-engine:test: [2m   Duration [22m 67.69s[2m (transform 1.48s, setup 0ms, collect 13.30s, tests 1.53s, environment 20ms, prepare 29.47s)[22m
+@ai-floor-planner/constraint-engine:test: 
+@ai-floor-planner/planning-engine:build: cache miss, executing e6d88b9514b22272
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/planning-engine:build: > @ai-floor-planner/planning-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:build: > tsc --build
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/renderer:test: cache miss, executing 92aa742ec6be815b
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/renderer:test: > @ai-floor-planner/renderer@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:test: > vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/renderer:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/renderer:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/renderer[39m
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/render-config.test.ts [2m ([22m[2m46 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/architectural-openings.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/reference-furniture.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/multi-floor-renderer.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/renderer.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 84[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/editor-synchronization.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 73[2mms[22m[39m
+@ai-floor-planner/renderer:test:  [32m✓[39m src/__tests__/site-zones.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/renderer:test: [2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+@ai-floor-planner/renderer:test: [2m      Tests [22m [1m[32m88 passed[39m[22m[90m (88)[39m
+@ai-floor-planner/renderer:test: [2m   Start at [22m 21:50:21
+@ai-floor-planner/renderer:test: [2m   Duration [22m 6.56s[2m (transform 526ms, setup 0ms, collect 1.80s, tests 216ms, environment 2ms, prepare 2.74s)[22m
+@ai-floor-planner/renderer:test: 
+@ai-floor-planner/planning-engine:test: cache miss, executing 7a62a94120c6e6c3
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: > @ai-floor-planner/planning-engine@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:test: > vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/planning-engine[39m
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mDouble Flat (2 Units)[2m > [22m[2m2x 3BHK in STATUTORY_SETBACK_100_PERCENT mode: stretches buildable envelope cleanly[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'double-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'double-3bhk-setback:typical-floor::apt-wall:x:11190:3000:5100'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m4050[39m, y: [33m11190[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'double-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'double-3bhk-setback:typical-floor::apt-wall:x:11190:42900:45000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m43950[39m, y: [33m11190[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mDouble Flat (2 Units)[2m > [22m[2m2x 4BHK in FULL_LOT_100_PERCENT mode: enforces statutory clearances[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'double-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'double-4bhk-full:typical-floor::apt-wall:x:11050:0:4250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m2125[39m, y: [33m11050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'double-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'double-4bhk-full:typical-floor::apt-wall:x:11050:50750:55000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m52875[39m, y: [33m11050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mTriple Flat (3 Units)[2m > [22m[2m3x 2BHK in STATUTORY_SETBACK_100_PERCENT mode: passes closure gate[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-2bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-2bhk-setback:typical-floor::apt-wall:x:11600:2500:6000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m4250[39m, y: [33m11600[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-2bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-2bhk-setback:typical-floor::apt-wall:x:11600:44000:47500'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m45750[39m, y: [33m11600[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-2bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-2bhk-setback:typical-floor::apt-wall:x:37900:44000:47500'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m45750[39m, y: [33m37900[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mTriple Flat (3 Units)[2m > [22m[2m3x 3BHK in FULL_LOT_100_PERCENT mode: golden triple flat configuration[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-3bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-3bhk-full:typical-floor::apt-wall:x:11050:0:2830'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m1415[39m, y: [33m11050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-3bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-3bhk-full:typical-floor::apt-wall:x:9310:49160:52000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m50580[39m, y: [33m9310[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-3bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-3bhk-full:typical-floor::apt-wall:x:45690:49160:52000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m50580[39m, y: [33m45690[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mTriple Flat (3 Units)[2m > [22m[2m3x 4BHK in STATUTORY_SETBACK_100_PERCENT mode: large luxury plate[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-4bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-4bhk-setback:typical-floor::apt-wall:x:15050:4000:8250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m6125[39m, y: [33m15050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-4bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-4bhk-setback:typical-floor::apt-wall:x:10960:51750:56000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m53875[39m, y: [33m10960[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'triple-4bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'triple-4bhk-setback:typical-floor::apt-wall:x:38960:51750:56000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m53875[39m, y: [33m38960[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mQuad Flat (4 Units)[2m > [22m[2m4x 2BHK in FULL_LOT_100_PERCENT mode: 4 quadrants around central core spine[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-2bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-2bhk-full:typical-floor::apt-wall:x:11050:0:4250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m2125[39m, y: [33m11050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-2bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-2bhk-full:typical-floor::apt-wall:x:11050:45750:50000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m47875[39m, y: [33m11050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-2bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-2bhk-full:typical-floor::apt-wall:x:38950:0:4250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m2125[39m, y: [33m38950[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_04__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-2bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-2bhk-full:typical-floor::apt-wall:x:38950:45750:50000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m47875[39m, y: [33m38950[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_04__master_bath'[39m, [32m'apt-room:flat_04__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mQuad Flat (4 Units)[2m > [22m[2m4x 3BHK in STATUTORY_SETBACK_100_PERCENT mode: high density tower layout[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-3bhk-setback:typical-floor::apt-wall:x:12240:3500:6130'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m4815[39m, y: [33m12240[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-3bhk-setback:typical-floor::apt-wall:x:12240:48860:51500'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m50180[39m, y: [33m12240[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-3bhk-setback:typical-floor::apt-wall:x:46760:3500:6130'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m4815[39m, y: [33m46760[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_04__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-3bhk-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-3bhk-setback:typical-floor::apt-wall:x:46760:48860:51500'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m50180[39m, y: [33m46760[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_04__master_bath'[39m, [32m'apt-room:flat_04__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mQuad Flat (4 Units)[2m > [22m[2m4x 4BHK in FULL_LOT_100_PERCENT mode: expansive 4-quadrant layout[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-4bhk-full:typical-floor::apt-wall:x:9060:0:4250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m2125[39m, y: [33m9060[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-4bhk-full:typical-floor::apt-wall:x:9060:60750:65000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m62875[39m, y: [33m9060[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-4bhk-full:typical-floor::apt-wall:x:44060:0:4250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m2125[39m, y: [33m44060[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_04__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-4bhk-full:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-4bhk-full:typical-floor::apt-wall:x:44060:60750:65000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m62875[39m, y: [33m44060[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_04__master_bath'[39m, [32m'apt-room:flat_04__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/space-filling-snapper.test.ts[2m > [22m[2mPhase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver[2m > [22m[2mQuad Flat (4 Units)[2m > [22m[2mMixed Quad Flat (2BHK + 3BHK + 4BHK + 2BHK) in STATUTORY_SETBACK_100_PERCENT mode[22m[39m
+@ai-floor-planner/planning-engine:test: TEST ISSUES 3x 2BHK: []
+@ai-floor-planner/planning-engine:test: MB DOORS: [
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_01__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-mixed-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-mixed-setback:typical-floor::apt-wall:x:14050:3000:7250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m5125[39m, y: [33m14050[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_01__master_bath'[39m, [32m'apt-room:flat_01__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_02__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-mixed-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-mixed-setback:typical-floor::apt-wall:x:12310:52160:55000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m53580[39m, y: [33m12310[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_02__master_bath'[39m, [32m'apt-room:flat_02__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_03__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-mixed-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-mixed-setback:typical-floor::apt-wall:x:37310:3000:7250'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m5125[39m, y: [33m37310[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_03__master_bath'[39m, [32m'apt-room:flat_03__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   },
+@ai-floor-planner/planning-engine:test:   {
+@ai-floor-planner/planning-engine:test:     id: [32m'flat_04__door_master_bath'[39m,
+@ai-floor-planner/planning-engine:test:     floorId: [32m'quad-mixed-setback:typical-floor'[39m,
+@ai-floor-planner/planning-engine:test:     wallId: [32m'quad-mixed-setback:typical-floor::apt-wall:x:46950:50750:55000'[39m,
+@ai-floor-planner/planning-engine:test:     position: { x: [33m52875[39m, y: [33m46950[39m },
+@ai-floor-planner/planning-engine:test:     width: [33m750[39m,
+@ai-floor-planner/planning-engine:test:     height: [33m2100[39m,
+@ai-floor-planner/planning-engine:test:     type: [32m'single'[39m,
+@ai-floor-planner/planning-engine:test:     swingDirection: [32m'inward'[39m,
+@ai-floor-planner/planning-engine:test:     connectsRooms: [ [32m'apt-room:flat_04__master_bath'[39m, [32m'apt-room:flat_04__master_bed'[39m ]
+@ai-floor-planner/planning-engine:test:   }
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/space-filling-snapper.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[33m 658[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/planning.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[33m 3999[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/architectural-evidence.test.ts [2m ([22m[2m37 tests[22m[2m)[22m[90m 171[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/plancraft-integration.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[33m 1902[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/phase3-compliance.test.ts [2m ([22m[2m34 tests[22m[2m)[22m[90m 159[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/geometry-validator.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 133[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/apartment-error-repair.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 1934[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/multi-sheet-apartment-solver.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 15123[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/program-intent.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[33m 847[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/program-intent.test.ts[2m > [22m[2mfloor and suite intent[2m > [22m[2mpreserves RBEA Ground intent and owned pairs through real generation and repair[22m[39m
+@ai-floor-planner/planning-engine:test: JSON STRING LENGTH: [33m41698[39m
+@ai-floor-planner/planning-engine:test: JSON SNIPPET: [{"id":"126d5bfc-5a78-4000-8000-126d5bfc5a78","buildingId":"126d5bfc-5a77-4000-8000-126d5bfc5a77","level":0,"name":"Floor 0","floorHeight":3000,"boundary":{"points":[{"x":1000,"y":1500},{"x":21000,"y":1500},{"x":21000,"y":27000},{"x":1000,"y":27000}]},"rooms":[{"id":"126d5bfc-5a7a-4000-8000-126d5bfc
+@ai-floor-planner/planning-engine:test: PHASE_1B_BENCHMARK [{"id":"candidate_compact_zoning_1","strategy":"compact_zoning","rank":1,"geometryHash":"dba82096fee24128dbddbf2dc774c18876cd3defbe8c3c71e726df9cb59c4cb9","score":78,"oldWet":100,"wet":55,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]},{"id":"candidate_linear_split_3","strategy":"linear_split","rank":2,"geometryHash":"59381c639fb5d5bba393c1c76bfbed8e537fa70c6009665ff39c3827f1bcace6","score":78,"oldWet":98,"wet":55,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]},{"id":"candidate_open_circulation_2","strategy":"open_circulation","rank":3,"geometryHash":"d2a8558146b5372e52f1d546379cd20a1826a3e4cc3bee2740394e2784010d22","score":77,"oldWet":100,"wet":33,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]}]
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/rbea-002-reference.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[90m 42[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/rbea-001-reference.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 147[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/rbea-003-reference.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 63[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/architectural-generation-benchmark.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 352[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/private-suite-repair.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 71[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/multi-story-synthesis.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[33m 5154[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/multi-story-synthesis.test.ts[2m > [22m[2mcomplete multi-story synthesis[2m > [22m[2msynthesizes stilt + three floors + terrace on 18 x 25m without rollback[22m[39m
+@ai-floor-planner/planning-engine:test: RECTANGULAR_SYNTHESIS {"floors":5,"columnsPerFloor":20,"beams":191,"deltasMm2":[-1.1920928955078125e-7,1.1920928955078125e-7,1.1920928955078125e-7,1.1920928955078125e-7,-5.960464477539063e-8],"stages":["ENVELOPE_AND_CORE_ANCHOR","COLUMN_GRID","STILT_LAYOUT","TYPICAL_FLOOR_PACKING","BEAM_NETWORK","OPENING_REFINEMENT","TERRACE_AND_CORE_CONTINUITY","FINAL_PLANAR_AND_GEOMETRY_ACCEPTANCE"]}
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/multi-story-synthesis.test.ts[2m > [22m[2mcomplete multi-story synthesis[2m > [22m[2msynthesizes four residential floors on a skewed plot with actual skewed slab conservation[22m[39m
+@ai-floor-planner/planning-engine:test: SKEWED_SYNTHESIS {"floors":6,"columnsPerFloor":20,"beams":229,"deltasMm2":[-5.960464477539063e-8,0,0,0,0,0]}
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/extraction.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 63[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/generation-workflow.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[33m 7792[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/architectural-closeout.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[33m 342[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/candidate-diversity.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 4542[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/targeted-regeneration.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[33m 2577[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/structural-grid.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[33m 1604[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/layout-hardening.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 43[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/residential-advisory.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 110[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/multi-floor-reliability.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 3979[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/repair-safety.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 46[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/candidate-seed-diversity.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 862[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/stair-coordination.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 66[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/site-utilization.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 238[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/site-utilization-50x50.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[33m 917[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/vertical-core.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 50[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/area-conservation-stress.test.ts [2m ([22m[2m53 tests[22m[2m)[22m[90m 115[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/full-plot-50x50.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 636[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/enclosed-room-walls.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 1772[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/phase1-honest-geometry.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/phase1-generation.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[33m 6200[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/exact-browser-reproduction.test.ts [2m ([22m[2m1 test[22m[2m)[22m[33m 935[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/opening-integrity.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/architectural-zoning.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/extraction-parser.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/reviewed-workflow.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 442[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/large-site-footprint.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[33m 1340[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/feasibility-gate.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/suite-placement.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 143[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/candidate-deduplication.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/room-proportions.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/orthogonal-decomposition.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/multifloor-hard-issues.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 191[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/multifloor-hard-issues.test.ts[2m > [22m[2mMulti-floor hard issue diagnostic[2m > [22m[2mprints per-floor validation details for the default 14x14 2BHK 3-floor building[22m[39m
+@ai-floor-planner/planning-engine:test: Generated 4 architectural candidates
+@ai-floor-planner/planning-engine:test: Candidate [0] 2BHK Plan (46×46 ft) — Offset Stepped Wings (Service-Articulated): Valid=true, Failed=0, Errors=0
+@ai-floor-planner/planning-engine:test: Candidate [1] 2BHK Plan (46×46 ft) — Front Parking Court (L-Shape Massing): Valid=true, Failed=0, Errors=0
+@ai-floor-planner/planning-engine:test: Candidate [2] 2BHK Plan (46×46 ft) — Central OTS & Wet-Core Clustered: Valid=true, Failed=0, Errors=0
+@ai-floor-planner/planning-engine:test: Candidate [3] 2BHK Plan (46×46 ft) — Compact Massing & Garden Court: Valid=true, Failed=0, Errors=0
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/diagnose-issues.test.ts[2m > [22m[2mDiagnose 26 Hard Issues[2m > [22m[2mprints all diagnostics and validation failures for 14x14 2BHK[22m[39m
+@ai-floor-planner/planning-engine:test: Generated 4 architectural candidates
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: ========================================
+@ai-floor-planner/planning-engine:test: Candidate: Front Parking Court (L-Shape Massing) (2BHK) (parking_first_l_shape)
+@ai-floor-planner/planning-engine:test: Valid: true, Failed issues: 0
+@ai-floor-planner/planning-engine:test: Rooms on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Entrance Foyer (foyer) [5200, 2000, 2400x2000]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Staircase (staircase) [5200, 4000, 2400x3200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Central Lobby (corridor) [5200, 7200, 2400x5300]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Living Room (living) [7600, 2000, 5400x4410]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Dining Hall (dining) [7600, 6410, 5400x2940]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Kitchen (kitchen) [7600, 9350, 5400x3150]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Bedroom 2 (bedroom) [1000, 4500, 4200x3058]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Master Bedroom (bedroom) [1000, 9318, 4200x3182]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'OTS (Open to Sky) (ots) [4000, 7558, 1200x1500]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Attached Bath 1 (bathroom) [1000, 7558, 1560x1760]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Common Bath 2 (bathroom) [2560, 7558, 1440x1760]'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Walls on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(5200,2000) -> (13000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,12500) -> (1000,4500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,4500) -> (5200,4500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(5200,4500) -> (5200,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(5200,2000) -> (5200,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,2000) -> (7600,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,9350) -> (13000,9350)] type=internal thickness=115'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Violations:
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: ========================================
+@ai-floor-planner/planning-engine:test: Candidate: Central OTS & Wet-Core Clustered (2BHK) (courtyard_ots)
+@ai-floor-planner/planning-engine:test: Valid: true, Failed issues: 0
+@ai-floor-planner/planning-engine:test: Rooms on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Entrance Foyer (foyer) [5308, 2000, 2400x2000]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Staircase (staircase) [5308, 4000, 2400x3200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Central Lobby (corridor) [5308, 7200, 2400x5300]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Living Room (living) [7708, 2000, 5292x4410]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Dining Hall (dining) [7708, 6410, 5292x2940]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Kitchen (kitchen) [7708, 9350, 5292x3150]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Bedroom 2 (bedroom) [1000, 2000, 4308x4067]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Master Bedroom (bedroom) [1000, 8267, 4308x4233]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'OTS (Open to Sky) (ots) [4108, 6067, 1200x1500]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Attached Bath 1 (bathroom) [1000, 6067, 1616x2200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Common Bath 2 (bathroom) [2616, 6067, 1492x2200]'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Walls on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,2000) -> (13000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,12500) -> (1000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(5308,2000) -> (5308,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7708,2000) -> (7708,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7708,9350) -> (13000,9350)] type=internal thickness=115'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Violations:
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: ========================================
+@ai-floor-planner/planning-engine:test: Candidate: Offset Stepped Wings (Service-Articulated) (2BHK) (offset_wings)
+@ai-floor-planner/planning-engine:test: Valid: true, Failed issues: 0
+@ai-floor-planner/planning-engine:test: Rooms on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Entrance Foyer (foyer) [7600, 2000, 1800x2000]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Staircase (staircase) [7600, 4000, 1800x3200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Central Lobby (corridor) [7600, 7200, 1800x4250]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Living Room (living) [9400, 2000, 3600x3969]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Dining Hall (dining) [9400, 5969, 3600x2750]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Kitchen (kitchen) [9400, 8719, 3600x2731]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Bedroom 2 (bedroom) [1000, 3050, 6600x3612]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Master Bedroom (bedroom) [1000, 8741, 6600x3759]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'OTS (Open to Sky) (ots) [6400, 6662, 1200x1500]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Attached Bath 1 (bathroom) [1000, 6662, 2808x2079]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Common Bath 2 (bathroom) [3808, 6662, 2592x2079]'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Walls on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,3050) -> (7600,3050)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,3050) -> (7600,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,2000) -> (13000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,2000) -> (13000,11450)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,11450) -> (7600,11450)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,11450) -> (7600,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,12500) -> (1000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,12500) -> (1000,3050)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7600,2000) -> (7600,11450)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(9400,2000) -> (9400,11450)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(9400,8719) -> (13000,8719)] type=internal thickness=115'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Violations:
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: ========================================
+@ai-floor-planner/planning-engine:test: Candidate: Compact Massing & Garden Court (2BHK) (compact_frontage)
+@ai-floor-planner/planning-engine:test: Valid: true, Failed issues: 0
+@ai-floor-planner/planning-engine:test: Rooms on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Entrance Foyer (foyer) [5508, 2000, 2400x2000]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Staircase (staircase) [5508, 4000, 2400x3200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Central Lobby (corridor) [5508, 7200, 2400x5300]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Living Room (living) [7908, 2000, 5092x4410]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Dining Hall (dining) [7908, 6410, 5092x2940]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Kitchen (kitchen) [7908, 9350, 5092x3150]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Bedroom 2 (bedroom) [1000, 2000, 4508x4067]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Master Bedroom (bedroom) [1000, 8267, 4508x4233]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'OTS (Open to Sky) (ots) [4308, 6067, 1200x1500]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Attached Bath 1 (bathroom) [1000, 6067, 1720x2200]'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Common Bath 2 (bathroom) [2720, 6067, 1588x2200]'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Walls on Ground Floor: [
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,2000) -> (13000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(1000,12500) -> (1000,2000)] type=external thickness=230'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(5508,2000) -> (5508,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7908,2000) -> (7908,12500)] type=internal thickness=115'[39m,
+@ai-floor-planner/planning-engine:test:   [32m'Wall [(7908,9350) -> (13000,9350)] type=internal thickness=115'[39m
+@ai-floor-planner/planning-engine:test: ]
+@ai-floor-planner/planning-engine:test: Violations:
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/diagnose-issues.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 133[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=north, floors=1[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=north floors=1 candidates=3
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=north, floors=2[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=north floors=2 candidates=3
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=south, floors=1[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=south floors=1 candidates=3
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=south, floors=2[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=south floors=2 candidates=3
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=east, floors=1[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=east floors=1 candidates=4
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=east, floors=2[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=east floors=2 candidates=4
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=west, floors=1[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=west floors=1 candidates=4
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/candidate-generation-3bhk.test.ts[2m > [22m[2mCandidate Generation 3BHK Diagnostic Test[2m > [22m[2mgenerates candidates for dir=west, floors=2[22m[39m
+@ai-floor-planner/planning-engine:test: [MATRIX] dir=west floors=2 candidates=4
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/candidate-generation-3bhk.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[33m 442[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/plot-fitting.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 213[2mms[22m[39m
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/reproduce-video-crash.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 156[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: [90mstdout[2m | src/__tests__/reproduce-video-crash.test.ts[2m > [22m[2mVideo Reproduction 60x55 ft 2BHK[2m > [22m[2mreproduces candidate generation on 60x55 ft (18288 x 16764 mm)[22m[39m
+@ai-floor-planner/planning-engine:test: Testing generateArchitecturalCandidates with 60x55 ft...
+@ai-floor-planner/planning-engine:test: Generated 4 candidates!
+@ai-floor-planner/planning-engine:test: Candidate: Offset Stepped Wings (Service-Articulated) (2BHK) - Valid: true - Issues: 0
+@ai-floor-planner/planning-engine:test: Candidate: Compact Massing & Garden Court (2BHK) - Valid: true - Issues: 0
+@ai-floor-planner/planning-engine:test: Candidate: Central OTS & Wet-Core Clustered (2BHK) - Valid: true - Issues: 0
+@ai-floor-planner/planning-engine:test: Candidate: Front Parking Court (L-Shape Massing) (2BHK) - Valid: true - Issues: 0
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test:  [32m✓[39m [35m|@ai-floor-planner/planning-engine|[39m src/__tests__/feasibility-conflict.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 14[2mms[22m[39m
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/planning-engine:test: [2m Test Files [22m [1m[32m52 passed[39m[22m[90m (52)[39m
+@ai-floor-planner/planning-engine:test: [2m      Tests [22m [1m[32m447 passed[39m[22m[90m (447)[39m
+@ai-floor-planner/planning-engine:test: [2m   Start at [22m 21:50:28
+@ai-floor-planner/planning-engine:test: [2m   Duration [22m 168.19s[2m (transform 2.99s, setup 0ms, collect 30.82s, tests 66.89s, environment 31ms, prepare 39.44s)[22m
+@ai-floor-planner/planning-engine:test: 
+@ai-floor-planner/ai-orchestration:build: cache miss, executing d7340f2199d9d7d5
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:build: > @ai-floor-planner/ai-orchestration@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:build: > tsc --build
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:test: cache miss, executing bc148ca7cde498b6
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: > @ai-floor-planner/ai-orchestration@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:test: > vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/ai-orchestration[39m
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/holdout-acceptance.test.ts [2m ([22m[2m20 tests[22m[2m)[22m[33m 23351[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/apartment-pipeline.test.ts [2m ([22m[2m36 tests[22m[2m)[22m[90m 198[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/manifest.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 161[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/golden-3x3bhk-regression.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[33m 2559[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/layout-planner.test.ts [2m ([22m[2m29 tests[22m[2m)[22m[33m 738[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/orchestration.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 80[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/editing.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 100[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/gemini-retry.test.ts[2m > [22m[2mGemini Provider Retry and Model Fallback (503 Resilience)[2m > [22m[2mRetry: 503 -> retry -> success[22m[39m
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Transient error on model "gemini-3.6-flash" (attempt 1/3). Retrying in 50ms with exponential backoff & jitter...
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/gemini-retry.test.ts[2m > [22m[2mGemini Provider Retry and Model Fallback (503 Resilience)[2m > [22m[2mRetry exhaustion: 503 -> 503 -> 503 -> final failure when no fallback model[22m[39m
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Transient error on model "gemini-3.6-flash" (attempt 1/2). Retrying in 50ms with exponential backoff & jitter...
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Transient error on model "gemini-3.6-flash" (attempt 2/2). Retrying in 50ms with exponential backoff & jitter...
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Retries exhausted for model "gemini-3.6-flash" on transient error (status 503).
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/gemini-retry.test.ts[2m > [22m[2mGemini Provider Retry and Model Fallback (503 Resilience)[2m > [22m[2mFallback: Primary model -> 503 -> fallback model -> success[22m[39m
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Transient error on model "gemini-3.8-flash" (attempt 1/1). Retrying in 50ms with exponential backoff & jitter...
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Retries exhausted for model "gemini-3.8-flash" on transient error (status 503).
+@ai-floor-planner/ai-orchestration:test: [GeminiProvider] Primary model "gemini-3.8-flash" temporarily unavailable (503/transient). Falling back to "gemini-3.6-flash"...
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/gemini-retry.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 56[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/image-prompt-compiler.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/phase2-reference-aspect.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/cloudflare-image-provider.test.ts[2m > [22m[2mPhase 2 â€” Cloudflare FLUX image provider[2m > [22m[2mtargets the PRD model and sends the compiled prompt with server-side credentials[22m[39m
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/cloudflare-image-provider.test.ts[2m > [22m[2mPhase 2 â€” Cloudflare FLUX image provider[2m > [22m[2mPhase 1 recovery (P7): default request contains only documented klein fields — no steps, no negative_prompt[22m[39m
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/cloudflare-image-provider.test.ts[2m > [22m[2mPhase 2 â€” Cloudflare FLUX image provider[2m > [22m[2mparses a JSON result envelope into a GeneratedPlanImage[22m[39m
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/cloudflare-image-provider.test.ts[2m > [22m[2mPhase 2 â€” Cloudflare FLUX image provider[2m > [22m[2mparses a raw image-bytes response[22m[39m
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"image/png"}
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [90mstderr[2m | src/__tests__/cloudflare-image-provider.test.ts[2m > [22m[2mPhase 2 â€” Cloudflare FLUX image provider[2m > [22m[2msurfaces API failure envelopes and HTTP errors with honest codes[22m[39m
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":401,"ok":false,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_error","model":"@cf/black-forest-labs/flux-2-klein-4b","status":401,"detail":"auth"}
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"response_decode_failure","model":"@cf/black-forest-labs/flux-2-klein-4b","contentType":"application/json","error":"ImageProviderError: Cloudflare reported failure: bad request"}
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+@ai-floor-planner/ai-orchestration:test: [CloudflareImageProvider][flux_transport] {"stage":"response_decode_failure","model":"@cf/black-forest-labs/flux-2-klein-4b","contentType":"application/json","error":"ImageProviderError: Cloudflare response contained no image payload."}
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/cloudflare-image-provider.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 53[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/gemini-image-transport.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 49[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/dynamic-prompt-compiler.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/vision-evaluation.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/reference-library.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/apartment-preflight.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [2m[90m↓[39m[22m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/phase1-render-concepts.test.ts [2m ([22m[2m1 test[22m [2m|[22m [33m1 skipped[39m[2m)[22m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/schematic-renderer.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 248[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/aspect-ratio.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test:  [2m[90m↓[39m[22m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/gemini-live.test.ts [2m ([22m[2m1 test[22m [2m|[22m [33m1 skipped[39m[2m)[22m
+@ai-floor-planner/ai-orchestration:test:  [32m✓[39m [36m|@ai-floor-planner/ai-orchestration|[39m src/__tests__/multi-floor-parser.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/ai-orchestration:test: [2m Test Files [22m [1m[32m19 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (21)[39m
+@ai-floor-planner/ai-orchestration:test: [2m      Tests [22m [1m[32m242 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (244)[39m
+@ai-floor-planner/ai-orchestration:test: [2m   Start at [22m 21:53:18
+@ai-floor-planner/ai-orchestration:test: [2m   Duration [22m 64.50s[2m (transform 2.53s, setup 0ms, collect 11.47s, tests 27.78s, environment 11ms, prepare 13.89s)[22m
+@ai-floor-planner/ai-orchestration:test: 
+@ai-floor-planner/frontend:build: cache miss, executing 2c5da72098ee4519
+@ai-floor-planner/frontend:build: 
+@ai-floor-planner/frontend:build: > @ai-floor-planner/frontend@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+@ai-floor-planner/frontend:build: > tsc && vite build
+@ai-floor-planner/frontend:build: 
+@ai-floor-planner/frontend:build: [36mvite v5.4.21 [32mbuilding for production...[36m[39m
+@ai-floor-planner/frontend:build: transforming...
+@ai-floor-planner/frontend:build: [32m✓[39m 1787 modules transformed.
+@ai-floor-planner/frontend:build: rendering chunks...
+@ai-floor-planner/frontend:build: computing gzip size...
+@ai-floor-planner/frontend:build: [2mdist/[22m[32mindex.html                                [39m[1m[2m  0.74 kB[22m[1m[22m[2m │ gzip:   0.43 kB[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[32massets/argon-planning.worker-CJhecGca.js  [39m[1m[2m181.91 kB[22m[1m[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[35massets/index-CSrMAMTm.css                 [39m[1m[2m172.47 kB[22m[1m[22m[2m │ gzip:  32.19 kB[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[36massets/index-DB4AnFBK.js                  [39m[1m[33m509.02 kB[39m[22m[2m │ gzip: 150.75 kB[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[36massets/ModelWorkspace-Buiq3pyZ.js         [39m[1m[33m610.34 kB[39m[22m[2m │ gzip: 160.07 kB[22m
+@ai-floor-planner/frontend:build: [33m
+@ai-floor-planner/frontend:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@ai-floor-planner/frontend:build: - Using dynamic import() to code-split the application
+@ai-floor-planner/frontend:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@ai-floor-planner/frontend:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+@ai-floor-planner/frontend:build: [32m✓ built in 28.35s[39m
+@ai-floor-planner/backend:build: cache miss, executing 655b5e08247ed002
+@ai-floor-planner/backend:build: 
+@ai-floor-planner/backend:build: > @ai-floor-planner/backend@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend
+@ai-floor-planner/backend:build: > tsc --build && node ../../scripts/bundle-backend.mjs
+@ai-floor-planner/backend:build: 
+@ai-floor-planner/backend:build: Backend bundle written to packages/backend/dist-server/server.cjs
+@ai-floor-planner/frontend:test: cache miss, executing 3df981b5480559b6
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: > @ai-floor-planner/frontend@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+@ai-floor-planner/frontend:test: > vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/frontend[39m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/storage.test.ts [2m ([22m[2m14 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/workflow-stabilization.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[33m 726[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/phase5-honest-stage-ui.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/two-phase-concept-cards.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/two-ai-candidates.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/download-path.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 40[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/advanced-export.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 76[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/ai-concept-image-panel.test.tsx [2m ([22m[2m5 tests[22m[2m)[22m[90m 61[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/blender-export.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 157[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/reviewed-intent.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 103[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/architectural-evidence-panel.test.tsx [2m ([22m[2m12 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/ai-concept-image.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 45[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/image-boundary.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/apartment-configurator-sidebar.test.tsx [2m ([22m[2m4 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/workflow-repair.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 236[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/multi-floor-workflow.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 62[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/workspace-commands.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/unified-input-prompt.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/argon-phase1.test.tsx [2m ([22m[2m2 tests[22m[2m)[22m[90m 85[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/architectural-canvas-sheets.test.tsx [2m ([22m[2m4 tests[22m[2m)[22m[90m 106[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/projection-preferences.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/floor-camera.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/phase2-export-client.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/ai-provider.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/multi-floor-ui.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/projection-shape.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/floor-capabilities.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 14[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/phase3-compliance-ui.test.tsx [2m ([22m[2m5 tests[22m[2m)[22m[33m 1213[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/phase2-export-center.test.tsx [2m ([22m[2m3 tests[22m[2m)[22m[33m 1650[2mms[22m[39m
+@ai-floor-planner/frontend:test:  [32m✓[39m src/__tests__/phase2-cad-workspace.test.tsx [2m ([22m[2m1 test[22m[2m)[22m[33m 1588[2mms[22m[39m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: [31m⎯⎯⎯⎯⎯⎯[1m[7m Unhandled Errors [27m[22m⎯⎯⎯⎯⎯⎯[39m
+@ai-floor-planner/frontend:test: [31m[1m
+@ai-floor-planner/frontend:test: Vitest caught 1 unhandled error during the test run.
+@ai-floor-planner/frontend:test: This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: [31m⎯⎯⎯⎯⎯⎯[1m[7m Unhandled Error [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+@ai-floor-planner/frontend:test: [31m[1mError[22m: EBUSY: resource busy or locked, open 'C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\node_modules\.pnpm\vitest@2.0.5_@types+node@20.19.43_jsdom@26.1.0\node_modules\vitest\dist\chunks\benchmark.DDmpNjj-.js'[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m Object.openSync node:fs:[2m561:18[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m Object.readFileSync node:fs:[2m445:35[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m getSourceSync node:internal/modules/esm/load:[2m41:17[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m defaultLoadSync node:internal/modules/esm/load:[2m156:34[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m #loadAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:[2m802:12[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m #loadSync node:internal/modules/esm/loader:[2m834:53[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m ModuleLoader.load node:internal/modules/esm/loader:[2m783:26[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m ModuleLoader.loadAndTranslate node:internal/modules/esm/loader:[2m494:31[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m #getOrCreateModuleJobAfterResolve node:internal/modules/esm/loader:[2m560:36[22m[39m
+@ai-floor-planner/frontend:test: [90m [2m❯[22m afterResolve node:internal/modules/esm/loader:[2m607:52[22m[39m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: [31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test: [2m Test Files [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+@ai-floor-planner/frontend:test: [2m      Tests [22m [1m[32m147 passed[39m[22m[90m (147)[39m
+@ai-floor-planner/frontend:test: [2m     Errors [22m [1m[31m1 error[39m[22m
+@ai-floor-planner/frontend:test: [2m   Start at [22m 21:54:59
+@ai-floor-planner/frontend:test: [2m   Duration [22m 115.28s[2m (transform 11.36s, setup 0ms, collect 31.33s, tests 6.65s, environment 22.43s, prepare 28.43s)[22m
+@ai-floor-planner/frontend:test: 
+@ai-floor-planner/frontend:test:  ELIFECYCLE  Test failed. See above for more details.
+@ai-floor-planner/frontend:test: ERROR: command finished with error: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run test --pool=threads --maxWorkers=1 --minWorkers=1 exited (1)
+@ai-floor-planner/backend:test: cache miss, executing 33a1c6234e9c2f62
+@ai-floor-planner/frontend#test: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run test --pool=threads --maxWorkers=1 --minWorkers=1 exited (1)
+
+ Tasks:    16 successful, 18 total
+Cached:    6 cached, 18 total
+  Time:    7m54.508s 
+Failed:    @ai-floor-planner/frontend#test
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Test failed. See above for more details.

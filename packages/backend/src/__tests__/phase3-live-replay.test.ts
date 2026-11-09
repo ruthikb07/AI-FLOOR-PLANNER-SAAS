@@ -19,7 +19,7 @@ import { ImageArtifactStore } from '../services/image-artifact-store.js';
 
 const LIVE = process.env.PHASE3_LIVE === '1';
 const repoRoot = path.resolve(__dirname, '../../../..');
-const recordedDir = path.join(repoRoot, 'data', 'image-artifacts');
+const recordedDir = path.join(repoRoot, 'tests', 'fixtures', 'flux-recordings');
 const REPLAY_IDS = (process.env.PHASE3_REPLAY_IDS ?? 'gen_7919_mui7f0ff_c36370c5,gen_42_muh2krwf_d2cdd112,gen_101_muhfk5cn_18e75c41').split(',');
 
 class RecordedFluxReplayProvider implements ImageGenerationProvider {

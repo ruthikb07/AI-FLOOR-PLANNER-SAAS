@@ -26,7 +26,11 @@
     "@ai-floor-planner/core": "workspace:*",
     "@ai-floor-planner/geometry-engine": "workspace:*",
     "@ai-floor-planner/planning-engine": "workspace:*",
-    "@node-projects/acad-ts": "^3.2.0"
+    "@ai-floor-planner/projection-3d": "workspace:^",
+    "@ai-floor-planner/renderer": "workspace:^",
+    "@node-projects/acad-ts": "^3.2.0",
+    "fast-xml-parser": "5.3.6",
+    "pdf-lib": "1.17.1"
   },
   "devDependencies": {
     "typescript": "5.5.4",

@@ -1,0 +1,45 @@
+
+> @ai-floor-planner/frontend@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+> vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+
+
+ RUN  v2.0.5 C:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/frontend
+
+WebSocket server error: Port is already in use
+ ✓ src/__tests__/storage.test.ts  (14 tests) 107ms
+ ✓ src/__tests__/workflow-stabilization.test.ts  (4 tests) 653ms
+ ✓ src/__tests__/phase5-honest-stage-ui.test.ts  (12 tests) 50ms
+ ✓ src/__tests__/two-phase-concept-cards.test.ts  (5 tests) 30ms
+ ✓ src/__tests__/two-ai-candidates.test.ts  (5 tests) 26ms
+ ✓ src/__tests__/advanced-export.test.ts  (7 tests) 16ms
+ ✓ src/__tests__/download-path.test.ts  (3 tests) 7ms
+ ✓ src/__tests__/ai-concept-image-panel.test.tsx  (5 tests) 11ms
+ ✓ src/__tests__/blender-export.test.ts  (6 tests) 26ms
+ ✓ src/__tests__/reviewed-intent.test.ts  (6 tests) 20ms
+ ✓ src/__tests__/architectural-evidence-panel.test.tsx  (12 tests) 9ms
+ ✓ src/__tests__/ai-concept-image.test.ts  (7 tests) 4ms
+ ✓ src/__tests__/image-boundary.test.ts  (4 tests) 6ms
+ ✓ src/__tests__/image-to-plan.test.ts  (5 tests) 6ms
+ ✓ src/__tests__/apartment-configurator-sidebar.test.tsx  (4 tests) 20ms
+ ✓ src/__tests__/workflow-repair.test.ts  (5 tests) 38ms
+ ✓ src/__tests__/multi-floor-workflow.test.ts  (2 tests) 11ms
+ ✓ src/__tests__/workspace-commands.test.ts  (12 tests) 5ms
+ ✓ src/__tests__/unified-input-prompt.test.ts  (2 tests) 3ms
+ ✓ src/__tests__/argon-phase1.test.tsx  (2 tests) 14ms
+ ✓ src/__tests__/architectural-canvas-sheets.test.tsx  (4 tests) 16ms
+ ✓ src/__tests__/projection-preferences.test.ts  (5 tests) 3ms
+ ✓ src/__tests__/floor-camera.test.ts  (2 tests) 3ms
+ ✓ src/__tests__/phase2-export-client.test.ts  (1 test) 5ms
+ ✓ src/__tests__/ai-provider.test.ts  (4 tests) 5ms
+ ✓ src/__tests__/multi-floor-ui.test.ts  (1 test) 3ms
+ ✓ src/__tests__/projection-shape.test.ts  (3 tests) 5ms
+ ✓ src/__tests__/floor-capabilities.test.ts  (1 test) 1ms
+ ✓ src/__tests__/phase3-compliance-ui.test.tsx  (5 tests) 203ms
+ ✓ src/__tests__/phase2-export-center.test.tsx  (3 tests) 258ms
+ ✓ src/__tests__/phase2-cad-workspace.test.tsx  (1 test) 251ms
+
+ Test Files  31 passed (31)
+      Tests  152 passed (152)
+   Start at  13:17:00
+   Duration  34.42s (transform 3.61s, setup 0ms, collect 9.34s, tests 1.81s, environment 3.42s, prepare 9.99s)
+

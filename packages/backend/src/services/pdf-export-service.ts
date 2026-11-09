@@ -4,17 +4,24 @@
  * for single floors or complete multi-sheet apartment sets.
  */
 
+import { createHash } from 'node:crypto';
 import type { Building, Floor } from '@ai-floor-planner/core';
+import { AnnotationLayout, roomAnnotation, polygonCentroid, getFloorContentBounds } from '@ai-floor-planner/geometry-engine';
+import { selectExportFloors, resolveExportScope, ExportError } from './export-selection.js';
+import { verifyPdfArtifact } from './artifact-verifier.js';
 
 export interface PdfExportOptions {
+  readonly drawingKind?:'ARCHITECTURAL'|'STRUCTURAL';
   readonly floorId?: string;
-  readonly exportScope?: 'current_floor' | 'all_floors' | 'complete_project';
+  readonly exportScope?: 'current_floor' | 'all_floors' | 'complete_project' | 'site_plan';
   readonly paperSize?: 'A4' | 'A3' | 'A2' | 'A1' | 'A0' | 'letter' | 'tabloid';
   readonly orientation?: 'landscape' | 'portrait';
   readonly scale?: string;
   readonly drawnBy?: string;
   readonly projectNumber?: string;
   readonly revision?: string;
+  readonly includeFurniture?: boolean;
+  readonly includeStructural?: boolean;
   readonly includeGrid?: boolean;
   readonly includeDimensions?: boolean;
   readonly includeRoomLabels?: boolean;
@@ -53,40 +60,6 @@ function byteLength(value: string): number {
   return Buffer.byteLength(value, 'utf-8');
 }
 
-function computeFloorBounds(floor: Floor) {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  if (floor.boundary?.points) {
-    for (const pt of floor.boundary.points) {
-      if (pt.x < minX) minX = pt.x;
-      if (pt.y < minY) minY = pt.y;
-      if (pt.x > maxX) maxX = pt.x;
-      if (pt.y > maxY) maxY = pt.y;
-    }
-  }
-  for (const r of floor.rooms) {
-    for (const pt of r.boundary.points) {
-      if (pt.x < minX) minX = pt.x;
-      if (pt.y < minY) minY = pt.y;
-      if (pt.x > maxX) maxX = pt.x;
-      if (pt.y > maxY) maxY = pt.y;
-    }
-  }
-  for (const w of floor.walls) {
-    if (w.startPoint.x < minX) minX = w.startPoint.x;
-    if (w.startPoint.y < minY) minY = w.startPoint.y;
-    if (w.startPoint.x > maxX) maxX = w.startPoint.x;
-    if (w.startPoint.y > maxY) maxY = w.startPoint.y;
-    if (w.endPoint.x < minX) minX = w.endPoint.x;
-    if (w.endPoint.y < minY) minY = w.endPoint.y;
-    if (w.endPoint.x > maxX) maxX = w.endPoint.x;
-    if (w.endPoint.y > maxY) maxY = w.endPoint.y;
-  }
-  if (!Number.isFinite(minX)) {
-    return { x: 0, y: 0, width: 30000, height: 25000 };
-  }
-  return { x: minX, y: minY, width: Math.max(1000, maxX - minX), height: Math.max(1000, maxY - minY) };
-}
-
 function pdfColorForRoom(type: string): [number, number, number] {
   const colors: Record<string, [number, number, number]> = {
     bedroom: [0.89, 0.95, 0.99],
@@ -109,30 +82,10 @@ export class PdfExportService {
     building: Building,
     options: PdfExportOptions = {},
   ): PdfExportResult {
-    const isMultiSheet =
-      options.exportScope === 'complete_project' ||
-      options.exportScope === 'all_floors' ||
-      options.floorId === 'all' ||
-      options.floorId === 'complete_project';
-
-    const fallbackFloor: Floor = {
-      id: 'fl-1',
-      buildingId: building.id,
-      level: 0,
-      name: 'Ground Floor',
-      floorHeight: 3000,
-      boundary: { points: [{ x: 0, y: 0 }, { x: 30000, y: 0 }, { x: 30000, y: 25000 }, { x: 0, y: 25000 }] },
-      rooms: [],
-      walls: [],
-      doors: [],
-      windows: [],
-      stairs: [],
-      columns: [],
-    };
-
-    const floorsToExport: readonly Floor[] = isMultiSheet
-      ? (building.floors.length > 0 ? building.floors : [fallbackFloor])
-      : [building.floors.find(f => f.id === options.floorId) ?? building.floors[0] ?? fallbackFloor];
+    const selected = selectExportFloors(building,options);
+    const scope=resolveExportScope(options);
+    const siteView = { id:'site', name:'Site Plan', boundary:building.site.plotBoundary, rooms:[],walls:[],doors:[],windows:[],stairs:[],columns:[] } as unknown as Floor;
+    const floorsToExport = scope==='site_plan' ? [siteView] : scope==='complete_project' ? [siteView,...selected] : selected;
 
     const paper = PAPER_POINTS[options.paperSize ?? 'A3'] ?? PAPER_POINTS['A3']!;
     const orientation = options.orientation ?? 'landscape';
@@ -153,18 +106,38 @@ export class PdfExportService {
     const pageRefs: string[] = [];
 
     for (let pIdx = 0; pIdx < pageCount; pIdx++) {
-      const floor = floorsToExport[pIdx]!;
-      const bounds = computeFloorBounds(floor);
+      const canonicalFloor = floorsToExport[pIdx]!;
+      const floor = options.drawingKind==='STRUCTURAL'?{...canonicalFloor,name:`${canonicalFloor.name} - Structural Layout`,rooms:[],walls:[],doors:[],windows:[],stairs:[],canonicalStaircases:[],furniture:[]}:canonicalFloor;
+      const bounds = getFloorContentBounds(floor);
       const modelWidth = Math.max(1, bounds.width);
       const modelHeight = Math.max(1, bounds.height);
-      const fitScale = Math.min(usableWidth / modelWidth, usableHeight / modelHeight);
+      const fitting=Math.min(usableWidth/modelWidth,usableHeight/modelHeight);
+      const denominator=Number((options.scale??'FIT_TO_PAGE').split(':')[1]);
+      const exact=72/25.4/denominator;
+      const fit=!Number.isFinite(exact)||exact>fitting;
+      const fitScale=fit?fitting:exact;
+      const scaleMode=fit?'FIT_TO_PAGE_NOT_TO_SCALE':'EXACT_SCALE';
+      const scaleLabel=fit?`FIT TO PAGE (NOT TO SCALE - APPROX 1:${Math.round(72/25.4/fitScale)})`:`1:${denominator}`;
+      const annotationLayout=new AnnotationLayout();
       const originX = margin + (usableWidth - modelWidth * fitScale) / 2;
       const originY = margin + titleHeight + (usableHeight - modelHeight * fitScale) / 2;
       const px = (x: number) => originX + (x - bounds.x) * fitScale;
-      const py = (y: number) => pageHeight - (originY + (y - bounds.y) * fitScale);
+      const py = (y: number) => originY + (bounds.y + modelHeight - y) * fitScale;
 
-      const commands: string[] = ['0 J', '0 j'];
+      const commands: string[] = ['0 J', '0 j',`% SCALE_MODE ${scaleMode} PAPER ${options.paperSize??'A3'} POINTS_PER_MM ${fitScale.toFixed(9)}`];
 
+      const polygon=(points:readonly {x:number;y:number}[],fill=false)=>commands.push(points.map((p,i)=>`${px(p.x).toFixed(4)} ${py(p.y).toFixed(4)} ${i?'l':'m'}`).join(' ')+(fill?' h f':' h S'));
+      const line=(a:{x:number;y:number},b:{x:number;y:number})=>commands.push(`${px(a.x).toFixed(4)} ${py(a.y).toFixed(4)} m ${px(b.x).toFixed(4)} ${py(b.y).toFixed(4)} l S`);
+      commands.push('0.3 0.3 0.3 RG','0.3 w');polygon(floor.boundary.points);
+      if(floor.id==='site') for(const zone of building.site.siteZones??[]) {
+        commands.push('0.8 0.9 0.9 rg');polygon(zone.boundary.points,true);
+        commands.push('0.2 0.5 0.5 RG');polygon(zone.boundary.points);
+        const center=polygonCentroid(zone.boundary),width=Math.max(...zone.boundary.points.map(p=>p.x))-Math.min(...zone.boundary.points.map(p=>p.x));
+        const label=zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i,'6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i,'MAIN ENTRY GATE');
+        const font=Math.min(350,width*.75/(label.length*.7))*fitScale;
+        const box=annotationLayout.place(label,px(center.x),py(center.y),font);
+        commands.push('0.12 0.15 0.19 rg',`BT /F1 ${font.toFixed(4)} Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-font*.35).toFixed(4)} Td (${ascii(label)}) Tj ET`);
+      }
       // Rooms
       for (const room of floor.rooms) {
         const [r, g, b] = pdfColorForRoom(room.type);
@@ -176,7 +149,7 @@ export class PdfExportService {
               .join(' ') + ' h f',
           );
         }
-        if (room.type === 'staircase') {
+        if (room.type === 'staircase' && !floor.canonicalStaircases?.length) {
           commands.push('0.4 0.4 0.4 RG', '0.4 w');
           for (let i = 1; i < 12; i++) {
             commands.push(
@@ -186,15 +159,13 @@ export class PdfExportService {
           }
         }
         if (options.includeRoomLabels !== false) {
-          const cx = px(room.x + room.width / 2);
-          const cy = py(room.y + room.height / 2);
-          const label = room.name.toUpperCase();
-          const font = Math.max(4, Math.min(8, (room.width * fitScale - 8) / (label.length * 0.55 || 1)));
-          commands.push('0.12 0.15 0.19 rg', `BT /F1 ${font.toFixed(2)} Tf ${(cx - label.length * font * 0.26).toFixed(2)} ${cy.toFixed(2)} Td (${ascii(label)}) Tj ET`);
-          if (options.includeRoomAreas !== false) {
-            const areaM2 = (room.area / 1e6).toFixed(1);
-            commands.push('0.35 0.39 0.45 rg', `BT /F1 7 Tf ${(cx - 16).toFixed(2)} ${(cy - 9).toFixed(2)} Td (${areaM2} sq m) Tj ET`);
-          }
+          const annotation=roomAnnotation(room);
+          annotation.lines.forEach((line,index)=>{
+            if(index===2 && options.includeRoomAreas===false)return;
+            const font=annotation.height*fitScale;
+            const box=annotationLayout.place(line,px(annotation.center.x),py(annotation.center.y)+((annotation.lines.length-1)/2-index)*1.65*font,font);
+            commands.push('0.12 0.15 0.19 rg',`BT /F1 ${font.toFixed(4)} Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-font*0.35).toFixed(4)} Td (${ascii(line)}) Tj ET`);
+          });
         }
       }
 
@@ -206,26 +177,62 @@ export class PdfExportService {
         const len = Math.hypot(dx, dy);
         if (!len) continue;
         commands.push(`${(wall.thickness * fitScale).toFixed(3)} w`);
-        commands.push(`${px(wall.startPoint.x).toFixed(2)} ${py(wall.startPoint.y).toFixed(2)} m ${px(wall.endPoint.x).toFixed(2)} ${py(wall.endPoint.y).toFixed(2)} l S`);
+        const openings=options.includeOpenings===false?[]:[...floor.doors,...floor.windows].filter(o=>o.wallId===wall.id);
+        const cuts=openings.map(o=>{const distance=((o.position.x-wall.startPoint.x)*dx+(o.position.y-wall.startPoint.y)*dy)/len;return [Math.max(0,distance-o.width/2),Math.min(len,distance+o.width/2)];}).sort((a,b)=>a[0]!-b[0]!);
+        let cursor=0;
+        for(const [start,end] of [...cuts,[len,len]]) {if(start!>cursor)line({x:wall.startPoint.x+dx*cursor/len,y:wall.startPoint.y+dy*cursor/len},{x:wall.startPoint.x+dx*start!/len,y:wall.startPoint.y+dy*start!/len});cursor=Math.max(cursor,end!);}
       }
 
       // Doors and windows
       if (options.includeOpenings !== false) {
         commands.push('0.08 0.45 0.7 RG', '0.6 w');
         for (const op of [...floor.doors, ...floor.windows]) {
-          commands.push(`${(px(op.position.x) - 4).toFixed(2)} ${(py(op.position.y) - 4).toFixed(2)} 8 8 re S`);
+          const wall=floor.walls.find(w=>w.id===op.wallId);if(!wall)continue;
+          const length=Math.hypot(wall.endPoint.x-wall.startPoint.x,wall.endPoint.y-wall.startPoint.y);if(!length)continue;
+          const ux=(wall.endPoint.x-wall.startPoint.x)/length,uy=(wall.endPoint.y-wall.startPoint.y)/length;
+          const a={x:op.position.x-ux*op.width/2,y:op.position.y-uy*op.width/2},b={x:op.position.x+ux*op.width/2,y:op.position.y+uy*op.width/2};
+          line(a,b);
+          if(floor.windows.includes(op as never))for(const side of [-1,1])line({x:a.x-uy*wall.thickness*.3*side,y:a.y+ux*wall.thickness*.3*side},{x:b.x-uy*wall.thickness*.3*side,y:b.y+ux*wall.thickness*.3*side});
+          else line(a,{x:a.x-uy*op.width,y:a.y+ux*op.width});
         }
       }
+      if(options.includeStructural!==false) {
+        commands.push('0.7 0.2 0.2 RG','0.5 w');
+        for(const col of floor.columns)polygon([{x:col.position.x-col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y+col.depth/2},{x:col.position.x-col.width/2,y:col.position.y+col.depth/2}]);
+        for(const beam of floor.beams??[]) {commands.push(`${(beam.widthMm*fitScale).toFixed(4)} w`);line(beam.startPoint,beam.endPoint);}
+      }
+      commands.push('0.3 0.3 0.3 RG','0.3 w');
+      for(const stair of floor.canonicalStaircases??[])for(const part of [stair.polygon,stair.flight1,stair.flight2,stair.midLanding])polygon(part.points);
+      if(options.includeFurniture!==false)for(const item of floor.furniture??[]) {
+        const room=floor.rooms.find(r=>r.id===item.roomId);
+        if(room&&/utility|balcony/i.test(`${room.type} ${room.name}`)&&['stove','oven'].includes(item.type))continue;
+        const angle=item.rotationDeg*Math.PI/180,cx=item.xMm+item.widthMm/2,cy=item.yMm+item.depthMm/2;
+        polygon([[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>({x:cx+x!*item.widthMm/2*Math.cos(angle)-y!*item.depthMm/2*Math.sin(angle),y:cy+x!*item.widthMm/2*Math.sin(angle)+y!*item.depthMm/2*Math.cos(angle)})));
+      }
 
+      if(options.includeDimensions!==false) {
+        const xs=floor.boundary.points.map(p=>p.x),ys=floor.boundary.points.map(p=>p.y);
+        const left=px(Math.min(...xs)),right=px(Math.max(...xs)),bottom=py(Math.max(...ys)),top=py(Math.min(...ys));
+        commands.push('0.1 0.35 0.6 RG','0.3 w',`${left.toFixed(4)} ${(top+10).toFixed(4)} m ${right.toFixed(4)} ${(top+10).toFixed(4)} l S`,`${(left-20).toFixed(4)} ${bottom.toFixed(4)} m ${(left-20).toFixed(4)} ${top.toFixed(4)} l S`);
+        for(const [text,x,y] of [[`${Math.round(Math.max(...xs)-Math.min(...xs))} mm`,(left+right)/2,top+17],[`${Math.round(Math.max(...ys)-Math.min(...ys))} mm`,left-20,(bottom+top)/2]] as const) {
+          const box=annotationLayout.place(text,x,y,6);
+          commands.push('0.1 0.35 0.6 rg',`BT /F1 6 Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-2.1).toFixed(4)} Td (${text}) Tj ET`);
+        }
+      }
+      if(options.drawingKind==='STRUCTURAL')floor.columns.forEach((col,index)=>{
+        const text=`C${index+1}`,font=140*fitScale;
+        const box=annotationLayout.place(text,px(col.position.x),py(col.position.y-col.depth/2)+font*2,font);
+        commands.push('0.7 0.2 0.2 rg',`BT /F1 ${font.toFixed(4)} Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-font*.35).toFixed(4)} Td (${text}) Tj ET`);
+      });
       // Scale bar and Title Block
       if (options.includeTitleBlock !== false) {
         commands.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
         commands.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
-        const sheetTitle = `Sheet ${pIdx + 1}: ${ascii(floor.name)} | 1:100 ISO A3 | Rev ${ascii(options.revision ?? '01')}`;
+        const sheetTitle = `Sheet ${pIdx + 1}: ${ascii(floor.name)} | ${ascii(scaleLabel)} ISO ${options.paperSize??'A3'} | Rev ${building.version}`;
         commands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (${sheetTitle}) Tj ET`);
         commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 29} Td (Drawn by ${ascii(options.drawnBy ?? 'FORMA AI Planner')}) Tj ET`);
-        commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 14} Td (Project ${ascii(options.projectNumber ?? 'FP-001')}) Tj ET`);
-        commands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 43} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION) Tj ET`);
+        commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 3} Td (Project ${ascii(options.projectNumber ?? 'FP-001')}) Tj ET`);
+        commands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 46} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION - PROFESSIONAL REVIEW REQUIRED) Tj ET`);
       }
 
       const stream = `${commands.join('\n')}\n`;
@@ -260,15 +267,15 @@ export class PdfExportService {
     }
     pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R /Info ${objects.length} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
 
-    const cleanBuilding = building.name ? building.name.replace(/[^a-zA-Z0-9_-]+/g, '_') : 'AI_BUILDING_SAAS';
-    const filename = isMultiSheet
-      ? `${cleanBuilding}_Complete_CAD_Sheet_Set.pdf`
-      : `${cleanBuilding}_Floor_${options.floorId ?? '01'}.pdf`;
-
+    const data=Buffer.from(pdf,'utf8');
+    const checksum=createHash('sha256').update(data).digest('hex');
+    const filename=`${building.id.replace(/[^a-zA-Z0-9_-]/g,'_')}_r${building.version}_${options.exportScope??'current_floor'}_${(options.floorId??'all').replace(/[^a-zA-Z0-9_-]/g,'_')}_${checksum}.pdf`;
+    const verified=verifyPdfArtifact(data);
+    if(!verified.isValid)throw new ExportError('ARTIFACT_VERIFICATION_FAILED',verified.errors.join('; '));
     return {
       filename,
       mimeType: 'application/pdf',
-      data: Buffer.from(pdf, 'utf-8'),
+      data,
       pageCount,
     };
   }

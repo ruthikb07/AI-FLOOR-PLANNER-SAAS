@@ -1,0 +1,113 @@
+
+> ai-floor-planner@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run test "--concurrency=1" "--" "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running test in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:build: cache hit, replaying logs 7d5650043717d724
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/geometry-engine:build: cache hit, replaying logs f8b8f15fd7da9a5b
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/core:test: cache miss, executing fed0e4f06085d45b
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: > @ai-floor-planner/core@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [7m[1m[36m RUN [39m[22m[27m [36mv2.0.5[39m [90mC:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/core[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/editor-foundation.test.ts [2m ([22m[2m13 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/footprint.test.ts [2m ([22m[2m22 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/space-program.test.ts [2m ([22m[2m16 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/factory.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/building-budget.test.ts [2m ([22m[2m25 tests[22m[2m)[22m[90m 179[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/dynamic-apartment-manifest.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/editor-commands.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 44[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/door-system-integrity.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/updaters.test.ts [2m ([22m[2m11 tests[22m[2m)[22m[90m 37[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/program-intent.test.ts [2m ([22m[2m15 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/serialization.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 91[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/versioning.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/site-intelligence.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/requirements-normalization.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/multi-floor-invariants.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architecture-workspace.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/generation-control.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/update-site-command.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 18[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architectural-review.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/floor-commands.test.ts [2m ([22m[2m2 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/architectural-opening-semantics.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 20[2mms[22m[39m
+@ai-floor-planner/core:test:  [32m✓[39m src/__tests__/generation-control-editor.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 15[2mms[22m[39m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/core:test: [2m Test Files [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+@ai-floor-planner/core:test: [2m      Tests [22m [1m[32m192 passed[39m[22m[90m (192)[39m
+@ai-floor-planner/core:test: [2m   Start at [22m 21:48:10
+@ai-floor-planner/core:test: [2m   Duration [22m 46.14s[2m (transform 791ms, setup 0ms, collect 9.04s, tests 736ms, environment 15ms, prepare 20.64s)[22m
+@ai-floor-planner/core:test: 
+@ai-floor-planner/projection-3d:build: cache hit, replaying logs ae697ca05cbaa2a0
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/constraint-engine:build: cache miss, executing e601465924ae0b29
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/renderer:build: cache miss, executing 41b0237ebac1a61e
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/geometry-engine:test: cache miss, executing b2481bdbd77ff701
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: > @ai-floor-planner/geometry-engine@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:test: > vitest run "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: node:fs:561
+@ai-floor-planner/geometry-engine:test:   return binding.open(
+@ai-floor-planner/geometry-engine:test:                  ^
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: Error: EBUSY: resource busy or locked, open 'C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\node_modules\.pnpm\vitest@2.0.5_@types+node@20.19.43\node_modules\vitest\dist\chunks\constants.CaAN7icJ.js'
+@ai-floor-planner/geometry-engine:test:     at Object.openSync (node:fs:561:18)
+@ai-floor-planner/geometry-engine:test:     at Object.readFileSync (node:fs:445:35)
+@ai-floor-planner/geometry-engine:test:     at getSourceSync (node:internal/modules/esm/load:41:17)
+@ai-floor-planner/geometry-engine:test:     at defaultLoadSync (node:internal/modules/esm/load:156:34)
+@ai-floor-planner/geometry-engine:test:     at #loadAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:802:12)
+@ai-floor-planner/geometry-engine:test:     at #loadSync (node:internal/modules/esm/loader:834:53)
+@ai-floor-planner/geometry-engine:test:     at ModuleLoader.load (node:internal/modules/esm/loader:783:26)
+@ai-floor-planner/geometry-engine:test:     at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:494:31)
+@ai-floor-planner/geometry-engine:test:     at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:560:36)
+@ai-floor-planner/geometry-engine:test:     at afterResolve (node:internal/modules/esm/loader:607:52) {
+@ai-floor-planner/geometry-engine:test:   errno: -4082,
+@ai-floor-planner/geometry-engine:test:   code: 'EBUSY',
+@ai-floor-planner/geometry-engine:test:   syscall: 'open',
+@ai-floor-planner/geometry-engine:test:   path: 'C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\node_modules\\.pnpm\\vitest@2.0.5_@types+node@20.19.43\\node_modules\\vitest\\dist\\chunks\\constants.CaAN7icJ.js'
+@ai-floor-planner/geometry-engine:test: }
+@ai-floor-planner/geometry-engine:test: 
+@ai-floor-planner/geometry-engine:test: Node.js v24.18.0
+@ai-floor-planner/geometry-engine:test:  ELIFECYCLE  Test failed. See above for more details.
+@ai-floor-planner/geometry-engine:test: ERROR: command finished with error: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run test --pool=threads --maxWorkers=1 --minWorkers=1 exited (1)
+@ai-floor-planner/projection-3d:test: cache miss, executing 3c21cbfbb2e76b26
+@ai-floor-planner/constraint-engine:test: cache miss, executing 75c8b5ddd6dc0a35
+@ai-floor-planner/planning-engine:build: cache miss, executing e6d88b9514b22272
+@ai-floor-planner/renderer:test: cache miss, executing 92aa742ec6be815b
+@ai-floor-planner/geometry-engine#test: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run test --pool=threads --maxWorkers=1 --minWorkers=1 exited (1)
+
+ Tasks:    6 successful, 11 total
+Cached:    3 cached, 11 total
+  Time:    51.61s 
+Failed:    @ai-floor-planner/geometry-engine#test
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Test failed. See above for more details.

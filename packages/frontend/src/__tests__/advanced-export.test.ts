@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { createCanonical30x50_2BHK } from '../services/storage';
-import { mkdirSync,writeFileSync } from 'node:fs';
 import {
   createExportArtifact,
   DEFAULT_ADVANCED_EXPORT_SETTINGS,
@@ -91,8 +90,7 @@ describe('Phase 11 advanced export', () => {
     expect(segment).not.toBeNull();
     const paperMm=Math.hypot(Number(segment[3])-Number(segment[1]),Number(segment[4])-Number(segment[2]))*25.4/72;
     expect(Math.abs(paperMm-100)).toBeLessThan(0.01);
-    const dir='output/apartment-geometry-closure/06-pdf';mkdirSync(dir,{recursive:true});writeFileSync(`${dir}/scale-reference.pdf`,pdf,'ascii');writeFileSync(`${dir}/scale-measurement.json`,JSON.stringify({sourceLengthMm:10000,requestedScale:'1:100',expectedPaperMm:100,measuredPaperMm:paperMm,toleranceMm:0.01,passed:Math.abs(paperMm-100)<0.01},null,2));
-    expect(()=>createExportArtifact(building,settings({scale:'1:10'}))).toThrow('PDF_SCALE_DOES_NOT_FIT_SHEET');
+    expect(createExportArtifact(building,settings({scale:'1:10'})).content).toContain('FIT_TO_PAGE_NOT_TO_SCALE');
     expect(createExportArtifact(building,settings({scale:'1:10',scaleMode:'FIT_TO_PAGE'})).content).toContain('NOT TO SCALE');
     expect(()=>createExportArtifact(building,settings({buildingRevision:base.version+1}))).toThrow('PDF_STALE_BUILDING_REVISION');
     expect(()=>createExportArtifact(building,settings({floorId:'missing'}))).toThrow('PDF_FLOOR_NOT_FOUND');

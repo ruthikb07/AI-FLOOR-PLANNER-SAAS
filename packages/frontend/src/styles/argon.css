@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --argon-bg: #F5F0E8;
+  --argon-surface: #EAE0D2;
+  --argon-card: #FFF9F0;
+  --argon-border: #D8CAB8;
+  --argon-text: #302820;
+  --argon-muted: #6F6257;
+  --argon-btn: #80644D;
+  --argon-btn-hover: #654B38;
+  --argon-accent: #B99270;
+  --argon-pass: #4A6B53;
+  --argon-warn: #C48A3F;
+  --argon-error: #9E4738;
+}
+
+.argon-shell {
+  color-scheme: light;
+  background-color: var(--argon-bg);
+  color: var(--argon-text);
+}
+
+.argon-shell select,
+.argon-shell option {
+  background-color: var(--argon-card);
+  color: var(--argon-text);
+}
+
+.argon-shell button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.argon-shell input,
+.argon-shell select,
+.argon-shell textarea {
+  min-width: 0;
+  background-color: var(--argon-card);
+  color: var(--argon-text);
+  border-color: var(--argon-border);
+}
+
+.argon-shell input:focus,
+.argon-shell select:focus,
+.argon-shell textarea:focus {
+  outline: none;
+  border-color: var(--argon-btn);
+  box-shadow: 0 0 0 1px var(--argon-btn);
+}
+
+.argon-shell > header {
+  height: auto;
+  min-height: 3.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-block: 0.5rem;
+}
+
+.argon-shell nav {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.argon-shell main > div {
+  max-height: 100%;
+}
+
+.argon-shell .argon-setup {
+  overflow-y: auto;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.argon-shell .argon-setup > div {
+  flex-shrink: 0;
+}
+
+/* Custom architectural drafting scrollbar */
+.argon-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.argon-scrollbar::-webkit-scrollbar-track {
+  background: var(--argon-surface);
+}
+
+.argon-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--argon-border);
+  border-radius: 3px;
+}
+
+.argon-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--argon-muted);
+}

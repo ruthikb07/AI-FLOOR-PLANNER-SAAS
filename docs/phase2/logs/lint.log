@@ -1,0 +1,94 @@
+
+> ai-floor-planner@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run lint "--concurrency=1"
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running lint in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:lint: cache hit, replaying logs de98173963348dbc
+@ai-floor-planner/core:lint: 
+@ai-floor-planner/core:lint: > @ai-floor-planner/core@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:lint: > eslint src/
+@ai-floor-planner/core:lint: 
+@ai-floor-planner/core:build: cache hit, replaying logs 0c5d6c5dcd0e6a90
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/projection-3d:lint: cache hit, replaying logs ea8a1f046b2d387d
+@ai-floor-planner/projection-3d:lint: 
+@ai-floor-planner/projection-3d:lint: > @ai-floor-planner/projection-3d@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:lint: > eslint src/
+@ai-floor-planner/projection-3d:lint: 
+@ai-floor-planner/geometry-engine:lint: cache hit, replaying logs 052a1cfbfc940781
+@ai-floor-planner/geometry-engine:lint: 
+@ai-floor-planner/geometry-engine:lint: > @ai-floor-planner/geometry-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:lint: > eslint src/
+@ai-floor-planner/geometry-engine:lint: 
+@ai-floor-planner/geometry-engine:build: cache hit, replaying logs 29a68fc1e62671b6
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/projection-3d:build: cache hit, replaying logs bdb6a253172b1d98
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/constraint-engine:lint: cache hit, replaying logs 6ed967b195d40b4d
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:lint: > @ai-floor-planner/constraint-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:lint: > eslint src/
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/renderer:build: cache hit, replaying logs d7d2e9266bcd0061
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:lint: cache hit, replaying logs 534b25281a21b82b
+@ai-floor-planner/renderer:lint: 
+@ai-floor-planner/renderer:lint: > @ai-floor-planner/renderer@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:lint: > eslint src/
+@ai-floor-planner/renderer:lint: 
+@ai-floor-planner/constraint-engine:build: cache hit, replaying logs 8b6108e04a318949
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/planning-engine:lint: cache hit, replaying logs 5e0481a4b0ccfa5c
+@ai-floor-planner/planning-engine:lint: 
+@ai-floor-planner/planning-engine:lint: > @ai-floor-planner/planning-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/planning-engine:lint: 
+@ai-floor-planner/planning-engine:build: cache hit, replaying logs a2a27c7ccce92f9f
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/planning-engine:build: > @ai-floor-planner/planning-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:build: > tsc --build
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/ai-orchestration:build: cache hit, replaying logs 323e6d954bddd301
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:build: > @ai-floor-planner/ai-orchestration@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:build: > tsc --build
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:lint: cache hit, replaying logs 8f6bda42158efb9e
+@ai-floor-planner/ai-orchestration:lint: 
+@ai-floor-planner/ai-orchestration:lint: > @ai-floor-planner/ai-orchestration@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/ai-orchestration:lint: 
+@ai-floor-planner/frontend:lint: cache miss, executing 183d2c3bf5718f2b
+@ai-floor-planner/frontend:lint: 
+@ai-floor-planner/frontend:lint: > @ai-floor-planner/frontend@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+@ai-floor-planner/frontend:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/frontend:lint: 
+@ai-floor-planner/backend:lint: cache miss, executing afbe25c1ef548e63
+@ai-floor-planner/backend:lint: 
+@ai-floor-planner/backend:lint: > @ai-floor-planner/backend@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend
+@ai-floor-planner/backend:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/backend:lint: 
+
+ Tasks:    16 successful, 16 total
+Cached:    14 cached, 16 total
+  Time:    7.786s 
+

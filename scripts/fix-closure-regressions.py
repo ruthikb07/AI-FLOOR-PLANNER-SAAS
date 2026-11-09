@@ -1,9 +1,0 @@
-from pathlib import Path
-r=Path(__file__).resolve().parents[1]
-def edit(file,a,b):
- p=r/file;s=p.read_text(encoding='utf8');assert a in s,file;p.write_text(s.replace(a,b),encoding='utf8')
-edit('packages/ai-orchestration/src/apartment/envelope-solver.ts','    commonCirculation: {\n      lobbyBounds: adjustedLobby,\n    corridors:core.corridors?.map(translateRect),','    commonCirculation: {\n      lobbyBounds: adjustedLobby,')
-edit('packages/backend/src/__tests__/fixtures/apartment-interpretation.ts','id: `corridor_${i}`','id: `corridor_${i+1}`')
-edit('packages/ai-orchestration/src/apartment/schematic.ts',"import { DEFAULT_APARTMENT_SETBACKS_M }","import { getUnitProgram } from './program-registry';\nimport { DEFAULT_APARTMENT_SETBACKS_M }")
-edit('packages/ai-orchestration/src/apartment/schematic.ts','      targetBedrooms: 3,\n      targetBathrooms: 3,\n      targetCarpetAreaSqFt: f.targetCarpetAreaSqFt ?? 1100,\n      targetCarpetAreaSqM: f.targetCarpetAreaSqM ?? 102,\n      mandatoryRooms: [],', '      targetBedrooms: getUnitProgram(f.unitType).targetBedrooms,\n      targetBathrooms: getUnitProgram(f.unitType).targetBathrooms,\n      targetCarpetAreaSqFt: f.targetCarpetAreaSqFt ?? (f.targetCarpetAreaSqM!==undefined?f.targetCarpetAreaSqM/0.092903:getUnitProgram(f.unitType).defaultCarpetAreaSqFt),\n      targetCarpetAreaSqM: f.targetCarpetAreaSqM ?? getUnitProgram(f.unitType).defaultCarpetAreaSqM,\n      mandatoryRooms: getUnitProgram(f.unitType).mandatoryRooms,')
-p=r/'packages/ai-orchestration/src/apartment/candidate-search.ts';s=p.read_text(encoding='utf8');a=s.index('          const {building}=apartmentStructureToBuilding(');b=s.index('\n          const physical=',a);call=s[a:b].replace('const {building}=','({building}=').rstrip(';')+');';s=s[:a]+"          let building: import('@ai-floor-planner/core').Building;\n          try {"+call+"} catch { rejectedHardErrorCount++;continue; }"+s[b:];p.write_text(s,encoding='utf8')

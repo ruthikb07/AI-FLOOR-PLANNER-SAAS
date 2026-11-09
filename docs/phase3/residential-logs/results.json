@@ -1,0 +1,27 @@
+[
+  {
+    "gate": "build",
+    "exitCode": 0,
+    "attempts": 1
+  },
+  {
+    "gate": "planning",
+    "exitCode": 0,
+    "attempts": 1
+  },
+  {
+    "gate": "typecheck",
+    "exitCode": 0,
+    "attempts": 1
+  },
+  {
+    "gate": "test",
+    "exitCode": 0,
+    "attempts": 1
+  },
+  {
+    "gate": "lint",
+    "exitCode": 0,
+    "attempts": 1
+  }
+]

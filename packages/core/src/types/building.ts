@@ -1,3 +1,5 @@
+import type { RegulatoryContextInput } from './udcpr';
+import type { CanonicalMepSystems } from '../mep/mep-contracts';
 /**
  * Core Building Model interfaces.
  * The Building Model is the canonical source of truth for all floor plan data.
@@ -68,6 +70,7 @@ export type SiteZoneKind =
 
 /** A classified, non-overlapping functional zone within the site/plot. */
 export interface SiteZone {
+  readonly regulatoryUse?: 'ROS' | 'CAR_STALL' | 'BIKE_STALL' | 'DRIVEWAY';
   readonly id: string;
   readonly kind: SiteZoneKind;
   readonly name: string;
@@ -113,6 +116,9 @@ export interface AdjacencyRequirement {
 
 /** A room within a floor. */
 export interface Room {
+  readonly wetRoomType?: 'BATH_ONLY' | 'WC_ONLY' | 'COMBINED';
+  readonly clearHeightMm?: number;
+  readonly openToSky?: boolean;
   readonly unitId?: string;
   readonly spaceUse?: 'UNIT' | 'COMMON' | 'CORE' | 'SERVICE' | 'OUTDOOR' | 'VOID';
   readonly planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR';
@@ -205,6 +211,7 @@ export interface Window {
 
 /** A staircase connecting floors. */
 export interface Stair {
+  readonly headroomMm?: number;
   readonly id: string;
   readonly floorId: string;
   readonly type: StairType;
@@ -241,6 +248,10 @@ export interface Column {
 
 /** A single floor/level in the building. */
 export interface Floor {
+  readonly parkingClearHeightMm?: number;
+  readonly elevationMm?: number;
+  readonly floorUse?: 'RESIDENTIAL' | 'STILT_PARKING' | 'ROOF';
+  readonly slabThicknessMm?: number;
   readonly voidBoundaries?: readonly Polygon[];
   readonly apartmentUnits?: readonly { id: string; boundary: Polygon; unitType: string }[];
   readonly id: string;
@@ -267,12 +278,20 @@ export interface Floor {
 export interface BuildingMetadata {
   readonly projectId: string;
   readonly clientName?: string;
+  readonly generationBrief?: {
+    readonly source: 'DETERMINISTIC';
+    readonly aiPrompt?: string;
+    readonly referenceImage?: { readonly name: string; readonly mimeType: string };
+    readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+  };
   readonly description?: string;
   readonly tags?: readonly string[];
 }
 
 /** The root building entity — source of truth for all plan data. */
 export interface Building {
+  readonly mep?: CanonicalMepSystems;
+  readonly regulatoryContext?: RegulatoryContextInput;
   readonly id: string;
   readonly projectId: string;
   readonly name: string;
@@ -298,6 +317,12 @@ export interface Project {
   readonly name: string;
   readonly description?: string;
   readonly clientName?: string;
+  readonly generationBrief?: {
+    readonly source: 'DETERMINISTIC';
+    readonly aiPrompt?: string;
+    readonly referenceImage?: { readonly name: string; readonly mimeType: string };
+    readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+  };
   readonly status: ProjectStatus;
   readonly buildings: readonly Building[];
   readonly createdAt: string;

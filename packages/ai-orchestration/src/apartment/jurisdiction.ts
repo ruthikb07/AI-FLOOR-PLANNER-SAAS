@@ -1,3 +1,5 @@
+/** Planning heuristics only. This legacy profile does not establish statutory compliance.
+ * Use the revision-bound planning-engine evaluator with explicit RegulatoryContextInput. */
 /**
  * Indian & Maharashtra Apartment Planning Regulatory Jurisdictions & Rule Profiles.
  *
@@ -772,3 +774,6 @@ export function getApartmentRulesProfile(
       };
   }
 }
+
+/** Explicit shared contract; no mapping from a city nickname to verified jurisdiction. */
+export type { RegulatoryContextInput } from '@ai-floor-planner/core';

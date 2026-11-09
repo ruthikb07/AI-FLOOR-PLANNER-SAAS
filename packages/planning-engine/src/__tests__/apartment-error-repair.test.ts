@@ -151,7 +151,7 @@ describe('Closed-Loop Hard & Soft Error Auto-Repair Engine (Phase 1D)', () => {
 
     // Verify 100% hard closure pass
     const postRepairClosure = validateApartmentClosure(healedBuilding, manifest3BHK);
-    expect(postRepairClosure.hardErrors).toBe(0);
+    expect(postRepairClosure.hardErrors, JSON.stringify(postRepairClosure.issues)).toBe(0);
     expect(postRepairClosure.issues.filter(i => i.severity === 'error')).toEqual([]);
 
     // Verify bedroom count restored to 3

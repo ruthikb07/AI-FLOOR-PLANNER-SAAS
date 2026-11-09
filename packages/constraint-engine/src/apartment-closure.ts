@@ -37,34 +37,6 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
   const issues: { code: string; severity: 'error' | 'warning'; message: string }[] = [];
   const add = (code: string, message: string, severity: 'error' | 'warning' = 'error') => issues.push({ code, severity, message });
   const ledgers = building.floors.map(floor => {
-    // Corridor & Core Unit-Assignment Sanitizer (§1.4)
-    // Strip unitId / flatId from any space whose type or label matches CORRIDOR, COMMON_LOBBY, LIFT, STAIR, or SHAFT
-    for (const r of floor.rooms) {
-      const rawType = String(r.type).toLowerCase();
-      const rawName = String(r.name).trim();
-      const isPrivatePassage = /\b(private|suite|internal)\b/i.test(rawName) || /\b(private|suite|internal)\b/i.test(r.id);
-      if (isPrivatePassage) continue;
-
-      const isCoreOrCommon = (
-        rawType === 'lift' || rawType === 'stair' || rawType === 'staircase' || rawType === 'shaft' || rawType === 'service_shaft' ||
-        /^(common_lobby|lift|stair|staircase|shaft|duct|mep)$/i.test(rawType) ||
-        /^(corridor|common_lobby|common_corridor|lobby|lift|stair|staircase|shaft|duct)$/i.test(rawName) ||
-        /\b(common\s*corridor|common\s*lobby|lift|elevator|stair|shaft|duct)\b/i.test(rawName) ||
-        r.tags.some(t => t.startsWith('core:') || t.includes('common_lobby') || t.includes('core_lobby'))
-      );
-      if (isCoreOrCommon) {
-        (r as any).unitId = undefined;
-        (r as any).tags = r.tags.filter(t => !t.startsWith('flat:'));
-        if (rawType === 'shaft' || rawType === 'service_shaft' || /^(shaft|duct|mep)$/i.test(rawType) || /^(shaft|duct)$/i.test(rawName)) {
-          (r as any).spaceUse = 'SERVICE';
-        } else if (rawType === 'lift' || rawType === 'stair' || rawType === 'staircase') {
-          (r as any).spaceUse = 'CORE';
-        } else {
-          (r as any).spaceUse = 'COMMON';
-        }
-      }
-    }
-
     const rooms = floor.rooms;
     const graph = new Map<string, Set<string>>(rooms.map(r => [r.id, new Set<string>()]));
     for (const r of rooms) {
@@ -136,7 +108,7 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
     for (const wall of floor.walls) {
       if (wall.roomIds.length > 2 || wall.thickness <= 0 || !wall.wallUse) add('WALL_TOPOLOGY_INVALID', wall.id);
       const isPartyWall = (wall.unitIds && wall.unitIds.length > 1) || wall.wallUse === 'UNIT_SEPARATION';
-      if (isPartyWall && wall.thickness < 220) {
+      if (isPartyWall && wall.thickness < 230) {
         add('PARTY_WALL_THICKNESS_INSUFFICIENT', `${wall.id}: ${wall.thickness} mm (minimum 230 mm party wall required)`);
       }
       for (const id of wall.roomIds) {
@@ -192,14 +164,10 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
         }
       }
 
-      // Bedroom balcony hard prohibition: Indian residential conventions permit exactly 1 living sit-out balcony and 1 utility balcony; zero bedroom balconies
-      const isABalc = a.type === 'balcony' || a.spaceUse === 'OUTDOOR' || a.name.toLowerCase().includes('balcony');
-      const isBBalc = b.type === 'balcony' || b.spaceUse === 'OUTDOOR' || b.name.toLowerCase().includes('balcony');
-      const isABed = a.type === 'bedroom' || a.name.toLowerCase().includes('bed');
-      const isBBed = b.type === 'bedroom' || b.name.toLowerCase().includes('bed');
-      if ((isABalc && isBBed) || (isBBalc && isABed)) {
-        add('BEDROOM_BALCONY_PROHIBITED', `${door.id}: Balcony connected directly to bedroom (${a.name} ↔ ${b.name}). Balconies on bedrooms are prohibited.`);
-      }
+      // A bedroom door to a real attached balcony is valid; opening-host
+      // checks above establish the shared physical wall. Never infer outdoors
+      // from a label or prohibit a legitimate bedroom balcony globally.
+
     }
     for (const window of floor.windows) {
       const host = floor.walls.find(w => w.id === window.wallId);
@@ -245,8 +213,8 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
 
       // Manifest room completeness (§1A)
       const unitSpec = manifestUnits.find((item: any) =>
-        item.unitIndex === (u as { unitIndex?: number }).unitIndex ||
-        item.unitIndex === (uIdx + 1) ||
+        (item.unitIndex !== undefined && item.unitIndex === (u as { unitIndex?: number }).unitIndex) ||
+        (item.unitIndex !== undefined && item.unitIndex === uIdx + 1) ||
         (item.id && (u.id === item.id || u.id.endsWith(String(item.id)) || String(item.id).endsWith(u.id))) ||
         (item.unitIndex !== undefined && u.id.endsWith(String(item.unitIndex)))
       );
@@ -269,8 +237,8 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
       if (kitchenCount === 0) add('UNIT_ROOM_MANIFEST_INCOMPLETE', `${u.id}: missing kitchen for ${bhkType}`);
 
       const bedCount = bedRoomsList.length;
-      if (bedCount < expectedBeds) {
-        add('UNIT_ROOM_MANIFEST_INCOMPLETE', `${u.id}: expected at least ${expectedBeds} bedrooms for ${bhkType}, found ${bedCount}`);
+      if (bedCount !== expectedBeds) {
+        add('UNIT_ROOM_MANIFEST_INCOMPLETE', `${u.id}: expected exactly ${expectedBeds} bedrooms for ${bhkType}, found ${bedCount}`);
       }
 
       const bathCount = unitRooms.filter(r => r.type === 'bathroom' || r.tags.includes('role:bathroom')).length;
@@ -303,7 +271,10 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
       if (r.unitId && ['living', 'bedroom', 'kitchen'].includes(r.type) && !floor.windows.some(w => w.roomId === r.id) && !hasBalconyOrUtilityVentilation) add('DAYLIGHT_OPENING_UNVERIFIED', r.id, 'warning');
     }
     const ledger = measureApartmentAreaLedger(floor);
-    if (Math.abs(ledger.delta) > 1) add('AREA_LEDGER_MISMATCH', `${floor.id}: ${ledger.delta} mm2`);
+    if (!Number.isFinite(ledger.delta) || Math.abs(ledger.delta) >= 0.001) add('AREA_LEDGER_MISMATCH', `${floor.id}: ${ledger.delta} mm2`);
+    if (!ledger.supported) add('AREA_LEDGER_UNSUPPORTED', floor.id);
+    if (ledger.overlap >= 0.001) add('AREA_LEDGER_OVERLAP', `${floor.id}: ${ledger.overlap} mm2`);
+    if (ledger.unassigned >= 0.001) add('AREA_UNASSIGNED', `${floor.id}: ${ledger.unassigned} mm2`);
     for (const balcony of ledger.balconies) {
       if (!balcony.unitId || !balcony.accessDoorIds.some(id => validDoors.has(id))) add('BALCONY_ACCESS_MISSING', balcony.id);
       if (!floor.walls.some(w => w.roomIds.length === 1 && w.roomIds.includes(balcony.id))) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);

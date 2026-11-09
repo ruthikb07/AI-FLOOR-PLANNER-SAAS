@@ -1,31 +1,24 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as acad from '@node-projects/acad-ts';
-import { createMockCanonicalBuilding } from './cad-export.test.js';
+import { createMockCanonicalBuilding } from '../__fixtures__/canonical-building.js';
 
-describe('Live CAD Export HTTP API (Port 4200)', () => {
+import { createBackendServer } from '../server.js';
+import { resolveImageServiceConfig } from '../env.js';
+import { ImageArtifactStore } from '../services/image-artifact-store.js';
+import type { Server } from 'node:http';
+describe('Live CAD Export HTTP API (isolated server)', () => {
   const building = createMockCanonicalBuilding();
-  let serverAvailable = false;
-
-  beforeAll(async () => {
-    try {
-      const res = await fetch('http://127.0.0.1:4200/api/v1/export/download/health-probe-test', {
-        signal: AbortSignal.timeout(600),
-      });
-      // Any HTTP response (even 404 or 400) indicates the server is listening
-      serverAvailable = res.status > 0;
-    } catch {
-      serverAvailable = false;
-    }
+  let server:Server;let baseUrl='';let exportedFilename='';
+  beforeAll(async()=>{
+    const config=resolveImageServiceConfig();
+    server=createBackendServer({provider:null,gemini:null,interpreterKind:'local-stub',store:new ImageArtifactStore(config.artifactDir),config});
+    await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+    baseUrl=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
   });
-
-  beforeEach((ctx) => {
-    if (!serverAvailable) {
-      ctx.skip();
-    }
-  });
+  afterAll(async()=>{await new Promise<void>(resolve=>server.close(()=>resolve()));});
 
   it('exports genuine binary AutoCAD DWG with AC1032 magic, correct headers, and disk persistence', async () => {
-    const res = await fetch('http://127.0.0.1:4200/api/v1/export/dwg', {
+    const res = await fetch(`${baseUrl}/api/v1/export/dwg`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -94,7 +87,7 @@ describe('Live CAD Export HTTP API (Port 4200)', () => {
   });
 
   it('exports genuine ASCII DXF with SECTION header, correct filename, and disk persistence', async () => {
-    const res = await fetch('http://127.0.0.1:4200/api/v1/export/dxf', {
+    const res = await fetch(`${baseUrl}/api/v1/export/dxf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -108,6 +101,7 @@ describe('Live CAD Export HTTP API (Port 4200)', () => {
 
     const disposition = res.headers.get('content-disposition');
     expect(disposition).toContain('.dxf');
+    exportedFilename=JSON.parse(res.headers.get('x-artifact-descriptor')!).fileName;
     expect(disposition).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
 
     const diskPaths = res.headers.get('x-cad-disk-path');
@@ -122,8 +116,8 @@ describe('Live CAD Export HTTP API (Port 4200)', () => {
   });
 
   it('serves previously exported CAD drawing directly via GET /api/v1/export/download/:filename', async () => {
-    const filename = 'canonical_building_export.dxf';
-    const res = await fetch(`http://127.0.0.1:4200/api/v1/export/download/${filename}`);
+    const filename = exportedFilename;
+    const res = await fetch(`${baseUrl}/api/v1/export/download/${filename}`);
 
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/dxf');
@@ -134,11 +128,11 @@ describe('Live CAD Export HTTP API (Port 4200)', () => {
     expect(text).toContain('EOF');
   });
 
-  it('persists any custom artifact to disk via POST /api/v1/export/persist', async () => {
+  it('rejects unverified arbitrary persistence via POST /api/v1/export/persist', async () => {
     const testFilename = 'test_canonical_export.json';
     const testContent = JSON.stringify({ test: true, time: Date.now() });
 
-    const res = await fetch('http://127.0.0.1:4200/api/v1/export/persist', {
+    const res = await fetch(`${baseUrl}/api/v1/export/persist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -147,15 +141,13 @@ describe('Live CAD Export HTTP API (Port 4200)', () => {
       }),
     });
 
-    expect(res.status).toBe(200);
-    const json = (await res.json()) as { success: boolean; savedPaths: string[]; downloadUrl: string };
-    expect(json.success).toBe(true);
-    expect(json.savedPaths.length).toBeGreaterThan(0);
-    expect(json.downloadUrl).toContain(testFilename);
+    expect(res.status).toBe(400);
+    const json=await res.json() as {error:{code:string}};
+    expect(json.error.code).toBe('INVALID_REQUEST');
   });
 
   it('gracefully handles missing building object with clear HTTP 400 JSON error', async () => {
-    const res = await fetch('http://127.0.0.1:4200/api/v1/export/dwg', {
+    const res = await fetch(`${baseUrl}/api/v1/export/dwg`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ options: {} }),

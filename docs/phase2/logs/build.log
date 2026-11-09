@@ -1,0 +1,76 @@
+
+> ai-floor-planner@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run build "--concurrency=1"
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running build in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:build: cache hit, replaying logs 0c5d6c5dcd0e6a90
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/projection-3d:build: cache hit, replaying logs bdb6a253172b1d98
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/geometry-engine:build: cache hit, replaying logs 29a68fc1e62671b6
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/renderer:build: cache hit, replaying logs d7d2e9266bcd0061
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/constraint-engine:build: cache hit, replaying logs 8b6108e04a318949
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/planning-engine:build: cache hit, replaying logs a2a27c7ccce92f9f
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/planning-engine:build: > @ai-floor-planner/planning-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:build: > tsc --build
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/ai-orchestration:build: cache hit, replaying logs 323e6d954bddd301
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:build: > @ai-floor-planner/ai-orchestration@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:build: > tsc --build
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/backend:build: cache miss, executing 106d4eb1263fe788
+@ai-floor-planner/backend:build: 
+@ai-floor-planner/backend:build: > @ai-floor-planner/backend@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend
+@ai-floor-planner/backend:build: > tsc --build && node ../../scripts/bundle-backend.mjs
+@ai-floor-planner/backend:build: 
+@ai-floor-planner/backend:build: Backend bundle written to packages/backend/dist-server/server.cjs
+@ai-floor-planner/frontend:build: cache miss, executing c1e65ba5fbde3fd7
+@ai-floor-planner/frontend:build: 
+@ai-floor-planner/frontend:build: > @ai-floor-planner/frontend@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+@ai-floor-planner/frontend:build: > tsc && vite build
+@ai-floor-planner/frontend:build: 
+@ai-floor-planner/frontend:build: [36mvite v5.4.21 [32mbuilding for production...[36m[39m
+@ai-floor-planner/frontend:build: transforming...
+@ai-floor-planner/frontend:build: [32m✓[39m 1755 modules transformed.
+@ai-floor-planner/frontend:build: rendering chunks...
+@ai-floor-planner/frontend:build: computing gzip size...
+@ai-floor-planner/frontend:build: [2mdist/[22m[32mindex.html                                [39m[1m[2m  0.74 kB[22m[1m[22m[2m │ gzip:   0.43 kB[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[32massets/argon-planning.worker-BovUOAa6.js  [39m[1m[2m134.61 kB[22m[1m[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[35massets/index-lj9mFx7s.css                 [39m[1m[2m172.09 kB[22m[1m[22m[2m │ gzip:  32.13 kB[22m
+@ai-floor-planner/frontend:build: [2mdist/[22m[36massets/index-DXIk9jmJ.js                  [39m[1m[2m454.67 kB[22m[1m[22m[2m │ gzip: 130.82 kB[22m
+@ai-floor-planner/frontend:build: [33m
+@ai-floor-planner/frontend:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@ai-floor-planner/frontend:build: - Using dynamic import() to code-split the application
+@ai-floor-planner/frontend:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@ai-floor-planner/frontend:build: [2mdist/[22m[36massets/ModelWorkspace-DJYjyIVi.js         [39m[1m[33m610.34 kB[39m[22m[2m │ gzip: 160.07 kB[22m
+@ai-floor-planner/frontend:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+@ai-floor-planner/frontend:build: [32m✓ built in 5.35s[39m
+
+ Tasks:    9 successful, 9 total
+Cached:    7 cached, 9 total
+  Time:    10.719s 
+

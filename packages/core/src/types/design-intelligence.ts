@@ -1,3 +1,4 @@
+import type { RegulatoryContextInput } from './udcpr';
 /**
  * Design Intelligence & Requirements-to-Plan Domain Types (Phase 7).
  *
@@ -150,6 +151,7 @@ export interface SoftDesignPreferences {
 }
 
 export interface DesignRequirementSpecification {
+  readonly regulatoryContext?: RegulatoryContextInput;
   readonly schemaVersion: 1;
   readonly projectId?: string;
   readonly projectName: string;

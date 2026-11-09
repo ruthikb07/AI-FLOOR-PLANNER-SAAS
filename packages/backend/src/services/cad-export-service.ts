@@ -1,20 +1,21 @@
+import { ResidentialCadExportRegistry } from '../cad/residential-cad-export-registry.js';
+import { ResidentialCadSerializer } from '../cad/residential-cad-serializer.js';
 import * as acad from '@node-projects/acad-ts';
 import {
   type Building,
+  canonicalRevisionJson,
   type Floor,
   type Site,
-  type Column,
   type StructuralBeam,
   type IndependentExportManifest,
   type ExportFileDescriptor,
-  WallType,
   RoomType,
   DoorType,
 } from '@ai-floor-planner/core';
-import {
-  generateApartmentWalls,
-  populateCanonicalFurniture,
-} from '@ai-floor-planner/planning-engine';
+import { AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
+import { selectExportFloors, resolveExportScope, ExportError } from './export-selection.js';
+import { verifyCadArtifact } from './artifact-verifier.js';
+import { createHash } from 'node:crypto';
 
 export type { StructuralBeam, IndependentExportManifest, ExportFileDescriptor };
 
@@ -23,6 +24,9 @@ export type CadExportFormat = 'dwg' | 'dxf';
 export type ExportScope = 'current_floor' | 'all_floors' | 'site_plan' | 'complete_project';
 
 export interface CadExportOptions {
+  readonly cadStandard?: import('@ai-floor-planner/core').ResidentialCadStandard;
+  readonly nativeCadAudit?: boolean;
+  readonly drawingKind?:'ARCHITECTURAL'|'STRUCTURAL';
   readonly floorId?: string;
   readonly exportScope?: ExportScope;
   readonly includeSite?: boolean;
@@ -41,6 +45,7 @@ export interface CadExportOptions {
 }
 
 export interface CadExportValidation {
+  readonly sourceChecks: Readonly<Record<string,unknown>>;
   readonly isValid: boolean;
   readonly format: 'DWG' | 'DXF';
   readonly magic: string;
@@ -110,15 +115,9 @@ const ARCHITECTURAL_LAYERS: readonly LayerSpec[] = [
   { name: 'A-SITE-AMENITY', colorIndex: 30, lineWeight: acad.LineWeightType.W20, description: 'Site amenities and recreation' },
   { name: 'A-SITE-UTIL', colorIndex: 1, lineWeight: acad.LineWeightType.W25, description: 'Utilities, services, and plant' },
   { name: 'A-SITE-SERV', colorIndex: 1, lineWeight: acad.LineWeightType.W25, description: 'Site services: Security Cabin, DG Yard, UGWT, STP' },
+  { name: 'A-ANNO-TEXT', colorIndex: 7, lineWeight: acad.LineWeightType.W18, description: 'Canonical annotation text' },
   { name: 'A-TEXT', colorIndex: 7, lineWeight: acad.LineWeightType.W18, description: 'General architectural text notes' },
 ];
-
-function mmToFeetInches(mm: number): string {
-  const totalInches = Math.round(mm / 25.4);
-  const feet = Math.floor(totalInches / 12);
-  const inches = totalInches % 12;
-  return `${feet}'-${inches}"`;
-}
 
 function sanitizeFilename(value: string): string {
   return value
@@ -128,48 +127,9 @@ function sanitizeFilename(value: string): string {
     .replace(/^_+|_+$/g, '') || 'drawing';
 }
 
-export function formatCadExportFilename(
-  building: Building,
-  floorsToExport: readonly Floor[],
-  format: CadExportFormat,
-  revision?: string,
-): string {
-  const rawBuilding = building.name && building.name.trim() !== '' ? building.name : 'AI_BUILDING_SAAS';
-
-  const isAiBuilding =
-    !building.name ||
-    building.name.trim() === '' ||
-    /^ai[ _-]?building[ _-]?saas$/i.test(rawBuilding.trim()) ||
-    /^my[ _-]?building[ _-]?project$/i.test(rawBuilding.trim()) ||
-    /^new[ _-]?project$/i.test(rawBuilding.trim()) ||
-    /^project$/i.test(rawBuilding.trim());
-
-  if (isAiBuilding) {
-    let floorPart = 'Floor_01';
-    if (floorsToExport.length === 0) {
-      floorPart = 'Site_Plan';
-    } else if (floorsToExport.length > 1) {
-      floorPart = 'All_Floors';
-    } else {
-      const floor = floorsToExport[0]!;
-      const floorIdx = building.floors.findIndex(f => f.id === floor.id);
-      const floorNum = floorIdx >= 0 ? floorIdx + 1 : (Math.abs(floor.level) === 0 ? 1 : Math.abs(floor.level));
-      const padded = String(floorNum).padStart(2, '0');
-      floorPart = `Floor_${padded}`;
-    }
-    return `AI_BUILDING_SAAS_${floorPart}.${format}`;
-  }
-
-  const floorSuffix = floorsToExport.length === 0
-    ? '_site_plan'
-    : floorsToExport.length === 1
-      ? `_${sanitizeFilename(floorsToExport[0]!.name)}`
-      : '_all_floors';
-  const revSuffix = revision ? `_r${sanitizeFilename(revision)}` : '';
-  return `${sanitizeFilename(rawBuilding)}${floorSuffix}${revSuffix}.${format}`;
-}
-
 export class CadExportService {
+  public async exportResidentialPackage(building:Building, options:import('@ai-floor-planner/core').ResidentialCadPackageOptions={}, directory?:string){return new ResidentialCadExportRegistry(directory).generate(building,options);}
+
   /**
    * Generates a genuine, editable AutoCAD binary DWG drawing (.dwg) or ASCII DXF (.dxf)
    * directly from the canonical Building model with full CAD entity fidelity.
@@ -179,11 +139,24 @@ export class CadExportService {
     format: CadExportFormat,
     options: CadExportOptions = {},
   ): CadExportResult {
-    const scope = options.exportScope ?? (options.floorId === 'all' ? 'all_floors' : 'current_floor');
+    if(options.cadStandard!==undefined){
+      if(format==='dwg')throw new ExportError('NATIVE_CAD_ASYNC_REQUIRED','Use the asynchronous artifact registry for native-verified residential DWG');
+      const scope=resolveExportScope(options);
+      if(scope==='site_plan')throw new ExportError('INVALID_CAD_SCOPE','Residential standards require physical floor sheets',400);
+      const result=new ResidentialCadSerializer().serialize(building,{standard:options.cadStandard,floorId:options.floorId,combined:scope==='all_floors'||scope==='complete_project'});
+      const b=result.bounds,doc=result.verification.document!;
+      const counts:Record<string,number>={};for(const e of doc.entities!)counts[e.objectName]=(counts[e.objectName]??0)+1;
+      return {filename:result.filename,mimeType:'application/dxf',format,data:result.data,validation:{sourceChecks:{...result.verification.checks,residentialCad:result.metadata,nativeAudit:'NOT_RUN'},isValid:result.verification.isValid,format:'DXF',magic:'DXF',fileSizeBytes:result.data.length,layerCount:result.layerNames.length,layers:result.layerNames,entityCount:result.entityCount,entityCountsByType:counts,bounds:{minX:b.x,minY:b.y,maxX:b.x+b.width,maxY:b.y+b.height,widthMm:b.width,heightMm:b.height},units:'Millimeters',modelSpaceScale:'1:1',floorsExported:result.metadata.floorIds.map(id=>building.floors.find(f=>f.id===id)!.name),siteIncluded:false,roundTripVerified:true}};
+    }
+    const selectedFloors = selectExportFloors(building, options);
+    const annotationLayout = new AnnotationLayout();
+    const scope = resolveExportScope(options);
     const includeSite = options.includeSite ?? (scope === 'site_plan' || scope === 'complete_project');
 
     // 1. Create a fresh CadDocument
     const doc = new acad.CadDocument();
+    const textStyle = new acad.TextStyle("ARGON_ANNOTATION");
+    doc.textStyles!.add(textStyle);
 
     // 2. Strict Model Space Configuration ($TILEMODE = 1)
     if (doc.header) {
@@ -191,6 +164,7 @@ export class CadExportService {
       doc.header.measurementUnits = acad.MeasurementUnits.Metric;
       doc.header.showModelSpace = true; // Sets TILEMODE = 1 in DwgHeaderWriter!
       doc.header.tileModeEnabled = true;
+      doc.header.splineType = 6;
     }
 
     // 3. Register standard architectural layers
@@ -229,7 +203,7 @@ export class CadExportService {
     // --- Entity Primitive Sanitizers (Prevent AutoCAD Crash / Reject on Open) ---
     const addSanitizedLine = (x1: number, y1: number, x2: number, y2: number, layer: acad.Layer): void => {
       if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(x2) || !Number.isFinite(y2)) return;
-      if (Math.hypot(x2 - x1, y2 - y1) < 0.5) return;
+      if (Math.hypot(x2 - x1, y2 - y1) < 1e-9) return;
       const line = new acad.Line(new acad.XYZ(x1, y1, 0), new acad.XYZ(x2, y2, 0));
       line.layer = layer;
       doc.entities?.add(line);
@@ -244,14 +218,14 @@ export class CadExportService {
         if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
         if (validPoints.length > 0) {
           const last = validPoints[validPoints.length - 1]!;
-          if (Math.hypot(pt.x - last.x, pt.y - last.y) < 0.5) continue; // Deduplicate closer than 0.5mm
+          if (Math.hypot(pt.x - last.x, pt.y - last.y) < 1e-9) continue; // Deduplicate closer than 0.5mm
         }
         validPoints.push(pt);
       }
       if (isClosed && validPoints.length > 2) {
         const first = validPoints[0]!;
         const last = validPoints[validPoints.length - 1]!;
-        if (Math.hypot(first.x - last.x, first.y - last.y) < 0.5) {
+        if (Math.hypot(first.x - last.x, first.y - last.y) < 1e-9) {
           validPoints.pop();
         }
       }
@@ -275,7 +249,7 @@ export class CadExportService {
       endAngleRad: number,
       layer: acad.Layer,
     ): void => {
-      if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(radius) || radius < 1.0) return;
+      if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(radius) || radius <= 0) return;
       if (!Number.isFinite(startAngleRad) || !Number.isFinite(endAngleRad)) return;
 
       let s = startAngleRad % (2 * Math.PI);
@@ -293,7 +267,7 @@ export class CadExportService {
     };
 
     const addSanitizedCircle = (cx: number, cy: number, radius: number, layer: acad.Layer): void => {
-      if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(radius) || radius < 1.0) return;
+      if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(radius) || radius <= 0) return;
       const circle = new acad.Circle(new acad.XYZ(cx, cy, 0), radius);
       circle.layer = layer;
       doc.entities?.add(circle);
@@ -311,9 +285,13 @@ export class CadExportService {
     ): void => {
       if (!value || typeof value !== 'string' || value.trim().length === 0) return;
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-      const h = Math.max(50, Number.isFinite(height) ? height : 150);
+      const h = Math.max(0.1, Number.isFinite(height) ? height : 150);
+      const box = annotationLayout.place(value.trim(), alignCenter ? x : x+value.trim().length*h*0.35, alignCenter ? y : y+h/2, h);
+      x = alignCenter ? box.x : box.x-box.width/2;
+      y = alignCenter ? box.y : box.y-h/2;
       const text = new acad.TextEntity();
-      text.layer = layer;
+      text.layer = ['A-ROOM-NAME','A-ROOM-AREA','A-TEXT','A-ANNO'].includes(layer.name)?getLayer('A-ANNO-TEXT'):layer;
+      text.style = textStyle;
       text.height = h;
       text.value = value.trim();
       if (alignCenter) {
@@ -326,6 +304,7 @@ export class CadExportService {
         expandBounds(x + (value.length * h * 0.35), y + h / 2);
       } else {
         text.insertPoint = new acad.XYZ(x, y, 0);
+        text.alignmentPoint = new acad.XYZ(x, y, 0);
         doc.entities?.add(text);
         expandBounds(x, y);
         expandBounds(x + value.length * h * 0.7, y + h);
@@ -350,24 +329,30 @@ export class CadExportService {
       dim.firstPoint = new acad.XYZ(p1x, p1y, 0);
       dim.secondPoint = new acad.XYZ(p2x, p2y, 0);
       dim.definitionPoint = new acad.XYZ(defX, defY, 0);
-      dim.textMiddlePoint = new acad.XYZ(defX, defY, 0);
+      const box = annotationLayout.place(String(Math.round(Math.hypot(p2x-p1x,p2y-p1y))),defX,defY,100);
+      dim.textMiddlePoint = new acad.XYZ(box.x, box.y, 0);
+      dim.text=String(Math.round(Math.hypot(p2x-p1x,p2y-p1y)));
+      dim.style.textHeight=100;
+      dim.isTextUserDefinedLocation=true;
       doc.entities?.add(dim);
+      // Native AutoCAD requires a nonempty anonymous DIMENSION block. Construct
+      // its display from the same measurement and collision-resolved text point.
+      const block=new acad.BlockRecord(`*D${dim.handle}`);block.isAnonymous=true;block.units=acad.UnitsType.Millimeters;dim.block=block;
+      const length=Math.hypot(p2x-p1x,p2y-p1y),ux=(p2x-p1x)/length,uy=(p2y-p1y)/length,nx=-uy,ny=ux;
+      const offset=(defX-p1x)*nx+(defY-p1y)*ny;
+      const q1={x:p1x+nx*offset,y:p1y+ny*offset},q2={x:p2x+nx*offset,y:p2y+ny*offset};
+      const blockLine=(x1:number,y1:number,x2:number,y2:number)=>{const line=new acad.Line(new acad.XYZ(x1,y1,0),new acad.XYZ(x2,y2,0));line.layer=layer;block.entities.add(line);};
+      blockLine(q1.x,q1.y,q2.x,q2.y);blockLine(p1x,p1y,q1.x,q1.y);blockLine(p2x,p2y,q2.x,q2.y);
+      for(const point of [q1,q2])blockLine(point.x-(ux+nx)*70,point.y-(uy+ny)*70,point.x+(ux+nx)*70,point.y+(uy+ny)*70);
+      const text=new acad.TextEntity(dim.text);text.style=textStyle;text.layer=layer;text.height=100;text.horizontalAlignment=1;text.verticalAlignment=2;text.insertPoint=new acad.XYZ(box.x,box.y,0);text.alignmentPoint=new acad.XYZ(box.x,box.y,0);block.entities.add(text);
       expandBounds(p1x, p1y);
       expandBounds(p2x, p2y);
       expandBounds(defX, defY);
     };
 
     // 5. Select floors to export
-    let floorsToExport: Floor[] = [];
-    const isSiteOnly = scope === 'site_plan' || options.floorId === 'site' || options.floorId === 'sheet_01_site_plan';
-    if (scope === 'all_floors' || scope === 'complete_project') {
-      floorsToExport = [...building.floors];
-    } else if (isSiteOnly) {
-      floorsToExport = [];
-    } else {
-      const selected = building.floors.find(f => f.id === options.floorId) ?? building.floors[0];
-      if (selected) floorsToExport = [selected];
-    }
+    const floorsToExport = selectedFloors;
+    const isSiteOnly = !floorsToExport.length;
 
     let currentOffsetX = 0;
     const floorSpacing = 12000; // 12 meters horizontal gap between sheets in AutoCAD model space
@@ -395,42 +380,10 @@ export class CadExportService {
       currentOffsetX += Math.max(siteWidth, 20000) + floorSpacing;
     }
 
-    // 7. Export Floor Plans with Fallback Geometry Reconstruction Guarantee
+    // 7. Project only the selected canonical floors; never reconstruct missing entities.
     for (let fIdx = 0; fIdx < floorsToExport.length; fIdx++) {
       const rawFloor = floorsToExport[fIdx]!;
-      // Clone floor to allow safe in-memory fallback reconstruction without mutating input
-      let floorWalls = Array.isArray(rawFloor.walls) ? [...rawFloor.walls] : [];
-      let floorFurniture = Array.isArray(rawFloor.furniture) ? [...rawFloor.furniture] : [];
-
-      // Fallback 1: Reconstruct walls if missing/empty
-      if (floorWalls.length === 0 && rawFloor.rooms && rawFloor.rooms.length > 0 && rawFloor.boundary) {
-        try {
-          floorWalls = generateApartmentWalls(rawFloor.rooms, rawFloor.id, rawFloor.boundary);
-        } catch (wallErr) {
-          console.warn(`Fallback wall generation notice for ${rawFloor.name}:`, wallErr);
-        }
-      }
-
-      // Fallback 2: Populate canonical furniture if missing/empty
-      if (floorFurniture.length === 0 && rawFloor.rooms && rawFloor.rooms.length > 0) {
-        try {
-          const tempBldg = populateCanonicalFurniture({ ...building, floors: [{ ...rawFloor, walls: floorWalls }] });
-          floorFurniture = tempBldg.floors[0]?.furniture ? [...tempBldg.floors[0].furniture] : [];
-        } catch (furnErr) {
-          console.warn(`Fallback furniture population notice for ${rawFloor.name}:`, furnErr);
-        }
-      }
-
-      const floor: Floor = {
-        ...rawFloor,
-        walls: floorWalls,
-        furniture: floorFurniture,
-        doors: rawFloor.doors ? [...rawFloor.doors] : [],
-        windows: rawFloor.windows ? [...rawFloor.windows] : [],
-        rooms: rawFloor.rooms ? [...rawFloor.rooms] : [],
-        stairs: rawFloor.stairs ? [...rawFloor.stairs] : [],
-        columns: rawFloor.columns ? [...rawFloor.columns] : [],
-      };
+      const floor = rawFloor;
 
       const safeFloorName = floor.name ? floor.name : `Floor_${String(floor.level ?? fIdx + 1).padStart(2, '0')}`;
       exportedFloorNames.push(safeFloorName);
@@ -533,12 +486,7 @@ export class CadExportService {
       }
     }
 
-    // 10. Guarantee Emitted Entity Count
-    const emittedEntityCount = doc.entities ? [...doc.entities].length : 0;
-    const totalInputRooms = building.floors.reduce((sum, f) => sum + (f.rooms?.length || 0), 0);
-    if (totalInputRooms > 0 && emittedEntityCount < 50) {
-      console.warn(`CAD export produced ${emittedEntityCount} entities for ${totalInputRooms} rooms. Expanding detail...`);
-    }
+    const emittedEntityCount=doc.entities?[...doc.entities].length:0;
 
     // 11. Serialize to target CAD format
     let data: Uint8Array;
@@ -551,42 +499,30 @@ export class CadExportService {
       data = buffer.subarray(0, writer.bytesWritten);
       magic = Buffer.from(data.subarray(0, 6)).toString('ascii');
     } else {
-      const buffer = new Uint8Array(8 * 1024 * 1024);
-      const writer = new acad.DxfWriter(buffer, doc, false);
+      // AC1032 DXF text is Unicode. Avoid the library's legacy code-page
+      // byte target, which corrupts non-ASCII annotations for native AutoCAD.
+      doc.header!.codePage='UTF-8';
+      const chunks:string[]=[];
+      const writer = new acad.DxfWriter({write:(chunk:string)=>{chunks.push(chunk);}}, doc, false);
       writer.configuration.writeOptionalValues = true;
-      writer.configuration.writeAllHeaderVariables = true;
+      writer.configuration.writeAllHeaderVariables = false;
+      for(const variable of ['$TILEMODE','$EXTMIN','$EXTMAX','$LIMMIN','$LIMMAX','$SPLINETYPE'])writer.configuration.addHeaderVariable(variable);
       writer.write();
-      const pos = (writer as any)._writer?._writer?._position ?? (writer as any)._stream?.position ?? buffer.length;
-      data = buffer.subarray(0, pos);
+      data=Buffer.from(chunks.join(''),'utf8');
       magic = 'DXF';
     }
 
-    // 12. Round-Trip Validation
-    let roundTripVerified = false;
-    const entityCountsByType: Record<string, number> = {};
-
-    if (format === 'dwg') {
-      try {
-        const reader = new acad.DwgReader(data);
-        const readDoc = reader.read();
-        if (readDoc && readDoc.header) {
-          roundTripVerified = true;
-          if (readDoc.entities) {
-            for (const ent of readDoc.entities) {
-              const typeName = String((ent as any).objectName ?? (ent as any).objectType ?? 'Entity');
-              entityCountsByType[typeName] = (entityCountsByType[typeName] ?? 0) + 1;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('DWG round-trip parse verification notice:', err);
-      }
-    } else {
-      roundTripVerified = data.length > 500 && Buffer.from(data.subarray(0, 100)).toString('ascii').includes('SECTION');
+    const verified = verifyCadArtifact(data, format, doc, floorsToExport);
+    if (!verified.isValid) throw new ExportError('ARTIFACT_VERIFICATION_FAILED', verified.errors.join('; '));
+    const roundTripVerified = verified.isValid;
+    const entityCountsByType: Record<string,number> = {};
+    for (const ent of verified.document!.entities!) {
+      const name=String(ent.objectName);entityCountsByType[name]=(entityCountsByType[name]??0)+1;
     }
 
     const validation: CadExportValidation = {
-      isValid: data.length > 0 && (format === 'dwg' ? magic.startsWith('AC') : true),
+      sourceChecks: verified.checks,
+      isValid: verified.isValid,
       format: format === 'dwg' ? 'DWG' : 'DXF',
       magic,
       fileSizeBytes: data.byteLength,
@@ -609,7 +545,8 @@ export class CadExportService {
       roundTripVerified,
     };
 
-    const filename = formatCadExportFilename(building, floorsToExport, format, options.revision);
+    const checksum=createHash('sha256').update(data).digest('hex');
+    const filename = `${sanitizeFilename(building.id)}_r${building.version}_${sanitizeFilename(scope)}_${sanitizeFilename(floorsToExport.map(f=>f.id).join('-')||'site')}_${checksum}.${format}`;
     const mimeType = format === 'dwg' ? 'application/x-dwg' : 'application/dxf';
 
     return {
@@ -702,11 +639,11 @@ export class CadExportService {
       addSanitizedPolyline(cadPoints, getLayer('A-WALL-EXT'), true);
     }
 
-    const floorWalls = Array.isArray(floor.walls) ? floor.walls : [];
-    const floorDoors = Array.isArray(floor.doors) ? floor.doors : [];
-    const floorWindows = Array.isArray(floor.windows) ? floor.windows : [];
-    const floorRooms = Array.isArray(floor.rooms) ? floor.rooms : [];
-    const floorStairs = Array.isArray(floor.stairs) ? floor.stairs : [];
+    const floorWalls = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.walls) ? floor.walls : [];
+    const floorDoors = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.doors) ? floor.doors : [];
+    const floorWindows = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.windows) ? floor.windows : [];
+    const floorRooms = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.rooms) ? floor.rooms : [];
+    const floorStairs = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.stairs) ? floor.stairs : [];
     const floorColumns = Array.isArray(floor.columns) ? floor.columns : [];
 
     // B. Walls: External, Party, and Internal Partitions
@@ -718,24 +655,13 @@ export class CadExportService {
       const dx = x2 - x1;
       const dy = y2 - y1;
       const len = Math.hypot(dx, dy);
-      if (len < 1) continue;
+      if (len < 1e-9) continue;
 
       trackPoint(x1, y1);
       trackPoint(x2, y2);
 
-      let wallLayerName = 'A-WALL-INT';
-      if (wall.wallUse === 'UNIT_SEPARATION' || (wall.unitIds && wall.unitIds.length > 1)) {
-        wallLayerName = 'A-WALL-PARTY';
-      } else if (wall.wallUse === 'EXTERNAL' || wall.type === WallType.External) {
-        wallLayerName = 'A-WALL-EXT';
-      } else if (wall.wallUse === 'BALCONY' || wall.wallUse === 'PARAPET') {
-        wallLayerName = 'A-BALC';
-      } else if (wall.wallUse === 'CORE' || wall.wallUse === 'SHAFT') {
-        wallLayerName = 'A-LIFT';
-      }
-
-      const wallLayer = getLayer(wallLayerName);
-      const halfThick = Math.max(50, (wall.thickness || 200) / 2);
+      const wallLayer = getLayer(wall.wallUse==='UNIT_SEPARATION'||(wall.unitIds?.length??0)>1?'A-WALL-PARTY':'A-WALL');
+      const halfThick = wall.thickness / 2;
       const nx = (-dy / len) * halfThick;
       const ny = (dx / len) * halfThick;
 
@@ -756,12 +682,12 @@ export class CadExportService {
       let cursor = 0;
       const segments: Array<[number, number]> = [];
       for (const cut of cuts) {
-        if (cut[0] > cursor + 1) {
+        if (cut[0] > cursor + 1e-9) {
           segments.push([cursor, cut[0]]);
         }
         cursor = Math.max(cursor, cut[1]);
       }
-      if (cursor < len - 1) {
+      if (cursor < len - 1e-9) {
         segments.push([cursor, len]);
       }
 
@@ -885,7 +811,7 @@ export class CadExportService {
       }
 
       // D. Windows: Frame lines and Glazing on A-WINDOW, A-WIND and A-GLAZ
-      const windLayer = getLayer('A-WINDOW');
+      const windLayer = getLayer('A-WIND');
       const glazLayer = getLayer('A-GLAZ');
       for (const window of floorWindows) {
         const wall = floorWalls.find(w => w.id === window.wallId);
@@ -925,7 +851,6 @@ export class CadExportService {
 
     // E. Rooms: Boundaries, Names, Usable Areas, and Core Graphics
     const roomNameLayer = getLayer('A-ROOM-NAME');
-    const roomAreaLayer = getLayer('A-ROOM-AREA');
     const stairLayer = getLayer('A-STAIR');
     const liftLayer = getLayer('A-LIFT');
 
@@ -948,34 +873,13 @@ export class CadExportService {
 
       // Task 7: Room Labels in CAD (Short clean title, exact mm + ft'-in" dimensions, exact sq.m + sq.ft area)
       if (options.includeRoomLabels !== false) {
-        const cleanName = rawRoomName
-          .replace(/^FLAT_\d+.*?\) /, '')
-          .replace(/_/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .toUpperCase();
-
-        const centerX = (rx1 + rx2) / 2;
-        const centerY = (ry1 + ry2) / 2;
-        const innerW = Math.abs(rx2 - rx1);
-
-        const wMm = Math.round(room.width);
-        const hMm = Math.round(room.height);
-        const dimStr = `${wMm} x ${hMm} mm (${mmToFeetInches(wMm)} x ${mmToFeetInches(hMm)})`;
-        const areaSqM = (room.area / 1_000_000).toFixed(1);
-        const areaSqFt = Math.round((room.area / 1_000_000) * 10.7639);
-        const areaStr = `${areaSqM} sq.m (${areaSqFt} sq.ft)`;
-
-        const maxLineChars = Math.max(cleanName.length, dimStr.length, areaStr.length);
-        const textHeight = Math.max(55, Math.min(105, Math.floor((innerW * 0.75) / (maxLineChars * 0.85))));
-
-        if (!isStair && !isLift) {
-          addSanitizedText(cleanName, centerX, centerY + textHeight * 1.3, textHeight, roomNameLayer, true);
-          addSanitizedText(dimStr, centerX, centerY, textHeight * 0.85, roomAreaLayer, true);
-          addSanitizedText(areaStr, centerX, centerY - textHeight * 1.3, textHeight * 0.85, roomAreaLayer, true);
-        } else {
-          addSanitizedText(cleanName, centerX, centerY, Math.max(60, textHeight), roomNameLayer, true);
-        }
+        const annotation = roomAnnotation(room);
+        const centerX=toCadX(annotation.center.x),centerY=toCadY(annotation.center.y);
+        annotation.lines.forEach((line,i)=>{
+          if(i===2 && options.includeRoomAreas===false)return;
+          const yLine=centerY+((annotation.lines.length-1)/2-i)*1.65*annotation.height;
+          addSanitizedText(line,centerX,yLine,annotation.height,roomNameLayer,true);
+        });
       }
 
       // Task 4: Lift graphics on A-LIFT (Diagonal cross + Inner car box + Inbuilt sliding door tracks)
@@ -1000,7 +904,7 @@ export class CadExportService {
       }
 
       // Task 4: Staircase graphics on A-STAIR (Dog-Legged Two-Flight Staircase)
-      if (isStair) {
+      if (isStair && !floor.canonicalStaircases?.length) {
         const sw = Math.abs(rx2 - rx1);
         const sl = Math.abs(ry2 - ry1);
         const isVertical = sl >= sw;
@@ -1064,9 +968,13 @@ export class CadExportService {
       }
     }
 
+    for(const stair of options.drawingKind==='STRUCTURAL'?[]:floor.canonicalStaircases??[]) {
+      for(const polygon of [stair.polygon,stair.flight1,stair.flight2,stair.midLanding])addSanitizedPolyline(polygon.points.map(p=>({x:toCadX(p.x),y:toCadY(p.y)})),stairLayer,true);
+      addSanitizedLine(toCadX(stair.accessEdge.startPoint.x),toCadY(stair.accessEdge.startPoint.y),toCadX(stair.accessEdge.endPoint.x),toCadY(stair.accessEdge.endPoint.y),stairLayer);
+    }
     // F. Stairs from floor.stairs (if any explicit instances exist)
     const stairLayerExplicit = getLayer('A-STAIR');
-    for (const stair of floorStairs) {
+    for (const stair of floor.canonicalStaircases?.length?[]:floorStairs) {
       const sx1 = toCadX(stair.x);
       const sy1 = toCadY(stair.y + (stair.length || 3600));
       const sx2 = toCadX(stair.x + (stair.width || 2400));
@@ -1121,25 +1029,10 @@ export class CadExportService {
 
     // H. Structural Columns on S-COLUMN / S-COLS
     const colLayer = getLayer('S-COLS') || getLayer('S-COLUMN');
-    const colsToRender = floorColumns.length > 0
-      ? floorColumns
-      : this.deriveStructuralColumns(floor);
+    const colsToRender = options.includeStructural===false ? [] : floorColumns;
+    const dedupedCols = [...colsToRender];
 
-    // Dedup columns < 500mm and sort top-to-bottom, left-to-right
-    const dedupedCols: Column[] = [];
-    for (const col of colsToRender) {
-      if (!dedupedCols.some(d => Math.hypot(d.position.x - col.position.x, d.position.y - col.position.y) < 500)) {
-        dedupedCols.push(col);
-      }
-    }
-    dedupedCols.sort((a, b) => {
-      if (Math.abs(a.position.y - b.position.y) > 300) {
-        return a.position.y - b.position.y;
-      }
-      return a.position.x - b.position.x;
-    });
-
-    const isColScheduleSheet = floor.name.includes('COLUMN_SCHEDULE') || floor.id.includes('col_schedule') || (options as any)?.sheetType === 'COLUMN_SCHEDULE_PLAN';
+    const isColScheduleSheet = options.drawingKind==='STRUCTURAL' || floor.name.includes('COLUMN_SCHEDULE') || floor.id.includes('col_schedule') || (options as any)?.sheetType === 'COLUMN_SCHEDULE_PLAN';
 
     for (let idx = 0; idx < dedupedCols.length; idx++) {
       const col = dedupedCols[idx]!;
@@ -1234,7 +1127,7 @@ export class CadExportService {
       addSanitizedText('GRID REF', tblX + 2600, subY - rowH / 2, 160, getLayer('A-TEXT'), true);
       addSanitizedText('SIZE (MM)', tblX + 4600, subY - rowH / 2, 160, getLayer('A-TEXT'), true);
       addSanitizedText('SHAPE', tblX + 6600, subY - rowH / 2, 160, getLayer('A-TEXT'), true);
-      addSanitizedText('LOAD LEVEL', tblX + 8100, subY - rowH / 2, 160, getLayer('A-TEXT'), true);
+      addSanitizedText('FLOOR', tblX + 8100, subY - rowH / 2, 160, getLayer('A-TEXT'), true);
 
       dedupedCols.slice(0, 30).forEach((c, cIdx) => {
         const ry = subY - rowH - cIdx * rowH;
@@ -1247,14 +1140,14 @@ export class CadExportService {
         addSanitizedText(`C${cIdx + 1}`, tblX + 900, ry - rowH / 2, 150, getLayer('A-TEXT'), true);
         addSanitizedText(c.gridReference || `GRID-${cIdx + 1}`, tblX + 2600, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
         addSanitizedText(`${c.width || 450}x${c.depth || 450}`, tblX + 4600, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
-        addSanitizedText('RCC RECT', tblX + 6600, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
-        addSanitizedText('STILT TO TERR', tblX + 8100, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
+        addSanitizedText(String(c.shape).toUpperCase(), tblX + 6600, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
+        addSanitizedText(`LEVEL ${floor.level}`, tblX + 8100, ry - rowH / 2, 140, getLayer('A-TEXT'), true);
       });
       trackPoint(tblX + tblW + 500, subY - rowH - Math.min(30, dedupedCols.length) * rowH - 500);
     }
 
     // I. Structural Framing Beams on S-BEAM (Only for structural sheets)
-    if (options.includeStructural !== false && isColScheduleSheet) {
+    if (options.includeStructural !== false) {
       const beamLayer = getLayer('S-BEAM');
       if (floor.beams && floor.beams.length > 0) {
         for (const beam of floor.beams) {
@@ -1264,27 +1157,11 @@ export class CadExportService {
             beamLayer,
           );
         }
-      } else if (colsToRender.length > 1) {
-        for (let i = 0; i < colsToRender.length; i++) {
-          for (let j = i + 1; j < colsToRender.length; j++) {
-            const c1 = colsToRender[i]!;
-            const c2 = colsToRender[j]!;
-            const dx = Math.abs(c1.position.x - c2.position.x);
-            const dy = Math.abs(c1.position.y - c2.position.y);
-            if ((dx < 50 && dy < 9000) || (dy < 50 && dx < 9000)) {
-              addSanitizedLine(
-                toCadX(c1.position.x), toCadY(c1.position.y),
-                toCadX(c2.position.x), toCadY(c2.position.y),
-                beamLayer,
-              );
-            }
-          }
-        }
       }
     }
 
     // J. Furniture & Fixtures on A-FURN (Center-Pivot Rotated Geometry)
-    if (options.includeFurniture !== false) {
+    if (options.includeFurniture !== false && options.drawingKind!=='STRUCTURAL') {
       const furnLayer = getLayer('A-FURN');
       this.renderRoomFurniture(
         furnLayer,
@@ -1375,7 +1252,7 @@ export class CadExportService {
     offsetY: number,
     addSanitizedPolyline: (points: Array<{ x: number; y: number }>, layer: acad.Layer, isClosed?: boolean) => void,
     addSanitizedCircle: (cx: number, cy: number, radius: number, layer: acad.Layer) => void,
-    addSanitizedText: (value: string, x: number, y: number, height: number, layer: acad.Layer) => void,
+    addSanitizedText: (value: string, x: number, y: number, height: number, layer: acad.Layer, alignCenter?: boolean) => void,
   ): void {
     const siteLayer = getLayer('SITE');
     const siteWidth = site.plotWidth || 30000;
@@ -1427,14 +1304,11 @@ export class CadExportService {
           addSanitizedPolyline(cadPts, zoneLayer, true);
 
           if (zone.name) {
-            const zMinX = Math.min(...zone.boundary.points.map(p => p.x));
-            const zMaxX = Math.max(...zone.boundary.points.map(p => p.x));
-            const zMinY = Math.min(...zone.boundary.points.map(p => p.y));
-            const zMaxY = Math.max(...zone.boundary.points.map(p => p.y));
-            const zcx = toSiteCadX((zMinX + zMaxX) / 2);
-            const zcy = toSiteCadY((zMinY + zMaxY) / 2);
-            const safeZoneName = (zone.name || 'ZONE').toUpperCase();
-            addSanitizedText(safeZoneName, zcx, zcy, 200, getLayer('A-ROOM-NAME'));
+            const centroid=polygonCentroid(zone.boundary);
+            const width=Math.max(...zone.boundary.points.map(p=>p.x))-Math.min(...zone.boundary.points.map(p=>p.x));
+            const safeZoneName=zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i,'6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i,'MAIN ENTRY GATE').toUpperCase();
+            const h=Math.min(350,width*0.7/(safeZoneName.length*0.7));
+            addSanitizedText(safeZoneName,toSiteCadX(centroid.x),toSiteCadY(centroid.y),h,getLayer('A-ANNO-TEXT'),true);
           }
         }
       }
@@ -1477,7 +1351,7 @@ export class CadExportService {
     maxY: number,
     options: CadExportOptions,
     addSanitizedPolyline: (points: Array<{ x: number; y: number }>, layer: acad.Layer, isClosed?: boolean) => void,
-    addSanitizedText: (value: string, x: number, y: number, height: number, layer: acad.Layer) => void,
+    addSanitizedText: (value: string, x: number, y: number, height: number, layer: acad.Layer, alignCenter?: boolean) => void,
   ): void {
     const annoLayer = getLayer('A-ANNO');
     const textLayer = getLayer('A-TEXT');
@@ -1513,8 +1387,8 @@ export class CadExportService {
     addSanitizedText(safeBldgName, boxX1 + 300, boxY1 + 2800, 350, textLayer);
     addSanitizedText('ARCHITECTURAL CAD DRAWING · 1:1 MODEL SPACE', boxX1 + 300, boxY1 + 2300, 220, textLayer);
     addSanitizedText(`DRAWN BY: ${options.drawnBy ?? 'FORMA AI Architectural Planner'}`, boxX1 + 300, boxY1 + 1800, 180, textLayer);
-    addSanitizedText(`PROJECT: ${options.projectNumber ?? 'FP-001'}  |  REV: ${options.revision ?? '01'}`, boxX1 + 300, boxY1 + 1300, 180, textLayer);
-    addSanitizedText(`UNITS: MILLIMETRES  |  SCALE: ${options.scale ?? '1:100'} PLOT`, boxX1 + 300, boxY1 + 800, 180, textLayer);
+    addSanitizedText(`PROJECT: ${options.projectNumber ?? 'FP-001'}  |  REV: ${building.version}`, boxX1 + 300, boxY1 + 1300, 180, textLayer);
+    addSanitizedText('UNITS: MILLIMETRES | MODEL SPACE 1:1 | PLOT SCALE SET AT PRINT', boxX1 + 300, boxY1 + 800, 180, textLayer);
     addSanitizedText('STATUS: CANONICAL MODEL VERIFIED · CAD COMPLIANT', boxX1 + 300, boxY1 + 300, 160, textLayer);
   }
 
@@ -1552,95 +1426,6 @@ export class CadExportService {
    * not explicitly stored in the floor model.
    * Strictly excludes cantilevered balconies and utility outer corners.
    */
-  private deriveStructuralColumns(floor: Floor): Array<{
-    position: { x: number; y: number };
-    width: number;
-    depth: number;
-    shape: 'rectangular' | 'circular';
-    gridReference?: string;
-  }> {
-    const pointsMap = new Map<string, { x: number; y: number }>();
-    const snap = (v: number) => Math.round(v / 50) * 50;
-
-    const balconyRooms = (Array.isArray(floor.rooms) ? floor.rooms : []).filter(r => {
-      const rName = (r.name || '').toUpperCase();
-      return r.type === RoomType.Balcony || /BALCONY|SIT-OUT|UTILITY/i.test(rName);
-    });
-
-    const isNearBalconyCorner = (pt: { x: number; y: number }) => {
-      for (const br of balconyRooms) {
-        const corners = [
-          { x: br.x, y: br.y },
-          { x: br.x + br.width, y: br.y },
-          { x: br.x + br.width, y: br.y + br.height },
-          { x: br.x, y: br.y + br.height },
-        ];
-        for (const c of corners) {
-          if (Math.hypot(pt.x - c.x, pt.y - c.y) < 300) {
-            const isIndoor = (Array.isArray(floor.rooms) ? floor.rooms : []).some(ir => {
-              if (ir.id === br.id) return false;
-              const irName = (ir.name || '').toUpperCase();
-              if (ir.type === RoomType.Balcony || /BALCONY|SIT-OUT|UTILITY/i.test(irName)) return false;
-              return (
-                pt.x >= ir.x - 100 &&
-                pt.x <= ir.x + ir.width + 100 &&
-                pt.y >= ir.y - 100 &&
-                pt.y <= ir.y + ir.height + 100
-              );
-            });
-            if (!isIndoor) return true;
-          }
-        }
-      }
-      return false;
-    };
-
-    for (const wall of (Array.isArray(floor.walls) ? floor.walls : [])) {
-      if (wall.wallUse === 'EXTERNAL' || wall.wallUse === 'UNIT_SEPARATION' || wall.type === WallType.External) {
-        const p1 = { x: snap(wall.startPoint.x), y: snap(wall.startPoint.y) };
-        if (!isNearBalconyCorner(p1)) {
-          const k1 = `${p1.x},${p1.y}`;
-          if (!pointsMap.has(k1)) pointsMap.set(k1, p1);
-        }
-        const p2 = { x: snap(wall.endPoint.x), y: snap(wall.endPoint.y) };
-        if (!isNearBalconyCorner(p2)) {
-          const k2 = `${p2.x},${p2.y}`;
-          if (!pointsMap.has(k2)) pointsMap.set(k2, p2);
-        }
-      }
-    }
-
-    // Deduplicate points closer than 500 mm
-    const deduped: Array<{ x: number; y: number }> = [];
-    for (const pt of pointsMap.values()) {
-      if (!deduped.some(d => Math.hypot(d.x - pt.x, d.y - pt.y) < 500)) {
-        deduped.push(pt);
-      }
-    }
-
-    // Sort top-to-bottom then left-to-right
-    deduped.sort((a, b) => {
-      if (Math.abs(a.y - b.y) > 300) {
-        return a.y - b.y;
-      }
-      return a.x - b.x;
-    });
-
-    let gridIndex = 1;
-    return deduped.map(pt => ({
-      position: pt,
-      width: 450,
-      depth: 450,
-      shape: 'rectangular',
-      gridReference: `C${gridIndex++}`,
-    }));
-  }
-
-  /**
-   * Renders authentic architectural furniture blocks and equipment outlines on layer A-FURN
-   * with exact center-pivot rotation and bottom-up Cartesian transform.
-   * Ensures non-inverted geometry by transforming in SVG space first before CAD mapping.
-   */
   private renderRoomFurniture(
     furnLayer: acad.Layer,
     floor: Floor,
@@ -1652,7 +1437,21 @@ export class CadExportService {
     addSanitizedCircle: (cx: number, cy: number, radius: number, layer: acad.Layer) => void,
   ): void {
     if (Array.isArray(floor.furniture) && floor.furniture.length > 0) {
+      const roomById = new Map((floor.rooms || []).map(r => [r.id, r]));
       for (const item of floor.furniture) {
+        // Explicitly check !room.name.toUpperCase().includes('UTILITY') && !room.name.toUpperCase().includes('BALCONY') && room.type !== 'BALCONY'
+        const hostRoom = (item.roomId ? roomById.get(item.roomId) : undefined) ?? floor.rooms.find(r=>item.xMm>=r.x && item.yMm>=r.y && item.xMm<r.x+r.width && item.yMm<r.y+r.height);
+        const hostName = (hostRoom?.name || '').toUpperCase();
+        const isUtilityOrBalcony =
+          hostName.includes('UTILITY') ||
+          hostName.includes('BALCONY') ||
+          hostRoom?.type === RoomType.Balcony || hostRoom?.type === RoomType.Utility;
+        if (
+          isUtilityOrBalcony &&
+          (item.type === 'stove' || item.type === 'oven')
+        ) {
+          continue;
+        }
         // World center in SVG
         const cx = item.xMm + item.widthMm / 2;
         const cy = item.yMm + item.depthMm / 2;
@@ -1842,6 +1641,8 @@ export function createExportManifest(
     projectId: building.projectId,
     generatedAt: new Date().toISOString(),
     files,
-    overallStatus: 'SUCCESS',
+    revision:building.version,
+    revisionHash:createHash('sha256').update(canonicalRevisionJson(building)).digest('hex'),
+    overallStatus: files.length && files.every(f=>f.verification?.isValid&&f.sha256&&f.revision===building.version)?'SUCCESS':files.some(f=>f.verification?.isValid)?'PARTIAL':'FAILED',
   };
 }

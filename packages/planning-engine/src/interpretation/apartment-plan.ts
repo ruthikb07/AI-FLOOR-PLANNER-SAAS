@@ -902,7 +902,17 @@ export function apartmentStructureToBuilding(
     }
   }
 
-  const regions=structure.source==='DETERMINISTIC_SCHEMATIC'?apartmentFloorRegions(walls):{boundary:base.floors[0]!.boundary,voids:[]};
+  // Measure the physical floor outline for every source. A rectangular image
+  // frame can include exterior recesses and enclosed voids; it is not a floor plate.
+  let regions: ReturnType<typeof apartmentFloorRegions>;
+  try { regions = apartmentFloorRegions(walls); }
+  catch (error) {
+    diagnostics.push({ code: 'CANONICAL_WALL_TOPOLOGY_INVALID', severity: 'error',
+      message: error instanceof Error ? error.message : String(error) });
+    // Retain the submitted envelope for diagnostics only. The explicit error
+    // below prevents this candidate from ever being accepted as a valid plan.
+    regions = { boundary: base.floors[0]!.boundary, voids: [] };
+  }
   const unitBoundaries = structure.flats.map(f => {
     const rectBoundary = {
       points: [
@@ -1209,11 +1219,12 @@ export function runApartmentPlanValidation(input: {
   const canonical = validateCanonicalApartmentBuilding(converted.building, input.expectation);
   const closure = validateApartmentClosure(converted.building, input.manifest);
 
-  const passed = canonical.isValid && closure.hardErrors === 0;
+  const passed = canonical.isValid && closure.hardErrors === 0 && !converted.diagnostics.some(issue => issue.severity === 'error');
 
   const verificationIssues = [
     ...structural.issues,
     ...canonical.verificationIssues,
+    ...closure.issues.filter(issue => issue.severity === 'error').map(issue => ({ ...issue, code: `CANONICAL_${issue.code}` })),
   ];
 
   return {

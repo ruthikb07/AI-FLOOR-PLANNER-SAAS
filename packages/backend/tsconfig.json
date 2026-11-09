@@ -10,6 +10,8 @@
     { "path": "../core" },
     { "path": "../ai-orchestration" },
     { "path": "../geometry-engine" },
-    { "path": "../planning-engine" }
+    { "path": "../planning-engine" },
+    { "path": "../renderer" },
+    { "path": "../projection-3d" }
   ]
 }

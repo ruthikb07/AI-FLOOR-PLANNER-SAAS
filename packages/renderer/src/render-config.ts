@@ -208,6 +208,7 @@ const DEFAULT_LAYERS: Readonly<Record<RenderLayer, boolean>> = {
   [RenderLayer.Openings]: true,
   [RenderLayer.Stairs]: true,
   [RenderLayer.Columns]: true,
+    [RenderLayer.Beams]: true,
   [RenderLayer.Furniture]: true, // Illustrative nominal symbols, not canonical furnishing.
   [RenderLayer.Annotations]: true,
   [RenderLayer.Selection]: false, // Interactive only

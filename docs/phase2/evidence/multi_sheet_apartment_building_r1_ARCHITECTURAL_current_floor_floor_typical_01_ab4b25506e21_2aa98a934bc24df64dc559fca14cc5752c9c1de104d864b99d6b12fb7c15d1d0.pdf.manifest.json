@@ -1,0 +1,45 @@
+{
+  "buildingId": "multi_sheet_apartment_building",
+  "projectId": "apartment_project",
+  "revision": 1,
+  "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+  "generatedAt": "2026-11-08T10:09:51.553Z",
+  "files": [
+    {
+      "fileId": "2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0",
+      "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0.pdf",
+      "fileType": "PDF",
+      "discipline": "ARCHITECTURAL",
+      "title": "current_floor: floor_typical_01",
+      "mimeType": "application/pdf",
+      "sizeBytes": 43014,
+      "sha256": "2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0",
+      "buildingId": "multi_sheet_apartment_building",
+      "revision": 1,
+      "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+      "scope": "ARCHITECTURAL:current_floor:floor_typical_01",
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "pageCount": 1,
+          "scaleModes": [
+            "FIT_TO_PAGE_NOT_TO_SCALE"
+          ],
+          "sizeBytes": 43014
+        }
+      },
+      "downloadUrl": "/api/v1/export/download/multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0.pdf",
+      "metadata": {
+        "options": {
+          "floorId": "floor_typical_01"
+        },
+        "floorIds": [
+          "floor_typical_01"
+        ],
+        "units": "mm"
+      }
+    }
+  ],
+  "overallStatus": "SUCCESS"
+}

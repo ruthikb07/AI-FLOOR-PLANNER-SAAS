@@ -63,7 +63,7 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
 
     // Check Sheet Audits for Delta = 0.000 mm²
     for (const sheet of result.sheets) {
-      expect(sheet.audit.isPlanarConserved).toBe(true);
+      expect(sheet.audit.isPlanarConserved, JSON.stringify(sheet.audit)).toBe(true);
       expect(sheet.audit.unassignedMm2).toBe(0);
       expect(Math.abs(sheet.audit.deltaMm2)).toBeLessThan(1);
     }
@@ -135,7 +135,7 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
 
     // Verify all sheets are Planar Conserved (Delta = 0.000 mm²)
     for (const sheet of result.sheets) {
-      expect(sheet.audit.isPlanarConserved).toBe(true);
+      expect(sheet.audit.isPlanarConserved, JSON.stringify(sheet.audit)).toBe(true);
       expect(sheet.audit.unassignedMm2).toBe(0);
       expect(Math.abs(sheet.audit.deltaMm2)).toBeLessThan(1);
     }
@@ -205,7 +205,7 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
 
     // Invariant: Every sheet satisfies Planar Conservation: Delta = 0.000 mm²
     for (const sheet of result.sheets) {
-      expect(sheet.audit.isPlanarConserved).toBe(true);
+      expect(sheet.audit.isPlanarConserved, JSON.stringify(sheet.audit)).toBe(true);
       expect(sheet.audit.unassignedMm2).toBe(0);
       expect(Math.abs(sheet.audit.deltaMm2)).toBeLessThan(1);
     }
@@ -242,7 +242,9 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
     expect(terrMumty.y).toBe(typStair.y);
 
     // Verify Canonical Building contains all coordinated floors (Stilt + 12 Residential Floors + Column Schedule + Refuge + Terrace = 16)
-    expect(result.building.floors.length).toBe(16);
+    expect(result.building.floors.length).toBe(14); // Stilt + 12 physical residential levels + terrace.
+    expect(new Set(result.building.floors.map(f => f.level)).size).toBe(14);
+    expect(result.building.floors.some(f => f.name.includes('COLUMN_SCHEDULE'))).toBe(false);
     expect(result.building.site.siteZones!.length).toBeGreaterThan(5);
 
     // Verify Parking multiplier for MECHANICAL_STACK
@@ -273,7 +275,7 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
     expect(result.schedule.groundCoveragePercent).toBe(100);
 
     for (const sheet of result.sheets) {
-      expect(sheet.audit.isPlanarConserved).toBe(true);
+      expect(sheet.audit.isPlanarConserved, JSON.stringify(sheet.audit)).toBe(true);
       expect(sheet.audit.unassignedMm2).toBe(0);
       expect(Math.abs(sheet.audit.deltaMm2)).toBeLessThan(1);
     }

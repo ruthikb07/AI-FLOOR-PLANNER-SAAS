@@ -1,0 +1,10 @@
+
+ RUN  v2.0.5 C:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/backend
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase2-artifacts.test.ts  (6 tests) 7101ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  15:55:27
+   Duration  10.32s (transform 1.14s, setup 0ms, collect 2.79s, tests 7.10s, environment 0ms, prepare 192ms)
+

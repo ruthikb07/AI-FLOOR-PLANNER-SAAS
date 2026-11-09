@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   BadgeCheck,
   Check,
@@ -13,12 +13,11 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { requestVerifiedExport, downloadVerifiedExport, fetchVerifiedBytes } from '../../services/export-client';
 import type { Building, Floor, PaperSize } from '@ai-floor-planner/core';
 import type { ValidationSummary } from '@ai-floor-planner/planning-engine';
 import {
   createExportArtifact,
-  exportCadArtifact,
-  persistArtifactToServer,
   DEFAULT_ADVANCED_EXPORT_SETTINGS,
   downloadExportArtifact,
   formatExportSize,
@@ -86,6 +85,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     ...DEFAULT_ADVANCED_EXPORT_SETTINGS,
     floorId: floor?.id ?? building.floors[0]?.id,
   });
+  const exportController=useRef(new AbortController());
+  useEffect(()=>{exportController.current.abort();exportController.current=new AbortController();return()=>exportController.current.abort();},[building,isOpen]);
   const [exportedMessage, setExportedMessage] = useState<string | null>(null);
   const [exportedPaths, setExportedPaths] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -93,6 +94,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     filename: string;
     blobUrl: string;
   } | null>(null);
+
+  useEffect(()=>()=>{if(lastExportedArtifact)URL.revokeObjectURL(lastExportedArtifact.blobUrl);},[lastExportedArtifact]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -137,37 +140,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   const handleDownload = async () => {
-    // DWG and DXF formats: use the real backend CAD export pipeline
-    if (settings.format === 'dwg' || settings.format === 'dxf') {
+    if (settings.format === 'dwg' || settings.format === 'dxf' || settings.format === 'pdf' || settings.format === 'svg') {
       try {
-        setIsExporting(true);
-        setExportedMessage(`Generating and validating ${settings.format.toUpperCase()} CAD drawing from canonical model...`);
-        const cadArtifact = await exportCadArtifact(building, settings);
-        await downloadExportArtifact(cadArtifact);
-        const verificationLabel = settings.format === 'dwg' ? 'AC1032 binary verified' : 'ASCII DXF standard verified';
-        setExportedMessage(
-          `${cadArtifact.filename} exported (${formatExportSize(cadArtifact.byteSize)} · ` +
-          `${cadArtifact.validation?.layerCount ?? 27} layers · ` +
-          `${cadArtifact.validation?.entityCount ?? 0} entities · ${verificationLabel}).`
-        );
-        const userDownloadPaths = (cadArtifact.savedPaths || []).filter(
-          p => !p.includes('output') && !p.includes('cad-export')
-        );
-        setExportedPaths(userDownloadPaths);
-
-        const blobParts: BlobPart[] = cadArtifact.content
-          ? [cadArtifact.content instanceof Uint8Array ? cadArtifact.content : String(cadArtifact.content)]
-          : [];
-        const blob = new Blob(blobParts, {
-          type: 'application/octet-stream',
-        });
-        const blobUrl = URL.createObjectURL(blob);
-        setLastExportedArtifact({ filename: cadArtifact.filename, blobUrl });
-      } catch (err) {
-        setExportedMessage(err instanceof Error ? err.message : 'CAD export failed.');
-      } finally {
-        setIsExporting(false);
-      }
+        const signal=exportController.current.signal;setIsExporting(true);setExportedMessage('Generating and verifying canonical artifact...');
+        const artifact=await requestVerifiedExport(building,settings.format,{floorId:settings.floorId,exportScope:settings.exportScope==='active_sheet'?'current_floor':settings.exportScope,paperSize:['A3','A2','A1'].includes(settings.paperSize)?settings.paperSize as 'A3'|'A2'|'A1':'A3',scale:settings.scaleMode==='FIT_TO_PAGE'?'FIT_TO_PAGE':settings.scale,includeDimensions:settings.includeDimensions,includeFurniture:settings.includeFurniture},signal);
+        await downloadVerifiedExport(artifact,signal);
+        setExportedMessage(`VERIFIED ${artifact.sizeBytes} bytes · SHA-256 ${artifact.sha256?.slice(0,16)} · revision ${artifact.revision}`);
+        const blob=await fetchVerifiedBytes(artifact,signal);setLastExportedArtifact({filename:artifact.fileName,blobUrl:URL.createObjectURL(blob)});
+      }catch(error){setExportedMessage(error instanceof Error?error.message:'Export failed');}
+      finally{setIsExporting(false);}
       return;
     }
 
@@ -175,19 +156,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     if (!artifactResult.artifact) return;
     try {
       setIsExporting(true);
-      const persistRes = await persistArtifactToServer(
-        artifactResult.artifact.filename,
-        artifactResult.artifact.content,
-      );
-      const artifactToDownload = persistRes
-        ? { ...artifactResult.artifact, savedPaths: persistRes.savedPaths, downloadUrl: persistRes.downloadUrl }
-        : artifactResult.artifact;
-      await downloadExportArtifact(artifactToDownload);
-      setExportedMessage(`${artifactResult.artifact.filename} exported successfully.`);
-      const userDownloadPaths = (persistRes?.savedPaths || []).filter(
-        p => !p.includes('output') && !p.includes('cad-export')
-      );
-      setExportedPaths(userDownloadPaths);
+      await downloadExportArtifact(artifactResult.artifact);
+      setExportedMessage(`${artifactResult.artifact.filename} downloaded locally. Artifact registry verification is unavailable for this project-data format.`);
+      setExportedPaths([]);
 
       const blobParts: BlobPart[] = [String(artifactResult.artifact.content)];
       const blob = new Blob(blobParts, { type: artifactResult.artifact.mimeType });

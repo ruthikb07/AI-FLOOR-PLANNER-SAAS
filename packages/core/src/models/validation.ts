@@ -7,6 +7,7 @@
 
 import type { Building } from '../types';
 import { RoomType } from '../types';
+import { mepSchemaErrors } from '../mep/mep-validation';
 
 export interface ValidationError {
   path: string;
@@ -143,6 +144,7 @@ export function validateBuildingSchema(building: unknown): ValidationError[] {
     return errors;
   }
 
+  if (building['regulatoryContext'] !== undefined) errors.push(...validateRegulatoryContextSchema(building['regulatoryContext']));
   // Root fields
   if (!isNonEmptyString(building['id'])) {
     errors.push({ path: 'id', message: 'Must be a non-empty string', value: building['id'] });
@@ -346,6 +348,7 @@ export function validateBuildingSchema(building: unknown): ValidationError[] {
   }
 
   // Version
+  for(const message of mepSchemaErrors(building))errors.push({path:'mep',message,value:building['mep']});
   if (!isFiniteNumber(building['version'])) {
     errors.push({ path: 'version', message: 'Must be a finite number', value: building['version'] });
   }
@@ -356,4 +359,18 @@ export function validateBuildingSchema(building: unknown): ValidationError[] {
 /** Type guard: check if a value is a valid Building. */
 export function isValidBuilding(value: unknown): value is Building {
   return validateBuildingSchema(value).length === 0;
+}
+
+/** Optional inputs may be absent, but malformed explicit inputs are never accepted as approvals. */
+export function validateRegulatoryContextSchema(input:unknown):ValidationError[]{
+ const errors:ValidationError[]=[];
+ const fail=(key:string,value:unknown)=>errors.push({path:`regulatoryContext.${key}`,value,message:'Invalid explicit regulatory input'});
+ if(!isObject(input)){fail('',input);return errors;}
+ const enums:Record<string,readonly unknown[]>={authorityType:['MUNICIPAL_CORPORATION','MUNICIPAL_COUNCIL','REGIONAL_PLAN'],congestionZone:['NON_CONGESTED','CONGESTED'],buildingUsage:['RESIDENTIAL_APARTMENT'],corporationClass:['A','B','C','D'],parkingFactorCategory:['PUNE_PCMC_THANE','NAGPUR_NASHIK','OTHER_MMR','OTHER_CORPORATION','D_CORPORATION','A_COUNCIL','BC_COUNCIL'],rosApplicability:['REQUIRED','EXEMPT_APPROVED_LAYOUT'],drivewayFlow:['ONE_WAY','TWO_WAY']};
+ for(const [k,values] of Object.entries(enums))if(input[k]!==undefined&&!values.includes(input[k]))fail(k,input[k]);
+ for(const k of ['parkingFloorHeightM','plotAreaSqm','roadWidthM','buildingHeightM','numFloors','originalHoldingAreaSqm','netPlotAreaSqm','approvedPremiumFsi','approvedTdrFsi','approvedAncillaryFsi'])if(input[k]!==undefined&&(!isFiniteNumber(input[k])||(input[k] as number)<0))fail(k,input[k]);
+ for(const k of ['roofFsiReviewed','stiltParkingEnabled','standardGreenfieldSchemeConfirmed','amendmentApplicabilityReviewed','fsiExemptionsReviewed'])if(input[k]!==undefined&&typeof input[k]!=='boolean')fail(k,input[k]);
+ if(input['numFloors']!==undefined&&!Number.isInteger(input['numFloors']))fail('numFloors',input['numFloors']);
+ if(input['reviewedFsiExemptions']!==undefined){const v=input['reviewedFsiExemptions'];if(!Array.isArray(v)||v.some(e=>!isObject(e)||!isNonEmptyString(e['floorId'])||!isNonEmptyString(e['clause'])||!isFiniteNumber(e['areaMm2'])||(e['areaMm2'] as number)<0))fail('reviewedFsiExemptions',v);}
+ return errors;
 }

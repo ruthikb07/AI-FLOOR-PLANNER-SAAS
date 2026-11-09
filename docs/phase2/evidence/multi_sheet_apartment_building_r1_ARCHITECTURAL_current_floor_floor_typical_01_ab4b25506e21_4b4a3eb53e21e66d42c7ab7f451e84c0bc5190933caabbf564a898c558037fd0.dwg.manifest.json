@@ -1,0 +1,137 @@
+{
+  "buildingId": "multi_sheet_apartment_building",
+  "projectId": "apartment_project",
+  "revision": 1,
+  "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+  "generatedAt": "2026-11-08T10:09:50.538Z",
+  "files": [
+    {
+      "fileId": "4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0",
+      "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0.dwg",
+      "fileType": "DWG",
+      "discipline": "ARCHITECTURAL",
+      "title": "current_floor: floor_typical_01",
+      "mimeType": "application/x-dwg",
+      "sizeBytes": 35764,
+      "sha256": "4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0",
+      "buildingId": "multi_sheet_apartment_building",
+      "revision": 1,
+      "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+      "scope": "ARCHITECTURAL:current_floor:floor_typical_01",
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "layers": {
+            "A-WALL-EXT": 1,
+            "A-WALL": 116,
+            "A-DOOR": 28,
+            "A-WIND": 56,
+            "A-GLAZ": 14,
+            "A-ROOM-NAME": 26,
+            "A-ANNO-TEXT": 85,
+            "A-LIFT": 18,
+            "A-STAIR": 52,
+            "A-DIMS": 6,
+            "S-COLS": 100,
+            "A-HATCH": 100,
+            "S-BEAM": 189,
+            "A-FURN": 167,
+            "A-ANNO": 2
+          },
+          "entityCount": 960,
+          "version": "AC1032",
+          "insUnits": 4,
+          "tileMode": 1,
+          "annotationCount": 95,
+          "annotationCollisions": 0,
+          "requiredLayers": {
+            "A-WALL": 116,
+            "S-COLS": 100,
+            "S-BEAM": 189,
+            "A-DOOR": 28,
+            "A-WIND": 56,
+            "A-FURN": 167,
+            "A-ANNO-TEXT": 85
+          }
+        }
+      },
+      "downloadUrl": "/api/v1/export/download/multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0.dwg",
+      "metadata": {
+        "validation": {
+          "isValid": true,
+          "format": "DWG",
+          "magic": "AC1032",
+          "fileSizeBytes": 35764,
+          "layerCount": 31,
+          "layers": [
+            "A-WALL",
+            "A-WALL-EXT",
+            "A-WALL-INT",
+            "A-WALL-PARTY",
+            "A-DOOR",
+            "A-WINDOW",
+            "A-WIND",
+            "A-GLAZ",
+            "S-COLUMN",
+            "S-COLS",
+            "S-GRID",
+            "S-BEAM",
+            "A-STAIR",
+            "A-LIFT",
+            "A-BALC",
+            "A-FURN",
+            "A-ROOM-NAME",
+            "A-ROOM-AREA",
+            "A-DIMS",
+            "A-ANNO",
+            "A-HATCH",
+            "SITE",
+            "A-SITE-BLDG",
+            "A-SITE-ROAD",
+            "A-SITE-PARK",
+            "A-SITE-LAND",
+            "A-SITE-AMENITY",
+            "A-SITE-UTIL",
+            "A-SITE-SERV",
+            "A-ANNO-TEXT",
+            "A-TEXT"
+          ],
+          "entityCount": 960,
+          "entityCountsByType": {
+            "LWPOLYLINE": 344,
+            "LINE": 375,
+            "ARC": 14,
+            "TEXT": 89,
+            "DIMENSION": 6,
+            "HATCH": 100,
+            "CIRCLE": 32
+          },
+          "bounds": {
+            "minX": -4200,
+            "minY": -9700,
+            "maxX": 52265,
+            "maxY": 47725,
+            "widthMm": 56465,
+            "heightMm": 57425
+          },
+          "units": "Millimeters",
+          "modelSpaceScale": "1:1",
+          "floorsExported": [
+            "1ST_FLOOR_PLAN"
+          ],
+          "siteIncluded": false,
+          "roundTripVerified": true
+        },
+        "options": {
+          "floorId": "floor_typical_01"
+        },
+        "floorIds": [
+          "floor_typical_01"
+        ],
+        "units": "mm"
+      }
+    }
+  ],
+  "overallStatus": "SUCCESS"
+}

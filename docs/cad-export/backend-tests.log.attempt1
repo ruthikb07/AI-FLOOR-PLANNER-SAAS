@@ -1,0 +1,292 @@
+
+> @ai-floor-planner/backend@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend
+> vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"
+
+
+ RUN  v2.0.5 C:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/backend
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/cad-export.test.ts  (21 tests) 7265ms
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — preflight rejection is honest (never "Score 0") > preflight FAIL → candidate REJECTED at VISUAL_PREFLIGHT with score null, no evaluation and no interpretation
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > attempt 1 fail → attempt 2 fail → attempt 3 fail → retry limit reached → FALLBACK_DETERMINISTIC
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > the same input reproduces the same seed sequence
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > valid fallback plan → real Gemini architectural evaluation → numeric score
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > preflight that cannot run is NOT a pass: no FLUX acceptance, no retry spend, fallback used
+[GenerationOrchestrator] Visual preflight could not be completed: HTTP 503 preflight model overloaded
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — bounded retry then deterministic fallback (Path B) > preflight that cannot run is NOT a pass: no FLUX acceptance, no retry spend, fallback used
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual preflight unavailable: HTTP 503 preflight model overloaded
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — FLUX success path (Path A) > attempt 1 FAIL → attempt 2 PASS → FLUX accepted on the retry seed, rejected attempt stays unscored
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — FLUX success path (Path A) > attempt 1 FAIL → attempt 2 PASS → FLUX accepted on the retry seed, rejected attempt stays unscored
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 1 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 1 flats, but image shows 2 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 1 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 1 flats, but image shows 2 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 2 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 2 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 3 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 3 flats, but image shows 4 flats.; Unit mix mismatch: Expected 3 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 3 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 3 flats, but image shows 4 flats.; Unit mix mismatch: Expected 3 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 4 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 4 flats, but image shows 5 flats.; Unit mix mismatch: Expected 4 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 4 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 4 flats, but image shows 5 flats.; Unit mix mismatch: Expected 4 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 5 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 5 flats, but image shows 6 flats.; Unit mix mismatch: Expected 5 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 5 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 5 flats, but image shows 6 flats.; Unit mix mismatch: Expected 5 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 6 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 6 flats, but image shows 7 flats.; Unit mix mismatch: Expected 6 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — deterministic fallback preserves exact counts for any N > requested 6 flat(s) → fallback has exactly that many, plus exact lifts/stairs and common lobby
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 6 flats, but image shows 7 flats.; Unit mix mismatch: Expected 6 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] FLUX attempt 1/3 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] FLUX attempt 2/3 (seed 7961) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase3-honest-gate-fallback.test.ts > Phase 3 — no false AI claim > the fallback is labelled FALLBACK_DETERMINISTIC, depicts the schematic, and is never reported as FLUX
+[GenerationOrchestrator] FLUX attempt 3/3 (seed 15880) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 2 x 2BHK.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase3-honest-gate-fallback.test.ts  (17 tests) 6180ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/generation-orchestrator.test.ts  (13 tests) 2152ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase4-image-to-2d.test.ts  (18 tests) 2826ms
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — per-candidate stage state is real (no false success) > preflight-rejected candidate: everything after preflight is SKIPPED; fallback reports its own stages
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — per-candidate stage state is real (no false success) > preflight-rejected candidate: everything after preflight is SKIPPED; fallback reports its own stages
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 1 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 1 flats, but image shows 2 flats.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 1 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 1 flats, but image shows 2 flats.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 2 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 2 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 3 flats.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 3 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 3 flats, but image shows 4 flats.; Unit mix mismatch: Expected 3 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 3 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 3 flats, but image shows 4 flats.; Unit mix mismatch: Expected 3 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 4 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 4 flats, but image shows 5 flats.; Unit mix mismatch: Expected 4 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 4 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 4 flats, but image shows 5 flats.; Unit mix mismatch: Expected 4 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 6 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 6 flats, but image shows 7 flats.; Unit mix mismatch: Expected 6 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/phase5-evaluation-and-sweep.test.ts > Phase 5 — scale sweep (mocked providers, real deterministic pipeline) > 6 flat(s), FLUX rejected → deterministic fallback: exact N preserved, provenance kept
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 6 flats, but image shows 7 flats.; Unit mix mismatch: Expected 6 x 2BHK, but detected 1 x 2BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase5-evaluation-and-sweep.test.ts  (20 tests) 4652ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase1-cad-acceptance.test.ts  (9 tests) 550ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase2-artifacts.test.ts  (6 tests) 38464ms
+stdout | src/__tests__/multi-story-cad-export.test.ts > actually converts a complete residential DXF with zero native audit errors
+PHASE4_NATIVE {"status":"VERIFIED","code":"ACCORECONSOLE_AUDIT_PASSED","errors":[],"binaryPath":"C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe","inputPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-phase4-native-cZiobI\\combined.dxf","inputSha256":"364b524fbc96bc3a5742f282f71c798242808152953377fe23b4e64c3f93030f","outputPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-phase4-native-cZiobI\\combined.dwg","logPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-phase4-native-cZiobI\\.accore-7e81a38c-b048-4a65-9048-9120e8b4d3c9\\console.log","exitCode":0,"auditErrorsFound":0,"auditErrorsFixed":0,"insUnits":4,"tileMode":1,"sha256":"d83f2491fabec7c33ae86a3cd05d60f9744bb13ce38a61cbb2824c8eca6416cd"}
+
+stdout | src/__tests__/multi-story-cad-export.test.ts > publishes verified DXF only and a partial manifest when the native binary is unavailable
+ACCORECONSOLE_BINARY_NOT_FOUND: explicit missing-binary regression case
+
+ ❯ |@ai-floor-planner/backend| src/__tests__/multi-story-cad-export.test.ts  (10 tests | 1 failed) 14214ms
+   × emits and verifies all per-floor and combined Standards A/B through native AutoCAD
+     → ENOENT: no such file or directory, mkdir ''
+ ↓ |@ai-floor-planner/backend| src/__tests__/phase5-live-sweep.test.ts  (1 test | 1 skipped)
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > a concept rejected at visual preflight is NOT scored; the others continue
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > a concept rejected at visual preflight is NOT scored; the others continue
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 179) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > a FLUX transport failure for one concept is recorded honestly (no fake candidate)
+[GenerationOrchestrator] Concept 3 (privacy) FLUX call failed: TimeoutError: The operation was aborted due to timeout
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 42) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 179) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 316) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] Gemini visual preflight rejection: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+stderr | src/__tests__/two-phase-concepts.test.ts > Two-phase upgrade — Phase 1: four controlled FLUX concepts > all four rejected ⇒ deterministic fallback (Candidate 01 plan), never an auto-applied FLUX image
+[GenerationOrchestrator] FLUX attempt 1/1 (seed 453) rejected at visual preflight: Visual acceptance FAIL: Flat count mismatch: Requested 2 flats, but image shows 4 flats.; Unit mix mismatch: Expected 1 x 2BHK, but detected 4 x 2BHK.; Unit mix mismatch: Expected 1 x 3BHK, but detected 0 x 3BHK.; Lift count insufficient: Requested 2 lift(s), but detected 1.; Staircase count insufficient: Requested 2 stair(s), but detected 1.
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/two-phase-concepts.test.ts  (6 tests) 10089ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/image-routes.test.ts  (8 tests) 373ms
+ ↓ |@ai-floor-planner/backend| src/__tests__/phase4-live-interpretation.test.ts  (3 tests | 3 skipped)
+stderr | src/__tests__/real-provider-smoke.test.ts > Real Provider Smoke Tests (Live Verification) > Phase 1 acceptance gate: no-reference, no-negative-prompt Klein request returns HTTP 200 + byte-valid image, and the default payload sends only documented fields
+[CloudflareImageProvider][flux_transport] {"stage":"http_response","model":"@cf/black-forest-labs/flux-2-klein-4b","hasReferences":false,"fieldsSent":["prompt","seed","width","height"],"status":200,"ok":true,"contentType":"application/json"}
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/real-provider-smoke.test.ts  (6 tests) 12204ms
+ ↓ |@ai-floor-planner/backend| src/__tests__/phase3-live-replay.test.ts  (1 test | 1 skipped)
+ ✓ |@ai-floor-planner/backend| src/__tests__/live-export-http.test.ts  (5 tests) 832ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/phase3-compliance-report.test.ts  (6 tests) 2399ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/image-artifact-store.test.ts  (6 tests) 138ms
+stdout | src/__tests__/accoreconsole-runner.test.ts > converts a minimal DXF using the actual installed AutoCAD engine
+NATIVE_PROBE {"status":"VERIFIED","code":"ACCORECONSOLE_AUDIT_PASSED","errors":[],"binaryPath":"C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe","inputPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-native-probe-LTz3BW\\input.dxf","inputSha256":"e51cbca022b68efefbe1dd572d39e616115b7a0e49addf14221d38b2793f17d5","outputPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-native-probe-LTz3BW\\native.dwg","logPath":"C:\\Users\\ruthi\\AppData\\Local\\Temp\\argon-native-probe-LTz3BW\\.accore-dab6d2b8-77ed-4479-bb68-620aae96d88d\\console.log","exitCode":0,"auditErrorsFound":0,"auditErrorsFixed":0,"insUnits":4,"tileMode":1,"sha256":"f26e4fdb9a2a953e89ae3a3e4443fd09b74c4f25d8026825ca95ba1bb2fa3f1b"}
+
+ ✓ |@ai-floor-planner/backend| src/__tests__/accoreconsole-runner.test.ts  (5 tests) 535ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/extraction-pipeline.test.ts  (3 tests) 42ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/interpretation-routes.test.ts  (6 tests) 40ms
+ ✓ |@ai-floor-planner/backend| src/__tests__/local-stub-image-provider.test.ts  (3 tests) 41ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |@ai-floor-planner/backend| src/__tests__/multi-story-cad-export.test.ts > emits and verifies all per-floor and combined Standards A/B through native AutoCAD
+Error: ENOENT: no such file or directory, mkdir ''
+ ❯ ResidentialCadExportRegistry.generate src/cad/residential-cad-export-registry.ts:181:8
+    179|       serializer.serialize(snapshot, { standard, combined: true }),
+    180|     ]);
+    181|     fs.mkdirSync(this.directory, { recursive: true });
+       |        ^
+    182|     const job = path.join(this.directory, `.residential-job-${randomUU…
+    183|     fs.mkdirSync(job);
+ ❯ ArtifactRegistry.generateResidentialPackage src/services/artifact-registry.ts:185:61
+ ❯ src/__tests__/multi-story-cad-export.test.ts:202:31
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 17 passed | 3 skipped (21)
+      Tests  1 failed | 167 passed | 5 skipped (173)
+   Start at  21:30:13
+   Duration  249.76s (transform 7.06s, setup 0ms, collect 116.51s, tests 103.00s, environment 12ms, prepare 16.71s)
+
+C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ai-floor-planner/backend@0.1.0 test: `vitest run --passWithNoTests "--pool=threads" "--maxWorkers=1" "--minWorkers=1"`
+Exit status 1

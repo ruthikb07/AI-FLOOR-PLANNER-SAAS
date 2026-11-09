@@ -44,6 +44,7 @@ import {
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
 } from '@ai-floor-planner/core';
+import { repairApartmentPlan } from '../repair/apartment-error-repair';
 import { populateCanonicalFurniture } from '../plancraft/auto-furnish-apartment.js';
 import {
   generateApartmentWalls,
@@ -60,6 +61,7 @@ import {
   type MacroPartition,
 } from '../interpretation/space-filling-snapper';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
+import { GeometryValidator, validateAndRepairBuildingGeometry } from '../validator/geometry-validator';
 
 // ─── Stack Parameters & Height Solver ────────────────────────────────────────
 
@@ -498,7 +500,7 @@ export function solveSitePlanSheet(
     accountedAreaMm2: accountedArea,
     deltaMm2: delta,
     unassignedMm2: 0,
-    isPlanarConserved: Math.abs(delta) < 1,
+    isPlanarConserved: Math.abs(delta) < 0.001,
   };
 
   const roadFacingSide = config.roadAccessSides?.[0] ?? Direction.South;
@@ -1009,7 +1011,7 @@ export function solveStiltParkingSheet(
     accountedAreaMm2: ledger.accounted,
     deltaMm2: ledger.delta,
     unassignedMm2: ledger.unassigned,
-    isPlanarConserved: Math.abs(ledger.delta) < 1 && ledger.unassigned === 0,
+    isPlanarConserved: Math.abs(ledger.delta) < 0.001 && ledger.unassigned === 0,
   };
 
   return { floor, carBaysCount, bikeBaysCount, audit };
@@ -1029,7 +1031,7 @@ export function solveTypicalFloorSheet(
   floorLevel: number = 1,
 ): TypicalFloorSheetResult {
   const floorId = floorLevel === 1 ? 'floor_typical_01' : `floor_level_${String(floorLevel).padStart(2, '0')}`;
-  const floorName = floorLevel === 1 ? '1ST_FLOOR_PLAN'
+  const floorName = floorLevel === 0 ? 'GROUND_FLOOR_PLAN' : floorLevel === 1 ? '1ST_FLOOR_PLAN'
     : floorLevel === 2 ? '2ND_FLOOR_PLAN'
     : floorLevel === 3 ? '3RD_FLOOR_PLAN'
     : `${floorLevel}TH_FLOOR_PLAN`;
@@ -1063,11 +1065,11 @@ export function solveTypicalFloorSheet(
 
   const rooms: Room[] = [];
   const addRoom = (
-    r: { id: string; name: string; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR' },
+    r: { id: string; name: string; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string },
     defaultType: RoomType,
     unitId?: string,
   ) => {
-    const rType = (r.type ?? defaultType) as RoomType;
+    const rType = (r.type === 'common_toilet' ? RoomType.Bathroom : r.type ?? defaultType) as RoomType;
     rooms.push(
       createBoxRoom({
         id: `apt-room:${r.id}`,
@@ -1107,9 +1109,9 @@ export function solveTypicalFloorSheet(
 
   for (const op of structure.openings) {
     const hostWall = walls.find(w =>
-      openingFitsApartmentWall(
+      (!op.connects || op.connects.every(id => w.roomIds.includes(`apt-room:${id}`))) && openingFitsApartmentWall(
         w,
-        { x: snap10(op.rect.x + op.rect.width / 2), y: snap10(op.rect.y + op.rect.height / 2) },
+        { x: op.rect.x + op.rect.width / 2, y: op.rect.y + op.rect.height / 2 },
         Math.max(op.rect.width, op.rect.height),
       ),
     );
@@ -1118,7 +1120,7 @@ export function solveTypicalFloorSheet(
         id: op.id,
         floorId,
         wallId: hostWall.id,
-        position: { x: snap10(op.rect.x + op.rect.width / 2), y: snap10(op.rect.y + op.rect.height / 2) },
+        position: { x: op.rect.x + op.rect.width / 2, y: op.rect.y + op.rect.height / 2 },
         width: Math.max(op.rect.width, op.rect.height),
         height: 2100,
         type: op.doorType === 'sliding' ? DoorType.Sliding : op.doorType === 'open_passage' ? DoorType.OpenPassage : DoorType.Single,
@@ -1129,12 +1131,17 @@ export function solveTypicalFloorSheet(
     }
   }
 
-  // Windows along exterior envelope walls
+  // Windows along exterior envelope walls (strictly no door overlap)
   for (const r of rooms) {
     if (r.spaceUse === 'OUTDOOR' || r.type === RoomType.ServiceShaft) continue;
     const extWalls = walls.filter(w => w.wallUse === 'EXTERNAL' && w.roomIds.includes(r.id));
-    if (extWalls.length > 0) {
-      const hw = extWalls[0]!;
+    for (const hw of extWalls) {
+      // Check if wall segment already has a door opening (e.g. balcony door)
+      const hasDoor = doors.some(d => d.wallId === hw.id);
+      if (hasDoor) {
+        // Balcony or exterior door already exists on this wall; never overlap door and window!
+        continue;
+      }
       const winW = 1200;
       const winPos = {
         x: snap10((hw.startPoint.x + hw.endPoint.x) / 2),
@@ -1142,7 +1149,7 @@ export function solveTypicalFloorSheet(
       };
       if (openingFitsApartmentWall(hw, winPos, winW)) {
         windows.push({
-          id: `win_${r.id}`,
+          id: `win_${r.id}_${hw.id}`,
           floorId,
           wallId: hw.id,
           position: winPos,
@@ -1194,7 +1201,8 @@ export function solveTypicalFloorSheet(
   };
 
   const flOrdinal = floorLevel === 1 ? '1st' : floorLevel === 2 ? '2nd' : floorLevel === 3 ? '3rd' : `${floorLevel}th`;
-  const ledger = measureApartmentAreaLedger(floor);
+  const repairedFloor = repairApartmentPlan({ id: 'typical', projectId: 'typical', name: floorName, site: { plotWidth: config.plotWidthMm, plotDepth: config.plotDepthMm } as Site, floors: [floor], metadata: { projectId: 'typical' }, version: 1, createdAt: '', updatedAt: '' }, manifest).building.floors[0]!;
+  const ledger = measureApartmentAreaLedger(repairedFloor);
   const audit: SheetLedgerAudit = {
     sheetId: floorLevel === 1 ? 'sheet_03_typical_plan' : `sheet_03_level_${floorLevel}_plan`,
     sheetName: `Sheet 03: ${flOrdinal} Residential Floor Plan`,
@@ -1202,10 +1210,10 @@ export function solveTypicalFloorSheet(
     accountedAreaMm2: ledger.accounted,
     deltaMm2: ledger.delta,
     unassignedMm2: ledger.unassigned,
-    isPlanarConserved: Math.abs(ledger.delta) < 1 && ledger.unassigned === 0,
+    isPlanarConserved: Math.abs(ledger.delta) < 0.001 && ledger.unassigned === 0,
   };
 
-  return { floor, structure, audit };
+  return { floor: repairedFloor, structure, audit };
 }
 
 // ─── Sheet 4 Solver: COLUMN_SCHEDULE_PLAN (Structural Grid & Schedule) ───────
@@ -1319,6 +1327,16 @@ export function solveRefugeFloorSheet(
     return { ...r, floorId };
   });
 
+  if (origBalcony && origLiving && deltaD > 0 && origLiving.width > origBalcony.width) {
+    const isNorth = origBalcony.y <= origLiving.y;
+    const remainingX = origBalcony.x === origLiving.x ? origBalcony.x + origBalcony.width : origLiving.x;
+    rooms.push(createBoxRoom({ id: `refuge_access_${refugeLevel}`, name: 'Refuge access passage',
+      type: RoomType.Corridor, spaceUse: 'UNIT', floorId, unitId: 'flat_01', tags: ['refuge:access'],
+      box: { x: remainingX, y: isNorth ? origLiving.y : origLiving.y + origLiving.height - deltaD,
+        w: origLiving.width - origBalcony.width, h: deltaD },
+    }));
+  }
+
   const walls = generateApartmentWalls(rooms, floorId, baseFloor.boundary);
   const doors = baseFloor.doors.map(d => ({ ...d, floorId }));
 
@@ -1365,7 +1383,7 @@ export function solveRefugeFloorSheet(
     accountedAreaMm2: ledger.accounted,
     deltaMm2: ledger.delta,
     unassignedMm2: ledger.unassigned,
-    isPlanarConserved: Math.abs(ledger.delta) < 1 && ledger.unassigned === 0,
+    isPlanarConserved: Math.abs(ledger.delta) < 0.001 && ledger.unassigned === 0,
   };
 
   return { floor, refugeAreaM2, audit };
@@ -1566,7 +1584,7 @@ export function solveTerraceSheet(
     accountedAreaMm2: ledger.accounted,
     deltaMm2: ledger.delta,
     unassignedMm2: ledger.unassigned,
-    isPlanarConserved: Math.abs(ledger.delta) < 1 && ledger.unassigned === 0,
+    isPlanarConserved: Math.abs(ledger.delta) < 0.001 && ledger.unassigned === 0,
   };
 
   return { floor, audit };
@@ -1720,10 +1738,28 @@ export function generateApartmentProjectSchedule(params: {
   };
 }
 
+/** Global entity identity is floor-scoped; all local references move together. */
+function namespaceFloorEntities(floor: Floor): Floor {
+  const id = (value: string): string => value.startsWith(`${floor.id}::`) ? value : `${floor.id}::${value}`;
+  const reference = (value: string | undefined): string | undefined => value ? id(value) : undefined;
+  return { ...floor,
+    rooms: floor.rooms.map(room => ({ ...room, id: id(room.id), floorId: floor.id, bathroomOwnerRoomId: reference(room.bathroomOwnerRoomId) })),
+    walls: floor.walls.map(wall => ({ ...wall, id: id(wall.id), floorId: floor.id, roomIds: wall.roomIds.map(id), leftRoomId: reference(wall.leftRoomId), rightRoomId: reference(wall.rightRoomId) })),
+    doors: floor.doors.map(door => ({ ...door, id: id(door.id), floorId: floor.id, wallId: id(door.wallId), connectsRooms: [id(door.connectsRooms[0]), door.connectsRooms[1].startsWith('__') ? door.connectsRooms[1] : id(door.connectsRooms[1])] as const })),
+    windows: floor.windows.map(window => ({ ...window, id: id(window.id), floorId: floor.id, wallId: id(window.wallId), roomId: id(window.roomId) })),
+    stairs: floor.stairs.map(stair => ({ ...stair, id: id(stair.id), floorId: floor.id })),
+    columns: floor.columns.map(column => ({ ...column, id: id(column.id), floorId: floor.id })),
+    beams: floor.beams?.map(beam => ({ ...beam, id: id(beam.id), floorId: floor.id, startColumnId: reference(beam.startColumnId), endColumnId: reference(beam.endColumnId) })),
+    canonicalStaircases: floor.canonicalStaircases?.map(stair => ({ ...stair, id: id(stair.id), floorId: floor.id })),
+    furniture: floor.furniture?.map(item => ({ ...item, id: id(item.id), roomId: id(item.roomId) })),
+  };
+}
+
 // ─── Master Engine: solveMultiSheetApartmentProject ──────────────────────────
 
 export function solveMultiSheetApartmentProject(
   rawConfig: MultiSheetApartmentConfig,
+  onStage?: (stage: 'UNIT_SPATIAL_SLICING' | 'WALL_AND_OPENING_TOPOLOGY' | 'COLUMN_AND_BEAM_GRID') => void,
 ): MultiSheetApartmentResult {
   const plotWidthMm = rawConfig.plotWidthMm ?? (rawConfig as any).siteWidthMm ?? 50000;
   const plotDepthMm = rawConfig.plotDepthMm ?? (rawConfig as any).siteDepthMm ?? 50000;
@@ -1768,21 +1804,22 @@ export function solveMultiSheetApartmentProject(
       h: config.plotDepthMm,
     };
   } else {
-    const left = 3000;
-    const rear = 3000;
-    const right = 3000;
-    const front = 4500;
+    const { left, rear, right, front } = config.setbacksMm ?? { left: 3000, rear: 3000, right: 3000, front: 4500 };
     envelope = {
       x: left,
       y: rear,
-      w: Math.max(12000, config.plotWidthMm - left - right),
-      h: Math.max(12000, config.plotDepthMm - rear - front),
+      w: config.plotWidthMm - left - right,
+      h: config.plotDepthMm - rear - front,
     };
   }
 
+  if (envelope.w < 12000 || envelope.h < 16000) throw new Error('The requested setbacks leave too little buildable space for this apartment topology. Increase the plot or reduce the program.');
+
+  onStage?.('UNIT_SPATIAL_SLICING');
   // 2. Resolve Macro Partitioning (Anchored directly onto space-filling-snapper)
   const macro = partitionMacroFootprint(envelope, config.flatsPerFloor);
 
+  onStage?.('WALL_AND_OPENING_TOPOLOGY');
   // 3. Solve Sheet 1: SITE_PLAN
   const siteSheet = solveSitePlanSheet(config, envelope);
 
@@ -1793,10 +1830,11 @@ export function solveMultiSheetApartmentProject(
   const numFloors = Math.max(1, config.numTypicalFloors ?? 4);
   const residentialSheets: TypicalFloorSheetResult[] = [];
   for (let fl = 1; fl <= numFloors; fl++) {
-    residentialSheets.push(solveTypicalFloorSheet(config, envelope, fl));
+    residentialSheets.push(solveTypicalFloorSheet(config, envelope, config.verticalStackType === 'G_PLUS_N' ? fl - 1 : fl));
   }
   const typicalSheet = residentialSheets[0]!;
 
+  onStage?.('COLUMN_AND_BEAM_GRID');
   // 6. Solve Sheet 4: COLUMN_SCHEDULE_PLAN
   const columnScheduleSheet = solveStructuralColumnScheduleSheet(typicalSheet, envelope);
 
@@ -1808,7 +1846,7 @@ export function solveMultiSheetApartmentProject(
   }
 
   // 8. Solve Sheet 6: TERRACE_PLAN
-  const terraceLevel = config.numTypicalFloors + 1;
+  const terraceLevel = config.numTypicalFloors + (config.verticalStackType === 'G_PLUS_N' ? 0 : 1);
   const terraceSheet = solveTerraceSheet(config, envelope, macro, terraceLevel);
 
   // 9. Solve Sheet 7: AREA_SCHEDULE_SHEET
@@ -1893,28 +1931,31 @@ export function solveMultiSheetApartmentProject(
         accountedAreaMm2: schedule.sheetAudits.reduce((sum, a) => sum + a.accountedAreaMm2, 0),
         deltaMm2: schedule.overallDeltaMm2,
         unassignedMm2: 0,
-        isPlanarConserved: schedule.overallDeltaMm2 < 1,
+        isPlanarConserved: schedule.overallDeltaMm2 < 0.001,
       },
     },
   ];
 
   // 11. Assemble Complete Multi-Floor Canonical Building
   const buildingFloors: Floor[] = [
-    stiltSheet.floor,
-    ...residentialSheets.map(s => s.floor),
-    columnScheduleSheet.floor,
-    ...(refugeSheet ? [refugeSheet.floor] : []),
+    ...(config.verticalStackType === 'G_PLUS_N' ? [] : [stiltSheet.floor]),
+    ...residentialSheets.map(s => refugeSheet && s.floor.level === refugeSheet.floor.level ? refugeSheet.floor : s.floor),
     terraceSheet.floor,
   ];
 
   const rawBuilding: Building = {
-    id: 'multi_sheet_apartment_building',
-    projectId: 'apartment_project',
-    name: 'Coordinated Multi-Sheet Indian Residential Apartment',
-    site: siteSheet.site,
-    floors: buildingFloors,
+    regulatoryContext: config.regulatoryContext,
+    id: config.projectId ? `building:${config.projectId}` : 'multi_sheet_apartment_building',
+    projectId: config.projectId ?? 'apartment_project',
+    name: config.projectName ?? 'Coordinated Multi-Sheet Indian Residential Apartment',
+    site: { ...siteSheet.site, roadFacing: config.roadAccessSides[0] ?? Direction.North, roadWidth: config.roadWidthMm },
+    floors: buildingFloors.map(floor => ({ ...floor,
+      floorUse: floor.id === terraceSheet.floor.id ? 'ROOF' as const : floor.id === stiltSheet.floor.id ? 'STILT_PARKING' as const : 'RESIDENTIAL' as const,
+      elevationMm: floor.id === stiltSheet.floor.id ? 0 : buildingFloors.filter(other => other.level < floor.level && other.id !== terraceSheet.floor.id).reduce((sum, other) => sum + other.floorHeight, 0),
+      buildingId: config.projectId ? `building:${config.projectId}` : 'multi_sheet_apartment_building' })),
     metadata: {
-      projectId: 'apartment_project',
+      projectId: config.projectId ?? 'apartment_project',
+      generationBrief: { source: 'DETERMINISTIC', aiPrompt: config.aiPrompt, referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined, units: config.units ?? [] },
       description: `Coordinated 6-Sheet Apartment Project (${config.flatsPerFloor} Flats/Floor, ${config.numTypicalFloors} Floors)`,
       tags: ['apartment', 'multi_sheet', 'udcpr', 'rera', 'canonical_model'],
     },
@@ -1923,21 +1964,37 @@ export function solveMultiSheetApartmentProject(
     updatedAt: new Date().toISOString(),
   };
 
-  const building = populateCanonicalFurniture(rawBuilding);
-  const furnishedFloorsById = new Map(building.floors.map(f => [f.id, f]));
+  const buildingWithFurniture = populateCanonicalFurniture(rawBuilding);
+
+  // Wire validateAndRepairBuildingGeometry() into default multi-sheet project generation:
+  // Snaps and deduplicates columns (S-COLS, min 2000 mm spacing - zero C2/C3 or C7/C8 overlaps, zero floating columns),
+  // generates complete primary, secondary, and cantilever beams (S-BEAM, 230 x 450 mm),
+  // enforces continuous canonicalStaircases on every floor with unobstructed OPEN_PASSAGE lobby access,
+  // and validates planar conservation (Delta = 0.000 mm²).
+  const placedStructure = new GeometryValidator().auditAndFixColumnAndBeamGrid(buildingWithFurniture, true).building;
+  const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
+  const finalFloors = audit.building.floors.map(namespaceFloorEntities);
+  const validatedBuilding: Building = { ...audit.building, floors: finalFloors,
+    furniture: [...finalFloors.flatMap(floor => floor.furniture ?? []), ...(audit.building.furniture ?? []).filter(item => item.siteZoneId)],
+  };
+  const validationReport = { ...audit.report, errors: audit.report.errors.map(error => ({ ...error,
+    elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
+  })) };
+  const validatedFloorsById = new Map(validatedBuilding.floors.map(f => [f.id, f]));
   const updatedSheets = sheets.map(s => {
     if (s.floor) {
-      const updatedFloor = furnishedFloorsById.get(s.floor.id);
-      return updatedFloor ? { ...s, floor: updatedFloor } : s;
+      const updatedFloor = validatedFloorsById.get(s.floor.id);
+      return { ...s, floor: updatedFloor ?? namespaceFloorEntities(s.floor) };
     }
     return s;
   });
 
   return {
     config,
-    building,
+    building: validatedBuilding,
     sheets: updatedSheets,
     schedule,
+    validationReport,
     totalBuildingHeightMm: stackParams.totalBuildingHeightMm,
     hasRefugeFloor: stackParams.requiresRefugeFloor,
     refugeFloorLevels: stackParams.refugeFloorLevels,

@@ -31,6 +31,8 @@ export interface StaircaseAccessEdge {
 
 /** Canonical multi-flight staircase entity with geometric flights and access edge. */
 export interface CanonicalStaircase {
+  readonly flightRiserCounts?: readonly [number, number];
+  readonly headroomMm?: number;
   readonly id: string;
   readonly floorId: string;
   readonly polygon: Polygon;

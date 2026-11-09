@@ -1,0 +1,106 @@
+
+> ai-floor-planner@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run lint
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running lint in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:build: cache miss, executing 0c5d6c5dcd0e6a90
+@ai-floor-planner/core:lint: cache miss, executing de98173963348dbc
+@ai-floor-planner/core:lint: 
+@ai-floor-planner/core:lint: > @ai-floor-planner/core@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:lint: > eslint src/
+@ai-floor-planner/core:lint: 
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/projection-3d:build: cache miss, executing bdb6a253172b1d98
+@ai-floor-planner/projection-3d:lint: cache miss, executing ea8a1f046b2d387d
+@ai-floor-planner/geometry-engine:lint: cache miss, executing 052a1cfbfc940781
+@ai-floor-planner/geometry-engine:build: cache miss, executing 29a68fc1e62671b6
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:lint: 
+@ai-floor-planner/projection-3d:lint: > @ai-floor-planner/projection-3d@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:lint: > eslint src/
+@ai-floor-planner/projection-3d:lint: 
+@ai-floor-planner/geometry-engine:lint: 
+@ai-floor-planner/geometry-engine:lint: > @ai-floor-planner/geometry-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:lint: > eslint src/
+@ai-floor-planner/geometry-engine:lint: 
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/renderer:build: cache miss, executing ca1668d76908b5cf
+@ai-floor-planner/constraint-engine:build: cache miss, executing 8b6108e04a318949
+@ai-floor-planner/renderer:lint: cache miss, executing 2869775246d6d211
+@ai-floor-planner/constraint-engine:lint: cache miss, executing 6ed967b195d40b4d
+@ai-floor-planner/renderer:lint: 
+@ai-floor-planner/renderer:lint: > @ai-floor-planner/renderer@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:lint: > eslint src/
+@ai-floor-planner/renderer:lint: 
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:lint: > @ai-floor-planner/constraint-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:lint: > eslint src/
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/planning-engine:lint: cache miss, executing 5e0481a4b0ccfa5c
+@ai-floor-planner/planning-engine:build: cache miss, executing a2a27c7ccce92f9f
+@ai-floor-planner/planning-engine:lint: 
+@ai-floor-planner/planning-engine:lint: > @ai-floor-planner/planning-engine@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/planning-engine:lint: 
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/planning-engine:build: > @ai-floor-planner/planning-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:build: > tsc --build
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/ai-orchestration:lint: cache miss, executing 8f6bda42158efb9e
+@ai-floor-planner/ai-orchestration:build: cache miss, executing 323e6d954bddd301
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:build: > @ai-floor-planner/ai-orchestration@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:build: > tsc --build
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:lint: 
+@ai-floor-planner/ai-orchestration:lint: > @ai-floor-planner/ai-orchestration@0.1.0 lint C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:lint: > eslint src/ --no-error-on-unmatched-pattern
+@ai-floor-planner/ai-orchestration:lint: 
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:lint: Oops! Something went wrong! :(
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:lint: ESLint: 9.9.0
+@ai-floor-planner/constraint-engine:lint: 
+@ai-floor-planner/constraint-engine:lint: Error: EBUSY: resource busy or locked, open 'C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\node_modules\.pnpm\@typescript-eslint+eslint-plugin@8.67.0_@typescript-eslint+parser@8.67.0_eslint@9.9.0_jiti@1._jur3blglbtt3i6whtj4b3vho6m\node_modules\@typescript-eslint\eslint-plugin\dist\util\misc.js'
+@ai-floor-planner/constraint-engine:lint:     at Object.readFileSync (node:fs:441:20)
+@ai-floor-planner/constraint-engine:lint:     at defaultLoadImpl (node:internal/modules/cjs/loader:1196:17)
+@ai-floor-planner/constraint-engine:lint:     at loadSource (node:internal/modules/cjs/loader:1897:20)
+@ai-floor-planner/constraint-engine:lint:     at Object..js (node:internal/modules/cjs/loader:1995:44)
+@ai-floor-planner/constraint-engine:lint:     at Module.load (node:internal/modules/cjs/loader:1594:32)
+@ai-floor-planner/constraint-engine:lint:     at Module._load (node:internal/modules/cjs/loader:1396:12)
+@ai-floor-planner/constraint-engine:lint:     at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+@ai-floor-planner/constraint-engine:lint:     at Module.require (node:internal/modules/cjs/loader:1617:12)
+@ai-floor-planner/constraint-engine:lint:     at require (node:internal/modules/helpers:153:16)
+@ai-floor-planner/constraint-engine:lint:     at Object.<anonymous> (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\node_modules\.pnpm\@typescript-eslint+eslint-plugin@8.67.0_@typescript-eslint+parser@8.67.0_eslint@9.9.0_jiti@1._jur3blglbtt3i6whtj4b3vho6m\node_modules\@typescript-eslint\eslint-plugin\dist\util\hasOverloadSignatures.js:5:16)
+@ai-floor-planner/constraint-engine:lint:  ELIFECYCLE  Command failed with exit code 2.
+@ai-floor-planner/constraint-engine:lint: ERROR: command finished with error: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run lint exited (2)
+@ai-floor-planner/constraint-engine#lint: command (C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine) C:\Users\ruthi\AppData\Roaming\npm\pnpm.cmd run lint exited (2)
+
+ Tasks:    6 successful, 14 total
+Cached:    0 cached, 14 total
+  Time:    12.927s 
+Failed:    @ai-floor-planner/constraint-engine#lint
+
+ ERROR  run failed: command  exited (2)
+ ELIFECYCLE  Command failed with exit code 2.

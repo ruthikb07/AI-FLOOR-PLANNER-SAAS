@@ -29,10 +29,12 @@ describe('reference-inspired illustrative furniture', () => {
       expect(placement.y).toBeGreaterThanOrEqual(200);
       expect(placement.x + placement.width).toBeLessThanOrEqual(6800);
       expect(placement.y + placement.height).toBeLessThanOrEqual(6800);
-      const svg = renderFloor(floor, building, transform);
+      const svg = renderReferenceFurniture(floor, transform);
+      const canonicalSvg=renderFloor(floor,building,transform);
+      expect(canonicalSvg).not.toContain('data-illustrative="true"');
       expect(svg).toContain('data-illustrative="true"');
       expect(svg).toContain(`data-source-room-id="${floor.rooms[0]!.id}"`);
-      expect(svg.match(/data-entity-type="room"/g)).toHaveLength(1);
+      expect(canonicalSvg.match(/data-entity-type="room"/g)).toHaveLength(1);
       expect(svg).not.toMatch(/NaN|Infinity/);
       expect(JSON.stringify(building)).toBe(before);
     });

@@ -1,0 +1,17 @@
+{
+  "isValid": true,
+  "errors": [],
+  "checks": {
+    "format": "pdf",
+    "pageCount": 8,
+    "scaleModes": [
+      "REPORT_NOT_TO_SCALE"
+    ],
+    "sizeBytes": 31807,
+    "pdfLibReopened": true,
+    "canonicalHashMatch": true,
+    "characterBoxOverlaps": 0,
+    "outOfBounds": 0,
+    "characters": 17689
+  }
+}

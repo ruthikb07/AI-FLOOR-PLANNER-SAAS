@@ -2213,4 +2213,30 @@
   color: #0F172A;
 }
 
+/* ==========================================================================
+   ARGON 4 GLOBAL HIGH-CONTRAST DROPDOWN & POPOVER STYLES
+   Eliminates white-on-white text across all selects and option menus
+   ========================================================================== */
+select,
+option {
+  background-color: #0f172a !important; /* bg-slate-900 */
+  color: #f8fafc !important; /* text-slate-50 */
+  border-color: #334155 !important; /* border-slate-700 */
+}
+
+select:focus,
+option:focus,
+option:hover,
+option:checked {
+  background-color: #1e293b !important; /* bg-slate-800 */
+  color: #fbbf24 !important; /* text-amber-400 */
+}
+
+.studio-root select,
+.studio-root option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+
 

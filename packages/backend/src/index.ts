@@ -55,3 +55,5 @@ export {
   type OrchestratedCandidate,
   type GenerationOrchestratorDeps,
 } from './services/generation-orchestrator.js';
+export { BlenderExportService, verifyBlenderArtifact, type BlenderExportManifest } from './services/blender-export-service.js';
+export { BlenderRunner, resolveBlenderExecutable } from './blender/blender-runner.js';

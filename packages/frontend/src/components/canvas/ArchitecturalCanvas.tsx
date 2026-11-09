@@ -44,6 +44,8 @@ import type { MultiSheetApartmentResult } from '@ai-floor-planner/planning-engin
 
 export interface ArchitecturalCanvasProps {
   editor?: EditorContextValue;
+  modelOnly?: boolean;
+  entityLayers?: {columns:boolean;beams:boolean;furniture:boolean};
   building?: Building;
   onCursorMove?: (worldPos: { x: number; y: number }) => void;
   onZoomChange?: (zoom: number) => void;
@@ -69,6 +71,8 @@ export const SHEET_TABS = [
 
 export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
   editor: externalEditor,
+  modelOnly = false,
+  entityLayers = {columns:true,beams:true,furniture:true},
   building: externalBuilding,
   onCursorMove,
   onZoomChange,
@@ -173,7 +177,7 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
 
   // 6-Tab CAD Sheet Switcher state
   const [internalTab, setInternalTab] = useState<number>(2); // Default to Sheet 03: Typical Floor
-  const currentTab = externalSheetTab !== undefined ? externalSheetTab : internalTab;
+  const currentTab = modelOnly ? 2 : externalSheetTab !== undefined ? externalSheetTab : internalTab;
 
   const handleTabClick = (tabId: number) => {
     if (onSelectSheetTab) {
@@ -320,17 +324,18 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
           [RenderLayer.Grid]: layers.grid,
           [RenderLayer.Rooms]: currentTab !== 0 ? layers.rooms : false,
           [RenderLayer.Walls]: currentTab !== 0 ? layers.walls : false,
-          [RenderLayer.Columns]: currentTab !== 0,
+          [RenderLayer.Columns]: currentTab !== 0 && entityLayers.columns,
+          [RenderLayer.Beams]: currentTab !== 0 && entityLayers.beams,
           [RenderLayer.Openings]: currentTab !== 0 ? layers.openings : false,
           [RenderLayer.Stairs]: currentTab !== 0 ? layers.stairs : false,
-          [RenderLayer.Furniture]: showFurniture && currentTab !== 0,
+          [RenderLayer.Furniture]: showFurniture && currentTab !== 0 && entityLayers.furniture,
           [RenderLayer.Annotations]: layers.dimensions,
           [RenderLayer.SiteZones]: currentTab === 0 && layers.siteZones,
           [RenderLayer.Plot]: true,
         },
       },
     );
-  }, [editor.activeFloor, editor.building, transform, viewportSize.width, viewportSize.height, layers, currentTab, showFurniture]);
+  }, [editor.activeFloor, editor.building, transform, viewportSize.width, viewportSize.height, layers, currentTab, showFurniture, entityLayers]);
 
   // Screen to World Conversion using Authoritative transform
   const getScreenToWorld = useCallback((screenX: number, screenY: number) => {
@@ -491,6 +496,10 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
       return;
     }
 
+    const entity=target.closest('[data-entity-type]');
+    const type=entity?.getAttribute('data-entity-type');
+    const id=entity?.getAttribute('data-entity-id');
+    if(id&&(type==='wall'||type==='column'||type==='stair'||type==='beam'||type==='furniture')) {editor.selectEntity(type,id,editor.activeFloor.id);return;}
     editor.clearSelection();
   };
 
@@ -657,8 +666,8 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
-      {/* ─── 1. TOP BAR: 6-TAB CAD SHEET SWITCHER BAR ─── */}
-      <div
+      {/* Legacy sheet catalog is unavailable in the canonical-only workspace. */}
+      {!modelOnly && <div
         style={{
           position: 'absolute',
           top: 0,
@@ -782,7 +791,7 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
             <span>Fit (1:100)</span>
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* ─── 2. MAIN VIEWPORT (SVG OR TAB 6 STATUTORY AREA SCHEDULE) ─── */}
       {currentTab === 5 ? (
@@ -930,7 +939,7 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
         /* Regular SVG Floor Canvas */
         <>
           {/* FLUX.2 Concept Underlay (Tab 3) */}
-          {currentTab === 2 && showUnderlay && (
+          {!modelOnly && currentTab === 2 && showUnderlay && (
             <div
               style={{
                 position: 'absolute',
@@ -1121,8 +1130,8 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
         </>
       )}
 
-      {/* ─── 3. BOTTOM BAR: PERSISTENT 100% PLANAR CONSERVATION LEDGER BAR ─── */}
-      <div
+      {/* Measured geometry is shown by the canonical workspace audit panel. */}
+      {!modelOnly && <div
         style={{
           position: 'absolute',
           bottom: 0,
@@ -1166,7 +1175,7 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
             </span>
           </div>
         </div>
-      </div>
+      </div>}
     </div>
   );
 };

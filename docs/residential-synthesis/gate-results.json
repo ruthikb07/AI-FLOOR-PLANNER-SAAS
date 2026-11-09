@@ -1,0 +1,48 @@
+[
+  {
+    "gate": "geometry-tests",
+    "exitCode": 0,
+    "attempts": 1,
+    "command": "pnpm --filter @ai-floor-planner/geometry-engine run test --pool=threads --maxWorkers=1 --minWorkers=1",
+    "seconds": 2.97
+  },
+  {
+    "gate": "planning-tests",
+    "exitCode": 0,
+    "attempts": 1,
+    "command": "pnpm --filter @ai-floor-planner/planning-engine run test --pool=threads --maxWorkers=1 --minWorkers=1",
+    "seconds": 43.17
+  },
+  {
+    "gate": "typecheck",
+    "exitCode": 0,
+    "attempts": 1,
+    "command": "pnpm typecheck --concurrency=1",
+    "seconds": 14.66
+  },
+  {
+    "gate": "lint",
+    "exitCode": 0,
+    "attempts": 1,
+    "command": "pnpm lint --concurrency=1",
+    "seconds": 18.63
+  },
+  {
+    "attempts": 1,
+    "exitCode": 0,
+    "previousResult": "Earlier live Cloudflare timeouts are preserved in parallel-timeout and attempt logs; worker forwarding is explicit in this run.",
+    "gate": "full-tests",
+    "command": "pnpm run test --concurrency=1 -- --pool=threads --maxWorkers=1 --minWorkers=1",
+    "seconds": 216.76,
+    "arguments": [
+      "run",
+      "test",
+      "--concurrency=1",
+      "--",
+      "--pool=threads",
+      "--maxWorkers=1",
+      "--minWorkers=1"
+    ],
+    "shellInvocation": "& pnpm @testArguments"
+  }
+]

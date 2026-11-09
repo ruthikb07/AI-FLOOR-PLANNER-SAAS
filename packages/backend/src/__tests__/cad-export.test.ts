@@ -15,309 +15,12 @@ import {
 } from '@ai-floor-planner/planning-engine';
 import {
   type Building,
-  WallType,
-  DoorType,
   SwingDirection,
-  WindowType,
   RoomType,
-  PlotShape,
   Direction,
 } from '@ai-floor-planner/core';
 
-export function createMockCanonicalBuilding(): Building {
-  return {
-    id: 'bldg-test-dwg-1',
-    projectId: 'proj-1',
-    name: 'Sapphire Heights Residency',
-    version: 3,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    metadata: {
-      projectId: 'proj-1',
-      clientName: 'Urban Prime Estates',
-    },
-    site: {
-      id: 'site-1',
-      plotWidth: 30000,
-      plotDepth: 25000,
-      plotArea: 750000000,
-      plotShape: PlotShape.Rectangular,
-      orientation: 45,
-      setbacks: { front: 5000, rear: 3000, left: 3000, right: 3000 },
-      roadFacing: Direction.North,
-      accessPoints: [
-        { id: 'ap-1', position: { x: 15000, y: 0 }, width: 6000, direction: Direction.North },
-      ],
-      plotBoundary: {
-        points: [
-          { x: 0, y: 0 },
-          { x: 30000, y: 0 },
-          { x: 30000, y: 25000 },
-          { x: 0, y: 25000 },
-        ],
-      },
-      siteZones: [
-        {
-          id: 'zone-1',
-          kind: 'parking',
-          name: 'Resident Parking',
-          area: 80000000,
-          accessLinks: [],
-          source: 'RULE_BASED',
-          reviewStatus: 'REVIEWED',
-          boundary: {
-            points: [
-              { x: 2000, y: 2000 },
-              { x: 10000, y: 2000 },
-              { x: 10000, y: 8000 },
-              { x: 2000, y: 8000 },
-            ],
-          },
-        },
-        {
-          id: 'zone-2',
-          kind: 'garden',
-          name: 'Courtyard Garden',
-          area: 120000000,
-          accessLinks: [],
-          source: 'RULE_BASED',
-          reviewStatus: 'REVIEWED',
-          boundary: {
-            points: [
-              { x: 12000, y: 2000 },
-              { x: 28000, y: 2000 },
-              { x: 28000, y: 8000 },
-              { x: 12000, y: 8000 },
-            ],
-          },
-        },
-      ],
-    },
-    floors: [
-      {
-        id: 'floor-0',
-        buildingId: 'bldg-test-dwg-1',
-        level: 0,
-        name: 'Ground Floor',
-        floorHeight: 3100,
-        boundary: {
-          points: [
-            { x: 5000, y: 5000 },
-            { x: 25000, y: 5000 },
-            { x: 25000, y: 20000 },
-            { x: 5000, y: 20000 },
-          ],
-        },
-        apartmentUnits: [
-          {
-            id: 'unit-101',
-            unitType: '2BHK',
-            boundary: {
-              points: [
-                { x: 5000, y: 5000 },
-                { x: 15000, y: 5000 },
-                { x: 15000, y: 20000 },
-                { x: 5000, y: 20000 },
-              ],
-            },
-          },
-          {
-            id: 'unit-102',
-            unitType: '2BHK',
-            boundary: {
-              points: [
-                { x: 15000, y: 5000 },
-                { x: 25000, y: 5000 },
-                { x: 25000, y: 20000 },
-                { x: 15000, y: 20000 },
-              ],
-            },
-          },
-        ],
-        rooms: [
-          {
-            id: 'room-1',
-            floorId: 'floor-0',
-            unitId: 'unit-101',
-            type: RoomType.Living,
-            name: 'Living Room 101',
-            x: 5000,
-            y: 5000,
-            width: 5000,
-            height: 6000,
-            area: 30000000,
-            rotation: 0,
-            priority: 1,
-            tags: ['living'],
-            adjacencyRequirements: [],
-            daylightRequirement: 1 as any,
-            privacyRequirement: 1 as any,
-            ventilationRequired: true,
-            isFixed: false,
-            boundary: {
-              points: [
-                { x: 5000, y: 5000 },
-                { x: 10000, y: 5000 },
-                { x: 10000, y: 11000 },
-                { x: 5000, y: 11000 },
-              ],
-            },
-          },
-          {
-            id: 'room-2',
-            floorId: 'floor-0',
-            unitId: 'unit-101',
-            type: RoomType.Bedroom,
-            name: 'Master Bedroom 101',
-            x: 10000,
-            y: 5000,
-            width: 5000,
-            height: 6000,
-            area: 30000000,
-            rotation: 0,
-            priority: 2,
-            tags: ['bedroom'],
-            adjacencyRequirements: [],
-            daylightRequirement: 1 as any,
-            privacyRequirement: 1 as any,
-            ventilationRequired: true,
-            isFixed: false,
-            boundary: {
-              points: [
-                { x: 10000, y: 5000 },
-                { x: 15000, y: 5000 },
-                { x: 15000, y: 11000 },
-                { x: 10000, y: 11000 },
-              ],
-            },
-          },
-          {
-            id: 'room-3',
-            floorId: 'floor-0',
-            unitId: 'unit-102',
-            type: RoomType.Living,
-            name: 'Living Room 102',
-            x: 15000,
-            y: 5000,
-            width: 5000,
-            height: 6000,
-            area: 30000000,
-            rotation: 0,
-            priority: 1,
-            tags: ['living'],
-            adjacencyRequirements: [],
-            daylightRequirement: 1 as any,
-            privacyRequirement: 1 as any,
-            ventilationRequired: true,
-            isFixed: false,
-            boundary: {
-              points: [
-                { x: 15000, y: 5000 },
-                { x: 20000, y: 5000 },
-                { x: 20000, y: 11000 },
-                { x: 15000, y: 11000 },
-              ],
-            },
-          },
-        ],
-        walls: [
-          // External wall south
-          {
-            id: 'wall-ext-1',
-            floorId: 'floor-0',
-            startPoint: { x: 5000, y: 5000 },
-            endPoint: { x: 25000, y: 5000 },
-            thickness: 230,
-            type: WallType.External,
-            wallUse: 'EXTERNAL',
-            roomIds: ['room-1', 'room-2', 'room-3'],
-            hasOpening: true,
-            loadBearing: true,
-          },
-          // Apartment party demising wall separating Unit 101 and Unit 102
-          {
-            id: 'wall-party-1',
-            floorId: 'floor-0',
-            startPoint: { x: 15000, y: 5000 },
-            endPoint: { x: 15000, y: 20000 },
-            thickness: 230,
-            type: WallType.Internal,
-            wallUse: 'UNIT_SEPARATION',
-            unitIds: ['unit-101', 'unit-102'],
-            roomIds: ['room-2', 'room-3'],
-            hasOpening: false,
-            loadBearing: true,
-          },
-          // Internal partition between Living and Master Bed
-          {
-            id: 'wall-int-1',
-            floorId: 'floor-0',
-            startPoint: { x: 10000, y: 5000 },
-            endPoint: { x: 10000, y: 11000 },
-            thickness: 115,
-            type: WallType.Partition,
-            wallUse: 'INTERNAL_PARTITION',
-            roomIds: ['room-1', 'room-2'],
-            hasOpening: true,
-            loadBearing: false,
-          },
-        ],
-        doors: [
-          {
-            id: 'door-1',
-            floorId: 'floor-0',
-            wallId: 'wall-int-1',
-            position: { x: 10000, y: 7500 },
-            width: 900,
-            height: 2100,
-            type: DoorType.Single,
-            swingDirection: SwingDirection.Inward,
-            connectsRooms: ['room-1', 'room-2'],
-          },
-        ],
-        windows: [
-          {
-            id: 'win-1',
-            floorId: 'floor-0',
-            wallId: 'wall-ext-1',
-            position: { x: 7500, y: 5000 },
-            width: 1500,
-            height: 1200,
-            sillHeight: 900,
-            type: WindowType.Casement,
-            roomId: 'room-1',
-          },
-        ],
-        stairs: [
-          {
-            id: 'stair-1',
-            floorId: 'floor-0',
-            type: 1 as any,
-            x: 20000,
-            y: 14000,
-            width: 2400,
-            length: 4000,
-            direction: Direction.North,
-            riserCount: 16,
-            riserHeight: 175,
-            treadDepth: 250,
-            landingWidth: 1200,
-            connectsFloors: [0, 1],
-            boundary: {
-              points: [
-                { x: 20000, y: 14000 },
-                { x: 22400, y: 14000 },
-                { x: 22400, y: 18000 },
-                { x: 20000, y: 18000 },
-              ],
-            },
-          },
-        ],
-        columns: [],
-      },
-    ],
-  };
-}
+import { createMockCanonicalBuilding } from '../__fixtures__/canonical-building.js';
 
 describe('CadExportService - Genuine DWG and DXF Export Engine', () => {
   const service = new CadExportService();
@@ -551,14 +254,12 @@ describe('CadExportService - Genuine DWG and DXF Export Engine', () => {
   it('exports complex realistic apartment candidate plans without errors', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const candPath = path.resolve(__dirname, '../../../../output/apartment-geometry-closure/04-selected-candidates/four-2bhk/canonical.json');
-    if (fs.existsSync(candPath)) {
-      const bld = JSON.parse(fs.readFileSync(candPath, 'utf8'));
-      const result = service.exportCad(bld, 'dwg');
-      expect(result.data.length).toBeGreaterThan(1000);
-      expect(result.validation.isValid).toBe(true);
-      expect(result.validation.magic).toMatch(/^AC/);
-    }
+    const candPath = path.resolve(__dirname, '../../../../tests/fixtures/apartment-closure/four-2bhk/canonical.json');
+    const candidate = JSON.parse(fs.readFileSync(candPath, 'utf8'));
+    const candidateResult = service.exportCad(candidate, 'dwg');
+    expect(candidateResult.data.length).toBeGreaterThan(1000);
+    expect(candidateResult.validation.isValid).toBe(true);
+    expect(candidateResult.validation.magic).toMatch(/^AC/);
 
     const fix2bhk = path.resolve(__dirname, '../../../../tests/fixtures/30x50-2bhk.json');
     if (fs.existsSync(fix2bhk)) {
@@ -624,7 +325,7 @@ describe('CadExportService - Genuine DWG and DXF Export Engine', () => {
     };
 
     const result = service.exportCad(aiBuilding, 'dxf', { floorId: aiBuilding.floors[0]!.id });
-    expect(result.filename).toBe('AI_BUILDING_SAAS_Floor_01.dxf');
+    expect(result.filename).toMatch(/^bldg_test_dwg_1_r3_current_floor_floor_0_[a-f0-9]{64}\.dxf$/);
   });
 
   it('exports distinct DXF files for different floor levels', () => {
@@ -651,8 +352,8 @@ describe('CadExportService - Genuine DWG and DXF Export Engine', () => {
     const groundExport = service.exportCad(multiFloorBuilding, 'dxf', { floorId: 'fl-ground' });
     const firstExport = service.exportCad(multiFloorBuilding, 'dxf', { floorId: 'fl-first' });
 
-    expect(groundExport.filename).toBe('metro_residences_ground_floor.dxf');
-    expect(firstExport.filename).toBe('metro_residences_first_floor.dxf');
+    expect(groundExport.filename).toMatch(/^bldg_test_dwg_1_r3_current_floor_fl_ground_[a-f0-9]{64}\.dxf$/);
+    expect(firstExport.filename).toMatch(/^bldg_test_dwg_1_r3_current_floor_fl_first_[a-f0-9]{64}\.dxf$/);
     expect(groundExport.validation.floorsExported).toEqual(['Ground Floor']);
     expect(firstExport.validation.floorsExported).toEqual(['First Floor']);
   });
@@ -713,9 +414,9 @@ describe('CadExportService - Genuine DWG and DXF Export Engine', () => {
       orientation: 'landscape',
     });
 
-    expect(result.filename).toContain('Gulmohar_Woods_Apartment_Complete_CAD_Sheet_Set.pdf');
+    expect(result.filename).toMatch(/^bldg-test-dwg-1_r3_complete_project_all_[a-f0-9]{64}\.pdf$/);
     expect(result.mimeType).toBe('application/pdf');
-    expect(result.pageCount).toBe(4);
+    expect(result.pageCount).toBe(5); // Site plan plus four canonical floor sheets
     expect(result.data.byteLength).toBeGreaterThan(2000);
     const pdfStr = Buffer.from(result.data).toString('utf-8');
     expect(pdfStr).toContain('%PDF-1.4');

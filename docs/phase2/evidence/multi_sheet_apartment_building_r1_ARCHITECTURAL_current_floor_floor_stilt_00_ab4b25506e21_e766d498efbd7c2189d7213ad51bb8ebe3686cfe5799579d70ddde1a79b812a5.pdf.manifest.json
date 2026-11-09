@@ -1,0 +1,45 @@
+{
+  "buildingId": "multi_sheet_apartment_building",
+  "projectId": "apartment_project",
+  "revision": 1,
+  "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+  "generatedAt": "2026-11-08T10:09:50.317Z",
+  "files": [
+    {
+      "fileId": "e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5",
+      "fileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_stilt_00_ab4b25506e21_e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5.pdf",
+      "fileType": "PDF",
+      "discipline": "ARCHITECTURAL",
+      "title": "current_floor: floor_stilt_00",
+      "mimeType": "application/pdf",
+      "sizeBytes": 42923,
+      "sha256": "e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5",
+      "buildingId": "multi_sheet_apartment_building",
+      "revision": 1,
+      "revisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+      "scope": "ARCHITECTURAL:current_floor:floor_stilt_00",
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "pageCount": 1,
+          "scaleModes": [
+            "FIT_TO_PAGE_NOT_TO_SCALE"
+          ],
+          "sizeBytes": 42923
+        }
+      },
+      "downloadUrl": "/api/v1/export/download/multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_stilt_00_ab4b25506e21_e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5.pdf",
+      "metadata": {
+        "options": {
+          "floorId": "floor_stilt_00"
+        },
+        "floorIds": [
+          "floor_stilt_00"
+        ],
+        "units": "mm"
+      }
+    }
+  ],
+  "overallStatus": "SUCCESS"
+}

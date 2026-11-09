@@ -1,0 +1,72 @@
+
+> @ai-floor-planner/frontend@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+> vitest run --passWithNoTests "--maxWorkers=1" "--minWorkers=1"
+
+
+ RUN  v2.0.5 C:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/frontend
+
+ ✓ src/__tests__/storage.test.ts  (14 tests) 16ms
+ ✓ src/__tests__/workflow-stabilization.test.ts  (4 tests) 93ms
+ ✓ src/__tests__/phase5-honest-stage-ui.test.ts  (12 tests) 4ms
+ ✓ src/__tests__/two-phase-concept-cards.test.ts  (5 tests) 2ms
+ ✓ src/__tests__/two-ai-candidates.test.ts  (5 tests) 4ms
+ ✓ src/__tests__/advanced-export.test.ts  (7 tests) 14ms
+ ✓ src/__tests__/download-path.test.ts  (3 tests) 7ms
+ ✓ src/__tests__/ai-concept-image-panel.test.tsx  (5 tests) 11ms
+ ✓ src/__tests__/blender-export.test.ts  (6 tests) 25ms
+ ✓ src/__tests__/reviewed-intent.test.ts  (6 tests) 27ms
+ ✓ src/__tests__/architectural-evidence-panel.test.tsx  (12 tests) 9ms
+ ✓ src/__tests__/ai-concept-image.test.ts  (7 tests) 5ms
+ ✓ src/__tests__/image-boundary.test.ts  (4 tests) 5ms
+ ✓ src/__tests__/image-to-plan.test.ts  (5 tests) 6ms
+ ✓ src/__tests__/apartment-configurator-sidebar.test.tsx  (4 tests) 27ms
+ ✓ src/__tests__/workflow-repair.test.ts  (5 tests) 46ms
+ ✓ src/__tests__/multi-floor-workflow.test.ts  (2 tests) 12ms
+ ✓ src/__tests__/workspace-commands.test.ts  (12 tests) 5ms
+ ✓ src/__tests__/unified-input-prompt.test.ts  (2 tests) 4ms
+ ✓ src/__tests__/argon-phase1.test.tsx  (2 tests) 15ms
+ ✓ src/__tests__/architectural-canvas-sheets.test.tsx  (4 tests) 28ms
+file:///C:/Users/ruthi/OneDrive/Desktop/AI%20BUILDING%20SAAS%20-%20Copy/AI%20BUILDING%20SAAS%20-%20Copy/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/utils-B--2TaWv.js:33
+		throw error;
+		^
+
+Error: EBUSY: resource busy or locked, open 'C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\node_modules\.pnpm\vitest@2.0.5_@types+node@20.19.43_jsdom@26.1.0\node_modules\vitest\dist\worker.js'
+    at Object.openSync (node:fs:561:18)
+    at Object.readFileSync (node:fs:445:35)
+    at getSourceSync (node:internal/modules/esm/load:41:17)
+    at defaultLoadSync (node:internal/modules/esm/load:156:34)
+    at #loadAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:802:12)
+    at #loadSync (node:internal/modules/esm/loader:834:53)
+    at ModuleLoader.load (node:internal/modules/esm/loader:783:26)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:494:31)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:560:36)
+    at afterResolve (node:internal/modules/esm/loader:607:52) {
+  errno: -4082,
+  code: 'EBUSY',
+  syscall: 'open',
+  path: 'C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\node_modules\\.pnpm\\vitest@2.0.5_@types+node@20.19.43_jsdom@26.1.0\\node_modules\\vitest\\dist\\worker.js'
+}
+
+Node.js v24.18.0
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: Worker exited unexpectedly
+    at ChildProcess.onUnexpectedExit (file:///C:/Users/ruthi/OneDrive/Desktop/AI%20BUILDING%20SAAS%20-%20Copy/AI%20BUILDING%20SAAS%20-%20Copy/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:118:30)
+    at ChildProcess.emit (node:events:521:24)
+    at ChildProcess._handle.onexit (node:internal/child_process:295:12)
+Emitted 'error' event on Tinypool instance at:
+    at EventEmitterReferencingAsyncResource.runInAsyncScope (node:async_hooks:227:14)
+    at Tinypool.emit (node:events:168:18)
+    at file:///C:/Users/ruthi/OneDrive/Desktop/AI%20BUILDING%20SAAS%20-%20Copy/AI%20BUILDING%20SAAS%20-%20Copy/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:594:30
+    at ChildProcess.<anonymous> (file:///C:/Users/ruthi/OneDrive/Desktop/AI%20BUILDING%20SAAS%20-%20Copy/AI%20BUILDING%20SAAS%20-%20Copy/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:162:34)
+    at ChildProcess.emit (node:events:509:28)
+    at ChildProcess.onUnexpectedExit (file:///C:/Users/ruthi/OneDrive/Desktop/AI%20BUILDING%20SAAS%20-%20Copy/AI%20BUILDING%20SAAS%20-%20Copy/node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:118:16)
+    at ChildProcess.emit (node:events:521:24)
+    at ChildProcess._handle.onexit (node:internal/child_process:295:12)
+
+Node.js v24.18.0
+C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ai-floor-planner/frontend@0.1.0 test: `vitest run --passWithNoTests "--maxWorkers=1" "--minWorkers=1"`
+Exit status 1

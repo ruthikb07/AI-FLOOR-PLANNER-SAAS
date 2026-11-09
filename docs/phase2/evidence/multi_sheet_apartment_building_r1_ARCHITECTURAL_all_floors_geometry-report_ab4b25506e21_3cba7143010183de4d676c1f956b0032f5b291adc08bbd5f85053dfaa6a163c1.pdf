@@ -1,0 +1,885 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R 28 0 R 30 0 R 32 0 R] /Count 15 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 4142 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 1 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (GEOMETRY & AREA CLOSURE REPORT) Tj ET
+BT /F1 8 Tf 32 785 Td (INTERNAL ENGINEERING GATE PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (Building multi_sheet_apartment_building revision 1) Tj ET
+BT /F1 8 Tf 32 755 Td (Canonical SHA-256 ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859) Tj ET
+BT /F1 8 Tf 32 740 Td (Units: mm / mm2; acceptance: absolute delta < 0.001 mm2) Tj ET
+BT /F1 8 Tf 32 725 Td (PROFESSIONAL REVIEW REQUIRED) Tj ET
+BT /F1 8 Tf 32 710 Td (Automated checks provide engineering design assistance and require verification by a licensed) Tj ET
+BT /F1 8 Tf 32 695 Td (Architect/Engineer before municipal submission.) Tj ET
+BT /F1 8 Tf 32 680 Td (FLOOR STILT_PARKING_PLAN \(floor_stilt_00\)) Tj ET
+BT /F1 8 Tf 32 665 Td (supported: true) Tj ET
+BT /F1 8 Tf 32 650 Td (units: mm2) Tj ET
+BT /F1 8 Tf 32 635 Td (convention: CENTRELINE_CELLS_MINUS_CLIPPED_WALL_UNION) Tj ET
+BT /F1 8 Tf 32 620 Td (gross: 2002500000) Tj ET
+BT /F1 8 Tf 32 605 Td (unitUsable: 0) Tj ET
+BT /F1 8 Tf 32 590 Td (balcony: 0) Tj ET
+BT /F1 8 Tf 32 575 Td (core: 485896500) Tj ET
+BT /F1 8 Tf 32 560 Td (common: 1109317550) Tj ET
+BT /F1 8 Tf 32 545 Td (service: 339389400) Tj ET
+BT /F1 8 Tf 32 530 Td (wall: 67896550) Tj ET
+BT /F1 8 Tf 32 515 Td (void: 0) Tj ET
+BT /F1 8 Tf 32 500 Td (unassigned: 0) Tj ET
+BT /F1 8 Tf 32 485 Td (overlap: 0) Tj ET
+BT /F1 8 Tf 32 470 Td (roomVoidOverlap: 0) Tj ET
+BT /F1 8 Tf 32 455 Td (accounted: 2002500000) Tj ET
+BT /F1 8 Tf 32 440 Td (delta: 0) Tj ET
+BT /F1 8 Tf 32 425 Td (WALL HIERARCHY \(canonical millimeters\)) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_stilt_00::apt-wall:x:14650:7900:11280 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:x:15280:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_stilt_00::apt-wall:x:15580:11280:16000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_stilt_00::apt-wall:x:21190:2500:5000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 350 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_stilt_00::apt-wall:x:21190:5000:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 320 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_stilt_00::apt-wall:x:21190:7500:7900 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 290 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:x:21190:7900:10000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_stilt_00::apt-wall:x:21190:10000:11280 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:x:21190:11280:12500 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_stilt_00::apt-wall:x:21190:12500:15000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::apt-wall:x:21190:15000:16000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::apt-wall:x:23550:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::apt-wall:x:23550:19000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_stilt_00::apt-wall:x:2500:2500:7900 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::apt-wall:x:2500:7900:11280 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:x:2500:11280:16000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:x:2500:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:x:2500:34000:36500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::apt-wall:x:2500:36500:39000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 4587 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 2 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:x:2500:39000:41500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::apt-wall:x:2500:41500:44000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::apt-wall:x:2500:44000:46500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_stilt_00::apt-wall:x:2500:46500:47500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::apt-wall:x:25950:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::apt-wall:x:26190:2500:5000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 710 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:x:26190:5000:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 680 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::apt-wall:x:26190:7500:10000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 650 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_stilt_00::apt-wall:x:26190:10000:12500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 620 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_stilt_00::apt-wall:x:26190:12500:15000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 590 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_stilt_00::apt-wall:x:26190:15000:16000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 560 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_stilt_00::apt-wall:x:30450:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_stilt_00::apt-wall:x:30450:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_stilt_00::apt-wall:x:42000:2500:5000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 500 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_stilt_00::apt-wall:x:42000:5000:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 470 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_stilt_00::apt-wall:x:42000:7500:10000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 440 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::apt-wall:x:42000:10000:12500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 410 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:x:42000:12500:15000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 380 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_stilt_00::apt-wall:x:42000:15000:16000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 350 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_stilt_00::apt-wall:x:42000:34000:36500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 320 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_stilt_00::apt-wall:x:42000:36500:39000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 290 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:x:42000:39000:41500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 260 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:x:42000:41500:44000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 230 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::apt-wall:x:42000:44000:46500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 200 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::apt-wall:x:42000:46500:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 170 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::apt-wall:x:47000:2500:5000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:x:47000:5000:7500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:x:47000:7500:10000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:x:47000:10000:12500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::apt-wall:x:47000:12500:15000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 4980 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 3 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:x:47000:15000:16000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::apt-wall:x:47000:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::apt-wall:x:47000:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_stilt_00::apt-wall:x:47000:34000:36500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::apt-wall:x:47000:36500:39000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::apt-wall:x:47000:39000:41500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::apt-wall:x:47000:41500:44000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:x:47000:44000:46500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::apt-wall:x:47000:46500:47500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::apt-wall:x:7000:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_stilt_00::apt-wall:x:7000:19000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_stilt_00::apt-wall:x:7500:34000:36500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 620 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_stilt_00::apt-wall:x:7500:36500:39000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 590 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_stilt_00::apt-wall:x:7500:39000:41500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 560 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_stilt_00::apt-wall:x:7500:41500:44000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 530 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_stilt_00::apt-wall:x:7500:44000:46500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 500 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_stilt_00::apt-wall:x:7500:46500:47500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 470 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_stilt_00::apt-wall:y:10000:21190:26190 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 440 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::apt-wall:y:10000:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 410 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:y:11280:2500:14650 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 380 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_stilt_00::apt-wall:y:11280:14650:15580 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_stilt_00::apt-wall:y:11280:15580:21190 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_stilt_00::apt-wall:y:12500:21190:26190 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 320 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_stilt_00::apt-wall:y:12500:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 290 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:y:15000:21190:26190 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 260 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:y:15000:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 230 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::apt-wall:y:16000:2500:7000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::apt-wall:y:16000:7000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::apt-wall:y:16000:15280:15580 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_stilt_00::apt-wall:y:16000:15580:21190 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::apt-wall:y:16000:21190:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:y:16000:23550:25950 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:y:16000:25950:26190 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:y:16000:26190:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::apt-wall:y:16000:30450:42000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 4804 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 4 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:y:16000:42000:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::apt-wall:y:19000:7000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::apt-wall:y:19000:15280:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_stilt_00::apt-wall:y:19000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::apt-wall:y:2500:2500:21190 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::apt-wall:y:2500:21190:26190 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::apt-wall:y:2500:26190:42000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:y:2500:42000:47000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::apt-wall:y:34000:2500:7000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::apt-wall:y:34000:7000:7500 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_stilt_00::apt-wall:y:34000:7500:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_stilt_00::apt-wall:y:34000:23550:25950 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_stilt_00::apt-wall:y:34000:25950:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_stilt_00::apt-wall:y:34000:30450:42000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_stilt_00::apt-wall:y:34000:42000:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_stilt_00::apt-wall:y:36500:2500:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 560 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_stilt_00::apt-wall:y:36500:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 530 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_stilt_00::apt-wall:y:39000:2500:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 500 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_stilt_00::apt-wall:y:39000:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 470 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_stilt_00::apt-wall:y:41500:2500:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 440 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::apt-wall:y:41500:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 410 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:y:44000:2500:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 380 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_stilt_00::apt-wall:y:44000:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 350 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_stilt_00::apt-wall:y:46500:2500:7500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 320 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_stilt_00::apt-wall:y:46500:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 290 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:y:47500:2500:7500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_stilt_00::apt-wall:y:47500:7500:42000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:y:47500:42000:47000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_stilt_00::apt-wall:y:5000:21190:26190 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 215 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::apt-wall:y:5000:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 185 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_stilt_00::apt-wall:y:7500:21190:26190 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 155 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:y:7500:42000:47000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 125 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:y:7900:2500:14650 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 95 Td (| PASSED) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 3662 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 5 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:y:7900:14650:21190 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (OPENING CHECKS) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::door_stilt_stair1 | host floor_stilt_00::apt-wall:stair1 | exists false | 1200) Tj ET
+BT /F1 8 Tf 32 755 Td (mm @ 26500,7000) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::door_stilt_lobby_corr | host floor_stilt_00::apt-wall:lobby_corr | exists false) Tj ET
+BT /F1 8 Tf 32 725 Td (| 1500 mm @ 26500,23550) Tj ET
+BT /F1 8 Tf 32 710 Td (STAIRCASES: 0 canonical; 0 instances) Tj ET
+BT /F1 8 Tf 32 695 Td (FLOOR 1ST_FLOOR_PLAN \(floor_typical_01\)) Tj ET
+BT /F1 8 Tf 32 680 Td (supported: true) Tj ET
+BT /F1 8 Tf 32 665 Td (units: mm2) Tj ET
+BT /F1 8 Tf 32 650 Td (convention: CENTRELINE_CELLS_MINUS_CLIPPED_WALL_UNION) Tj ET
+BT /F1 8 Tf 32 635 Td (gross: 2002500000) Tj ET
+BT /F1 8 Tf 32 620 Td (unitUsable: 1120604412.5) Tj ET
+BT /F1 8 Tf 32 605 Td (balcony: 40329175) Tj ET
+BT /F1 8 Tf 32 590 Td (core: 202222187.5) Tj ET
+BT /F1 8 Tf 32 575 Td (common: 284239750) Tj ET
+BT /F1 8 Tf 32 560 Td (service: 292810000) Tj ET
+BT /F1 8 Tf 32 545 Td (wall: 62294475) Tj ET
+BT /F1 8 Tf 32 530 Td (void: 0) Tj ET
+BT /F1 8 Tf 32 515 Td (unassigned: 0) Tj ET
+BT /F1 8 Tf 32 500 Td (overlap: 0) Tj ET
+BT /F1 8 Tf 32 485 Td (roomVoidOverlap: 0) Tj ET
+BT /F1 8 Tf 32 470 Td (accounted: 2002500000) Tj ET
+BT /F1 8 Tf 32 455 Td (delta: 0) Tj ET
+BT /F1 8 Tf 32 440 Td (WALL HIERARCHY \(canonical millimeters\)) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::apt-wall:x:11600:2500:6000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 410 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::apt-wall:x:11600:6000:9500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 380 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-wall:x:11600:40500:44000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 350 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-wall:x:11600:44000:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 320 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::apt-wall:x:13400:2500:6000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 290 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-wall:x:13400:6000:9500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 260 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::apt-wall:x:13400:40500:44000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 230 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::apt-wall:x:13400:44000:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 200 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_typical_01::apt-wall:x:14600:2500:9500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 170 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::apt-wall:x:14600:40500:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 140 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::apt-wall:x:15280:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_typical_01::apt-wall:x:23550:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::apt-wall:x:23550:19000:34000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 5145 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 6 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_typical_01::apt-wall:x:2500:2500:9500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_typical_01::apt-wall:x:2500:9500:12100 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_typical_01::apt-wall:x:2500:12100:16000 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_typical_01::apt-wall:x:2500:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::apt-wall:x:2500:34000:37900 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_typical_01::apt-wall:x:2500:37900:40500 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 695 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_typical_01::apt-wall:x:2500:40500:47500 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 665 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_typical_01::apt-wall:x:25950:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::apt-wall:x:30450:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_typical_01::apt-wall:x:30450:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::apt-wall:x:3930:9500:12100 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 590 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::apt-wall:x:3930:37900:40500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 560 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_typical_01::apt-wall:x:47000:2500:9500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::apt-wall:x:47000:9500:16000 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 515 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-wall:x:47000:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::apt-wall:x:47000:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_typical_01::apt-wall:x:47000:34000:40500 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 455 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_typical_01::apt-wall:x:47000:40500:47500 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 425 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_typical_01::apt-wall:x:7000:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::apt-wall:x:7000:19000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-wall:x:8000:9500:12100 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 365 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-wall:x:8000:12100:16000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-wall:x:8000:34000:37900 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_typical_01::apt-wall:x:8000:37900:40500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 305 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-wall:y:12100:2500:3930 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-wall:y:12100:3930:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-wall:y:16000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::apt-wall:y:16000:7000:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-wall:y:16000:8000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::apt-wall:y:16000:15280:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_typical_01::apt-wall:y:16000:23550:25950 | COMMON_CORRIDOR | actual 150 mm / expected 150) Tj ET
+BT /F1 8 Tf 32 185 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_typical_01::apt-wall:y:16000:25950:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::apt-wall:y:16000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_typical_01::apt-wall:y:19000:7000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::apt-wall:y:19000:15280:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_typical_01::apt-wall:y:19000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::apt-wall:y:2500:2500:11600 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 4297 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 7 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_typical_01::apt-wall:y:2500:11600:13400 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 785 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_typical_01::apt-wall:y:2500:13400:14600 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 755 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_typical_01::apt-wall:y:2500:14600:47000 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 725 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_typical_01::apt-wall:y:34000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_typical_01::apt-wall:y:34000:7000:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_typical_01::apt-wall:y:34000:8000:23550 | COMMON_CORRIDOR | actual 150 mm / expected 150) Tj ET
+BT /F1 8 Tf 32 665 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_typical_01::apt-wall:y:34000:23550:25950 | COMMON_CORRIDOR | actual 150 mm / expected 150) Tj ET
+BT /F1 8 Tf 32 635 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_typical_01::apt-wall:y:34000:25950:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::apt-wall:y:34000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_typical_01::apt-wall:y:37900:2500:3930 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::apt-wall:y:37900:3930:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_typical_01::apt-wall:y:40500:2500:3930 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 545 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::apt-wall:y:40500:3930:8000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 515 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-wall:y:40500:8000:11600 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 485 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_typical_01::apt-wall:y:40500:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 455 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_typical_01::apt-wall:y:40500:13400:14600 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 425 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_typical_01::apt-wall:y:40500:14600:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 395 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-wall:y:44000:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 365 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-wall:y:47500:2500:11600 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 335 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_typical_01::apt-wall:y:47500:11600:13400 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 305 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-wall:y:47500:13400:14600 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 275 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-wall:y:47500:14600:47000 | EXTERNAL | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 245 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-wall:y:6000:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 215 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_typical_01::apt-wall:y:9500:2500:3930 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 185 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_typical_01::apt-wall:y:9500:3930:8000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 155 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_typical_01::apt-wall:y:9500:8000:11600 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 125 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_typical_01::apt-wall:y:9500:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 95 Td (115 | PASSED) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 4590 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 8 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_typical_01::apt-wall:y:9500:13400:14600 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 785 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_typical_01::apt-wall:y:9500:14600:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 755 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (OPENING CHECKS) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::flat_01__door_balcony | host floor_typical_01::apt-wall:x:8000:12100:16000 |) Tj ET
+BT /F1 8 Tf 32 710 Td (exists true | 900 mm @ 14050,8000) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_typical_01::flat_01__door_kitchen | host floor_typical_01::apt-wall:x:8000:9500:12100 |) Tj ET
+BT /F1 8 Tf 32 680 Td (exists true | 900 mm @ 10800,8000) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_typical_01::flat_01__door_utility | host floor_typical_01::apt-wall:x:3930:9500:12100 |) Tj ET
+BT /F1 8 Tf 32 650 Td (exists true | 750 mm @ 10800,3930) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::flat_01__door_entrance | host floor_typical_01::apt-wall:y:16000:23550:25950) Tj ET
+BT /F1 8 Tf 32 620 Td (| exists true | 1050 mm @ 16000,24750) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::flat_01__door_passage | host floor_typical_01::apt-wall:y:9500:13400:14600 |) Tj ET
+BT /F1 8 Tf 32 590 Td (exists true | 900 mm @ 9500,14000) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::flat_01__door_master_bath | host floor_typical_01::apt-wall:x:11600:2500:6000) Tj ET
+BT /F1 8 Tf 32 560 Td (| exists true | 750 mm @ 4250,11600) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_typical_01::flat_01__door_common_bath | host floor_typical_01::apt-wall:x:13400:6000:9500) Tj ET
+BT /F1 8 Tf 32 530 Td (| exists true | 750 mm @ 7750,13400) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::flat_01__door_bed_2 | host floor_typical_01::apt-wall:x:14600:2500:9500 |) Tj ET
+BT /F1 8 Tf 32 500 Td (exists true | 900 mm @ 6000,14600) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::flat_01__door_master_bed | host floor_typical_01::apt-wall:y:9500:8000:11600) Tj ET
+BT /F1 8 Tf 32 470 Td (| exists true | 900 mm @ 9500,9800) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_typical_01::flat_02__door_balcony | host floor_typical_01::apt-wall:x:8000:34000:37900 |) Tj ET
+BT /F1 8 Tf 32 440 Td (exists true | 900 mm @ 35950,8000) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::flat_02__door_kitchen | host floor_typical_01::apt-wall:x:8000:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 410 Td (exists true | 900 mm @ 39200,8000) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::flat_02__door_utility | host floor_typical_01::apt-wall:x:3930:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 380 Td (exists true | 750 mm @ 39200,3930) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::flat_02__door_entrance | host floor_typical_01::apt-wall:y:34000:23550:25950) Tj ET
+BT /F1 8 Tf 32 350 Td (| exists true | 1050 mm @ 34000,24750) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::flat_02__door_passage | host floor_typical_01::apt-wall:y:40500:13400:14600 |) Tj ET
+BT /F1 8 Tf 32 320 Td (exists true | 900 mm @ 40500,14000) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::flat_02__door_master_bath | host) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-wall:x:11600:44000:47500 | exists true | 750 mm @ 45750,11600) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::flat_02__door_common_bath | host) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-wall:x:13400:40500:44000 | exists true | 750 mm @ 42250,13400) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::flat_02__door_bed_2 | host floor_typical_01::apt-wall:x:14600:40500:47500 |) Tj ET
+BT /F1 8 Tf 32 230 Td (exists true | 900 mm @ 44000,14600) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::flat_02__door_master_bed | host floor_typical_01::apt-wall:y:40500:8000:11600) Tj ET
+BT /F1 8 Tf 32 200 Td (| exists true | 900 mm @ 40500,9800) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_typical_01::door_stair_1 | host floor_typical_01::apt-wall:x:7000:19000:34000 | exists) Tj ET
+BT /F1 8 Tf 32 170 Td (true | 1200 mm @ 26500,7000) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::door_lift_1 | host floor_typical_01::apt-wall:y:19000:7000:15280 | exists) Tj ET
+BT /F1 8 Tf 32 140 Td (true | 900 mm @ 19000,11140) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::door_lift_2 | host floor_typical_01::apt-wall:y:19000:15280:23550 | exists) Tj ET
+BT /F1 8 Tf 32 110 Td (true | 900 mm @ 19000,19415) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::door_lobby_corridor | host floor_typical_01::apt-wall:x:23550:19000:34000 |) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 21 0 R >>
+endobj
+21 0 obj
+<< /Length 4669 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 9 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (exists true | 1500 mm @ 26500,23550) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_typical_01::door_stair_2 | host floor_typical_01::apt-wall:x:25950:16000:34000 | exists) Tj ET
+BT /F1 8 Tf 32 770 Td (true | 1200 mm @ 25000,25950) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_typical_01::win_apt-room:flat_01__utility_floor_typical_01::apt-wall:x:2500:9500:12100 |) Tj ET
+BT /F1 8 Tf 32 740 Td (host floor_typical_01::apt-wall:x:2500:9500:12100 | exists true | 1200 mm @ 10800,2500) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::win_apt-room:flat_01__living_floor_typical_01::apt-wall:x:47000:9500:16000 |) Tj ET
+BT /F1 8 Tf 32 710 Td (host floor_typical_01::apt-wall:x:47000:9500:16000 | exists true | 1200 mm @ 12750,47000) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:x:2500:2500:9500) Tj ET
+BT /F1 8 Tf 32 680 Td (| host floor_typical_01::apt-wall:x:2500:2500:9500 | exists true | 1200 mm @ 6000,2500) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:y:2500:2500:11600) Tj ET
+BT /F1 8 Tf 32 650 Td (| host floor_typical_01::apt-wall:y:2500:2500:11600 | exists true | 1200 mm @ 2500,7050) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::win_apt-room:flat_01__master_bath_floor_typical_01::apt-wall:y:2500:11600:134) Tj ET
+BT /F1 8 Tf 32 620 Td (00 | host floor_typical_01::apt-wall:y:2500:11600:13400 | exists true | 1200 mm @ 2500,12500) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::win_apt-room:flat_01__bed_2_floor_typical_01::apt-wall:x:47000:2500:9500 |) Tj ET
+BT /F1 8 Tf 32 590 Td (host floor_typical_01::apt-wall:x:47000:2500:9500 | exists true | 1200 mm @ 6000,47000) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::win_apt-room:flat_01__bed_2_floor_typical_01::apt-wall:y:2500:14600:47000 |) Tj ET
+BT /F1 8 Tf 32 560 Td (host floor_typical_01::apt-wall:y:2500:14600:47000 | exists true | 1200 mm @ 2500,30800) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_typical_01::win_apt-room:flat_02__utility_floor_typical_01::apt-wall:x:2500:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 530 Td (host floor_typical_01::apt-wall:x:2500:37900:40500 | exists true | 1200 mm @ 39200,2500) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::win_apt-room:flat_02__living_floor_typical_01::apt-wall:x:47000:34000:40500 |) Tj ET
+BT /F1 8 Tf 32 500 Td (host floor_typical_01::apt-wall:x:47000:34000:40500 | exists true | 1200 mm @ 37250,47000) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::win_apt-room:flat_02__master_bed_floor_typical_01::apt-wall:x:2500:40500:4750) Tj ET
+BT /F1 8 Tf 32 470 Td (0 | host floor_typical_01::apt-wall:x:2500:40500:47500 | exists true | 1200 mm @ 44000,2500) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_typical_01::win_apt-room:flat_02__master_bed_floor_typical_01::apt-wall:y:47500:2500:1160) Tj ET
+BT /F1 8 Tf 32 440 Td (0 | host floor_typical_01::apt-wall:y:47500:2500:11600 | exists true | 1200 mm @ 47500,7050) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::win_apt-room:flat_02__master_bath_floor_typical_01::apt-wall:y:47500:11600:13) Tj ET
+BT /F1 8 Tf 32 410 Td (400 | host floor_typical_01::apt-wall:y:47500:11600:13400 | exists true | 1200 mm @ 47500,12500) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:x:47000:40500:47500 |) Tj ET
+BT /F1 8 Tf 32 380 Td (host floor_typical_01::apt-wall:x:47000:40500:47500 | exists true | 1200 mm @ 44000,47000) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:y:47500:14600:47000 |) Tj ET
+BT /F1 8 Tf 32 350 Td (host floor_typical_01::apt-wall:y:47500:14600:47000 | exists true | 1200 mm @ 47500,30800) Tj ET
+BT /F1 8 Tf 32 335 Td (STAIRCASES: 0 canonical; 0 instances) Tj ET
+BT /F1 8 Tf 32 320 Td (FLOOR 2ND_FLOOR_PLAN \(floor_level_02\)) Tj ET
+BT /F1 8 Tf 32 305 Td (supported: true) Tj ET
+BT /F1 8 Tf 32 290 Td (units: mm2) Tj ET
+BT /F1 8 Tf 32 275 Td (convention: CENTRELINE_CELLS_MINUS_CLIPPED_WALL_UNION) Tj ET
+BT /F1 8 Tf 32 260 Td (gross: 2002500000) Tj ET
+BT /F1 8 Tf 32 245 Td (unitUsable: 1120604412.5) Tj ET
+BT /F1 8 Tf 32 230 Td (balcony: 40329175) Tj ET
+BT /F1 8 Tf 32 215 Td (core: 202222187.5) Tj ET
+BT /F1 8 Tf 32 200 Td (common: 284239750) Tj ET
+BT /F1 8 Tf 32 185 Td (service: 292810000) Tj ET
+BT /F1 8 Tf 32 170 Td (wall: 62294475) Tj ET
+BT /F1 8 Tf 32 155 Td (void: 0) Tj ET
+BT /F1 8 Tf 32 140 Td (unassigned: 0) Tj ET
+BT /F1 8 Tf 32 125 Td (overlap: 0) Tj ET
+BT /F1 8 Tf 32 110 Td (roomVoidOverlap: 0) Tj ET
+BT /F1 8 Tf 32 95 Td (accounted: 2002500000) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 23 0 R >>
+endobj
+23 0 obj
+<< /Length 4839 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 10 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (delta: 0) Tj ET
+BT /F1 8 Tf 32 785 Td (WALL HIERARCHY \(canonical millimeters\)) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_level_02::apt-wall:x:11600:2500:6000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 755 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_level_02::apt-wall:x:11600:6000:9500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 725 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_level_02::apt-wall:x:11600:40500:44000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 695 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_level_02::apt-wall:x:11600:44000:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 665 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_level_02::apt-wall:x:13400:2500:6000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 635 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_level_02::apt-wall:x:13400:6000:9500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 605 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_level_02::apt-wall:x:13400:40500:44000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 575 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_level_02::apt-wall:x:13400:44000:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 545 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_level_02::apt-wall:x:14600:2500:9500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 515 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_level_02::apt-wall:x:14600:40500:47500 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 485 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_level_02::apt-wall:x:15280:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_level_02::apt-wall:x:23550:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_level_02::apt-wall:x:23550:19000:34000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 425 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_level_02::apt-wall:x:2500:2500:9500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_level_02::apt-wall:x:2500:9500:12100 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_level_02::apt-wall:x:2500:12100:16000 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_level_02::apt-wall:x:2500:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_level_02::apt-wall:x:2500:34000:37900 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_level_02::apt-wall:x:2500:37900:40500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_level_02::apt-wall:x:2500:40500:47500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_level_02::apt-wall:x:25950:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_level_02::apt-wall:x:30450:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_level_02::apt-wall:x:30450:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_level_02::apt-wall:x:3930:9500:12100 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 245 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_level_02::apt-wall:x:3930:37900:40500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 215 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_level_02::apt-wall:x:47000:2500:9500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_level_02::apt-wall:x:47000:9500:16000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_level_02::apt-wall:x:47000:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_level_02::apt-wall:x:47000:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_level_02::apt-wall:x:47000:34000:40500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_level_02::apt-wall:x:47000:40500:47500 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_level_02::apt-wall:x:7000:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_level_02::apt-wall:x:7000:19000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 25 0 R >>
+endobj
+25 0 obj
+<< /Length 5046 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 11 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_level_02::apt-wall:x:8000:9500:12100 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 785 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_level_02::apt-wall:x:8000:12100:16000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_level_02::apt-wall:x:8000:34000:37900 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_level_02::apt-wall:x:8000:37900:40500 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 725 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_level_02::apt-wall:y:12100:2500:3930 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_level_02::apt-wall:y:12100:3930:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_level_02::apt-wall:y:16000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_level_02::apt-wall:y:16000:7000:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_level_02::apt-wall:y:16000:8000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_level_02::apt-wall:y:16000:15280:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_level_02::apt-wall:y:16000:23550:25950 | COMMON_CORRIDOR | actual 150 mm / expected 150 |) Tj ET
+BT /F1 8 Tf 32 605 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_level_02::apt-wall:y:16000:25950:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_level_02::apt-wall:y:16000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_level_02::apt-wall:y:19000:7000:15280 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_level_02::apt-wall:y:19000:15280:23550 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_level_02::apt-wall:y:19000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_level_02::apt-wall:y:2500:2500:11600 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_level_02::apt-wall:y:2500:11600:13400 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_level_02::apt-wall:y:2500:13400:14600 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_level_02::apt-wall:y:2500:14600:47000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_level_02::apt-wall:y:34000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_level_02::apt-wall:y:34000:7000:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_level_02::apt-wall:y:34000:8000:23550 | COMMON_CORRIDOR | actual 150 mm / expected 150 |) Tj ET
+BT /F1 8 Tf 32 410 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_level_02::apt-wall:y:34000:23550:25950 | COMMON_CORRIDOR | actual 150 mm / expected 150 |) Tj ET
+BT /F1 8 Tf 32 380 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_level_02::apt-wall:y:34000:25950:30450 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_level_02::apt-wall:y:34000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_level_02::apt-wall:y:37900:2500:3930 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_level_02::apt-wall:y:37900:3930:8000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_level_02::apt-wall:y:40500:2500:3930 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 290 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_level_02::apt-wall:y:40500:3930:8000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 260 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_level_02::apt-wall:y:40500:8000:11600 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 230 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_level_02::apt-wall:y:40500:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 200 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_level_02::apt-wall:y:40500:13400:14600 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 170 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_level_02::apt-wall:y:40500:14600:47000 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 140 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_level_02::apt-wall:y:44000:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected) Tj ET
+BT /F1 8 Tf 32 110 Td (115 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_level_02::apt-wall:y:47500:2500:11600 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+endstream
+endobj
+26 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 27 0 R >>
+endobj
+27 0 obj
+<< /Length 4483 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 12 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_level_02::apt-wall:y:47500:11600:13400 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_level_02::apt-wall:y:47500:13400:14600 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_level_02::apt-wall:y:47500:14600:47000 | EXTERNAL | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_level_02::apt-wall:y:6000:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 740 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_level_02::apt-wall:y:9500:2500:3930 | INTERNAL_PARTITION | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 710 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_level_02::apt-wall:y:9500:3930:8000 | INTERNAL_PARTITION | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 680 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_level_02::apt-wall:y:9500:8000:11600 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 650 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_level_02::apt-wall:y:9500:11600:13400 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 620 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_level_02::apt-wall:y:9500:13400:14600 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 590 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_level_02::apt-wall:y:9500:14600:47000 | INTERNAL_PARTITION | actual 115 mm / expected 115) Tj ET
+BT /F1 8 Tf 32 560 Td (| PASSED) Tj ET
+BT /F1 8 Tf 32 545 Td (OPENING CHECKS) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_level_02::flat_01__door_balcony | host floor_level_02::apt-wall:x:8000:12100:16000 |) Tj ET
+BT /F1 8 Tf 32 515 Td (exists true | 900 mm @ 14050,8000) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_level_02::flat_01__door_kitchen | host floor_level_02::apt-wall:x:8000:9500:12100 |) Tj ET
+BT /F1 8 Tf 32 485 Td (exists true | 900 mm @ 10800,8000) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_level_02::flat_01__door_utility | host floor_level_02::apt-wall:x:3930:9500:12100 |) Tj ET
+BT /F1 8 Tf 32 455 Td (exists true | 750 mm @ 10800,3930) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_level_02::flat_01__door_entrance | host floor_level_02::apt-wall:y:16000:23550:25950 |) Tj ET
+BT /F1 8 Tf 32 425 Td (exists true | 1050 mm @ 16000,24750) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_level_02::flat_01__door_passage | host floor_level_02::apt-wall:y:9500:13400:14600 |) Tj ET
+BT /F1 8 Tf 32 395 Td (exists true | 900 mm @ 9500,14000) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_level_02::flat_01__door_master_bath | host floor_level_02::apt-wall:x:11600:2500:6000 |) Tj ET
+BT /F1 8 Tf 32 365 Td (exists true | 750 mm @ 4250,11600) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_level_02::flat_01__door_common_bath | host floor_level_02::apt-wall:x:13400:6000:9500 |) Tj ET
+BT /F1 8 Tf 32 335 Td (exists true | 750 mm @ 7750,13400) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_level_02::flat_01__door_bed_2 | host floor_level_02::apt-wall:x:14600:2500:9500 | exists) Tj ET
+BT /F1 8 Tf 32 305 Td (true | 900 mm @ 6000,14600) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_level_02::flat_01__door_master_bed | host floor_level_02::apt-wall:y:9500:8000:11600 |) Tj ET
+BT /F1 8 Tf 32 275 Td (exists true | 900 mm @ 9500,9800) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_level_02::flat_02__door_balcony | host floor_level_02::apt-wall:x:8000:34000:37900 |) Tj ET
+BT /F1 8 Tf 32 245 Td (exists true | 900 mm @ 35950,8000) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_level_02::flat_02__door_kitchen | host floor_level_02::apt-wall:x:8000:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 215 Td (exists true | 900 mm @ 39200,8000) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_level_02::flat_02__door_utility | host floor_level_02::apt-wall:x:3930:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 185 Td (exists true | 750 mm @ 39200,3930) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_level_02::flat_02__door_entrance | host floor_level_02::apt-wall:y:34000:23550:25950 |) Tj ET
+BT /F1 8 Tf 32 155 Td (exists true | 1050 mm @ 34000,24750) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_level_02::flat_02__door_passage | host floor_level_02::apt-wall:y:40500:13400:14600 |) Tj ET
+BT /F1 8 Tf 32 125 Td (exists true | 900 mm @ 40500,14000) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_level_02::flat_02__door_master_bath | host floor_level_02::apt-wall:x:11600:44000:47500 |) Tj ET
+BT /F1 8 Tf 32 95 Td (exists true | 750 mm @ 45750,11600) Tj ET
+endstream
+endobj
+28 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 29 0 R >>
+endobj
+29 0 obj
+<< /Length 5143 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 13 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_level_02::flat_02__door_common_bath | host floor_level_02::apt-wall:x:13400:40500:44000 |) Tj ET
+BT /F1 8 Tf 32 785 Td (exists true | 750 mm @ 42250,13400) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_level_02::flat_02__door_bed_2 | host floor_level_02::apt-wall:x:14600:40500:47500 |) Tj ET
+BT /F1 8 Tf 32 755 Td (exists true | 900 mm @ 44000,14600) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_level_02::flat_02__door_master_bed | host floor_level_02::apt-wall:y:40500:8000:11600 |) Tj ET
+BT /F1 8 Tf 32 725 Td (exists true | 900 mm @ 40500,9800) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_level_02::door_stair_1 | host floor_level_02::apt-wall:x:7000:19000:34000 | exists true |) Tj ET
+BT /F1 8 Tf 32 695 Td (1200 mm @ 26500,7000) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_level_02::door_lift_1 | host floor_level_02::apt-wall:y:19000:7000:15280 | exists true |) Tj ET
+BT /F1 8 Tf 32 665 Td (900 mm @ 19000,11140) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_level_02::door_lift_2 | host floor_level_02::apt-wall:y:19000:15280:23550 | exists true |) Tj ET
+BT /F1 8 Tf 32 635 Td (900 mm @ 19000,19415) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_level_02::door_lobby_corridor | host floor_level_02::apt-wall:x:23550:19000:34000 |) Tj ET
+BT /F1 8 Tf 32 605 Td (exists true | 1500 mm @ 26500,23550) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_level_02::door_stair_2 | host floor_level_02::apt-wall:x:25950:16000:34000 | exists true) Tj ET
+BT /F1 8 Tf 32 575 Td (| 1200 mm @ 25000,25950) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_level_02::win_apt-room:flat_01__utility_floor_level_02::apt-wall:x:2500:9500:12100 | host) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_level_02::apt-wall:x:2500:9500:12100 | exists true | 1200 mm @ 10800,2500) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_level_02::win_apt-room:flat_01__living_floor_level_02::apt-wall:x:47000:9500:16000 | host) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_level_02::apt-wall:x:47000:9500:16000 | exists true | 1200 mm @ 12750,47000) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_level_02::win_apt-room:flat_01__master_bed_floor_level_02::apt-wall:x:2500:2500:9500 |) Tj ET
+BT /F1 8 Tf 32 485 Td (host floor_level_02::apt-wall:x:2500:2500:9500 | exists true | 1200 mm @ 6000,2500) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_level_02::win_apt-room:flat_01__master_bed_floor_level_02::apt-wall:y:2500:2500:11600 |) Tj ET
+BT /F1 8 Tf 32 455 Td (host floor_level_02::apt-wall:y:2500:2500:11600 | exists true | 1200 mm @ 2500,7050) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_level_02::win_apt-room:flat_01__master_bath_floor_level_02::apt-wall:y:2500:11600:13400 |) Tj ET
+BT /F1 8 Tf 32 425 Td (host floor_level_02::apt-wall:y:2500:11600:13400 | exists true | 1200 mm @ 2500,12500) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_level_02::win_apt-room:flat_01__bed_2_floor_level_02::apt-wall:x:47000:2500:9500 | host) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_level_02::apt-wall:x:47000:2500:9500 | exists true | 1200 mm @ 6000,47000) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_level_02::win_apt-room:flat_01__bed_2_floor_level_02::apt-wall:y:2500:14600:47000 | host) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_level_02::apt-wall:y:2500:14600:47000 | exists true | 1200 mm @ 2500,30800) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_level_02::win_apt-room:flat_02__utility_floor_level_02::apt-wall:x:2500:37900:40500 |) Tj ET
+BT /F1 8 Tf 32 335 Td (host floor_level_02::apt-wall:x:2500:37900:40500 | exists true | 1200 mm @ 39200,2500) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_level_02::win_apt-room:flat_02__living_floor_level_02::apt-wall:x:47000:34000:40500 |) Tj ET
+BT /F1 8 Tf 32 305 Td (host floor_level_02::apt-wall:x:47000:34000:40500 | exists true | 1200 mm @ 37250,47000) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_level_02::win_apt-room:flat_02__master_bed_floor_level_02::apt-wall:x:2500:40500:47500 |) Tj ET
+BT /F1 8 Tf 32 275 Td (host floor_level_02::apt-wall:x:2500:40500:47500 | exists true | 1200 mm @ 44000,2500) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_level_02::win_apt-room:flat_02__master_bed_floor_level_02::apt-wall:y:47500:2500:11600 |) Tj ET
+BT /F1 8 Tf 32 245 Td (host floor_level_02::apt-wall:y:47500:2500:11600 | exists true | 1200 mm @ 47500,7050) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_level_02::win_apt-room:flat_02__master_bath_floor_level_02::apt-wall:y:47500:11600:13400) Tj ET
+BT /F1 8 Tf 32 215 Td (| host floor_level_02::apt-wall:y:47500:11600:13400 | exists true | 1200 mm @ 47500,12500) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_level_02::win_apt-room:flat_02__bed_2_floor_level_02::apt-wall:x:47000:40500:47500 | host) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_level_02::apt-wall:x:47000:40500:47500 | exists true | 1200 mm @ 44000,47000) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_level_02::win_apt-room:flat_02__bed_2_floor_level_02::apt-wall:y:47500:14600:47000 | host) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_level_02::apt-wall:y:47500:14600:47000 | exists true | 1200 mm @ 47500,30800) Tj ET
+BT /F1 8 Tf 32 140 Td (STAIRCASES: 0 canonical; 0 instances) Tj ET
+BT /F1 8 Tf 32 125 Td (FLOOR TERRACE_PLAN \(floor_terrace_03\)) Tj ET
+BT /F1 8 Tf 32 110 Td (supported: true) Tj ET
+BT /F1 8 Tf 32 95 Td (units: mm2) Tj ET
+endstream
+endobj
+30 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 31 0 R >>
+endobj
+31 0 obj
+<< /Length 4521 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 14 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (convention: CENTRELINE_CELLS_MINUS_CLIPPED_WALL_UNION) Tj ET
+BT /F1 8 Tf 32 785 Td (gross: 2002500000) Tj ET
+BT /F1 8 Tf 32 770 Td (unitUsable: 0) Tj ET
+BT /F1 8 Tf 32 755 Td (balcony: 1178853975) Tj ET
+BT /F1 8 Tf 32 740 Td (core: 203423312.5) Tj ET
+BT /F1 8 Tf 32 725 Td (common: 40614812.5) Tj ET
+BT /F1 8 Tf 32 710 Td (service: 537915000) Tj ET
+BT /F1 8 Tf 32 695 Td (wall: 41692900) Tj ET
+BT /F1 8 Tf 32 680 Td (void: 0) Tj ET
+BT /F1 8 Tf 32 665 Td (unassigned: 0) Tj ET
+BT /F1 8 Tf 32 650 Td (overlap: 0) Tj ET
+BT /F1 8 Tf 32 635 Td (roomVoidOverlap: 0) Tj ET
+BT /F1 8 Tf 32 620 Td (accounted: 2002500000) Tj ET
+BT /F1 8 Tf 32 605 Td (delta: 0) Tj ET
+BT /F1 8 Tf 32 590 Td (WALL HIERARCHY \(canonical millimeters\)) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_terrace_03::apt-wall:x:15280:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_terrace_03::apt-wall:x:22530:34000:47500 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 545 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_terrace_03::apt-wall:x:23550:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_terrace_03::apt-wall:x:23550:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_terrace_03::apt-wall:x:2500:2500:16000 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_terrace_03::apt-wall:x:2500:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_terrace_03::apt-wall:x:2500:34000:47500 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_terrace_03::apt-wall:x:25950:16000:34000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_terrace_03::apt-wall:x:30450:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_terrace_03::apt-wall:x:30450:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_terrace_03::apt-wall:x:47000:2500:16000 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_terrace_03::apt-wall:x:47000:16000:19000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_terrace_03::apt-wall:x:47000:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_terrace_03::apt-wall:x:47000:34000:47500 | BALCONY | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 350 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_terrace_03::apt-wall:x:7000:16000:19000 | CORE | actual 150 mm / expected 150 | PASSED) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_terrace_03::apt-wall:x:7000:19000:34000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_terrace_03::apt-wall:y:16000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_terrace_03::apt-wall:y:16000:7000:15280 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_terrace_03::apt-wall:y:16000:15280:23550 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 260 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_terrace_03::apt-wall:y:16000:23550:25950 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 230 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_terrace_03::apt-wall:y:16000:25950:30450 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 200 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_terrace_03::apt-wall:y:16000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_terrace_03::apt-wall:y:19000:7000:15280 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_terrace_03::apt-wall:y:19000:15280:23550 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_terrace_03::apt-wall:y:19000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_terrace_03::apt-wall:y:2500:2500:47000 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_terrace_03::apt-wall:y:34000:2500:7000 | BALCONY | actual 115 mm / expected 115 | PASSED) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_terrace_03::apt-wall:y:34000:7000:22530 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+endstream
+endobj
+32 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 33 0 R >>
+endobj
+33 0 obj
+<< /Length 1122 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+BT /F1 8 Tf 32 824 Td (Geometry and Area Closure - revision 1 - page 15 of 15) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_terrace_03::apt-wall:y:34000:22530:23550 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_terrace_03::apt-wall:y:34000:23550:25950 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 770 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_terrace_03::apt-wall:y:34000:25950:30450 | BALCONY | actual 115 mm / expected 115 |) Tj ET
+BT /F1 8 Tf 32 740 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_terrace_03::apt-wall:y:34000:30450:47000 | SHAFT | actual 100 mm / expected 100 | PASSED) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_terrace_03::apt-wall:y:47500:2500:22530 | BALCONY | actual 230 mm / expected 230 | PASSED) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_terrace_03::apt-wall:y:47500:22530:47000 | BALCONY | actual 230 mm / expected 230 |) Tj ET
+BT /F1 8 Tf 32 680 Td (PASSED) Tj ET
+BT /F1 8 Tf 32 665 Td (OPENING CHECKS) Tj ET
+BT /F1 8 Tf 32 650 Td (STAIRCASES: 0 canonical; 0 instances) Tj ET
+BT /F1 8 Tf 32 635 Td (AUDIT FINDINGS) Tj ET
+endstream
+endobj
+xref
+0 34
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000212 00000 n 
+0000000280 00000 n 
+0000000406 00000 n 
+0000004599 00000 n 
+0000004725 00000 n 
+0000009363 00000 n 
+0000009489 00000 n 
+0000014520 00000 n 
+0000014648 00000 n 
+0000019504 00000 n 
+0000019632 00000 n 
+0000023346 00000 n 
+0000023474 00000 n 
+0000028671 00000 n 
+0000028799 00000 n 
+0000033148 00000 n 
+0000033276 00000 n 
+0000037918 00000 n 
+0000038046 00000 n 
+0000042767 00000 n 
+0000042895 00000 n 
+0000047786 00000 n 
+0000047914 00000 n 
+0000053012 00000 n 
+0000053140 00000 n 
+0000057675 00000 n 
+0000057803 00000 n 
+0000062998 00000 n 
+0000063126 00000 n 
+0000067699 00000 n 
+0000067827 00000 n 
+trailer
+<< /Size 34 /Root 1 0 R >>
+startxref
+69001
+%%EOF

@@ -1,0 +1,573 @@
+{
+  "scope": "User-authorized generated bloat and duplicate sibling only",
+  "protectedBefore": {
+    "AGENTS.md": {
+      "files": 1,
+      "sha256": "6227094ac1a9b4f8eaefdcfd1907c7f7d0f483f0c063eea999a16772b27a2b9d"
+    },
+    "docs/phase0": {
+      "files": 9,
+      "sha256": "f36cf877adb333ad5f6376c983ad63ccd384d0606e0e35c87b4b485775c624c5"
+    },
+    "docs/phase1": {
+      "files": 12,
+      "sha256": "7986e58f3272faa4ca159f755e37d977d50ac3e6452caf305380ecdfb98cb5c6"
+    },
+    "docs/phase2": {
+      "files": 35,
+      "sha256": "be8b3565be8d91cb4f31916b364ddb42322e06a43c5323ddd9bcc8358f86e2f9"
+    },
+    "packages/backend/data/reference-images": {
+      "files": 42,
+      "sha256": "50264a60551837f525189f33a9af53ba8c20533c6d347d34fac621fafbd01091"
+    }
+  },
+  "targetsBefore": [
+    {
+      "path": "data/image-artifacts",
+      "files": 234,
+      "bytes": 27499037
+    },
+    {
+      "path": "packages/backend/data/image-artifacts",
+      "files": 48,
+      "bytes": 5151908
+    },
+    {
+      "path": "output/apartment-geometry-closure",
+      "files": 71,
+      "bytes": 3772960
+    },
+    {
+      "path": "output/engineering-acceptance",
+      "files": 12,
+      "bytes": 238244
+    },
+    {
+      "path": "output/golden-3x3bhk",
+      "files": 19,
+      "bytes": 280963
+    },
+    {
+      "path": "output/golden-3x3bhk-phase",
+      "files": 46,
+      "bytes": 377820
+    },
+    {
+      "path": "packages/frontend/output",
+      "files": 2,
+      "bytes": 1967
+    },
+    {
+      "path": "scripts/phase1_concepts_output",
+      "files": 25,
+      "bytes": 421819
+    },
+    {
+      "path": "scripts/phase3_live_output",
+      "files": 6,
+      "bytes": 1095437
+    },
+    {
+      "path": "scripts/phase4_live_output",
+      "files": 4,
+      "bytes": 39310
+    },
+    {
+      "path": "scripts/phase5_sweep_output",
+      "files": 1,
+      "bytes": 21011
+    },
+    {
+      "path": "scripts/two_phase_live_output",
+      "files": 5,
+      "bytes": 313413
+    },
+    {
+      "path": "../plancraft-source",
+      "files": 140,
+      "bytes": 1894026
+    },
+    {
+      "path": "scripts/compact-core-closure.py",
+      "files": 1,
+      "bytes": 6663
+    },
+    {
+      "path": "scripts/complete-closure-checks.py",
+      "files": 1,
+      "bytes": 3453
+    },
+    {
+      "path": "scripts/complete-semantic-checks.py",
+      "files": 1,
+      "bytes": 5122
+    },
+    {
+      "path": "scripts/finish-closure-wiring.py",
+      "files": 1,
+      "bytes": 4994
+    },
+    {
+      "path": "scripts/finish-floor-regions.py",
+      "files": 1,
+      "bytes": 1053
+    },
+    {
+      "path": "scripts/fix-closure-regressions.py",
+      "files": 1,
+      "bytes": 1957
+    },
+    {
+      "path": "scripts/repair-access-and-evidence.py",
+      "files": 1,
+      "bytes": 4074
+    },
+    {
+      "path": "scripts/repair-apartment-closure.py",
+      "files": 1,
+      "bytes": 4584
+    },
+    {
+      "path": "scripts/repair-pdf-closure.py",
+      "files": 1,
+      "bytes": 9118
+    },
+    {
+      "path": "scripts/replace-unit-topology.py",
+      "files": 1,
+      "bytes": 6182
+    },
+    {
+      "path": "scripts/wire-apartment-closure.py",
+      "files": 1,
+      "bytes": 4754
+    },
+    {
+      "path": "scripts/wire-candidate-and-inputs.py",
+      "files": 1,
+      "bytes": 9662
+    },
+    {
+      "path": "scripts/temp_append_ws.cmd",
+      "files": 1,
+      "bytes": 1016
+    },
+    {
+      "path": "scripts/acceptance_result.json",
+      "files": 1,
+      "bytes": 1074722
+    },
+    {
+      "path": "scripts/last_exit_gate_result.json",
+      "files": 1,
+      "bytes": 456857
+    },
+    {
+      "path": "scripts/phase2_seed_7919_output.png",
+      "files": 1,
+      "bytes": 361631
+    },
+    {
+      "path": "scripts/test_schematic_512.png",
+      "files": 1,
+      "bytes": 4880
+    },
+    {
+      "path": "APARTMENT_BALCONY_EFFICIENCY_REPORT.md",
+      "files": 1,
+      "bytes": 5460
+    },
+    {
+      "path": "APARTMENT_GEOMETRY_BASELINE_AUDIT.md",
+      "files": 1,
+      "bytes": 7854
+    },
+    {
+      "path": "APARTMENT_GEOMETRY_CLOSURE_REPORT.md",
+      "files": 1,
+      "bytes": 7648
+    },
+    {
+      "path": "APARTMENT_PDF_ACCEPTANCE_REPORT.md",
+      "files": 1,
+      "bytes": 5141
+    },
+    {
+      "path": "APARTMENT_WALL_AND_SEGREGATION_IMPLEMENTATION.md",
+      "files": 1,
+      "bytes": 6739
+    },
+    {
+      "path": "ARCHITECTURAL_CONSTANTS_AUDIT.md",
+      "files": 1,
+      "bytes": 11441
+    },
+    {
+      "path": "DATA_REQUIREMENTS_MASTER_AUDIT.md",
+      "files": 1,
+      "bytes": 22370
+    },
+    {
+      "path": "FUTURE_DATA_PHASE_MATRIX.md",
+      "files": 1,
+      "bytes": 5047
+    },
+    {
+      "path": "GOLDEN_3X3BHK_ACCEPTANCE_REPORT.md",
+      "files": 1,
+      "bytes": 8652
+    },
+    {
+      "path": "GOLDEN_3X3BHK_APARTMENT_REPAIR_REPORT.md",
+      "files": 1,
+      "bytes": 21054
+    },
+    {
+      "path": "GOLDEN_3X3BHK_IMPLEMENTATION_REPORT.md",
+      "files": 1,
+      "bytes": 10527
+    },
+    {
+      "path": "GOLDEN_3X3BHK_PIPELINE_AUDIT.md",
+      "files": 1,
+      "bytes": 11328
+    },
+    {
+      "path": "GOLDEN_OVERFITTING_AND_METRIC_AUDIT.md",
+      "files": 1,
+      "bytes": 7780
+    },
+    {
+      "path": "MINIMUM_NEXT_PHASE_DATA.md",
+      "files": 1,
+      "bytes": 44428
+    },
+    {
+      "path": "TRUE_EDITABLE_DWG_EXPORT_DELIVERABLE.md",
+      "files": 1,
+      "bytes": 8621
+    },
+    {
+      "path": "USER_DATA_QUESTIONNAIRE.md",
+      "files": 1,
+      "bytes": 5398
+    },
+    {
+      "path": "USER_UPLOAD_CHECKLIST.md",
+      "files": 1,
+      "bytes": 3138
+    },
+    {
+      "path": "output/cad-export/AI_BUILDING_SAAS_Floor_01.dwg",
+      "files": 1,
+      "bytes": 39863
+    },
+    {
+      "path": "output/cad-export/AI_BUILDING_SAAS_Floor_01.dxf",
+      "files": 1,
+      "bytes": 342775
+    },
+    {
+      "path": "output/cad-export/apartment_project_4_flats_floor_23_floors_typical_residential_floor_r01.svg",
+      "files": 1,
+      "bytes": 224835
+    },
+    {
+      "path": "output/cad-export/apartment_project_4_flats_floor_4_floors_typical_residential_floor_r01.dwg",
+      "files": 1,
+      "bytes": 40534
+    },
+    {
+      "path": "output/cad-export/cad_test_building_typical_residential_floor.dwg",
+      "files": 1,
+      "bytes": 39863
+    },
+    {
+      "path": "output/cad-export/cad_test_building_typical_residential_floor.dxf",
+      "files": 1,
+      "bytes": 342775
+    },
+    {
+      "path": "output/cad-export/canonical_building_export.dwg",
+      "files": 1,
+      "bytes": 39863
+    },
+    {
+      "path": "output/cad-export/canonical_building_export.dxf",
+      "files": 1,
+      "bytes": 342775
+    },
+    {
+      "path": "output/cad-export/coordinated_multi_sheet_indian_residential_apartment_typical_floor_plan_r01.dwg",
+      "files": 1,
+      "bytes": 30902
+    },
+    {
+      "path": "output/cad-export/coordinated_multi_sheet_indian_residential_apartment_typical_residential_floor_r01.dwg",
+      "files": 1,
+      "bytes": 42487
+    },
+    {
+      "path": "output/cad-export/golden_typical_residential_floor.dxf",
+      "files": 1,
+      "bytes": 251715
+    },
+    {
+      "path": "output/cad-export/my_building_project_typical_residential_floor_r01.dwg",
+      "files": 1,
+      "bytes": 38935
+    },
+    {
+      "path": "output/cad-export/my_building_project_typical_residential_floor_r01.dxf",
+      "files": 1,
+      "bytes": 332341
+    },
+    {
+      "path": "output/cad-export/sapphire_heights_residency_ground_floor_r01.dwg",
+      "files": 1,
+      "bytes": 11559
+    },
+    {
+      "path": "output/cad-export/sapphire_heights_residency_ground_floor_r01.dxf",
+      "files": 1,
+      "bytes": 40026
+    },
+    {
+      "path": "output/cad-export/test_canonical_export.json",
+      "files": 1,
+      "bytes": 34
+    },
+    {
+      "path": "output/cad-export/test_ground.dxf",
+      "files": 1,
+      "bytes": 10415
+    }
+  ],
+  "retainedTestInputs": [
+    {
+      "from": "output/apartment-geometry-closure/04-selected-candidates/two-3bhk/canonical.json",
+      "to": "tests/fixtures/apartment-closure/two-3bhk/canonical.json",
+      "bytes": 167610,
+      "sha256": "d63a664441d4edf525ffb1e21c837e2c3e04a432c11ea2476ea4df0814c89293"
+    },
+    {
+      "from": "output/apartment-geometry-closure/04-selected-candidates/golden/canonical.json",
+      "to": "tests/fixtures/apartment-closure/golden/canonical.json",
+      "bytes": 229005,
+      "sha256": "4abe52ec3fd4fd62413b66162d734b78b3610e8fbaa9a75a4418beaf13bd033c"
+    },
+    {
+      "from": "output/apartment-geometry-closure/04-selected-candidates/four-2bhk/canonical.json",
+      "to": "tests/fixtures/apartment-closure/four-2bhk/canonical.json",
+      "bytes": 234652,
+      "sha256": "20aef2224372928629be383f2aa9713d86ed5bbfa93023d5b70451930a747378"
+    },
+    {
+      "from": "data/image-artifacts/gen_7919_mui7f0ff_c36370c5.json",
+      "to": "tests/fixtures/flux-recordings/gen_7919_mui7f0ff_c36370c5.json",
+      "bytes": 2189,
+      "sha256": "9ed860c201e20d4d00597791c962231d0958ef8e8f1d43e7f0f0a756693b329a"
+    },
+    {
+      "from": "data/image-artifacts/gen_7919_mui7f0ff_c36370c5.jpg",
+      "to": "tests/fixtures/flux-recordings/gen_7919_mui7f0ff_c36370c5.jpg",
+      "bytes": 361631,
+      "sha256": "8e4a7e814fda8dd03451c2e33c025501588eef9e55f116ec8348d903342d569e"
+    },
+    {
+      "from": "data/image-artifacts/gen_42_muh2krwf_d2cdd112.json",
+      "to": "tests/fixtures/flux-recordings/gen_42_muh2krwf_d2cdd112.json",
+      "bytes": 4211,
+      "sha256": "8a04083d379c15bfcd44fea605f2d1c25918064ef2e5bcbf6227b7fb0fc1b2a5"
+    },
+    {
+      "from": "data/image-artifacts/gen_42_muh2krwf_d2cdd112.png",
+      "to": "tests/fixtures/flux-recordings/gen_42_muh2krwf_d2cdd112.png",
+      "bytes": 315556,
+      "sha256": "2cf679f3ac2303a081fdf56806e5f86dc7479c548126b02228f9169cb0601c8c"
+    },
+    {
+      "from": "data/image-artifacts/gen_101_muhfk5cn_18e75c41.json",
+      "to": "tests/fixtures/flux-recordings/gen_101_muhfk5cn_18e75c41.json",
+      "bytes": 6493,
+      "sha256": "145dc5ad046db05535619f03a15967e4814334cb0c71c311becf7c9e1f04d9c0"
+    },
+    {
+      "from": "data/image-artifacts/gen_101_muhfk5cn_18e75c41.jpg",
+      "to": "tests/fixtures/flux-recordings/gen_101_muhfk5cn_18e75c41.jpg",
+      "bytes": 401898,
+      "sha256": "d34103d7f426f007f8a19a4447a08f755f6c08775f38c5b62260a661f1d53927"
+    },
+    {
+      "from": "data/image-artifacts/gen_1306_muh6rq3y_0e9fcf79.json",
+      "to": "tests/fixtures/flux-recordings/gen_1306_muh6rq3y_0e9fcf79.json",
+      "bytes": 1529,
+      "sha256": "aa70d57c2be8cbce9e7a048efcddb2bf0d3c8bfd4be6ce37f8ffcc637a202296"
+    },
+    {
+      "from": "data/image-artifacts/gen_1306_muh6rq3y_0e9fcf79.jpg",
+      "to": "tests/fixtures/flux-recordings/gen_1306_muh6rq3y_0e9fcf79.jpg",
+      "bytes": 245243,
+      "sha256": "732208447cfc78d941d9651db23dfc78b32bd8fdc4c4364ede4563ddc764dcdb"
+    },
+    {
+      "from": "data/image-artifacts/gen_650_muh6qnjm_4e456f2f.json",
+      "to": "tests/fixtures/flux-recordings/gen_650_muh6qnjm_4e456f2f.json",
+      "bytes": 1527,
+      "sha256": "43b8a67a3b67d7c6586c3b96a322f818f0b78faa8171c36a91e12ac35982aa86"
+    },
+    {
+      "from": "data/image-artifacts/gen_650_muh6qnjm_4e456f2f.jpg",
+      "to": "tests/fixtures/flux-recordings/gen_650_muh6qnjm_4e456f2f.jpg",
+      "bytes": 249251,
+      "sha256": "c85b9e9a9e5e4812b99014a71236627e7c21c9703dc2da29b664f7921ff23a75"
+    }
+  ],
+  "plancraftPackageAndTestReferences": 0,
+  "cadSamples": [
+    "output/cad-export/AI_BUILDING_SAAS_Floor_01.dwg",
+    "output/cad-export/AI_BUILDING_SAAS_Floor_01.dxf",
+    "output/cad-export/apartment_project_4_flats_floor_23_floors_typical_residential_floor_r01.svg",
+    "output/cad-export/apartment_project_4_flats_floor_4_floors_typical_residential_floor_r01.dwg",
+    "output/cad-export/cad_test_building_typical_residential_floor.dwg",
+    "output/cad-export/cad_test_building_typical_residential_floor.dxf",
+    "output/cad-export/canonical_building_export.dwg",
+    "output/cad-export/canonical_building_export.dxf",
+    "output/cad-export/coordinated_multi_sheet_indian_residential_apartment_typical_floor_plan_r01.dwg",
+    "output/cad-export/coordinated_multi_sheet_indian_residential_apartment_typical_residential_floor_r01.dwg",
+    "output/cad-export/golden_typical_residential_floor.dxf",
+    "output/cad-export/my_building_project_typical_residential_floor_r01.dwg",
+    "output/cad-export/my_building_project_typical_residential_floor_r01.dxf",
+    "output/cad-export/sapphire_heights_residency_ground_floor_r01.dwg",
+    "output/cad-export/sapphire_heights_residency_ground_floor_r01.dxf",
+    "output/cad-export/test_canonical_export.json",
+    "output/cad-export/test_ground.dxf"
+  ],
+  "rootReports": [
+    "APARTMENT_BALCONY_EFFICIENCY_REPORT.md",
+    "APARTMENT_GEOMETRY_BASELINE_AUDIT.md",
+    "APARTMENT_GEOMETRY_CLOSURE_REPORT.md",
+    "APARTMENT_PDF_ACCEPTANCE_REPORT.md",
+    "APARTMENT_WALL_AND_SEGREGATION_IMPLEMENTATION.md",
+    "ARCHITECTURAL_CONSTANTS_AUDIT.md",
+    "DATA_REQUIREMENTS_MASTER_AUDIT.md",
+    "FUTURE_DATA_PHASE_MATRIX.md",
+    "GOLDEN_3X3BHK_ACCEPTANCE_REPORT.md",
+    "GOLDEN_3X3BHK_APARTMENT_REPAIR_REPORT.md",
+    "GOLDEN_3X3BHK_IMPLEMENTATION_REPORT.md",
+    "GOLDEN_3X3BHK_PIPELINE_AUDIT.md",
+    "GOLDEN_OVERFITTING_AND_METRIC_AUDIT.md",
+    "MINIMUM_NEXT_PHASE_DATA.md",
+    "TRUE_EDITABLE_DWG_EXPORT_DELIVERABLE.md",
+    "USER_DATA_QUESTIONNAIRE.md",
+    "USER_UPLOAD_CHECKLIST.md"
+  ],
+  "protectedAfterDeletion": {
+    "AGENTS.md": {
+      "files": 1,
+      "sha256": "6227094ac1a9b4f8eaefdcfd1907c7f7d0f483f0c063eea999a16772b27a2b9d"
+    },
+    "docs/phase0": {
+      "files": 9,
+      "sha256": "f36cf877adb333ad5f6376c983ad63ccd384d0606e0e35c87b4b485775c624c5"
+    },
+    "docs/phase1": {
+      "files": 12,
+      "sha256": "7986e58f3272faa4ca159f755e37d977d50ac3e6452caf305380ecdfb98cb5c6"
+    },
+    "docs/phase2": {
+      "files": 35,
+      "sha256": "be8b3565be8d91cb4f31916b364ddb42322e06a43c5323ddd9bcc8358f86e2f9"
+    },
+    "packages/backend/data/reference-images": {
+      "files": 42,
+      "sha256": "50264a60551837f525189f33a9af53ba8c20533c6d347d34fac621fafbd01091"
+    }
+  },
+  "removedFiles": 664,
+  "removedBytes": 45432960,
+  "retainedFixtureBytes": 2220795,
+  "netBytesRemoved": 43212165,
+  "remainingTargetFiles": [],
+  "indexing": {
+    "visibleFiles": 675,
+    "unexpectedHeavyFiles": [],
+    "visibleFilesAfterTests": 676
+  },
+  "protectedAfterTests": {
+    "AGENTS.md": {
+      "files": 1,
+      "sha256": "6227094ac1a9b4f8eaefdcfd1907c7f7d0f483f0c063eea999a16772b27a2b9d"
+    },
+    "docs/phase0": {
+      "files": 9,
+      "sha256": "f36cf877adb333ad5f6376c983ad63ccd384d0606e0e35c87b4b485775c624c5"
+    },
+    "docs/phase1": {
+      "files": 12,
+      "sha256": "7986e58f3272faa4ca159f755e37d977d50ac3e6452caf305380ecdfb98cb5c6"
+    },
+    "docs/phase2": {
+      "files": 35,
+      "sha256": "be8b3565be8d91cb4f31916b364ddb42322e06a43c5323ddd9bcc8358f86e2f9"
+    },
+    "packages/backend/data/reference-images": {
+      "files": 42,
+      "sha256": "50264a60551837f525189f33a9af53ba8c20533c6d347d34fac621fafbd01091"
+    }
+  },
+  "testSummary": {
+    "packages": {
+      "@ai-floor-planner/core": {
+        "passed": 192,
+        "skipped": 0
+      },
+      "@ai-floor-planner/projection-3d": {
+        "passed": 22,
+        "skipped": 0
+      },
+      "@ai-floor-planner/geometry-engine": {
+        "passed": 82,
+        "skipped": 0
+      },
+      "@ai-floor-planner/renderer": {
+        "passed": 88,
+        "skipped": 0
+      },
+      "@ai-floor-planner/constraint-engine": {
+        "passed": 185,
+        "skipped": 0
+      },
+      "@ai-floor-planner/planning-engine": {
+        "passed": 353,
+        "skipped": 0
+      },
+      "@ai-floor-planner/ai-orchestration": {
+        "passed": 242,
+        "skipped": 2
+      },
+      "@ai-floor-planner/backend": {
+        "passed": 153,
+        "skipped": 5
+      },
+      "@ai-floor-planner/frontend": {
+        "passed": 152,
+        "skipped": 0
+      }
+    },
+    "passed": 1469,
+    "skipped": 7,
+    "failed": 0,
+    "unhandledErrors": 0,
+    "successfulTasks": 18,
+    "cachedTasks": 17,
+    "command": "pnpm run test --concurrency=1 -- -- --pool=threads --maxWorkers=1 --minWorkers=1"
+  },
+  "typecheckSummary": {
+    "successfulTasks": 16,
+    "errors": 0,
+    "command": "pnpm typecheck --concurrency=1"
+  },
+  "remainingTargetFilesAfterTests": []
+}

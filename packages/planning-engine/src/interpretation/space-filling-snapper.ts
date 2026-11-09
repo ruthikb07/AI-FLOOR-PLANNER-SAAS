@@ -105,23 +105,24 @@ export function createConnectingDoor(
   const sharedXLen = hiX - loX;
 
   // Resolve statutory step-down if segment is tight:
-  // Entrance: 1050 -> 1000 mm (NBC min 1000 mm)
+  // Entrance: 1050 mm (NBC min 1000 mm, fits on shared >= 1200mm)
   // Bedroom: 900 -> 800 mm (NBC min 800 mm)
   // Service/Bath: 750 -> 700 mm (NBC min 700 mm)
   const effectiveHorizWidth =
     sharedXLen >= width + 200 ? width :
     width >= 1050 && sharedXLen >= 1200 ? 1000 :
     width >= 900 && sharedXLen >= 1000 ? 800 :
-    width >= 750 && sharedXLen >= 900 ? 700 :
+    width < 900 && width >= 750 && sharedXLen >= 900 ? 700 :
     width;
 
   const isRoomBBath = /bath|toilet|wc|dress/i.test(roomB.id);
   const isRoomABath = /bath|toilet|wc|dress/i.test(roomA.id);
   const targetBathId = isRoomBBath ? roomB.id : isRoomABath ? roomA.id : undefined;
 
-  const cornerNib = 150;
+  const cornerNib = options?.isFlatEntrance ? 100 : 150;
+  const reqMargin = options?.isFlatEntrance ? 100 : 200;
 
-  if (touchesHoriz && sharedXLen >= effectiveHorizWidth + 200) {
+  if (touchesHoriz && sharedXLen >= effectiveHorizWidth + reqMargin) {
     const sharedY = Math.abs(aRect.y + aRect.height - bRect.y) <= 1 ? aRect.y + aRect.height : bRect.y + bRect.height;
     const doorX = options?.doorType === 'open_passage' && effectiveHorizWidth >= 1200
       ? snap10((loX + hiX - effectiveHorizWidth) / 2)
@@ -154,10 +155,10 @@ export function createConnectingDoor(
     sharedYLen >= width + 200 ? width :
     width >= 1050 && sharedYLen >= 1200 ? 1000 :
     width >= 900 && sharedYLen >= 1000 ? 800 :
-    width >= 750 && sharedYLen >= 900 ? 700 :
+    width < 900 && width >= 750 && sharedYLen >= 900 ? 700 :
     width;
 
-  if (touchesVert && sharedYLen >= effectiveVertWidth + 200) {
+  if (touchesVert && sharedYLen >= effectiveVertWidth + reqMargin) {
     const sharedX = Math.abs(aRect.x + aRect.width - bRect.x) <= 1 ? aRect.x + aRect.width : bRect.x + bRect.width;
     const doorY = options?.doorType === 'open_passage' && effectiveVertWidth >= 1200
       ? snap10((loY + hiY - effectiveVertWidth) / 2)
@@ -456,6 +457,11 @@ export function partitionMacroFootprint(
   const coreX = env.x + leftW;
   const splitY = snap10(env.y + env.h * 0.50);
 
+  const coreBox = { x: coreX, y: env.y, w: coreW, h: env.h };
+  // Clamped strictly to 1800 - 2400 mm common corridor clear width
+  const defaultCorrH = 2400;
+  const defaultCorrY = snap10(splitY - defaultCorrH / 2);
+
   if (count === 2) {
     // Double Flat: West Unit + Central Core Spine + East Unit
     flatBoxes.push({ x: env.x, y: env.y, w: leftW, h: env.h });
@@ -464,8 +470,7 @@ export function partitionMacroFootprint(
     flatBoxes.push({ x: coreX + coreW, y: env.y, w: rightW, h: env.h });
     corridorIsEastForFlat.push(false); // East flat has corridor on West
 
-    const coreBox = { x: coreX, y: env.y, w: coreW, h: env.h };
-    const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: splitY - 8000, corrH: 16000 });
+    const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: defaultCorrY, corrH: defaultCorrH });
 
     return { coreBox, flatBoxes, corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes, corridorIsEastForFlat };
   }
@@ -481,8 +486,7 @@ export function partitionMacroFootprint(
     flatBoxes.push({ x: coreX + coreW, y: splitY, w: rightW, h: (env.y + env.h) - splitY });
     corridorIsEastForFlat.push(false); // SE flat has corridor on West
 
-    const coreBox = { x: coreX, y: env.y, w: coreW, h: env.h };
-    const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: splitY - 8000, corrH: 16000 });
+    const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: defaultCorrY, corrH: defaultCorrH });
 
     return { coreBox, flatBoxes, corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes, corridorIsEastForFlat };
   }
@@ -500,8 +504,7 @@ export function partitionMacroFootprint(
   flatBoxes.push({ x: coreX + coreW, y: splitY, w: rightW, h: (env.y + env.h) - splitY });
   corridorIsEastForFlat.push(false); // SE flat has core on West
 
-  const coreBox = { x: coreX, y: env.y, w: coreW, h: env.h };
-  const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: splitY - 8000, corrH: 16000 });
+  const { corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes } = partitionCore(coreBox, { corrY: defaultCorrY, corrH: defaultCorrH });
 
   return { coreBox, flatBoxes, corridorBox, lobbyBox, liftBoxes, stairBoxes, shaftBoxes, corridorIsEastForFlat };
 }
@@ -524,7 +527,8 @@ export function partitionCore(
   // Band 5 (Bottom): Service Shaft / MEP or Internal OTS Central Courtyard / Atrium
   const stair1H = 4500;
   const stair2H = 4500;
-  const corrH = snap10(options?.corrH ?? 16000);
+  // Common corridor clear width strictly clamped to 1800 - 2400 mm
+  const corrH = Math.min(2400, Math.max(1800, snap10(options?.corrH ?? 2400)));
   const corrY = snap10(options?.corrY ?? (core.y + (core.h - corrH) / 2));
 
   // Band 1: Staircase 1
@@ -605,232 +609,302 @@ function sliceFlatRooms(params: {
 
   const isSouth = box.y > envelope.y + 100;
 
-  // ─── 1. Public Zone: Balcony + Living/Dining + Kitchen + Utility ───────────
-  const balcDepth = 1800; // Clear usable depth = 1800 - 230 = 1570 mm >= 1500 mm statutory
-  const utilDepth = 1800; // Clear usable depth = 1800 - 230 = 1570 mm >= 1500 mm
-  const kitchDepth = 2400;
-  const livingDepth = box.h - (balcDepth + kitchDepth + utilDepth);
+  // ─── 1. Public Zone: Living/Dining + Kitchen + Kitchen Utility Balcony + Balcony ───────────
+  // Subdivide livingZone into Kitchen column (kitchW) and Living column (livW).
+  // Living column is anchored against the core/corridor spine wall so the 1050 mm entrance door
+  // swings directly from Common Corridor into Living & Dining (never into Kitchen stove).
+  const kitchW = snap10(Math.min(2600, Math.max(2200, livingZoneW * 0.42)));
+  const livW = livingZoneW - kitchW;
 
-  let livingRoom: ApartmentPlanRoom;
-  let balconyRoom: ApartmentPlanRoom;
-  let kitchenRoom: ApartmentPlanRoom;
-  let utilityRoom: ApartmentPlanRoom;
+  // If corridorIsEast is true, core is East -> Living is on East (touching core), Kitchen is West
+  // If corridorIsEast is false, core is West -> Living is on West (touching core), Kitchen is East
+  const livX = corridorIsEast ? livingZoneX + kitchW : livingZoneX;
+  const kitchX = corridorIsEast ? livingZoneX : livingZoneX + livW;
 
-  if (!isSouth) {
-    // North flat or Full-depth flat: Balcony at North exterior edge, Living in middle, Kitchen/Utility south
-    let curY = box.y;
-    balconyRoom = {
-      id: `${flatId}__balcony`,
-      name: `${flatLabel} Continuous Architectural Sit-out Deck`,
-      type: 'balcony',
-      planningZone: 'OUTDOOR',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: balcDepth },
-    };
-    rooms.push(balconyRoom);
-    curY += balcDepth;
-
-    livingRoom = {
-      id: `${flatId}__living`,
-      name: `${flatLabel} Living & Dining Room`,
-      type: 'living',
-      planningZone: 'PUBLIC',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: livingDepth },
-    };
-    rooms.push(livingRoom);
-    curY += livingDepth;
-
-    kitchenRoom = {
-      id: `${flatId}__kitchen`,
-      name: `${flatLabel} Kitchen`,
-      type: 'kitchen',
-      planningZone: 'SERVICE',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: kitchDepth },
-    };
-    rooms.push(kitchenRoom);
-    curY += kitchDepth;
-
-    utilityRoom = {
-      id: `${flatId}__utility`,
-      name: `${flatLabel} Kitchen Utility Balcony`,
-      type: 'utility',
-      planningZone: 'SERVICE',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: (box.y + box.h) - curY },
-    };
-    rooms.push(utilityRoom);
-
-    const dBalc = createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, 1500, { doorType: 'sliding' });
-    if (dBalc) flatOpenings.push(dBalc);
-
-    const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, livingRoom, kitchenRoom, 900);
-    if (dKitchen) flatOpenings.push(dKitchen);
-
-    const dUtility = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750);
-    if (dUtility) flatOpenings.push(dUtility);
-  } else {
-    // South flat: Utility/Kitchen at North, Living in middle, Balcony at South exterior edge
-    let curY = box.y;
-    utilityRoom = {
-      id: `${flatId}__utility`,
-      name: `${flatLabel} Kitchen Utility Balcony`,
-      type: 'utility',
-      planningZone: 'SERVICE',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: utilDepth },
-    };
-    rooms.push(utilityRoom);
-    curY += utilDepth;
-
-    kitchenRoom = {
-      id: `${flatId}__kitchen`,
-      name: `${flatLabel} Kitchen`,
-      type: 'kitchen',
-      planningZone: 'SERVICE',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: kitchDepth },
-    };
-    rooms.push(kitchenRoom);
-    curY += kitchDepth;
-
-    livingRoom = {
-      id: `${flatId}__living`,
-      name: `${flatLabel} Living & Dining Room`,
-      type: 'living',
-      planningZone: 'PUBLIC',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: livingDepth },
-    };
-    rooms.push(livingRoom);
-    curY += livingDepth;
-
-    balconyRoom = {
-      id: `${flatId}__balcony`,
-      name: `${flatLabel} Continuous Architectural Sit-out Deck`,
-      type: 'balcony',
-      planningZone: 'OUTDOOR',
-      rect: { x: livingZoneX, y: curY, width: livingZoneW, height: (box.y + box.h) - curY },
-    };
-    rooms.push(balconyRoom);
-
-    const dUtility = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750);
-    if (dUtility) flatOpenings.push(dUtility);
-
-    const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, livingRoom, kitchenRoom, 900);
-    if (dKitchen) flatOpenings.push(dKitchen);
-
-    const dBalc = createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, 1500, { doorType: 'sliding' });
-    if (dBalc) flatOpenings.push(dBalc);
+  // A shallow facade service band leaves Living & Dining against BOTH the
+  // corridor and the bedroom zone. No kitchen strip separates every bedroom.
+  const utilDepth = 1430;
+  const serviceDepth = Math.max(5500, snap10(5_500_000 / livW));
+  const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
+  const utilityRoom: ApartmentPlanRoom = {
+    id: `${flatId}__utility`, name: `${flatLabel} Kitchen Utility Balcony`, type: 'utility', planningZone: 'OUTDOOR',
+    rect: { x: kitchX, y: isSouth ? box.y + box.h - utilDepth : box.y, width: kitchW, height: utilDepth },
+  };
+  const kitchenRoom: ApartmentPlanRoom = {
+    id: `${flatId}__kitchen`, name: `${flatLabel} Kitchen`, type: 'kitchen', planningZone: 'SERVICE',
+    rect: { x: kitchX, y: isSouth ? serviceY : box.y + utilDepth, width: kitchW, height: serviceDepth - utilDepth },
+  };
+  const balconyRoom: ApartmentPlanRoom = {
+    id: `${flatId}__balcony`, name: `${flatLabel} Sit-out Balcony`, type: 'balcony', planningZone: 'OUTDOOR',
+    rect: { x: livX, y: serviceY, width: livW, height: serviceDepth },
+  };
+  const livingRoom: ApartmentPlanRoom = {
+    id: `${flatId}__living`, name: `${flatLabel} Living & Dining Room`, type: 'living', planningZone: 'PUBLIC',
+    rect: { x: livingZoneX, y: isSouth ? box.y : box.y + serviceDepth, width: livingZoneW, height: box.h - serviceDepth },
+  };
+  rooms.push(utilityRoom, kitchenRoom, balconyRoom, livingRoom);
+  for (const [id, from, to, width, doorType] of [
+    ['balcony', livingRoom, balconyRoom, 900, 'sliding'],
+    ['kitchen', livingRoom, kitchenRoom, 900, 'single'],
+    ['utility', kitchenRoom, utilityRoom, 750, 'single'],
+  ] as const) {
+    const door = createConnectingDoor(`${flatId}__door_${id}`, from, to, width, { doorType });
+    if (door) flatOpenings.push(door);
   }
 
-  // Main Entrance Door (1050 mm single door on shared wall between corridor and living)
-  const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: 'corridor_1', rect: corridorBox }, livingRoom, 1050, { isFlatEntrance: true });
+  // Main Flat Entrance: 1050 mm single door on shared wall between corridor and living
+  const dEntrance = createConnectingDoor(
+    `${flatId}__door_entrance`,
+    { id: 'corridor_1', rect: corridorBox },
+    livingRoom,
+    1050,
+    { isFlatEntrance: true },
+  );
   if (dEntrance) flatOpenings.push(dEntrance);
 
-  const connectToPublic = (
-    doorId: string,
-    targetRoom: ApartmentPlanRoom,
-    width: number,
-    options?: { isFlatEntrance?: boolean; doorType?: 'single' | 'double' | 'sliding' | 'open_passage' },
-  ) => {
-    return createConnectingDoor(doorId, livingRoom, targetRoom, width, options);
-  };
+  // ─── 2. Private Zone: Bedrooms + Bathrooms + Internal Passage ───────────
+  // Clamps aspect ratio so all habitable bedrooms have max(w/h, h/w) <= 1.35
+  const maxBedH = snap10(bedZoneW * 1.30);
+  const minBedH = 3000;
 
-  // ─── 2. Private Zone: Bedrooms + Bathrooms (§4) ───────────────────────────
-  if (unitType === '2BHK') {
-    // 2BHK: Master Suite (Bed + Attached Bath) + Common Bath + Bedroom 02
-    // Bathrooms are paired side-by-side in an 1800 mm band, reserving full vertical height for bedrooms
+  if (unitType === '1BHK') {
+    // 1BHK: Strictly 1 Bedroom (Master Bedroom) + 1 Bath + Living & Dining + Kitchen + Utility + Balcony
     const bathH = 1800;
-    const availBedH = box.h - bathH;
-    const masterBedH = snap10(availBedH * 0.52);
-    const bed2H = box.h - (masterBedH + bathH);
+    const availH = box.h - bathH;
+    const masterBedH = Math.min(maxBedH, Math.max(minBedH, snap10(availH * 0.70)));
+    const passH = box.h - (masterBedH + bathH);
 
     let bY = box.y;
+    let masterBed: ApartmentPlanRoom;
+    let commonBath: ApartmentPlanRoom;
 
-    // Master Bedroom
-    const masterBed: ApartmentPlanRoom = {
-      id: `${flatId}__master_bed`,
-      name: `${flatLabel} Master Bedroom`,
-      type: 'bedroom',
-      planningZone: 'PRIVATE',
-      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
-    };
-    rooms.push(masterBed);
+    if (!isSouth) {
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+      bY += masterBedH;
 
-    // Master Bed Door from Living / Foyer (900 mm)
-    const dMaster = connectToPublic(`${flatId}__door_master_bed`, masterBed, 900);
+      if (passH > 0) {
+        const passage: ApartmentPlanRoom = {
+          id: `${flatId}__internal_passage`,
+          name: `${flatLabel} Internal Passage`,
+          type: 'corridor',
+          planningZone: 'SERVICE',
+          rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+        };
+        rooms.push(passage);
+        bY += passH;
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+        if (dPass) flatOpenings.push(dPass);
+      }
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Master Bathroom`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        bathroomOwnerRoomId: masterBed.id,
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bathH },
+      };
+      rooms.push(commonBath);
+    } else {
+      if (passH > 0) {
+        const passage: ApartmentPlanRoom = {
+          id: `${flatId}__internal_passage`,
+          name: `${flatLabel} Internal Passage`,
+          type: 'corridor',
+          planningZone: 'SERVICE',
+          rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+        };
+        rooms.push(passage);
+        bY += passH;
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+        if (dPass) flatOpenings.push(dPass);
+      }
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Master Bathroom`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bathH },
+      };
+      rooms.push(commonBath);
+      bY += bathH;
+
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+    }
+
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
     if (dMaster) flatOpenings.push(dMaster);
 
-    bY += masterBedH;
+    const dBath = createConnectingDoor(`${flatId}__door_common_bath`, masterBed, commonBath, 750);
+    if (dBath) flatOpenings.push(dBath);
+  } else if (unitType === '2BHK') {
+    // 2BHK: Strictly 2 Bedrooms (Master Bedroom, Bedroom 02) and 2 Bathrooms (Master Toilet, Common Bathroom)
+    const bathH = 1800;
+    const passH = 1200; // Internal passage isolating bathrooms from living room
+    const availBedH = box.h - bathH - passH;
+    const rawMasterBedH = snap10(availBedH * 0.52);
+    const masterBedH = Math.min(maxBedH, Math.max(minBedH, rawMasterBedH));
+    const bed2H = box.h - (masterBedH + bathH + passH);
 
-    // Paired Bathrooms: Master Toilet + Common Bathroom
     const bath1W = snap10(bedZoneW * 0.50);
     const bath2W = bedZoneW - bath1W;
     const commonBathX = corridorIsEast ? bedZoneX + bath1W : bedZoneX;
     const masterBathX = corridorIsEast ? bedZoneX : bedZoneX + bath2W;
 
-    const masterBath: ApartmentPlanRoom = {
-      id: `${flatId}__master_bath`,
-      name: `${flatLabel} Master Toilet`,
-      type: 'bathroom',
-      planningZone: 'SERVICE',
-      bathroomOwnerRoomId: masterBed.id,
-      rect: { x: masterBathX, y: bY, width: bath1W, height: bathH },
-    };
-    rooms.push(masterBath);
+    let bY = box.y;
+    let masterBed: ApartmentPlanRoom;
+    let masterBath: ApartmentPlanRoom;
+    let commonBath: ApartmentPlanRoom;
+    let passage: ApartmentPlanRoom;
+    let bed2: ApartmentPlanRoom;
 
+    if (!isSouth) {
+      // North Flat: Master Bed at North exterior, Bathrooms middle, Passage, Bedroom 02 at South
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+      bY += masterBedH;
+
+      masterBath = {
+        id: `${flatId}__master_bath`,
+        name: `${flatLabel} Master Toilet`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        bathroomOwnerRoomId: masterBed.id,
+        rect: { x: masterBathX, y: bY, width: bath1W, height: bathH },
+      };
+      rooms.push(masterBath);
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Common Bathroom`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: commonBathX, y: bY, width: bath2W, height: bathH },
+      };
+      rooms.push(commonBath);
+      bY += bathH;
+
+      passage = {
+        id: `${flatId}__internal_passage`,
+        name: `${flatLabel} Internal Passage`,
+        type: 'corridor',
+        planningZone: 'SERVICE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+      };
+      rooms.push(passage);
+      bY += passH;
+
+      bed2 = {
+        id: `${flatId}__bed_2`,
+        name: `${flatLabel} Bedroom 02`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
+      };
+      rooms.push(bed2);
+    } else {
+      // South Flat: Bedroom 02 at North, Passage, Bathrooms, Master Bed at South exterior
+      bed2 = {
+        id: `${flatId}__bed_2`,
+        name: `${flatLabel} Bedroom 02`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
+      };
+      rooms.push(bed2);
+      bY += bed2H;
+
+      passage = {
+        id: `${flatId}__internal_passage`,
+        name: `${flatLabel} Internal Passage`,
+        type: 'corridor',
+        planningZone: 'SERVICE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+      };
+      rooms.push(passage);
+      bY += passH;
+
+      masterBath = {
+        id: `${flatId}__master_bath`,
+        name: `${flatLabel} Master Toilet`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        bathroomOwnerRoomId: `${flatId}__master_bed`,
+        rect: { x: masterBathX, y: bY, width: bath1W, height: bathH },
+      };
+      rooms.push(masterBath);
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Common Bathroom`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: commonBathX, y: bY, width: bath2W, height: bathH },
+      };
+      rooms.push(commonBath);
+      bY += bathH;
+
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+    }
+
+    // Door Connections:
+    // Passage connects to Living Room:
+    const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+    if (dPass) flatOpenings.push(dPass);
+
+    // Master Bath strictly opens from Master Bed:
     const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
     if (dMasterBath) flatOpenings.push(dMasterBath);
 
-    const commonBath: ApartmentPlanRoom = {
-      id: `${flatId}__common_bath`,
-      name: `${flatLabel} Common Bathroom`,
-      type: 'common_toilet',
-      planningZone: 'SERVICE',
-      rect: { x: commonBathX, y: bY, width: bath2W, height: bathH },
-    };
-    rooms.push(commonBath);
-
-    const dCommonBath = connectToPublic(`${flatId}__door_common_bath`, commonBath, 750);
+    // Common Bath strictly opens from Internal Passage (never through Living & Dining wall):
+    const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
     if (dCommonBath) flatOpenings.push(dCommonBath);
 
-    bY += bathH;
-
-    // Bedroom 02
-    const bed2: ApartmentPlanRoom = {
-      id: `${flatId}__bed_2`,
-      name: `${flatLabel} Bedroom 02`,
-      type: 'bedroom',
-      planningZone: 'PRIVATE',
-      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
-    };
-    rooms.push(bed2);
-
-    // Bed 2 Door from Living / Foyer (900 mm)
-    const dBed2 = connectToPublic(`${flatId}__door_bed_2`, bed2, 900);
+    // Bedroom 02 connects from Internal Passage:
+    const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900);
     if (dBed2) flatOpenings.push(dBed2);
-  } else if (unitType === '3BHK') {
-    // 3BHK: Master Suite (Bed + Bath) + Common Bath + Bed 2 (with Attached Bath) + Bed 3
-    // All 3 bathrooms are grouped side-by-side in a single 1800 mm band, reserving maximum height for bedrooms
-    const bathH = 1800;
-    const availBedH = box.h - bathH;
-    const masterBedH = snap10(availBedH * 0.36);
-    const bed2H = snap10(availBedH * 0.32);
-    const bed3H = availBedH - (masterBedH + bed2H);
 
-    let bY = box.y;
-
-    // Master Bedroom
-    const masterBed: ApartmentPlanRoom = {
-      id: `${flatId}__master_bed`,
-      name: `${flatLabel} Master Bedroom`,
-      type: 'bedroom',
-      planningZone: 'PRIVATE',
-      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
-    };
-    rooms.push(masterBed);
-
-    const dMaster = connectToPublic(`${flatId}__door_master_bed`, masterBed, 900);
+    // Master Bed connects from Living or Passage:
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900) ??
+      createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900);
     if (dMaster) flatOpenings.push(dMaster);
+  } else if (unitType === '3BHK') {
+    // 3BHK: Strictly 3 Bedrooms (Master Bedroom, Bedroom 02, Bedroom 03) and 2–3 Bathrooms
+    const bathH = 1800;
+    const passH = 1200;
+    const availBedH = box.h - bathH - passH;
+    const masterBedH = Math.min(maxBedH, Math.max(minBedH, snap10(availBedH * 0.38)));
+    const bed2H = Math.min(maxBedH, Math.max(minBedH, snap10(availBedH * 0.33)));
+    const bed3H = box.h - (masterBedH + bed2H + bathH + passH);
 
-    bY += masterBedH;
-
-    // Paired Bathrooms: Master Bath + Common Bath + Toilet 02 (Attached to Bed 2)
     const slot1W = snap10(bedZoneW / 3);
     const slot2W = snap10(bedZoneW / 3);
     const slot3W = bedZoneW - slot1W - slot2W;
@@ -839,111 +913,203 @@ function sliceFlatRooms(params: {
     const bX2 = bedZoneX + slot1W;
     const bX3 = bedZoneX + slot1W + slot2W;
 
-    // livingRoom is on the East when corridorIsEast is true, and West when corridorIsEast is false.
-    // commonBath MUST touch livingRoom for reachability from public zone:
-    // When corridorIsEast is true: livingRoom is East -> commonBath in Slot 3 (East), bath2 in Slot 2 (middle), masterBath in Slot 1 (West/exterior)
-    // When corridorIsEast is false: livingRoom is West -> commonBath in Slot 1 (West), bath2 in Slot 2 (middle), masterBath in Slot 3 (East/exterior)
     const masterBathX = corridorIsEast ? bX1 : bX3;
     const masterBathW = corridorIsEast ? slot1W : slot3W;
-
     const bath2X = bX2;
     const bath2W = slot2W;
-
     const commonBathX = corridorIsEast ? bX3 : bX1;
     const commonBathW = corridorIsEast ? slot3W : slot1W;
 
-    const masterBath: ApartmentPlanRoom = {
-      id: `${flatId}__master_bath`,
-      name: `${flatLabel} Master Toilet`,
-      type: 'bathroom',
-      planningZone: 'SERVICE',
-      bathroomOwnerRoomId: masterBed.id,
-      rect: { x: masterBathX, y: bY, width: masterBathW, height: bathH },
-    };
-    rooms.push(masterBath);
+    let bY = box.y;
+    let masterBed: ApartmentPlanRoom;
+    let masterBath: ApartmentPlanRoom;
+    let commonBath: ApartmentPlanRoom;
+    let bath2: ApartmentPlanRoom;
+    let passage: ApartmentPlanRoom;
+    let bed2: ApartmentPlanRoom;
+    let bed3: ApartmentPlanRoom;
+
+    if (!isSouth) {
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+      bY += masterBedH;
+
+      masterBath = {
+        id: `${flatId}__master_bath`,
+        name: `${flatLabel} Master Toilet`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        bathroomOwnerRoomId: masterBed.id,
+        rect: { x: masterBathX, y: bY, width: masterBathW, height: bathH },
+      };
+      rooms.push(masterBath);
+
+      bath2 = {
+        id: `${flatId}__bath_2`,
+        name: `${flatLabel} Common Toilet 02`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: bath2X, y: bY, width: bath2W, height: bathH },
+      };
+      rooms.push(bath2);
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Common Bathroom`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: commonBathX, y: bY, width: commonBathW, height: bathH },
+      };
+      rooms.push(commonBath);
+      bY += bathH;
+
+      passage = {
+        id: `${flatId}__internal_passage`,
+        name: `${flatLabel} Internal Passage`,
+        type: 'corridor',
+        planningZone: 'SERVICE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+      };
+      rooms.push(passage);
+      bY += passH;
+
+      bed2 = {
+        id: `${flatId}__bed_2`,
+        name: `${flatLabel} Bedroom 02`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
+      };
+      rooms.push(bed2);
+      bY += bed2H;
+
+      bed3 = {
+        id: `${flatId}__bed_3`,
+        name: `${flatLabel} Bedroom 03`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed3H },
+      };
+      rooms.push(bed3);
+    } else {
+      bed3 = {
+        id: `${flatId}__bed_3`,
+        name: `${flatLabel} Bedroom 03`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed3H },
+      };
+      rooms.push(bed3);
+      bY += bed3H;
+
+      bed2 = {
+        id: `${flatId}__bed_2`,
+        name: `${flatLabel} Bedroom 02`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
+      };
+      rooms.push(bed2);
+      bY += bed2H;
+
+      passage = {
+        id: `${flatId}__internal_passage`,
+        name: `${flatLabel} Internal Passage`,
+        type: 'corridor',
+        planningZone: 'SERVICE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+      };
+      rooms.push(passage);
+      bY += passH;
+
+      masterBath = {
+        id: `${flatId}__master_bath`,
+        name: `${flatLabel} Master Toilet`,
+        type: 'bathroom',
+        planningZone: 'SERVICE',
+        bathroomOwnerRoomId: `${flatId}__master_bed`,
+        rect: { x: masterBathX, y: bY, width: masterBathW, height: bathH },
+      };
+      rooms.push(masterBath);
+
+      bath2 = {
+        id: `${flatId}__bath_2`,
+        name: `${flatLabel} Common Toilet 02`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: bath2X, y: bY, width: bath2W, height: bathH },
+      };
+      rooms.push(bath2);
+
+      commonBath = {
+        id: `${flatId}__common_bath`,
+        name: `${flatLabel} Common Bathroom`,
+        type: 'common_toilet',
+        planningZone: 'SERVICE',
+        rect: { x: commonBathX, y: bY, width: commonBathW, height: bathH },
+      };
+      rooms.push(commonBath);
+      bY += bathH;
+
+      masterBed = {
+        id: `${flatId}__master_bed`,
+        name: `${flatLabel} Master Bedroom`,
+        type: 'bedroom',
+        planningZone: 'PRIVATE',
+        rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
+      };
+      rooms.push(masterBed);
+    }
+
+    // Door Connections:
+    const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+    if (dPass) flatOpenings.push(dPass);
 
     const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
     if (dMasterBath) flatOpenings.push(dMasterBath);
 
-    const commonBath: ApartmentPlanRoom = {
-      id: `${flatId}__common_bath`,
-      name: `${flatLabel} Common Bathroom`,
-      type: 'common_toilet',
-      planningZone: 'SERVICE',
-      rect: { x: commonBathX, y: bY, width: commonBathW, height: bathH },
-    };
-    rooms.push(commonBath);
-
-    const dCommonBath = connectToPublic(`${flatId}__door_common_bath`, commonBath, 750);
-    if (dCommonBath) flatOpenings.push(dCommonBath);
-
-    bY += bathH;
-
-    // Bedroom 02
-    const bed2: ApartmentPlanRoom = {
-      id: `${flatId}__bed_2`,
-      name: `${flatLabel} Bedroom 02`,
-      type: 'bedroom',
-      planningZone: 'PRIVATE',
-      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
-    };
-    rooms.push(bed2);
-
-    const dBed2 = connectToPublic(`${flatId}__door_bed_2`, bed2, 900);
-    if (dBed2) flatOpenings.push(dBed2);
-
-    // Toilet 02 (attached to Bed 2) sits in the bathroom band at bath2X, sharing a wall with bed2
-    const bath2: ApartmentPlanRoom = {
-      id: `${flatId}__bath_2`,
-      name: `${flatLabel} Toilet 02`,
-      type: 'bathroom',
-      planningZone: 'SERVICE',
-      bathroomOwnerRoomId: bed2.id,
-      rect: { x: bath2X, y: bY - bathH, width: bath2W, height: bathH },
-    };
-    rooms.push(bath2);
-
-    const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, bed2, bath2, 750);
+    const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, passage, bath2, 750);
     if (dBath2) flatOpenings.push(dBath2);
 
-    bY += bed2H;
+    const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
+    if (dCommonBath) flatOpenings.push(dCommonBath);
 
-    // Bedroom 03
-    const bed3: ApartmentPlanRoom = {
-      id: `${flatId}__bed_3`,
-      name: `${flatLabel} Bedroom 03`,
-      type: 'bedroom',
-      planningZone: 'PRIVATE',
-      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed3H },
-    };
-    rooms.push(bed3);
+    const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900);
+    if (dBed2) flatOpenings.push(dBed2);
 
-    const dBed3 = connectToPublic(`${flatId}__door_bed_3`, bed3, 900);
+    const dBed3 = createConnectingDoor(`${flatId}__door_bed_3`, passage, bed3, 900) ??
+      createConnectingDoor(`${flatId}__door_bed_3`, livingRoom, bed3, 900);
     if (dBed3) flatOpenings.push(dBed3);
+
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900) ??
+      createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900);
+    if (dMaster) flatOpenings.push(dMaster);
   } else {
-    // 4BHK: Master Suite + Common Bath + Bed 2 + Bed 3 + Bed 4 with 2 paired bathroom bands
+    // 4BHK: Strictly 4 Bedrooms (Master Bedroom, Bedroom 02, Bedroom 03, Bedroom 04)
     const bathH = 1800;
-    const availBedH = box.h - (bathH * 2);
-    const masterBedH = snap10(availBedH * 0.30);
-    const bed2H = snap10(availBedH * 0.25);
-    const bed3H = snap10(availBedH * 0.23);
-    const bed4H = availBedH - (masterBedH + bed2H + bed3H);
+    const passH = 1200;
+    const availBedH = box.h - (bathH * 2) - passH;
+    const masterBedH = Math.min(maxBedH, Math.max(minBedH, snap10(availBedH * 0.30)));
+    const bed2H = Math.min(maxBedH, Math.max(minBedH, snap10(availBedH * 0.25)));
+    const bed3H = Math.min(maxBedH, Math.max(minBedH, snap10(availBedH * 0.23)));
+    const bed4H = box.h - (masterBedH + bed2H + bed3H + bathH * 2 + passH);
 
     let bY = box.y;
-
     // Master Bed
     const masterBed: ApartmentPlanRoom = {
       id: `${flatId}__master_bed`,
-      name: `${flatLabel} Presidential Suite`,
+      name: `${flatLabel} Master Bedroom`,
       type: 'bedroom',
       planningZone: 'PRIVATE',
       rect: { x: bedZoneX, y: bY, width: bedZoneW, height: masterBedH },
     };
     rooms.push(masterBed);
-
-    const dMaster = connectToPublic(`${flatId}__door_master_bed`, masterBed, 900);
-    if (dMaster) flatOpenings.push(dMaster);
-
     bY += masterBedH;
 
     // Band 1: Master Bath + Common Bath
@@ -954,7 +1120,7 @@ function sliceFlatRooms(params: {
 
     const masterBath: ApartmentPlanRoom = {
       id: `${flatId}__master_bath`,
-      name: `${flatLabel} Master Bath`,
+      name: `${flatLabel} Master Toilet`,
       type: 'bathroom',
       planningZone: 'SERVICE',
       bathroomOwnerRoomId: masterBed.id,
@@ -962,35 +1128,35 @@ function sliceFlatRooms(params: {
     };
     rooms.push(masterBath);
 
-    const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
-    if (dMasterBath) flatOpenings.push(dMasterBath);
-
     const commonBath: ApartmentPlanRoom = {
       id: `${flatId}__common_bath`,
-      name: `${flatLabel} Common Powder / Bath`,
+      name: `${flatLabel} Common Bathroom`,
       type: 'common_toilet',
       planningZone: 'SERVICE',
       rect: { x: commonBathX, y: bY, width: b2W, height: bathH },
     };
     rooms.push(commonBath);
-
-    const dCommonBath = connectToPublic(`${flatId}__door_common_bath`, commonBath, 750);
-    if (dCommonBath) flatOpenings.push(dCommonBath);
-
     bY += bathH;
+
+    const passage: ApartmentPlanRoom = {
+      id: `${flatId}__internal_passage`,
+      name: `${flatLabel} Internal Passage`,
+      type: 'corridor',
+      planningZone: 'SERVICE',
+      rect: { x: bedZoneX, y: bY, width: bedZoneW, height: passH },
+    };
+    rooms.push(passage);
+    bY += passH;
+
     // Bedroom 02
     const bed2: ApartmentPlanRoom = {
       id: `${flatId}__bed_2`,
-      name: `${flatLabel} Master Suite 02`,
+      name: `${flatLabel} Bedroom 02`,
       type: 'bedroom',
       planningZone: 'PRIVATE',
       rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed2H },
     };
     rooms.push(bed2);
-
-    const dBed2 = connectToPublic(`${flatId}__door_bed_2`, bed2, 900);
-    if (dBed2) flatOpenings.push(dBed2);
-
     bY += bed2H;
 
     // Band 2: Bath 2 + Bath 3 side-by-side
@@ -1007,9 +1173,15 @@ function sliceFlatRooms(params: {
     };
     rooms.push(bath2);
 
-    const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, bed2, bath2, 750);
-    if (dBath2) flatOpenings.push(dBath2);
-
+    const bath3: ApartmentPlanRoom = {
+      id: `${flatId}__bath_3`,
+      name: `${flatLabel} Toilet 03`,
+      bathroomOwnerRoomId: `${flatId}__bed_3`,
+      type: 'bathroom',
+      planningZone: 'SERVICE',
+      rect: { x: bedZoneX + b3W, y: bY, width: b4W, height: bathH },
+    };
+    rooms.push(bath3);
     bY += bathH;
 
     // Bedroom 03
@@ -1021,24 +1193,6 @@ function sliceFlatRooms(params: {
       rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed3H },
     };
     rooms.push(bed3);
-
-    const dBed3 = connectToPublic(`${flatId}__door_bed_3`, bed3, 900);
-    if (dBed3) flatOpenings.push(dBed3);
-
-    // Bath 3 (attached to bed 3) sits in Band 2
-    const bath3: ApartmentPlanRoom = {
-      id: `${flatId}__bath_3`,
-      name: `${flatLabel} Toilet 03`,
-      type: 'bathroom',
-      planningZone: 'SERVICE',
-      bathroomOwnerRoomId: bed3.id,
-      rect: { x: bedZoneX + b3W, y: bY - bathH, width: b4W, height: bathH },
-    };
-    rooms.push(bath3);
-
-    const dBath3 = createConnectingDoor(`${flatId}__door_bath_3`, bed3, bath3, 750);
-    if (dBath3) flatOpenings.push(dBath3);
-
     bY += bed3H;
 
     // Bedroom 04
@@ -1051,9 +1205,40 @@ function sliceFlatRooms(params: {
     };
     rooms.push(bed4);
 
-    const dBed4 = connectToPublic(`${flatId}__door_bed_4`, bed4, 900);
+    // Door Connections:
+    const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+    if (dPass) flatOpenings.push(dPass);
+
+    const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
+    if (dMasterBath) flatOpenings.push(dMasterBath);
+
+    const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
+    if (dCommonBath) flatOpenings.push(dCommonBath);
+
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
+    if (dMaster) flatOpenings.push(dMaster);
+
+    const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900);
+    if (dBed2) flatOpenings.push(dBed2);
+
+    const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, bed2, bath2, 750);
+    if (dBath2) flatOpenings.push(dBath2);
+
+    const dBed3 = createConnectingDoor(`${flatId}__door_bed_3`, passage, bed3, 900);
+    if (dBed3) flatOpenings.push(dBed3);
+
+    const dBath3 = createConnectingDoor(`${flatId}__door_bath_3`, bed3, bath3, 750);
+    if (dBath3) flatOpenings.push(dBath3);
+
+    const dBed4 = createConnectingDoor(`${flatId}__door_bed_4`, passage, bed4, 900);
     if (dBed4) flatOpenings.push(dBed4);
   }
 
+  for (const room of rooms.filter(r => r.type === 'bedroom')) {
+    if (flatOpenings.some(d => d.connects?.includes(room.id) && !d.connects.some(id => rooms.find(r => r.id === id)?.bathroomOwnerRoomId))) continue;
+    const door = createConnectingDoor(`${room.id}__door_day_access`, livingRoom, room, 900)
+      ?? createConnectingDoor(`${room.id}__door_day_access`, kitchenRoom, room, 900);
+    if (door) flatOpenings.push(door);
+  }
   return { rooms, flatOpenings };
 }

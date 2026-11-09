@@ -1,0 +1,74 @@
+[
+  {
+    "exitCode": 0,
+    "gate": "backend-tests",
+    "command": "pnpm --filter @ai-floor-planner/backend run test --pool=threads --maxWorkers=1 --minWorkers=1",
+    "seconds": 269.28,
+    "attempts": 1,
+    "arguments": [
+      "--filter",
+      "@ai-floor-planner/backend",
+      "run",
+      "test",
+      "--pool=threads",
+      "--maxWorkers=1",
+      "--minWorkers=1"
+    ]
+  },
+  {
+    "arguments": [
+      "--filter",
+      "@ai-floor-planner/backend",
+      "run",
+      "test",
+      "multi-story-cad-export",
+      "accoreconsole-runner",
+      "--pool=threads",
+      "--maxWorkers=1",
+      "--minWorkers=1"
+    ],
+    "seconds": 35.62,
+    "attempts": 1,
+    "command": "pnpm --filter @ai-floor-planner/backend run test multi-story-cad-export accoreconsole-runner --pool=threads --maxWorkers=1 --minWorkers=1",
+    "exitCode": 0,
+    "gate": "focused-native"
+  },
+  {
+    "arguments": [
+      "typecheck",
+      "--concurrency=1"
+    ],
+    "gate": "typecheck",
+    "exitCode": 0,
+    "seconds": 6.58,
+    "command": "pnpm typecheck --concurrency=1",
+    "attempts": 1
+  },
+  {
+    "arguments": [
+      "lint",
+      "--concurrency=1"
+    ],
+    "gate": "lint",
+    "exitCode": 0,
+    "seconds": 7.2,
+    "command": "pnpm lint --concurrency=1",
+    "attempts": 1
+  },
+  {
+    "arguments": [
+      "run",
+      "test",
+      "--concurrency=1",
+      "--",
+      "--pool=threads",
+      "--maxWorkers=1",
+      "--minWorkers=1"
+    ],
+    "gate": "full-tests",
+    "exitCode": 0,
+    "seconds": 68.11,
+    "command": "pnpm run test --concurrency=1 -- --pool=threads --maxWorkers=1 --minWorkers=1",
+    "attempts": 1
+  }
+]

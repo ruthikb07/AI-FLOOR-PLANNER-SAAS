@@ -1,0 +1,47 @@
+Redirect stdout (file: C:\Users\ruthi\AppData\Local\Temp\accc408962).
+
+AcCoreConsole: StdOutConsoleMode: processed-output: disabled,auto
+
+AutoCAD Core Engine Console - Copyright 2020 Autodesk, Inc.  All rights reserved. (R.47.0.0)
+
+
+
+Execution Path:
+
+C:\Program Files\Autodesk\AutoCAD 2021\accoreconsole.exe
+
+
+
+Version Number: R.47.0.0 (UNICODE)
+
+CoreHeartBeat
+
+Unknown header variable $PELLIPSE ignored on line 70.
+
+Unknown header variable $DIMALTMZF ignored on line 150.
+
+Unknown header variable $DIMALTMZS ignored on line 154.
+
+Unknown header variable $DIMMZF ignored on line 282.
+
+Unknown header variable $DIMMZS ignored on line 286.
+
+Unknown header variable $FACETRES ignored on line 482.
+
+
+
+The following error was encountered while reading
+
+in AcDbAlignedDimension starting at line 26528:
+
+
+
+Invalid dimension block name.
+
+Invalid or incomplete DXF input -- drawing discarded.
+
+
+
+ERROR: Something went wrong. ErrorStatus=53.
+
+

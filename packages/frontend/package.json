@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-floor-planner/ai-orchestration": "workspace:*",
+    "@ai-floor-planner/constraint-engine": "workspace:*",
     "@ai-floor-planner/core": "workspace:*",
     "@ai-floor-planner/geometry-engine": "workspace:*",
     "@ai-floor-planner/planning-engine": "workspace:*",
@@ -23,14 +24,17 @@
     "lucide-react": "^0.435.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.185.1",
-    "@ai-floor-planner/constraint-engine": "workspace:*"
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "10",
+    "jsdom": "26.1.0",
+    "postcss": "8",
+    "tailwindcss": "3.4.17",
     "typescript": "5.5.4",
     "vite": "^5.4.1",
     "vitest": "2.0.5"

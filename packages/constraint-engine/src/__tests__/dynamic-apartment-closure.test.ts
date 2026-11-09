@@ -5,7 +5,7 @@ import { createDynamicApartmentManifest } from '@ai-floor-planner/core';
 import { validateApartmentClosure } from '../apartment-closure';
 import type { Building } from '@ai-floor-planner/core';
 
-const OUTPUT_DIR = path.resolve(__dirname, '../../../../output/apartment-geometry-closure/04-selected-candidates');
+const OUTPUT_DIR = path.resolve(__dirname, '../../../../tests/fixtures/apartment-closure');
 
 function loadCanonicalFixture(name: string): Building {
   const filePath = path.join(OUTPUT_DIR, name, 'canonical.json');

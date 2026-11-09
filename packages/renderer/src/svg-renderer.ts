@@ -15,11 +15,10 @@ import type {
   Point,
 } from '@ai-floor-planner/core';
 import { RoomType, WallType, RenderLayer, DoorType, SwingDirection, type SiteZoneKind } from '@ai-floor-planner/core';
-import { getFloorContentBounds, computeStairSolids, polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
+import { getFloorContentBounds, computeStairSolids, polygonBoundingBox, AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
 import { worldToScreen, fitToView, scaleToScreen } from './coordinate-transform';
 import { resolveConfig } from './render-config';
 import type { DeepPartial, RenderConfig } from './render-config';
-import { furniturePlacement, renderReferenceFurniture } from './reference-furniture';
 import { PLANCRAFT_SVG_SYMBOLS } from './plancraft-symbols';
 
 // ─── Room Colors ────────────────────────────────────────────────────────────
@@ -67,10 +66,6 @@ function escapeXml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function sqMmToSqM(sqMm: number): string {
-  return (sqMm / 1_000_000).toFixed(1);
 }
 
 function mmToFtDisplay(mm: number): string {
@@ -238,32 +233,15 @@ function renderSiteZones(building: Building, transform: ViewTransform): string {
 
     // Label and Area
     const bbox = polygonBoundingBox(poly);
-    const center = { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+    const center = polygonCentroid(poly);
     const sCenter = worldToScreen(center, transform);
     const sWidth = scaleToScreen(bbox.width, transform);
     const sHeight = scaleToScreen(bbox.height, transform);
 
-    // Only render text if the screen rectangle is large enough
-    if (sWidth >= 36 && sHeight >= 20) {
-      const areaMm2 = zone.area > 10_000 ? zone.area : zone.area * 1_000_000;
-      const areaM2 = (areaMm2 / 1_000_000).toFixed(1);
-      const areaSqFt = Math.round(Number(areaM2) * 10.7639);
-      const isCompact = sWidth < 65 || sHeight < 36;
-      const dimLabel = `${Math.round(bbox.width)} × ${Math.round(bbox.height)} mm`;
-
-      const pillWidth = Math.min(sWidth * 0.95, Math.max(zone.name.length * (isCompact ? 5.8 : 7.2), 110));
-      const pillHeight = isCompact ? 30 : 44;
-      const pillX = sCenter.x - pillWidth / 2;
-      const pillY = sCenter.y - pillHeight / 2;
-
-      elements.push(
-        `<g class="site-zone-label" pointer-events="none">`,
-        `  <rect x="${pillX.toFixed(1)}" y="${pillY.toFixed(1)}" width="${pillWidth.toFixed(1)}" height="${pillHeight.toFixed(1)}" rx="4" fill="#ffffff" fill-opacity="0.90" stroke="#cbd5e1" stroke-width="0.75"/>`,
-        `  <text x="${sCenter.x.toFixed(1)}" y="${(sCenter.y - (isCompact ? 1 : 8)).toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${isCompact ? 8 : 10}" font-weight="700" fill="#0f172a" style="text-transform:uppercase;paint-order:stroke fill;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;">${escapeXml(zone.name)}</text>`,
-        `  <text x="${sCenter.x.toFixed(1)}" y="${(sCenter.y + (isCompact ? 9 : 4)).toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${isCompact ? 7 : 8.5}" font-weight="600" fill="#334155" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2.5px;stroke-linejoin:round;">${areaM2} m² (${areaM2} sq m | ${areaSqFt} sq ft)</text>`,
-        !isCompact ? `  <text x="${sCenter.x.toFixed(1)}" y="${(sCenter.y + 16).toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="7.5" font-weight="500" fill="#0284c7" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2px;stroke-linejoin:round;">${dimLabel} (${mmToFeetInches(bbox.width)} × ${mmToFeetInches(bbox.height)})</text>` : '',
-        `</g>`,
-      );
+    if(sWidth>0 && sHeight>0) {
+      const name=zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i,'6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i,'MAIN ENTRY GATE');
+      const h=Math.min(scaleToScreen(80,transform),sWidth*0.75/(name.length*0.7),sHeight/3);
+      elements.push(`<text x="${sCenter.x}" y="${sCenter.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="${h}" fill="#0f172a">${escapeXml(name)}</text>`);
     }
   }
 
@@ -320,7 +298,7 @@ function renderRooms(
   showLabels: boolean = true,
   showAreas: boolean = true,
   labelsOnly = false,
-  withFurniture = false,
+  _withFurniture = false,
 ): string {
   const elements: string[] = [];
 
@@ -339,7 +317,7 @@ function renderRooms(
 
     const isStair = room.type === RoomType.Staircase || /stair/i.test(room.name);
     const isLift = room.type === RoomType.Lift || /lift/i.test(room.name);
-    if (!labelsOnly && isStair) {
+    if (!labelsOnly && isStair && !floor.canonicalStaircases?.length) {
       const rTopLeft = worldToScreen({ x: room.x, y: room.y }, transform);
       const rw = scaleToScreen(room.width, transform);
       const rh = scaleToScreen(room.height, transform);
@@ -380,99 +358,14 @@ function renderRooms(
       }
     }
 
-    // Room label with clean display name, adaptive font sizing, and collision prevention
-    const sWidth = scaleToScreen(room.width, transform);
-    const sHeight = scaleToScreen(room.height, transform);
-    const showText = sWidth >= 28 && sHeight >= 16;
-    const showAreaText = showAreas && sWidth >= 55 && sHeight >= 30;
-
-    if (showText && (showLabels || showAreaText)) {
-      const furniture = withFurniture ? furniturePlacement(room, floor) : undefined;
-      const labelY = furniture
-        ? (furniture.y > room.y + room.height / 2 ? room.y + 500 : room.y + room.height - 400)
-        : room.y + room.height / 2;
-      const cx = worldToScreen(
-        { x: room.x + (room.type === RoomType.Staircase ? Math.min(500, room.width / 2) : room.width / 2), y: labelY },
-        transform,
-      );
-
-      const displayName = cleanRoomDisplayName(room.name);
-      const isNarrow = sWidth < 85;
-      const words = displayName.split(/\s+/);
-      const canSplit = isNarrow && words.length >= 2 && displayName.length > 8;
-
-      let lines: string[];
-      if (canSplit) {
-        const mid = Math.ceil(words.length / 2);
-        lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
-      } else {
-        lines = [displayName];
-      }
-
-      const longestLine = Math.max(...lines.map(l => l.length));
-      const minRoomDimMm = Math.min(room.width, room.height);
-      const minRoomDimScreen = scaleToScreen(minRoomDimMm, transform);
-      const maxFontByMinDim = Math.max(5.5, minRoomDimScreen * 0.12);
-      const maxFontForWidth = Math.max(5.5, (sWidth * 0.78) / Math.max(1, longestLine * 0.58));
-      const maxFontForHeight = Math.max(5.5, (sHeight * 0.60) / (lines.length + (showAreaText ? 1.5 : 0)));
-      const baseFontSize = scaleToScreen(330, transform);
-      const fontSize = Math.max(5.5, Math.min(12.5, baseFontSize, maxFontForWidth, maxFontForHeight, maxFontByMinDim));
-      const areaFontSize = Math.max(5.0, fontSize - 1.8);
-      const lineHeight = fontSize * 1.15;
-      const haloWidth = Math.max(1.8, Math.min(3.6, fontSize * 0.28));
-
-      const rotateLabel = [RoomType.Corridor, RoomType.Staircase].includes(room.type) && room.height > room.width;
-      elements.push(`<g${rotateLabel ? ` transform="rotate(-90 ${cx.x} ${cx.y})"` : ''} data-room-name="${escapeXml(room.name)}" pointer-events="none">`);
-
-      const areaM2 = sqMmToSqM(room.area);
-      const areaSqFt = Math.round((room.area / 1_000_000) * 10.7639);
-      const dimText = `${Math.round(room.width)} × ${Math.round(room.height)} mm | ${mmToFeetInches(room.width)} × ${mmToFeetInches(room.height)}`;
-      const showDims = sWidth >= 75 && sHeight >= 45;
-
-      if (showLabels) {
-        const extraLines = (showAreaText ? 1 : 0) + (showDims ? 1 : 0);
-        const totalTextHeight = lines.length * lineHeight + extraLines * areaFontSize * 1.2;
-        const startY = cx.y - totalTextHeight / 2 + fontSize * 0.8;
-
-        const maxChars = Math.max(...lines.map(l => l.length), showDims ? Math.floor(dimText.length * 0.75) : 0, showAreaText ? 20 : 0);
-        const pillW = Math.min(sWidth - 4, Math.max(48, maxChars * fontSize * 0.62 + 14));
-        const pillH = totalTextHeight + 8;
-        const pillX = cx.x - pillW / 2;
-        const pillY = startY - fontSize * 0.8 - 4;
-
-        elements.push(
-          `  <rect x="${pillX.toFixed(1)}" y="${pillY.toFixed(1)}" width="${pillW.toFixed(1)}" height="${pillH.toFixed(1)}" rx="4" fill="#ffffff" fill-opacity="0.88" stroke="#cbd5e1" stroke-width="0.5"/>`,
-        );
-
-        lines.forEach((line, lineIdx) => {
-          const lineY = startY + lineIdx * lineHeight;
-          elements.push(
-            `<text x="${cx.x.toFixed(1)}" y="${lineY.toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${fontSize.toFixed(1)}" fill="#0f172a" font-weight="700" letter-spacing="0.02em" style="text-transform:uppercase;paint-order:stroke fill;stroke:#ffffff;stroke-width:${haloWidth.toFixed(1)}px;stroke-linejoin:round;stroke-linecap:round">${escapeXml(line)}</text>`,
-          );
-        });
-
-        let currentY = startY + lines.length * lineHeight;
-        if (showDims) {
-          elements.push(
-            `<text x="${cx.x.toFixed(1)}" y="${currentY.toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${(areaFontSize * 0.95).toFixed(1)}" fill="#0284c7" font-weight="600" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:${Math.max(1.5, haloWidth - 0.5).toFixed(1)}px;stroke-linejoin:round;stroke-linecap:round">${dimText}</text>`,
-          );
-          currentY += areaFontSize * 1.15;
-        }
-
-        if (showAreaText) {
-          elements.push(
-            `<text x="${cx.x.toFixed(1)}" y="${currentY.toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${areaFontSize.toFixed(1)}" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:${Math.max(1.5, haloWidth - 0.5).toFixed(1)}px;stroke-linejoin:round;stroke-linecap:round">${areaM2} sq m (${areaM2} m² | ${areaSqFt} sq ft)</text>`,
-          );
-        }
-      } else if (showAreaText) {
-        const pillW = Math.min(sWidth - 4, 110);
-        const pillH = areaFontSize * 1.5 + 6;
-        elements.push(
-          `  <rect x="${(cx.x - pillW / 2).toFixed(1)}" y="${(cx.y - pillH / 2).toFixed(1)}" width="${pillW.toFixed(1)}" height="${pillH.toFixed(1)}" rx="3" fill="#ffffff" fill-opacity="0.88" stroke="#cbd5e1" stroke-width="0.5"/>`,
-          `  <text x="${cx.x.toFixed(1)}" y="${(cx.y + areaFontSize * 0.35).toFixed(1)}" text-anchor="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="${areaFontSize.toFixed(1)}" fill="#475569" font-weight="500" style="paint-order:stroke fill;stroke:#ffffff;stroke-width:2px;stroke-linejoin:round;stroke-linecap:round">${areaM2} sq m (${areaM2} m² | ${areaSqFt} sq ft)</text>`,
-        );
-      }
-      elements.push('</g>');
+    if(labelsOnly && (showLabels||showAreas)) {
+      const annotation=roomAnnotation(room);
+      annotation.lines.forEach((line,i)=>{
+        if((i===0&&!showLabels)||(i===2&&!showAreas))return;
+        const point=worldToScreen({x:annotation.center.x,y:annotation.center.y+(i-(annotation.lines.length-1)/2)*1.65*annotation.height},transform);
+        const height=scaleToScreen(annotation.height,transform);
+        elements.push(`<text x="${point.x}" y="${point.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="${height}" fill="#0f172a" data-room-name="${escapeXml(room.name)}">${escapeXml(line)}</text>`);
+      });
     }
   }
 
@@ -726,6 +619,11 @@ function renderWindows(floor: Floor, transform: ViewTransform): string {
 
 function renderStairs(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
+  if(floor.canonicalStaircases?.length) {
+    for(const stair of floor.canonicalStaircases)for(const part of [stair.polygon,stair.flight1,stair.flight2,stair.midLanding])elements.push(`<polygon points="${polygonToSvgPoints(part,transform)}" fill="none" stroke="#64748b" stroke-width="0.8" data-entity-type="stair" data-entity-id="${escapeXml(stair.id)}"/>`);
+    return `<g class="layer-stairs" data-layer="stairs">${elements.join('')}</g>`;
+  }
+
 
   for (const stair of floor.stairs) {
     const solids = computeStairSolids(stair, 3000);
@@ -784,6 +682,21 @@ function renderColumns(floor: Floor, transform: ViewTransform): string {
     }
   }
   return `<g class="layer-columns" data-layer="${RenderLayer.Columns}">\n${elements.join('\n')}\n</g>`;
+}
+
+function renderBeams(floor: Floor, transform: ViewTransform): string {
+  if (!floor.beams || floor.beams.length === 0) return '';
+  const elements: string[] = [];
+  for (const beam of floor.beams) {
+    const sp = worldToScreen(beam.startPoint, transform);
+    const ep = worldToScreen(beam.endPoint, transform);
+    const strokeColor = beam.type === 'CANTILEVER' ? '#ef4444' : beam.type === 'SECONDARY' ? '#0284c7' : '#d97706';
+    const strokeWidth = beam.type === 'PRIMARY' ? 1.5 : 1.0;
+    elements.push(
+      `<line x1="${sp.x.toFixed(1)}" y1="${sp.y.toFixed(1)}" x2="${ep.x.toFixed(1)}" y2="${ep.y.toFixed(1)}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-dasharray="4,2" data-entity-type="beam" data-entity-id="${escapeXml(beam.id)}"><title>${escapeXml(beam.id)} (${beam.widthMm}x${beam.depthMm}mm ${beam.type})</title></line>`,
+    );
+  }
+  return `<g class="layer-beams" data-layer="beams">\n${elements.join('\n')}\n</g>`;
 }
 
 function renderDimensions(floor: Floor, building: Building, transform: ViewTransform): string {
@@ -879,12 +792,14 @@ function renderDimensionLine(
 function renderPlancraftFurniture(floor: Floor, transform: ViewTransform): string {
   const items = floor.furniture && floor.furniture.length > 0 ? floor.furniture : [];
   if (items.length === 0) {
-    return renderReferenceFurniture(floor, transform);
+    return '';
   }
 
   const elements: string[] = [];
 
   for (const item of items) {
+    const room=floor.rooms.find(r=>r.id===item.roomId);
+    if(room&&/utility|balcony/i.test(`${room.type} ${room.name}`)&&['stove','oven'].includes(item.type))continue;
     const symbol = PLANCRAFT_SVG_SYMBOLS[item.type];
     if (!symbol) continue;
 
@@ -902,7 +817,7 @@ function renderPlancraftFurniture(floor: Floor, transform: ViewTransform): strin
     const tr = `translate(${sCenter.x.toFixed(2)} ${sCenter.y.toFixed(2)}) rotate(${item.rotationDeg}) scale(${sx.toFixed(5)} ${sy.toFixed(5)}) translate(${(-symbol.viewBoxWidth / 2).toFixed(2)} ${(-symbol.viewBoxHeight / 2).toFixed(2)})`;
 
     elements.push(
-      `<g class="cad-furniture-item" data-entity-type="furniture" data-furniture-id="${escapeXml(item.id)}" data-furniture-type="${escapeXml(item.type)}" transform="${tr}" opacity="0.85" pointer-events="none">` +
+      `<g class="cad-furniture-item" data-entity-type="furniture" data-furniture-id="${escapeXml(item.id)}" data-entity-id="${escapeXml(item.id)}" data-furniture-type="${escapeXml(item.type)}" transform="${tr}" opacity="0.85" pointer-events="visiblePainted">` +
       `<title>${escapeXml(item.type)} (${item.widthMm} × ${item.depthMm} mm)</title>` +
       symbol.inner +
       `</g>`,
@@ -992,6 +907,8 @@ export function renderFloor(
     // 3. Wall Polygons (230/150/115/100mm) & Structural Columns
     resolved.layers[RenderLayer.Walls] ? renderWalls(floor, transform) : '',
     resolved.layers[RenderLayer.Columns] ? renderColumns(floor, transform) : '',
+    resolved.layers[RenderLayer.Beams]
+      ? renderBeams(floor, transform) : '',
     // 4. Doors & 90° Swing Arcs + Windows + Stairs
     resolved.layers[RenderLayer.Openings] ? renderDoors(floor, transform) : '',
     resolved.layers[RenderLayer.Openings] ? renderWindows(floor, transform) : '',
@@ -1008,7 +925,7 @@ export function renderFloor(
       ? renderTitleBlock(building, floor, viewportWidth, viewportHeight, exportOptions) : '',
   ].filter(Boolean);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewportWidth} ${viewportHeight}" class="floor-plan" width="${viewportWidth}" height="${viewportHeight}">
+  return resolveSvgAnnotations(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewportWidth} ${viewportHeight}" class="floor-plan" width="${viewportWidth}" height="${viewportHeight}">
   <defs>
     <pattern id="tile-hatch" width="${scaleToScreen(600, transform)}" height="${scaleToScreen(600, transform)}" patternUnits="userSpaceOnUse"><path d="M ${scaleToScreen(600, transform)} 0 H 0 V ${scaleToScreen(600, transform)}" fill="none" stroke="#bd9d76" stroke-width="0.4"/></pattern>
     <pattern id="wet-hatch" width="${scaleToScreen(300, transform)}" height="${scaleToScreen(300, transform)}" patternUnits="userSpaceOnUse"><path d="M0 0V${scaleToScreen(220, transform)}H${scaleToScreen(220, transform)}" fill="none" stroke="#6f86c0" stroke-width="0.55"/></pattern>
@@ -1043,7 +960,7 @@ export function renderFloor(
     </style>
   </defs>
   ${layers.join('\n  ')}
-</svg>`;
+</svg>`);
 }
 
 /**
@@ -1116,4 +1033,21 @@ export function exportSVG(
     },
     options,
   );
+}
+
+/** Resolve conservative text envelopes after layer composition, in drawing pixels. */
+export function resolveSvgAnnotations(svg:string):string {
+  const layout=new AnnotationLayout();
+  return svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g,(original,attributes:string,content:string)=>{
+    const x=Number(attributes.match(/\bx="([^"]+)"/)?.[1]);
+    const y=Number(attributes.match(/\by="([^"]+)"/)?.[1]);
+    const h=Number(attributes.match(/font-size="([^"]+)"/)?.[1]??10);
+    if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(h)||h<=0)return original;
+    const text=content.replace(/&[^;]+;/g,'X');
+    const middle=attributes.includes('text-anchor="middle"');
+    const centerX=middle?x:x+text.length*h*0.35;
+    const box=layout.place(text,centerX,y,h,undefined,/rotate\(-?90/.test(attributes));
+    const updated=attributes.replace(/\by="[^"]+"/,`y="${box.y}"`).replace(/rotate\((-?90) [^)]*\)/g,(_m:string,angle:string)=>`rotate(${angle} ${x} ${box.y})`);
+    return `<text${updated} data-text-box="${box.x},${box.y},${box.width},${box.height}">${content}</text>`;
+  });
 }

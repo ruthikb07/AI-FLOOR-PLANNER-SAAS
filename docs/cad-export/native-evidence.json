@@ -1,0 +1,456 @@
+{
+  "manifestPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\package.manifest.json",
+  "nativeAuditCount": 12,
+  "nativeAudits": [
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\0.dxf",
+      "inputSha256": "39989adebf4253f8660dd73dcee76df0e4f4f60589796bcddcf53f5657033545",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\0.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-a4c146e4-e9a4-433e-b3e7-314e21f70134\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "7417ae2b44c9c9e8f7ef6e4a89c51b5469af98cced3871d72be1ec22ad7e97e5"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\1.dxf",
+      "inputSha256": "4b588242ace85c7fb69d25be65e5d715ffeed7fe68e6165ac5bf028f98c4adaa",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\1.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-13f7bc31-1031-49c8-8a54-3c57a9e833ba\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "2c5d408084c725e15ce739d4f6346d2f82b34314a74f3eb0807646b37b3eb338"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\2.dxf",
+      "inputSha256": "59ea242930c02e6a4b3b8820b2de1120897db71cfdb96b789c92fdc1e24e24bb",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\2.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-6532ebe5-c053-491c-831f-74f79009ead9\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "e7b70341da33ce477b6278786ec96836df944e8776a666f2ec264d2c9fd068f8"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\3.dxf",
+      "inputSha256": "ad1233bfb4cc2ab3533f995b56ae50b5f9dbf719997ca97e3f6eacdc84755e05",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\3.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-b209e33a-01de-4d4f-8817-714540681dba\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "2f3b854f71e74415cf33cc3412a16bbfed49c525d4402478b70c742466945be9"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\4.dxf",
+      "inputSha256": "63b90a9b5f41a37c7781e9d48547bc484f48db823071830bf4b619ac1fab2811",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\4.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-9688da79-61b1-4876-a90b-45c8ae40bc92\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "542a871d36dfbdba939fb16a56e4e8c2ee13aec2b96e73102ee86fbd1d35baf9"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\5.dxf",
+      "inputSha256": "7225c2ab7e950d6eb2f84a76929958e91e076d7b96d72817718b85dd06640ff3",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\5.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-d49329cc-0f19-49b1-ac51-75e0a7daaee7\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "1f36e8f35da92a179d83f36bb389d5514a6b7af80c9d3af42fe9f43b1aae05c9"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\6.dxf",
+      "inputSha256": "97dcdf20a9893ed77d8aab8e83a67c0668b4e82bc540eeb25e83b2a4c7907531",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\6.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-7c38ad9f-f4c9-4956-966a-272a1707a45a\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "2b005496f3e5f990efe2baab8ea77371931084c51c03acc1cde1e6594f83f7e1"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\7.dxf",
+      "inputSha256": "caf609ae0f8a3a626003b24b44922b05920da05929af958b165f4eb2f32c96bb",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\7.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-5a221458-c8a7-4a6c-9756-20607dccb45c\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "e687e396908c7482e2d0ad20f22c4d3a4400e28ea53a7b72ad68346514901415"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\8.dxf",
+      "inputSha256": "631b4a463b2bf6ea919f9cd108e340362c580d254172050b8e7baadf5f89cb00",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\8.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-a7676738-08e9-4a86-9587-9693a127d6cc\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "18597ab28c367cf65374e49301addf80cb46c4a7cb0bfa05d866bc936e342c3d"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\9.dxf",
+      "inputSha256": "6088d02d0bdcb14084d5ef6bb66e3f320a6cf718c8ed521dbbdf8f7e7bb4877e",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\9.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-28b0d42e-854c-4a94-be43-dce19c5d54ba\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "3d156be90901e77130e4851b1af2ec8ff182f53fecd7c139a5c2a4e5d5e66339"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\10.dxf",
+      "inputSha256": "2ae0b7d9f99944d6429ea1be660fd869cce7922fddf84541534653f3e6b79b41",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\10.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-26adb7c6-5e6f-4ced-b169-cc493e7e3405\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "e7f55cbcd8b7b06d7183c1dc0a50c60bbf1ba18b0e3b7743aa52974e4c155dfb"
+    },
+    {
+      "status": "VERIFIED",
+      "code": "ACCORECONSOLE_AUDIT_PASSED",
+      "errors": [],
+      "binaryPath": "C:\\Program Files\\Autodesk\\AutoCAD 2021\\accoreconsole.exe",
+      "inputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\11.dxf",
+      "inputSha256": "c34cc23952d666e3013d831939c12c56859eec6a428559322c88a7beae1a19f2",
+      "outputPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\11.dwg",
+      "logPath": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\.residential-job-9d57df2b-3e1d-433b-97b0-4a978d9476cd\\.accore-20f15722-464e-4bcb-9f59-3866fb0a8f50\\console.log",
+      "exitCode": 0,
+      "auditErrorsFound": 0,
+      "auditErrorsFixed": 0,
+      "insUnits": 4,
+      "tileMode": 1,
+      "sha256": "cea7af2dc6bf9cf9b79c032adf2e1475243f62496003d297dcd8ef11f8d630cd"
+    }
+  ],
+  "files": [
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_75cb99d1_r2_bc817d70a9b1_39989adebf4253f8660dd73dcee76df0e4f4f60589796bcddcf53f5657033545.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:0"
+      ],
+      "sha256": "39989adebf4253f8660dd73dcee76df0e4f4f60589796bcddcf53f5657033545",
+      "bytes": 56782
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_75cb99d1_r2_bc817d70a9b1_7417ae2b44c9c9e8f7ef6e4a89c51b5469af98cced3871d72be1ec22ad7e97e5.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:0"
+      ],
+      "sha256": "7417ae2b44c9c9e8f7ef6e4a89c51b5469af98cced3871d72be1ec22ad7e97e5",
+      "bytes": 24363
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_117ea76d_r2_bc817d70a9b1_4b588242ace85c7fb69d25be65e5d715ffeed7fe68e6165ac5bf028f98c4adaa.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:1"
+      ],
+      "sha256": "4b588242ace85c7fb69d25be65e5d715ffeed7fe68e6165ac5bf028f98c4adaa",
+      "bytes": 129457
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_117ea76d_r2_bc817d70a9b1_2c5d408084c725e15ce739d4f6346d2f82b34314a74f3eb0807646b37b3eb338.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:1"
+      ],
+      "sha256": "2c5d408084c725e15ce739d4f6346d2f82b34314a74f3eb0807646b37b3eb338",
+      "bytes": 32945
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_131c303d_r2_bc817d70a9b1_59ea242930c02e6a4b3b8820b2de1120897db71cfdb96b789c92fdc1e24e24bb.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:2"
+      ],
+      "sha256": "59ea242930c02e6a4b3b8820b2de1120897db71cfdb96b789c92fdc1e24e24bb",
+      "bytes": 129461
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_131c303d_r2_bc817d70a9b1_e7b70341da33ce477b6278786ec96836df944e8776a666f2ec264d2c9fd068f8.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:2"
+      ],
+      "sha256": "e7b70341da33ce477b6278786ec96836df944e8776a666f2ec264d2c9fd068f8",
+      "bytes": 32914
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_ae0feb9b_r2_bc817d70a9b1_ad1233bfb4cc2ab3533f995b56ae50b5f9dbf719997ca97e3f6eacdc84755e05.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:3"
+      ],
+      "sha256": "ad1233bfb4cc2ab3533f995b56ae50b5f9dbf719997ca97e3f6eacdc84755e05",
+      "bytes": 129453
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_ae0feb9b_r2_bc817d70a9b1_2f3b854f71e74415cf33cc3412a16bbfed49c525d4402478b70c742466945be9.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:3"
+      ],
+      "sha256": "2f3b854f71e74415cf33cc3412a16bbfed49c525d4402478b70c742466945be9",
+      "bytes": 32946
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_c44df663_r2_bc817d70a9b1_63b90a9b5f41a37c7781e9d48547bc484f48db823071830bf4b619ac1fab2811.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "63b90a9b5f41a37c7781e9d48547bc484f48db823071830bf4b619ac1fab2811",
+      "bytes": 57627
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_c44df663_r2_bc817d70a9b1_542a871d36dfbdba939fb16a56e4e8c2ee13aec2b96e73102ee86fbd1d35baf9.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "542a871d36dfbdba939fb16a56e4e8c2ee13aec2b96e73102ee86fbd1d35baf9",
+      "bytes": 24162
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_combined_r2_bc817d70a9b1_7225c2ab7e950d6eb2f84a76929958e91e076d7b96d72817718b85dd06640ff3.dxf",
+      "format": "DXF",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:0",
+        "synthesis:phase4-cad:floor:1",
+        "synthesis:phase4-cad:floor:2",
+        "synthesis:phase4-cad:floor:3",
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "7225c2ab7e950d6eb2f84a76929958e91e076d7b96d72817718b85dd06640ff3",
+      "bytes": 474899
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_A_combined_r2_bc817d70a9b1_1f36e8f35da92a179d83f36bb389d5514a6b7af80c9d3af42fe9f43b1aae05c9.dwg",
+      "format": "DWG",
+      "standard": "A",
+      "floors": [
+        "synthesis:phase4-cad:floor:0",
+        "synthesis:phase4-cad:floor:1",
+        "synthesis:phase4-cad:floor:2",
+        "synthesis:phase4-cad:floor:3",
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "1f36e8f35da92a179d83f36bb389d5514a6b7af80c9d3af42fe9f43b1aae05c9",
+      "bytes": 73255
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_75cb99d1_r2_bc817d70a9b1_97dcdf20a9893ed77d8aab8e83a67c0668b4e82bc540eeb25e83b2a4c7907531.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:0"
+      ],
+      "sha256": "97dcdf20a9893ed77d8aab8e83a67c0668b4e82bc540eeb25e83b2a4c7907531",
+      "bytes": 85111
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_75cb99d1_r2_bc817d70a9b1_2b005496f3e5f990efe2baab8ea77371931084c51c03acc1cde1e6594f83f7e1.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:0"
+      ],
+      "sha256": "2b005496f3e5f990efe2baab8ea77371931084c51c03acc1cde1e6594f83f7e1",
+      "bytes": 27379
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_117ea76d_r2_bc817d70a9b1_caf609ae0f8a3a626003b24b44922b05920da05929af958b165f4eb2f32c96bb.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:1"
+      ],
+      "sha256": "caf609ae0f8a3a626003b24b44922b05920da05929af958b165f4eb2f32c96bb",
+      "bytes": 69759
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_117ea76d_r2_bc817d70a9b1_e687e396908c7482e2d0ad20f22c4d3a4400e28ea53a7b72ad68346514901415.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:1"
+      ],
+      "sha256": "e687e396908c7482e2d0ad20f22c4d3a4400e28ea53a7b72ad68346514901415",
+      "bytes": 25616
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_131c303d_r2_bc817d70a9b1_631b4a463b2bf6ea919f9cd108e340362c580d254172050b8e7baadf5f89cb00.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:2"
+      ],
+      "sha256": "631b4a463b2bf6ea919f9cd108e340362c580d254172050b8e7baadf5f89cb00",
+      "bytes": 69755
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_131c303d_r2_bc817d70a9b1_18597ab28c367cf65374e49301addf80cb46c4a7cb0bfa05d866bc936e342c3d.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:2"
+      ],
+      "sha256": "18597ab28c367cf65374e49301addf80cb46c4a7cb0bfa05d866bc936e342c3d",
+      "bytes": 25616
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_ae0feb9b_r2_bc817d70a9b1_6088d02d0bdcb14084d5ef6bb66e3f320a6cf718c8ed521dbbdf8f7e7bb4877e.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:3"
+      ],
+      "sha256": "6088d02d0bdcb14084d5ef6bb66e3f320a6cf718c8ed521dbbdf8f7e7bb4877e",
+      "bytes": 69755
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_ae0feb9b_r2_bc817d70a9b1_3d156be90901e77130e4851b1af2ec8ff182f53fecd7c139a5c2a4e5d5e66339.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:3"
+      ],
+      "sha256": "3d156be90901e77130e4851b1af2ec8ff182f53fecd7c139a5c2a4e5d5e66339",
+      "bytes": 25616
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_c44df663_r2_bc817d70a9b1_2ae0b7d9f99944d6429ea1be660fd869cce7922fddf84541534653f3e6b79b41.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "2ae0b7d9f99944d6429ea1be660fd869cce7922fddf84541534653f3e6b79b41",
+      "bytes": 68586
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_c44df663_r2_bc817d70a9b1_e7f55cbcd8b7b06d7183c1dc0a50c60bbf1ba18b0e3b7743aa52974e4c155dfb.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "e7f55cbcd8b7b06d7183c1dc0a50c60bbf1ba18b0e3b7743aa52974e4c155dfb",
+      "bytes": 25651
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_combined_r2_bc817d70a9b1_c34cc23952d666e3013d831939c12c56859eec6a428559322c88a7beae1a19f2.dxf",
+      "format": "DXF",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:0",
+        "synthesis:phase4-cad:floor:1",
+        "synthesis:phase4-cad:floor:2",
+        "synthesis:phase4-cad:floor:3",
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "c34cc23952d666e3013d831939c12c56859eec6a428559322c88a7beae1a19f2",
+      "bytes": 335723
+    },
+    {
+      "path": "C:\\Users\\ruthi\\OneDrive\\Desktop\\AI BUILDING SAAS - Copy\\AI BUILDING SAAS - Copy\\output\\cad-export\\artifacts\\phase4-verification\\res_B_combined_r2_bc817d70a9b1_cea7af2dc6bf9cf9b79c032adf2e1475243f62496003d297dcd8ef11f8d630cd.dwg",
+      "format": "DWG",
+      "standard": "B",
+      "floors": [
+        "synthesis:phase4-cad:floor:0",
+        "synthesis:phase4-cad:floor:1",
+        "synthesis:phase4-cad:floor:2",
+        "synthesis:phase4-cad:floor:3",
+        "synthesis:phase4-cad:floor:4"
+      ],
+      "sha256": "cea7af2dc6bf9cf9b79c032adf2e1475243f62496003d297dcd8ef11f8d630cd",
+      "bytes": 52932
+    }
+  ]
+}

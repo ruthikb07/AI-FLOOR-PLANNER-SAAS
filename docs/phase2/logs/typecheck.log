@@ -1,0 +1,94 @@
+
+> ai-floor-planner@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy
+> turbo run typecheck "--concurrency=1"
+
+turbo 2.0.14
+
+• Packages in scope: @ai-floor-planner/ai-orchestration, @ai-floor-planner/backend, @ai-floor-planner/constraint-engine, @ai-floor-planner/core, @ai-floor-planner/frontend, @ai-floor-planner/geometry-engine, @ai-floor-planner/planning-engine, @ai-floor-planner/projection-3d, @ai-floor-planner/renderer
+• Running typecheck in 9 packages
+• Remote caching disabled
+@ai-floor-planner/core:typecheck: cache hit, replaying logs 62959bc83692195b
+@ai-floor-planner/core:typecheck: 
+@ai-floor-planner/core:typecheck: > @ai-floor-planner/core@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:typecheck: > tsc --noEmit
+@ai-floor-planner/core:typecheck: 
+@ai-floor-planner/core:build: cache hit, replaying logs 0c5d6c5dcd0e6a90
+@ai-floor-planner/core:build: 
+@ai-floor-planner/core:build: > @ai-floor-planner/core@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\core
+@ai-floor-planner/core:build: > tsc --build
+@ai-floor-planner/core:build: 
+@ai-floor-planner/projection-3d:build: cache hit, replaying logs bdb6a253172b1d98
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:build: > @ai-floor-planner/projection-3d@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:build: > tsc --build
+@ai-floor-planner/projection-3d:build: 
+@ai-floor-planner/projection-3d:typecheck: cache hit, replaying logs 51a6e809fdced23a
+@ai-floor-planner/projection-3d:typecheck: 
+@ai-floor-planner/projection-3d:typecheck: > @ai-floor-planner/projection-3d@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\projection-3d
+@ai-floor-planner/projection-3d:typecheck: > tsc --noEmit
+@ai-floor-planner/projection-3d:typecheck: 
+@ai-floor-planner/geometry-engine:build: cache hit, replaying logs 29a68fc1e62671b6
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:build: > @ai-floor-planner/geometry-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:build: > tsc --build
+@ai-floor-planner/geometry-engine:build: 
+@ai-floor-planner/geometry-engine:typecheck: cache hit, replaying logs 8f0ccf12b13ef60e
+@ai-floor-planner/geometry-engine:typecheck: 
+@ai-floor-planner/geometry-engine:typecheck: > @ai-floor-planner/geometry-engine@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\geometry-engine
+@ai-floor-planner/geometry-engine:typecheck: > tsc --noEmit
+@ai-floor-planner/geometry-engine:typecheck: 
+@ai-floor-planner/constraint-engine:typecheck: cache hit, replaying logs bb1b7e6a5e77f1ce
+@ai-floor-planner/constraint-engine:typecheck: 
+@ai-floor-planner/constraint-engine:typecheck: > @ai-floor-planner/constraint-engine@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:typecheck: > tsc --noEmit
+@ai-floor-planner/constraint-engine:typecheck: 
+@ai-floor-planner/constraint-engine:build: cache hit, replaying logs 8b6108e04a318949
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/constraint-engine:build: > @ai-floor-planner/constraint-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\constraint-engine
+@ai-floor-planner/constraint-engine:build: > tsc --build
+@ai-floor-planner/constraint-engine:build: 
+@ai-floor-planner/renderer:build: cache hit, replaying logs d7d2e9266bcd0061
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:build: > @ai-floor-planner/renderer@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:build: > tsc --build
+@ai-floor-planner/renderer:build: 
+@ai-floor-planner/renderer:typecheck: cache hit, replaying logs 3b5a81ad77e1321f
+@ai-floor-planner/renderer:typecheck: 
+@ai-floor-planner/renderer:typecheck: > @ai-floor-planner/renderer@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\renderer
+@ai-floor-planner/renderer:typecheck: > tsc --noEmit
+@ai-floor-planner/renderer:typecheck: 
+@ai-floor-planner/planning-engine:typecheck: cache hit, replaying logs e513baf2731ee06c
+@ai-floor-planner/planning-engine:typecheck: 
+@ai-floor-planner/planning-engine:typecheck: > @ai-floor-planner/planning-engine@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:typecheck: > tsc --noEmit
+@ai-floor-planner/planning-engine:typecheck: 
+@ai-floor-planner/planning-engine:build: cache hit, replaying logs a2a27c7ccce92f9f
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/planning-engine:build: > @ai-floor-planner/planning-engine@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+@ai-floor-planner/planning-engine:build: > tsc --build
+@ai-floor-planner/planning-engine:build: 
+@ai-floor-planner/ai-orchestration:typecheck: cache hit, replaying logs df35e0b8ac5e5512
+@ai-floor-planner/ai-orchestration:typecheck: 
+@ai-floor-planner/ai-orchestration:typecheck: > @ai-floor-planner/ai-orchestration@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:typecheck: > tsc --noEmit
+@ai-floor-planner/ai-orchestration:typecheck: 
+@ai-floor-planner/ai-orchestration:build: cache hit, replaying logs 323e6d954bddd301
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/ai-orchestration:build: > @ai-floor-planner/ai-orchestration@0.1.0 build C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\ai-orchestration
+@ai-floor-planner/ai-orchestration:build: > tsc --build
+@ai-floor-planner/ai-orchestration:build: 
+@ai-floor-planner/frontend:typecheck: cache miss, executing a9beab7bedb2d933
+@ai-floor-planner/frontend:typecheck: 
+@ai-floor-planner/frontend:typecheck: > @ai-floor-planner/frontend@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\frontend
+@ai-floor-planner/frontend:typecheck: > tsc --noEmit
+@ai-floor-planner/frontend:typecheck: 
+@ai-floor-planner/backend:typecheck: cache miss, executing b0c463717fcaff69
+@ai-floor-planner/backend:typecheck: 
+@ai-floor-planner/backend:typecheck: > @ai-floor-planner/backend@0.1.0 typecheck C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\backend
+@ai-floor-planner/backend:typecheck: > tsc --noEmit
+@ai-floor-planner/backend:typecheck: 
+
+ Tasks:    16 successful, 16 total
+Cached:    14 cached, 16 total
+  Time:    6.501s 
+

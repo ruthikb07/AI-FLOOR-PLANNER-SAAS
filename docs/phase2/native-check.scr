@@ -1,0 +1,15 @@
+FILEDIA
+0
+CMDECHO
+0
+_.AUDIT
+_N
+(princ (strcat "\nARGON_ACADVER=" (getvar "ACADVER")))
+(princ (strcat "\nARGON_INSUNITS=" (itoa (getvar "INSUNITS"))))
+(princ (strcat "\nARGON_TILEMODE=" (itoa (getvar "TILEMODE"))))
+(princ (strcat "\nARGON_ENTITIES=" (itoa (sslength (ssget "_X")))))
+(foreach lay '("A-WALL" "S-COLS" "S-BEAM" "A-DOOR" "A-WIND" "A-FURN" "A-ANNO-TEXT") (princ (strcat "\nARGON_LAYER_" lay "=" (itoa (if (ssget "_X" (list (cons 8 lay))) (sslength (ssget "_X" (list (cons 8 lay)))) 0)))))
+(princ "\nARGON_NATIVE_OPEN_COMPLETED\n")
+_.QUIT
+_Y
+

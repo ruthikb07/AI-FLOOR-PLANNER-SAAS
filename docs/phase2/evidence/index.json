@@ -1,0 +1,82 @@
+[
+  {
+    "NativeViewer": "AutoCAD 2021 Core Engine",
+    "Revision": 1,
+    "SizeBytes": 35764,
+    "UnchangedAfterNativeOpen": true,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0.dwg",
+    "Sha256": "4b4a3eb53e21e66d42c7ab7f451e84c0bc5190933caabbf564a898c558037fd0",
+    "NativeAuditErrors": 0,
+    "InsUnits": 4,
+    "TileMode": 1,
+    "ModelEntities": 960,
+    "NativeLayers": {
+      "A-WALL": 116,
+      "S-COLS": 100,
+      "S-BEAM": 189,
+      "A-DOOR": 28,
+      "A-WIND": 56,
+      "A-FURN": 167,
+      "A-ANNO-TEXT": 85
+    }
+  },
+  {
+    "NativeViewer": "AutoCAD 2021 Core Engine",
+    "Revision": 1,
+    "SizeBytes": 271640,
+    "UnchangedAfterNativeOpen": true,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_8ac015e534e750afd93e24c3f4bb0232618cfedf74bf8b3a3b3d6bec467825e2.dxf",
+    "Sha256": "8ac015e534e750afd93e24c3f4bb0232618cfedf74bf8b3a3b3d6bec467825e2",
+    "NativeAuditErrors": 0,
+    "InsUnits": 4,
+    "TileMode": 1,
+    "ModelEntities": 960,
+    "NativeLayers": {
+      "A-WALL": 116,
+      "S-COLS": 100,
+      "S-BEAM": 189,
+      "A-DOOR": 28,
+      "A-WIND": 56,
+      "A-FURN": 167,
+      "A-ANNO-TEXT": 85
+    }
+  },
+  {
+    "RenderReview": "First page visually inspected; every page reopened and actual character bounds checked with pdfplumber",
+    "Revision": 1,
+    "SizeBytes": 43014,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_typical_01_ab4b25506e21_2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0.pdf",
+    "Sha256": "2aa98a934bc24df64dc559fca14cc5752c9c1de104d864b99d6b12fb7c15d1d0",
+    "CharacterBoxOverlaps": 0
+  },
+  {
+    "RenderReview": "First page visually inspected; every page reopened and actual character bounds checked with pdfplumber",
+    "Revision": 1,
+    "SizeBytes": 42923,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_current_floor_floor_stilt_00_ab4b25506e21_e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5.pdf",
+    "Sha256": "e766d498efbd7c2189d7213ad51bb8ebe3686cfe5799579d70ddde1a79b812a5",
+    "CharacterBoxOverlaps": 0
+  },
+  {
+    "RenderReview": "First page visually inspected; every page reopened and actual character bounds checked with pdfplumber",
+    "Revision": 1,
+    "SizeBytes": 7575,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_site_plan_site_ab4b25506e21_39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c.pdf",
+    "Sha256": "39053ae29de01eb7cc7828757fbba5d7bc7d9ec37b4ffea5318f6f36c36e2d2c",
+    "CharacterBoxOverlaps": 0
+  },
+  {
+    "RenderReview": "First page visually inspected; every page reopened and actual character bounds checked with pdfplumber",
+    "Revision": 1,
+    "SizeBytes": 69747,
+    "RevisionHash": "ab4b25506e2180256368fa89d49582e9138f0180133f5de921d4862bb2ab6859",
+    "FileName": "multi_sheet_apartment_building_r1_ARCHITECTURAL_all_floors_geometry-report_ab4b25506e21_3cba7143010183de4d676c1f956b0032f5b291adc08bbd5f85053dfaa6a163c1.pdf",
+    "Sha256": "3cba7143010183de4d676c1f956b0032f5b291adc08bbd5f85053dfaa6a163c1",
+    "CharacterBoxOverlaps": 0
+  }
+]

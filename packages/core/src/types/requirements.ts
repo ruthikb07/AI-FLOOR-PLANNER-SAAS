@@ -1,3 +1,4 @@
+import type { RegulatoryContextInput } from './udcpr';
 /**
  * User requirement and preference types.
  * These represent user input that drives plan generation.
@@ -32,6 +33,7 @@ export interface DesignPreferences {
  * legacy projects until their migration is implemented.
  */
 export interface UserRequirements {
+  readonly regulatoryContext?: RegulatoryContextInput;
   readonly plotWidth: number;      // mm
   readonly plotDepth: number;      // mm
   readonly plotShape: PlotShape;

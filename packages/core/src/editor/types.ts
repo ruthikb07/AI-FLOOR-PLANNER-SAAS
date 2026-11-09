@@ -18,6 +18,8 @@ export type EditorEntityType =
   | 'window'
   | 'stair'
   | 'column'
+  | 'beam'
+  | 'furniture'
   | 'floor'
   | 'site';
 

@@ -53,6 +53,10 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
     ? activeFloor.windows.find(w => w.id === selection.entityId)
     : null;
 
+  const selectedCanonicalStair=selection?.entityType==='stair'?activeFloor.canonicalStaircases?.find(s=>s.id===selection.entityId):null;
+  const selectedBeam = selection?.entityType==='beam' ? activeFloor.beams?.find(b=>b.id===selection.entityId) : null;
+  const selectedFurniture = selection?.entityType==='furniture' ? activeFloor.furniture?.find(f=>f.id===selection.entityId) : null;
+  const selectedColumn = selection?.entityType==='column' ? activeFloor.columns.find(c=>c.id===selection.entityId) : null;
   const selectedWall = !isMulti && selection?.entityType === 'wall'
     ? activeFloor.walls.find(wall => wall.id === selection.entityId) : null;
   const selectedStair = !isMulti && selection?.entityType === 'stair'
@@ -72,6 +76,10 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
 
   return (
     <div className={`property-inspector ${embedded ? 'embedded' : ''}`}>
+      {selectedCanonicalStair&&<section className="p-4 text-xs"><h3>Staircase {selectedCanonicalStair.id}</h3><p>Clear width {selectedCanonicalStair.clearWidthMm} mm · {selectedCanonicalStair.riserCount} risers</p><p>Access {selectedCanonicalStair.accessEdge.type}</p></section>}
+      {selectedBeam&&<section className="p-4 text-xs"><h3>Beam {selectedBeam.id}</h3><p>{selectedBeam.widthMm} x {selectedBeam.depthMm} mm · {selectedBeam.type}</p><p>Start {selectedBeam.startPoint.x}, {selectedBeam.startPoint.y} mm</p><p>End {selectedBeam.endPoint.x}, {selectedBeam.endPoint.y} mm</p></section>}
+      {selectedFurniture&&<section className="p-4 text-xs"><h3>{selectedFurniture.type}</h3><p>{selectedFurniture.widthMm} x {selectedFurniture.depthMm} mm · rotation {selectedFurniture.rotationDeg}°</p></section>}
+      {selectedColumn&&<section className="p-4 text-xs"><h3>Column {selectedColumn.gridReference??selectedColumn.id}</h3><p>{selectedColumn.width} x {selectedColumn.depth} mm</p><p>Position {selectedColumn.position.x}, {selectedColumn.position.y} mm</p><p>Canonical geometry · professional structural review required</p></section>}
       <div className="inspector-header">
         <span className="inspector-title">
           {isMulti ? `${editor.selections.length} selected` : selection ? `${selection.entityType} Properties` : 'Plot & Floor Info'}

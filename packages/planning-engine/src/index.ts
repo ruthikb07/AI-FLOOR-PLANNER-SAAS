@@ -183,13 +183,14 @@ export { generateApartmentWalls } from '@ai-floor-planner/geometry-engine';
 // Zero-Error Geometry Validation & Audit Engine (ARGON 4 Phase 1)
 export {
   GeometryValidator,
+  validateAndRepairBuildingGeometry,
   type GeometryValidatorOptions,
   type GeometryAuditResult,
   type AnnotationItem,
 } from './validator/geometry-validator';
 
 // UDCPR Statutory Compliance Engine (ARGON 4 Phase 1)
-export { evaluateUDCPRCompliance } from './validator/udcpr-engine';
+export { evaluateUDCPRCompliance, isUDCPRReportCurrent } from './validator/udcpr-engine';
 
 // Pipeline Stage Progress Emitter (ARGON 4 Phase 1)
 export {
@@ -201,3 +202,21 @@ export {
   type PipelineProgressCallback,
   PIPELINE_STAGE_WEIGHTS,
 } from './pipeline/stage-progress-emitter';
+
+export * from './compliance/jurisdiction-context';
+export * from './compliance/source-registry';
+export * from './compliance/rules/entitlements';
+
+export * from './compliance/residential-udcpr-evaluator';
+export * from './compliance/apartment-vastu-evaluator';
+
+export * from './structural/solver-result';
+export * from './structural/column-grid-generator';
+export * from './structural/beam-network-generator';
+export * from './structural/hardened-residential-generation';
+export * from './core/vertical-core-solver';
+export * from './layout/stilt-layout-solver';
+export * from './layout/apartment-unit-packer';
+export * from './layout/opening-integrity-solver';
+
+export * from './pipeline/multi-story-residential-synthesizer';

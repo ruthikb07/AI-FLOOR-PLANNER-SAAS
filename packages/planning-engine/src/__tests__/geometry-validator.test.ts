@@ -573,7 +573,7 @@ describe('GeometryValidator — ARGON 4 Zero-Error Audit Engine', () => {
     });
   });
 
-  it('runs deterministic pipeline stage progress emitter and completes full pipeline', async () => {
+  it('emits audit stages but never certifies uncovered geometry or unrun regulations', async () => {
     const building = createMockBuilding();
     const stagesSeen: string[] = [];
 
@@ -582,8 +582,10 @@ describe('GeometryValidator — ARGON 4 Zero-Error Audit Engine', () => {
     });
 
     expect(result.building).toBeDefined();
-    expect(result.validationReport.isValid).toBe(true);
-    expect(result.udcprReport.rulesChecked.length).toBeGreaterThan(0);
+    expect(result.validationReport.isValid).toBe(false);
+    expect(result.validationReport.errors.some(error => error.code === 'UNASSIGNED_AREA')).toBe(true);
+    expect(result.regulatoryStatus).toBe(result.udcprReport.status);
+    expect(result.udcprReport.overallCompliant).toBe(false);
 
     // Verify all 7 stages fired
     expect(stagesSeen).toContain('PLOT_BOUNDARY_SOLVE:RUNNING');
@@ -600,11 +602,11 @@ describe('GeometryValidator — ARGON 4 Zero-Error Audit Engine', () => {
     const report = evaluateUDCPRCompliance(building);
 
     expect(report.buildingId).toBe(building.id);
-    expect(report.fsiUtilization.permissibleFsi).toBeGreaterThan(0);
-    expect(report.fsiUtilization.consumedFsi).toBeGreaterThan(0);
-    expect(report.setbacks.front.requiredMm).toBe(4500);
-    expect(report.parking.requiredCars).toBeGreaterThan(0);
-    expect(report.staircaseFireSafety.minWidthMm).toBe(1200);
-    expect(report.rulesChecked.length).toBe(7);
+    expect(report.overallCompliant).toBe(false);
+    expect(report.fsiUtilization.permissibleFsi).toBeNull();
+    expect(report.parking.providedCars).toBe(0);
+    expect(report.staircaseFireSafety.actualTravelDistanceMm).toBeNull();
+    expect(report.missingInputs).toContain('authorityType');
+    expect(report.rulesChecked.some(check => check.status === 'NOT_VERIFIED')).toBe(true);
   });
 });

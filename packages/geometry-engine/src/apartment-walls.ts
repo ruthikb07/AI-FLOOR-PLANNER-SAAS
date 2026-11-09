@@ -2,7 +2,7 @@ import { WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/
 import { polygonSignedArea, containsPolygon } from './polygon';
 
 /** Millimetres. Numerical coincidence is separate from opening corner clearance. */
-export const APARTMENT_GEOMETRY_TOLERANCES = { coincidence: 1, openingHost: 1, openingCorner: 100, areaDelta: 1 } as const;
+export const APARTMENT_GEOMETRY_TOLERANCES = { coincidence: 1, openingHost: 1, openingCorner: 100, areaDelta: 0.001 } as const;
 export const ARCHITECTURAL_STANDARDS_PROFILE = {
   provenance: 'PROVISIONAL_HEURISTIC', externalWall: 230, partitionWall: 150,
   separationWall: 230, balconyMinDepth: 1500, balconyMinWidth: 2400,
@@ -53,7 +53,7 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
         use === 'SHAFT' ? 100 :
         use === 'BALCONY' ? (external ? 230 : 115) :
         115;
-      walls.push({id:`apt-wall:${key}:${lo}:${hi}`,floorId,startPoint:axis==='x'?{x:lo,y:line}:{x:line,y:lo},endPoint:axis==='x'?{x:hi,y:line}:{x:line,y:hi},thickness,type:external?WallType.External:WallType.Internal,roomIds:ids,unitIds,wallUse:use,leftRoomId:owners.find(o=>o.side==='left')?.room.id,rightRoomId:owners.find(o=>o.side==='right')?.room.id,hasOpening:false,loadBearing:false,provenance:'PROVISIONAL_HEURISTIC'});
+      walls.push({id:`${floorId}::apt-wall:${key}:${lo}:${hi}`,floorId,startPoint:axis==='x'?{x:lo,y:line}:{x:line,y:lo},endPoint:axis==='x'?{x:hi,y:line}:{x:line,y:hi},thickness,type:external?WallType.External:WallType.Internal,roomIds:ids,unitIds,wallUse:use,leftRoomId:owners.find(o=>o.side==='left')?.room.id,rightRoomId:owners.find(o=>o.side==='right')?.room.id,hasOpening:false,loadBearing:false,provenance:'PROVISIONAL_HEURISTIC'});
     }
   }
   return walls;

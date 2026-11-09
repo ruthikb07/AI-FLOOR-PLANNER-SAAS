@@ -1,0 +1,607 @@
+
+> @ai-floor-planner/planning-engine@0.1.0 test C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine
+> vitest run --passWithNoTests "--maxWorkers=1" "--minWorkers=1"
+
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+ RUN  v2.0.5 C:/Users/ruthi/OneDrive/Desktop/AI BUILDING SAAS - Copy/AI BUILDING SAAS - Copy/packages/planning-engine
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Double Flat (2 Units) > 2x 3BHK in STATUTORY_SETBACK_100_PERCENT mode: stretches buildable envelope cleanly
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'double-3bhk-setback:typical-floor',
+    wallId: 'double-3bhk-setback:typical-floor::apt-wall:x:11190:3000:5100',
+    position: { x: 4050, y: 11190 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'double-3bhk-setback:typical-floor',
+    wallId: 'double-3bhk-setback:typical-floor::apt-wall:x:11190:42900:45000',
+    position: { x: 43950, y: 11190 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Double Flat (2 Units) > 2x 4BHK in FULL_LOT_100_PERCENT mode: enforces statutory clearances
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'double-4bhk-full:typical-floor',
+    wallId: 'double-4bhk-full:typical-floor::apt-wall:x:11050:0:4250',
+    position: { x: 2125, y: 11050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'double-4bhk-full:typical-floor',
+    wallId: 'double-4bhk-full:typical-floor::apt-wall:x:11050:50750:55000',
+    position: { x: 52875, y: 11050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Triple Flat (3 Units) > 3x 2BHK in STATUTORY_SETBACK_100_PERCENT mode: passes closure gate
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'triple-2bhk-setback:typical-floor',
+    wallId: 'triple-2bhk-setback:typical-floor::apt-wall:x:11600:2500:6000',
+    position: { x: 4250, y: 11600 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'triple-2bhk-setback:typical-floor',
+    wallId: 'triple-2bhk-setback:typical-floor::apt-wall:x:11600:44000:47500',
+    position: { x: 45750, y: 11600 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'triple-2bhk-setback:typical-floor',
+    wallId: 'triple-2bhk-setback:typical-floor::apt-wall:x:37900:44000:47500',
+    position: { x: 45750, y: 37900 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Triple Flat (3 Units) > 3x 3BHK in FULL_LOT_100_PERCENT mode: golden triple flat configuration
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'triple-3bhk-full:typical-floor',
+    wallId: 'triple-3bhk-full:typical-floor::apt-wall:x:11050:0:2830',
+    position: { x: 1415, y: 11050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'triple-3bhk-full:typical-floor',
+    wallId: 'triple-3bhk-full:typical-floor::apt-wall:x:9310:49160:52000',
+    position: { x: 50580, y: 9310 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'triple-3bhk-full:typical-floor',
+    wallId: 'triple-3bhk-full:typical-floor::apt-wall:x:45690:49160:52000',
+    position: { x: 50580, y: 45690 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Triple Flat (3 Units) > 3x 4BHK in STATUTORY_SETBACK_100_PERCENT mode: large luxury plate
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'triple-4bhk-setback:typical-floor',
+    wallId: 'triple-4bhk-setback:typical-floor::apt-wall:x:15050:4000:8250',
+    position: { x: 6125, y: 15050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'triple-4bhk-setback:typical-floor',
+    wallId: 'triple-4bhk-setback:typical-floor::apt-wall:x:10960:51750:56000',
+    position: { x: 53875, y: 10960 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'triple-4bhk-setback:typical-floor',
+    wallId: 'triple-4bhk-setback:typical-floor::apt-wall:x:38960:51750:56000',
+    position: { x: 53875, y: 38960 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Quad Flat (4 Units) > 4x 2BHK in FULL_LOT_100_PERCENT mode: 4 quadrants around central core spine
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'quad-2bhk-full:typical-floor',
+    wallId: 'quad-2bhk-full:typical-floor::apt-wall:x:11050:0:4250',
+    position: { x: 2125, y: 11050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'quad-2bhk-full:typical-floor',
+    wallId: 'quad-2bhk-full:typical-floor::apt-wall:x:11050:45750:50000',
+    position: { x: 47875, y: 11050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'quad-2bhk-full:typical-floor',
+    wallId: 'quad-2bhk-full:typical-floor::apt-wall:x:38950:0:4250',
+    position: { x: 2125, y: 38950 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  },
+  {
+    id: 'flat_04__door_master_bath',
+    floorId: 'quad-2bhk-full:typical-floor',
+    wallId: 'quad-2bhk-full:typical-floor::apt-wall:x:38950:45750:50000',
+    position: { x: 47875, y: 38950 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_04__master_bath', 'apt-room:flat_04__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Quad Flat (4 Units) > 4x 3BHK in STATUTORY_SETBACK_100_PERCENT mode: high density tower layout
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'quad-3bhk-setback:typical-floor',
+    wallId: 'quad-3bhk-setback:typical-floor::apt-wall:x:12240:3500:6130',
+    position: { x: 4815, y: 12240 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'quad-3bhk-setback:typical-floor',
+    wallId: 'quad-3bhk-setback:typical-floor::apt-wall:x:12240:48860:51500',
+    position: { x: 50180, y: 12240 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'quad-3bhk-setback:typical-floor',
+    wallId: 'quad-3bhk-setback:typical-floor::apt-wall:x:46760:3500:6130',
+    position: { x: 4815, y: 46760 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  },
+  {
+    id: 'flat_04__door_master_bath',
+    floorId: 'quad-3bhk-setback:typical-floor',
+    wallId: 'quad-3bhk-setback:typical-floor::apt-wall:x:46760:48860:51500',
+    position: { x: 50180, y: 46760 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_04__master_bath', 'apt-room:flat_04__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Quad Flat (4 Units) > 4x 4BHK in FULL_LOT_100_PERCENT mode: expansive 4-quadrant layout
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'quad-4bhk-full:typical-floor',
+    wallId: 'quad-4bhk-full:typical-floor::apt-wall:x:9060:0:4250',
+    position: { x: 2125, y: 9060 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'quad-4bhk-full:typical-floor',
+    wallId: 'quad-4bhk-full:typical-floor::apt-wall:x:9060:60750:65000',
+    position: { x: 62875, y: 9060 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'quad-4bhk-full:typical-floor',
+    wallId: 'quad-4bhk-full:typical-floor::apt-wall:x:44060:0:4250',
+    position: { x: 2125, y: 44060 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  },
+  {
+    id: 'flat_04__door_master_bath',
+    floorId: 'quad-4bhk-full:typical-floor',
+    wallId: 'quad-4bhk-full:typical-floor::apt-wall:x:44060:60750:65000',
+    position: { x: 62875, y: 44060 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_04__master_bath', 'apt-room:flat_04__master_bed' ]
+  }
+]
+
+stdout | src/__tests__/space-filling-snapper.test.ts > Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver > Quad Flat (4 Units) > Mixed Quad Flat (2BHK + 3BHK + 4BHK + 2BHK) in STATUTORY_SETBACK_100_PERCENT mode
+TEST ISSUES 3x 2BHK: []
+MB DOORS: [
+  {
+    id: 'flat_01__door_master_bath',
+    floorId: 'quad-mixed-setback:typical-floor',
+    wallId: 'quad-mixed-setback:typical-floor::apt-wall:x:14050:3000:7250',
+    position: { x: 5125, y: 14050 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_01__master_bath', 'apt-room:flat_01__master_bed' ]
+  },
+  {
+    id: 'flat_02__door_master_bath',
+    floorId: 'quad-mixed-setback:typical-floor',
+    wallId: 'quad-mixed-setback:typical-floor::apt-wall:x:12310:52160:55000',
+    position: { x: 53580, y: 12310 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_02__master_bath', 'apt-room:flat_02__master_bed' ]
+  },
+  {
+    id: 'flat_03__door_master_bath',
+    floorId: 'quad-mixed-setback:typical-floor',
+    wallId: 'quad-mixed-setback:typical-floor::apt-wall:x:37310:3000:7250',
+    position: { x: 5125, y: 37310 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_03__master_bath', 'apt-room:flat_03__master_bed' ]
+  },
+  {
+    id: 'flat_04__door_master_bath',
+    floorId: 'quad-mixed-setback:typical-floor',
+    wallId: 'quad-mixed-setback:typical-floor::apt-wall:x:46950:50750:55000',
+    position: { x: 52875, y: 46950 },
+    width: 750,
+    height: 2100,
+    type: 'single',
+    swingDirection: 'inward',
+    connectsRooms: [ 'apt-room:flat_04__master_bath', 'apt-room:flat_04__master_bed' ]
+  }
+]
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/space-filling-snapper.test.ts  (11 tests) 590ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/planning.test.ts  (17 tests) 647ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/architectural-evidence.test.ts  (37 tests) 34ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/plancraft-integration.test.ts  (9 tests) 300ms
+ ❯ |@ai-floor-planner/planning-engine| src/__tests__/geometry-validator.test.ts  (9 tests | 1 failed) 23ms
+   × GeometryValidator — ARGON 4 Zero-Error Audit Engine > emits audit stages but never certifies uncovered geometry or unrun regulations
+     → expected 'VIOLATION' to be 'NOT_RUN' // Object.is equality
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/apartment-error-repair.test.ts  (6 tests) 317ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/multi-sheet-apartment-solver.test.ts  (5 tests) 2232ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/phase3-compliance.test.ts  (29 tests) 23ms
+stdout | src/__tests__/program-intent.test.ts > floor and suite intent > preserves RBEA Ground intent and owned pairs through real generation and repair
+JSON STRING LENGTH: 41698
+JSON SNIPPET: [{"id":"126d5bfc-5a78-4000-8000-126d5bfc5a78","buildingId":"126d5bfc-5a77-4000-8000-126d5bfc5a77","level":0,"name":"Floor 0","floorHeight":3000,"boundary":{"points":[{"x":1000,"y":1500},{"x":21000,"y":1500},{"x":21000,"y":27000},{"x":1000,"y":27000}]},"rooms":[{"id":"126d5bfc-5a7a-4000-8000-126d5bfc
+PHASE_1B_BENCHMARK [{"id":"candidate_compact_zoning_1","strategy":"compact_zoning","rank":1,"geometryHash":"dba82096fee24128dbddbf2dc774c18876cd3defbe8c3c71e726df9cb59c4cb9","score":78,"oldWet":100,"wet":55,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]},{"id":"candidate_linear_split_3","strategy":"linear_split","rank":2,"geometryHash":"59381c639fb5d5bba393c1c76bfbed8e537fa70c6009665ff39c3827f1bcace6","score":78,"oldWet":98,"wet":55,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]},{"id":"candidate_open_circulation_2","strategy":"open_circulation","rank":3,"geometryHash":"d2a8558146b5372e52f1d546379cd20a1826a3e4cc3bee2740394e2784010d22","score":77,"oldWet":100,"wet":33,"required":8,"direct":4,"owned":4,"access":{"PRIVATE_DIRECT":4,"PRIVATE_INDIRECT":0,"SHARED":0,"UNRESOLVED":0,"NOT_EVALUATED":0},"suites":[{"name":"Attached Bath 01","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 02","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath 03","status":"PRIVATE_DIRECT","otherAccessTypes":[]},{"name":"Attached Bath Guest","status":"PRIVATE_DIRECT","otherAccessTypes":[]}]}]
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/program-intent.test.ts  (12 tests) 201ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/rbea-002-reference.test.ts  (17 tests) 16ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/rbea-001-reference.test.ts  (15 tests) 17ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/rbea-003-reference.test.ts  (15 tests) 12ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/architectural-generation-benchmark.test.ts  (5 tests) 65ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/private-suite-repair.test.ts  (12 tests) 19ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/extraction.test.ts  (11 tests) 11ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/generation-workflow.test.ts  (15 tests) 1667ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/architectural-closeout.test.ts  (11 tests) 106ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/candidate-diversity.test.ts  (6 tests) 814ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/targeted-regeneration.test.ts  (9 tests) 648ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/multi-floor-reliability.test.ts  (8 tests) 761ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/repair-safety.test.ts  (6 tests) 13ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/candidate-seed-diversity.test.ts  (6 tests) 132ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/stair-coordination.test.ts  (9 tests) 12ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/site-utilization.test.ts  (3 tests) 47ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/site-utilization-50x50.test.ts  (2 tests) 164ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/full-plot-50x50.test.ts  (3 tests) 152ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/enclosed-room-walls.test.ts  (4 tests) 388ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/phase1-honest-geometry.test.ts  (5 tests) 7ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/phase1-generation.test.ts  (5 tests) 930ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/exact-browser-reproduction.test.ts  (1 test) 163ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/architectural-zoning.test.ts  (2 tests) 5ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/extraction-parser.test.ts  (6 tests) 3ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/reviewed-workflow.test.ts  (6 tests) 87ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/large-site-footprint.test.ts  (3 tests) 235ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/feasibility-gate.test.ts  (2 tests) 6ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/suite-placement.test.ts  (3 tests) 30ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/candidate-deduplication.test.ts  (2 tests) 10ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/room-proportions.test.ts  (2 tests) 5ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/orthogonal-decomposition.test.ts  (6 tests) 3ms
+stdout | src/__tests__/multifloor-hard-issues.test.ts > Multi-floor hard issue diagnostic > prints per-floor validation details for the default 14x14 2BHK 3-floor building
+Generated 4 architectural candidates
+Candidate [0] 2BHK Plan (46×46 ft) — Offset Stepped Wings (Service-Articulated): Valid=true, Failed=0, Errors=0
+Candidate [1] 2BHK Plan (46×46 ft) — Front Parking Court (L-Shape Massing): Valid=true, Failed=0, Errors=0
+Candidate [2] 2BHK Plan (46×46 ft) — Central OTS & Wet-Core Clustered: Valid=true, Failed=0, Errors=0
+Candidate [3] 2BHK Plan (46×46 ft) — Compact Massing & Garden Court: Valid=true, Failed=0, Errors=0
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/multifloor-hard-issues.test.ts  (1 test) 39ms
+stdout | src/__tests__/diagnose-issues.test.ts > Diagnose 26 Hard Issues > prints all diagnostics and validation failures for 14x14 2BHK
+Generated 4 architectural candidates
+
+========================================
+Candidate: Front Parking Court (L-Shape Massing) (2BHK) (parking_first_l_shape)
+Valid: true, Failed issues: 0
+Rooms on Ground Floor: [
+  'Entrance Foyer (foyer) [5200, 2000, 2400x2000]',
+  'Staircase (staircase) [5200, 4000, 2400x3200]',
+  'Central Lobby (corridor) [5200, 7200, 2400x5300]',
+  'Living Room (living) [7600, 2000, 5400x4410]',
+  'Dining Hall (dining) [7600, 6410, 5400x2940]',
+  'Kitchen (kitchen) [7600, 9350, 5400x3150]',
+  'Bedroom 2 (bedroom) [1000, 4500, 4200x3058]',
+  'Master Bedroom (bedroom) [1000, 9318, 4200x3182]',
+  'OTS (Open to Sky) (ots) [4000, 7558, 1200x1500]',
+  'Attached Bath 1 (bathroom) [1000, 7558, 1560x1760]',
+  'Common Bath 2 (bathroom) [2560, 7558, 1440x1760]'
+]
+Walls on Ground Floor: [
+  'Wall [(5200,2000) -> (13000,2000)] type=external thickness=230',
+  'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230',
+  'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230',
+  'Wall [(1000,12500) -> (1000,4500)] type=external thickness=230',
+  'Wall [(1000,4500) -> (5200,4500)] type=external thickness=230',
+  'Wall [(5200,4500) -> (5200,2000)] type=external thickness=230',
+  'Wall [(5200,2000) -> (5200,12500)] type=internal thickness=115',
+  'Wall [(7600,2000) -> (7600,12500)] type=internal thickness=115',
+  'Wall [(7600,9350) -> (13000,9350)] type=internal thickness=115'
+]
+Violations:
+
+========================================
+Candidate: Central OTS & Wet-Core Clustered (2BHK) (courtyard_ots)
+Valid: true, Failed issues: 0
+Rooms on Ground Floor: [
+  'Entrance Foyer (foyer) [5308, 2000, 2400x2000]',
+  'Staircase (staircase) [5308, 4000, 2400x3200]',
+  'Central Lobby (corridor) [5308, 7200, 2400x5300]',
+  'Living Room (living) [7708, 2000, 5292x4410]',
+  'Dining Hall (dining) [7708, 6410, 5292x2940]',
+  'Kitchen (kitchen) [7708, 9350, 5292x3150]',
+  'Bedroom 2 (bedroom) [1000, 2000, 4308x4067]',
+  'Master Bedroom (bedroom) [1000, 8267, 4308x4233]',
+  'OTS (Open to Sky) (ots) [4108, 6067, 1200x1500]',
+  'Attached Bath 1 (bathroom) [1000, 6067, 1616x2200]',
+  'Common Bath 2 (bathroom) [2616, 6067, 1492x2200]'
+]
+Walls on Ground Floor: [
+  'Wall [(1000,2000) -> (13000,2000)] type=external thickness=230',
+  'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230',
+  'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230',
+  'Wall [(1000,12500) -> (1000,2000)] type=external thickness=230',
+  'Wall [(5308,2000) -> (5308,12500)] type=internal thickness=115',
+  'Wall [(7708,2000) -> (7708,12500)] type=internal thickness=115',
+  'Wall [(7708,9350) -> (13000,9350)] type=internal thickness=115'
+]
+Violations:
+
+========================================
+Candidate: Offset Stepped Wings (Service-Articulated) (2BHK) (offset_wings)
+Valid: true, Failed issues: 0
+Rooms on Ground Floor: [
+  'Entrance Foyer (foyer) [7600, 2000, 1800x2000]',
+  'Staircase (staircase) [7600, 4000, 1800x3200]',
+  'Central Lobby (corridor) [7600, 7200, 1800x4250]',
+  'Living Room (living) [9400, 2000, 3600x3969]',
+  'Dining Hall (dining) [9400, 5969, 3600x2750]',
+  'Kitchen (kitchen) [9400, 8719, 3600x2731]',
+  'Bedroom 2 (bedroom) [1000, 3050, 6600x3612]',
+  'Master Bedroom (bedroom) [1000, 8741, 6600x3759]',
+  'OTS (Open to Sky) (ots) [6400, 6662, 1200x1500]',
+  'Attached Bath 1 (bathroom) [1000, 6662, 2808x2079]',
+  'Common Bath 2 (bathroom) [3808, 6662, 2592x2079]'
+]
+Walls on Ground Floor: [
+  'Wall [(1000,3050) -> (7600,3050)] type=external thickness=230',
+  'Wall [(7600,3050) -> (7600,2000)] type=external thickness=230',
+  'Wall [(7600,2000) -> (13000,2000)] type=external thickness=230',
+  'Wall [(13000,2000) -> (13000,11450)] type=external thickness=230',
+  'Wall [(13000,11450) -> (7600,11450)] type=external thickness=230',
+  'Wall [(7600,11450) -> (7600,12500)] type=external thickness=230',
+  'Wall [(7600,12500) -> (1000,12500)] type=external thickness=230',
+  'Wall [(1000,12500) -> (1000,3050)] type=external thickness=230',
+  'Wall [(7600,2000) -> (7600,11450)] type=internal thickness=115',
+  'Wall [(9400,2000) -> (9400,11450)] type=internal thickness=115',
+  'Wall [(9400,8719) -> (13000,8719)] type=internal thickness=115'
+]
+Violations:
+
+========================================
+Candidate: Compact Massing & Garden Court (2BHK) (compact_frontage)
+Valid: true, Failed issues: 0
+Rooms on Ground Floor: [
+  'Entrance Foyer (foyer) [5508, 2000, 2400x2000]',
+  'Staircase (staircase) [5508, 4000, 2400x3200]',
+  'Central Lobby (corridor) [5508, 7200, 2400x5300]',
+  'Living Room (living) [7908, 2000, 5092x4410]',
+  'Dining Hall (dining) [7908, 6410, 5092x2940]',
+  'Kitchen (kitchen) [7908, 9350, 5092x3150]',
+  'Bedroom 2 (bedroom) [1000, 2000, 4508x4067]',
+  'Master Bedroom (bedroom) [1000, 8267, 4508x4233]',
+  'OTS (Open to Sky) (ots) [4308, 6067, 1200x1500]',
+  'Attached Bath 1 (bathroom) [1000, 6067, 1720x2200]',
+  'Common Bath 2 (bathroom) [2720, 6067, 1588x2200]'
+]
+Walls on Ground Floor: [
+  'Wall [(1000,2000) -> (13000,2000)] type=external thickness=230',
+  'Wall [(13000,2000) -> (13000,12500)] type=external thickness=230',
+  'Wall [(13000,12500) -> (1000,12500)] type=external thickness=230',
+  'Wall [(1000,12500) -> (1000,2000)] type=external thickness=230',
+  'Wall [(5508,2000) -> (5508,12500)] type=internal thickness=115',
+  'Wall [(7908,2000) -> (7908,12500)] type=internal thickness=115',
+  'Wall [(7908,9350) -> (13000,9350)] type=internal thickness=115'
+]
+Violations:
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/diagnose-issues.test.ts  (1 test) 29ms
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=north, floors=1
+[MATRIX] dir=north floors=1 candidates=3
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=north, floors=2
+[MATRIX] dir=north floors=2 candidates=3
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=south, floors=1
+[MATRIX] dir=south floors=1 candidates=3
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=south, floors=2
+[MATRIX] dir=south floors=2 candidates=3
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=east, floors=1
+[MATRIX] dir=east floors=1 candidates=4
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=east, floors=2
+[MATRIX] dir=east floors=2 candidates=4
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=west, floors=1
+[MATRIX] dir=west floors=1 candidates=4
+
+stdout | src/__tests__/candidate-generation-3bhk.test.ts > Candidate Generation 3BHK Diagnostic Test > generates candidates for dir=west, floors=2
+[MATRIX] dir=west floors=2 candidates=4
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/candidate-generation-3bhk.test.ts  (8 tests) 77ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/plot-fitting.test.ts  (1 test) 42ms
+stdout | src/__tests__/reproduce-video-crash.test.ts > Video Reproduction 60x55 ft 2BHK > reproduces candidate generation on 60x55 ft (18288 x 16764 mm)
+Testing generateArchitecturalCandidates with 60x55 ft...
+Generated 4 candidates!
+Candidate: Offset Stepped Wings (Service-Articulated) (2BHK) - Valid: true - Issues: 0
+Candidate: Compact Massing & Garden Court (2BHK) - Valid: true - Issues: 0
+Candidate: Central OTS & Wet-Core Clustered (2BHK) - Valid: true - Issues: 0
+Candidate: Front Parking Court (L-Shape Massing) (2BHK) - Valid: true - Issues: 0
+
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/reproduce-video-crash.test.ts  (1 test) 37ms
+ ✓ |@ai-floor-planner/planning-engine| src/__tests__/feasibility-conflict.test.ts  (1 test) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |@ai-floor-planner/planning-engine| src/__tests__/geometry-validator.test.ts > GeometryValidator — ARGON 4 Zero-Error Audit Engine > emits audit stages but never certifies uncovered geometry or unrun regulations
+AssertionError: expected 'VIOLATION' to be 'NOT_RUN' // Object.is equality
+
+Expected: "NOT_RUN"
+Received: "VIOLATION"
+
+ ❯ src/__tests__/geometry-validator.test.ts:587:37
+    585|     expect(result.validationReport.isValid).toBe(false);
+    586|     expect(result.validationReport.errors.some(error => error.code ===…
+    587|     expect(result.regulatoryStatus).toBe('NOT_RUN');
+       |                                     ^
+    588| 
+    589|     // Verify all 7 stages fired
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 44 passed (45)
+      Tests  1 failed | 347 passed (348)
+   Start at  16:41:19
+   Duration  35.83s (transform 1.40s, setup 0ms, collect 10.30s, tests 11.12s, environment 6ms, prepare 6.83s)
+
+C:\Users\ruthi\OneDrive\Desktop\AI BUILDING SAAS - Copy\AI BUILDING SAAS - Copy\packages\planning-engine:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ai-floor-planner/planning-engine@0.1.0 test: `vitest run --passWithNoTests "--maxWorkers=1" "--minWorkers=1"`
+Exit status 1
