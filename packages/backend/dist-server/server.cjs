@@ -1133,6 +1133,454 @@ var init_updaters = __esm({
   }
 });
 
+// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+function isBytes(a) {
+  return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
+}
+function abytes(b, ...lengths) {
+  if (!isBytes(b))
+    throw new Error("Uint8Array expected");
+  if (lengths.length > 0 && !lengths.includes(b.length))
+    throw new Error("Uint8Array expected of length " + lengths + ", got length=" + b.length);
+}
+function aexists(instance, checkFinished = true) {
+  if (instance.destroyed)
+    throw new Error("Hash instance has been destroyed");
+  if (checkFinished && instance.finished)
+    throw new Error("Hash#digest() has already been called");
+}
+function aoutput(out, instance) {
+  abytes(out);
+  const min = instance.outputLen;
+  if (out.length < min) {
+    throw new Error("digestInto() expects output buffer of length at least " + min);
+  }
+}
+function clean(...arrays) {
+  for (let i = 0; i < arrays.length; i++) {
+    arrays[i].fill(0);
+  }
+}
+function createView(arr) {
+  return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+}
+function rotr(word, shift) {
+  return word << 32 - shift | word >>> shift;
+}
+function bytesToHex(bytes) {
+  abytes(bytes);
+  if (hasHexBuiltin)
+    return bytes.toHex();
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += hexes[bytes[i]];
+  }
+  return hex;
+}
+function utf8ToBytes(str2) {
+  if (typeof str2 !== "string")
+    throw new Error("string expected");
+  return new Uint8Array(new TextEncoder().encode(str2));
+}
+function toBytes(data) {
+  if (typeof data === "string")
+    data = utf8ToBytes(data);
+  abytes(data);
+  return data;
+}
+function createHasher(hashCons) {
+  const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+  const tmp3 = hashCons();
+  hashC.outputLen = tmp3.outputLen;
+  hashC.blockLen = tmp3.blockLen;
+  hashC.create = () => hashCons();
+  return hashC;
+}
+var hasHexBuiltin, hexes, Hash;
+var init_utils = __esm({
+  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js"() {
+    hasHexBuiltin = /* @__PURE__ */ (() => (
+      // @ts-ignore
+      typeof Uint8Array.from([]).toHex === "function" && typeof Uint8Array.fromHex === "function"
+    ))();
+    hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
+    Hash = class {
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+function setBigUint64(view, byteOffset, value, isLE) {
+  if (typeof view.setBigUint64 === "function")
+    return view.setBigUint64(byteOffset, value, isLE);
+  const _32n = BigInt(32);
+  const _u32_max = BigInt(4294967295);
+  const wh = Number(value >> _32n & _u32_max);
+  const wl = Number(value & _u32_max);
+  const h = isLE ? 4 : 0;
+  const l = isLE ? 0 : 4;
+  view.setUint32(byteOffset + h, wh, isLE);
+  view.setUint32(byteOffset + l, wl, isLE);
+}
+function Chi(a, b, c) {
+  return a & b ^ ~a & c;
+}
+function Maj(a, b, c) {
+  return a & b ^ a & c ^ b & c;
+}
+var HashMD, SHA256_IV;
+var init_md = __esm({
+  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js"() {
+    init_utils();
+    HashMD = class extends Hash {
+      constructor(blockLen, outputLen, padOffset, isLE) {
+        super();
+        this.finished = false;
+        this.length = 0;
+        this.pos = 0;
+        this.destroyed = false;
+        this.blockLen = blockLen;
+        this.outputLen = outputLen;
+        this.padOffset = padOffset;
+        this.isLE = isLE;
+        this.buffer = new Uint8Array(blockLen);
+        this.view = createView(this.buffer);
+      }
+      update(data) {
+        aexists(this);
+        data = toBytes(data);
+        abytes(data);
+        const { view, buffer, blockLen } = this;
+        const len = data.length;
+        for (let pos = 0; pos < len; ) {
+          const take = Math.min(blockLen - this.pos, len - pos);
+          if (take === blockLen) {
+            const dataView = createView(data);
+            for (; blockLen <= len - pos; pos += blockLen)
+              this.process(dataView, pos);
+            continue;
+          }
+          buffer.set(data.subarray(pos, pos + take), this.pos);
+          this.pos += take;
+          pos += take;
+          if (this.pos === blockLen) {
+            this.process(view, 0);
+            this.pos = 0;
+          }
+        }
+        this.length += data.length;
+        this.roundClean();
+        return this;
+      }
+      digestInto(out) {
+        aexists(this);
+        aoutput(out, this);
+        this.finished = true;
+        const { buffer, view, blockLen, isLE } = this;
+        let { pos } = this;
+        buffer[pos++] = 128;
+        clean(this.buffer.subarray(pos));
+        if (this.padOffset > blockLen - pos) {
+          this.process(view, 0);
+          pos = 0;
+        }
+        for (let i = pos; i < blockLen; i++)
+          buffer[i] = 0;
+        setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+        this.process(view, 0);
+        const oview = createView(out);
+        const len = this.outputLen;
+        if (len % 4)
+          throw new Error("_sha2: outputLen should be aligned to 32bit");
+        const outLen = len / 4;
+        const state = this.get();
+        if (outLen > state.length)
+          throw new Error("_sha2: outputLen bigger than state");
+        for (let i = 0; i < outLen; i++)
+          oview.setUint32(4 * i, state[i], isLE);
+      }
+      digest() {
+        const { buffer, outputLen } = this;
+        this.digestInto(buffer);
+        const res = buffer.slice(0, outputLen);
+        this.destroy();
+        return res;
+      }
+      _cloneInto(to) {
+        to || (to = new this.constructor());
+        to.set(...this.get());
+        const { blockLen, buffer, length, finished, destroyed, pos } = this;
+        to.destroyed = destroyed;
+        to.finished = finished;
+        to.length = length;
+        to.pos = pos;
+        if (length % blockLen)
+          to.buffer.set(buffer);
+        return to;
+      }
+      clone() {
+        return this._cloneInto();
+      }
+    };
+    SHA256_IV = /* @__PURE__ */ Uint32Array.from([
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225
+    ]);
+  }
+});
+
+// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+var SHA256_K, SHA256_W, SHA256, sha256;
+var init_sha2 = __esm({
+  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js"() {
+    init_md();
+    init_utils();
+    SHA256_K = /* @__PURE__ */ Uint32Array.from([
+      1116352408,
+      1899447441,
+      3049323471,
+      3921009573,
+      961987163,
+      1508970993,
+      2453635748,
+      2870763221,
+      3624381080,
+      310598401,
+      607225278,
+      1426881987,
+      1925078388,
+      2162078206,
+      2614888103,
+      3248222580,
+      3835390401,
+      4022224774,
+      264347078,
+      604807628,
+      770255983,
+      1249150122,
+      1555081692,
+      1996064986,
+      2554220882,
+      2821834349,
+      2952996808,
+      3210313671,
+      3336571891,
+      3584528711,
+      113926993,
+      338241895,
+      666307205,
+      773529912,
+      1294757372,
+      1396182291,
+      1695183700,
+      1986661051,
+      2177026350,
+      2456956037,
+      2730485921,
+      2820302411,
+      3259730800,
+      3345764771,
+      3516065817,
+      3600352804,
+      4094571909,
+      275423344,
+      430227734,
+      506948616,
+      659060556,
+      883997877,
+      958139571,
+      1322822218,
+      1537002063,
+      1747873779,
+      1955562222,
+      2024104815,
+      2227730452,
+      2361852424,
+      2428436474,
+      2756734187,
+      3204031479,
+      3329325298
+    ]);
+    SHA256_W = /* @__PURE__ */ new Uint32Array(64);
+    SHA256 = class extends HashMD {
+      constructor(outputLen = 32) {
+        super(64, outputLen, 8, false);
+        this.A = SHA256_IV[0] | 0;
+        this.B = SHA256_IV[1] | 0;
+        this.C = SHA256_IV[2] | 0;
+        this.D = SHA256_IV[3] | 0;
+        this.E = SHA256_IV[4] | 0;
+        this.F = SHA256_IV[5] | 0;
+        this.G = SHA256_IV[6] | 0;
+        this.H = SHA256_IV[7] | 0;
+      }
+      get() {
+        const { A, B, C: C2, D, E: E2, F, G, H } = this;
+        return [A, B, C2, D, E2, F, G, H];
+      }
+      // prettier-ignore
+      set(A, B, C2, D, E2, F, G, H) {
+        this.A = A | 0;
+        this.B = B | 0;
+        this.C = C2 | 0;
+        this.D = D | 0;
+        this.E = E2 | 0;
+        this.F = F | 0;
+        this.G = G | 0;
+        this.H = H | 0;
+      }
+      process(view, offset) {
+        for (let i = 0; i < 16; i++, offset += 4)
+          SHA256_W[i] = view.getUint32(offset, false);
+        for (let i = 16; i < 64; i++) {
+          const W15 = SHA256_W[i - 15];
+          const W2 = SHA256_W[i - 2];
+          const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
+          const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
+          SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
+        }
+        let { A, B, C: C2, D, E: E2, F, G, H } = this;
+        for (let i = 0; i < 64; i++) {
+          const sigma1 = rotr(E2, 6) ^ rotr(E2, 11) ^ rotr(E2, 25);
+          const T1 = H + sigma1 + Chi(E2, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+          const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+          const T2 = sigma0 + Maj(A, B, C2) | 0;
+          H = G;
+          G = F;
+          F = E2;
+          E2 = D + T1 | 0;
+          D = C2;
+          C2 = B;
+          B = A;
+          A = T1 + T2 | 0;
+        }
+        A = A + this.A | 0;
+        B = B + this.B | 0;
+        C2 = C2 + this.C | 0;
+        D = D + this.D | 0;
+        E2 = E2 + this.E | 0;
+        F = F + this.F | 0;
+        G = G + this.G | 0;
+        H = H + this.H | 0;
+        this.set(A, B, C2, D, E2, F, G, H);
+      }
+      roundClean() {
+        clean(SHA256_W);
+      }
+      destroy() {
+        this.set(0, 0, 0, 0, 0, 0, 0, 0);
+        clean(this.buffer);
+      }
+    };
+    sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
+  }
+});
+
+// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+var sha2562;
+var init_sha256 = __esm({
+  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js"() {
+    init_sha2();
+    sha2562 = sha256;
+  }
+});
+
+// ../core/dist/models/canonical-revision.js
+function canonicalRevisionJson(building) {
+  const sorted = (value) => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => [key, sorted(item)])) : value;
+  return JSON.stringify(sorted(building));
+}
+function canonicalBuildingHash(building) {
+  return stableValueHash(building);
+}
+function stableValueHash(value) {
+  return bytesToHex(sha2562(utf8ToBytes(canonicalRevisionJson(value))));
+}
+var init_canonical_revision = __esm({
+  "../core/dist/models/canonical-revision.js"() {
+    "use strict";
+    init_sha256();
+    init_utils();
+  }
+});
+
+// ../core/dist/mep/mep-validation.js
+function architectureHash(building) {
+  const { mep: _mep, version: _version, updatedAt: _updatedAt, ...architecture } = building;
+  return canonicalBuildingHash(architecture);
+}
+function mepSchemaErrors(building) {
+  const b = building;
+  if (!b || b.mep === void 0)
+    return [];
+  const m = b.mep, e = [];
+  if (!m || !Array.isArray(m.fixtures) || !Array.isArray(m.shafts) || !Array.isArray(m.stacks) || !Array.isArray(m.issues))
+    return ["MEP arrays are required"];
+  if (m.status !== "PROPOSED_REQUIRES_REVIEW" || m.hydraulicDesign !== "NOT_VERIFIED" || m.electricalDesign !== "NOT_VERIFIED" || m.fireCoverage !== "NOT_VERIFIED")
+    e.push("MEP professional status must remain unverified");
+  if (!Number.isInteger(m.sourceRevision) || typeof m.sourceArchitectureHash !== "string")
+    e.push("MEP source revision/hash required");
+  const ids = /* @__PURE__ */ new Set(), floorIds = new Set(b.floors?.map((f) => f.id));
+  const claim = (id) => {
+    if (!id || ids.has(id))
+      e.push("Missing or duplicate MEP id");
+    ids.add(id);
+  };
+  const finite = (n) => typeof n === "number" && Number.isFinite(n);
+  const positive = (n) => finite(n) && n > 0;
+  const types = {
+    ELECTRICAL: ["SWITCHBOARD_PRIMARY", "SWITCHBOARD_SECONDARY", "SOCKET_16A_POWER", "SOCKET_6A", "DISTRIBUTION_BOARD", "CEILING_LIGHT", "CEILING_FAN"],
+    PLUMBING: ["WC_DRAIN", "KITCHEN_SINK_DRAIN", "KITCHEN_SINK_SUPPLY", "WASHBASIN_DRAIN", "WASHBASIN_SUPPLY"],
+    FIRE: ["PENDENT_SPRINKLER", "SMOKE_DETECTOR", "ABC_6KG_EXTINGUISHER", "LANDING_VALVE"]
+  };
+  for (const f of m.fixtures) {
+    if (!f || typeof f !== "object") {
+      e.push("Invalid MEP fixture");
+      continue;
+    }
+    claim(f.id);
+    if (!floorIds.has(f.floorId) || !types[f.kind]?.includes(f.type) || !["WALL", "CEILING", "CONNECTION"].includes(f.mounting) || ![f.position?.x, f.position?.y, f.rotationRad, f.elevationAfflMm].every(finite) || f.elevationAfflMm < 0 || ![f.widthMm, f.depthMm, f.heightMm].every(positive) || !["ASSERTED_FROM_BRIEF", "VISUALIZATION_DEFAULT"].includes(f.provenance))
+      e.push("Invalid MEP fixture " + f.id);
+    const floor = b.floors?.find((x) => x.id === f.floorId);
+    if (!floor?.rooms.some((r) => r.id === f.roomId) || f.hostWallId && !floor.walls.some((w) => w.id === f.hostWallId))
+      e.push("Unknown MEP host " + f.id);
+  }
+  for (const s of m.shafts) {
+    if (!s || !Array.isArray(s.floors)) {
+      e.push("Invalid shaft");
+      continue;
+    }
+    claim(s.id);
+    if (!["OTS_SHAFT", "PLUMBING_CHASE", "FIRE_RISER"].includes(s.type) || s.enclosureWallThicknessMm !== 100)
+      e.push("Invalid shaft classification");
+    for (const f of s.floors)
+      if (!f || !floorIds.has(f.floorId) || !Array.isArray(f.boundary?.points) || f.boundary.points.length < 3 || !f.boundary.points.every((p) => p && finite(p.x) && finite(p.y)))
+        e.push("Invalid shaft polygon");
+  }
+  for (const s of m.stacks) {
+    if (!s) {
+      e.push("Invalid stack");
+      continue;
+    }
+    claim(s.id);
+    if (!m.shafts.some((h) => h?.id === s.shaftId) || !Array.isArray(s.floorIds) || !s.floorIds.length || !s.floorIds.every((id) => floorIds.has(id)) || !["SOIL", "WASTE", "VENT", "RAINWATER", "WET_RISER"].includes(s.service) || !positive(s.outerDiameterMm) || ![s.position?.x, s.position?.y, s.bottomMm, s.topMm].every(finite) || s.topMm <= s.bottomMm)
+      e.push("Invalid MEP stack " + s.id);
+  }
+  return e;
+}
+var init_mep_validation = __esm({
+  "../core/dist/mep/mep-validation.js"() {
+    "use strict";
+    init_canonical_revision();
+  }
+});
+
 // ../core/dist/models/validation.js
 function isString(v) {
   return typeof v === "string";
@@ -1362,6 +1810,8 @@ function validateBuildingSchema(building) {
       }
     }
   }
+  for (const message of mepSchemaErrors(building))
+    errors.push({ path: "mep", message, value: building["mep"] });
   if (!isFiniteNumber(building["version"])) {
     errors.push({ path: "version", message: "Must be a finite number", value: building["version"] });
   }
@@ -1398,6 +1848,7 @@ var init_validation = __esm({
   "../core/dist/models/validation.js"() {
     "use strict";
     init_types();
+    init_mep_validation();
     VALID_ROOM_TYPES = new Set(Object.values(RoomType));
   }
 });
@@ -2028,383 +2479,6 @@ var init_reviewed_generation = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
-function isBytes(a) {
-  return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
-}
-function abytes(b, ...lengths) {
-  if (!isBytes(b))
-    throw new Error("Uint8Array expected");
-  if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new Error("Uint8Array expected of length " + lengths + ", got length=" + b.length);
-}
-function aexists(instance, checkFinished = true) {
-  if (instance.destroyed)
-    throw new Error("Hash instance has been destroyed");
-  if (checkFinished && instance.finished)
-    throw new Error("Hash#digest() has already been called");
-}
-function aoutput(out, instance) {
-  abytes(out);
-  const min = instance.outputLen;
-  if (out.length < min) {
-    throw new Error("digestInto() expects output buffer of length at least " + min);
-  }
-}
-function clean(...arrays) {
-  for (let i = 0; i < arrays.length; i++) {
-    arrays[i].fill(0);
-  }
-}
-function createView(arr) {
-  return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
-}
-function rotr(word, shift) {
-  return word << 32 - shift | word >>> shift;
-}
-function bytesToHex(bytes) {
-  abytes(bytes);
-  if (hasHexBuiltin)
-    return bytes.toHex();
-  let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += hexes[bytes[i]];
-  }
-  return hex;
-}
-function utf8ToBytes(str2) {
-  if (typeof str2 !== "string")
-    throw new Error("string expected");
-  return new Uint8Array(new TextEncoder().encode(str2));
-}
-function toBytes(data) {
-  if (typeof data === "string")
-    data = utf8ToBytes(data);
-  abytes(data);
-  return data;
-}
-function createHasher(hashCons) {
-  const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
-  const tmp3 = hashCons();
-  hashC.outputLen = tmp3.outputLen;
-  hashC.blockLen = tmp3.blockLen;
-  hashC.create = () => hashCons();
-  return hashC;
-}
-var hasHexBuiltin, hexes, Hash;
-var init_utils = __esm({
-  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js"() {
-    hasHexBuiltin = /* @__PURE__ */ (() => (
-      // @ts-ignore
-      typeof Uint8Array.from([]).toHex === "function" && typeof Uint8Array.fromHex === "function"
-    ))();
-    hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
-    Hash = class {
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
-function setBigUint64(view, byteOffset, value, isLE) {
-  if (typeof view.setBigUint64 === "function")
-    return view.setBigUint64(byteOffset, value, isLE);
-  const _32n = BigInt(32);
-  const _u32_max = BigInt(4294967295);
-  const wh = Number(value >> _32n & _u32_max);
-  const wl = Number(value & _u32_max);
-  const h = isLE ? 4 : 0;
-  const l = isLE ? 0 : 4;
-  view.setUint32(byteOffset + h, wh, isLE);
-  view.setUint32(byteOffset + l, wl, isLE);
-}
-function Chi(a, b, c) {
-  return a & b ^ ~a & c;
-}
-function Maj(a, b, c) {
-  return a & b ^ a & c ^ b & c;
-}
-var HashMD, SHA256_IV;
-var init_md = __esm({
-  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js"() {
-    init_utils();
-    HashMD = class extends Hash {
-      constructor(blockLen, outputLen, padOffset, isLE) {
-        super();
-        this.finished = false;
-        this.length = 0;
-        this.pos = 0;
-        this.destroyed = false;
-        this.blockLen = blockLen;
-        this.outputLen = outputLen;
-        this.padOffset = padOffset;
-        this.isLE = isLE;
-        this.buffer = new Uint8Array(blockLen);
-        this.view = createView(this.buffer);
-      }
-      update(data) {
-        aexists(this);
-        data = toBytes(data);
-        abytes(data);
-        const { view, buffer, blockLen } = this;
-        const len = data.length;
-        for (let pos = 0; pos < len; ) {
-          const take = Math.min(blockLen - this.pos, len - pos);
-          if (take === blockLen) {
-            const dataView = createView(data);
-            for (; blockLen <= len - pos; pos += blockLen)
-              this.process(dataView, pos);
-            continue;
-          }
-          buffer.set(data.subarray(pos, pos + take), this.pos);
-          this.pos += take;
-          pos += take;
-          if (this.pos === blockLen) {
-            this.process(view, 0);
-            this.pos = 0;
-          }
-        }
-        this.length += data.length;
-        this.roundClean();
-        return this;
-      }
-      digestInto(out) {
-        aexists(this);
-        aoutput(out, this);
-        this.finished = true;
-        const { buffer, view, blockLen, isLE } = this;
-        let { pos } = this;
-        buffer[pos++] = 128;
-        clean(this.buffer.subarray(pos));
-        if (this.padOffset > blockLen - pos) {
-          this.process(view, 0);
-          pos = 0;
-        }
-        for (let i = pos; i < blockLen; i++)
-          buffer[i] = 0;
-        setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
-        this.process(view, 0);
-        const oview = createView(out);
-        const len = this.outputLen;
-        if (len % 4)
-          throw new Error("_sha2: outputLen should be aligned to 32bit");
-        const outLen = len / 4;
-        const state = this.get();
-        if (outLen > state.length)
-          throw new Error("_sha2: outputLen bigger than state");
-        for (let i = 0; i < outLen; i++)
-          oview.setUint32(4 * i, state[i], isLE);
-      }
-      digest() {
-        const { buffer, outputLen } = this;
-        this.digestInto(buffer);
-        const res = buffer.slice(0, outputLen);
-        this.destroy();
-        return res;
-      }
-      _cloneInto(to) {
-        to || (to = new this.constructor());
-        to.set(...this.get());
-        const { blockLen, buffer, length, finished, destroyed, pos } = this;
-        to.destroyed = destroyed;
-        to.finished = finished;
-        to.length = length;
-        to.pos = pos;
-        if (length % blockLen)
-          to.buffer.set(buffer);
-        return to;
-      }
-      clone() {
-        return this._cloneInto();
-      }
-    };
-    SHA256_IV = /* @__PURE__ */ Uint32Array.from([
-      1779033703,
-      3144134277,
-      1013904242,
-      2773480762,
-      1359893119,
-      2600822924,
-      528734635,
-      1541459225
-    ]);
-  }
-});
-
-// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
-var SHA256_K, SHA256_W, SHA256, sha256;
-var init_sha2 = __esm({
-  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js"() {
-    init_md();
-    init_utils();
-    SHA256_K = /* @__PURE__ */ Uint32Array.from([
-      1116352408,
-      1899447441,
-      3049323471,
-      3921009573,
-      961987163,
-      1508970993,
-      2453635748,
-      2870763221,
-      3624381080,
-      310598401,
-      607225278,
-      1426881987,
-      1925078388,
-      2162078206,
-      2614888103,
-      3248222580,
-      3835390401,
-      4022224774,
-      264347078,
-      604807628,
-      770255983,
-      1249150122,
-      1555081692,
-      1996064986,
-      2554220882,
-      2821834349,
-      2952996808,
-      3210313671,
-      3336571891,
-      3584528711,
-      113926993,
-      338241895,
-      666307205,
-      773529912,
-      1294757372,
-      1396182291,
-      1695183700,
-      1986661051,
-      2177026350,
-      2456956037,
-      2730485921,
-      2820302411,
-      3259730800,
-      3345764771,
-      3516065817,
-      3600352804,
-      4094571909,
-      275423344,
-      430227734,
-      506948616,
-      659060556,
-      883997877,
-      958139571,
-      1322822218,
-      1537002063,
-      1747873779,
-      1955562222,
-      2024104815,
-      2227730452,
-      2361852424,
-      2428436474,
-      2756734187,
-      3204031479,
-      3329325298
-    ]);
-    SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-    SHA256 = class extends HashMD {
-      constructor(outputLen = 32) {
-        super(64, outputLen, 8, false);
-        this.A = SHA256_IV[0] | 0;
-        this.B = SHA256_IV[1] | 0;
-        this.C = SHA256_IV[2] | 0;
-        this.D = SHA256_IV[3] | 0;
-        this.E = SHA256_IV[4] | 0;
-        this.F = SHA256_IV[5] | 0;
-        this.G = SHA256_IV[6] | 0;
-        this.H = SHA256_IV[7] | 0;
-      }
-      get() {
-        const { A, B, C: C2, D, E: E2, F, G, H } = this;
-        return [A, B, C2, D, E2, F, G, H];
-      }
-      // prettier-ignore
-      set(A, B, C2, D, E2, F, G, H) {
-        this.A = A | 0;
-        this.B = B | 0;
-        this.C = C2 | 0;
-        this.D = D | 0;
-        this.E = E2 | 0;
-        this.F = F | 0;
-        this.G = G | 0;
-        this.H = H | 0;
-      }
-      process(view, offset) {
-        for (let i = 0; i < 16; i++, offset += 4)
-          SHA256_W[i] = view.getUint32(offset, false);
-        for (let i = 16; i < 64; i++) {
-          const W15 = SHA256_W[i - 15];
-          const W2 = SHA256_W[i - 2];
-          const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
-          const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
-          SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
-        }
-        let { A, B, C: C2, D, E: E2, F, G, H } = this;
-        for (let i = 0; i < 64; i++) {
-          const sigma1 = rotr(E2, 6) ^ rotr(E2, 11) ^ rotr(E2, 25);
-          const T1 = H + sigma1 + Chi(E2, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
-          const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
-          const T2 = sigma0 + Maj(A, B, C2) | 0;
-          H = G;
-          G = F;
-          F = E2;
-          E2 = D + T1 | 0;
-          D = C2;
-          C2 = B;
-          B = A;
-          A = T1 + T2 | 0;
-        }
-        A = A + this.A | 0;
-        B = B + this.B | 0;
-        C2 = C2 + this.C | 0;
-        D = D + this.D | 0;
-        E2 = E2 + this.E | 0;
-        F = F + this.F | 0;
-        G = G + this.G | 0;
-        H = H + this.H | 0;
-        this.set(A, B, C2, D, E2, F, G, H);
-      }
-      roundClean() {
-        clean(SHA256_W);
-      }
-      destroy() {
-        this.set(0, 0, 0, 0, 0, 0, 0, 0);
-        clean(this.buffer);
-      }
-    };
-    sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
-  }
-});
-
-// ../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
-var sha2562;
-var init_sha256 = __esm({
-  "../../node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js"() {
-    init_sha2();
-    sha2562 = sha256;
-  }
-});
-
-// ../core/dist/models/canonical-revision.js
-function canonicalRevisionJson(building) {
-  const sorted = (value) => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => [key, sorted(item)])) : value;
-  return JSON.stringify(sorted(building));
-}
-function canonicalBuildingHash(building) {
-  return stableValueHash(building);
-}
-function stableValueHash(value) {
-  return bytesToHex(sha2562(utf8ToBytes(canonicalRevisionJson(value))));
-}
-var init_canonical_revision = __esm({
-  "../core/dist/models/canonical-revision.js"() {
-    "use strict";
-    init_sha256();
-    init_utils();
-  }
-});
-
 // ../core/dist/compliance/udcpr-residential-types.js
 var init_udcpr_residential_types = __esm({
   "../core/dist/compliance/udcpr-residential-types.js"() {
@@ -2416,6 +2490,26 @@ var init_udcpr_residential_types = __esm({
 var init_vastu_advisory_types = __esm({
   "../core/dist/compliance/vastu-advisory-types.js"() {
     "use strict";
+  }
+});
+
+// ../core/dist/mep/mep-contracts.js
+var MEP_PIPE_DIAMETERS, MEP_MATERIALS;
+var init_mep_contracts = __esm({
+  "../core/dist/mep/mep-contracts.js"() {
+    "use strict";
+    MEP_PIPE_DIAMETERS = { SOIL: 110, WASTE: 75, VENT: 50, RAINWATER: 110, WET_RISER: 100 };
+    MEP_MATERIALS = {
+      MAT_Fire_Red: { color: "#CC1100", roughness: 0.25, metalness: 0 },
+      MAT_Pipe_Soil: { color: "#B85D19", roughness: 0.35, metalness: 0 },
+      MAT_Pipe_Waste: { color: "#326699", roughness: 0.35, metalness: 0 },
+      MAT_Pipe_Vent: { color: "#555555", roughness: 0.4, metalness: 0 },
+      MAT_Pipe_Rain: { color: "#204C99", roughness: 0.35, metalness: 0 },
+      MAT_Electrical_Plate: { color: "#F0EFEA", roughness: 0.2, metalness: 0 },
+      MAT_Chrome_Sprinkler: { color: "#C6CCD1", roughness: 0.1, metalness: 1 },
+      MAT_Copper_Terminal: { color: "#B87333", roughness: 0.3, metalness: 1 },
+      MAT_Black_Nozzle: { color: "#181818", roughness: 0.45, metalness: 0 }
+    };
   }
 });
 
@@ -2435,6 +2529,8 @@ var init_dist = __esm({
     init_canonical_revision();
     init_udcpr_residential_types();
     init_vastu_advisory_types();
+    init_mep_contracts();
+    init_mep_validation();
   }
 });
 
@@ -4159,6 +4255,119 @@ var init_residential_envelope = __esm({
   }
 });
 
+// ../geometry-engine/dist/mep.js
+function mepFloorElevations(building) {
+  const result = /* @__PURE__ */ new Map();
+  let z = 0;
+  for (const f of [...building.floors].sort((a, b) => a.level - b.level)) {
+    z = f.elevationMm ?? z;
+    result.set(f.id, z);
+    z += f.floorHeight;
+  }
+  return result;
+}
+function mepFootprint(f, padding = 0) {
+  const c = Math.cos(f.rotationRad), s = Math.sin(f.rotationRad), w = f.widthMm / 2 + padding, d = f.depthMm / 2 + padding;
+  return { points: [[-w, -d], [w, -d], [w, d], [-w, d]].map(([x, y]) => ({ x: f.position.x + c * x - s * y, y: f.position.y + s * x + c * y })) };
+}
+function mepPipeFootprint(position, diameter) {
+  return { points: Array.from({ length: 32 }, (_, i) => ({ x: position.x + diameter / 2 * Math.cos(i * Math.PI / 16), y: position.y + diameter / 2 * Math.sin(i * Math.PI / 16) })) };
+}
+function structuralOverlap(floor, poly, bottom, top) {
+  return floor.columns.some((c) => hardeningOverlapArea(poly, columnFootprint(c)) > 1e-3) || zOverlap(bottom, top, floor.floorHeight - 450, floor.floorHeight) && (floor.beams ?? []).some((b) => hardeningOverlapArea(poly, beamFootprint(b)) > 1e-3);
+}
+function symbolFootprint(f) {
+  const size = f.type === "PENDENT_SPRINKLER" ? 100 : Math.max(f.widthMm, 80);
+  return mepFootprint({ ...f, widthMm: size, depthMm: Math.max(f.depthMm, 80) }, 15);
+}
+function roomHasShaft(floor, poly) {
+  return [...floor.rooms.filter((r) => ["service_shaft", "ots"].includes(r.type)).map((r) => r.boundary), ...floor.voidBoundaries ?? []].some((p) => containsPolygon(p, poly));
+}
+function validateMepGeometry(building) {
+  if (!building.mep)
+    return [];
+  const issues = mepSchemaErrors(building).map((message) => ({ code: "MEP_SCHEMA_INVALID", message }));
+  if (issues.length)
+    return issues;
+  const m = building.mep;
+  if (m.sourceArchitectureHash !== architectureHash(building))
+    issues.push({ code: "STALE_MEP_ARCHITECTURE", message: "Architecture changed; regenerate MEP before export." });
+  const elevations = mepFloorElevations(building);
+  for (const fixture of m.fixtures) {
+    const floor = building.floors.find((f) => f.id === fixture.floorId), room = floor.rooms.find((r) => r.id === fixture.roomId);
+    const footprint = mepFootprint(fixture), bottom = fixture.elevationAfflMm + MEP_FINISH_OFFSET_MM, top = bottom + fixture.heightMm;
+    const fail = (code, message) => issues.push({ code, entityId: fixture.id, floorId: floor.id, roomId: room.id, message });
+    if (!containsPolygon(room.boundary, footprint) || top > floor.floorHeight - (floor.slabThicknessMm ?? 150) + 1e-3)
+      fail("MEP_OUTSIDE_ROOM", "Fixture exceeds its room or ceiling soffit");
+    if (structuralOverlap(floor, footprint, bottom, top))
+      fail("MEP_STRUCTURE_COLLISION", "Fixture intersects a column or beam");
+    if (floor.walls.some((w) => hardeningOverlapArea(footprint, wallToPolygon(w)) > 1e-3))
+      fail("MEP_WALL_COLLISION", "Fixture penetrates a wall");
+    if (fixture.mounting === "WALL") {
+      const wall = floor.walls.find((w) => w.id === fixture.hostWallId);
+      if (!wall)
+        fail("MEP_HOST_REQUIRED", "Wall mounted equipment requires a registered wall");
+      else {
+        const p = projectOnSegment(fixture.position, wall.startPoint, wall.endPoint);
+        const actual = (p?.distance ?? Infinity) - wall.thickness / 2 - fixture.depthMm / 2;
+        if (Math.abs(actual - 10) > 0.1)
+          fail("MEP_FINISH_OFFSET_INVALID", "Wall equipment must stand 10 mm forward of the wall face");
+      }
+    }
+    if (fixture.type === "PENDENT_SPRINKLER") {
+      const p = mepFootprint({ ...fixture, widthMm: 600, depthMm: 600 });
+      if (!containsPolygon(room.boundary, p) || floor.walls.some((w) => hardeningOverlapArea(p, wallToPolygon(w)) > 1e-3))
+        fail("SPRINKLER_WALL_CLEARANCE", "Sprinkler needs 300 mm wall clearance");
+    }
+  }
+  for (let i = 0; i < m.fixtures.length; i++)
+    for (const other of m.fixtures.slice(i + 1)) {
+      const f = m.fixtures[i];
+      if (f.floorId === other.floorId && hardeningOverlapArea(symbolFootprint(f), symbolFootprint(other)) > 1e-3)
+        issues.push({ code: "MEP_SYMBOL_COLLISION", floorId: f.floorId, entityId: f.id, message: "Fixture CAD symbol overlaps " + other.id });
+    }
+  for (const stack of m.stacks) {
+    const shaft = m.shafts.find((s) => s.id === stack.shaftId), poly = mepPipeFootprint(stack.position, stack.outerDiameterMm);
+    if (stack.outerDiameterMm !== MEP_PIPE_DIAMETERS[stack.service])
+      issues.push({ code: "PIPE_DIAMETER_INVALID", entityId: stack.id, message: "Pipe OD differs from supplied design brief" });
+    for (const id of stack.floorIds) {
+      const floor = building.floors.find((f) => f.id === id), boundary = shaft.floors.find((f) => f.floorId === id)?.boundary;
+      if (!boundary || !roomHasShaft(floor, boundary) || !containsPolygon(boundary, poly) || !containsPolygon(floor.boundary, poly))
+        issues.push({ code: "PIPE_OUTSIDE_REGISTERED_SHAFT", floorId: id, entityId: stack.id, message: "Every pipe level needs an existing registered shaft/void" });
+      const z = elevations.get(id);
+      if (structuralOverlap(floor, poly, stack.bottomMm - z, stack.topMm - z))
+        issues.push({ code: "PIPE_STRUCTURE_COLLISION", floorId: id, entityId: stack.id, message: "Vertical stack intersects structure" });
+      if (floor.walls.some((w) => hardeningOverlapArea(poly, wallToPolygon(w)) > 1e-3))
+        issues.push({ code: "PIPE_WALL_COLLISION", floorId: id, entityId: stack.id, message: "Pipe penetrates enclosure" });
+    }
+  }
+  for (let i = 0; i < m.stacks.length; i++)
+    for (const other of m.stacks.slice(i + 1)) {
+      const s = m.stacks[i];
+      if (zOverlap(s.bottomMm, s.topMm, other.bottomMm, other.topMm) && Math.hypot(s.position.x - other.position.x, s.position.y - other.position.y) < (s.outerDiameterMm + other.outerDiameterMm) / 2 + 10)
+        issues.push({ code: "PIPE_PIPE_COLLISION", entityId: s.id, message: "Insufficient separation between vertical stacks" });
+    }
+  return issues;
+}
+function assertMepGeometry(building) {
+  const errors = validateMepGeometry(building);
+  if (errors.length)
+    throw new Error(errors.slice(0, 8).map((e) => e.code + ": " + e.message).join("; "));
+}
+var MEP_FINISH_OFFSET_MM, zOverlap;
+var init_mep = __esm({
+  "../geometry-engine/dist/mep.js"() {
+    "use strict";
+    init_dist();
+    init_polygon();
+    init_hardening_geometry();
+    init_walls();
+    init_point();
+    MEP_FINISH_OFFSET_MM = 8;
+    zOverlap = (a, b, c, d) => Math.min(b, d) - Math.max(a, c) > 1e-3;
+  }
+});
+
 // ../geometry-engine/dist/index.js
 var init_dist2 = __esm({
   "../geometry-engine/dist/index.js"() {
@@ -4193,6 +4402,7 @@ var init_dist2 = __esm({
     init_planar_cells();
     init_hardening_geometry();
     init_residential_envelope();
+    init_mep();
   }
 });
 
@@ -35430,8 +35640,8 @@ function normalizationScales(metadata, site) {
     scaleY: site.plotDepth / metadata.imageTallPixels
   };
 }
-function normalizeExtractedPlan(extracted, site) {
-  const scales = normalizationScales(extracted.metadata, site);
+function normalizeExtractedPlan(extracted2, site) {
+  const scales = normalizationScales(extracted2.metadata, site);
   if (!scales) {
     return {
       normalized: null,
@@ -35442,7 +35652,7 @@ function normalizeExtractedPlan(extracted, site) {
       }]
     };
   }
-  const imageAspect = extracted.metadata.imageWidePixels / extracted.metadata.imageTallPixels;
+  const imageAspect = extracted2.metadata.imageWidePixels / extracted2.metadata.imageTallPixels;
   const plotAspect = site.plotWidth / site.plotDepth;
   const aspectMismatchRatio = Math.abs(imageAspect - plotAspect) / plotAspect;
   const diagnostics = [];
@@ -35455,9 +35665,9 @@ function normalizeExtractedPlan(extracted, site) {
   }
   return {
     normalized: {
-      ...extracted,
+      ...extracted2,
       metadata: {
-        ...extracted.metadata,
+        ...extracted2.metadata,
         aspectMismatchRatio,
         orientationDegrees: site.orientation,
         roadFacing: site.roadFacing,
@@ -35569,13 +35779,13 @@ function isEdgeCoveredByWalls(edge, walls) {
   }
   return false;
 }
-function extractPlanToBuilding(extracted, site, projectId, name) {
+function extractPlanToBuilding(extracted2, site, projectId, name) {
   const diagnostics = [];
   const siteRect = { plotWidth: site.plotWidth, plotDepth: site.plotDepth };
-  const wide = extracted.metadata.imageWidePixels;
-  const tall = extracted.metadata.imageTallPixels;
+  const wide = extracted2.metadata.imageWidePixels;
+  const tall = extracted2.metadata.imageTallPixels;
   const boundaryPolygon = {
-    points: extracted.boundary.points.map((point) => ({
+    points: extracted2.boundary.points.map((point) => ({
       x: point.x / wide * site.plotWidth,
       y: point.y / tall * site.plotDepth
     }))
@@ -35611,7 +35821,7 @@ function extractPlanToBuilding(extracted, site, projectId, name) {
   const floorId = base.floors[0].id;
   let building = base;
   const appendRoom = (id, roomName, type, rect2, fixed) => {
-    const real = imageRectToMillimetres(rect2, extracted.metadata, siteRect);
+    const real = imageRectToMillimetres(rect2, extracted2.metadata, siteRect);
     if (!real)
       return;
     const minArea = MINIMUM_ROOM_AREAS[type];
@@ -35642,13 +35852,13 @@ function extractPlanToBuilding(extracted, site, projectId, name) {
       } : floor)
     };
   };
-  for (const room of extracted.rooms) {
+  for (const room of extracted2.rooms) {
     appendRoom(room.id, room.name, extractedRoomType(room.type || room.name), room, false);
   }
-  for (const stair of extracted.stairs) {
+  for (const stair of extracted2.stairs) {
     appendRoom(stair.id, stair.name, "staircase", stair, true);
   }
-  for (const park of extracted.parking) {
+  for (const park of extracted2.parking) {
     appendRoom(park.id, park.name, "parking", park, false);
   }
   const currentFloor = building.floors[0];
@@ -35679,13 +35889,13 @@ function extractPlanToBuilding(extracted, site, projectId, name) {
   }
   return { building, diagnostics };
 }
-function attachExtractedOpenings(building, extracted, site) {
+function attachExtractedOpenings(building, extracted2, site) {
   const diagnostics = [];
   const floorId = building.floors[0].id;
   let next = building;
-  for (const door of extracted.doors) {
+  for (const door of extracted2.doors) {
     const adjacent = next.floors[0].rooms.find((room) => room.tags.includes(`extracted:${door.adjacentRoomId}`));
-    const real = imageRectToMillimetres(door, extracted.metadata, site);
+    const real = imageRectToMillimetres(door, extracted2.metadata, site);
     if (!adjacent || !real) {
       if (!adjacent) {
         diagnostics.push({
@@ -35719,9 +35929,9 @@ function attachExtractedOpenings(building, extracted, site) {
       } : floor)
     };
   }
-  for (const window2 of extracted.windows) {
+  for (const window2 of extracted2.windows) {
     const adjacent = next.floors[0].rooms.find((room) => room.tags.includes(`extracted:${window2.adjacentRoomId}`));
-    const real = imageRectToMillimetres(window2, extracted.metadata, site);
+    const real = imageRectToMillimetres(window2, extracted2.metadata, site);
     if (!adjacent || !real)
       continue;
     const hostWall = findHostingWall(next.floors[0].walls, { x: real.x, y: real.y }, adjacent.id);
@@ -35779,7 +35989,7 @@ var init_extraction_building = __esm({
 });
 
 // ../planning-engine/dist/interpretation/extraction-validation.js
-function validateExtractedPlan(building, extracted, requirements) {
+function validateExtractedPlan(building, extracted2, requirements) {
   const diagnostics = evaluateDesign(building, { requiredRoomTypes: ["living", "bedroom"] });
   const issues = [];
   if (!diagnostics.geometryHealthy) {
@@ -35805,7 +36015,7 @@ function validateExtractedPlan(building, extracted, requirements) {
     });
   }
   const extractedCounts = {};
-  for (const room of extracted.rooms) {
+  for (const room of extracted2.rooms) {
     const type = extractedRoomType(room.type || room.name);
     extractedCounts[type] = (extractedCounts[type] ?? 0) + 1;
   }
@@ -49388,8 +49598,10 @@ var DEFAULT_PROJECTION_SETTINGS = Object.freeze({
 init_dist();
 
 // ../projection-3d/dist/building-scene-projector.js
+init_dist();
+
+// ../projection-3d/dist/mep-scene-projector.js
 init_dist2();
-var import_polygon_clipping = __toESM(require_polygon_clipping_cjs());
 
 // ../../node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js
 var REVISION = "185";
@@ -58856,6 +59068,258 @@ var BufferGeometry = class _BufferGeometry extends EventDispatcher {
     this.dispatchEvent({ type: "dispose" });
   }
 };
+var BoxGeometry = class _BoxGeometry extends BufferGeometry {
+  /**
+   * Constructs a new box geometry.
+   *
+   * @param {number} [width=1] - The width. That is, the length of the edges parallel to the X axis.
+   * @param {number} [height=1] - The height. That is, the length of the edges parallel to the Y axis.
+   * @param {number} [depth=1] - The depth. That is, the length of the edges parallel to the Z axis.
+   * @param {number} [widthSegments=1] - Number of segmented rectangular faces along the width of the sides.
+   * @param {number} [heightSegments=1] - Number of segmented rectangular faces along the height of the sides.
+   * @param {number} [depthSegments=1] - Number of segmented rectangular faces along the depth of the sides.
+   */
+  constructor(width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1) {
+    super();
+    this.type = "BoxGeometry";
+    this.parameters = {
+      width,
+      height,
+      depth,
+      widthSegments,
+      heightSegments,
+      depthSegments
+    };
+    const scope = this;
+    widthSegments = Math.floor(widthSegments);
+    heightSegments = Math.floor(heightSegments);
+    depthSegments = Math.floor(depthSegments);
+    const indices = [];
+    const vertices = [];
+    const normals = [];
+    const uvs = [];
+    let numberOfVertices = 0;
+    let groupStart = 0;
+    buildPlane("z", "y", "x", -1, -1, depth, height, width, depthSegments, heightSegments, 0);
+    buildPlane("z", "y", "x", 1, -1, depth, height, -width, depthSegments, heightSegments, 1);
+    buildPlane("x", "z", "y", 1, 1, width, depth, height, widthSegments, depthSegments, 2);
+    buildPlane("x", "z", "y", 1, -1, width, depth, -height, widthSegments, depthSegments, 3);
+    buildPlane("x", "y", "z", 1, -1, width, height, depth, widthSegments, heightSegments, 4);
+    buildPlane("x", "y", "z", -1, -1, width, height, -depth, widthSegments, heightSegments, 5);
+    this.setIndex(indices);
+    this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+    this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+    this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    function buildPlane(u, v, w, udir, vdir, width2, height2, depth2, gridX, gridY, materialIndex) {
+      const segmentWidth = width2 / gridX;
+      const segmentHeight = height2 / gridY;
+      const widthHalf = width2 / 2;
+      const heightHalf = height2 / 2;
+      const depthHalf = depth2 / 2;
+      const gridX1 = gridX + 1;
+      const gridY1 = gridY + 1;
+      let vertexCounter = 0;
+      let groupCount = 0;
+      const vector = new Vector3();
+      for (let iy = 0; iy < gridY1; iy++) {
+        const y = iy * segmentHeight - heightHalf;
+        for (let ix = 0; ix < gridX1; ix++) {
+          const x = ix * segmentWidth - widthHalf;
+          vector[u] = x * udir;
+          vector[v] = y * vdir;
+          vector[w] = depthHalf;
+          vertices.push(vector.x, vector.y, vector.z);
+          vector[u] = 0;
+          vector[v] = 0;
+          vector[w] = depth2 > 0 ? 1 : -1;
+          normals.push(vector.x, vector.y, vector.z);
+          uvs.push(ix / gridX);
+          uvs.push(1 - iy / gridY);
+          vertexCounter += 1;
+        }
+      }
+      for (let iy = 0; iy < gridY; iy++) {
+        for (let ix = 0; ix < gridX; ix++) {
+          const a = numberOfVertices + ix + gridX1 * iy;
+          const b = numberOfVertices + ix + gridX1 * (iy + 1);
+          const c = numberOfVertices + (ix + 1) + gridX1 * (iy + 1);
+          const d = numberOfVertices + (ix + 1) + gridX1 * iy;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+          groupCount += 6;
+        }
+      }
+      scope.addGroup(groupStart, groupCount, materialIndex);
+      groupStart += groupCount;
+      numberOfVertices += vertexCounter;
+    }
+  }
+  copy(source2) {
+    super.copy(source2);
+    this.parameters = Object.assign({}, source2.parameters);
+    return this;
+  }
+  /**
+   * Factory method for creating an instance of this class from the given
+   * JSON object.
+   *
+   * @param {Object} data - A JSON object representing the serialized geometry.
+   * @return {BoxGeometry} A new instance.
+   */
+  static fromJSON(data) {
+    return new _BoxGeometry(data.width, data.height, data.depth, data.widthSegments, data.heightSegments, data.depthSegments);
+  }
+};
+var CylinderGeometry = class _CylinderGeometry extends BufferGeometry {
+  /**
+   * Constructs a new cylinder geometry.
+   *
+   * @param {number} [radiusTop=1] - Radius of the cylinder at the top.
+   * @param {number} [radiusBottom=1] - Radius of the cylinder at the bottom.
+   * @param {number} [height=1] - Height of the cylinder.
+   * @param {number} [radialSegments=32] - Number of segmented faces around the circumference of the cylinder.
+   * @param {number} [heightSegments=1] - Number of rows of faces along the height of the cylinder.
+   * @param {boolean} [openEnded=false] - Whether the base of the cylinder is open or capped.
+   * @param {number} [thetaStart=0] - Start angle for first segment, in radians.
+   * @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta, of the circular sector, in radians.
+   * The default value results in a complete cylinder.
+   */
+  constructor(radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
+    super();
+    this.type = "CylinderGeometry";
+    this.parameters = {
+      radiusTop,
+      radiusBottom,
+      height,
+      radialSegments,
+      heightSegments,
+      openEnded,
+      thetaStart,
+      thetaLength
+    };
+    const scope = this;
+    radialSegments = Math.floor(radialSegments);
+    heightSegments = Math.floor(heightSegments);
+    const indices = [];
+    const vertices = [];
+    const normals = [];
+    const uvs = [];
+    let index = 0;
+    const indexArray = [];
+    const halfHeight = height / 2;
+    let groupStart = 0;
+    generateTorso();
+    if (openEnded === false) {
+      if (radiusTop > 0) generateCap(true);
+      if (radiusBottom > 0) generateCap(false);
+    }
+    this.setIndex(indices);
+    this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+    this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+    this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    function generateTorso() {
+      const normal = new Vector3();
+      const vertex = new Vector3();
+      let groupCount = 0;
+      const slope = (radiusBottom - radiusTop) / height;
+      for (let y = 0; y <= heightSegments; y++) {
+        const indexRow = [];
+        const v = y / heightSegments;
+        const radius = v * (radiusBottom - radiusTop) + radiusTop;
+        for (let x = 0; x <= radialSegments; x++) {
+          const u = x / radialSegments;
+          const theta = u * thetaLength + thetaStart;
+          const sinTheta = Math.sin(theta);
+          const cosTheta = Math.cos(theta);
+          vertex.x = radius * sinTheta;
+          vertex.y = -v * height + halfHeight;
+          vertex.z = radius * cosTheta;
+          vertices.push(vertex.x, vertex.y, vertex.z);
+          normal.set(sinTheta, slope, cosTheta).normalize();
+          normals.push(normal.x, normal.y, normal.z);
+          uvs.push(u, 1 - v);
+          indexRow.push(index++);
+        }
+        indexArray.push(indexRow);
+      }
+      for (let x = 0; x < radialSegments; x++) {
+        for (let y = 0; y < heightSegments; y++) {
+          const a = indexArray[y][x];
+          const b = indexArray[y + 1][x];
+          const c = indexArray[y + 1][x + 1];
+          const d = indexArray[y][x + 1];
+          if (radiusTop > 0 || y !== 0) {
+            indices.push(a, b, d);
+            groupCount += 3;
+          }
+          if (radiusBottom > 0 || y !== heightSegments - 1) {
+            indices.push(b, c, d);
+            groupCount += 3;
+          }
+        }
+      }
+      scope.addGroup(groupStart, groupCount, 0);
+      groupStart += groupCount;
+    }
+    function generateCap(top) {
+      const centerIndexStart = index;
+      const uv = new Vector2();
+      const vertex = new Vector3();
+      let groupCount = 0;
+      const radius = top === true ? radiusTop : radiusBottom;
+      const sign2 = top === true ? 1 : -1;
+      for (let x = 1; x <= radialSegments; x++) {
+        vertices.push(0, halfHeight * sign2, 0);
+        normals.push(0, sign2, 0);
+        uvs.push(0.5, 0.5);
+        index++;
+      }
+      const centerIndexEnd = index;
+      for (let x = 0; x <= radialSegments; x++) {
+        const u = x / radialSegments;
+        const theta = u * thetaLength + thetaStart;
+        const cosTheta = Math.cos(theta);
+        const sinTheta = Math.sin(theta);
+        vertex.x = radius * sinTheta;
+        vertex.y = halfHeight * sign2;
+        vertex.z = radius * cosTheta;
+        vertices.push(vertex.x, vertex.y, vertex.z);
+        normals.push(0, sign2, 0);
+        uv.x = cosTheta * 0.5 + 0.5;
+        uv.y = sinTheta * 0.5 * sign2 + 0.5;
+        uvs.push(uv.x, uv.y);
+        index++;
+      }
+      for (let x = 0; x < radialSegments; x++) {
+        const c = centerIndexStart + x;
+        const i = centerIndexEnd + x;
+        if (top === true) {
+          indices.push(i, i + 1, c);
+        } else {
+          indices.push(i + 1, i, c);
+        }
+        groupCount += 3;
+      }
+      scope.addGroup(groupStart, groupCount, top === true ? 1 : 2);
+      groupStart += groupCount;
+    }
+  }
+  copy(source2) {
+    super.copy(source2);
+    this.parameters = Object.assign({}, source2.parameters);
+    return this;
+  }
+  /**
+   * Factory method for creating an instance of this class from the given
+   * JSON object.
+   *
+   * @param {Object} data - A JSON object representing the serialized geometry.
+   * @return {CylinderGeometry} A new instance.
+   */
+  static fromJSON(data) {
+    return new _CylinderGeometry(data.radiusTop, data.radiusBottom, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
+  }
+};
 var Curve = class {
   /**
    * Constructs a new curve.
@@ -64065,7 +64529,96 @@ var DATA = new Uint16Array([
   1183
 ]);
 
+// ../projection-3d/dist/mep-scene-projector.js
+function extracted(g) {
+  const p = g.getAttribute("position"), vertices = [], faces = [];
+  for (let i = 0; i < p.count; i++)
+    vertices.push([p.getX(i), p.getY(i), p.getZ(i)]);
+  const index = g.getIndex();
+  for (let i = 0; i < (index?.count ?? p.count); i += 3)
+    faces.push(index ? [index.getX(i), index.getX(i + 1), index.getX(i + 2)] : [i, i + 1, i + 2]);
+  g.dispose();
+  return { vertices, faces };
+}
+function appendMepScene(building, scene) {
+  if (!building.mep)
+    return;
+  assertMepGeometry(building);
+  const elevations = mepFloorElevations(building);
+  const push = (source2, floorId, kind, material, g) => {
+    const node = { id: source2 + ":" + floorId + ":" + kind, sourceEntityId: source2, floorId, buildingId: building.id, canonicalRevision: building.version, kind, material, geometry: extracted(g), provenance: "CANONICAL" };
+    scene.meshes.push(node);
+  };
+  for (const f of building.mep.fixtures) {
+    const z = elevations.get(f.floorId) + MEP_FINISH_OFFSET_MM + f.elevationAfflMm;
+    const orient = (g, x = 0, y = 0, bottom = 0) => g.translate(x, y, z + bottom).rotateZ(f.rotationRad).translate(f.position.x, f.position.y, 0);
+    const cylinder = (kind, diameter, height, bottom, mat, x = 0, y = 0, axis = "Z") => {
+      const g = new CylinderGeometry(diameter / 2, diameter / 2, height, 32);
+      if (axis === "Z")
+        g.rotateX(Math.PI / 2);
+      g.translate(0, 0, axis === "Z" ? height / 2 : diameter / 2);
+      push(f.id, f.floorId, "mep-" + kind, mat, orient(g, x, y, bottom));
+    };
+    const box = (kind, w, d, h, bottom, mat, x = 0, y = 0) => push(f.id, f.floorId, "mep-" + kind, mat, orient(new BoxGeometry(w, d, h).translate(0, 0, h / 2), x, y, bottom));
+    switch (f.type) {
+      case "PENDENT_SPRINKLER":
+        cylinder("sprinkler-deflector", 30, 3, 0, "MAT_Chrome_Sprinkler");
+        cylinder("sprinkler-bulb", 6, 28, 5, "MAT_Fire_Red");
+        cylinder("sprinkler-body", 15, 25, 33, "MAT_Chrome_Sprinkler");
+        cylinder("sprinkler-thread", 15, 7, 58, "MAT_Chrome_Sprinkler");
+        break;
+      case "SMOKE_DETECTOR":
+        cylinder("smoke-detector", 100, 40, 0, "MAT_Electrical_Plate");
+        cylinder("smoke-grille", 65, 1, 0, "MAT_Black_Nozzle");
+        break;
+      case "ABC_6KG_EXTINGUISHER":
+        cylinder("extinguisher-canister", 150, 500, 0, "MAT_Fire_Red");
+        cylinder("extinguisher-hose", 12, 210, 150, "MAT_Black_Nozzle", 65, 0);
+        box("extinguisher-nozzle", 14, 14, 45, 360, "MAT_Black_Nozzle", 65, 0);
+        cylinder("extinguisher-gauge", 25, 8, 420, "MAT_Chrome_Sprinkler", 30, 65, "Y");
+        box("extinguisher-handle", 100, 18, 15, 480, "MAT_Black_Nozzle");
+        break;
+      case "LANDING_VALVE":
+        cylinder("landing-valve", 65, 12, 0, "MAT_Fire_Red", 0, 0, "Y");
+        box("landing-valve-stem", 100, 20, 20, 22.5, "MAT_Chrome_Sprinkler");
+        break;
+      case "CEILING_LIGHT":
+        cylinder("ceiling-light", f.widthMm, f.heightMm, 0, "MAT_Electrical_Plate");
+        break;
+      case "CEILING_FAN":
+        cylinder("fan-hub", 160, 80, 0, "MAT_Electrical_Plate");
+        for (let i = 0; i < 3; i++)
+          push(f.id, f.floorId, "mep-fan-blade-" + i, "MAT_Electrical_Plate", new BoxGeometry(520, 100, 12).translate(300, 0, z + 40).rotateZ(f.rotationRad + i * 2 * Math.PI / 3).translate(f.position.x, f.position.y, 0));
+        break;
+      default:
+        if (f.kind === "PLUMBING")
+          cylinder("connection-" + f.type, f.widthMm, f.heightMm, 0, "MAT_Copper_Terminal");
+        else {
+          box(f.type.toLowerCase(), f.widthMm, f.depthMm, f.heightMm, 0, "MAT_Electrical_Plate");
+          box("terminal-" + f.type, 12, 2, 12, f.heightMm / 2, "MAT_Copper_Terminal", 0, -f.depthMm / 2 + 2);
+        }
+    }
+  }
+  const sorted = [...building.floors].sort((a, b) => a.level - b.level);
+  for (const stack of building.mep.stacks) {
+    const mat = { SOIL: "MAT_Pipe_Soil", WASTE: "MAT_Pipe_Waste", VENT: "MAT_Pipe_Vent", RAINWATER: "MAT_Pipe_Rain", WET_RISER: "MAT_Fire_Red" }[stack.service];
+    for (let i = 0; i < sorted.length; i++) {
+      const floor = sorted[i];
+      if (!stack.floorIds.includes(floor.id))
+        continue;
+      const bottom = Math.max(stack.bottomMm, elevations.get(floor.id));
+      const top = Math.min(stack.topMm, i + 1 < sorted.length ? elevations.get(sorted[i + 1].id) : elevations.get(floor.id) + floor.floorHeight);
+      if (top <= bottom)
+        continue;
+      push(stack.id, floor.id, "mep-pipe-" + stack.service.toLowerCase(), mat, new CylinderGeometry(stack.outerDiameterMm / 2, stack.outerDiameterMm / 2, top - bottom, 32).rotateX(Math.PI / 2).translate(stack.position.x, stack.position.y, (bottom + top) / 2));
+    }
+  }
+  scene.warnings.push(...building.mep.issues.map((i) => i.code + ": " + i.message));
+}
+
 // ../projection-3d/dist/building-scene-projector.js
+init_dist2();
+var import_polygon_clipping = __toESM(require_polygon_clipping_cjs());
 function ring(p) {
   return p.points.map((p2) => [p2.x, p2.y]);
 }
@@ -64370,13 +64923,15 @@ function projectBuildingScene(building) {
           add(f, stair.id, "stair-" + solid.kind, "MAT_Concrete_Structural", solid.boundary, z + solid.bottom, z + solid.top);
       }
   }
+  appendMepScene(building, scene);
   scene.warnings.push("Architectural projection only; structural adequacy NOT_VERIFIED. Presentation frames, chajjas, finishes and 1000 mm railings are derived defaults requiring professional review.");
   return scene;
 }
 
 // ../projection-3d/dist/blender/blender-script-generator.js
+init_dist();
 function generateBlenderScript(scene, outputDirectory) {
-  return "SCENE_JSON = " + JSON.stringify(JSON.stringify(scene)) + "\nOUTPUT_DIRECTORY = " + JSON.stringify(outputDirectory) + "\n" + BLENDER_PROGRAM;
+  return "SCENE_JSON = " + JSON.stringify(JSON.stringify(scene)) + "\nOUTPUT_DIRECTORY = " + JSON.stringify(outputDirectory) + "\nMEP_MATERIAL_JSON = " + JSON.stringify(JSON.stringify(MEP_MATERIALS)) + "\n" + BLENDER_PROGRAM;
 }
 var BLENDER_PROGRAM = String.raw`
 import bpy
@@ -64443,6 +64998,11 @@ materials = {
     'MAT_Floor_Wet': material('MAT_Floor_Wet', (0.36, 0.47, 0.49), 0.52),
     'MAT_Door': material('MAT_Door', (0.22, 0.105, 0.045), 0.6),
 }
+def srgb_to_linear(value):
+    return value/12.92 if value<=0.04045 else ((value+0.055)/1.055)**2.4
+for name, spec in json.loads(MEP_MATERIAL_JSON).items():
+    color = tuple(srgb_to_linear(int(spec['color'][i:i+2],16)/255.0) for i in (1,3,5))
+    materials[name] = material(name, color, spec['roughness'], spec['metalness'])
 # Real packed image textures survive glTF export; unsupported procedural-only nodes do not.
 for key in ('MAT_Wall_Exterior', 'MAT_Concrete_Structural', 'MAT_Floor_Tile', 'MAT_Floor_Wet'):
     mat = materials[key]

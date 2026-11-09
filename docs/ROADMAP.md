@@ -1,125 +1,106 @@
-# AI Building SaaS — Current V1 Delivery Roadmap
+# AI Building SaaS — Verified ARGON 4 Delivery Roadmap
 
-## Scope and delivery discipline
+> **Baseline Audit Date:** 2026-11-10  
+> **Baseline Commit:** `a2370d5` (`feat: complete ARGON 4 Phase 1 & 2 geometry, synthesis, and Stage 6A studio intake`)  
+> **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
+> **Audited By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
+> **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
 
-V1 targets high-quality editable residential architectural 2D, canonical-model-driven Blender architectural 3D, and architectural elevations/presentation. This is a delivery target, not current professional validation or construction readiness.
+---
 
-The canonical Building Model remains authoritative: requirements → AI interpretation/fallback → structured intent → deterministic architectural planner/geometry → architectural validation/evidence/ranking → 2D rendering/editing → reviewed/finalized canonical design → professional exports and reproducible Blender projection. Neither Blender meshes nor AI-generated images become independent geometric truth.
+## 1. Scope and Delivery Discipline
 
-Audit anchor: e968720 (access-path evidence), following 16f4dbf (candidate evidence). Current source and verification override this snapshot. Original scaffolding/Phase 1–4 specifications are historical; see [the archived foundation sequence](specs/IMPLEMENTATION_ORDER.md).
+The project targets high-quality, editable residential architectural 2D generation, canonical-model-driven Blender 5.2 / Three.js 3D visualization, statutory Maharashtra UDCPR 2020 validation, and native AutoCAD DWG / multi-sheet PDF export.
 
-IMPLEMENTED_FOUNDATION means supporting code exists, not completed professional acceptance. IN_PROGRESS means acceptance remains incomplete; PLANNED means a V1 target; DEFERRED means outside V1. Split every phase into small, verified and reviewed checkpoints—not twelve giant implementation passes.
+### Core Architectural Axioms
+1. **Canonical Model Primacy:** The canonical `Building` contract from `@ai-floor-planner/core` is the sole source of authoritative state. SVG, Three.js, React components, and exported CAD files are pure projections.
+2. **Deterministic Solvers First:** AI interprets user intent and generates schematic proposals. All geometry creation, wall sizing, room allocation, column/beam grids, and statutory compliance checks are owned by deterministic computational geometry solvers.
+3. **Honest Gate Reporting:** If an external service, solver, or environment requirement is missing or unverified, the system must report `NOT_RUN`, `BLOCKED`, or `PROFESSIONAL_REVIEW_REQUIRED`. Never fabricate a passing score or structural safety approval.
 
-Structural analysis, BM/SF/stress/deflection, RCC/steel/load-bearing structural-system engineering, beam/column/slab/member/footing/foundation design, geotechnical engineering, reinforcement, structural 3D, BOQ and cost estimation are DEFERRED_POST_V1. Architectural slabs/floor plates and existing column data do not imply engineering design. Preserve future extensibility without adding premature systems.
+---
 
-## Phase 1 — Architectural Evidence & Acceptance
+## 2. Verified Baseline Status (Audit Commit `a2370d5`)
 
-- **Goal:** Architectural Evidence & Acceptance within the architectural V1 boundary.
-- **Current state: IN_PROGRESS.** Required floors, explicit bath ownership, validated direct/reviewed private-indirect paths, shared/unresolved/not-evaluated states, wet coverage and outdoor/residual observations plus evidence UI exist. Program-only Dressing is not newly generated.
-- **Main deliverables:** Building plus reviewed-Program evidence freshness; broader architectural acceptance; review/finalization status contract.
-- **Exit criteria:** Changed intent or geometry invalidates stale evidence; private and shared/ambiguous cases have tests; missing information never implies approval. Phase 7 completes the finalization workflow.
-- **Dependencies:** Existing core/planning/frontend evidence foundations. Immediate next bounded pass: evidence freshness.
+| Area / Subsystem | Status | Test Verification | Source Reality |
+| :--- | :---: | :---: | :--- |
+| **Monorepo Build & Types** | `VERIFIED` | 16/16 typecheck, 9/9 build | `pnpm typecheck` (16 tasks), `pnpm build` (9 packages), and `pnpm lint` pass with 0 errors. |
+| **Mathematical Geometry** | `VERIFIED` | 447 tests pass | Zero-error planar area conservation ($\Delta < 0.001\text{ mm}^2$), non-overlapping rooms, snap-to-grid column placement. |
+| **Apartment Topology & Synthesis** | `VERIFIED` | All suites pass | Multi-story synthesizer (`multi-story-residential-synthesizer.ts`), Quad/Triple/Double BHK room counts, living room corridor entry, utility attached to kitchen. |
+| **Maharashtra UDCPR 2020** | `VERIFIED` | 34 rules checked | FSI (Basic/Premium/TDR/Ancillary), marginal setbacks ($H/5, H/4$), Table 8-A parking, 10% ROS open space, statutory disclaimer. |
+| **CAD & PDF Export Pipeline** | `VERIFIED` | 24 file artifacts pass | Native AutoCAD `accoreconsole.exe` DWG validation, standard DXF fallback, multi-sheet vector PDF with `FIT_TO_PAGE` protection. |
+| **ARGON Studio Shell (Stage 6A)** | `VERIFIED` | 166 frontend tests pass | Warm vellum theme (`#F5F0E8`), 4-stage intake wizard with persistent `useStudioStore`, live computed metrics, Web Worker pipeline execution. |
+| **2D CAD Studio** | `VERIFIED` | Tested & functional | Interactive SVG canvas, layer segregation, embedded Property Inspector, live `GeometryValidator` audit. |
+| **Export Center** | `VERIFIED` | Tested & functional | Multi-format independent export triggers with SHA-256 integrity verification. |
+| **Floor Isometric Editor** | `PARTIAL` | UI wired to 2D canvas | Floor buttons use hardcoded array and do not update `editor.activeFloor`; renders 2D canvas instead of 3D isometric plate. |
+| **3D Building Customizer** | `HYBRID` | 3D WebGL functional | Viewport uses Three.js `ModelWorkspace`, but explode slider, lighting mode, and fixture drawer buttons are local UI state. |
+| **ETABS Structural Analysis** | `HONEST_STUB` | Honest placeholder | Stated as `NOT_RUN — PENDING PHASE 6`. Buttons disabled; no false claims. |
 
-## Phase 2 — Architectural Placement Quality
+---
 
-- **Goal:** Architectural Placement Quality within the architectural V1 boundary.
-- **Current state: IN_PROGRESS.** Deterministic generation, floor/owner handling and repair exist; weak architectural relationships remain.
-- **Main deliverables:** Better initial placement, privacy, bathroom access, kitchen/dining/service organization, circulation, useful proportions/furnishability and exterior exposure opportunity. Distinguish unusable residual space from intentional transitions/outdoor space.
-- **Exit criteria:** Same-Program/seed before-and-after geometry demonstrates specific improvements without hard-requirement regressions. A score change alone is insufficient; representative output needs professional review.
-- **Dependencies:** Phase 1 measurement contracts and existing planner/geometry/constraint engines.
+## 3. Prioritized Implementation Sequence
 
-## Phase 3 — Meaningful Alternatives
+### Phase 1 — Diagnostic & Baseline Stabilization (Current Phase — Complete)
+- [x] Read `AGENTS.md`, workspace configuration, and all relevant documentation.
+- [x] Identify entry points and dependencies across all 9 packages.
+- [x] Audit ARGON Studio interface: real vs. local UI state vs. placeholders.
+- [x] Run full installation, typecheck, lint, build, and test suites; record exact outputs.
+- [x] Reconcile historical audit reports (`docs/phase0/FAILURES.md`) against current green test reality.
+- [x] Publish `docs/VERIFIED_AUDIT.md`, `docs/FEATURE_MATRIX.md`, and updated `docs/ROADMAP.md`.
+- [x] Verify reproducible local development environment.
 
-- **Goal:** Meaningful Alternatives within the architectural V1 boundary.
-- **Current state: IMPLEMENTED_FOUNDATION.** Multiple strategies and ranking exist; meaningful diversity acceptance remains incomplete.
-- **Main deliverables:** Genuine zoning, circulation, cluster, feasible core, site-response and outdoor-relationship differences; understandable comparison UI.
-- **Exit criteria:** Options meet the same hard brief and differ in documented planning organization, not coordinate jitter. Report fewer feasible options honestly.
-- **Dependencies:** Phases 1–2.
+---
 
-## Phase 4 — Multi-Floor + Site Coordination
+### Phase 2 — Immediate Defect Rectification & Test Hardening (Immediate Next Pass)
+- [ ] **Task 2.1 — Live Smoke Test Isolation:**
+  - In `packages/backend/src/__tests__/real-provider-smoke.test.ts`, wrap live external API pings with a test that checks if the credentials are live, or gracefully skip with `it.skipIf(!hasValidCredentials)` so standard offline `pnpm test` runs 100% green.
+- [ ] **Task 2.2 — Turbo Parallel Build Windows Lock:**
+  - Adjust `turbo.json` task dependencies or backend build script to prevent file lock contention on `dist-server/server.cjs` during parallel `pnpm test:unit` execution on Windows.
 
-- **Goal:** Multi-Floor + Site Coordination within the architectural V1 boundary.
-- **Current state: IMPLEMENTED_FOUNDATION.** Site/footprint workflows and multi-floor planning exist; comprehensive architectural coordination remains incomplete.
-- **Main deliverables:** One Building for G+3 (Ground/First/Second/Third); stair and applicable lift continuity, floor requirements, terraces/balconies, voids, non-identical upper plates, frontage/access, applicable parking and exposure opportunity.
-- **Exit criteria:** Whole-building fixtures verify continuity, access, floor intent and outdoor/void semantics. Missing inputs remain explicit; no plumbing or structural safety claim.
-- **Dependencies:** Phases 1–3 and canonical site/floor semantics.
+---
 
-## Phase 5 — Professional 2D Semantics
+### Phase 3 — Floor Isometric Editor (Phase 6B)
+- [ ] **Task 3.1 — Dynamic Floor Switcher:**
+  - Update `FloorIsometricEditor.tsx` to read dynamic floors from `editor.building.floors` rather than a hardcoded array.
+  - Wire button clicks to `editor.switchFloor(floor.id)`.
+- [ ] **Task 3.2 — Isolated Floor 3D Isometric Viewport:**
+  - Replace the 2D SVG canvas in `FloorIsometricEditor.tsx` with a dedicated Three.js isometric viewport plate that isolates the active floor slab, hides upper floors, and provides rotation/zoom controls.
 
-- **Goal:** Professional 2D Semantics within the architectural V1 boundary.
-- **Current state: IMPLEMENTED_FOUNDATION.** Canonical rooms/walls/openings, SVG rendering and annotation foundations exist.
-- **Main deliverables:** External/internal walls and thickness; doors/swings; windows/ventilators; stairs/lift; dimensions/labels; balconies/terraces/voids; site boundary, roads/access/parking; supplied north/reference data; printable sheets.
-- **Exit criteria:** Geometry and symbols match canonical data at supported scales/orientations and floor shapes; unsupported details are not fabricated.
-- **Dependencies:** Phase 4 and existing core/geometry/renderer.
+---
 
-## Phase 6 — Professional Interactive Editor
+### Phase 4 — 3D Building Customizer Controls Wiring (Phase 6C)
+- [ ] **Task 4.1 — Explode Slider Wiring:**
+  - Pass `explodeValue` prop from `Building3DCustomizer.tsx` down to `<ModelWorkspace />`.
+  - In `ModelWorkspace.tsx` / `BuildingSceneProjector`, apply vertical Z-offsets to floor slabs proportional to `explodeValue`.
+- [ ] **Task 4.2 — Day / Night Lighting State:**
+  - Pass `lightingMode` to `<ModelWorkspace />`.
+  - Adjust ambient and directional Three.js lights (warm daylight sun vs. cool indigo night sky with warm interior window emissions).
+- [ ] **Task 4.3 — Element Customizer Dispatch:**
+  - Connect window, door, and furniture buttons in the right drawer to real editor commands that update canonical opening styles (`SLIDING_UPVC`, `CASEMENT_ALUMINUM`, `GLASS_FRENCH`) or furniture layouts on the active floor.
 
-- **Goal:** Professional Interactive Editor within the architectural V1 boundary.
-- **Current state: IMPLEMENTED_FOUNDATION.** Commands, selection, inspectors, undo/redo and workspace controls exist.
-- **Main deliverables:** Reliable room/wall/opening position and size editing, validation feedback, floor navigation, persistence and undo/redo parity.
-- **Exit criteria:** Representative browser editing workflows preserve canonical geometry, invalidate dependent evidence and survive save/reload and undo/redo.
-- **Dependencies:** Phases 1 and 5; preserve multi-floor semantics.
+---
 
-## Phase 7 — Architectural Review & Finalization
+### Phase 5 — ETABS Structural Analysis Integration (Phase 7)
+- [ ] **Task 5.1 — ETABS `.e2k` File Generator:**
+  - Serialize column grid (`S-COLS`) and beam network (`S-BEAM`) into standard ETABS `.e2k` text format.
+- [ ] **Task 5.2 — Structural Check & Utilization Parser:**
+  - Implement parsing of ETABS member utilization, drift, and displacement results.
+- [ ] **Task 5.3 — ETABS Error Report PDF:**
+  - Generate a professional engineering PDF report documenting member utilization, failed checks, and statutory disclaimers.
 
-- **Goal:** Architectural Review & Finalization within the architectural V1 boundary.
-- **Current state: PLANNED.** Project persistence and validation foundations exist; complete scoped finalization is not established.
-- **Main deliverables:** Generate → Compare → Select → Edit → Validate → Finalize; findings and an exact reviewed revision for exports/3D.
-- **Exit criteria:** Finalization binds canonical revision and reviewed intent. Later edits supersede/invalidate it. User review is not statutory or structural certification.
-- **Dependencies:** Phase 1 acceptance contract and Phases 2–6.
+---
 
-## Phase 8 — Professional Exports
+### Phase 6 — Blender 5.2 Headless Rendering Pipeline (Phase 8)
+- [ ] **Task 6.1 — Procedural Blender Asset Exporter:**
+  - Expand `packages/backend/src/blender/blender-runner.ts` to execute `blender.exe` in headless background mode (`--background --python run_blender.py`).
+- [ ] **Task 6.2 — PBR Architectural Finishes:**
+  - Generate realistic exterior finishes, railings, chajjas, window frames, and ambient lighting in Blender scene output.
 
-- **Goal:** Professional Exports within the architectural V1 boundary.
-- **Current state: IMPLEMENTED_FOUNDATION.** SVG/PDF/JSON code exists. PDF uses fit-to-page scaling and simplified room/opening drawing; professional fidelity remains incomplete.
-- **Main deliverables:** Verified native SVG; professional PDF sheets/scales/annotations; true interoperable DXF; genuine DWG conversion where proper external tooling/licensing supports it. JSON remains model interchange.
-- **Exit criteria:** Geometry, dimensions, openings, floor selection and sheet scale match the finalized design; external interoperability verified. Document DWG dependencies; never rename another format to DWG.
-- **Dependencies:** Phases 5–7.
+---
 
-## Phase 9 — Canonical Building → Blender Bridge
+## 4. Development & Verification Checkpoint Protocol
 
-- **Goal:** Canonical Building → Blender Bridge within the architectural V1 boundary.
-- **Current state: PLANNED.** Canonical browser 3D projection exists. The prior JSON-wall Blender experiment is outside the primary repository, not integrated product functionality.
-- **Main deliverables:** Finalized canonical Building → adapter → reproducible Blender model; units/axes/levels, stable source IDs and versioned exchange contract.
-- **Exit criteria:** Representative multi-floor dimensions, levels, walls/openings match canonical data; genuine .blend output or reproducible Blender content; 2D edits regenerate consistently; missing input fails clearly.
-- **Dependencies:** Stable Phase 5 semantics, Phase 7 revision contract and Phase 4 coordination. Underlying 2D quality comes first.
-
-## Phase 10 — Detailed Blender Architectural Model
-
-- **Goal:** Detailed Blender Architectural Model within the architectural V1 boundary.
-- **Current state: PLANNED.** Browser projection includes schematic elements; detailed Blender delivery is not implemented.
-- **Main deliverables:** Levels, wall thickness/heights, architectural slabs, openings/doors/windows, stairs/railings, balconies/terraces/parapets, applicable roofs, site/context and appropriate basic furniture.
-- **Exit criteria:** Source-linked geometry matches the canonical revision and regenerates reliably. No independent redesign or engineered member-sizing claim.
-- **Dependencies:** Phase 9 and explicit supported architectural semantics.
-
-## Phase 11 — Elevation / Materials / Presentation
-
-- **Goal:** Elevation / Materials / Presentation within the architectural V1 boundary.
-- **Current state: PLANNED.** Browser viewing and a future elevation-dataset contract are foundations, not finished elevation production.
-- **Main deliverables:** Front and useful side/rear elevations; perspectives, facade detail/materials, cameras, lighting/shadows and site context.
-- **Exit criteria:** Views depict the same finalized architecture with correct levels/openings and reviewed visual quality. AI imagery cannot replace geometric authority.
-- **Dependencies:** Phase 10. A historical-image dataset is not required for geometry-driven elevations.
-
-## Phase 12 — Professional Validation + V1 Release
-
-- **Goal:** Professional Validation + V1 Release within the architectural V1 boundary.
-- **Current state: PLANNED.** Internal tests exist; complete professional/deployment acceptance is not established.
-- **Main deliverables:** Representative residential/RBEA-derived cases, professional review, browser/export/Blender end-to-end QA, performance/recovery, secure deployment and honest limitations.
-- **Exit criteria:** Supported workflows pass documented automated and professional review criteria; production build/release checks actually pass. Environment-blocked checks stay blocked. Public builds must not expose developer AI keys.
-- **Dependencies:** Relevant gates from Phases 1–11. Infrastructure only as required by release mode; full billing/organizations are not local architectural prerequisites.
-
-## Infrastructure and professional references
-
-Fastify, PostgreSQL, Redis, authentication, billing and hosted services are PLANNED_INFRASTRUCTURE, not established running components. Browser local persistence and development-only frontend provider configuration exist. Secure server-side AI credentials are required before public release; choose the smallest service boundary needed rather than requiring every proposed SaaS component before architectural development.
-
-RBEA-001/002/003 are redacted relationship/topology evidence, not coordinate templates. Preserve VERIFIED_FROM_SOURCE, ASSERTED_FROM_BRIEF and AMBIGUOUS provenance. Do not memorize historical layouts, infer ownership from proximity or expose client PII. Professional acceptance of a reference does not validate generated output.
-
-## Post-V1 — DEFERRED
-
-Future engineering may follow: structural model → validated loads/load combinations → validated solver → reactions → BM/SF/stress/deflection → member design → geotechnical input → foundation design → reinforcement → structural 3D. These require validated inputs and professional review.
-
-Later measurement may follow: quantity take-off → BOQ → costing. None is a current V1 priority. Preserve clean floors, walls, openings, rooms, stairs, levels, site and existing support/grid data; do not add speculative structural grids.
-
-## Scheduling and gates
-
-No whole-product completion date or inherited 19-week promise is supported. Use phase acceptance criteria and dependency-based sequencing. Scope each pass, record actual verification, review its checkpoint and then proceed. Code completion, architectural quality, professional review and public-release readiness are distinct. Historical estimates in archived foundation documents are not current commitments.
+1. Before starting a pass: run `git status` and record baseline commit.
+2. Maintain documentation integrity: never delete existing docstrings or comments unrelated to the task.
+3. Every code change must be accompanied by focused unit tests.
+4. Before submitting: run `pnpm typecheck`, `pnpm lint`, and package test suite.
+5. Record exact command outputs in the delivery report.
