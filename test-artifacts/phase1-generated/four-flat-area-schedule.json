@@ -1,0 +1,2558 @@
+[
+  {
+    "floorId": "floor_stilt_00",
+    "floorUse": "STILT_PARKING",
+    "rooms": [
+      {
+        "id": "floor_stilt_00::stilt__stair_1",
+        "type": "staircase",
+        "name": "Staircase 01 (Main)",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__stair_2",
+        "type": "staircase",
+        "name": "Staircase 02 (Fire Escape)",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__lift_1",
+        "type": "lift",
+        "name": "Passenger Lift 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_stilt_00::stilt__lift_2",
+        "type": "lift",
+        "name": "Stretcher / Fire Lift 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_stilt_00::stilt__corridor_spine",
+        "type": "corridor",
+        "name": "Stilt Central Circulation Spine",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_stilt_00::stilt__shaft_1",
+        "type": "service_shaft",
+        "name": "MEP Service Shaft 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_stilt_00::stilt__shaft_2",
+        "type": "service_shaft",
+        "name": "Open-to-sky courtyard at stilt",
+        "areaM2": 833
+      },
+      {
+        "id": "floor_stilt_00::stilt__grand_lobby",
+        "type": "foyer",
+        "name": "Grand Entrance Double-Height Lobby",
+        "areaM2": 15.984
+      },
+      {
+        "id": "floor_stilt_00::stilt__society_office",
+        "type": "custom",
+        "name": "Society Administrative Office",
+        "areaM2": 6.5025
+      },
+      {
+        "id": "floor_stilt_00::stilt__staff_toilet",
+        "type": "bathroom",
+        "name": "Driver & Maintenance Staff Toilet",
+        "areaM2": 3.4875
+      },
+      {
+        "id": "floor_stilt_00::stilt__gymnasium",
+        "type": "custom",
+        "name": "Fitness Center & Health Gymnasium",
+        "areaM2": 9.7965
+      },
+      {
+        "id": "floor_stilt_00::stilt__meter_bms_room",
+        "type": "custom",
+        "name": "Electric Meter & BMS Control Room",
+        "areaM2": 4.1895
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c01",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-01 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c02",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-02 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c03",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-03 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__bike_bay_b02",
+        "type": "parking",
+        "name": "Two-Wheeler Parking Bay B-02",
+        "areaM2": 7.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__driveway_west",
+        "type": "corridor",
+        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (west)",
+        "areaM2": 10.08
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c04",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-04 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c05",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-05 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c06",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-06 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__bike_bay_b04",
+        "type": "parking",
+        "name": "Two-Wheeler Parking Bay B-04",
+        "areaM2": 7.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__driveway_east_01",
+        "type": "corridor",
+        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_01)",
+        "areaM2": 50.04
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c07",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-07 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c08",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-08 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c09",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-09 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__bike_bay_b06",
+        "type": "parking",
+        "name": "Two-Wheeler Parking Bay B-06",
+        "areaM2": 7.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__driveway_east_02",
+        "type": "corridor",
+        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_02)",
+        "areaM2": 50.04
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c10",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-10 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c11",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-11 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__car_bay_c12",
+        "type": "parking",
+        "name": "Covered Car Parking Stall C-12 (2.5x5.0m)",
+        "areaM2": 12.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__bike_bay_b08",
+        "type": "parking",
+        "name": "Two-Wheeler Parking Bay B-08",
+        "areaM2": 7.5
+      },
+      {
+        "id": "floor_stilt_00::stilt__driveway_east_03",
+        "type": "corridor",
+        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_03)",
+        "areaM2": 52.38
+      }
+    ],
+    "windows": [],
+    "balconySchedule": []
+  },
+  {
+    "floorId": "floor_typical_01",
+    "floorUse": "RESIDENTIAL",
+    "rooms": [
+      {
+        "id": "floor_typical_01::apt-room:flat_01__utility",
+        "flatId": "flat_01",
+        "type": "utility",
+        "name": "Flat 101 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__kitchen",
+        "flatId": "flat_01",
+        "type": "kitchen",
+        "name": "Flat 101 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 101 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__dining",
+        "flatId": "flat_01",
+        "type": "dining",
+        "name": "Flat 101 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__living",
+        "flatId": "flat_01",
+        "type": "living",
+        "name": "Flat 101 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__master_bed",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 101 Master Bedroom",
+        "areaM2": 12.24
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__master_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 101 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__common_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 101 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+        "flatId": "flat_01",
+        "type": "corridor",
+        "name": "Flat 101 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__bed_2",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 101 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_01__master_bed__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 101 Master Bedroom Balcony",
+        "areaM2": 6.12
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__utility",
+        "flatId": "flat_02",
+        "type": "utility",
+        "name": "Flat 102 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__kitchen",
+        "flatId": "flat_02",
+        "type": "kitchen",
+        "name": "Flat 102 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__dining",
+        "flatId": "flat_02",
+        "type": "dining",
+        "name": "Flat 102 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__living",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 102 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__master_bed",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 102 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__master_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 102 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__common_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 102 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+        "flatId": "flat_02",
+        "type": "corridor",
+        "name": "Flat 102 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__bed_2",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 102 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_02__balcony",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 102 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__utility",
+        "flatId": "flat_03",
+        "type": "utility",
+        "name": "Flat 103 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__kitchen",
+        "flatId": "flat_03",
+        "type": "kitchen",
+        "name": "Flat 103 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__dining",
+        "flatId": "flat_03",
+        "type": "dining",
+        "name": "Flat 103 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__living",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 103 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__master_bed",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 103 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__master_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 103 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__common_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 103 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+        "flatId": "flat_03",
+        "type": "corridor",
+        "name": "Flat 103 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__bed_2",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 103 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_03__balcony",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 103 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__utility",
+        "flatId": "flat_04",
+        "type": "utility",
+        "name": "Flat 104 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__kitchen",
+        "flatId": "flat_04",
+        "type": "kitchen",
+        "name": "Flat 104 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 104 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__dining",
+        "flatId": "flat_04",
+        "type": "dining",
+        "name": "Flat 104 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__living",
+        "flatId": "flat_04",
+        "type": "living",
+        "name": "Flat 104 Living Room",
+        "areaM2": 18.675
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__master_bed",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 104 Master Bedroom",
+        "areaM2": 18.99
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__master_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 104 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__common_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 104 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+        "flatId": "flat_04",
+        "type": "corridor",
+        "name": "Flat 104 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__bed_2",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 104 Bedroom 02",
+        "areaM2": 10.8
+      },
+      {
+        "id": "floor_typical_01::apt-room:flat_04__bed_2__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 104 Bedroom 02 Balcony",
+        "areaM2": 5.4
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_lift_1",
+        "type": "lift",
+        "name": "Passenger Lift 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_lift_2",
+        "type": "lift",
+        "name": "Passenger Lift 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_stair_1",
+        "type": "staircase",
+        "name": "Main Fire Staircase",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_stair_2",
+        "type": "staircase",
+        "name": "Fire Staircase 02",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_typical_01::apt-room:corridor_1",
+        "type": "corridor",
+        "name": "Common Circulation Spine",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_shaft_1",
+        "type": "service_shaft",
+        "name": "MEP / Plumbing Duct 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_shaft_2",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 833
+      }
+    ],
+    "windows": [
+      {
+        "id": "floor_typical_01::win_apt-room:flat_01__utility_floor_typical_01::apt-wall:x:3000:27100:29490",
+        "roomId": "floor_typical_01::apt-room:flat_01__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:x:3000:24100:27100",
+        "roomId": "floor_typical_01::apt-room:flat_01__master_bed",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_01__master_bath_floor_typical_01::apt-wall:y:22600:7080:8580",
+        "roomId": "floor_typical_01::apt-room:flat_01__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_01__common_bath_floor_typical_01::apt-wall:y:22600:8580:10080",
+        "roomId": "floor_typical_01::apt-room:flat_01__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_02__master_bath_floor_typical_01::apt-wall:y:22600:17640:19140",
+        "roomId": "floor_typical_01::apt-room:flat_02__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_02__common_bath_floor_typical_01::apt-wall:y:22600:19140:20640",
+        "roomId": "floor_typical_01::apt-room:flat_02__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_03__master_bath_floor_typical_01::apt-wall:y:22600:28200:29700",
+        "roomId": "floor_typical_01::apt-room:flat_03__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_03__common_bath_floor_typical_01::apt-wall:y:22600:29700:31200",
+        "roomId": "floor_typical_01::apt-room:flat_03__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__utility_floor_typical_01::apt-wall:x:45500:27100:29490",
+        "roomId": "floor_typical_01::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__master_bath_floor_typical_01::apt-wall:y:22600:38900:40400",
+        "roomId": "floor_typical_01::apt-room:flat_04__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__common_bath_floor_typical_01::apt-wall:y:22600:40400:41900",
+        "roomId": "floor_typical_01::apt-room:flat_04__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__bed_2_floor_typical_01::apt-wall:x:45500:24100:27100",
+        "roomId": "floor_typical_01::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      }
+    ],
+    "balconySchedule": [
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_01__master_bed",
+        "balconyId": "floor_typical_01::apt-room:flat_01__master_bed__balcony",
+        "accessDoorId": "floor_typical_01::flat_01__master_bed__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 4080
+        },
+        "areaM2": 6.12,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      },
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_01__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_02__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_02__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_03__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_03__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_04__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_typical_01",
+        "bedroomId": "floor_typical_01::apt-room:flat_04__bed_2",
+        "balconyId": "floor_typical_01::apt-room:flat_04__bed_2__balcony",
+        "accessDoorId": "floor_typical_01::flat_04__bed_2__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 3600
+        },
+        "areaM2": 5.4,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      }
+    ]
+  },
+  {
+    "floorId": "floor_level_02",
+    "floorUse": "RESIDENTIAL",
+    "rooms": [
+      {
+        "id": "floor_level_02::apt-room:flat_01__utility",
+        "flatId": "flat_01",
+        "type": "utility",
+        "name": "Flat 201 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__kitchen",
+        "flatId": "flat_01",
+        "type": "kitchen",
+        "name": "Flat 201 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 201 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__dining",
+        "flatId": "flat_01",
+        "type": "dining",
+        "name": "Flat 201 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__living",
+        "flatId": "flat_01",
+        "type": "living",
+        "name": "Flat 201 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__master_bed",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 201 Master Bedroom",
+        "areaM2": 12.24
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__master_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 201 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__common_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 201 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__internal_passage",
+        "flatId": "flat_01",
+        "type": "corridor",
+        "name": "Flat 201 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__bed_2",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 201 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_01__master_bed__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 201 Master Bedroom Balcony",
+        "areaM2": 6.12
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__utility",
+        "flatId": "flat_02",
+        "type": "utility",
+        "name": "Flat 202 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__kitchen",
+        "flatId": "flat_02",
+        "type": "kitchen",
+        "name": "Flat 202 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__dining",
+        "flatId": "flat_02",
+        "type": "dining",
+        "name": "Flat 202 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__living",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 202 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__master_bed",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 202 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__master_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 202 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__common_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 202 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__internal_passage",
+        "flatId": "flat_02",
+        "type": "corridor",
+        "name": "Flat 202 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__bed_2",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 202 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_02__balcony",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 202 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__utility",
+        "flatId": "flat_03",
+        "type": "utility",
+        "name": "Flat 203 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__kitchen",
+        "flatId": "flat_03",
+        "type": "kitchen",
+        "name": "Flat 203 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__dining",
+        "flatId": "flat_03",
+        "type": "dining",
+        "name": "Flat 203 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__living",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 203 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__master_bed",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 203 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__master_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 203 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__common_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 203 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__internal_passage",
+        "flatId": "flat_03",
+        "type": "corridor",
+        "name": "Flat 203 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__bed_2",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 203 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_03__balcony",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 203 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__utility",
+        "flatId": "flat_04",
+        "type": "utility",
+        "name": "Flat 204 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__kitchen",
+        "flatId": "flat_04",
+        "type": "kitchen",
+        "name": "Flat 204 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 204 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__dining",
+        "flatId": "flat_04",
+        "type": "dining",
+        "name": "Flat 204 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__living",
+        "flatId": "flat_04",
+        "type": "living",
+        "name": "Flat 204 Living Room",
+        "areaM2": 18.675
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__master_bed",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 204 Master Bedroom",
+        "areaM2": 18.99
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__master_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 204 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__common_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 204 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__internal_passage",
+        "flatId": "flat_04",
+        "type": "corridor",
+        "name": "Flat 204 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__bed_2",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 204 Bedroom 02",
+        "areaM2": 10.8
+      },
+      {
+        "id": "floor_level_02::apt-room:flat_04__bed_2__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 204 Bedroom 02 Balcony",
+        "areaM2": 5.4
+      },
+      {
+        "id": "floor_level_02::apt-room:core_lift_1",
+        "type": "lift",
+        "name": "Passenger Lift 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_02::apt-room:core_lift_2",
+        "type": "lift",
+        "name": "Passenger Lift 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_02::apt-room:core_stair_1",
+        "type": "staircase",
+        "name": "Main Fire Staircase",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_02::apt-room:core_stair_2",
+        "type": "staircase",
+        "name": "Fire Staircase 02",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_02::apt-room:corridor_1",
+        "type": "corridor",
+        "name": "Common Circulation Spine",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_level_02::apt-room:core_shaft_1",
+        "type": "service_shaft",
+        "name": "MEP / Plumbing Duct 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_level_02::apt-room:core_shaft_2",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 833
+      }
+    ],
+    "windows": [
+      {
+        "id": "floor_level_02::win_apt-room:flat_01__utility_floor_level_02::apt-wall:x:3000:27100:29490",
+        "roomId": "floor_level_02::apt-room:flat_01__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_01__master_bed_floor_level_02::apt-wall:x:3000:24100:27100",
+        "roomId": "floor_level_02::apt-room:flat_01__master_bed",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_01__master_bath_floor_level_02::apt-wall:y:22600:7080:8580",
+        "roomId": "floor_level_02::apt-room:flat_01__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_01__common_bath_floor_level_02::apt-wall:y:22600:8580:10080",
+        "roomId": "floor_level_02::apt-room:flat_01__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_02__master_bath_floor_level_02::apt-wall:y:22600:17640:19140",
+        "roomId": "floor_level_02::apt-room:flat_02__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_02__common_bath_floor_level_02::apt-wall:y:22600:19140:20640",
+        "roomId": "floor_level_02::apt-room:flat_02__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_03__master_bath_floor_level_02::apt-wall:y:22600:28200:29700",
+        "roomId": "floor_level_02::apt-room:flat_03__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_03__common_bath_floor_level_02::apt-wall:y:22600:29700:31200",
+        "roomId": "floor_level_02::apt-room:flat_03__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__utility_floor_level_02::apt-wall:x:45500:27100:29490",
+        "roomId": "floor_level_02::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__master_bath_floor_level_02::apt-wall:y:22600:38900:40400",
+        "roomId": "floor_level_02::apt-room:flat_04__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__common_bath_floor_level_02::apt-wall:y:22600:40400:41900",
+        "roomId": "floor_level_02::apt-room:flat_04__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__bed_2_floor_level_02::apt-wall:x:45500:24100:27100",
+        "roomId": "floor_level_02::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      }
+    ],
+    "balconySchedule": [
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_01__master_bed",
+        "balconyId": "floor_level_02::apt-room:flat_01__master_bed__balcony",
+        "accessDoorId": "floor_level_02::flat_01__master_bed__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 4080
+        },
+        "areaM2": 6.12,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      },
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_01__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_02__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_02__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_03__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_03__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_04__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_02",
+        "bedroomId": "floor_level_02::apt-room:flat_04__bed_2",
+        "balconyId": "floor_level_02::apt-room:flat_04__bed_2__balcony",
+        "accessDoorId": "floor_level_02::flat_04__bed_2__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 3600
+        },
+        "areaM2": 5.4,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      }
+    ]
+  },
+  {
+    "floorId": "floor_level_03",
+    "floorUse": "RESIDENTIAL",
+    "rooms": [
+      {
+        "id": "floor_level_03::apt-room:flat_01__utility",
+        "flatId": "flat_01",
+        "type": "utility",
+        "name": "Flat 301 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__kitchen",
+        "flatId": "flat_01",
+        "type": "kitchen",
+        "name": "Flat 301 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 301 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__dining",
+        "flatId": "flat_01",
+        "type": "dining",
+        "name": "Flat 301 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__living",
+        "flatId": "flat_01",
+        "type": "living",
+        "name": "Flat 301 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__master_bed",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 301 Master Bedroom",
+        "areaM2": 12.24
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__master_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 301 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__common_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 301 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__internal_passage",
+        "flatId": "flat_01",
+        "type": "corridor",
+        "name": "Flat 301 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__bed_2",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 301 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_01__master_bed__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 301 Master Bedroom Balcony",
+        "areaM2": 6.12
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__utility",
+        "flatId": "flat_02",
+        "type": "utility",
+        "name": "Flat 302 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__kitchen",
+        "flatId": "flat_02",
+        "type": "kitchen",
+        "name": "Flat 302 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__dining",
+        "flatId": "flat_02",
+        "type": "dining",
+        "name": "Flat 302 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__living",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 302 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__master_bed",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 302 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__master_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 302 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__common_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 302 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__internal_passage",
+        "flatId": "flat_02",
+        "type": "corridor",
+        "name": "Flat 302 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__bed_2",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 302 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_02__balcony",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 302 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__utility",
+        "flatId": "flat_03",
+        "type": "utility",
+        "name": "Flat 303 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__kitchen",
+        "flatId": "flat_03",
+        "type": "kitchen",
+        "name": "Flat 303 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__dining",
+        "flatId": "flat_03",
+        "type": "dining",
+        "name": "Flat 303 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__living",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 303 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__master_bed",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 303 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__master_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 303 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__common_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 303 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__internal_passage",
+        "flatId": "flat_03",
+        "type": "corridor",
+        "name": "Flat 303 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__bed_2",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 303 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_03__balcony",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 303 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__utility",
+        "flatId": "flat_04",
+        "type": "utility",
+        "name": "Flat 304 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__kitchen",
+        "flatId": "flat_04",
+        "type": "kitchen",
+        "name": "Flat 304 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 304 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__dining",
+        "flatId": "flat_04",
+        "type": "dining",
+        "name": "Flat 304 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__living",
+        "flatId": "flat_04",
+        "type": "living",
+        "name": "Flat 304 Living Room",
+        "areaM2": 18.675
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__master_bed",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 304 Master Bedroom",
+        "areaM2": 18.99
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__master_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 304 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__common_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 304 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__internal_passage",
+        "flatId": "flat_04",
+        "type": "corridor",
+        "name": "Flat 304 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__bed_2",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 304 Bedroom 02",
+        "areaM2": 10.8
+      },
+      {
+        "id": "floor_level_03::apt-room:flat_04__bed_2__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 304 Bedroom 02 Balcony",
+        "areaM2": 5.4
+      },
+      {
+        "id": "floor_level_03::apt-room:core_lift_1",
+        "type": "lift",
+        "name": "Passenger Lift 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_03::apt-room:core_lift_2",
+        "type": "lift",
+        "name": "Passenger Lift 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_03::apt-room:core_stair_1",
+        "type": "staircase",
+        "name": "Main Fire Staircase",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_03::apt-room:core_stair_2",
+        "type": "staircase",
+        "name": "Fire Staircase 02",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_03::apt-room:corridor_1",
+        "type": "corridor",
+        "name": "Common Circulation Spine",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_level_03::apt-room:core_shaft_1",
+        "type": "service_shaft",
+        "name": "MEP / Plumbing Duct 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_level_03::apt-room:core_shaft_2",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 833
+      }
+    ],
+    "windows": [
+      {
+        "id": "floor_level_03::win_apt-room:flat_01__utility_floor_level_03::apt-wall:x:3000:27100:29490",
+        "roomId": "floor_level_03::apt-room:flat_01__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_01__master_bed_floor_level_03::apt-wall:x:3000:24100:27100",
+        "roomId": "floor_level_03::apt-room:flat_01__master_bed",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_01__master_bath_floor_level_03::apt-wall:y:22600:7080:8580",
+        "roomId": "floor_level_03::apt-room:flat_01__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_01__common_bath_floor_level_03::apt-wall:y:22600:8580:10080",
+        "roomId": "floor_level_03::apt-room:flat_01__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_02__master_bath_floor_level_03::apt-wall:y:22600:17640:19140",
+        "roomId": "floor_level_03::apt-room:flat_02__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_02__common_bath_floor_level_03::apt-wall:y:22600:19140:20640",
+        "roomId": "floor_level_03::apt-room:flat_02__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_03__master_bath_floor_level_03::apt-wall:y:22600:28200:29700",
+        "roomId": "floor_level_03::apt-room:flat_03__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_03__common_bath_floor_level_03::apt-wall:y:22600:29700:31200",
+        "roomId": "floor_level_03::apt-room:flat_03__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__utility_floor_level_03::apt-wall:x:45500:27100:29490",
+        "roomId": "floor_level_03::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__master_bath_floor_level_03::apt-wall:y:22600:38900:40400",
+        "roomId": "floor_level_03::apt-room:flat_04__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__common_bath_floor_level_03::apt-wall:y:22600:40400:41900",
+        "roomId": "floor_level_03::apt-room:flat_04__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__bed_2_floor_level_03::apt-wall:x:45500:24100:27100",
+        "roomId": "floor_level_03::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      }
+    ],
+    "balconySchedule": [
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_01__master_bed",
+        "balconyId": "floor_level_03::apt-room:flat_01__master_bed__balcony",
+        "accessDoorId": "floor_level_03::flat_01__master_bed__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 4080
+        },
+        "areaM2": 6.12,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      },
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_01__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_02__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_02__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_03__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_03__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_04__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_03",
+        "bedroomId": "floor_level_03::apt-room:flat_04__bed_2",
+        "balconyId": "floor_level_03::apt-room:flat_04__bed_2__balcony",
+        "accessDoorId": "floor_level_03::flat_04__bed_2__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 3600
+        },
+        "areaM2": 5.4,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      }
+    ]
+  },
+  {
+    "floorId": "floor_level_04",
+    "floorUse": "RESIDENTIAL",
+    "rooms": [
+      {
+        "id": "floor_level_04::apt-room:flat_01__utility",
+        "flatId": "flat_01",
+        "type": "utility",
+        "name": "Flat 401 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__kitchen",
+        "flatId": "flat_01",
+        "type": "kitchen",
+        "name": "Flat 401 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 401 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__dining",
+        "flatId": "flat_01",
+        "type": "dining",
+        "name": "Flat 401 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__living",
+        "flatId": "flat_01",
+        "type": "living",
+        "name": "Flat 401 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__master_bed",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 401 Master Bedroom",
+        "areaM2": 12.24
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__master_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 401 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__common_bath",
+        "flatId": "flat_01",
+        "type": "bathroom",
+        "name": "Flat 401 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__internal_passage",
+        "flatId": "flat_01",
+        "type": "corridor",
+        "name": "Flat 401 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__bed_2",
+        "flatId": "flat_01",
+        "type": "bedroom",
+        "name": "Flat 401 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_01__master_bed__balcony",
+        "flatId": "flat_01",
+        "type": "balcony",
+        "name": "Flat 401 Master Bedroom Balcony",
+        "areaM2": 6.12
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__utility",
+        "flatId": "flat_02",
+        "type": "utility",
+        "name": "Flat 402 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__kitchen",
+        "flatId": "flat_02",
+        "type": "kitchen",
+        "name": "Flat 402 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__dining",
+        "flatId": "flat_02",
+        "type": "dining",
+        "name": "Flat 402 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__living",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 402 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__master_bed",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 402 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__master_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 402 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__common_bath",
+        "flatId": "flat_02",
+        "type": "bathroom",
+        "name": "Flat 402 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__internal_passage",
+        "flatId": "flat_02",
+        "type": "corridor",
+        "name": "Flat 402 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__bed_2",
+        "flatId": "flat_02",
+        "type": "bedroom",
+        "name": "Flat 402 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_02__balcony",
+        "flatId": "flat_02",
+        "type": "living",
+        "name": "Flat 402 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__utility",
+        "flatId": "flat_03",
+        "type": "utility",
+        "name": "Flat 403 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__kitchen",
+        "flatId": "flat_03",
+        "type": "kitchen",
+        "name": "Flat 403 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__dining",
+        "flatId": "flat_03",
+        "type": "dining",
+        "name": "Flat 403 Dining & Family Hall",
+        "areaM2": 9.2207
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__living",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 403 Living Room",
+        "areaM2": 17.505
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__master_bed",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 403 Master Bedroom",
+        "areaM2": 18.36
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__master_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 403 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__common_bath",
+        "flatId": "flat_03",
+        "type": "bathroom",
+        "name": "Flat 403 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__internal_passage",
+        "flatId": "flat_03",
+        "type": "corridor",
+        "name": "Flat 403 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__bed_2",
+        "flatId": "flat_03",
+        "type": "bedroom",
+        "name": "Flat 403 Bedroom 02",
+        "areaM2": 15.66
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_03__balcony",
+        "flatId": "flat_03",
+        "type": "living",
+        "name": "Flat 403 Family Sit-out",
+        "areaM2": 4.853
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__utility",
+        "flatId": "flat_04",
+        "type": "utility",
+        "name": "Flat 404 Kitchen Utility Balcony",
+        "areaM2": 3.4177
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__kitchen",
+        "flatId": "flat_04",
+        "type": "kitchen",
+        "name": "Flat 404 Kitchen",
+        "areaM2": 12.5236
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 404 Sit-out Balcony",
+        "areaM2": 3.798
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__dining",
+        "flatId": "flat_04",
+        "type": "dining",
+        "name": "Flat 404 Dining & Family Hall",
+        "areaM2": 10.2757
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__living",
+        "flatId": "flat_04",
+        "type": "living",
+        "name": "Flat 404 Living Room",
+        "areaM2": 18.675
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__master_bed",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 404 Master Bedroom",
+        "areaM2": 18.99
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__master_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 404 Master Toilet",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__common_bath",
+        "flatId": "flat_04",
+        "type": "bathroom",
+        "name": "Flat 404 Common Bathroom",
+        "areaM2": 4.395
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__internal_passage",
+        "flatId": "flat_04",
+        "type": "corridor",
+        "name": "Flat 404 Internal Passage",
+        "areaM2": 4.71
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__bed_2",
+        "flatId": "flat_04",
+        "type": "bedroom",
+        "name": "Flat 404 Bedroom 02",
+        "areaM2": 10.8
+      },
+      {
+        "id": "floor_level_04::apt-room:flat_04__bed_2__balcony",
+        "flatId": "flat_04",
+        "type": "balcony",
+        "name": "Flat 404 Bedroom 02 Balcony",
+        "areaM2": 5.4
+      },
+      {
+        "id": "floor_level_04::apt-room:core_lift_1",
+        "type": "lift",
+        "name": "Passenger Lift 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_04::apt-room:core_lift_2",
+        "type": "lift",
+        "name": "Passenger Lift 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_level_04::apt-room:core_stair_1",
+        "type": "staircase",
+        "name": "Main Fire Staircase",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_04::apt-room:core_stair_2",
+        "type": "staircase",
+        "name": "Fire Staircase 02",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_level_04::apt-room:corridor_1",
+        "type": "corridor",
+        "name": "Common Circulation Spine",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_level_04::apt-room:core_shaft_1",
+        "type": "service_shaft",
+        "name": "MEP / Plumbing Duct 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_level_04::apt-room:core_shaft_2",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 833
+      }
+    ],
+    "windows": [
+      {
+        "id": "floor_level_04::win_apt-room:flat_01__utility_floor_level_04::apt-wall:x:3000:27100:29490",
+        "roomId": "floor_level_04::apt-room:flat_01__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_01__master_bed_floor_level_04::apt-wall:x:3000:24100:27100",
+        "roomId": "floor_level_04::apt-room:flat_01__master_bed",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_01__master_bath_floor_level_04::apt-wall:y:22600:7080:8580",
+        "roomId": "floor_level_04::apt-room:flat_01__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_01__common_bath_floor_level_04::apt-wall:y:22600:8580:10080",
+        "roomId": "floor_level_04::apt-room:flat_01__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_02__master_bath_floor_level_04::apt-wall:y:22600:17640:19140",
+        "roomId": "floor_level_04::apt-room:flat_02__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_02__common_bath_floor_level_04::apt-wall:y:22600:19140:20640",
+        "roomId": "floor_level_04::apt-room:flat_02__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_03__master_bath_floor_level_04::apt-wall:y:22600:28200:29700",
+        "roomId": "floor_level_04::apt-room:flat_03__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_03__common_bath_floor_level_04::apt-wall:y:22600:29700:31200",
+        "roomId": "floor_level_04::apt-room:flat_03__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__utility_floor_level_04::apt-wall:x:45500:27100:29490",
+        "roomId": "floor_level_04::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__master_bath_floor_level_04::apt-wall:y:22600:38900:40400",
+        "roomId": "floor_level_04::apt-room:flat_04__master_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__common_bath_floor_level_04::apt-wall:y:22600:40400:41900",
+        "roomId": "floor_level_04::apt-room:flat_04__common_bath",
+        "widthMm": 600,
+        "heightMm": 650,
+        "areaM2": 0.39
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__bed_2_floor_level_04::apt-wall:x:45500:24100:27100",
+        "roomId": "floor_level_04::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      }
+    ],
+    "balconySchedule": [
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_01__master_bed",
+        "balconyId": "floor_level_04::apt-room:flat_01__master_bed__balcony",
+        "accessDoorId": "floor_level_04::flat_01__master_bed__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 4080
+        },
+        "areaM2": 6.12,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      },
+      {
+        "flatId": "flat_01",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_01__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_02__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_02",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_02__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_03__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_03",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_03__bed_2",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_04__master_bed",
+        "balconyId": null,
+        "accessDoorId": null,
+        "dimensionsMm": null,
+        "areaM2": null,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "FAILED",
+        "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+        "alternatives": [
+          "Reposition the bedroom on an exterior facade.",
+          "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+        ]
+      },
+      {
+        "flatId": "flat_04",
+        "floorId": "floor_level_04",
+        "bedroomId": "floor_level_04::apt-room:flat_04__bed_2",
+        "balconyId": "floor_level_04::apt-room:flat_04__bed_2__balcony",
+        "accessDoorId": "floor_level_04::flat_04__bed_2__balcony_door",
+        "dimensionsMm": {
+          "width": 1500,
+          "depth": 3600
+        },
+        "areaM2": 5.4,
+        "externalExposure": "NOT_VERIFIED",
+        "udcprStatus": "NOT_VERIFIED",
+        "geometryStatus": "NOT_VERIFIED",
+        "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+        "alternatives": []
+      }
+    ]
+  },
+  {
+    "floorId": "floor_terrace_05",
+    "floorUse": "ROOF",
+    "rooms": [
+      {
+        "id": "floor_terrace_05::terrace__stair_mumty_1",
+        "type": "staircase",
+        "name": "Staircase 01 Mumty & Headroom",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_terrace_05::terrace__stair_mumty_2",
+        "type": "staircase",
+        "name": "Staircase 02 Mumty & Fire Escape Headroom",
+        "areaM2": 13.5
+      },
+      {
+        "id": "floor_terrace_05::terrace__lift_machine_room_1",
+        "type": "custom",
+        "name": "Lift headroom reservation 01",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_terrace_05::terrace__lift_machine_room_2",
+        "type": "custom",
+        "name": "Lift headroom reservation 02",
+        "areaM2": 6.6
+      },
+      {
+        "id": "floor_terrace_05::terrace__ohwt_tank",
+        "type": "custom",
+        "name": "Overhead Water Tank (OHWT — Domestic & Fire Reserve)",
+        "areaM2": 102
+      },
+      {
+        "id": "floor_terrace_05::terrace__shaft_head_1",
+        "type": "service_shaft",
+        "name": "Service duct vent head 01",
+        "areaM2": 87.3
+      },
+      {
+        "id": "floor_terrace_05::terrace__shaft_head_2",
+        "type": "service_shaft",
+        "name": "Open-to-sky courtyard (no roof)",
+        "areaM2": 833
+      },
+      {
+        "id": "floor_terrace_05::terrace__solar_pv_array",
+        "type": "terrace",
+        "name": "Rooftop Solar PV Array & Inverter Deck",
+        "areaM2": 95.04
+      },
+      {
+        "id": "floor_terrace_05::terrace__yoga_deck_1",
+        "type": "terrace",
+        "name": "Terrace Gazebo, Yoga & Landscaped Sitout Deck",
+        "areaM2": 42.75
+      },
+      {
+        "id": "floor_terrace_05::terrace__open_waterproof_1",
+        "type": "terrace",
+        "name": "Open Waterproofed Rooftop Terrace",
+        "areaM2": 52.29
+      },
+      {
+        "id": "floor_terrace_05::terrace__yoga_deck_2",
+        "type": "terrace",
+        "name": "Terrace Gazebo, Yoga & Landscaped Sitout Deck",
+        "areaM2": 42.75
+      },
+      {
+        "id": "floor_terrace_05::terrace__open_waterproof_2",
+        "type": "terrace",
+        "name": "Open Waterproofed Rooftop Terrace",
+        "areaM2": 52.29
+      },
+      {
+        "id": "floor_terrace_05::terrace__yoga_deck_3",
+        "type": "terrace",
+        "name": "Terrace Gazebo, Yoga & Landscaped Sitout Deck",
+        "areaM2": 43.83
+      },
+      {
+        "id": "floor_terrace_05::terrace__open_waterproof_3",
+        "type": "terrace",
+        "name": "Open Waterproofed Rooftop Terrace",
+        "areaM2": 53.55
+      }
+    ],
+    "windows": [],
+    "balconySchedule": []
+  }
+]

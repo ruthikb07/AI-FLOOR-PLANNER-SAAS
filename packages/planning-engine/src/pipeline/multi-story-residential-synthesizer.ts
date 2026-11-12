@@ -1,3 +1,5 @@
+import { coordinateArchitecturalStairs } from './architectural-connections';
+import { withArchitecturalElements } from '@ai-floor-planner/core';
 import type { Building, Polygon } from "@ai-floor-planner/core";
 import { measureApartmentAreaLedger } from "@ai-floor-planner/geometry-engine";
 import { ColumnGridGenerator } from "../structural/column-grid-generator";
@@ -98,14 +100,14 @@ export class MultiStoryResidentialSynthesizer {
       run("FINAL_PLANAR_AND_GEOMETRY_ACCEPTANCE", (b) =>
         solverResult(b, b, residentialAcceptanceErrors(b)),
       );
-      const building: Building = {
+      const building: Building = withArchitecturalElements(coordinateArchitecturalStairs({
         ...candidate,
         version: original.version + 1,
         updatedAt: new Date().toISOString(),
         canonicalStaircases: candidate.floors.flatMap(
           (f) => f.canonicalStaircases ?? [],
         ),
-      };
+      }));
       return {
         ...solverResult(original, building, []),
         statutoryStatus: "INTERNAL_GATES_PASSED",

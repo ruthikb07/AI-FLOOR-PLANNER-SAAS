@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EtabsInstallDir Condition="'$(EtabsInstallDir)' == ''">$(ETABS_INSTALL_DIR)</EtabsInstallDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ETABSv1">
+      <HintPath>$(EtabsInstallDir)/ETABSv1.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="RequireInstalledApi" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(EtabsInstallDir)/ETABSv1.dll')" Text="Set EtabsInstallDir to the licensed ETABS installation directory." />
+  </Target>
+</Project>

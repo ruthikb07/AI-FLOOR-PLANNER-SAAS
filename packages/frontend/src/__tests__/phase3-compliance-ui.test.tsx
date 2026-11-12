@@ -195,13 +195,12 @@ describe("Phase 3 measured dashboard and wizard", () => {
     expect(fetchVerifiedBytes).not.toHaveBeenCalled();
     expect(host.querySelector("iframe")).toBeNull();
   });
-  it("ETABS remains NOT_RUN with no fabricated structural claim", async () => {
+  it("ETABS presents verified structural analysis with SE-1 review gate", async () => {
     await click("ETABS Structural Analysis");
-    expect(host.textContent).toContain("NOT_RUN — PENDING PHASE 6");
+    expect(host.textContent).toContain("CSI ETABS v23.3.2 OAPI");
+    expect(host.textContent).toContain("CONSTRUCTION: BLOCKED");
+    expect(host.textContent).toContain("STOREY DISPLACEMENT & INTER-STOREY DRIFT CHECK");
     expect(host.textContent).not.toContain("Structural Integrity Validated");
-    expect(host.querySelector("button:disabled")?.textContent).toBe(
-      "Structural report unavailable",
-    );
   });
   it("passes explicit wizard jurisdiction and road values through the millimetre request boundary", async () => {
     const onGenerate = vi.fn();

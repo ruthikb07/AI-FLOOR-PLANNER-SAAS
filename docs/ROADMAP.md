@@ -2,7 +2,7 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
-> **Phase 2 Verification:** Complete (`feature/phase2-room-area-regeneration`)  
+> **Phase 2.5 Independent Review:** NOT READY — see [independent review](PHASE2_CODEX_INDEPENDENT_REVIEW.md)
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Audited By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
@@ -63,28 +63,20 @@ The project targets high-quality, editable residential architectural 2D generati
 
 ---
 
-### Phase 2 — Room Area Customization, Constraint-Aware Regeneration & Architectural Validation (Complete)
-- [x] **Task 2.1 — Canonical Command & Metadata:**
-  - Implemented `ApplyRoomAreaRegenerationCommand` in `@ai-floor-planner/core` with typed `RoomAreaRegenerationMetadata`.
-  - Full undo/redo integration with `EditorEngine`, updating canonical building version.
-- [x] **Task 2.2 — Deterministic Room Area Optimizer (`optimizeRoomArea`):**
-  - Implemented `packages/planning-engine/src/refinement/room-area-optimizer.ts`.
-  - Supports local envelope expansion and adjacent room partition shifting.
-  - Enforces envelope containment, column/beam clearances (`S-COLS`, `S-BEAM`), staircase/core protection, door re-anchoring, and statutory minimums.
-  - Generates up to 3 distinct alternatives (Candidate A: Minimum Disturbance, Candidate B: Circulation & Adjacency, Candidate C: Space Optimization).
-  - Tolerance rule: $\pm\max(0.10\text{ m}^2, 1.0\%)$.
-- [x] **Task 2.3 — Room Area Customizer UI & Interactive Preview:**
-  - Implemented `RoomAreaCustomizerPanel.tsx` and connected to `PropertyInspector.tsx`.
-  - Supports metric/imperial unit conversion ($m^2 \leftrightarrow \text{sq ft}$), sliders, room/neighbor locks, and structural protection toggles.
-  - Interactive SVG candidate preview modal with safety validation checklist, impact ledger, and revision staleness detection.
-- [x] **Task 2.4 — Comprehensive Regression Test Suites:**
-  - Implemented all 16 regression tests in `packages/planning-engine/src/__tests__/room-area-optimizer.test.ts`.
-  - Added 5 frontend integration tests in `packages/frontend/src/__tests__/room-area-customizer.test.tsx`.
-  - Added 3D projection test in `packages/projection-3d/src/__tests__/room-area-projection.test.ts`.
-  - Full quality gates verified: `pnpm test:unit`, `pnpm typecheck`, `pnpm lint`, `pnpm build`.
-- [x] **Task 2.5 — Documentation:**
-  - Created `docs/PHASE2_ROOM_REGENERATION.md`.
-  - Updated `docs/FEATURE_MATRIX.md` and `docs/ROADMAP.md`.
+### Phase 2.5 — Independent room regeneration review (NOT READY)
+- [x] Reproduce target-unit reset, corrupt door identity, and stale direct-command acceptance before repairing them.
+- [x] Preserve target area in mm², use actual preview constraints, reject partial alternatives, and revalidate at command execution.
+- [x] Preserve wall/opening identities; reject ambiguous topology, fixed-room edits, and locked host changes.
+- [x] Remove the arbitrary 85% envelope cap and misleading universal statutory-minimum claims.
+- [x] Add cancellable solver workers and stale-result protection.
+- [x] Exercise undo/redo, local storage, real PDF/SVG output, DWG read-back, DXF area labels and canonical 3D wall coordinates on fixtures.
+- [ ] Establish one explicit canonical opening-position contract and migrate legacy renderer/projection/export consumers; then enable physical-floor regeneration.
+- [ ] Extend conservative wall reconstruction to complete closed apartments, including split partitions and verified circulation/clearance continuity.
+- [ ] Complete browser/WebGL acceptance scenarios; current browser service is unavailable.
+- [ ] Resolve integration failures: live provider AUTH_FAILED/403 and nondeterministic furniture IDs in the existing generation pipeline.
+- [ ] Rerun all release gates and obtain professional architectural review before marking the phase complete.
+
+Evidence and exact limitations: [PHASE2_CODEX_INDEPENDENT_REVIEW.md](PHASE2_CODEX_INDEPENDENT_REVIEW.md).
 
 ---
 
@@ -119,5 +111,5 @@ The project targets high-quality, editable residential architectural 2D generati
 
 1. Before starting a phase: verify clean working tree and run `pnpm test:unit`.
 2. Commit message format: `feat(scope): ...` or `fix(scope): ...`.
-3. Push to `origin/main` upon phase completion.
+3. Keep work on the feature/review branch. Do not merge or push to main without explicit authorization.
 4. Maintain `AGENTS.md` and feature matrices with verified realities only.

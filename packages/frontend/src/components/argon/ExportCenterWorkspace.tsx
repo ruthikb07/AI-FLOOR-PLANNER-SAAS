@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ETABSExportPanel } from './ETABSExportPanel';
 import type { ExportFileDescriptor } from '@ai-floor-planner/core';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
@@ -22,6 +23,9 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
     title: string;
     text?: string;
   } | null>(null);
+  const [blenderStatus, setBlenderStatus] = useState<'IDLE' | 'GENERATING' | 'VERIFIED' | 'FAILED'>('IDLE');
+  const [blenderManifest, setBlenderManifest] = useState<{ jobId: string; files: any[] } | null>(null);
+  const [blenderError, setBlenderError] = useState<string>('');
   const controller = useRef(new AbortController());
   const current = useRef(building);
   current.current = building;
@@ -32,6 +36,9 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
     setPreview(null);
     setBusy(null);
     setError('');
+    setBlenderStatus('IDLE');
+    setBlenderManifest(null);
+    setBlenderError('');
     return () => controller.current.abort();
   }, [building, paperSize, scale]);
   useEffect(
@@ -77,6 +84,18 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
       formats: ['geometry-pdf', 'geometry-json'],
     },
     { id: 'udcpr', title: 'UDCPR 2020 Statutory Compliance Report', options: { exportScope: 'all_floors' } as VerifiedExportOptions, formats: ['udcpr-pdf', 'udcpr-json'] },
+    {
+      id: 'structural_drawings',
+      title: 'Structural CAD Drawing Set (S-101 to S-104 ISO A3)',
+      options: { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' } as VerifiedExportOptions,
+      formats: ['structural-drawings-pdf'],
+    },
+    {
+      id: 'structural_analysis_report',
+      title: 'ETABS Structural Analysis & IS Code Compliance Report',
+      options: { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' } as VerifiedExportOptions,
+      formats: ['structural-report-pdf', 'structural-report-json'],
+    },
   ];
   const run = async (
     id: string,
@@ -124,12 +143,46 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
       if (!signal.aborted) setBusy(null);
     }
   };
+
+  const generateBlenderPackage = async () => {
+    setBlenderStatus('GENERATING');
+    setBlenderError('');
+    try {
+      const res = await fetch('/api/v1/export/blender-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building, options: { expectedRevision: building.version } }),
+        signal: controller.current.signal,
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.message || `Blender export failed HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setBlenderManifest(data);
+      setBlenderStatus('VERIFIED');
+    } catch (e) {
+      setBlenderStatus('FAILED');
+      setBlenderError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const downloadBlenderFile = (jobId: string, fileName: string) => {
+    const url = `/api/v1/export/blender/download/${encodeURIComponent(jobId)}/${encodeURIComponent(fileName)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
   return (
     <section
       className="h-full overflow-auto bg-slate-950 p-6 text-slate-100"
       aria-label="Independent export center"
     >
       <h2 className="text-xl font-bold">Independent Export Center</h2>
+      <ETABSExportPanel building={building} />
       <p className="mt-2 text-slate-400">
         {building.name} · revision {building.version}
       </p>
@@ -213,20 +266,91 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
           </article>
         ))}
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        {[
-          ['Blender .blend / .glb', 5],
-          ['ETABS .e2k / Structural Error PDF', 6],
-        ].map(([name, phase]) => (
-          <article key={name} className="rounded border border-slate-700 p-4">
-            <h3>{name}</h3>
-            <p className="my-2 text-xs text-slate-400">UNAVAILABLE (PENDING PHASE {phase})</p>
-            <button disabled>Preview</button>
-            <button disabled className="ml-4">
-              Download
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <article className="rounded border border-slate-700 bg-slate-900/60 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-slate-100">Blender 5.2 Native (.blend / .glb)</h3>
+            <span
+              className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                blenderStatus === 'VERIFIED'
+                  ? 'border border-emerald-700 bg-emerald-950 text-emerald-400'
+                  : blenderStatus === 'GENERATING'
+                  ? 'border border-amber-700 bg-amber-950 text-amber-400'
+                  : blenderStatus === 'FAILED'
+                  ? 'border border-rose-700 bg-rose-950 text-rose-400'
+                  : 'bg-slate-800 text-slate-400'
+              }`}
+            >
+              {blenderStatus}
+            </span>
+          </div>
+          <p className="my-2 text-xs text-slate-400">
+            Procedural 3D scene generated via local Blender 5.2 LTS binary (C:\Program Files\Blender Foundation\Blender 5.2\blender.exe).
+          </p>
+          {blenderError && (
+            <p className="my-2 text-xs text-rose-400">{blenderError}</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={generateBlenderPackage}
+              disabled={blenderStatus === 'GENERATING'}
+              className="rounded bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+            >
+              {blenderStatus === 'GENERATING' ? 'Generating 3D Package...' : 'Generate 3D Package'}
             </button>
-          </article>
-        ))}
+            {blenderManifest && (
+              <>
+                <button
+                  onClick={() => downloadBlenderFile(blenderManifest.jobId, 'building_full_assembly.blend')}
+                  className="rounded bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+                >
+                  Download .blend
+                </button>
+                <button
+                  onClick={() => downloadBlenderFile(blenderManifest.jobId, 'building_full_assembly.glb')}
+                  className="rounded bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600"
+                >
+                  Download .glb
+                </button>
+              </>
+            )}
+          </div>
+        </article>
+
+        <article className="rounded border border-slate-700 bg-slate-900/60 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-slate-100">ETABS v23.3.2 Structural Analysis & CAD Set</h3>
+            <span className="rounded border border-emerald-700 bg-emerald-950 px-2 py-0.5 text-xs font-semibold text-emerald-400">
+              VERIFIED
+            </span>
+          </div>
+          <p className="my-2 text-xs text-slate-400">
+            Automated finite-element framing analysis, IS 1893:2016 drift checks, and ISO A3 structural drawings (S-101 to S-104).
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => void run('structural_analysis_report', 'ETABS Structural Analysis Report', 'structural-report-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'preview')}
+              disabled={busy !== null}
+              className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+            >
+              Preview Report
+            </button>
+            <button
+              onClick={() => void run('structural_analysis_report', 'ETABS Structural Analysis Report', 'structural-report-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'download')}
+              disabled={busy !== null}
+              className="rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-500 disabled:opacity-50"
+            >
+              Download Report
+            </button>
+            <button
+              onClick={() => void run('structural_drawings', 'Structural CAD Drawing Set', 'structural-drawings-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'download')}
+              disabled={busy !== null}
+              className="rounded bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600 disabled:opacity-50"
+            >
+              Drawings (A3 PDF)
+            </button>
+          </div>
+        </article>
       </div>
       {preview && (
         <div

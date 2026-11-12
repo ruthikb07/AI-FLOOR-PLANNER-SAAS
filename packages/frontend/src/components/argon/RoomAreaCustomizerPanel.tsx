@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { solveRoomArea } from '../../services/room-area-solver';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Maximize2,
   Lock,
@@ -11,10 +12,7 @@ import {
   X,
   RotateCcw,
 } from 'lucide-react';
-import type { Room, Building, Floor } from '@ai-floor-planner/core';
-import {
-  ApplyRoomAreaRegenerationCommand,
-} from '@ai-floor-planner/core';
+import type { Room, Building, Floor, GenerationControlState } from '@ai-floor-planner/core';
 import {
   sqMmToSqM,
   sqMToSqMm,
@@ -24,8 +22,8 @@ import {
   polygonArea,
 } from '@ai-floor-planner/geometry-engine';
 import {
-  optimizeRoomArea,
-  STATUTORY_MIN_ROOM_AREAS,
+  ENGINEERING_MIN_ROOM_AREAS,
+  createRoomAreaRegenerationCommand,
   buildingRefinementRevision,
   type RoomAreaCandidate,
   type RoomAreaOptimizationResult,
@@ -50,6 +48,9 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
   const [lockNeighbors, setLockNeighbors] = useState<boolean>(false);
   const [preserveStructural, setPreserveStructural] = useState<boolean>(true);
 
+  const pending = useRef<AbortController | null>(null);
+  const actualRevision = buildingRefinementRevision(building, generationControl);
+  useEffect(() => () => { pending.current?.abort(); }, [room.id, actualRevision]);
   // Execution & Candidate State
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
   const [optimizationResult, setOptimizationResult] =
@@ -67,36 +68,31 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
   const currentAreaSqFt = sqMmToSqFt(room.area);
 
   const statutoryMinAreaMm2 =
-    room.minArea ?? STATUTORY_MIN_ROOM_AREAS[room.type] ?? 6_000_000;
+    room.minArea ?? ENGINEERING_MIN_ROOM_AREAS[room.type] ?? 6_000_000;
   const statutoryMinAreaM2 = sqMmToSqM(statutoryMinAreaMm2);
   const statutoryMinAreaSqFt = sqMmToSqFt(statutoryMinAreaMm2);
 
   const floorAreaMm2 = polygonArea(activeFloor.boundary);
-  const maxAllowableAreaM2 = sqMmToSqM(floorAreaMm2 * 0.85);
-  const maxAllowableAreaSqFt = sqMmToSqFt(floorAreaMm2 * 0.85);
+  const maxAllowableAreaM2 = sqMmToSqM(floorAreaMm2);
+  const maxAllowableAreaSqFt = sqMmToSqFt(floorAreaMm2);
 
   const isRoomLocked =
     generationControl.lockedEntityIds.includes(room.id) ||
     generationControl.lockedFloorIds.includes(activeFloor.id);
 
-  // Sync target input when room changes
+  const [targetAreaMm2, setTargetAreaMm2] = useState(room.area);
+  const liveControl = useRef(generationControl);
+  liveControl.current = generationControl;
   useEffect(() => {
-    const defaultVal =
-      unit === 'm2'
-        ? currentAreaM2.toFixed(2)
-        : currentAreaSqFt.toFixed(1);
-    setTargetInput(defaultVal);
-    setOptimizationResult(null);
-    setPreviewCandidate(null);
-    setFeedback(null);
-  }, [room.id, unit]);
-
-  // Parse numerical target
-  const targetAreaMm2 = useMemo(() => {
-    const val = parseFloat(targetInput);
-    if (!Number.isFinite(val) || val <= 0) return 0;
-    return unit === 'm2' ? sqMToSqMm(val) : sqFtToSqMm(val);
-  }, [targetInput, unit]);
+    setTargetAreaMm2(room.area);
+    setTargetInput(String(unit === 'm2' ? sqMmToSqM(room.area) : sqMmToSqFt(room.area)));
+    setOptimizationResult(null); setPreviewCandidate(null); setFeedback(null);
+  }, [room.id]);
+  const editTarget = (value: string) => {
+    setTargetInput(value);
+    const number = Number(value);
+    setTargetAreaMm2(Number.isFinite(number) && number > 0 ? unit === 'm2' ? sqMToSqMm(number) : sqFtToSqMm(number) : 0);
+  };
 
   const targetAreaM2 = sqMmToSqM(targetAreaMm2);
   const deltaAreaM2 = targetAreaM2 - currentAreaM2;
@@ -112,14 +108,14 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
         isWarning: true,
       };
     }
-    if (targetAreaMm2 < statutoryMinAreaMm2 * 0.95) {
+    if (targetAreaMm2 < statutoryMinAreaMm2) {
       return {
         status: 'BELOW_MINIMUM',
-        message: `Below statutory minimum of ${statutoryMinAreaM2.toFixed(2)} m²`,
+        message: `Below engineering minimum of ${statutoryMinAreaM2.toFixed(2)} m²`,
         isWarning: true,
       };
     }
-    if (targetAreaMm2 > floorAreaMm2 * 0.85) {
+    if (targetAreaMm2 > floorAreaMm2) {
       return {
         status: 'EXCEEDS_ENVELOPE',
         message: `Exceeds floor envelope capacity (${maxAllowableAreaM2.toFixed(2)} m²)`,
@@ -152,19 +148,13 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
   // Unit Toggle Handler
   const handleUnitToggle = (newUnit: 'm2' | 'sqft') => {
     if (newUnit === unit) return;
-    const currentVal = parseFloat(targetInput);
-    if (Number.isFinite(currentVal)) {
-      if (newUnit === 'sqft') {
-        setTargetInput((currentVal * 10.76391).toFixed(1));
-      } else {
-        setTargetInput((currentVal / 10.76391).toFixed(2));
-      }
-    }
+    setTargetInput(String(newUnit === 'm2' ? sqMmToSqM(targetAreaMm2) : sqMmToSqFt(targetAreaMm2)));
     setUnit(newUnit);
   };
 
   // Reset to original
   const handleReset = () => {
+    setTargetAreaMm2(room.area);
     setTargetInput(
       unit === 'm2' ? currentAreaM2.toFixed(2) : currentAreaSqFt.toFixed(1)
     );
@@ -185,7 +175,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
     if (feasibilityValidation.status === 'BELOW_MINIMUM') {
       setFeedback({
         type: 'error',
-        message: `Requested area is below the statutory minimum for ${room.name} (${statutoryMinAreaM2.toFixed(2)} m²).`,
+        message: `Requested area is below the engineering minimum for ${room.name} (${statutoryMinAreaM2.toFixed(2)} m²).`,
       });
       return;
     }
@@ -201,17 +191,18 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
     setIsOptimizing(true);
     setFeedback(null);
 
-    // Yield to let UI update spinner
-    await new Promise((r) => setTimeout(r, 80));
+    pending.current?.abort();
+    const request = new AbortController(); pending.current = request;
 
     try {
-      const result = optimizeRoomArea(building, room.id, {
+      const result = await solveRoomArea(building, room.id, {
         targetAreaMm2,
         control: generationControl,
         allowAdjacentAdjustments: allowAdjacent,
         lockNeighboringRooms: lockNeighbors,
         preserveStructural,
-      });
+      }, request.signal);
+      if (request.signal.aborted) return;
 
       setOptimizationResult(result);
 
@@ -225,10 +216,11 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
       } else {
         setFeedback({
           type: 'success',
-          message: `Generated ${result.candidates.length} valid architectural alternative(s).`,
+          message: `Generated ${result.candidates.length} geometrically checked alternative(s). Professional review required.`,
         });
       }
     } catch (err) {
+      if (request.signal.aborted) return;
       setFeedback({
         type: 'error',
         message:
@@ -237,7 +229,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
             : 'Unknown error occurred during room regeneration.',
       });
     } finally {
-      setIsOptimizing(false);
+      if (pending.current === request) setIsOptimizing(false);
     }
   };
 
@@ -256,21 +248,18 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
       return;
     }
 
-    const command = new ApplyRoomAreaRegenerationCommand(
-      editor.building,
-      candidate.building,
-      {
-        roomId: room.id,
-        roomName: room.name,
-        requestedAreaMm2: candidate.requestedAreaMm2,
-        achievedAreaMm2: candidate.achievedAreaMm2,
-        candidateType: candidate.candidateType,
-        changedRoomIds: candidate.modifiedRooms.map((r) => r.roomId),
-        baseRevision: candidate.baseRevision,
-      }
-    );
-
-    executeCommand(command);
+    if (candidate.feasibilityStatus !== 'FEASIBLE' || !candidate.toleranceSatisfied || candidate.constraintViolations.length) {
+      setFeedback({ type: 'error', message: 'Unsatisfied alternatives cannot be accepted.' }); return;
+    }
+    try {
+      const command = createRoomAreaRegenerationCommand(editor.building, candidate, {
+        targetAreaMm2: candidate.requestedAreaMm2, allowAdjacentAdjustments: allowAdjacent,
+        lockNeighboringRooms: lockNeighbors, preserveStructural: true,
+      }, () => editor.getGenerationControl?.() ?? liveControl.current);
+      executeCommand(command);
+    } catch (error) {
+      setFeedback({ type: 'error', message: error instanceof Error ? error.message : 'Candidate acceptance failed' }); return;
+    }
     setPreviewCandidate(null);
     setOptimizationResult(null);
     setFeedback({
@@ -338,7 +327,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
       {/* Statutory & Envelope Limits */}
       <div className="mt-2 flex items-center justify-between text-[11px] px-1 text-slate-400">
         <span>
-          Statutory Min:{' '}
+          Project / engineering Min:{' '}
           <strong className="text-slate-300">
             {statutoryMinAreaM2.toFixed(2)} m²
           </strong>
@@ -393,7 +382,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
               max={unit === 'm2' ? maxAllowableAreaM2 : maxAllowableAreaSqFt}
               value={targetInput}
               disabled={isRoomLocked}
-              onChange={(e) => setTargetInput(e.target.value)}
+              onChange={(e) => editTarget(e.target.value)}
               className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none"
               placeholder={unit === 'm2' ? 'e.g. 15.00' : 'e.g. 160'}
             />
@@ -421,7 +410,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
             step={unit === 'm2' ? 0.25 : 2.5}
             value={parseFloat(targetInput) || currentAreaM2}
             disabled={isRoomLocked}
-            onChange={(e) => setTargetInput(e.target.value)}
+            onChange={(e) => editTarget(e.target.value)}
             className="w-full accent-amber-500 cursor-pointer"
           />
         </div>
@@ -467,7 +456,8 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
           <input
             type="checkbox"
             checked={preserveStructural}
-            onChange={(e) => setPreserveStructural(e.target.checked)}
+            disabled
+            onChange={() => setPreserveStructural(true)}
             className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0"
           />
           <span className="flex items-center gap-1">
@@ -535,6 +525,7 @@ export const RoomAreaCustomizerPanel: React.FC<RoomAreaCustomizerPanelProps> = (
         <CandidatePreviewModal
           candidate={previewCandidate}
           baseBuilding={editor.building}
+          control={generationControl}
           floor={activeFloor}
           onClose={() => setPreviewCandidate(null)}
           onAccept={() => handleAcceptCandidate(previewCandidate)}
@@ -648,6 +639,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
         </button>
         <button
           type="button"
+          disabled={!candidate.toleranceSatisfied || candidate.feasibilityStatus !== 'FEASIBLE' || candidate.constraintViolations.length > 0}
           onClick={onApply}
           className="flex items-center gap-1 rounded bg-amber-500 px-2.5 py-1 text-xs font-bold text-slate-950 hover:bg-amber-400"
         >
@@ -665,6 +657,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
 interface CandidatePreviewModalProps {
   candidate: RoomAreaCandidate;
   baseBuilding: Building;
+  control: GenerationControlState;
   floor: Floor;
   onClose: () => void;
   onAccept: () => void;
@@ -673,6 +666,7 @@ interface CandidatePreviewModalProps {
 const CandidatePreviewModal: React.FC<CandidatePreviewModalProps> = ({
   candidate,
   baseBuilding,
+  control,
   floor,
   onClose,
   onAccept,
@@ -684,15 +678,7 @@ const CandidatePreviewModal: React.FC<CandidatePreviewModalProps> = ({
   // Staleness check
   const isStale =
     candidate.baseRevision !==
-    buildingRefinementRevision(baseBuilding, {
-      schemaVersion: 1,
-      revisionId: 'check',
-      lockedEntityIds: [],
-      lockedFloorIds: [],
-      protectedCoreIds: [],
-      footprintLocked: true,
-      updatedAt: '',
-    });
+    buildingRefinementRevision(baseBuilding, control);
 
   // Calculate SVG ViewBox from floor boundary
   const xs = floor.boundary.points.map((p) => p.x);
@@ -896,12 +882,12 @@ const CandidatePreviewModal: React.FC<CandidatePreviewModalProps> = ({
               {/* Architectural Safety Checklist */}
               <div className="mt-4 border-t border-slate-800 pt-3">
                 <span className="text-xs font-semibold text-slate-300 block mb-2">
-                  Architectural Safety Checks
+                  Engineering Checks
                 </span>
                 <div className="space-y-1.5 text-[11px] text-slate-300">
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Structural columns completely cleared</span>
+                    <span>Geometric checks only; structural safety not certified</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -909,11 +895,11 @@ const CandidatePreviewModal: React.FC<CandidatePreviewModalProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>No room polygon intersections</span>
+                    <span>Candidate geometry checked by deterministic solver</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Statutory room minimums preserved</span>
+                    <span>Engineering defaults only; regulatory compliance not verified</span>
                   </div>
                 </div>
               </div>
@@ -936,7 +922,7 @@ const CandidatePreviewModal: React.FC<CandidatePreviewModalProps> = ({
                 </button>
                 <button
                   type="button"
-                  disabled={isStale}
+                  disabled={isStale || !candidate.toleranceSatisfied || candidate.feasibilityStatus !== 'FEASIBLE' || candidate.constraintViolations.length > 0}
                   onClick={onAccept}
                   className="flex-1 rounded bg-amber-500 py-2 text-xs font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-50"
                 >

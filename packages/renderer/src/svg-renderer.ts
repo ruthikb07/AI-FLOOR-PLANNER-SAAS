@@ -1,3 +1,5 @@
+import { isPhysicalBoundary, architecturalSpaceRole } from '@ai-floor-planner/core';
+import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 /**
  * SVG Renderer — generates architectural floor plan SVG from Building Model.
  *
@@ -15,7 +17,7 @@ import type {
   Point,
 } from '@ai-floor-planner/core';
 import { RoomType, WallType, RenderLayer, DoorType, SwingDirection, type SiteZoneKind } from '@ai-floor-planner/core';
-import { getFloorContentBounds, computeStairSolids, polygonBoundingBox, AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
+import { getFloorContentBounds, computeStairSolids, canonicalStairSolids, polygonBoundingBox, AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
 import { worldToScreen, fitToView, scaleToScreen } from './coordinate-transform';
 import { resolveConfig } from './render-config';
 import type { DeepPartial, RenderConfig } from './render-config';
@@ -308,7 +310,7 @@ function renderRooms(
 
     // Room fill
     if (!labelsOnly) elements.push(
-      `<polygon points="${points}" fill="${color}" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="${room.id}"/>`,
+      `<polygon points="${points}" fill="${color}" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="${room.id}" data-architectural-role="${architecturalSpaceRole(room)}"/>`,
     );
     const hatch = room.type === RoomType.Bathroom ? 'wet-hatch'
       : room.type === RoomType.ServiceShaft ? 'outdoor-hatch'
@@ -375,8 +377,13 @@ function renderRooms(
 function renderWalls(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
 
-  for (const wall of floor.walls) {
+  for (const wall of floor.walls.filter(isPhysicalBoundary)) {
     const start = worldToScreen(wall.startPoint, transform);
+    if (wall.boundaryRole === 'PARAPET' || wall.boundaryRole === 'GUARDRAIL') {
+      const end = worldToScreen(wall.endPoint, transform);
+      elements.push(`<line data-entity-type="wall" data-entity-id="${wall.id}" data-boundary-role="${wall.boundaryRole}" data-height-mm="${wall.heightMm ?? 1100}" x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#80644D" stroke-width="1.5" />`);
+      continue;
+    }
     const end = worldToScreen(wall.endPoint, transform);
     const style = WALL_STYLES[wall.type] ?? WALL_STYLES[WallType.Internal]!;
     const frame = wallFrame(wall);
@@ -466,6 +473,7 @@ function renderDoors(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
 
   for (const door of floor.doors) {
+    if (floor.walls.find(w => w.id === door.wallId)?.boundaryRole === 'OPEN_BOUNDARY') continue;
     let wall = floor.walls.find(w => w.id === door.wallId);
     let frame = wall ? wallFrame(wall) : undefined;
     let interval = wall ? openingInterval(wall, door.position, door.width) : undefined;
@@ -500,27 +508,14 @@ function renderDoors(floor: Floor, transform: ViewTransform): string {
     const swingSign = door.swingDirection === SwingDirection.Outward ? -1 : 1;
     const halfW = scaledWidth / 2;
 
-    const isStair =
-      /stair/i.test(door.id || '') ||
-      (door.connectsRooms || []).some(rid => {
-        const rm = floor.rooms.find(r => r.id === rid);
-        return rm && (rm.type === RoomType.Staircase || /stair/i.test(rm.name || ''));
-      });
-    const isLift =
-      /lift|elevator/i.test(door.id || '') ||
-      (door.connectsRooms || []).some(rid => {
-        const rm = floor.rooms.find(r => r.id === rid);
-        return rm && (rm.type === RoomType.Lift || /lift/i.test(rm.name || ''));
-      });
-
-    if (door.type === DoorType.OpenPassage || isStair) {
+    if (door.type === DoorType.OpenPassage) {
       elements.push(
         `<g data-entity-type="door" data-entity-id="${door.id}" data-door-type="open_passage" transform="${tr}">
   <title>Open passage - no door leaf</title>
   <line x1="${(-halfW).toFixed(1)}" y1="0" x2="${halfW.toFixed(1)}" y2="0" stroke="#94a3b8" stroke-width="0.75" stroke-dasharray="3,3"/>
 </g>`,
       );
-    } else if (door.type === DoorType.Sliding || isLift) {
+    } else if (door.type === DoorType.Sliding) {
       elements.push(
         `<g data-entity-type="door" data-entity-id="${door.id}" data-door-type="sliding" transform="${tr}" class="door-group" style="cursor: pointer;">
   <title>Sliding Door ${door.id}</title>
@@ -620,7 +615,10 @@ function renderWindows(floor: Floor, transform: ViewTransform): string {
 function renderStairs(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
   if(floor.canonicalStaircases?.length) {
-    for(const stair of floor.canonicalStaircases)for(const part of [stair.polygon,stair.flight1,stair.flight2,stair.midLanding])elements.push(`<polygon points="${polygonToSvgPoints(part,transform)}" fill="none" stroke="#64748b" stroke-width="0.8" data-entity-type="stair" data-entity-id="${escapeXml(stair.id)}"/>`);
+    for (const stair of floor.canonicalStaircases) {
+      const parts = canonicalStairSolids(stair, floor.floorHeight, floor.slabThicknessMm);
+      for (const part of parts.filter(p => floor.floorUse !== 'ROOF' || p.top === 0)) elements.push(`<polygon points="${polygonToSvgPoints(part.boundary,transform)}" fill="none" stroke="#64748b" stroke-width="0.8" data-entity-type="stair" data-stair-part="${part.kind}" data-entity-id="${escapeXml(stair.id)}"/>`);
+    }
     return `<g class="layer-stairs" data-layer="stairs">${elements.join('')}</g>`;
   }
 
@@ -892,6 +890,17 @@ export function renderFloor(
   config?: Readonly<RenderConfig> | DeepPartial<RenderConfig>,
   exportOptions?: ExportOptions,
 ): string {
+  const viewOpening = <T extends Floor['doors'][number] | Floor['windows'][number]>(o: T): T => {
+    if (o.openingGeometryVersion !== 1) return o;
+    const wall = floor.walls.find(w => w.id === o.wallId);
+    if (!wall) return o;
+    try {
+      return { ...o, position: canonicalOpeningGeometry(o, wall).startPoint, openingGeometryVersion: undefined, positionReference: undefined };
+    } catch {
+      return o;
+    }
+  };
+  floor = { ...floor, doors: floor.doors.map(viewOpening), windows: floor.windows.map(viewOpening) };
   const resolved = resolveConfig(config);
   const layers = [
     resolved.layers[RenderLayer.Grid] && resolved.showGrid

@@ -12,6 +12,7 @@ import {
   createBuilding,
   createRoom,
   createWall,
+  createWindow,
   createDoor,
   createColumn,
   EditorEngine,
@@ -28,6 +29,7 @@ import {
 } from '@ai-floor-planner/geometry-engine';
 import {
   optimizeRoomArea,
+  createRoomAreaRegenerationCommand,
   buildingRefinementRevision,
 } from '../index';
 
@@ -473,19 +475,9 @@ describe('ARGON 4 Phase 2 — Room Area Customization & Optimization Solver', ()
     expect(result.isFeasible).toBe(true);
     const candidate = result.candidates[0]!;
 
-    const cmd = new ApplyRoomAreaRegenerationCommand(
-      building,
-      candidate.building,
-      {
-        roomId: 'room-bed-1',
-        roomName: 'Master Bedroom',
-        requestedAreaMm2: candidate.requestedAreaMm2,
-        achievedAreaMm2: candidate.achievedAreaMm2,
-        candidateType: candidate.candidateType,
-        changedRoomIds: candidate.modifiedRooms.map((r) => r.roomId),
-        baseRevision: candidate.baseRevision,
-      }
-    );
+    const control = { ...createGenerationControlState(), revisionId: 'rev-0', updatedAt: result.timestamp };
+    const fresh = optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000, control });
+    const cmd = createRoomAreaRegenerationCommand(building, fresh.candidates[0]!, { targetAreaMm2: 15_000_000 }, () => control);
 
     const engine = new EditorEngine(building);
 
@@ -677,4 +669,139 @@ describe('ARGON 4 Phase 2 — Room Area Customization & Optimization Solver', ()
     // Revisions diverge
     expect(candidate.baseRevision).not.toBe(modifiedRev);
   });
+});
+
+
+describe('Independent room regeneration audit', () => {
+  it('preserves each opening exactly once and its connected rooms', () => {
+    const building = createTestBuilding();
+    const result = optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000 });
+    expect(result.candidates.length).toBeGreaterThan(0);
+    for (const candidate of result.candidates) {
+      const floor = candidate.building.floors[0]!;
+      expect(floor.doors.map(d => d.id).sort()).toEqual(building.floors[0]!.doors.map(d => d.id).sort());
+      expect(new Set(floor.walls.map(w => w.id)).size).toBe(floor.walls.length);
+      for (const door of floor.doors) {
+        const wall = floor.walls.find(w => w.id === door.wallId)!;
+        expect(wall).toBeDefined();
+        expect(door.connectsRooms.every(id => wall.roomIds.includes(id))).toBe(true);
+      }
+    }
+  });
+  it('rejects an externally executed stale command', () => {
+    const before = createTestBuilding();
+    const result = optimizeRoomArea(before, 'room-bed-1', { targetAreaMm2: 15_000_000 });
+    const candidate = result.candidates[0]!;
+    const command = new ApplyRoomAreaRegenerationCommand(before, candidate.building, {
+      roomId: 'room-bed-1', roomName: 'Bedroom', requestedAreaMm2: 15_000_000,
+      achievedAreaMm2: candidate.achievedAreaMm2, candidateType: 'A',
+      changedRoomIds: candidate.modifiedRooms.map(r => r.roomId), baseRevision: candidate.baseRevision,
+    });
+    const engine = new EditorEngine({ ...before, version: before.version + 1 });
+    expect(() => engine.execute(command)).toThrow(/stale/i);
+  });
+});
+
+
+describe('Phase 2.5 acceptance policy regressions', () => {
+  const prepare = () => {
+    const before = createTestBuilding(), control = createGenerationControlState();
+    const options = { targetAreaMm2: 15_000_000, control };
+    const candidate = optimizeRoomArea(before, 'room-bed-1', options).candidates[0]!;
+    return { before, control, options, candidate };
+  };
+  it('blocks constraint changes even when a caller reuses the revision ID', () => {
+    const { before, control, options, candidate } = prepare();
+    let current = control;
+    const command = createRoomAreaRegenerationCommand(before, candidate, options, () => current);
+    current = { ...control, lockedEntityIds: ['room-bed-1'] };
+    expect(() => new EditorEngine(before).execute(command)).toThrow(/stale/i);
+  });
+  it('blocks partial candidates even when the geometry is otherwise feasible', () => {
+    const { before, control, options, candidate } = prepare();
+    const command = createRoomAreaRegenerationCommand(before, { ...candidate, feasibilityStatus: 'PARTIALLY_FEASIBLE', toleranceSatisfied: false }, options, () => control);
+    expect(() => new EditorEngine(before).execute(command)).toThrow(/unsatisfied/i);
+  });
+  it('rejects tampered candidate geometry at execution', () => {
+    const { before, control, options, candidate } = prepare();
+    const changed = { ...candidate, building: { ...candidate.building, name: 'Unapproved mutation' } };
+    const command = createRoomAreaRegenerationCommand(before, changed, options, () => control);
+    expect(() => new EditorEngine(before).execute(command)).toThrow(/validation/i);
+  });
+  it('rejects direct command execution without the acceptance validator', () => {
+    const { before, candidate } = prepare();
+    const command = new ApplyRoomAreaRegenerationCommand(before, candidate.building, {
+      roomId: candidate.targetRoomId, roomName: 'Bedroom', requestedAreaMm2: 15_000_000,
+      achievedAreaMm2: candidate.achievedAreaMm2, candidateType: 'A', changedRoomIds: [], baseRevision: candidate.baseRevision,
+    });
+    expect(() => new EditorEngine(before).execute(command)).toThrow(/validator/i);
+  });
+  it('allows geometrically feasible targets above 85 percent of the floor', () => {
+    const original = createTestBuilding();
+    const floor = original.floors[0]!;
+    const room = { ...createRoom({ floorId: floor.id, name: 'Living', type: RoomType.Living, x: 0, y: 0, width: 9000, height: 10000 }), id: 'large-room' };
+    const building = { ...original, floors: [{ ...floor, rooms: [room], columns: [], walls: [], doors: [], windows: [] }] };
+    const result = optimizeRoomArea(building, room.id, { targetAreaMm2: 110_000_000 });
+    expect(result.isFeasible).toBe(true);
+    expect(result.candidates.every(c => c.toleranceSatisfied)).toBe(true);
+  });
+  it('rejects a stale cached area instead of returning an already-met candidate', () => {
+    const before = createTestBuilding();
+    const floor = before.floors[0]!;
+    const building = { ...before, floors: [{ ...floor, rooms: floor.rooms.map(r => r.id === 'room-bed-1' ? { ...r, area: 15_000_000 } : r) }] };
+    expect(optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000 }).isFeasible).toBe(false);
+  });
+  it('rejects non-finite tolerance input', () => {
+    expect(() => optimizeRoomArea(createTestBuilding(), 'room-bed-1', { targetAreaMm2: 15_000_000, toleranceMm2: NaN })).toThrow(/tolerance/i);
+  });
+  it('fingerprints columns and constraint contents, not just revision counters', () => {
+    const { before, control } = prepare();
+    const floor = before.floors[0]!;
+    const after = { ...before, floors: [{ ...floor, columns: [] }] };
+    expect(buildingRefinementRevision(before, control)).not.toBe(buildingRefinementRevision(after, control));
+  });
+});
+
+
+it('retains redo history when new locks block re-acceptance', () => {
+  const before = createTestBuilding();
+  let control = createGenerationControlState();
+  const options = { targetAreaMm2: 15_000_000, control };
+  const candidate = optimizeRoomArea(before, 'room-bed-1', options).candidates[0]!;
+  const command = createRoomAreaRegenerationCommand(before, candidate, options, () => control);
+  const engine = new EditorEngine(before);
+  engine.execute(command); engine.undo();
+  control = { ...control, lockedEntityIds: ['room-bed-1'] };
+  expect(() => engine.redo()).toThrow(/stale/i);
+  expect(engine.getState().historySummary.canRedo).toBe(true);
+  expect(engine.getBuilding()).toEqual(before);
+});
+
+
+it('respects fixed rooms independently of editor locks', () => {
+  const before = createTestBuilding(), floor = before.floors[0]!;
+  const building = { ...before, floors: [{ ...floor, rooms: floor.rooms.map(r => r.id === 'room-bed-1' ? { ...r, isFixed: true } : r) }] };
+  expect(optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000 }).isFeasible).toBe(false);
+});
+it('enforces the configured minimum without a five-percent allowance', () => {
+  const result = optimizeRoomArea(createTestBuilding(), 'room-bed-1', { targetAreaMm2: 9_400_000 });
+  expect(result.isFeasible).toBe(false);
+  expect(result.diagnostics).toContain('PROJECT_MINIMUM_VIOLATION');
+});
+
+
+it('preserves multiple windows and doors without re-hosting or resizing them', () => {
+  const before = createTestBuilding(), floor = before.floors[0]!;
+  const wall = createWall({ floorId: floor.id, startPoint: { x: 1000, y: 1000 }, endPoint: { x: 9000, y: 1000 }, thickness: 230, type: WallType.External, roomIds: ['room-bed-1', 'room-bed-2'] });
+  const windows = [
+    createWindow({ floorId: floor.id, wallId: wall.id, roomId: 'room-bed-1', position: { x: 2000, y: 1000 }, width: 1200 }),
+    createWindow({ floorId: floor.id, wallId: wall.id, roomId: 'room-bed-2', position: { x: 6000, y: 1000 }, width: 1200 }),
+  ];
+  const building = { ...before, floors: [{ ...floor, walls: [...floor.walls, wall], windows }] };
+  const result = optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000 });
+  expect(result.candidates.length).toBeGreaterThan(0);
+  for (const c of result.candidates) {
+    expect(c.building.floors[0]!.windows).toEqual(windows);
+    expect(c.building.floors[0]!.doors).toEqual(floor.doors);
+  }
 });

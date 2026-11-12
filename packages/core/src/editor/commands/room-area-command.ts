@@ -1,3 +1,4 @@
+import { canonicalBuildingHash } from '../../models/canonical-revision';
 import type { Building } from '../../types';
 import { generateId } from '../../models/id';
 import type { CommandExecutionResult, EditorState, IEditorCommand } from '../types';
@@ -23,40 +24,53 @@ export class ApplyRoomAreaRegenerationCommand implements IEditorCommand {
   readonly metadata: RoomAreaRegenerationMetadata;
   private readonly before: Building;
   private readonly after: Building;
+  private readonly beforeHash: string;
 
-  constructor(before: Building, after: Building, metadata: RoomAreaRegenerationMetadata) {
-    this.before = before;
-    this.after = { ...after, version: before.version + 1 };
-    this.metadata = metadata;
+  constructor(before: Building, after: Building, metadata: RoomAreaRegenerationMetadata, private readonly validateAcceptance?: (current: Building, proposed: Building) => void) {
+    this.before = structuredClone(before);
+    this.beforeHash = canonicalBuildingHash(before);
+    this.after = { ...structuredClone(after), version: before.version + 1 };
+    this.metadata = structuredClone(metadata);
     this.affectedEntityId = metadata.roomId;
     const requestedM2 = (metadata.requestedAreaMm2 / 1_000_000).toFixed(2);
     const achievedM2 = (metadata.achievedAreaMm2 / 1_000_000).toFixed(2);
     this.description = `Regenerate ${metadata.roomName} to ${achievedM2} m² (target ${requestedM2} m² via Candidate ${metadata.candidateType})`;
   }
 
-  execute(_building: Building, state: EditorState): CommandExecutionResult {
+  execute(building: Building, _state: EditorState): CommandExecutionResult {
+    if (canonicalBuildingHash(building) !== this.beforeHash) throw new Error('Stale room regeneration command');
+    if (!this.validateAcceptance) throw new Error('Room regeneration requires a deterministic acceptance validator');
+    this.validateAcceptance(building, this.after);
+    const floor = this.after.floors.find(f => f.rooms.some(r => r.id === this.metadata.roomId));
+    if (!floor) throw new Error('Regenerated room identity is missing');
     return {
-      building: this.after,
+      building: structuredClone(this.after),
       stateUpdates: {
+        activeFloorId: floor.id,
+        selections: [{ entityType: 'room', entityId: this.metadata.roomId, floorId: floor.id }],
         selection: {
           entityType: 'room',
           entityId: this.metadata.roomId,
-          floorId: state.activeFloorId,
+          floorId: floor.id,
         },
       },
     };
   }
 
-  undo(_building: Building, state: EditorState): CommandExecutionResult {
+  undo(_building: Building, _state: EditorState): CommandExecutionResult {
+    const floor = this.before.floors.find(f => f.rooms.some(r => r.id === this.metadata.roomId))!;
     return {
-      building: this.before,
+      building: structuredClone(this.before),
       stateUpdates: {
+        activeFloorId: floor.id,
+        selections: [{ entityType: 'room', entityId: this.metadata.roomId, floorId: floor.id }],
         selection: {
           entityType: 'room',
           entityId: this.metadata.roomId,
-          floorId: state.activeFloorId,
+          floorId: floor.id,
         },
       },
     };
   }
 }
+

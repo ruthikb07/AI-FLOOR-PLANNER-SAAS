@@ -95,7 +95,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
               type="number"
               min={10}
               max={250}
-              step={0.5}
+              step="any"
               suffix="m"
               value={wizard.plotWidthM}
               onChange={(e) => updateWizard({ plotWidthM: Math.max(1, Number(e.target.value)) })}
@@ -105,7 +105,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
               type="number"
               min={10}
               max={250}
-              step={0.5}
+              step="any"
               suffix="m"
               value={wizard.plotDepthM}
               onChange={(e) => updateWizard({ plotDepthM: Math.max(1, Number(e.target.value)) })}
@@ -140,7 +140,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
               type="number"
               min={6}
               max={60}
-              step={0.5}
+              step="any"
               suffix="m"
               value={wizard.roadWidthM}
               onChange={(e) => updateWizard({ roadWidthM: Math.max(1, Number(e.target.value)) })}
@@ -191,7 +191,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
           <ArgonInput
             label="Front Setback"
             type="number"
-            step={0.5}
+            step="any"
             min={1.5}
             max={20}
             suffix="m"
@@ -202,7 +202,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
           <ArgonInput
             label="Rear Setback"
             type="number"
-            step={0.5}
+            step="any"
             min={1.5}
             max={20}
             suffix="m"
@@ -213,7 +213,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
           <ArgonInput
             label="Side Setbacks (Each Side)"
             type="number"
-            step={0.5}
+            step="any"
             min={1.5}
             max={20}
             suffix="m"

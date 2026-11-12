@@ -1,3 +1,4 @@
+import { migrateOpeningGeometry } from '@ai-floor-planner/core';
 import type { Building, Polygon } from "@ai-floor-planner/core";
 import { residentialAcceptanceErrors } from "./residential-acceptance";
 import { ColumnGridGenerator } from "./column-grid-generator";
@@ -77,5 +78,8 @@ export function hardenResidentialBuilding(
 export function generateHardenedResidential(
   config: ResidentialSynthesisConfig,
 ) {
-  return new MultiStoryResidentialSynthesizer().synthesize(config);
+  const result = new MultiStoryResidentialSynthesizer().synthesize(config);
+  if (!result.accepted) return result;
+  const evidence = Object.fromEntries(result.building.floors.flatMap(f => [...f.doors, ...f.windows].map(o => [o.id, 'CENTER' as const])));
+  return { ...result, building: migrateOpeningGeometry(result.building, evidence) };
 }

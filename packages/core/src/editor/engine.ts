@@ -1,3 +1,4 @@
+import { withArchitecturalElements } from '../models/architectural-semantics';
 /**
  * Headless Architectural Editor Engine.
  *
@@ -138,7 +139,7 @@ export class EditorEngine {
 
     const buildingChanged = result.building !== prevBuilding;
 
-    this.building = result.building;
+    this.building = result.building !== prevBuilding && result.building.floors.some(f => f.architecture) ? withArchitecturalElements(result.building) : result.building;
 
     // Apply state updates from command
     if (result.stateUpdates) {

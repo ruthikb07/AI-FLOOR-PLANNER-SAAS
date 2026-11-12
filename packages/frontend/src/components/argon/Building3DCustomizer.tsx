@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useMemo } from 'react';
+import React, { lazy, Suspense, useState, useMemo, useRef } from 'react';
 import {
   Box,
   Sun,
@@ -15,6 +15,7 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
+import * as THREE from 'three';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
   UpdateWindowPropertiesCommand,
@@ -23,6 +24,7 @@ import {
   type OpeningStyleId,
   type IEditorCommand,
 } from '@ai-floor-planner/core';
+import { use3DAnimation } from '../../hooks/use3dAnimations';
 
 const ModelWorkspace = lazy(() => import('../model-3d/ModelWorkspace'));
 
@@ -56,6 +58,13 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
   const [customizerTab, setCustomizerTab] = useState<'fixtures' | 'furniture'>('fixtures');
   const [selectedFixtureId, setSelectedFixtureId] = useState<string>('sliding_aluminum_win');
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
+  const sceneRef = useRef<THREE.Scene | null>(null);
+
+  // Apply crazy 3D animations
+  use3DAnimation(sceneRef, {
+    particles: { enabled: true, color: '#22d3ee', count: 150 },
+    explosion: { enabled: explodeValue > 0, intensity: explodeValue / 10 },
+  });
 
   const fixtureOptions: readonly FixtureOption[] = useMemo(
     () => [
@@ -307,6 +316,7 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
             onSwitchFloor={editor.switchFloor}
             explodeValue={explodeValue}
             lightingMode={lightingMode}
+            sceneRef={sceneRef}
           />
         </Suspense>
 

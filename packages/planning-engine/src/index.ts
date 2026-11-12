@@ -61,6 +61,9 @@ export type {
 } from './refinement/targeted-regeneration';
 export {
   optimizeRoomArea,
+  createRoomAreaRegenerationCommand,
+  ENGINEERING_MIN_ROOM_AREAS,
+  ENGINEERING_MIN_ROOM_WIDTH,
   STATUTORY_MIN_ROOM_AREAS,
   STATUTORY_MIN_ROOM_WIDTH,
   type RoomAreaRegenerationOptions,

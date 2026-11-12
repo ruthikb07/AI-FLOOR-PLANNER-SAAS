@@ -2,12 +2,27 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
-> **Phase 2 Verification:** Complete (`feature/phase2-room-area-regeneration`)  
+> **Phase 2.5 Independent Review:** NOT READY — see [independent review](PHASE2_CODEX_INDEPENDENT_REVIEW.md)
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Verified By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
 
 ---
+
+## Phase 2.5 verified scope (supersedes earlier Phase 2 claims)
+
+| Capability | Current evidence / limit |
+| :--- | :--- |
+| Edited area retained across unit switches | Regression-tested using actual React input events; canonical target retained in mm². |
+| Command acceptance | Full building/control fingerprints and deterministic replay; partial, stale, forged and validator-free proposals rejected. |
+| Wall/opening identity | Preserved without cloning doors; ambiguous endpoint/topology reconstruction rejected. |
+| Minima | Project-configured areas plus conservative engineering defaults, not universal statutory rules. |
+| Undo/redo, persistence, exports | Fixture-level execution, reload, PDF/SVG bytes, DWG read-back, DXF area text and 3D wall coordinate tests. |
+| Actual synthesized physical floors | BLOCKED: center/start opening-position contracts are inconsistent across consumers. |
+| Browser / WebGL acceptance | NOT VERIFIED: browser service timed out; component/worker tests are not browser evidence. |
+| Complete phase readiness | NOT READY. Integration authentication and furniture identity failures remain; see report for exact gate results. |
+
+The historical package counts and unrelated capability rows below were not independently recertified by this focused audit. Passing software tests does not certify statutory or structural compliance.
 
 ## 1. System-Level Architecture & Package Matrix
 

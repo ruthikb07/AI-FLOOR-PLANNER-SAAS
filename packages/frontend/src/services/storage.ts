@@ -6,6 +6,12 @@
 import type { Building, BuildingBudgetIntent, CandidatePlan, FootprintIntent, GenerationControlState, SpaceProgram } from '@ai-floor-planner/core';
 import type { FloorPlanImagePromptRequest } from '@ai-floor-planner/ai-orchestration';
 import {
+  projectStore,
+  type IndexedDbProjectStore,
+  type PersistenceResult,
+  type PersistenceState,
+} from './durable-project-store';
+import {
   serializeBuilding,
   deserializeBuilding,
   validateBuildingSchema,
@@ -169,6 +175,22 @@ export interface ProjectHeader {
 const STORAGE_KEY_PREFIX = 'ai_floor_planner_proj_';
 const ACTIVE_PROJECT_KEY = 'ai_floor_planner_active_id';
 
+/**
+ * Outcome of a project save, reported honestly.
+ *
+ * `durability` is the state of the durable write; `SAVED` means the IndexedDB
+ * transaction completed. Geometry is always in memory and readable this session
+ * once `inMemory` is true, even when the durable write failed — those are
+ * different facts and the UI must be able to tell them apart.
+ */
+export interface SaveOutcome {
+  readonly durability: PersistenceState;
+  readonly inMemory: boolean;
+  readonly reason?: string;
+  /** Resolves when the durable write settles. Await when certainty matters. */
+  readonly durable: Promise<PersistenceResult>;
+}
+
 function normalizeBuildingCategory(value: unknown): BuildingCategory {
   return BUILDING_CATEGORIES.includes(value as BuildingCategory)
     ? value as BuildingCategory
@@ -193,64 +215,101 @@ function normalizeRequiredRoomCounts(input: unknown): Partial<Record<RoomType, n
   return counts;
 }
 
+/**
+ * Project persistence.
+ *
+ * Canonical building geometry is held in IndexedDB through
+ * `durable-project-store`, not in `localStorage`. A generated G+4 apartment
+ * serializes to roughly 2.39 MB and a G+10 to 5.73 MB, against a ~5 MB
+ * `localStorage` budget shared by every project — which is exactly why
+ * finalization used to fail with a quota error. `localStorage` now keeps only
+ * the active project id, which is a handful of bytes.
+ *
+ * Reads stay synchronous, served from the store's in-memory mirror that
+ * `hydrateProjectStorage()` fills before the app renders. That keeps the
+ * roughly eighteen existing synchronous call sites working unchanged.
+ */
 export class LocalStorageProjectStorage {
-  save(envelope: ProjectEnvelope): void {
+  /**
+   * Persists a project envelope.
+   *
+   * Returns the outcome rather than throwing on a storage failure: the
+   * geometry is already in the session and must not be discarded because a
+   * durable write failed. Callers that need certainty await `outcome.durable`.
+   *
+   * Still throws on a genuine programming error — a malformed envelope that
+   * cannot be serialized at all — because that is a defect, not a capacity
+   * problem, and should not be reported as a storage issue.
+   */
+  save(envelope: ProjectEnvelope): SaveOutcome {
+    // Read the previous record ONCE. The old implementation called JSON.parse
+    // on it six separate times, which on a multi-megabyte payload was pure
+    // waste on the hot finalization path.
+    const previousRaw = projectStore.read(envelope.projectId);
+    const previous = previousRaw ? safeParse(previousRaw) : undefined;
+
+    const category = normalizeBuildingCategory(envelope.category);
+    const previousProgram = previous?.spaceProgram as SpaceProgram | undefined;
+    const previousFootprint = previous?.footprintIntent as FootprintIntent | undefined;
+    const previousGeneration = previous?.generationSession as GenerationSession | undefined;
+    const previousControl = previous?.generationControl as GenerationControlState | undefined;
+    const previousImage = previous?.floorPlanImage as FloorPlanImageSession | undefined;
+
+    const candidateProgram = envelope.spaceProgram ?? previousProgram;
+    const spaceProgram = candidateProgram?.category === category
+      ? candidateProgram
+      : deriveSpaceProgramFromBuilding(envelope.building, category);
+    const footprintIntent = envelope.footprintIntent ?? previousFootprint ?? deriveFootprintIntent(envelope.building);
+    const generationControl = validateGenerationControl(
+      envelope.generationControl ?? previousControl ?? createGenerationControlState(),
+      envelope.building,
+    ).state;
+    const buildingBudget = normalizeBudget(
+      envelope.buildingBudget ?? previous?.buildingBudget,
+      { building: envelope.building, program: spaceProgram, footprint: footprintIntent, generationControl },
+    );
+
+    const serialized = JSON.stringify({
+      ...envelope,
+      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+      category,
+      spaceProgram,
+      buildingBudget,
+      footprintIntent,
+      generationSession: envelope.generationSession === null
+        ? undefined
+        : envelope.generationSession ?? previousGeneration,
+      floorPlanImage: envelope.floorPlanImage === null
+        ? undefined
+        : envelope.floorPlanImage ?? previousImage,
+      generationControl,
+      building: JSON.parse(serializeBuilding(envelope.building)),
+    });
+
+    const durable = projectStore.write(envelope.projectId, serialized);
+
+    // The active id is small and must survive a reload, so it stays in
+    // localStorage. A failure here is not fatal to the save.
     try {
-      const previousRaw = localStorage.getItem(STORAGE_KEY_PREFIX + envelope.projectId);
-      const previousProgram = previousRaw
-        ? (JSON.parse(previousRaw).spaceProgram as SpaceProgram | undefined)
-        : undefined;
-      const previousFootprint = previousRaw
-        ? (JSON.parse(previousRaw).footprintIntent as FootprintIntent | undefined)
-        : undefined;
-      const previousGeneration = previousRaw
-        ? (JSON.parse(previousRaw).generationSession as GenerationSession | undefined)
-        : undefined;
-      const previousControl = previousRaw
-        ? (JSON.parse(previousRaw).generationControl as GenerationControlState | undefined)
-        : undefined;
-      const previousImage = previousRaw
-        ? (JSON.parse(previousRaw).floorPlanImage as FloorPlanImageSession | undefined)
-        : undefined;
-      const category = normalizeBuildingCategory(envelope.category);
-      const candidateProgram = envelope.spaceProgram ?? previousProgram;
-      const spaceProgram = candidateProgram?.category === category
-        ? candidateProgram
-        : deriveSpaceProgramFromBuilding(envelope.building, category);
-      const footprintIntent = envelope.footprintIntent ?? previousFootprint ?? deriveFootprintIntent(envelope.building);
-      const generationControl = validateGenerationControl(envelope.generationControl ?? previousControl ?? createGenerationControlState(), envelope.building).state;
-      const previousBudget = previousRaw ? JSON.parse(previousRaw).buildingBudget : undefined;
-      const buildingBudget = normalizeBudget(envelope.buildingBudget ?? previousBudget, { building: envelope.building, program: spaceProgram, footprint: footprintIntent, generationControl });
-      const serialized = JSON.stringify({
-        ...envelope,
-        schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-        category,
-        spaceProgram,
-        buildingBudget,
-        footprintIntent: envelope.footprintIntent ?? previousFootprint ?? deriveFootprintIntent(envelope.building),
-        generationSession: envelope.generationSession === null
-          ? undefined
-          : envelope.generationSession ?? previousGeneration,
-        floorPlanImage: envelope.floorPlanImage === null
-          ? undefined
-          : envelope.floorPlanImage ?? previousImage,
-        generationControl: validateGenerationControl(
-          envelope.generationControl ?? previousControl ?? createGenerationControlState(),
-          envelope.building,
-        ).state,
-        building: JSON.parse(serializeBuilding(envelope.building)),
-      });
-      localStorage.setItem(STORAGE_KEY_PREFIX + envelope.projectId, serialized);
       localStorage.setItem(ACTIVE_PROJECT_KEY, envelope.projectId);
-    } catch (err) {
-      console.error('Failed to save project to LocalStorage:', err);
-      throw new Error('Storage quota exceeded or storage unavailable.');
+    } catch (error) {
+      console.warn('Could not record the active project id:', error);
     }
+
+    // The payload is in the mirror synchronously, so the session can continue
+    // immediately. Durability is reported as PENDING until the transaction
+    // settles; it is never claimed to be SAVED before then.
+    return {
+      durability: projectStore.isAvailable() ? 'PENDING' : 'UNAVAILABLE',
+      inMemory: true,
+      reason: projectStore.isAvailable() ? undefined : projectStore.unavailable(),
+      durable,
+    };
   }
 
   load(projectId: string): ProjectEnvelope | null {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
+      const raw = projectStore.read(projectId);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       const building = deserializeBuilding(JSON.stringify(parsed.building));
@@ -270,10 +329,8 @@ export class LocalStorageProjectStorage {
         buildingBudget: normalizeBudget(parsed.buildingBudget, { building, program, footprint, generationControl: control }),
         category,
         status: normalizeProjectStatus(parsed.status),
-        spaceProgram: savedProgram?.category === category
-          ? savedProgram
-          : deriveSpaceProgramFromBuilding(building, category),
-        footprintIntent: savedFootprint ?? deriveFootprintIntent(building),
+        spaceProgram: program,
+        footprintIntent: footprint,
         generationSession: savedGeneration ? {
           ...savedGeneration,
           candidates: savedGeneration.candidates.map(candidate => ({
@@ -283,7 +340,7 @@ export class LocalStorageProjectStorage {
         } : undefined,
         floorPlanImage: normalizeFloorPlanImageSession(parsed.floorPlanImage),
         architecturalEvaluation: normalizeArchitecturalEvaluation(parsed.architecturalEvaluation),
-        generationControl: validateGenerationControl(savedControl, building).state,
+        generationControl: control,
       };
     } catch (err) {
       console.error(`Failed to load project ${projectId}:`, err);
@@ -293,53 +350,142 @@ export class LocalStorageProjectStorage {
 
   list(): ProjectHeader[] {
     const list: ProjectHeader[] = [];
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(STORAGE_KEY_PREFIX)) {
-          const raw = localStorage.getItem(key);
-          if (raw) {
-            const data = JSON.parse(raw);
-            list.push({
-              id: data.projectId,
-              name: data.name ?? 'Untitled Project',
-              updatedAt: data.updatedAt ?? new Date().toISOString(),
-              roomCount: data.building?.floors?.reduce(
-                (count: number, floor: { rooms?: unknown[] }) => count + (floor.rooms?.length ?? 0),
-                0,
-              ) ?? 0,
-              plotArea: data.building?.site?.plotArea ?? 0,
-              floorCount: data.building?.site?.plannedFloorCount ?? data.building?.floors?.length ?? 0,
-              plotWidth: data.building?.site?.plotWidth ?? 0,
-              plotDepth: data.building?.site?.plotDepth ?? 0,
-              category: normalizeBuildingCategory(data.category),
-              status: normalizeProjectStatus(data.status),
-            });
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Error reading project list from LocalStorage', e);
+    for (const record of projectStore.readAll()) {
+      const data = safeParse(record.payload);
+      if (!data) continue;
+      list.push({
+        id: data.projectId,
+        name: data.name ?? 'Untitled Project',
+        updatedAt: data.updatedAt ?? record.updatedAt,
+        roomCount: data.building?.floors?.reduce(
+          (count: number, floor: { rooms?: unknown[] }) => count + (floor.rooms?.length ?? 0),
+          0,
+        ) ?? 0,
+        plotArea: data.building?.site?.plotArea ?? 0,
+        floorCount: data.building?.site?.plannedFloorCount ?? data.building?.floors?.length ?? 0,
+        plotWidth: data.building?.site?.plotWidth ?? 0,
+        plotDepth: data.building?.site?.plotDepth ?? 0,
+        category: normalizeBuildingCategory(data.category),
+        status: normalizeProjectStatus(data.status),
+      });
     }
     return list.sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1));
   }
 
+  /** Explicit user deletion. There is no automatic eviction of user projects. */
   delete(projectId: string): void {
-    localStorage.removeItem(STORAGE_KEY_PREFIX + projectId);
-    if (localStorage.getItem(ACTIVE_PROJECT_KEY) === projectId) {
-      localStorage.removeItem(ACTIVE_PROJECT_KEY);
+    void projectStore.remove(projectId);
+    try {
+      localStorage.removeItem(STORAGE_KEY_PREFIX + projectId);
+      if (localStorage.getItem(ACTIVE_PROJECT_KEY) === projectId) {
+        localStorage.removeItem(ACTIVE_PROJECT_KEY);
+      }
+    } catch (error) {
+      console.warn('Could not clear the legacy localStorage entry:', error);
     }
   }
 
   getActiveProjectId(): string | null {
-    return localStorage.getItem(ACTIVE_PROJECT_KEY);
+    try {
+      return localStorage.getItem(ACTIVE_PROJECT_KEY);
+    } catch {
+      return null;
+    }
   }
 
   setActiveProjectId(projectId: string): boolean {
-    if (!localStorage.getItem(STORAGE_KEY_PREFIX + projectId)) return false;
-    localStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
-    return true;
+    if (!projectStore.has(projectId)) return false;
+    try {
+      localStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
+      return true;
+    } catch {
+      return false;
+    }
   }
+
+  /** Awaits the durable write for a project. */
+  flush(projectId: string): Promise<PersistenceResult> {
+    return projectStore.flush(projectId);
+  }
+
+  /** Reads back from durable storage and checks the digest. */
+  verify(projectId: string): Promise<{ readonly ok: boolean; readonly reason?: string }> {
+    return projectStore.verify(projectId);
+  }
+
+  usage(): ReturnType<IndexedDbProjectStore['usage']> {
+    return projectStore.usage();
+  }
+}
+
+/** Tolerant parse: a corrupt record is skipped, never allowed to break a list. */
+function safeParse(raw: string): Record<string, any> | undefined {
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Prepares project storage and migrates anything still in `localStorage`.
+ *
+ * Must be awaited before the app renders, because every synchronous read is
+ * served from the store's mirror. Migration copies legacy records into
+ * IndexedDB and only removes the `localStorage` original once the durable
+ * write has actually completed — so an interrupted migration can lose nothing.
+ */
+export async function hydrateProjectStorage(): Promise<{
+  readonly migrated: number;
+  readonly failed: ReadonlyArray<{ projectId: string; reason: string }>;
+  readonly durableAvailable: boolean;
+}> {
+  await projectStore.hydrate();
+
+  const failed: Array<{ projectId: string; reason: string }> = [];
+  let migrated = 0;
+
+  // Collect legacy keys first: the loop below mutates localStorage, and
+  // iterating by index while removing entries skips records.
+  const legacyKeys: string[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(STORAGE_KEY_PREFIX)) legacyKeys.push(key);
+    }
+  } catch (error) {
+    console.warn('Could not enumerate legacy projects:', error);
+  }
+
+  for (const key of legacyKeys) {
+    const projectId = key.slice(STORAGE_KEY_PREFIX.length);
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      // A project already in IndexedDB wins: it is the newer store, and
+      // overwriting it with a stale localStorage copy would lose work.
+      if (projectStore.has(projectId)) {
+        localStorage.removeItem(key);
+        continue;
+      }
+
+      const result = await projectStore.write(projectId, raw);
+      if (result.state === 'SAVED') {
+        localStorage.removeItem(key);
+        migrated++;
+      } else {
+        // Leave the original in place. A legacy project is only removed once
+        // its durable copy is confirmed.
+        failed.push({ projectId, reason: result.reason ?? result.state });
+      }
+    } catch (error) {
+      failed.push({ projectId, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  return { migrated, failed, durableAvailable: projectStore.isAvailable() };
 }
 
 export const projectStorage = new LocalStorageProjectStorage();

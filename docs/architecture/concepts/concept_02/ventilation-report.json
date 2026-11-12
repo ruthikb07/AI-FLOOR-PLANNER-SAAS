@@ -1,0 +1,61 @@
+{
+  "note": "Opening areas are measured from canonical geometry. Regulatory adequacy is NOT_VERIFIED and requires review by a licensed Architect/Engineer before municipal submission.",
+  "wetRooms": [
+    {
+      "roomId": "floor_level_00::apt-room:flat_01__master_bath",
+      "name": "Flat 1 Master Toilet",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_01__common_bath",
+      "name": "Flat 1 Common Bathroom",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_02__master_bath",
+      "name": "Flat 2 Master Toilet",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_02__common_bath",
+      "name": "Flat 2 Common Bathroom",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_03__master_bath",
+      "name": "Flat 3 Master Toilet",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_03__common_bath",
+      "name": "Flat 3 Common Bathroom",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_04__master_bath",
+      "name": "Flat 4 Master Toilet",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    },
+    {
+      "roomId": "floor_level_00::apt-room:flat_04__common_bath",
+      "name": "Flat 4 Common Bathroom",
+      "windowCount": 1,
+      "openingAreaSqm": 0.39,
+      "udcprStatus": "NOT_VERIFIED"
+    }
+  ]
+}

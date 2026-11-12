@@ -308,3 +308,11 @@ export * from './hardening-geometry';
 
 export * from './residential-envelope';
 export * from './mep';
+
+export { roomRegenerationIntegrityIssues } from './room-regeneration-integrity';
+
+export * from './opening-geometry';
+
+export * from './architectural-solids';
+
+export * from './architectural-validation';

@@ -1,3 +1,6 @@
+import { LocalStorageProjectStorage, CURRENT_PROJECT_SCHEMA_VERSION } from '../services/storage';
+import { createExportArtifact, DEFAULT_ADVANCED_EXPORT_SETTINGS } from '../services/advanced-export';
+import { optimizeRoomArea } from '@ai-floor-planner/planning-engine';
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -125,6 +128,7 @@ describe('RoomAreaCustomizerPanel Component', () => {
       engine: {} as any,
       building,
       activeFloor: building.floors[0]!,
+      persistence: { state: 'SAVED' as const },
       selection: { entityType: 'room', entityId: 'room-bed-1', floorId: 'floor-0' },
       selections: [{ entityType: 'room', entityId: 'room-bed-1', floorId: 'floor-0' }],
       generationControl: createGenerationControlState(),
@@ -181,7 +185,7 @@ describe('RoomAreaCustomizerPanel Component', () => {
 
     expect(host.textContent).toContain('Room Area Customizer');
     expect(host.textContent).toContain('12.00 m²');
-    expect(host.textContent).toContain('Statutory Min: 9.50 m²');
+    expect(host.textContent).toContain('Project / engineering Min: 9.50 m²');
     expect(host.textContent).toContain('4.00 × 3.00 m');
   });
 
@@ -204,7 +208,57 @@ describe('RoomAreaCustomizerPanel Component', () => {
 
     const input = host.querySelector('input[type="number"]') as HTMLInputElement;
     expect(input).toBeDefined();
-    expect(parseFloat(input.value)).toBeCloseTo(129.2, 1);
+    expect(parseFloat(input.value)).toBeCloseTo(12 / 0.09290304, 5);
+  });
+
+  it('preserves an edited target through repeated unit switches', () => {
+    act(() => root.render(<RoomAreaCustomizerPanel editor={createEditorContext()} room={building.floors[0]!.rooms[0]!} />));
+    const input = host.querySelector('input[type="number"]') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '15.123456');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    for (let i = 0; i < 4; i++) {
+      act(() => Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === 'sq ft')!.click());
+      expect(Number(input.value)).toBeCloseTo(15.123456 / 0.09290304, 5);
+      act(() => Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === 'm²')!.click());
+      expect(Number(input.value)).toBeCloseTo(15.123456, 6);
+    }
+  });
+
+  it('uses actual constraint revisions in preview and blocks a subsequent lock change', async () => {
+    const editor = createEditorContext();
+    const room = building.floors[0]!.rooms[0]!;
+    act(() => root.render(<RoomAreaCustomizerPanel editor={editor} room={room} />));
+    const input = host.querySelector('input[type="number"]') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '15');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Regenerate Selected Room'))!.click(); });
+    act(() => Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Preview')!.click());
+    const accept = () => Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Accept Design')!;
+    expect(accept().disabled).toBe(false);
+    const changed = { ...editor, generationControl: { ...editor.generationControl, lockedEntityIds: [room.id] } };
+    act(() => root.render(<RoomAreaCustomizerPanel editor={changed} room={room} />));
+    expect(accept().disabled).toBe(true);
+    act(() => accept().click());
+    expect(executeCommandMock).not.toHaveBeenCalled();
+  });
+
+  it('saves and reloads resized canonical geometry and emits real PDF and SVG content', () => {
+    const candidate = optimizeRoomArea(building, 'room-bed-1', { targetAreaMm2: 15_000_000 }).candidates[0]!;
+    expect(candidate).toBeDefined();
+    const storage = new LocalStorageProjectStorage();
+    storage.save({ schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION, projectId: 'phase25-test', name: 'Audit fixture', createdAt: building.createdAt, updatedAt: building.updatedAt, building: candidate.building });
+    const loaded = storage.load('phase25-test')!;
+    expect(loaded.building.floors).toEqual(candidate.building.floors);
+    const pdf = createExportArtifact(loaded.building, { ...DEFAULT_ADVANCED_EXPORT_SETTINGS, format: 'pdf', scaleMode: 'FIT_TO_PAGE' });
+    expect(pdf.content.startsWith('%PDF-')).toBe(true);
+    expect(pdf.byteSize).toBeGreaterThan(1000);
+    const svg = createExportArtifact(loaded.building, { ...DEFAULT_ADVANCED_EXPORT_SETTINGS, format: 'svg' });
+    expect(svg.content).toContain('<svg');
+    expect(svg.content).toContain('15.0');
   });
 
   it('calls setRoomLocks when lock button is clicked', () => {
@@ -237,7 +291,7 @@ describe('RoomAreaCustomizerPanel Component', () => {
 
     const input = host.querySelector('input[type="number"]') as HTMLInputElement;
     act(() => {
-      input.value = '14.00';
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '14.00');
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
@@ -266,7 +320,7 @@ describe('RoomAreaCustomizerPanel Component', () => {
 
     const input = host.querySelector('input[type="number"]') as HTMLInputElement;
     act(() => {
-      input.value = '14.00';
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '14.00');
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });

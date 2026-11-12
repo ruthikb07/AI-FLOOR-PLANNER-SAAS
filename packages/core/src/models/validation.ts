@@ -1,3 +1,4 @@
+import { architecturalModelErrors } from './architectural-semantics';
 /**
  * Schema validation for deserialized Building data.
  *
@@ -347,6 +348,9 @@ export function validateBuildingSchema(building: unknown): ValidationError[] {
     }
   }
 
+  try {
+    if (Array.isArray(building['floors'])) for (const message of architecturalModelErrors(building as unknown as Building)) errors.push({ path: 'architecture', message, value: building['floors'] });
+  } catch { errors.push({ path: 'architecture', message: 'Malformed architectural model', value: building['floors'] }); }
   // Version
   for(const message of mepSchemaErrors(building))errors.push({path:'mep',message,value:building['mep']});
   if (!isFiniteNumber(building['version'])) {

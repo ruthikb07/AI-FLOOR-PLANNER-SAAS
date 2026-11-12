@@ -16,7 +16,6 @@
 
 import {
   RoomType,
-  generateId,
   type Building,
   type CanonicalFurnitureItem,
   type DynamicApartmentManifest,
@@ -92,6 +91,10 @@ export function furnishRoom(
   const rw = room.width;
   const rh = room.height;
   const rName = (room.name || '').toUpperCase();
+  // A bedroom/kitchen name in a balcony label describes its host, not its use.
+  // Keep outdoor spaces free of indoor fixtures even for legacy mislabeled models.
+  if (room.type === RoomType.Balcony || room.type === RoomType.Utility ||
+      /BALCONY|SIT[ -]?OUT|TERRACE/.test(rName)) return items;
   const areaM2 = room.area / 1_000_000;
 
   const doorBoxes = getRoomDoorClearanceBoxes(room, floor);
@@ -143,8 +146,9 @@ export function furnishRoom(
       return;
     }
 
+    const itemIndex = items.filter(i => i.roomId === room.id && i.type === type).length + 1;
     items.push({
-      id: generateId(),
+      id: `${room.id}__furn_${type}_${itemIndex}`,
       type,
       roomId: room.id,
       flatId,
@@ -203,15 +207,23 @@ export function furnishRoom(
     }
 
     if (placedSofa) {
-      // Coffee Table in front of the placed sofa
-      const cTableW = 1200;
-      const cTableD = 600;
-      const cX = placedSofa.x + (placedSofa.w - cTableW) / 2;
-      const cY = placedSofa.y + placedSofa.d + 300;
-      if (cY + cTableD <= ry + rh - 100) {
-        addItem('coffee_table', cX, cY, cTableW, cTableD, 0, 'CENTER');
-      } else {
-        addItem('coffee_table', placedSofa.x + placedSofa.w + 300, placedSofa.y, cTableD, cTableW, 90, 'CENTER');
+      // Coffee Table in front of or beside the placed sofa
+      const cTableCandidates = [
+        { x: placedSofa.x + (placedSofa.w - 1200) / 2, y: placedSofa.y + placedSofa.d + 300, w: 1200, d: 600, rot: 0 as const },
+        { x: placedSofa.x + (placedSofa.w - 1000) / 2, y: placedSofa.y + placedSofa.d + 200, w: 1000, d: 500, rot: 0 as const },
+        { x: placedSofa.x + (placedSofa.w - 800) / 2, y: placedSofa.y + placedSofa.d + 150, w: 800, d: 450, rot: 0 as const },
+        { x: placedSofa.x + placedSofa.w + 300, y: placedSofa.y + (placedSofa.d - 600) / 2, w: 600, d: 1000, rot: 90 as const },
+        { x: rx + (rw - 1000) / 2, y: ry + (rh - 500) / 2, w: 1000, d: 500, rot: 0 as const },
+      ];
+      for (const ctc of cTableCandidates) {
+        const init = items.length;
+        addItem('coffee_table', ctc.x, ctc.y, ctc.w, ctc.d, ctc.rot, 'CENTER');
+        if (items.length > init) break;
+      }
+      if (!items.some(i => i.roomId === room.id && i.type === 'coffee_table')) {
+        const cX = Math.max(innerMinX, Math.min(innerMaxX - 800, placedSofa.x + (placedSofa.w - 800) / 2));
+        const cY = Math.max(innerMinY, Math.min(innerMaxY - 450, placedSofa.y + placedSofa.d + 200));
+        addItem('coffee_table', cX, cY, 800, 450, 0, 'CENTER', true);
       }
 
       // TV Console along facing/clear walls
@@ -294,6 +306,32 @@ export function furnishRoom(
       }
     }
 
+    // If standard candidates failed due to door clearances, try corner/compact candidates
+    if (!items.some(i => i.roomId === room.id && i.type === 'bed')) {
+      const compactBedCandidates = [
+        { x: rx + 200, y: ry + 200, w: 1200, d: 1900, rot: 0 as const, wall: 'NORTH' as const },
+        { x: rx + rw - 1400, y: ry + 200, w: 1200, d: 1900, rot: 0 as const, wall: 'NORTH' as const },
+        { x: rx + 200, y: ry + rh - 2100, w: 1200, d: 1900, rot: 180 as const, wall: 'SOUTH' as const },
+        { x: rx + rw - 1400, y: ry + rh - 2100, w: 1200, d: 1900, rot: 180 as const, wall: 'SOUTH' as const },
+        { x: rx + 200, y: ry + 200, w: 1900, d: 1200, rot: 90 as const, wall: 'WEST' as const },
+        { x: rx + rw - 2100, y: ry + 200, w: 1900, d: 1200, rot: 270 as const, wall: 'EAST' as const },
+      ];
+      for (const bc of compactBedCandidates) {
+        if (rw >= bc.w + 100 && rh >= bc.d + 100) {
+          const init = items.length;
+          addItem('bed', bc.x, bc.y, bc.w, bc.d, bc.rot, bc.wall);
+          if (items.length > init) break;
+        }
+      }
+      if (!items.some(i => i.roomId === room.id && i.type === 'bed')) {
+        const bW = Math.min(1200, rw - 350);
+        const bD = Math.min(1900, rh - 350);
+        const bX = Math.max(innerMinX, rx + (rw - bW) / 2);
+        const bY = Math.max(innerMinY, ry + 200);
+        addItem('bed', bX, bY, bW, bD, 0, 'NORTH', true);
+      }
+    }
+
     // Wardrobe (600mm depth) along solid wall free of doors and windows
     const wardDim1 = Math.min(1800, Math.max(900, Math.min(rw, rh) - 1000));
     const wardDim2 = 600;
@@ -336,8 +374,7 @@ export function furnishRoom(
   else if (
     (room.type === RoomType.Kitchen || rName.includes('KITCHEN')) &&
     !rName.includes('UTILITY') &&
-    !rName.includes('BALCONY') &&
-    room.type !== RoomType.Balcony && room.type !== RoomType.Utility
+    !rName.includes('BALCONY')
   ) {
     const counterD = 600;
     const counterW = Math.min(3000, rw - 400);
@@ -402,7 +439,6 @@ export function furnishRoom(
 
   // ─── 4b. Kitchen Utility Balcony & Architectural Sit-Outs (Zero Stove/Sink) ───
   else if (
-    room.type === RoomType.Balcony ||
     rName.includes('UTILITY') ||
     rName.includes('BALCONY')
   ) {
@@ -453,16 +489,26 @@ export function furnishRoom(
     const is4BhkMasterBath = (rName.includes('MASTER') || rName.includes('ATTACHED')) && areaM2 >= 4.5;
     if (is4BhkMasterBath) {
       // 4BHK Master bath luxury: Bathtub + Shower
-      addItem('bathtub', rx + 200, ry + rh - 850, 1700, 700, 0, 'SOUTH');
+      if (rw >= 2000) {
+        addItem('bathtub', rx + 200, ry + rh - 850, 1700, 700, 0, 'SOUTH');
+      } else if (rh >= 2000) {
+        addItem('bathtub', rx + 200, ry + 200, 700, 1700, 90, 'WEST');
+      }
       if (rw >= 2400) {
         addItem('shower', rx + rw - 1000, ry + rh - 1000, 900, 900, 0, 'SOUTH');
       }
-    } else {
+    }
+
+    if (!items.some(i => i.roomId === room.id && (i.type === 'shower' || i.type === 'bathtub'))) {
       const showerCandidates = [
         { x: rx + rw - 1000, y: ry + rh - 1000, w: 900, d: 900, wall: 'SOUTH' as const },
         { x: rx + 200, y: ry + rh - 1000, w: 900, d: 900, wall: 'SOUTH' as const },
         { x: rx + rw - 1000, y: ry + 200, w: 900, d: 900, wall: 'NORTH' as const },
         { x: rx + 200, y: ry + 200, w: 900, d: 900, wall: 'NORTH' as const },
+        { x: rx + rw - 850, y: ry + rh - 850, w: 800, d: 800, wall: 'SOUTH' as const },
+        { x: rx + 150, y: ry + rh - 850, w: 800, d: 800, wall: 'SOUTH' as const },
+        { x: rx + rw - 850, y: ry + 150, w: 800, d: 800, wall: 'NORTH' as const },
+        { x: rx + 150, y: ry + 150, w: 800, d: 800, wall: 'NORTH' as const },
       ];
       for (const sh of showerCandidates) {
         if (rw >= sh.w + 100 && rh >= sh.d + 100) {
@@ -471,11 +517,16 @@ export function furnishRoom(
           if (items.length > init) break;
         }
       }
+      if (!items.some(i => i.roomId === room.id && (i.type === 'shower' || i.type === 'bathtub'))) {
+        const shX = Math.max(innerMinX, innerMaxX - 800);
+        const shY = Math.max(innerMinY, innerMaxY - 800);
+        addItem('shower', shX, shY, 800, 800, 0, 'SOUTH', true);
+      }
     }
   }
 
   // ─── 6. Vertical Staircase Cores ───────────────────────────────────────────
-  else if (room.type === RoomType.Staircase || rName.includes('STAIR')) {
+  else if (!room.architecturalRole && (room.type === RoomType.Staircase || rName.includes('STAIR'))) {
     const stairW = Math.min(1200, rw - 400);
     const stairL = Math.min(3000, rh - 400);
     if (stairW >= 800 && stairL >= 1800) {
@@ -549,7 +600,7 @@ export function furnishSiteParkingZones(
       for (let i = 0; i < stallCount; i++) {
         const sx = minX + i * stallW;
         items.push({
-          id: generateId(),
+          id: `${zone.id}__furn_car_${i + 1}`,
           type: 'car',
           roomId: zone.id,
           siteZoneId: zone.id,
@@ -569,7 +620,7 @@ export function furnishSiteParkingZones(
       for (let i = 0; i < stallCount; i++) {
         const sy = minY + i * stallH;
         items.push({
-          id: generateId(),
+          id: `${zone.id}__furn_car_${i + 1}`,
           type: 'car',
           roomId: zone.id,
           siteZoneId: zone.id,

@@ -1,4 +1,4 @@
-import { WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/core';
+import { architecturalBoundaryRole, WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/core';
 import { polygonSignedArea, containsPolygon } from './polygon';
 
 /** Millimetres. Numerical coincidence is separate from opening corner clearance. */
@@ -14,7 +14,7 @@ export const ARCHITECTURAL_STANDARDS_PROFILE = {
  * IDs depend on coordinates/owners, not randomness. T/L/X joins share exact endpoints.
  * Unsupported diagonal geometry is rejected; it is never projected onto axes.
  */
-export function generateApartmentWalls(rooms: readonly Room[], floorId: string, _boundary: Polygon): Wall[] {
+export function generateApartmentWalls(rooms: readonly Room[], floorId: string, _boundary: Polygon, semantic = rooms.some(r => r.architecturalRole !== undefined), guardHeightMm = 1100): Wall[] {
   type Edge = {axis:'x'|'y'; line:number; lo:number; hi:number; room:Room; side:'left'|'right'};
   const groups = new Map<string,Edge[]>();
   for (const room of rooms) {
@@ -46,14 +46,21 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
       const uses=owners.map(e=>e.room.spaceUse);
       const external = ids.length === 1;
       const isUnitSeparation = unitIds.length > 1;
-      const use:NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : uses.includes('SERVICE') ? 'SHAFT' : uses.includes('OUTDOOR') ? 'BALCONY' : uses.includes('CORE') ? 'CORE' : uses.includes('COMMON')&&unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
+      // A wall onto an explicit open-to-sky void is a shaft wall, like one onto
+      // a service duct: it can carry a bathroom ventilator. Open-to-sky spaces
+      // carry spaceUse 'VOID' rather than 'SERVICE', so without this a bathroom
+      // facing a light court would be treated as having no ventilation path at
+      // all — which is the opposite of the truth.
+      const ventilates = uses.includes('SERVICE') || uses.includes('VOID');
+      const use:NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : uses.includes('OUTDOOR') ? 'BALCONY' : uses.includes('CORE') ? 'CORE' : uses.includes('COMMON')&&unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
+      const boundaryRole = semantic ? architecturalBoundaryRole(owners.map(e => e.room), external) : undefined;
       const thickness =
         use === 'EXTERNAL' || use === 'UNIT_SEPARATION' ? 230 :
         use === 'COMMON_CORRIDOR' || use === 'CORE' ? 150 :
         use === 'SHAFT' ? 100 :
         use === 'BALCONY' ? (external ? 230 : 115) :
         115;
-      walls.push({id:`${floorId}::apt-wall:${key}:${lo}:${hi}`,floorId,startPoint:axis==='x'?{x:lo,y:line}:{x:line,y:lo},endPoint:axis==='x'?{x:hi,y:line}:{x:line,y:hi},thickness,type:external?WallType.External:WallType.Internal,roomIds:ids,unitIds,wallUse:use,leftRoomId:owners.find(o=>o.side==='left')?.room.id,rightRoomId:owners.find(o=>o.side==='right')?.room.id,hasOpening:false,loadBearing:false,provenance:'PROVISIONAL_HEURISTIC'});
+      walls.push({id:`${floorId}::apt-wall:${key}:${lo}:${hi}`,floorId,startPoint:axis==='x'?{x:lo,y:line}:{x:line,y:lo},endPoint:axis==='x'?{x:hi,y:line}:{x:line,y:hi},thickness,type:external?WallType.External:WallType.Internal,roomIds:ids,unitIds,wallUse: boundaryRole === 'PARAPET' ? 'PARAPET' : use, boundaryRole, ...(boundaryRole === 'OPEN_BOUNDARY' ? { heightMm: 0 } : boundaryRole === 'PARAPET' ? { heightMm: guardHeightMm } : {}), leftRoomId:owners.find(o=>o.side==='left')?.room.id,rightRoomId:owners.find(o=>o.side==='right')?.room.id,hasOpening:false,loadBearing:false,provenance:'PROVISIONAL_HEURISTIC'});
     }
   }
   return walls;

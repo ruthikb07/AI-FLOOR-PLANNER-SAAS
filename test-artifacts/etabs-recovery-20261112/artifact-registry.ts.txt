@@ -1,0 +1,280 @@
+import { ResidentialCadSerializer, verifyResidentialCadDrawing } from '../cad/residential-cad-serializer.js';
+import { ResidentialCadExportRegistry } from '../cad/residential-cad-export-registry.js';
+import { AccoreConsoleRunner } from '../cad/accoreconsole-runner.js';
+import { randomUUID } from 'node:crypto';
+import { complianceReport, complianceReportJson, complianceReportPdf } from './compliance-report-service.js';
+import { verifyComplianceArtifact, verifyStructuralArtifact } from './artifact-verifier.js';
+import * as acad from '@node-projects/acad-ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import type {
+  Building,
+  ExportFileDescriptor,
+  IndependentExportManifest,
+  VerifiedArtifactFormat,
+  VerifiedArtifactOptions,
+} from '@ai-floor-planner/core';
+import { PDFDocument } from 'pdf-lib';
+import { CadExportService, type CadExportValidation } from './cad-export-service.js';
+import { PdfExportService } from './pdf-export-service.js';
+import { canonicalRevisionHash, geometryReport, reportPdf } from './geometry-report.js';
+import { verifyCadArtifact, verifyPdfArtifact, verifyReportArtifact } from './artifact-verifier.js';
+import { ExportError, selectExportFloors, resolveExportScope } from './export-selection.js';
+import { StructuralAnalysisEngine } from './structural-analysis-engine.js';
+import { generateETABSAnalysisPdfReport } from './etabs-report-pdf.js';
+import { StructuralDrawingsService } from './structural-drawings-service.js';
+
+export type ArtifactFormat = VerifiedArtifactFormat;
+export class ArtifactRegistry {
+  constructor(readonly directory = path.resolve('output/cad-export/artifacts')) { }
+  async generate(
+    building: Building,
+    format: ArtifactFormat,
+    options: VerifiedArtifactOptions = {},
+  ) {
+    if (!['dwg', 'dxf', 'pdf', 'svg', 'geometry-json', 'geometry-pdf', 'udcpr-json', 'udcpr-pdf', 'structural-drawings-pdf', 'structural-report-pdf', 'structural-report-json'].includes(format))
+      throw new ExportError('UNSUPPORTED_FORMAT', 'Unsupported artifact format', 400);
+    if (
+      options.paperSize &&
+      !['A4', 'A3', 'A2', 'A1', 'A0', 'letter', 'tabloid'].includes(options.paperSize)
+    )
+      throw new ExportError('INVALID_OPTIONS', 'Unsupported paper size', 400);
+    if (
+      options.scale &&
+      options.scale !== 'FIT_TO_PAGE' &&
+      (!/^1:\d+(?:\.\d+)?$/.test(options.scale) || Number(options.scale.slice(2)) <= 0)
+    )
+      throw new ExportError(
+        'INVALID_OPTIONS',
+        'Scale must be FIT_TO_PAGE or a positive 1:N ratio',
+        400,
+      );
+    if (options.cadStandard !== undefined) {
+      if (!['A', 'B'].includes(options.cadStandard) || !['dxf', 'dwg'].includes(format)) throw new ExportError('INVALID_CAD_STANDARD', 'Residential A/B require DXF or DWG', 400);
+      if (options.nativeCadAudit !== undefined && typeof options.nativeCadAudit !== 'boolean') throw new ExportError('INVALID_OPTIONS', 'nativeCadAudit must be boolean', 400);
+      const scope = resolveExportScope(options); if (scope === 'site_plan') throw new ExportError('INVALID_CAD_SCOPE', 'Residential sheets require physical floors', 400);
+      const serialized = new ResidentialCadSerializer().serialize(structuredClone(building), { standard: options.cadStandard, floorId: options.floorId, combined: scope === 'all_floors' || scope === 'complete_project' });
+      const registry = new ResidentialCadExportRegistry(this.directory);
+      if (format === 'dxf' && options.nativeCadAudit !== true) return registry.persist(serialized.data, 'dxf', serialized.metadata);
+      if (format === 'dwg' && options.nativeCadAudit === false) throw new ExportError('INVALID_OPTIONS', 'Residential DWG requires native audit; request DXF for an unaudited source file', 400);
+      const job = path.join(this.directory, `.native-${randomUUID()}`); fs.mkdirSync(job, { recursive: true });
+      const input = path.join(job, 'source.dxf'), output = path.join(job, 'native.dwg'); fs.writeFileSync(input, serialized.data);
+      const native = await new AccoreConsoleRunner().convert(input, output);
+      fs.writeFileSync(path.join(job, 'native-result.json'), JSON.stringify(native, null, 2));
+      if (native.status !== 'VERIFIED') throw new ExportError(native.code, native.errors.join('; '), 503);
+      if (format === 'dxf') return registry.persist(serialized.data, 'dxf', serialized.metadata, native, serialized.verification);
+      const data = fs.readFileSync(output), verified = verifyResidentialCadDrawing(data, 'dwg', serialized.metadata, serialized.verification.document, native);
+      return registry.persist(data, 'dwg', serialized.metadata, native, verified);
+    }
+    let floors = selectExportFloors(building, options);
+    if (format.startsWith('udcpr-') || format.startsWith('geometry-') || format.startsWith('structural-')) {
+      options = { ...options, exportScope: 'all_floors', floorId: undefined };
+      floors = selectExportFloors(building, options);
+    }
+      const scope = resolveExportScope(options);
+      const revisionHash = canonicalRevisionHash(building);
+      let data: Uint8Array, mimeType: string, validation: unknown;
+      if (format === 'dwg' || format === 'dxf') {
+        const result = new CadExportService().exportCad(building, format, options);
+        data = result.data;
+        mimeType = result.mimeType;
+        validation = result.validation;
+      } else if (format === 'pdf') {
+        const result = new PdfExportService().exportPdf(building, options);
+        data = result.data;
+        mimeType = result.mimeType;
+      } else if (format === 'udcpr-json' || format === 'udcpr-pdf') {
+        const report = complianceReport(building);
+        data = format === 'udcpr-json' ? complianceReportJson(report) : complianceReportPdf(report);
+        mimeType = format === 'udcpr-json' ? 'application/json' : 'application/pdf';
+      } else if (format === 'geometry-json' || format === 'geometry-pdf') {
+        const report = geometryReport(building);
+        data =
+          format === 'geometry-json'
+            ? Buffer.from(JSON.stringify(report, null, 2))
+            : reportPdf(report);
+        mimeType = format === 'geometry-json' ? 'application/json' : 'application/pdf';
+      } else if (format === 'svg') {
+        const cad = new CadExportService().exportCad(building, 'dxf', options);
+        data = this.cadSvg(cad.data, 'dxf');
+        mimeType = 'image/svg+xml';
+      } else if (format === 'structural-drawings-pdf') {
+        const result = await new StructuralDrawingsService().generateStructuralDrawingPackage(building);
+        data = result.data;
+        mimeType = 'application/pdf';
+      } else if (format === 'structural-report-pdf') {
+        const model = new StructuralAnalysisEngine().generateComprehensiveModel(building);
+        data = await generateETABSAnalysisPdfReport(model);
+        mimeType = 'application/pdf';
+      } else if (format === 'structural-report-json') {
+        const model = new StructuralAnalysisEngine().generateComprehensiveModel(building);
+        data = Buffer.from(JSON.stringify(model, null, 2));
+        mimeType = 'application/json';
+      } else throw new ExportError('UNSUPPORTED_FORMAT', 'Unsupported artifact format', 400);
+      const extension = format.startsWith('geometry-')
+        ? format.slice(9)
+        : format.startsWith('udcpr-')
+          ? format.slice(6)
+          : format.startsWith('structural-')
+            ? (format.endsWith('-json') ? 'json' : 'pdf')
+            : format;
+      const verification = format.startsWith('udcpr-')
+        ? await verifyComplianceArtifact(data, extension as 'pdf' | 'json', revisionHash)
+        : format.startsWith('structural-')
+          ? await verifyStructuralArtifact(data, extension as 'pdf' | 'json')
+          : extension === 'dwg' || extension === 'dxf'
+            ? verifyCadArtifact(data, extension)
+            : extension === 'pdf'
+              ? verifyPdfArtifact(data)
+              : verifyReportArtifact(data, extension as 'svg' | 'json');
+      if (extension === 'pdf') {
+        try {
+          const reopened = await PDFDocument.load(data, { throwOnInvalidObject: true });
+          if (reopened.getPageCount() < 1) throw new Error('Empty PDF page tree');
+        } catch (error) {
+          throw new ExportError(
+            'ARTIFACT_VERIFICATION_FAILED',
+            `PDF reopen failed: ${String(error)}`,
+          );
+        }
+      }
+      if (!verification.isValid)
+        throw new ExportError('ARTIFACT_VERIFICATION_FAILED', verification.errors.join('; '));
+      const sha256 = createHash('sha256').update(data).digest('hex');
+      const clean = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 65);
+      const fileName = `${clean(building.id)}_r${building.version}_${clean(options.drawingKind ?? 'ARCHITECTURAL')}_${clean(scope)}_${clean(format.startsWith('geometry-') ? 'geometry-report' : (options.floorId ?? (floors.length === 1 ? floors[0]!.id : 'all')))}_${revisionHash.slice(0, 12)}_${sha256}.${extension}`;
+      fs.mkdirSync(this.directory, { recursive: true });
+      const destination = path.join(this.directory, fileName);
+      if (!fs.existsSync(destination)) fs.writeFileSync(destination, data, { flag: 'wx' });
+      const saved = fs.readFileSync(destination);
+      if (createHash('sha256').update(saved).digest('hex') !== sha256)
+        throw new ExportError(
+          'ARTIFACT_CHECKSUM_MISMATCH',
+          'Persisted artifact differs from verified bytes',
+        );
+      const descriptor: ExportFileDescriptor = {
+        fileId: sha256,
+        fileName,
+        fileType: extension.toUpperCase() as ExportFileDescriptor['fileType'],
+        discipline: format.startsWith('udcpr-')
+          ? 'STATUTORY'
+          : format.startsWith('structural-') || options.drawingKind === 'STRUCTURAL'
+            ? 'STRUCTURAL'
+            : 'ARCHITECTURAL',
+        title: format === 'structural-drawings-pdf'
+          ? 'Structural CAD Drawing Set (S-101 to S-104 ISO A3 Landscape)'
+          : format === 'structural-report-pdf'
+            ? 'ETABS Multi-Page Structural Analysis & IS Code Compliance Report'
+            : format === 'structural-report-json'
+              ? 'ETABS Comprehensive Structural FEM Model & Result Ledger'
+              : format.startsWith('udcpr-')
+                ? 'UDCPR 2020 Engineering Compliance Report - Professional Review Required'
+                : format.startsWith('geometry-')
+                  ? 'Geometry & Area Closure Report'
+                  : `${scope}: ${options.floorId ?? 'all'}`,
+        mimeType,
+        sizeBytes: data.length,
+        sha256,
+        buildingId: building.id,
+        revision: building.version,
+        revisionHash,
+        scope: `${options.drawingKind ?? 'ARCHITECTURAL'}:${scope}:${floors.map((f) => f.id).join(',') || 'site'}`,
+        verification: {
+          isValid: true,
+          errors: [],
+          checks: {
+            ...verification.checks,
+            ...(format === 'dwg' || format === 'dxf'
+              ? (validation as CadExportValidation).sourceChecks
+              : {}),
+          },
+        },
+        downloadUrl: `/api/v1/export/download/${encodeURIComponent(fileName)}`,
+        metadata: { validation, options, floorIds: floors.map((f) => f.id), units: 'mm' },
+      };
+      const manifest: IndependentExportManifest = {
+        buildingId: building.id,
+        projectId: building.projectId,
+        revision: building.version,
+        revisionHash,
+        generatedAt: new Date().toISOString(),
+        files: [descriptor],
+        overallStatus: 'SUCCESS',
+      };
+      const manifestPath = `${destination}.manifest.json`;
+      if (!fs.existsSync(manifestPath))
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), { flag: 'wx' });
+      else {
+        const existing = JSON.parse(
+          fs.readFileSync(manifestPath, 'utf8'),
+        ) as IndependentExportManifest;
+        if (existing.revisionHash !== revisionHash || existing.files[0]?.sha256 !== sha256)
+          throw new ExportError(
+            'ARTIFACT_MANIFEST_MISMATCH',
+            'Immutable manifest provenance differs',
+          );
+      }
+      return { descriptor, manifest, data, validation, destination };
+    }
+  async generateResidentialPackage(building: Building, options: import('@ai-floor-planner/core').ResidentialCadPackageOptions = {}){
+      return new ResidentialCadExportRegistry(this.directory).generate(building, options);
+    }
+    preview(fileName: string): Uint8Array {
+      const artifact = this.read(fileName);
+      const format = artifact.descriptor.fileType.toLowerCase();
+      if (format !== 'dwg' && format !== 'dxf') return artifact.data;
+      return this.cadSvg(artifact.data, format, artifact.descriptor.metadata?.nativeCad as import('@ai-floor-planner/core').NativeCadVerification | undefined);
+    }
+  private cadSvg(bytes: Uint8Array, format: 'dwg' | 'dxf', native?: import('@ai-floor-planner/core').NativeCadVerification): Uint8Array {
+    const verified = verifyCadArtifact(bytes, format, undefined, undefined, format === 'dwg' ? native : undefined);
+    if (!verified.isValid || !verified.document?.modelSpace)
+      throw new ExportError('ARTIFACT_VERIFICATION_FAILED', verified.errors.join('; '));
+    const writer = new acad.SvgXmlWriter(
+      new Uint8Array(16 * 1024 * 1024),
+      new acad.SvgConfiguration(),
+    );
+    writer.onNotification = (_sender, event) => {
+      if (event.exception || event.notificationType !== 0)
+        throw new ExportError('PREVIEW_FAILED', event.message);
+    };
+    for (const entity of [...verified.document.blockRecords!].flatMap((block) => [
+      ...block.entities,
+    ]))
+      if (entity.color.isByLayer || entity.color.isByBlock) entity.color = entity.layer.color;
+    writer.writeBlock(verified.document.modelSpace);
+    writer.close();
+    const data = Buffer.from(writer.getOutput());
+    const svg = verifyReportArtifact(data, 'svg');
+    if (!svg.isValid) throw new ExportError('PREVIEW_FAILED', svg.errors.join('; '));
+    return data;
+  }
+  read(fileName: string) {
+    if (!fileName || fileName !== path.basename(fileName) || fileName.includes('..'))
+      throw new ExportError('INVALID_FILENAME', 'Invalid artifact filename', 400);
+    const destination = path.join(this.directory, fileName);
+    if (!fs.existsSync(destination) || !fs.existsSync(`${destination}.manifest.json`))
+      throw new ExportError('FILE_NOT_FOUND', 'Verified artifact not found', 404);
+    const manifest = JSON.parse(
+      fs.readFileSync(`${destination}.manifest.json`, 'utf8'),
+    ) as IndependentExportManifest;
+    const descriptor = manifest.files[0]!;
+    const data = fs.readFileSync(destination);
+    if (
+      !descriptor ||
+      descriptor.fileName !== fileName ||
+      !descriptor.verification?.isValid ||
+      manifest.overallStatus !== 'SUCCESS' ||
+      descriptor.revisionHash !== manifest.revisionHash ||
+      !fileName.includes(descriptor.sha256 ?? 'INVALID') ||
+      data.length !== descriptor.sizeBytes
+    )
+      throw new ExportError(
+        'ARTIFACT_MANIFEST_MISMATCH',
+        'Artifact provenance does not match the immutable manifest',
+      );
+    if (createHash('sha256').update(data).digest('hex') !== descriptor.sha256)
+      throw new ExportError('ARTIFACT_CHECKSUM_MISMATCH', 'Artifact changed after verification');
+    return { descriptor, data, destination };
+  }
+}

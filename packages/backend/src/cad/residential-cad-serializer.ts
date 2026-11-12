@@ -1,3 +1,4 @@
+import { isPhysicalBoundary } from '@ai-floor-planner/core';
 import * as acad from "@node-projects/acad-ts";
 import { createHash } from "node:crypto";
 import {
@@ -10,6 +11,7 @@ import {
   type ResidentialCadSheetMetadata,
 } from "@ai-floor-planner/core";
 import {
+  canonicalStairSolids,
   polygonArea,
   polygonCentroid,
   polygonBoundingBox,
@@ -34,6 +36,8 @@ import {
 } from "../services/export-selection.js";
 export const RESIDENTIAL_CAD_LAYERS = {
   "A-WALL-EXTR": 11,
+  "A-GUARD": 32,
+  "A-STAIR": 8,
   "A-WALL-INTR": 252,
   "S-COLS": 5,
   "S-BEAM": 4,
@@ -340,7 +344,8 @@ export class ResidentialCadSerializer {
         text(s, { x: (left + right) / 2, y: bottom - 5500 - i * 500 }, 120),
       );
       if (options.standard === "A") {
-        for (const wall of floor.walls) {
+        for (const wall of floor.walls.filter(isPhysicalBoundary)) {
+          if (wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL") { line(cad(wall.startPoint), cad(wall.endPoint), "A-GUARD"); continue; }
           const q = projectOnSegment(
             wall.startPoint,
             wall.startPoint,
@@ -462,7 +467,7 @@ export class ResidentialCadSerializer {
             });
           }
         }
-        for (const opening of [...floor.doors, ...floor.windows]) {
+        for (const opening of [...floor.doors, ...floor.windows].filter(o => floor.walls.some(w => w.id === o.wallId && isPhysicalBoundary(w)))) {
           const wall = floor.walls.find((w) => w.id === opening.wallId);
           if (!wall) throw new ExportError("UNHOSTED_OPENING", opening.id);
           const p = projectOnSegment(
@@ -506,7 +511,8 @@ export class ResidentialCadSerializer {
             0
               ? 1
               : -1;
-          if (door.swingDirection === "outward") side *= -1;
+          if (door.openingGeometryVersion === 1) side = ["outward","left"].includes(door.swingDirection) ? -1 : 1;
+          else if (door.swingDirection === "outward") side *= -1;
           const leaf = {
             x: a.x - side * dy * opening.width,
             y: a.y + side * dx * opening.width,
@@ -532,23 +538,8 @@ export class ResidentialCadSerializer {
           add(arc, name);
         }
         for (const stair of floor.canonicalStaircases ?? []) {
-          poly(stair.polygon.points.map(cad), "A-WALL-INTR");
-          for (const flight of [stair.flight1, stair.flight2]) {
-            poly(flight.points.map(cad), "A-WALL-INTR");
-            const b = polygonBoundingBox(flight);
-            for (let i = 1; i < stair.riserCount / 2; i++)
-              line(
-                cad({
-                  x: b.x,
-                  y: b.y + (b.height * i) / (stair.riserCount / 2),
-                }),
-                cad({
-                  x: b.x + b.width,
-                  y: b.y + (b.height * i) / (stair.riserCount / 2),
-                }),
-                "A-WALL-INTR",
-              );
-          }
+          for (const part of canonicalStairSolids(stair, floor.floorHeight, floor.slabThicknessMm).filter(p => floor.floorUse !== "ROOF" || p.top === 0))
+            poly(part.boundary.points.map(cad), "A-STAIR");
         }
         if (floor.floorUse === "STILT_PARKING")
           for (const drive of building.site.siteZones?.filter(

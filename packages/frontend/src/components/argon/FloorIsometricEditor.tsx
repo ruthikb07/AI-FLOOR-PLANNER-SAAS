@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import * as THREE from 'three';
 import {
   Layers,
   Box,
@@ -14,6 +15,7 @@ import {
   projectionSourceToSelection,
   type ModelLayerVisibility,
 } from '../../services/projection-preferences';
+import { FLOOR_ISOMETRIC_BLUEPRINT_CONFIG } from '../../views/animations/FloorIsometricSceneConfig';
 
 interface FloorIsometricEditorProps {
   editor: EditorContextValue;
@@ -24,6 +26,7 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'3d_iso' | '2d_plan'>('3d_iso');
   const [fitRequest, setFitRequest] = useState(0);
+  const sceneRef = useRef<THREE.Scene | null>(null);
 
   const projector = useMemo(() => new Building3DProjector(), []);
   const projection = useMemo(
@@ -61,6 +64,56 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
     const elevationM = ((floor.level * heightMm) / 1000).toFixed(2);
     return `+${elevationM}m`;
   };
+
+  // Apply BlueprintLines animation when scene is ready
+  useEffect(() => {
+    if (sceneRef.current) {
+      const config = FLOOR_ISOMETRIC_BLUEPRINT_CONFIG.blueprintLines;
+      if (!config.enabled) return;
+
+      const lineGroup = new THREE.Group();
+      lineGroup.name = 'blueprint-lines';
+      sceneRef.current.add(lineGroup);
+
+      const segmentCount = 12;
+
+      for (let i = 0; i < segmentCount; i++) {
+        const angle = (i / segmentCount) * Math.PI * 2;
+        const radius = 6 + Math.random() * 2;
+
+        const geometry = new THREE.RingGeometry(2, 2.2, 64);
+        geometry.rotateX(-Math.PI / 2);
+        geometry.translate(
+          radius * Math.cos(angle),
+          0.02,
+          radius * Math.sin(angle)
+        );
+
+        const material = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(config.color),
+          transparent: true,
+          opacity: config.opacity,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+        });
+
+        const ring = new THREE.Points(geometry, material);
+        ring.rotation.y = angle;
+        ring.position.x = Math.cos(angle) * 6;
+        ring.position.z = Math.sin(angle) * 6;
+        lineGroup.add(ring);
+      }
+
+      // Animation loop
+      let animationTime = 0;
+      const animate = () => {
+        animationTime += 16; // approx 60fps
+        lineGroup.rotation.y = (animationTime % 2000) / 2000 * Math.PI * 2;
+        requestAnimationFrame(animate);
+      };
+      animate();
+    }
+  }, [sceneRef.current]);
 
   return (
     <div
@@ -102,51 +155,51 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
             })}
           </div>
         </div>
+      </div>
 
-        {/* View Mode Controls: 3D Isometric Isolated vs 2D Drafting Plan */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button
-              data-testid="toggle-view-3d"
-              onClick={() => setViewMode('3d_iso')}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === '3d_iso'
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>3D Isometric</span>
-            </button>
-            <button
-              data-testid="toggle-view-2d"
-              onClick={() => setViewMode('2d_plan')}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-all ${
-                viewMode === '2d_plan'
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>2D Technical Plan</span>
-            </button>
-          </div>
+      {/* View Mode Controls: 3D Isometric Isolated vs 2D Drafting Plan */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            data-testid="toggle-view-3d"
+            onClick={() => setViewMode('3d_iso')}
+            className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === '3d_iso'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>3D Isometric</span>
+          </button>
+          <button
+            data-testid="toggle-view-2d"
+            onClick={() => setViewMode('2d_plan')}
+            className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === '2d_plan'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>2D Technical Plan</span>
+          </button>
+        </div>
 
-          {viewMode === '3d_iso' && (
-            <button
-              onClick={() => setFitRequest((v) => v + 1)}
-              title="Reset Isometric Camera Fit"
-              className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1.5 transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span>Fit</span>
-            </button>
-          )}
+        {viewMode === '3d_iso' && (
+          <button
+            onClick={() => setFitRequest((v) => v + 1)}
+            title="Reset Isometric Camera Fit"
+            className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1.5 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span>Fit</span>
+          </button>
+        )}
 
-          <div className="text-[11px] font-mono text-slate-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 hidden md:flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Isolated Plate · Upper Floors Suppressed</span>
-          </div>
+        <div className="text-[11px] font-mono text-slate-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 hidden md:flex items-center gap-1.5">
+          <Compass className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Isolated Plate · Upper Floors Suppressed</span>
         </div>
       </div>
 
@@ -170,6 +223,7 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
               fitSite={false}
               onSelect={handleSelect3D}
               onClearSelection={() => editor.clearSelection()}
+              sceneRef={sceneRef}
             />
           </div>
         ) : (

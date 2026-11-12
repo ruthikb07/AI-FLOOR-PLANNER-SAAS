@@ -1,3 +1,4 @@
+import type { ArchitecturalSpaceRole, ArchitecturalBoundaryRole, ArchitecturalFloorModel } from './architectural-elements';
 import type { RegulatoryContextInput } from './udcpr';
 import type { CanonicalMepSystems } from '../mep/mep-contracts';
 /**
@@ -116,6 +117,7 @@ export interface AdjacencyRequirement {
 
 /** A room within a floor. */
 export interface Room {
+  readonly architecturalRole?: ArchitecturalSpaceRole;
   readonly wetRoomType?: 'BATH_ONLY' | 'WC_ONLY' | 'COMBINED';
   readonly clearHeightMm?: number;
   readonly openToSky?: boolean;
@@ -150,6 +152,8 @@ export interface Room {
 
 /** A wall segment on a floor. */
 export interface Wall {
+  readonly boundaryRole?: ArchitecturalBoundaryRole;
+  readonly heightMm?: number;
   readonly wallUse?: 'EXTERNAL' | 'INTERNAL_PARTITION' | 'UNIT_SEPARATION' | 'COMMON_CORRIDOR' | 'CORE' | 'SHAFT' | 'BALCONY' | 'PARAPET';
   readonly leftRoomId?: string;
   readonly rightRoomId?: string;
@@ -170,7 +174,10 @@ export interface Wall {
 // ─── Door ───────────────────────────────────────────────────────────────────
 
 /** A door placed on a wall. */
+/** V1 positions are world-space centers; direction is host start -> end. */
 export interface Door {
+  readonly openingGeometryVersion?: 1;
+  readonly positionReference?: 'CENTER';
   readonly id: string;
   readonly floorId: string;
   readonly wallId: string;
@@ -191,6 +198,8 @@ export interface Door {
 
 /** A window placed on a wall. */
 export interface Window {
+  readonly openingGeometryVersion?: 1;
+  readonly positionReference?: 'CENTER';
   readonly id: string;
   readonly floorId: string;
   readonly wallId: string;
@@ -248,6 +257,7 @@ export interface Column {
 
 /** A single floor/level in the building. */
 export interface Floor {
+  readonly architecture?: ArchitecturalFloorModel;
   readonly parkingClearHeightMm?: number;
   readonly elevationMm?: number;
   readonly floorUse?: 'RESIDENTIAL' | 'STILT_PARKING' | 'ROOF';
@@ -276,6 +286,12 @@ export interface Floor {
 
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
+  readonly bedroomBalconySchedule?: readonly {
+    flatId: string | null; floorId: string; bedroomId: string; balconyId: string | null;
+    accessDoorId: string | null; dimensionsMm: { width: number; depth: number } | null; areaM2: number | null;
+    externalExposure: 'NOT_VERIFIED'; udcprStatus: 'NOT_VERIFIED'; geometryStatus: 'NOT_VERIFIED' | 'FAILED';
+    feasibilityReason: string; alternatives: string[];
+  }[];
   readonly projectId: string;
   readonly clientName?: string;
   readonly generationBrief?: {

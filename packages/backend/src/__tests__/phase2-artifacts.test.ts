@@ -49,6 +49,8 @@ describe('Phase 2 independent immutable artifacts', () => {
         stiltAmenities: DEFAULT_STILT_AMENITIES,
         terraceAmenities: DEFAULT_TERRACE_AMENITIES,
         parkingMode: 'STILT_ONLY',
+        // This fixture explicitly verifies column/beam artifacts; architecture defaults to deferred structure.
+        structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
       })
     ).building;
   });

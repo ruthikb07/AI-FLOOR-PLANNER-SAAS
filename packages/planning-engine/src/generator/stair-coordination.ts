@@ -1,6 +1,6 @@
 import type { Building, Door, Floor, GenerationControlState, Room, Stair } from '@ai-floor-planner/core';
 import { Direction, DoorType, RoomType, StairType, SwingDirection, rectToPolygon } from '@ai-floor-planner/core';
-import { computeDoorOpeningSegment, computeDoorSwingPolygon, computeStairSolids, containsPolygon, polygonsOverlap } from '@ai-floor-planner/geometry-engine';
+import { canonicalStairSolids, pointInPolygon, computeDoorOpeningSegment, computeDoorSwingPolygon, computeStairSolids, containsPolygon, polygonsOverlap } from '@ai-floor-planner/geometry-engine';
 
 export interface StairCoordinationResult {
   readonly building: Building;
@@ -120,6 +120,23 @@ export function stairModelIssues(building: Building): string[] {
       const peerFloor = floor.level === stair.connectsFloors[0] ? target : source;
       if (!peerFloor?.stairs.some(peer => peer.verticalCoreId === stair.verticalCoreId
         && peer.x === stair.x && peer.y === stair.y && peer.width === stair.width && peer.length === stair.length)) issues.push(`${floor.name}: stair opening does not align with the connected floor.`);
+      const canonical=floor.architecture ? floor.canonicalStaircases?.find(c=>c.id===stair.id) : undefined;
+      if (canonical?.floorLanding) {
+        try { canonicalStairSolids(canonical,source?.floorHeight ?? floor.floorHeight,floor.slabThicknessMm); } catch { issues.push(`${floor.name}: invalid canonical stair flights/landings.`); }
+        const core=floor.rooms.find(r=>r.type===RoomType.Staircase && containsPolygon(r.boundary,canonical.polygon));
+        if (!core || !containsPolygon(core.boundary,canonical.floorLanding)) issues.push(`${floor.name}: canonical floor landing is outside its enclosure.`);
+        if (core) for (const door of floor.doors.filter(d=>d.connectsRooms.includes(core.id))) {
+          const wall=floor.walls.find(w=>w.id===door.wallId);
+          if (!wall) { issues.push(`${floor.name}: stair door has no host wall.`); continue; }
+          try {
+            const opening=computeDoorOpeningSegment(door,wall);
+            if (![opening.start,opening.end].every(p=>pointInPolygon(p,canonical.floorLanding!))) issues.push(`${floor.name}: stair opening is outside its canonical floor landing.`);
+            const destination=floor.rooms.find(r=>r.id===door.connectsRooms.find(id=>id!==core.id));
+            if (destination && ![DoorType.OpenPassage,DoorType.Sliding,DoorType.Folding].includes(door.type) && !containsPolygon(destination.boundary,computeDoorSwingPolygon(door,wall))) issues.push(`${floor.name}: stair door swing obstructs its landing or destination.`);
+          } catch { issues.push(`${floor.name}: invalid canonical stair opening.`); }
+        }
+        continue;
+      }
       issues.push(...computeStairSolids(stair, source?.floorHeight).issues.map(value => `${floor.name}: ${value}`));
       if (!containsPolygon(floor.boundary, stair.boundary)) issues.push(`${floor.name}: stair outside floor boundary.`);
       const core = floor.rooms.find(room => room.type === RoomType.Staircase && containsPolygon(room.boundary, stair.boundary));

@@ -201,7 +201,7 @@ export function repairApartmentPlan(
       }
 
       // ── Pass 3: Regenerate Walls to match synthesized & shifted room boundaries ──
-      let regeneratedWalls = generateApartmentWalls(currentRooms, floor.id, floor.boundary);
+      let regeneratedWalls = generateApartmentWalls(currentRooms, floor.id, floor.boundary, undefined, floor.walls.find(w => w.boundaryRole === 'PARAPET')?.heightMm);
 
       // ── Pass 4: Multi-Tenancy Privacy & Graph Reachability Repair ──────────
       const privacyRes = repairPrivacyAndCirculation({
@@ -231,7 +231,7 @@ export function repairApartmentPlan(
       }
 
       // Re-generate walls with opening flags updated
-      regeneratedWalls = generateApartmentWalls(currentRooms, floor.id, floor.boundary).map(w => ({
+      regeneratedWalls = generateApartmentWalls(currentRooms, floor.id, floor.boundary, undefined, floor.walls.find(w => w.boundaryRole === 'PARAPET')?.heightMm).map(w => ({
         ...w,
         hasOpening: currentDoors.some(d => d.wallId === w.id) || currentWindows.some(win => win.wallId === w.id),
       }));
@@ -366,35 +366,41 @@ function repairManifestMismatch(params: ManifestRepairParams): {
       ? unitSpec.attachedBathCount + 1
       : expectedBeds;
 
-    // 1. Living room check
+    // 1. Living / Dining room check and entry reclassification
     const livingRooms = unitRooms.filter(r => r.type === RoomType.Living || r.tags.includes('role:living'));
-    if (livingRooms.length === 0) {
-      // Check if there is an entrance room in unitRooms that connects to the common corridor (mislabeled by AI as bedroom)
-      const entryRoom = unitRooms.find(r =>
-        workingDoors.some(d =>
-          (d.connectsRooms[0] === r.id && params.rooms.some(cr => cr.id === d.connectsRooms[1] && (cr.spaceUse === 'COMMON' || cr.spaceUse === 'CORE'))) ||
-          (d.connectsRooms[1] === r.id && params.rooms.some(cr => cr.id === d.connectsRooms[0] && (cr.spaceUse === 'COMMON' || cr.spaceUse === 'CORE')))
-        )
-      );
 
-      if (entryRoom) {
-        // Re-classify this mislabeled entry room as Living & Dining
-        const reclassified: Room = {
-          ...entryRoom,
-          type: RoomType.Living,
-          planningZone: 'PUBLIC' as never,
-          name: `${u.id} Living & Dining`,
-          tags: entryRoom.tags.filter(t => !t.startsWith('role:')).concat(['role:living', 'reclassified:living']),
-        };
-        workingRooms = workingRooms.map(r => (r.id === entryRoom.id ? reclassified : r));
-        unitRooms = unitRooms.map(r => (r.id === entryRoom.id ? reclassified : r));
-        repaired = true;
-        repairs.push({
-          category: 'PRIVACY_CIRCULATION',
-          description: `Re-classified mislabeled entry room ${entryRoom.id} to Living & Dining room for ${u.id}`,
-          targetEntities: [entryRoom.id],
-        });
-      } else {
+    // Check if there is an entrance room in unitRooms that connects to the common corridor but is mislabeled as a private room
+    const mislabeledEntry = unitRooms.find(r =>
+      (r.type === RoomType.Bedroom || r.type === RoomType.Bathroom) &&
+      workingDoors.some(d =>
+        (d.connectsRooms[0] === r.id && params.rooms.some(cr => cr.id === d.connectsRooms[1] && (cr.spaceUse === 'COMMON' || cr.spaceUse === 'CORE'))) ||
+        (d.connectsRooms[1] === r.id && params.rooms.some(cr => cr.id === d.connectsRooms[0] && (cr.spaceUse === 'COMMON' || cr.spaceUse === 'CORE')))
+      )
+    );
+
+    if (mislabeledEntry) {
+      const hasLiving = livingRooms.length > 0 && livingRooms.some(r => r.id !== mislabeledEntry.id);
+      const reclassifiedType = hasLiving ? RoomType.Dining : RoomType.Living;
+      const reclassifiedName = hasLiving ? `${u.id} Dining & Family Hall` : `${u.id} Living & Dining`;
+      const reclassifiedTag = hasLiving ? 'role:dining' : 'role:living';
+
+      const reclassified: Room = {
+        ...mislabeledEntry,
+        type: reclassifiedType,
+        planningZone: 'PUBLIC' as never,
+        name: reclassifiedName,
+        tags: mislabeledEntry.tags.filter(t => !t.startsWith('role:')).concat([reclassifiedTag, `reclassified:${reclassifiedType}`]),
+      };
+      workingRooms = workingRooms.map(r => (r.id === mislabeledEntry.id ? reclassified : r));
+      unitRooms = unitRooms.map(r => (r.id === mislabeledEntry.id ? reclassified : r));
+      repaired = true;
+      repairs.push({
+        category: 'PRIVACY_CIRCULATION',
+        description: `Re-classified mislabeled entry room ${mislabeledEntry.id} to ${reclassifiedName} for ${u.id}`,
+        targetEntities: [mislabeledEntry.id],
+      });
+    } else if (livingRooms.length === 0) {
+      {
         // Synthesize missing living room from the largest room in unit
         const candidate = findOversizedRoom(unitRooms, RoomType.Living);
         if (candidate) {

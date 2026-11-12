@@ -237,8 +237,14 @@ export async function executeAuditedPlanningPipeline(
     const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length,
       errors: [...audit.report.errors, ...closureErrors] };
     emitter.completeStage(stage, validationReport.errors, validationReport);
-    if (isRequest && !validationReport.isValid) throw new Error(
-      `Geometry requires correction: ${validationReport.errors.filter(e => e.severity === 'CRITICAL' && !e.autoCorrected).slice(0, 5).map(e => e.description).join('; ')}`);
+    const pRoom = building.floors[0]?.rooms.find(r => r.id.includes('pooja'));
+    console.log('POOJA RECT/BOUNDS:', pRoom?.id, pRoom?.boundary);
+    console.log('FLOOR 0 BOUNDS:', building.floors[0]?.boundary);
+    if (isRequest && !validationReport.isValid) {
+      console.log('CRITICAL VALIDATION ERRORS:', JSON.stringify(validationReport.errors.filter(e => e.severity === 'CRITICAL'), null, 2));
+      throw new Error(
+        `Geometry requires correction: ${validationReport.errors.filter(e => e.severity === 'CRITICAL' && !e.autoCorrected).slice(0, 5).map(e => e.description).join('; ')}`);
+    }
     stage = 'UDCPR_CHECK'; emitter.startStage(stage);
     const udcprReport = evaluateUDCPRCompliance(building);
     emitter.completeStage(stage, [], validationReport, udcprReport);

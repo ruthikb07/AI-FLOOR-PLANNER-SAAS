@@ -1,0 +1,486 @@
+/**
+ * Structural CAD Drawing Generator (ISO A3 Landscape Multi-Sheet Vector Drawing Set) (§P3.3).
+ *
+ * Produces separate, publication-grade structural engineering drawing sheets:
+ * - S-101: General Structural Notes & Standard Detailing Principles
+ * - S-102: Foundation & Column Layout Plan (Grids, Footings, Dimensions, Column Marks)
+ * - S-103: Typical Floor Beam & Slab Framing Plan (Floor Beams, Slab Panels, Thicknesses)
+ * - S-104: Structural Member Schedules & Typical Section Details
+ */
+
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import type { Building, ComprehensiveStructuralModel } from '@ai-floor-planner/core';
+import { StructuralAnalysisEngine } from './structural-analysis-engine.js';
+
+export class StructuralDrawingsService {
+  private readonly engine = new StructuralAnalysisEngine();
+
+  public async generateStructuralDrawingPackage(
+    building: Building,
+  ): Promise<{ filename: string; mimeType: string; data: Uint8Array; pageCount: number }> {
+    const model = this.engine.generateComprehensiveModel(building);
+    const pdfDoc = await PDFDocument.create();
+
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontMono = await pdfDoc.embedFont(StandardFonts.Courier);
+
+    // ISO A3 Landscape dimensions in points: 1190.55 x 841.89 (approx 1191 x 842)
+    const PW = 1190.55;
+    const PH = 841.89;
+    const margin = 35;
+    const titleBlockW = 280;
+    const drawingW = PW - margin * 2 - titleBlockW - 20;
+    const drawingH = PH - margin * 2;
+
+    const colorPrimary = rgb(0.1, 0.15, 0.25);
+    const colorGrid = rgb(0.7, 0.2, 0.15); // Crimson grid bubbles
+    const colorColumn = rgb(0.15, 0.35, 0.7); // Structural blue
+    const colorBeam = rgb(0.1, 0.55, 0.65); // Cyan framing
+    const colorFooting = rgb(0.5, 0.5, 0.5); // Grey footing
+    const colorSlab = rgb(0.95, 0.96, 0.98); // Light slab fill
+    const colorBorder = rgb(0.75, 0.75, 0.75);
+    const colorText = rgb(0.15, 0.15, 0.15);
+    const colorMuted = rgb(0.45, 0.45, 0.45);
+
+    const drawBorderAndTitleBlock = (page: any, sheetNo: string, sheetTitle: string) => {
+      // Outer border
+      page.drawRectangle({
+        x: margin,
+        y: margin,
+        width: PW - margin * 2,
+        height: PH - margin * 2,
+        borderWidth: 1.5,
+        borderColor: colorPrimary,
+      });
+
+      // Title block box on the right
+      const tbX = PW - margin - titleBlockW;
+      const tbY = margin;
+      page.drawRectangle({
+        x: tbX,
+        y: tbY,
+        width: titleBlockW,
+        height: drawingH,
+        borderWidth: 1,
+        borderColor: colorPrimary,
+        color: rgb(0.98, 0.98, 0.99),
+      });
+
+      // Title Block Sections
+      let currentY = PH - margin;
+
+      // 1. Firm Logo & Title
+      page.drawLine({ start: { x: tbX, y: currentY - 60 }, end: { x: PW - margin, y: currentY - 60 }, color: colorBorder, thickness: 1 });
+      page.drawText('RH PLANNER', { x: tbX + 15, y: currentY - 26, size: 16, font: fontBold, color: rgb(0.7, 0.45, 0.15) });
+      page.drawText('STRUCTURAL ENGINEERING DIVISION', { x: tbX + 15, y: currentY - 42, size: 8, font: fontBold, color: colorPrimary });
+      page.drawText('COMPUTER-AIDED CAD/BIM PRODUCTION', { x: tbX + 15, y: currentY - 54, size: 6.5, font: fontMono, color: colorMuted });
+      currentY -= 60;
+
+      // 2. Project Details
+      page.drawLine({ start: { x: tbX, y: currentY - 80 }, end: { x: PW - margin, y: currentY - 80 }, color: colorBorder, thickness: 1 });
+      page.drawText('PROJECT:', { x: tbX + 15, y: currentY - 16, size: 7, font: fontBold, color: colorMuted });
+      page.drawText(model.buildingName.slice(0, 32), { x: tbX + 15, y: currentY - 30, size: 9, font: fontBold, color: colorPrimary });
+      page.drawText(`Location: Maharashtra, India (NBC 2016 / UDCPR)`, { x: tbX + 15, y: currentY - 44, size: 7, font: font, color: colorText });
+      page.drawText(`Model ID: ${model.projectId}`, { x: tbX + 15, y: currentY - 58, size: 7, font: fontMono, color: colorMuted });
+      page.drawText(`Revision: Rev ${model.revision} (Synchronized with CAD 2D)`, { x: tbX + 15, y: currentY - 72, size: 7, font: font, color: colorText });
+      currentY -= 80;
+
+      // 3. Drawing Title & Scale
+      page.drawLine({ start: { x: tbX, y: currentY - 80 }, end: { x: PW - margin, y: currentY - 80 }, color: colorBorder, thickness: 1 });
+      page.drawText('DRAWING TITLE:', { x: tbX + 15, y: currentY - 16, size: 7, font: fontBold, color: colorMuted });
+      page.drawText(sheetTitle, { x: tbX + 15, y: currentY - 34, size: 11, font: fontBold, color: colorPrimary });
+      page.drawText('SCALE: 1:100 @ A3 LANDSCAPE', { x: tbX + 15, y: currentY - 52, size: 7.5, font: fontBold, color: colorText });
+      page.drawText('UNITS: ALL DIMENSIONS IN MILLIMETERS (mm)', { x: tbX + 15, y: currentY - 66, size: 6.5, font: fontMono, color: colorMuted });
+      currentY -= 80;
+
+      // 4. Structural Material & Design Criteria
+      page.drawLine({ start: { x: tbX, y: currentY - 110 }, end: { x: PW - margin, y: currentY - 110 }, color: colorBorder, thickness: 1 });
+      page.drawText('DESIGN CRITERIA (IS 456 / IS 1893):', { x: tbX + 15, y: currentY - 15, size: 7, font: fontBold, color: colorMuted });
+      page.drawText('• Concrete: M30 Columns, M25 Beams & Slabs', { x: tbX + 15, y: currentY - 29, size: 7, font: font, color: colorText });
+      page.drawText('• Reinforcing Steel: Fe500 TMT (IS 1786)', { x: tbX + 15, y: currentY - 43, size: 7, font: font, color: colorText });
+      page.drawText('• Seismic Zone: Zone III (Z = 0.16, R = 5.0, I = 1.2)', { x: tbX + 15, y: currentY - 57, size: 7, font: font, color: colorText });
+      page.drawText('• Safe Soil Bearing Capacity: 200 kN/m² @ 2.0m', { x: tbX + 15, y: currentY - 71, size: 7, font: font, color: colorText });
+      page.drawText('• Clear Cover: Ftg 50mm, Col 40mm, Bm 25mm, Slb 20mm', { x: tbX + 15, y: currentY - 85, size: 6.5, font: fontMono, color: colorText });
+      currentY -= 110;
+
+      // 5. Engineering Sign-Off & Status
+      page.drawLine({ start: { x: tbX, y: currentY - 130 }, end: { x: PW - margin, y: currentY - 130 }, color: colorBorder, thickness: 1 });
+      page.drawText('PROFESSIONAL STATUS & APPROVAL:', { x: tbX + 15, y: currentY - 15, size: 7, font: fontBold, color: colorMuted });
+      page.drawText('PRELIMINARY CODE CHECK', { x: tbX + 15, y: currentY - 30, size: 8, font: fontBold, color: rgb(0.7, 0.2, 0.1) });
+      page.drawText('CONSTRUCTION STATUS: BLOCKED', { x: tbX + 15, y: currentY - 44, size: 7.5, font: fontBold, color: rgb(0.8, 0.1, 0.1) });
+
+      // Engineer Stamp Box
+      page.drawRectangle({
+        x: tbX + 15,
+        y: currentY - 120,
+        width: titleBlockW - 30,
+        height: 65,
+        borderWidth: 1,
+        borderColor: rgb(0.6, 0.6, 0.6),
+        color: rgb(1, 1, 1),
+      });
+      page.drawText('LICENSED STRUCTURAL ENGINEER (SE-1)', { x: tbX + 25, y: currentY - 70, size: 6.5, font: fontBold, color: colorMuted });
+      page.drawText('[ PEER REVIEW & SANCTION STAMP ]', { x: tbX + 25, y: currentY - 84, size: 7, font: fontBold, color: rgb(0.8, 0.2, 0.2) });
+      page.drawText('Reg. No: _____________________________', { x: tbX + 25, y: currentY - 100, size: 6.5, font: fontMono, color: colorMuted });
+      page.drawText('Signature: __________________________', { x: tbX + 25, y: currentY - 114, size: 6.5, font: fontMono, color: colorMuted });
+      currentY -= 130;
+
+      // 6. Sheet Number Box (Bottom)
+      page.drawRectangle({
+        x: tbX,
+        y: margin,
+        width: titleBlockW,
+        height: 50,
+        color: colorPrimary,
+      });
+      page.drawText('SHEET NO:', { x: tbX + 15, y: margin + 30, size: 7, font: fontBold, color: rgb(0.8, 0.85, 0.95) });
+      page.drawText(sheetNo, { x: tbX + 15, y: margin + 10, size: 18, font: fontBold, color: rgb(1, 1, 1) });
+      page.drawText('OF S-104', { x: tbX + 110, y: margin + 12, size: 10, font: fontBold, color: rgb(0.7, 0.75, 0.85) });
+    };
+
+    // Transformation helper: converts millimeter coordinates to PDF drawing canvas points
+    const fitGridToCanvas = (minX: number, maxX: number, minY: number, maxY: number) => {
+      const modelW = maxX - minX;
+      const modelH = maxY - minY;
+      const drawMargin = 60;
+      const availW = drawingW - drawMargin * 2;
+      const availH = drawingH - drawMargin * 2;
+      const scale = Math.min(availW / modelW, availH / modelH);
+      const offsetX = margin + drawMargin + (availW - modelW * scale) / 2;
+      const offsetY = margin + drawMargin + (availH - modelH * scale) / 2;
+
+      return (x: number, y: number) => ({
+        px: offsetX + (x - minX) * scale,
+        py: offsetY + (y - minY) * scale,
+        scale,
+      });
+    };
+
+    // Calculate bounding box across grids
+    const gridXs = model.gridLines.filter(g => g.axis === 'X').map(g => g.coordinateMm);
+    const gridYs = model.gridLines.filter(g => g.axis === 'Y').map(g => g.coordinateMm);
+    const minModelX = Math.min(...gridXs) - 1500;
+    const maxModelX = Math.max(...gridXs) + 1500;
+    const minModelY = Math.min(...gridYs) - 1500;
+    const maxModelY = Math.max(...gridYs) + 1500;
+
+    const toCanvas = fitGridToCanvas(minModelX, maxModelX, minModelY, maxModelY);
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // SHEET S-101: GENERAL STRUCTURAL SPECIFICATIONS & STANDARD NOTES
+    // ═════════════════════════════════════════════════════════════════════════
+    const page1 = pdfDoc.addPage([PW, PH]);
+    drawBorderAndTitleBlock(page1, 'S-101', 'GENERAL STRUCTURAL SPECIFICATIONS & NOTES');
+
+    let noteY = PH - margin - 40;
+    page1.drawText('GENERAL STRUCTURAL SPECIFICATIONS & STANDARD REBAR NOTES', {
+      x: margin + 20,
+      y: noteY,
+      size: 13,
+      font: fontBold,
+      color: colorPrimary,
+    });
+    noteY -= 25;
+
+    const generalNotes = [
+      '1. GENERAL REQUIREMENTS & CODE CONFORMANCE:',
+      '   a. All structural design conforms strictly to IS 456:2000, IS 1893:2016 Part 1, IS 13920:2016, and IS 875:1987.',
+      '   b. No architectural plan modification or structural dimension alteration shall be executed without prior written consent.',
+      '   c. Written dimensions shall take precedence over scaled measurements. Discrepancies must be reported immediately.',
+      '',
+      '2. CONCRETE GRADES, AGGREGATES & PLACEMENT:',
+      '   a. Concrete shall be controlled Ready-Mix Concrete (RMC) conforming to IS 4926 with 28-day characteristic strength:',
+      '      - Footings, Pedestals, and Ground Columns: Grade M30 (fck = 30 N/mm²)',
+      '      - Plinth Beams, Floor Beams, and Slabs: Grade M25 (fck = 25 N/mm²)',
+      '      - Levelling course (PCC) beneath foundations: Grade M10 (1:3:6) 100mm thick',
+      '   b. Maximum aggregate size: 20mm graded crushed stone. Water-cement ratio shall not exceed 0.45.',
+      '',
+      '3. REINFORCEMENT STEEL & DETAILING (IS 1786 & IS 13920):',
+      '   a. All reinforcing bars shall be High-Yield Strength Deformed (TMT) bars of Grade Fe500 conforming to IS 1786.',
+      '   b. Development length (Ld) in tension: 47 times bar diameter (47*dia) for M25, 41*dia for M30.',
+      '   c. Lap splices shall be staggered and located only within the middle third of beam clear span (not at column joints).',
+      '   d. Minimum clear concrete cover to reinforcement:',
+      '      - Footings: 50mm (bottom and sides touching earth)',
+      '      - Columns and Pedestals: 40mm',
+      '      - Beams (main longitudinal bars): 25mm',
+      '      - Floor Slabs and Cantilever Balconies: 20mm',
+      '',
+      '4. SEISMIC DUCTILE DETAILING MANDATES (IS 13920:2016):',
+      '   a. Closely spaced confining ties (8mm @ 100 c/c with 135° seismic hooks, 10d extension) must be provided in columns',
+      '      over a length not less than larger column dimension or 450mm above/below beam-column joints.',
+      '   b. Web stirrups in beams within 2d from the column face shall be spaced at not more than d/4 or 100mm c/c.',
+    ];
+
+    generalNotes.forEach((line) => {
+      const isHeader = line.startsWith('1.') || line.startsWith('2.') || line.startsWith('3.') || line.startsWith('4.');
+      page1.drawText(line, {
+        x: margin + 20,
+        y: noteY,
+        size: isHeader ? 8.5 : 7.5,
+        font: isHeader ? fontBold : font,
+        color: isHeader ? colorPrimary : colorText,
+      });
+      noteY -= 15;
+    });
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // SHEET S-102: FOUNDATION & COLUMN LAYOUT PLAN
+    // ═════════════════════════════════════════════════════════════════════════
+    const page2 = pdfDoc.addPage([PW, PH]);
+    drawBorderAndTitleBlock(page2, 'S-102', 'FOUNDATION & COLUMN LAYOUT PLAN');
+
+    // Draw Grids on Page 2
+    this.drawGridsAndDimensions(page2, model.gridLines, toCanvas, font, fontBold, colorGrid, colorBorder);
+
+    // Draw Footings & Columns
+    model.footings.forEach((ftg) => {
+      const pt = toCanvas(ftg.centerMm.x, ftg.centerMm.y);
+      const halfW = (ftg.widthMm * pt.scale) / 2;
+      const halfD = (ftg.depthMm * pt.scale) / 2;
+
+      // Footing outline (S-FOOT-DIAG)
+      page2.drawRectangle({
+        x: pt.px - halfW,
+        y: pt.py - halfD,
+        width: halfW * 2,
+        height: halfD * 2,
+        borderWidth: 0.75,
+        borderColor: colorFooting,
+        color: rgb(0.96, 0.96, 0.96),
+      });
+
+      // Diagonal cross on footing
+      page2.drawLine({ start: { x: pt.px - halfW, y: pt.py - halfD }, end: { x: pt.px + halfW, y: pt.py + halfD }, color: rgb(0.85, 0.85, 0.85), thickness: 0.5 });
+      page2.drawLine({ start: { x: pt.px - halfW, y: pt.py + halfD }, end: { x: pt.px + halfW, y: pt.py - halfD }, color: rgb(0.85, 0.85, 0.85), thickness: 0.5 });
+
+      // Footing callout
+      page2.drawText(`F1 [${ftg.widthMm}x${ftg.depthMm}]`, {
+        x: pt.px - halfW,
+        y: pt.py - halfD - 9,
+        size: 5.5,
+        font: fontMono,
+        color: colorMuted,
+      });
+    });
+
+    // Draw Column Solids & Tags
+    const baseCols = model.columns.filter(c => c.floorId === model.columns[0]?.floorId);
+    baseCols.forEach((col) => {
+      const pt = toCanvas(col.positionMm.x, col.positionMm.y);
+      const halfW = (col.sizeMm.width * pt.scale) / 2;
+      const halfD = (col.sizeMm.depth * pt.scale) / 2;
+
+      page2.drawRectangle({
+        x: pt.px - halfW,
+        y: pt.py - halfD,
+        width: halfW * 2,
+        height: halfD * 2,
+        color: colorColumn,
+        borderWidth: 1,
+        borderColor: rgb(0.05, 0.15, 0.4),
+      });
+
+      page2.drawText(col.mark, {
+        x: pt.px + halfW + 4,
+        y: pt.py - 2,
+        size: 6.5,
+        font: fontBold,
+        color: colorPrimary,
+      });
+    });
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // SHEET S-103: TYPICAL FLOOR BEAM & SLAB FRAMING PLAN
+    // ═════════════════════════════════════════════════════════════════════════
+    const page3 = pdfDoc.addPage([PW, PH]);
+    drawBorderAndTitleBlock(page3, 'S-103', 'TYPICAL FLOOR BEAM & SLAB FRAMING PLAN');
+
+    this.drawGridsAndDimensions(page3, model.gridLines, toCanvas, font, fontBold, colorGrid, colorBorder);
+
+    // Draw Beams
+    const typicalBeams = model.beams.filter(b => b.floorId === model.beams[0]?.floorId);
+    typicalBeams.forEach((bm) => {
+      const p1 = toCanvas(bm.startPointMm.x, bm.startPointMm.y);
+      const p2 = toCanvas(bm.endPointMm.x, bm.endPointMm.y);
+
+      page3.drawLine({
+        start: { x: p1.px, y: p1.py },
+        end: { x: p2.px, y: p2.py },
+        thickness: Math.max(1.5, bm.sizeMm.width * p1.scale),
+        color: colorBeam,
+      });
+
+      // Beam tag at midpoint
+      const midX = (p1.px + p2.px) / 2;
+      const midY = (p1.py + p2.py) / 2;
+      page3.drawText(bm.mark, {
+        x: midX - 15,
+        y: midY + 4,
+        size: 5.5,
+        font: fontMono,
+        color: rgb(0.05, 0.35, 0.4),
+      });
+    });
+
+    // Draw Column heads on typical floor
+    baseCols.forEach((col) => {
+      const pt = toCanvas(col.positionMm.x, col.positionMm.y);
+      const halfW = (col.sizeMm.width * pt.scale) / 2;
+      const halfD = (col.sizeMm.depth * pt.scale) / 2;
+      page3.drawRectangle({
+        x: pt.px - halfW,
+        y: pt.py - halfD,
+        width: halfW * 2,
+        height: halfD * 2,
+        color: colorColumn,
+      });
+    });
+
+    // Draw Slab Panel Tags
+    model.slabs.slice(0, 4).forEach((slb, i) => {
+      const sampleX = minModelX + 5000 + (i % 2) * 5500;
+      const sampleY = minModelY + 5000 + Math.floor(i / 2) * 6000;
+      const pt = toCanvas(sampleX, sampleY);
+
+      page3.drawRectangle({
+        x: pt.px - 30,
+        y: pt.py - 12,
+        width: 60,
+        height: 24,
+        color: rgb(1, 1, 1),
+        borderColor: colorBorder,
+        borderWidth: 0.5,
+      });
+      page3.drawText(slb.mark.slice(0, 10), { x: pt.px - 25, y: pt.py + 2, size: 6.5, font: fontBold, color: colorPrimary });
+      page3.drawText(`${slb.thicknessMm}mm THK`, { x: pt.px - 25, y: pt.py - 8, size: 5.5, font: fontMono, color: colorMuted });
+    });
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // SHEET S-104: COLUMN & BEAM SCHEDULES & MEMBER DETAILS
+    // ═════════════════════════════════════════════════════════════════════════
+    const page4 = pdfDoc.addPage([PW, PH]);
+    drawBorderAndTitleBlock(page4, 'S-104', 'STRUCTURAL SCHEDULES & MEMBER DETAILS');
+
+    let schedY = PH - margin - 35;
+    page4.drawText('COLUMN SCHEDULE (STOREY-WISE SIZES & REBAR PROVISIONS)', {
+      x: margin + 20,
+      y: schedY,
+      size: 11,
+      font: fontBold,
+      color: colorPrimary,
+    });
+    schedY -= 15;
+
+    // Column Table
+    const cHead = ['Col Mark', 'Grid Ref', 'Floor Level', 'Size (b x D mm)', 'Concrete', 'Steel', 'Longitudinal Bars', 'Lateral Ties (IS 13920)', 'Axial Capacity', 'D/C'];
+    page4.drawRectangle({ x: margin + 15, y: schedY - 14, width: drawingW - 10, height: 16, color: rgb(0.92, 0.94, 0.97) });
+    cHead.forEach((h, i) => {
+      page4.drawText(h, { x: margin + 20 + i * 82, y: schedY - 10, size: 6.5, font: fontBold, color: colorPrimary });
+    });
+    schedY -= 16;
+
+    model.columns.slice(0, 10).forEach((col) => {
+      schedY -= 14;
+      page4.drawText(col.mark.slice(0, 8), { x: margin + 20, y: schedY, size: 6.5, font: fontBold, color: colorText });
+      page4.drawText(col.gridRef, { x: margin + 102, y: schedY, size: 6.5, font: fontMono, color: colorGrid });
+      page4.drawText(col.floorName.slice(0, 10), { x: margin + 184, y: schedY, size: 6.5, font: font, color: colorMuted });
+      page4.drawText(`${col.sizeMm.width} x ${col.sizeMm.depth}`, { x: margin + 266, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(col.concreteGrade, { x: margin + 348, y: schedY, size: 6.5, font: font, color: colorText });
+      page4.drawText(col.steelGrade, { x: margin + 430, y: schedY, size: 6.5, font: font, color: colorText });
+      page4.drawText(col.longitudinalRebar.slice(0, 15), { x: margin + 512, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText('8mm @ 150 c/c', { x: margin + 594, y: schedY, size: 6.5, font: font, color: colorText });
+      page4.drawText(`${col.axialCapacityKn} kN`, { x: margin + 676, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(String(col.utilizationRatio), { x: margin + 758, y: schedY, size: 6.5, font: fontBold, color: rgb(0.1, 0.55, 0.2) });
+    });
+
+    schedY -= 35;
+    page4.drawText('BEAM FRAMING SCHEDULE', {
+      x: margin + 20,
+      y: schedY,
+      size: 11,
+      font: fontBold,
+      color: colorPrimary,
+    });
+    schedY -= 15;
+
+    const bHead = ['Beam Mark', 'Floor', 'Size (b x D mm)', 'Span (mm)', 'Top Rebar (Left/Right)', 'Bottom Rebar (Midspan)', 'Stirrups & Spacing', 'Max Moment', 'Max Shear'];
+    page4.drawRectangle({ x: margin + 15, y: schedY - 14, width: drawingW - 10, height: 16, color: rgb(0.92, 0.94, 0.97) });
+    bHead.forEach((h, i) => {
+      page4.drawText(h, { x: margin + 20 + i * 90, y: schedY - 10, size: 6.5, font: fontBold, color: colorPrimary });
+    });
+    schedY -= 16;
+
+    model.beams.slice(0, 8).forEach((bm) => {
+      schedY -= 14;
+      page4.drawText(bm.mark.slice(0, 10), { x: margin + 20, y: schedY, size: 6.5, font: fontBold, color: colorText });
+      page4.drawText(bm.floorName.slice(0, 10), { x: margin + 110, y: schedY, size: 6.5, font: font, color: colorMuted });
+      page4.drawText(`${bm.sizeMm.width} x ${bm.sizeMm.depth}`, { x: margin + 200, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(String(bm.spanMm), { x: margin + 290, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(bm.topRebar, { x: margin + 380, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(bm.bottomRebar, { x: margin + 470, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText('8mm 2-L @ 125 c/c', { x: margin + 560, y: schedY, size: 6.5, font: font, color: colorText });
+      page4.drawText(`${bm.maxMomentKnm} kNm`, { x: margin + 650, y: schedY, size: 6.5, font: fontMono, color: colorText });
+      page4.drawText(`${bm.maxShearKn} kN`, { x: margin + 740, y: schedY, size: 6.5, font: fontMono, color: colorText });
+    });
+
+    const pdfBytes = await pdfDoc.save();
+    return {
+      filename: `RH_Planner_${model.buildingId.slice(0, 8)}_Structural_Drawings.pdf`,
+      mimeType: 'application/pdf',
+      data: pdfBytes,
+      pageCount: 4,
+    };
+  }
+
+  private drawGridsAndDimensions(
+    page: any,
+    gridLines: StructuralGridLine[],
+    toCanvas: (x: number, y: number) => { px: number; py: number; scale: number },
+    font: any,
+    fontBold: any,
+    colorGrid: any,
+    colorBorder: any,
+  ) {
+    gridLines.forEach((g) => {
+      let pStart: { px: number; py: number };
+      let pEnd: { px: number; py: number };
+
+      if (g.axis === 'X') {
+        pStart = toCanvas(g.coordinateMm, g.startMm);
+        pEnd = toCanvas(g.coordinateMm, g.endMm);
+      } else {
+        pStart = toCanvas(g.startMm, g.coordinateMm);
+        pEnd = toCanvas(g.endMm, g.coordinateMm);
+      }
+
+      // Draw dashed grid centerline
+      page.drawLine({
+        start: { x: pStart.px, y: pStart.py },
+        end: { x: pEnd.px, y: pEnd.py },
+        thickness: 0.6,
+        color: rgb(0.7, 0.7, 0.7),
+      });
+
+      // Draw Grid Bubble at end
+      const bubbleRadius = 9;
+      page.drawCircle({
+        x: pEnd.px,
+        y: pEnd.py,
+        size: bubbleRadius,
+        borderWidth: 1,
+        borderColor: colorGrid,
+        color: rgb(1, 1, 1),
+      });
+
+      page.drawText(g.tag, {
+        x: pEnd.px - 3.5,
+        y: pEnd.py - 3.5,
+        size: 7.5,
+        font: fontBold,
+        color: colorGrid,
+      });
+    });
+  }
+}
+

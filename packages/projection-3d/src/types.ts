@@ -132,6 +132,7 @@ export interface Site3D extends ProjectionSource {
 }
 
 export interface Building3DProjection {
+  readonly architecturalSolids?: readonly { readonly sourceEntityId: string; readonly sourceEntityType: 'stair' | 'room'; readonly floorId: string; readonly boundary: Polygon; readonly bottom: number; readonly top: number; readonly kind: string }[];
   readonly buildingId: string;
   readonly buildingVersion: number;
   readonly settings: Building3DProjectionSettings;

@@ -115,10 +115,11 @@ export class CommandHistory {
    * Returns the restored Building and any state updates, or null if redo stack is empty.
    */
   redo(currentState: EditorState): { building: Building; command: IEditorCommand; stateUpdates?: Partial<EditorState> } | null {
-    const entry = this.redoStack.pop();
+    const entry = this.redoStack[this.redoStack.length - 1];
     if (!entry) return null;
 
     const redoResult = entry.command.execute(entry.beforeBuilding, currentState);
+    this.redoStack.pop();
 
     this.undoStack.push(entry);
 

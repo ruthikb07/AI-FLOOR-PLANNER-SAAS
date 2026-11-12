@@ -1,3 +1,4 @@
+import { isPhysicalBoundary } from '@ai-floor-planner/core';
 import { ResidentialCadExportRegistry } from '../cad/residential-cad-export-registry.js';
 import { ResidentialCadSerializer } from '../cad/residential-cad-serializer.js';
 import * as acad from '@node-projects/acad-ts';
@@ -12,7 +13,7 @@ import {
   RoomType,
   DoorType,
 } from '@ai-floor-planner/core';
-import { AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
+import { AnnotationLayout, roomAnnotation, polygonCentroid, canonicalStairSolids } from '@ai-floor-planner/geometry-engine';
 import { selectExportFloors, resolveExportScope, ExportError } from './export-selection.js';
 import { verifyCadArtifact } from './artifact-verifier.js';
 import { createHash } from 'node:crypto';
@@ -86,6 +87,10 @@ interface LayerSpec {
 }
 
 const ARCHITECTURAL_LAYERS: readonly LayerSpec[] = [
+  { name: 'A-SLAB', colorIndex: 9, lineWeight: acad.LineWeightType.W18, description: 'Slab perimeter, not an enclosing wall' },
+  { name: 'A-PARK-STAL', colorIndex: 6, lineWeight: acad.LineWeightType.W13, description: 'Painted parking bay markings' },
+  { name: 'A-ROOF-EQPM', colorIndex: 8, lineWeight: acad.LineWeightType.W13, description: 'Roof equipment reservation boundaries' },
+  { name: 'A-GUARD', colorIndex: 32, lineWeight: acad.LineWeightType.W18, description: 'Low parapets and protective guards' },
   { name: 'A-WALL', colorIndex: 3, lineWeight: acad.LineWeightType.W50, description: 'Architectural wall outlines and assemblies' },
   { name: 'A-WALL-EXT', colorIndex: 3, lineWeight: acad.LineWeightType.W50, description: 'External perimeter walls' },
   { name: 'A-WALL-INT', colorIndex: 8, lineWeight: acad.LineWeightType.W25, description: 'Internal room partition walls' },
@@ -636,11 +641,11 @@ export class CadExportService {
         trackPoint(cx, cy);
         return { x: cx, y: cy };
       });
-      addSanitizedPolyline(cadPoints, getLayer('A-WALL-EXT'), true);
+      addSanitizedPolyline(cadPoints, getLayer(floor.architecture ? 'A-SLAB' : 'A-WALL-EXT'), true);
     }
 
-    const floorWalls = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.walls) ? floor.walls : [];
-    const floorDoors = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.doors) ? floor.doors : [];
+    const floorWalls = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.walls) ? floor.walls.filter(isPhysicalBoundary) : [];
+    const floorDoors = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.doors) ? floor.doors.filter(o => floorWalls.some(w => w.id === o.wallId)) : [];
     const floorWindows = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.windows) ? floor.windows : [];
     const floorRooms = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.rooms) ? floor.rooms : [];
     const floorStairs = options.drawingKind==='STRUCTURAL'?[]:Array.isArray(floor.stairs) ? floor.stairs : [];
@@ -648,6 +653,10 @@ export class CadExportService {
 
     // B. Walls: External, Party, and Internal Partitions
     for (const wall of floorWalls) {
+      if (wall.boundaryRole === 'PARAPET' || wall.boundaryRole === 'GUARDRAIL') {
+        addSanitizedLine(toCadX(wall.startPoint.x), toCadY(wall.startPoint.y), toCadX(wall.endPoint.x), toCadY(wall.endPoint.y), getLayer('A-GUARD'));
+        continue;
+      }
       const x1 = toCadX(wall.startPoint.x);
       const y1 = toCadY(wall.startPoint.y);
       const x2 = toCadX(wall.endPoint.x);
@@ -722,22 +731,8 @@ export class CadExportService {
     if (options.includeOpenings !== false) {
       const doorLayer = getLayer('A-DOOR');
       for (const door of floorDoors) {
-        // Task 4: Delete hinged swinging doors on all lifts & staircases
-        const isStairOrLift =
-          door.type === DoorType.OpenPassage ||
-          (door as any).type === 'open_passage' ||
-          door.type === DoorType.Sliding ||
-          (door as any).type === 'sliding' ||
-          /stair|lift|elevator/i.test(door.id || '') ||
-          (door.connectsRooms || []).some((rid: string) => {
-            const rm = floorRooms.find(r => r.id === rid);
-            return rm && (rm.type === RoomType.Staircase || rm.type === RoomType.Lift || /stair|lift/i.test(rm.name || ''));
-          });
-
-        if (isStairOrLift) {
-          // Never emit a hinged swing arc or swinging leaf for lift or stair spaces!
-          continue;
-        }
+        // The saved opening type controls the leaf, including protected stair doors.
+        if (door.type === DoorType.OpenPassage) continue;
 
         const wall = floorWalls.find(w => w.id === door.wallId);
         const wdx = wall ? toCadX(wall.endPoint.x) - toCadX(wall.startPoint.x) : 1;
@@ -758,14 +753,20 @@ export class CadExportService {
         const j2x = posX + ux * halfW;
         const j2y = posY + uy * halfW;
 
+        if (door.type === DoorType.Sliding) {
+          addSanitizedLine(j1x, j1y, posX, posY, doorLayer);
+          addSanitizedLine(posX + nx * 40, posY + ny * 40, j2x + nx * 40, j2y + ny * 40, doorLayer);
+          continue;
+        }
+
         // Task 5: Inward swing rule for bathrooms, toilets, dressing & balconies
         const isToilet = (door.connectsRooms || []).some((rid: string) => {
           const rm = floorRooms.find(r => r.id === rid);
           return rm && (rm.type === RoomType.Bathroom || /bath|toilet|wc|dress/i.test(rm.name || ''));
         });
 
-        let side = door.swingDirection === 'outward' ? -1 : 1;
-        if (isToilet) {
+        let side = door.openingGeometryVersion === 1 ? (['outward','left'].includes(door.swingDirection) ? 1 : -1) : door.swingDirection === 'outward' ? -1 : 1;
+        if (isToilet && door.openingGeometryVersion !== 1) {
           const bathRoom = floorRooms.find(r =>
             (door.connectsRooms || []).includes(r.id) &&
             (r.type === RoomType.Bathroom || /bath|toilet|wc|dress/i.test(r.name || ''))
@@ -864,7 +865,9 @@ export class CadExportService {
 
       if (room.boundary?.points && room.boundary.points.length > 2) {
         const cadPts = room.boundary.points.map((p: { x: number; y: number }) => ({ x: toCadX(p.x), y: toCadY(p.y) }));
-        addSanitizedPolyline(cadPts, roomNameLayer, true);
+        if (!floor.architecture) addSanitizedPolyline(cadPts, roomNameLayer, true);
+        else if (room.architecturalRole === 'PARKING_BAY') addSanitizedPolyline(cadPts, getLayer('A-PARK-STAL'), true);
+        else if (room.architecturalRole === 'ROOF_EQUIPMENT_ZONE') addSanitizedPolyline(cadPts, getLayer('A-ROOF-EQPM'), true);
       }
 
       const rawRoomName = room.name || (room.type ? String(room.type) : 'ROOM');
@@ -969,7 +972,7 @@ export class CadExportService {
     }
 
     for(const stair of options.drawingKind==='STRUCTURAL'?[]:floor.canonicalStaircases??[]) {
-      for(const polygon of [stair.polygon,stair.flight1,stair.flight2,stair.midLanding])addSanitizedPolyline(polygon.points.map(p=>({x:toCadX(p.x),y:toCadY(p.y)})),stairLayer,true);
+      for(const polygon of [stair.polygon,...canonicalStairSolids(stair,floor.floorHeight,floor.slabThicknessMm).filter(p=>floor.floorUse!=='ROOF'||p.top===0).map(p=>p.boundary)])addSanitizedPolyline(polygon.points.map(p=>({x:toCadX(p.x),y:toCadY(p.y)})),stairLayer,true);
       addSanitizedLine(toCadX(stair.accessEdge.startPoint.x),toCadY(stair.accessEdge.startPoint.y),toCadX(stair.accessEdge.endPoint.x),toCadY(stair.accessEdge.endPoint.y),stairLayer);
     }
     // F. Stairs from floor.stairs (if any explicit instances exist)

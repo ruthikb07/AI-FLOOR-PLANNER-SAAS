@@ -4,6 +4,7 @@
  */
 
 import type { Building } from '@ai-floor-planner/core';
+import { handleETABSExportRoute } from './etabs-export-routes.js';
 import { BlenderExportService } from '../services/blender-export-service.js';
 import {
   CadExportService,
@@ -58,6 +59,7 @@ export async function handleExportRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   cors: Record<string, string>,
 ): Promise<boolean> {
+  if (await handleETABSExportRoute(request, response, url, readBody)) return true;
   const match = url.pathname.match(/^\/api(?:\/v1)?\/export\/(.*)$/);
   if (!match) return false;
   try {
@@ -117,8 +119,26 @@ export async function handleExportRoute(
       const result=await registry.generateResidentialPackage(body.building,body.options??{});
       sendJson(response,200,result);return true;
     }
+    if(match[1]==='structural-package') {
+      const drawings = await registry.generate(body.building, 'structural-drawings-pdf', body.options ?? {});
+      const reportPdf = await registry.generate(body.building, 'structural-report-pdf', body.options ?? {});
+      const reportJson = await registry.generate(body.building, 'structural-report-json', body.options ?? {});
+      sendJson(response, 200, {
+        buildingId: body.building.id,
+        revision: body.building.version,
+        files: [drawings.descriptor, reportPdf.descriptor, reportJson.descriptor],
+        overallStatus: 'SUCCESS',
+      });
+      return true;
+    }
     const requestedFormat = match[1] === 'artifacts' ? body.format : match[1];
-    const aliases: Record<string, ArtifactFormat> = { UDCPR_COMPLIANCE_REPORT_PDF: 'udcpr-pdf', UDCPR_COMPLIANCE_REPORT_JSON: 'udcpr-json' };
+    const aliases: Record<string, ArtifactFormat> = {
+      UDCPR_COMPLIANCE_REPORT_PDF: 'udcpr-pdf',
+      UDCPR_COMPLIANCE_REPORT_JSON: 'udcpr-json',
+      'structural-drawings': 'structural-drawings-pdf',
+      'structural-report': 'structural-report-pdf',
+      'structural-data': 'structural-report-json',
+    };
     const format = (aliases[requestedFormat ?? ''] ?? requestedFormat) as ArtifactFormat;
     const artifact = await registry.generate(body.building, format, body.options ?? {});
     if (match[1] === 'artifacts') {

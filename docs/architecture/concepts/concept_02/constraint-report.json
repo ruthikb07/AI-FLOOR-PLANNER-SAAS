@@ -1,0 +1,45 @@
+{
+  "feasible": true,
+  "hardConstraints": [
+    {
+      "id": "EXACT_FLAT_COUNT",
+      "satisfied": true,
+      "detail": "4 flats placed; the brief requires 4"
+    },
+    {
+      "id": "EVERY_FLAT_HAS_ONE_ENTRANCE",
+      "satisfied": true,
+      "detail": "every flat has an entrance door onto common circulation"
+    },
+    {
+      "id": "EVERY_BATHROOM_VENTILATED",
+      "satisfied": true,
+      "detail": "all 8 bathrooms touch the external facade or a ventilation shaft"
+    },
+    {
+      "id": "EVERY_FLAT_REACHES_FACADE",
+      "satisfied": true,
+      "detail": "every flat reaches at least one exterior envelope edge"
+    },
+    {
+      "id": "CORE_REACHABLE_FROM_CIRCULATION",
+      "satisfied": true,
+      "detail": "every stair and lift adjoins common circulation"
+    },
+    {
+      "id": "REQUIRED_CORE_PLACEMENT_HONOURED",
+      "satisfied": true,
+      "detail": "no mandatory core placement was stated"
+    },
+    {
+      "id": "REQUIRED_VENTILATION_STRATEGY_HONOURED",
+      "satisfied": true,
+      "detail": "no mandatory ventilation strategy was stated"
+    }
+  ],
+  "geometryValidation": {
+    "isValid": true,
+    "errorCount": 0,
+    "errors": []
+  }
+}

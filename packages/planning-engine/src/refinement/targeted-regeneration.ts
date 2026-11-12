@@ -1,5 +1,5 @@
 import type { Building, Door, Floor, GenerationControlState, Polygon, RefinementIntent, Room, Wall } from '@ai-floor-planner/core';
-import { DoorType, SwingDirection, WallType } from '@ai-floor-planner/core';
+import { DoorType, SwingDirection, WallType, stableValueHash } from '@ai-floor-planner/core';
 import { containsPolygon } from '@ai-floor-planner/geometry-engine';
 import { evaluateDesign } from '../diagnostics/design-evaluator';
 import { diagnosticsToValidation, type ValidationSummary } from '../repair/engine';
@@ -35,11 +35,7 @@ const rectPolygon = (x: number, y: number, width: number, height: number): Polyg
 const canonical = (value: unknown) => JSON.stringify(value);
 
 export function buildingRefinementRevision(building: Building, control: GenerationControlState): string {
-  return canonical({
-    version: building.version,
-    floors: building.floors.map(floor => ({ id: floor.id, boundary: floor.boundary, rooms: floor.rooms, walls: floor.walls, doors: floor.doors, windows: floor.windows, stairs: floor.stairs })),
-    controlRevision: control.revisionId,
-  });
+  return stableValueHash({ building, control });
 }
 
 export function isRefinementCandidateStale(candidate: RefinementCandidate, building: Building, control: GenerationControlState): boolean {

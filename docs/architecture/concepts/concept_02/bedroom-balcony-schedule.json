@@ -1,0 +1,546 @@
+[
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_01__master_bed",
+    "balconyId": "floor_level_00::apt-room:flat_01__master_bed__balcony",
+    "accessDoorId": "floor_level_00::flat_01__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_01__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_02__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_02__bed_2",
+    "balconyId": "floor_level_00::apt-room:flat_02__bed_2__balcony",
+    "accessDoorId": "floor_level_00::flat_02__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_03__master_bed",
+    "balconyId": "floor_level_00::apt-room:flat_03__master_bed__balcony",
+    "accessDoorId": "floor_level_00::flat_03__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_03__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_04__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_00",
+    "bedroomId": "floor_level_00::apt-room:flat_04__bed_2",
+    "balconyId": "floor_level_00::apt-room:flat_04__bed_2__balcony",
+    "accessDoorId": "floor_level_00::flat_04__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_01__master_bed",
+    "balconyId": "floor_typical_01::apt-room:flat_01__master_bed__balcony",
+    "accessDoorId": "floor_typical_01::flat_01__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_01__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_02__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_02__bed_2",
+    "balconyId": "floor_typical_01::apt-room:flat_02__bed_2__balcony",
+    "accessDoorId": "floor_typical_01::flat_02__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_03__master_bed",
+    "balconyId": "floor_typical_01::apt-room:flat_03__master_bed__balcony",
+    "accessDoorId": "floor_typical_01::flat_03__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_03__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_04__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_typical_01",
+    "bedroomId": "floor_typical_01::apt-room:flat_04__bed_2",
+    "balconyId": "floor_typical_01::apt-room:flat_04__bed_2__balcony",
+    "accessDoorId": "floor_typical_01::flat_04__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_01__master_bed",
+    "balconyId": "floor_level_02::apt-room:flat_01__master_bed__balcony",
+    "accessDoorId": "floor_level_02::flat_01__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_01__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_02__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_02__bed_2",
+    "balconyId": "floor_level_02::apt-room:flat_02__bed_2__balcony",
+    "accessDoorId": "floor_level_02::flat_02__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_03__master_bed",
+    "balconyId": "floor_level_02::apt-room:flat_03__master_bed__balcony",
+    "accessDoorId": "floor_level_02::flat_03__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_03__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_04__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_02",
+    "bedroomId": "floor_level_02::apt-room:flat_04__bed_2",
+    "balconyId": "floor_level_02::apt-room:flat_04__bed_2__balcony",
+    "accessDoorId": "floor_level_02::flat_04__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_01__master_bed",
+    "balconyId": "floor_level_03::apt-room:flat_01__master_bed__balcony",
+    "accessDoorId": "floor_level_03::flat_01__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_01",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_01__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_02__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_02",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_02__bed_2",
+    "balconyId": "floor_level_03::apt-room:flat_02__bed_2__balcony",
+    "accessDoorId": "floor_level_03::flat_02__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_03__master_bed",
+    "balconyId": "floor_level_03::apt-room:flat_03__master_bed__balcony",
+    "accessDoorId": "floor_level_03::flat_03__master_bed__balcony_door",
+    "dimensionsMm": {
+      "width": 4080,
+      "depth": 1500
+    },
+    "areaM2": 6.12,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  },
+  {
+    "flatId": "flat_03",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_03__bed_2",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_04__master_bed",
+    "balconyId": null,
+    "accessDoorId": null,
+    "dimensionsMm": null,
+    "areaM2": null,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "FAILED",
+    "feasibilityReason": "No same-flat bedroom balcony with a door referencing an existing wall.",
+    "alternatives": [
+      "Reposition the bedroom on an exterior facade.",
+      "Reserve an inset balcony while retaining minimum bedroom and kitchen clearances."
+    ]
+  },
+  {
+    "flatId": "flat_04",
+    "floorId": "floor_level_03",
+    "bedroomId": "floor_level_03::apt-room:flat_04__bed_2",
+    "balconyId": "floor_level_03::apt-room:flat_04__bed_2__balcony",
+    "accessDoorId": "floor_level_03::flat_04__bed_2__balcony_door",
+    "dimensionsMm": {
+      "width": 3480,
+      "depth": 1500
+    },
+    "areaM2": 5.22,
+    "externalExposure": "NOT_VERIFIED",
+    "udcprStatus": "NOT_VERIFIED",
+    "geometryStatus": "NOT_VERIFIED",
+    "feasibilityReason": "Door relationship found; wall fit, clearances, exterior exposure, guards and projection applicability still require validation.",
+    "alternatives": []
+  }
+]

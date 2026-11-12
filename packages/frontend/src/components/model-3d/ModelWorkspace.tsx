@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import * as THREE from 'three';
 import { Box, Building2, Eye, Focus, Layers3, PanelTop, Rotate3D, Ruler, Settings2 } from 'lucide-react';
 import type { Building, EditorSelection, GenerationControlState } from '@ai-floor-planner/core';
 import { coordinateStairAccess, stairModelIssues } from '@ai-floor-planner/planning-engine';
@@ -25,6 +26,7 @@ export interface ModelWorkspaceProps {
   readonly onSwitchFloor: (floorId: string) => void;
   readonly explodeValue?: number;
   readonly lightingMode?: 'day' | 'night';
+  readonly sceneRef?: React.MutableRefObject<THREE.Scene | null>;
 }
 
 const projector = new Building3DProjector();
@@ -46,6 +48,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
   onSwitchFloor,
   explodeValue,
   lightingMode = 'day',
+  sceneRef,
 }) => {
   const [coordinationMessage, setCoordinationMessage] = useState('');
   const [stairReviewOpen, setStairReviewOpen] = useState(false);
@@ -72,7 +75,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
     onSelectEntity(mapped.entityType, mapped.entityId, mapped.floorId);
   };
 
-  const effectiveExplodeDistance = (explodeValue !== undefined && explodeValue > 0)
+  const effectiveExplodeDistance = explodeValue !== undefined
     ? (explodeValue / 100) * 4.5
     : (preferences.exploded ? 1.8 : 0);
   const effectiveExploded = effectiveExplodeDistance > 0;
@@ -115,6 +118,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
       snapshotRequest={snapshotRequest}
       onSelect={handleSelect}
       onClearSelection={onClearSelection}
+      sceneRef={sceneRef}
     />
 
     <div className="model-context-card">

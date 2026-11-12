@@ -18,9 +18,11 @@ import {
 } from 'lucide-react';
 import { useEditorStore } from '../../stores/editor-store';
 import { ProjectSetupWizard, type ProjectSetupWizardData } from './ProjectSetupWizard';
+import { RHWelcomeScreen } from '../studio/RHWelcomeScreen';
 import { ArchitecturalCADWorkspace } from './ArchitecturalCADWorkspace';
 import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { Building3DCustomizer } from './Building3DCustomizer';
+import { StructuralCADWorkspace } from './StructuralCADWorkspace';
 import { UdcprEtabsAnalysis } from './UdcprEtabsAnalysis';
 import { ExportCenterWorkspace } from './ExportCenterWorkspace';
 import { GenerationProgressModal } from './GenerationProgressModal';
@@ -37,6 +39,7 @@ export type ArgonWorkspaceId =
   | 'cad_2d'
   | 'isometric'
   | 'building_3d'
+  | 'structural_cad'
   | 'engineering'
   | 'export';
 
@@ -60,13 +63,20 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     { id: 'cad_2d', label: '02 • 2D CAD Studio', icon: <DraftingCompass className="w-4 h-4" /> },
     { id: 'isometric', label: '03 • Floor Editor', icon: <Layers className="w-4 h-4" /> },
     { id: 'building_3d', label: '04 • 3D Building', icon: <Box className="w-4 h-4" /> },
-    { id: 'engineering', label: '05 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
-    { id: 'export', label: '06 • Export Center', icon: <Download className="w-4 h-4" /> },
+    { id: 'structural_cad', label: '05 • Structural CAD', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'engineering', label: '06 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'export', label: '07 • Export Center', icon: <Download className="w-4 h-4" /> },
   ];
 
   const workerRef = useRef<Worker | null>(null);
   const lastBrief = useRef<ProjectSetupWizardData | null>(null);
   const [generationError, setGenerationError] = useState('');
+  /**
+   * Set when geometry generated successfully but the durable save did not.
+   * Kept separate from `generationError`: the plan exists and is usable, which
+   * is a different situation from a generation that failed.
+   */
+  const [saveWarning, setSaveWarning] = useState('');
   useEffect(() => () => workerRef.current?.terminate(), []);
   const handleGenerate = (data: ProjectSetupWizardData) => {
     workerRef.current?.terminate();
@@ -87,11 +97,31 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         }
         if (event.data.type === 'complete' && event.data.result) {
           try {
-            editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
+            // The plan is handed to the editor and the user is taken to it
+            // immediately. Persistence is reported separately below: a storage
+            // problem must not read as a generation failure, and must not
+            // discard a plan that has already passed every geometric and
+            // regulatory check.
+            const outcome = editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
             const firstResidential = event.data.result.building.floors.find(floor => floor.apartmentUnits?.length);
             if (firstResidential) editor.switchFloor(firstResidential.id);
             setIsGenerating(false); setActiveWorkspace('cad_2d');
-          } catch (error) { setGenerationError(error instanceof Error ? error.message : 'Could not save the project.'); }
+            setSaveWarning('');
+
+            void outcome.durable.then(result => {
+              if (result.state === 'SAVED') return;
+              setSaveWarning(
+                result.state === 'UNAVAILABLE'
+                  ? 'This plan is open and complete, but durable storage is unavailable, so it will not '
+                    + 'survive a reload. Export the project to keep it.'
+                  : `This plan is open and complete, but it could not be saved durably: ${result.reason ?? result.state} `
+                    + 'Export the project to keep it.',
+              );
+            });
+          } catch (error) {
+            // Only a genuine defect reaches here now, not a capacity problem.
+            setGenerationError(error instanceof Error ? error.message : 'Could not open the generated project.');
+          }
           worker.terminate();
         }
       };
@@ -101,8 +131,35 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   };
   const cancelGeneration = () => { workerRef.current?.terminate(); workerRef.current = null; setIsGenerating(false); };
 
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem('rh_welcome_dismissed');
+    }
+    return true;
+  });
+
+  const dismissWelcome = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('rh_welcome_dismissed', 'true');
+    }
+    setShowWelcome(false);
+  };
+
   return (
-    <div className="argon-shell flex flex-col h-screen w-screen bg-argon-bg text-argon-text overflow-hidden font-sans">
+    <div className="argon-shell flex flex-col h-screen w-screen bg-argon-bg text-argon-text overflow-hidden font-sans relative">
+      {showWelcome && (
+        <RHWelcomeScreen
+          onStartNewProject={dismissWelcome}
+          onOpenExisting={() => {
+            dismissWelcome();
+            setIsProjectSwitcherOpen(true);
+          }}
+          onExplore={() => {
+            dismissWelcome();
+            setActiveWorkspace('building_3d');
+          }}
+        />
+      )}
       {/* STRICTLY ONE UNIFIED TOP HEADER BAR (H-14) */}
       <header className="h-14 bg-argon-surface/95 border-b border-argon-border flex items-center justify-between px-4 z-50 flex-shrink-0 shadow-2xs">
         {/* Left: Brand + Project Switcher */}
@@ -241,11 +298,38 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         {activeWorkspace === 'building_3d' && (
           <Building3DCustomizer editor={editor} />
         )}
+        {activeWorkspace === 'structural_cad' && (
+          <StructuralCADWorkspace editor={editor} />
+        )}
         {activeWorkspace === 'engineering' && (
           <UdcprEtabsAnalysis editor={editor} onHighlight={()=>setActiveWorkspace('cad_2d')} />
         )}
         {activeWorkspace === 'export' && (
           <ExportCenterWorkspace editor={editor} />
+        )}
+
+        {/*
+          Persistence warning. Shown when the plan generated and opened
+          successfully but the durable save did not, so the user can act on it
+          by exporting. This is deliberately not an error banner: the plan is
+          complete and usable, only its storage is at risk.
+        */}
+        {saveWarning && (
+          <div
+            role="status"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-2xl px-4 py-3 rounded-lg
+                       bg-amber-50 border border-amber-300 text-amber-900 text-sm shadow-lg flex items-start gap-3"
+          >
+            <span className="font-bold shrink-0">NOT SAVED</span>
+            <span className="flex-1">{saveWarning}</span>
+            <button
+              onClick={() => setSaveWarning('')}
+              className="shrink-0 font-bold text-amber-700 hover:text-amber-900"
+              aria-label="Dismiss the storage warning"
+            >
+              ×
+            </button>
+          </div>
         )}
 
         {/* Generation Progress Modal */}

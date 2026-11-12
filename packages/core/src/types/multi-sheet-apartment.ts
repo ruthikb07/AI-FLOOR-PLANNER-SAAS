@@ -1,3 +1,4 @@
+import type { ArchitecturalGenerationOptions } from './architectural-elements';
 import type { RegulatoryContextInput } from './udcpr';
 /**
  * Multi-Sheet Apartment Project Domain & Configuration Contracts (§1C).
@@ -63,10 +64,20 @@ export interface TerraceAmenitiesConfig {
 
 /** Comprehensive configuration for a multi-sheet residential apartment project. */
 export interface MultiSheetApartmentConfig {
+  readonly architectureOptions?: ArchitecturalGenerationOptions;
+  /** Defaults to DEFERRED. Provisional member sizes require an explicit structural workflow. */
+  readonly structuralLayoutMode?: 'DEFERRED' | 'PROVISIONAL_EXISTING_PROFILE';
   readonly regulatoryContext?: RegulatoryContextInput;
   readonly projectId?: string;
   readonly projectName?: string;
   readonly aiPrompt?: string;
+  /**
+   * Deterministic generation seed. The same plot, brief, seed and engine
+   * version produce byte-identical geometry; a different seed explores the
+   * viable organizations in a different order. The seed never decides whether
+   * a constraint is satisfied. Defaults to 1.
+   */
+  readonly generationSeed?: number;
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
   readonly plotWidthMm: number;

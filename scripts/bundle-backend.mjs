@@ -33,6 +33,7 @@ await esbuild.build({
   platform: 'node',
   format: 'cjs',
   target: 'node22',
+  keepNames: true,
   outfile: path.join(backend, 'dist-server', 'server.cjs'),
   logLevel: 'warning',
 });

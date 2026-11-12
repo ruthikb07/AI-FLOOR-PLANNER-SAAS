@@ -28,6 +28,7 @@ export interface ThreeBuildingSceneProps {
   readonly snapshotRequest?: number;
   readonly onSelect: (source: ProjectionSource) => void;
   readonly onClearSelection: () => void;
+  readonly sceneRef?: React.MutableRefObject<THREE.Scene | null>;
 }
 
 type SelectableObject = THREE.Object3D & { userData: ProjectionSource };
@@ -81,6 +82,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   snapshotRequest = 0,
   onSelect,
   onClearSelection,
+  sceneRef,
 }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null);
@@ -93,8 +95,10 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const host = hostRef.current;
     if (!host) return;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1120);
-    const camera = new THREE.PerspectiveCamera(38, Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight), 0.05, 500);
+    scene.background = new THREE.Color(0xe8eef5);
+    // The model inspection view must retain visibility at every site scale.
+    scene.fog = null;
+    const camera = new THREE.PerspectiveCamera(38, Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight), 0.05, 1000);
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -140,6 +144,12 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     });
     resize.observe(host);
     runtimeRef.current = { camera, controls, renderer, scene };
+
+    // Expose scene to external animation hooks
+    if (sceneRef) {
+      sceneRef.current = scene;
+    }
+
     render();
     return () => {
       resize.disconnect();
@@ -183,7 +193,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         nightGlow.visible = true;
       }
     } else {
-      scene.background = new THREE.Color(0x0a1120);
+      scene.background = new THREE.Color(0xe8eef5);
       if (hemi) {
         hemi.color.setHex(0xddeeff);
         hemi.groundColor.setHex(0x182235);
@@ -210,10 +220,20 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     group.name = 'building-projection';
     const xray = viewMode === 'xray';
 
-    const material = (color: number, opacity = 1) => new THREE.MeshStandardMaterial({ color, transparent: opacity < 1 || xray, opacity: xray ? Math.min(opacity, 0.34) : opacity, roughness: 0.82, metalness: 0.02, side: THREE.DoubleSide, depthWrite: !xray });
+    // Aether Mesh Standard Material - Metallic bronze/charcoal feel
+    const material = (color: number, opacity = 1) => new THREE.MeshStandardMaterial({
+      color,
+      transparent: opacity < 1 || xray,
+      opacity: xray ? Math.min(opacity, 0.34) : opacity,
+      roughness: 0.15, // Sleeker
+      metalness: 0.6, // Metallic finish like concept
+      side: THREE.DoubleSide,
+      depthWrite: !xray
+    });
     const addSelectable = (mesh: THREE.Mesh, source: ProjectionSource) => { mesh.userData = source; group.add(mesh); };
 
-    if (layers.site) {
+    const isGroundOrFull = !activeFloorId || floorMode !== 'isolate' || activeFloorId.includes('stilt') || activeFloorId.includes('ground') || activeFloorId === projection.floorPlates[0]?.floorId;
+    if (layers.site && isGroundOrFull) {
       const siteContext = new THREE.Group();
       siteContext.name = 'site-context';
       group.add(siteContext);
@@ -318,7 +338,15 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       addSelectable(mesh, opening);
     });
 
-    if (layers.stairs) projection.stairs.forEach(stair => {
+    (projection.architecturalSolids ?? []).forEach(part => {
+      if ((part.sourceEntityType === 'stair' && !layers.stairs) || !shouldShowFloor(part.floorId, activeFloorId, floorMode)) return;
+      const geometry = new THREE.ExtrudeGeometry(makeShape(part.boundary), { depth: (part.top - part.bottom) * MM_TO_M, bevelEnabled: false });
+      geometry.rotateX(-Math.PI / 2);
+      const mesh = new THREE.Mesh(geometry, material(0xd4a373, floorContextOpacity(part.floorId, activeFloorId, floorMode)));
+      mesh.position.y = part.bottom * MM_TO_M + floorOffset(projection, part.floorId, isExploded, explodeDistance);
+      addEdges(mesh); addSelectable(mesh, part);
+    });
+    if (layers.stairs) projection.stairs.filter(s => !projection.architecturalSolids?.some(p => p.sourceEntityId === s.sourceEntityId)).forEach(stair => {
       if (!shouldShowFloor(stair.floorId, activeFloorId, floorMode)) return;
       const result = computeStairSolids(stair.canonicalStair, stair.verticalExtent);
       result.solids.forEach(part => {
@@ -363,7 +391,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     runtime.controls.target.copy(center);
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
-  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded, explodeDistance, isExploded, fitSite]);
+  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, fitSite]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;

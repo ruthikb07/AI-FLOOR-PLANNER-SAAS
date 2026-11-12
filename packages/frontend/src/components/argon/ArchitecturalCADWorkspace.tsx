@@ -7,7 +7,7 @@ import { requestVerifiedExport, downloadVerifiedExport } from '../../services/ex
 import type { WorkspaceLayer } from '../workspace/BuildingNavigator';
 
 export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
-  const [entityLayers, setEntityLayers] = useState({ columns: true, beams: true, furniture: true });
+  const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [exportStatus, setExportStatus] = useState('');
   const controller = React.useRef(new AbortController());
   React.useEffect(() => {
@@ -43,7 +43,7 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
     openings: true,
     stairs: true,
     dimensions: true,
-    grid: true,
+    grid: false,
     validation: true,
     siteZones: true,
   });

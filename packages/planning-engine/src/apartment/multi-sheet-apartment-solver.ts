@@ -1,3 +1,7 @@
+import { interpretArchitecturalPlacement } from '../interpretation/architectural-placement.js';
+import { coordinateArchitecturalStairs } from '../pipeline/architectural-connections.js';
+import { bedroomBalconySchedule } from './bedroom-balcony-audit.js';
+import { architecturalSpaceRole, withArchitecturalElements } from '@ai-floor-planner/core';
 /**
  * Multi-Sheet Apartment Project Engine (Phase 1C).
  *
@@ -57,9 +61,13 @@ import {
   partitionMacroFootprint,
   createConnectingDoor,
   snap10,
+  macroCorridorBoxes,
+  macroLobbyBoxes,
   type Box2D,
   type MacroPartition,
 } from '../interpretation/space-filling-snapper';
+import { selectProductionTopology, type SelectedTopology } from '../topology/production-bridge';
+import { assembleStructureFromPartition } from '../topology/plan-assembler';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { GeometryValidator, validateAndRepairBuildingGeometry } from '../validator/geometry-validator';
 
@@ -145,6 +153,7 @@ function createBoxRoom(params: {
   planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR';
   unitId?: string;
   tags?: string[];
+  architecturalRole?: Room['architecturalRole'];
 }): Room {
   const boundary: Polygon = {
     points: [
@@ -155,7 +164,7 @@ function createBoxRoom(params: {
     ],
   };
 
-  return {
+  const result: Room = {
     id: params.id,
     name: params.name,
     type: params.type,
@@ -178,6 +187,8 @@ function createBoxRoom(params: {
     planningZone: params.planningZone,
     unitId: params.unitId,
   };
+  const role = params.architecturalRole ?? architecturalSpaceRole(result);
+  return { ...result, architecturalRole: role, ...(role === 'OPEN_TO_SKY_VOID' ? { openToSky: true, spaceUse: 'VOID' as const } : {}) };
 }
 
 const roomToBox = (r: Room) => ({ id: r.id, rect: { x: r.x, y: r.y, width: r.width, height: r.height } });
@@ -649,6 +660,41 @@ export function deriveCleanStructuralColumns(
   }));
 }
 
+/**
+ * The parts of `box` not covered by any of `blockers`, as axis-aligned pieces.
+ *
+ * Used where a region offered for packing may already be partly built on. Only
+ * whole free rectangles are returned, so a caller can place content in them
+ * without re-checking for overlap. The decomposition is not minimal; it is
+ * exact, which is what matters for an area ledger.
+ */
+function subtractBoxes(box: Box2D, blockers: readonly Box2D[]): Box2D[] {
+  let pieces: Box2D[] = [box];
+  for (const blocker of blockers) {
+    const next: Box2D[] = [];
+    for (const piece of pieces) {
+      const overlapsX = piece.x < blocker.x + blocker.w && blocker.x < piece.x + piece.w;
+      const overlapsY = piece.y < blocker.y + blocker.h && blocker.y < piece.y + piece.h;
+      if (!overlapsX || !overlapsY) {
+        next.push(piece);
+        continue;
+      }
+      // Up to four slabs around the blocker's intersection with this piece.
+      const loX = Math.max(piece.x, blocker.x);
+      const hiX = Math.min(piece.x + piece.w, blocker.x + blocker.w);
+      const loY = Math.max(piece.y, blocker.y);
+      const hiY = Math.min(piece.y + piece.h, blocker.y + blocker.h);
+
+      if (loY > piece.y) next.push({ x: piece.x, y: piece.y, w: piece.w, h: loY - piece.y });
+      if (hiY < piece.y + piece.h) next.push({ x: piece.x, y: hiY, w: piece.w, h: piece.y + piece.h - hiY });
+      if (loX > piece.x) next.push({ x: piece.x, y: loY, w: loX - piece.x, h: hiY - loY });
+      if (hiX < piece.x + piece.w) next.push({ x: hiX, y: loY, w: piece.x + piece.w - hiX, h: hiY - loY });
+    }
+    pieces = next.filter(p => p.w > 0 && p.h > 0);
+  }
+  return pieces;
+}
+
 // ─── Sheet 2 Solver: STILT_PARKING_PLAN (Delta = 0.000 mm²) ──────────────────
 
 export interface StiltParkingSheetResult {
@@ -659,7 +705,7 @@ export interface StiltParkingSheetResult {
 }
 
 export function solveStiltParkingSheet(
-  _config: MultiSheetApartmentConfig,
+  config: MultiSheetApartmentConfig,
   envelope: Box2D,
   macro: MacroPartition,
   stackParams: BuildingStackParameters,
@@ -670,7 +716,10 @@ export function solveStiltParkingSheet(
   const columns: Column[] = [];
 
   // 1. Locked Vertical Core (Staircases, Lifts, Lobby, Shafts)
-  // Must match typical floor coordinates exactly to the millimeter!
+  // Must match typical floor coordinates exactly to the millimeter, and must
+  // place EVERY element: a split-core organization has more than two stairs or
+  // lifts, and a shaft that exists above but not here would have stilt slab
+  // driven through it.
   const stair1 = createBoxRoom({
     id: 'stilt__stair_1',
     name: 'Staircase 01 (Main)',
@@ -682,17 +731,16 @@ export function solveStiltParkingSheet(
   });
   rooms.push(stair1);
 
-  if (macro.stairBoxes[1]) {
-    const stair2 = createBoxRoom({
-      id: 'stilt__stair_2',
-      name: 'Staircase 02 (Fire Escape)',
+  for (let i = 1; i < macro.stairBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: `stilt__stair_${i + 1}`,
+      name: i === 1 ? 'Staircase 02 (Fire Escape)' : `Staircase 0${i + 1}`,
       type: RoomType.Staircase,
       spaceUse: 'CORE',
-      box: macro.stairBoxes[1]!,
+      box: macro.stairBoxes[i]!,
       floorId,
       tags: ['core:stair'],
-    });
-    rooms.push(stair2);
+    }));
   }
 
   const lift1 = createBoxRoom({
@@ -706,45 +754,58 @@ export function solveStiltParkingSheet(
   });
   rooms.push(lift1);
 
-  if (macro.liftBoxes[1]) {
-    const lift2 = createBoxRoom({
-      id: 'stilt__lift_2',
-      name: 'Stretcher / Fire Lift 02',
+  for (let i = 1; i < macro.liftBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: `stilt__lift_${i + 1}`,
+      name: i === 1 ? 'Stretcher / Fire Lift 02' : `Passenger Lift 0${i + 1}`,
       type: RoomType.Lift,
       spaceUse: 'CORE',
-      box: macro.liftBoxes[1]!,
+      box: macro.liftBoxes[i]!,
       floorId,
       tags: ['core:lift'],
-    });
-    rooms.push(lift2);
+    }));
   }
 
-  const stiltLobby = createBoxRoom({
-    id: 'stilt__core_lobby',
-    name: 'Stilt Central Lift Lobby',
-    type: RoomType.Corridor,
-    spaceUse: 'CORE',
-    box: macro.lobbyBox,
-    floorId,
-    tags: ['core:lobby'],
-  });
-  rooms.push(stiltLobby);
+  // Every lobby and corridor of the chosen organization is repeated at stilt
+  // level. Placing only the primary pair would leave the secondary circulation
+  // of a courtyard or split-core plan as unassigned area, which fails the
+  // planar area ledger, and would put stilt slab where a corridor runs above.
+  // An organization may have no separate lift lobby, where the cars open
+  // straight onto the corridor. Place a lobby room only for a real one.
+  const stiltLobbyBoxes = macroLobbyBoxes(macro);
+  for (let i = 0; i < stiltLobbyBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: i === 0 ? 'stilt__core_lobby' : `stilt__core_lobby_${i + 1}`,
+      architecturalRole: 'LIFT_LOBBY',
+      name: stiltLobbyBoxes.length > 1 ? `Stilt Lift Lobby 0${i + 1}` : 'Stilt Central Lift Lobby',
+      type: RoomType.Corridor,
+      spaceUse: 'CORE',
+      box: stiltLobbyBoxes[i]!,
+      floorId,
+      tags: ['core:lobby'],
+    }));
+  }
 
-  const stiltCorridor = createBoxRoom({
-    id: 'stilt__corridor_spine',
-    name: 'Stilt Central Circulation Spine',
-    type: RoomType.Corridor,
-    spaceUse: 'CORE',
-    box: macro.corridorBox,
-    floorId,
-    tags: ['core:corridor'],
-  });
-  rooms.push(stiltCorridor);
+  const stiltCorridorBoxes = macroCorridorBoxes(macro);
+  for (let i = 0; i < stiltCorridorBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: i === 0 ? 'stilt__corridor_spine' : `stilt__corridor_spine_${i + 1}`,
+      name: stiltCorridorBoxes.length > 1 ? `Stilt Circulation Spine 0${i + 1}` : 'Stilt Central Circulation Spine',
+      type: RoomType.Corridor,
+      spaceUse: 'CORE',
+      box: stiltCorridorBoxes[i]!,
+      floorId,
+      tags: ['core:corridor'],
+    }));
+  }
+  const stiltCorridor = rooms.find(r => r.id === 'stilt__corridor_spine')!;
+  const stiltLobby = rooms.find(r => r.id === 'stilt__core_lobby') ?? stiltCorridor;
 
   for (let s = 0; s < macro.shaftBoxes.length; s++) {
     const shaft = createBoxRoom({
       id: `stilt__shaft_${s + 1}`,
-      name: `MEP Service Shaft 0${s + 1}`,
+      architecturalRole: macro.shaftRoles?.[s],
+      name: macro.shaftRoles?.[s] === 'OPEN_TO_SKY_VOID' ? 'Open-to-sky courtyard at stilt' : `MEP Service Shaft 0${s + 1}`,
       type: RoomType.ServiceShaft,
       spaceUse: 'SERVICE',
       box: macro.shaftBoxes[s]!,
@@ -781,7 +842,8 @@ export function solveStiltParkingSheet(
 
   const office = createBoxRoom({
     id: 'stilt__society_office',
-    name: 'Society Administrative Office',
+    architecturalRole: config.stiltAmenities.societyOffice ? 'ENCLOSED_SERVICE' : 'OPEN_CIRCULATION',
+    name: config.stiltAmenities.societyOffice ? 'Society Administrative Office' : 'Open stilt circulation',
     type: RoomType.Custom,
     spaceUse: 'COMMON',
     box: { x: amenityBox.x + amLobbyW, y: amenityBox.y, w: amOfficeW, h: officeH },
@@ -791,7 +853,8 @@ export function solveStiltParkingSheet(
 
   const staffToilet = createBoxRoom({
     id: 'stilt__staff_toilet',
-    name: 'Driver & Maintenance Staff Toilet',
+    architecturalRole: config.stiltAmenities.driverStaffToilet ? 'ENCLOSED_SERVICE' : 'OPEN_CIRCULATION',
+    name: config.stiltAmenities.driverStaffToilet ? 'Driver & Maintenance Staff Toilet' : 'Open stilt circulation',
     type: RoomType.Bathroom,
     spaceUse: 'SERVICE',
     box: { x: amenityBox.x + amLobbyW, y: amenityBox.y + officeH, w: amOfficeW, h: toiletH },
@@ -804,7 +867,8 @@ export function solveStiltParkingSheet(
 
   const gym = createBoxRoom({
     id: 'stilt__gymnasium',
-    name: 'Fitness Center & Health Gymnasium',
+    architecturalRole: config.stiltAmenities.fitnessGymnasium ? 'ENCLOSED_SERVICE' : 'OPEN_CIRCULATION',
+    name: config.stiltAmenities.fitnessGymnasium ? 'Fitness Center & Health Gymnasium' : 'Open stilt circulation',
     type: RoomType.Custom,
     spaceUse: 'COMMON',
     box: { x: amenityBox.x + amLobbyW + amOfficeW, y: amenityBox.y, w: amGymW, h: gymH },
@@ -814,7 +878,8 @@ export function solveStiltParkingSheet(
 
   const meterRoom = createBoxRoom({
     id: 'stilt__meter_bms_room',
-    name: 'Electric Meter & BMS Control Room',
+    architecturalRole: config.stiltAmenities.meterBmsRoom ? 'ENCLOSED_SERVICE' : 'OPEN_CIRCULATION',
+    name: config.stiltAmenities.meterBmsRoom ? 'Electric Meter & BMS Control Room' : 'Open stilt circulation',
     type: RoomType.Custom,
     spaceUse: 'SERVICE',
     box: { x: amenityBox.x + amLobbyW + amOfficeW, y: amenityBox.y + gymH, w: amGymW, h: meterH },
@@ -827,12 +892,19 @@ export function solveStiltParkingSheet(
   let bikeBaysCount = 0;
 
   const packParkingBox = (box: Box2D, zoneKey: string) => {
-    const stallDepth = 5000;
+    // A bay is 5000 mm deep, but the region offered may be shallower once the
+    // core and circulation have been clipped out of it. Packing a fixed depth
+    // into a shallower region drives the stalls straight through whatever lies
+    // beyond, so the depth is bounded by the region and a region too shallow
+    // for a vehicle is left as open stilt area rather than mislabelled.
     const stallWidth = 2500;
+    const stallDepth = Math.min(5000, Math.floor(box.h / 2) >= 5000 ? 5000 : box.h);
+    if (stallDepth < 2500) return;
     const numStalls = Math.floor(box.w / stallWidth);
     const stallsW = numStalls * stallWidth;
     const remW = box.w - stallsW;
-    const isDoubleLoaded = box.h >= 13000;
+    // Two rows only fit when the region is deep enough for both plus an aisle.
+    const isDoubleLoaded = box.h >= 2 * stallDepth + 3000;
 
     // North Row of Car Bays
     for (let s = 0; s < numStalls; s++) {
@@ -852,12 +924,12 @@ export function solveStiltParkingSheet(
 
     // North Remainder Two-Wheeler Bay
     if (remW > 0) {
-      bikeBaysCount += 2;
+      bikeBaysCount += remW >= 1000 ? 2 : 0;
       rooms.push(
         createBoxRoom({
-          id: `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}`,
-          name: `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}`,
-          type: RoomType.Parking,
+          id: remW >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
+          name: remW >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
+          type: remW >= 1000 ? RoomType.Parking : RoomType.Foyer,
           spaceUse: 'COMMON',
           box: { x: box.x + stallsW, y: box.y, w: remW, h: stallDepth },
           floorId,
@@ -885,12 +957,12 @@ export function solveStiltParkingSheet(
 
       // South Remainder Two-Wheeler Bay
       if (remW > 0) {
-        bikeBaysCount += 2;
+        bikeBaysCount += remW >= 1000 ? 2 : 0;
         rooms.push(
           createBoxRoom({
-            id: `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}`,
-            name: `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}`,
-            type: RoomType.Parking,
+            id: remW >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
+            name: remW >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
+            type: remW >= 1000 ? RoomType.Parking : RoomType.Foyer,
             spaceUse: 'COMMON',
             box: { x: box.x + stallsW, y: southY, w: remW, h: stallDepth },
             floorId,
@@ -903,6 +975,7 @@ export function solveStiltParkingSheet(
       rooms.push(
         createBoxRoom({
           id: `stilt__driveway_${zoneKey}`,
+          architecturalRole: 'VEHICLE_AISLE',
           name: `Stilt Vehicular Driveway & Maneuvering Aisle (${zoneKey})`,
           type: RoomType.Corridor,
           spaceUse: 'COMMON',
@@ -916,6 +989,7 @@ export function solveStiltParkingSheet(
       rooms.push(
         createBoxRoom({
           id: `stilt__driveway_${zoneKey}`,
+          architecturalRole: 'VEHICLE_AISLE',
           name: `Stilt Vehicular Driveway & Maneuvering Aisle (${zoneKey})`,
           type: RoomType.Corridor,
           spaceUse: 'COMMON',
@@ -926,49 +1000,87 @@ export function solveStiltParkingSheet(
     }
   };
 
-  // Pack Zone A (West South)
-  const parkBoxA: Box2D = { x: westBox.x, y: westBox.y + amenityH, w: westBox.w, h: westParkH };
-  packParkingBox(parkBoxA, 'west');
+  // Parking is packed into the parts of each flat footprint that are genuinely
+  // free. The core is placed first, and in some organizations a corridor runs
+  // the full length of the plot and crosses the flat footprints above; packing
+  // a footprint wholesale would then drive parking stalls through that
+  // corridor. So every zone is clipped against what has already been placed.
+  const occupied = rooms.map(r => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
 
-  // Pack Zone B (East Wing flatBoxes)
+  const packFree = (box: Box2D, zoneKey: string) => {
+    for (const free of subtractBoxes(box, occupied)) {
+      if (free.w < 2500 || free.h < 2500) continue;
+      packParkingBox(free, zoneKey);
+      occupied.push(free);
+    }
+  };
+
+  // Zone A (West South)
+  packFree({ x: westBox.x, y: westBox.y + amenityH, w: westBox.w, h: westParkH }, 'west');
+
+  // Zone B (remaining flat footprints)
   for (let fb = 1; fb < macro.flatBoxes.length; fb++) {
-    const eastBox = macro.flatBoxes[fb]!;
-    packParkingBox(eastBox, `east_0${fb}`);
+    packFree(macro.flatBoxes[fb]!, `east_0${fb}`);
   }
+
+  // Zone C: the open strips an organization leaves between its flats and the
+  // plot edge become surface parking at stilt level. Earlier partitions had the
+  // flats tile everything but the core, so this was empty; a topology that sets
+  // its building in leaves real area here, and packing it is what keeps the
+  // stilt floor's area ledger exact.
+  //
+  // Each strip is clipped against everything already placed, so a strip that
+  // is partly occupied contributes only its free remainder and parking can
+  // never land on a corridor, stair or shaft.
+  const freeStrips = macro.shaftBoxes.filter((box, i) =>
+    macro.shaftRoles?.[i] === 'OPEN_TO_SKY_VOID' && box.w >= 2500 && box.h >= 2500,
+  );
+  let openZone = 0;
+  for (const strip of freeStrips) packFree(strip, `open_0${++openZone}`);
 
   // 4. Generate Stilt Floor Walls
   const stiltBoundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
-  const walls = generateApartmentWalls(rooms, floorId, stiltBoundary);
+  const walls = generateApartmentWalls(rooms, floorId, stiltBoundary, true, config.architectureOptions?.guardHeightMm);
 
   // 5. Host-fitting Open Passage Walkthrough for Staircase 01 (Clean 1200mm, Zero Swinging Door)
   const dStair1 = createConnectingDoor('door_stilt_stair1', roomToBox(stiltLobby), roomToBox(stair1), 1200, { doorType: 'open_passage' });
   if (dStair1) {
-    doors.push({
-      id: dStair1.id,
-      floorId,
-      wallId: `apt-wall:stair1`,
-      position: { x: snap10(dStair1.rect.x + dStair1.rect.width / 2), y: snap10(dStair1.rect.y + dStair1.rect.height / 2) },
-      width: 1200,
-      height: 2100,
-      type: DoorType.OpenPassage,
-      swingDirection: SwingDirection.Inward,
-      connectsRooms: [stiltLobby.id, stair1.id],
-    });
+    const hostWall = walls.find(w => w.roomIds.includes(stiltLobby.id) && w.roomIds.includes(stair1.id))
+      ?? walls.find(w => openingFitsApartmentWall(w, { x: snap10(dStair1.rect.x + dStair1.rect.width / 2), y: snap10(dStair1.rect.y + dStair1.rect.height / 2) }, 1200));
+    if (hostWall) {
+      doors.push({
+        id: dStair1.id,
+        floorId,
+        wallId: hostWall.id,
+        position: { x: snap10(dStair1.rect.x + dStair1.rect.width / 2), y: snap10(dStair1.rect.y + dStair1.rect.height / 2) },
+        width: 1200,
+        height: 2100,
+        type: DoorType.OpenPassage,
+        swingDirection: SwingDirection.Inward,
+        connectsRooms: [stiltLobby.id, stair1.id],
+      });
+      (hostWall as { hasOpening: boolean }).hasOpening = true;
+    }
   }
 
   const dLobbyCorr = createConnectingDoor('door_stilt_lobby_corr', roomToBox(stiltLobby), roomToBox(stiltCorridor), 1500, { doorType: 'open_passage' });
   if (dLobbyCorr) {
-    doors.push({
-      id: dLobbyCorr.id,
-      floorId,
-      wallId: `apt-wall:lobby_corr`,
-      position: { x: snap10(dLobbyCorr.rect.x + dLobbyCorr.rect.width / 2), y: snap10(dLobbyCorr.rect.y + dLobbyCorr.rect.height / 2) },
-      width: 1500,
-      height: 2100,
-      type: DoorType.OpenPassage,
-      swingDirection: SwingDirection.Inward,
-      connectsRooms: [stiltLobby.id, stiltCorridor.id],
-    });
+    const hostWall = walls.find(w => w.roomIds.includes(stiltLobby.id) && w.roomIds.includes(stiltCorridor.id))
+      ?? walls.find(w => openingFitsApartmentWall(w, { x: snap10(dLobbyCorr.rect.x + dLobbyCorr.rect.width / 2), y: snap10(dLobbyCorr.rect.y + dLobbyCorr.rect.height / 2) }, 1500));
+    if (hostWall) {
+      doors.push({
+        id: dLobbyCorr.id,
+        floorId,
+        wallId: hostWall.id,
+        position: { x: snap10(dLobbyCorr.rect.x + dLobbyCorr.rect.width / 2), y: snap10(dLobbyCorr.rect.y + dLobbyCorr.rect.height / 2) },
+        width: 1500,
+        height: 2100,
+        type: DoorType.OpenPassage,
+        swingDirection: SwingDirection.Inward,
+        connectsRooms: [stiltLobby.id, stiltCorridor.id],
+      });
+      (hostWall as { hasOpening: boolean }).hasOpening = true;
+    }
   }
 
   // 6. Structural RCC Columns (S-COLS): Deduplicated, sequentially numbered C1..CN, zero balcony outer corners
@@ -986,7 +1098,7 @@ export function solveStiltParkingSheet(
     stairs: [],
     columns: [],
   };
-  columns.push(...deriveCleanStructuralColumns(tempFloor, envelope));
+  if (config.structuralLayoutMode === 'PROVISIONAL_EXISTING_PROFILE') columns.push(...deriveCleanStructuralColumns(tempFloor, envelope));
 
   const floor: Floor = {
     id: floorId,
@@ -1029,6 +1141,13 @@ export function solveTypicalFloorSheet(
   config: MultiSheetApartmentConfig,
   envelope: Box2D,
   floorLevel: number = 1,
+  /**
+   * The organization chosen by the generative topology engine. Supplied by
+   * `solveMultiSheetApartmentProject` so every level of the stack repeats the
+   * same core, corridors and shafts. Omitted only by legacy direct callers,
+   * which then get the historical single central-core partition.
+   */
+  topology?: SelectedTopology,
 ): TypicalFloorSheetResult {
   const floorId = floorLevel === 1 ? 'floor_typical_01' : `floor_level_${String(floorLevel).padStart(2, '0')}`;
   const floorName = floorLevel === 0 ? 'GROUND_FLOOR_PLAN' : floorLevel === 1 ? '1ST_FLOOR_PLAN'
@@ -1045,27 +1164,38 @@ export function solveTypicalFloorSheet(
     lotAllotmentMode: config.lotAllotmentMode,
   });
 
-  const structure = solveOrthogonalSpaceFillingApartment({
-    plan: { flats: [], rooms: [] } as never,
-    site: {
-      plotWidth: config.plotWidthMm,
-      plotDepth: config.plotDepthMm,
-      lotAllotmentMode: config.lotAllotmentMode,
-      setbacks: {
-        front: config.plotDepthMm - (envelope.y + envelope.h),
-        rear: envelope.y,
-        left: envelope.x,
-        right: config.plotWidthMm - (envelope.x + envelope.w),
-      },
-    },
-    frame: { width: 1000, height: 1000 },
-    manifest,
-    lotAllotmentMode: config.lotAllotmentMode,
-  });
+  // The generative engine owns topology selection and room placement when a
+  // concept was chosen. Without one, fall back to the historical partition so
+  // a brief the previous engine could build does not start failing.
+  const structure = topology
+    ? assembleStructureFromPartition({
+        partition: topology.chosen.partition,
+        program: topology.result.program,
+        manifest,
+        unitTypes: (config.units ?? []).map(u => u.bhkType),
+      }).structure
+    : solveOrthogonalSpaceFillingApartment({
+        aiPrompt: config.aiPrompt,
+        plan: { flats: [], rooms: [] } as never,
+        site: {
+          plotWidth: config.plotWidthMm,
+          plotDepth: config.plotDepthMm,
+          lotAllotmentMode: config.lotAllotmentMode,
+          setbacks: {
+            front: config.plotDepthMm - (envelope.y + envelope.h),
+            rear: envelope.y,
+            left: envelope.x,
+            right: config.plotWidthMm - (envelope.x + envelope.w),
+          },
+        },
+        frame: { width: 1000, height: 1000 },
+        manifest,
+        lotAllotmentMode: config.lotAllotmentMode,
+      });
 
   const rooms: Room[] = [];
   const addRoom = (
-    r: { id: string; name: string; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string },
+    r: { id: string; name: string; architecturalRole?: Room['architecturalRole']; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string },
     defaultType: RoomType,
     unitId?: string,
   ) => {
@@ -1073,6 +1203,7 @@ export function solveTypicalFloorSheet(
     rooms.push(
       createBoxRoom({
         id: `apt-room:${r.id}`,
+        architecturalRole: r.architecturalRole,
         name: r.name,
         type: rType,
         spaceUse: rType === RoomType.Balcony ? 'OUTDOOR' : unitId ? 'UNIT' : rType === RoomType.ServiceShaft ? 'SERVICE' : (rType === RoomType.Lift || rType === RoomType.Staircase) ? 'CORE' : 'COMMON',
@@ -1103,7 +1234,7 @@ export function solveTypicalFloorSheet(
   for (const el of structure.shafts) addRoom(el, RoomType.ServiceShaft);
 
   const boundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
-  const walls = generateApartmentWalls(rooms, floorId, boundary);
+  const walls = generateApartmentWalls(rooms, floorId, boundary, true, config.architectureOptions?.guardHeightMm);
   const doors: Door[] = [];
   const windows: Window[] = [];
 
@@ -1131,10 +1262,16 @@ export function solveTypicalFloorSheet(
     }
   }
 
-  // Windows along exterior envelope walls (strictly no door overlap)
+  // Windows along exterior envelope walls and shafts (strictly no door overlap)
   for (const r of rooms) {
     if (r.spaceUse === 'OUTDOOR' || r.type === RoomType.ServiceShaft) continue;
-    const extWalls = walls.filter(w => w.wallUse === 'EXTERNAL' && w.roomIds.includes(r.id));
+    const isBath = r.type === RoomType.Bathroom;
+    const extWalls = walls.filter(w =>
+      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT')) &&
+      w.boundaryRole !== 'OPEN_BOUNDARY' &&
+      w.boundaryRole !== 'PARAPET' &&
+      w.roomIds.includes(r.id),
+    );
     for (const hw of extWalls) {
       // Check if wall segment already has a door opening (e.g. balcony door)
       const hasDoor = doors.some(d => d.wallId === hw.id);
@@ -1142,7 +1279,9 @@ export function solveTypicalFloorSheet(
         // Balcony or exterior door already exists on this wall; never overlap door and window!
         continue;
       }
-      const winW = 1200;
+      const winW = isBath ? 600 : 1200;
+      const winH = isBath ? 650 : 1200;
+      const sillH = isBath ? 1500 : 900;
       const winPos = {
         x: snap10((hw.startPoint.x + hw.endPoint.x) / 2),
         y: snap10((hw.startPoint.y + hw.endPoint.y) / 2),
@@ -1154,9 +1293,9 @@ export function solveTypicalFloorSheet(
           wallId: hw.id,
           position: winPos,
           width: winW,
-          height: 1200,
-          sillHeight: 900,
-          type: WindowType.Sliding,
+          height: winH,
+          sillHeight: sillH,
+          type: isBath ? WindowType.Ventilator : WindowType.Sliding,
           roomId: r.id,
         });
       }
@@ -1282,59 +1421,39 @@ export function solveRefugeFloorSheet(
 ): RefugeFloorSheetResult {
   const floorId = `floor_refuge_${String(refugeLevel).padStart(2, '0')}`;
   const baseFloor = typicalResult.floor;
-  const origBalcony = baseFloor.rooms.find(r => r.id.includes('flat_01__balcony') || (r.spaceUse === 'OUTDOOR' && r.unitId === 'flat_01'));
+  const origBalcony = baseFloor.rooms.find(r => r.id === 'apt-room:flat_01__balcony' || r.id === 'flat_01__balcony' || (r.unitId === 'flat_01' && r.name.toLowerCase().includes('sit-out')));
+  const origDining = baseFloor.rooms.find(r => r.unitId === 'flat_01' && (r.id.includes('dining') || r.type === RoomType.Dining));
   const origLiving = baseFloor.rooms.find(r => r.unitId === 'flat_01' && r.type === RoomType.Living);
 
-  let deltaD = 0;
-  if (origBalcony && origLiving && origBalcony.area < 15_000_000) {
-    deltaD = snap10(Math.ceil((15_500_000 - origBalcony.area) / origBalcony.width));
-  }
+  const targetBalcony = origBalcony ?? baseFloor.rooms.find(r => r.unitId === 'flat_01' && r.type === RoomType.Balcony);
+
+  // On the refuge floor, Flat 01 sit-out balcony and dining merge into Statutory Fire Refuge Terrace (>= 15 m2)
+  const isNorth = (targetBalcony && origDining) ? targetBalcony.y <= origDining.y : true;
+  const refY = origDining ? (isNorth ? targetBalcony!.y : origDining.y) : targetBalcony!.y;
+  const refH = origDining ? (targetBalcony!.height + origDining.height) : targetBalcony!.height;
 
   // Clone rooms and convert exterior balcony of Flat 01 into Statutory Fire Refuge Terrace (>= 15 m²)
-  const rooms: Room[] = baseFloor.rooms.map(r => {
-    if (origBalcony && (r.id === origBalcony.id || r.id.includes('flat_01__balcony'))) {
-      const isNorth = origLiving ? origBalcony.y <= origLiving.y : true;
-      const refY = isNorth ? origBalcony.y : origBalcony.y - deltaD;
-      const refH = origBalcony.height + deltaD;
-      return createBoxRoom({
+  const rooms: Room[] = [];
+  for (const r of baseFloor.rooms) {
+    if (targetBalcony && r.id === targetBalcony.id) {
+      rooms.push(createBoxRoom({
         id: `refuge_terrace_${refugeLevel}`,
         name: 'Statutory Fire Refuge Terrace (>= 15 m²)',
         type: RoomType.Balcony,
         spaceUse: 'OUTDOOR',
         planningZone: 'OUTDOOR',
-        box: { x: origBalcony.x, y: refY, w: origBalcony.width, h: refH },
+        box: { x: targetBalcony.x, y: refY, w: targetBalcony.width, h: refH },
         floorId,
         unitId: 'flat_01',
         tags: ['refuge:terrace', 'fire_safety'],
-      });
+      }));
+      continue;
     }
-    if (origLiving && r.id === origLiving.id && deltaD > 0) {
-      const isNorth = origBalcony ? origBalcony.y <= origLiving.y : true;
-      const livY = isNorth ? origLiving.y + deltaD : origLiving.y;
-      const livH = origLiving.height - deltaD;
-      return createBoxRoom({
-        id: origLiving.id,
-        name: origLiving.name,
-        type: origLiving.type,
-        spaceUse: origLiving.spaceUse,
-        planningZone: origLiving.planningZone,
-        box: { x: origLiving.x, y: livY, w: origLiving.width, h: livH },
-        floorId,
-        unitId: 'flat_01',
-        tags: [...origLiving.tags],
-      });
+    if (origDining && r.id === origDining.id) {
+      // Merged into refuge terrace
+      continue;
     }
-    return { ...r, floorId };
-  });
-
-  if (origBalcony && origLiving && deltaD > 0 && origLiving.width > origBalcony.width) {
-    const isNorth = origBalcony.y <= origLiving.y;
-    const remainingX = origBalcony.x === origLiving.x ? origBalcony.x + origBalcony.width : origLiving.x;
-    rooms.push(createBoxRoom({ id: `refuge_access_${refugeLevel}`, name: 'Refuge access passage',
-      type: RoomType.Corridor, spaceUse: 'UNIT', floorId, unitId: 'flat_01', tags: ['refuge:access'],
-      box: { x: remainingX, y: isNorth ? origLiving.y : origLiving.y + origLiving.height - deltaD,
-        w: origLiving.width - origBalcony.width, h: deltaD },
-    }));
+    rooms.push({ ...r, floorId });
   }
 
   const walls = generateApartmentWalls(rooms, floorId, baseFloor.boundary);
@@ -1342,22 +1461,25 @@ export function solveRefugeFloorSheet(
 
   // Add 1050 mm Fire Exit Door connecting Flat 01 Living Room to Fire Refuge Terrace
   const refugeRoom = rooms.find(r => r.tags.includes('refuge:terrace'));
-  if (refugeRoom) {
-    const living = rooms.find(r => r.unitId === 'flat_01' && r.type === RoomType.Living);
-    if (living) {
-      const dRefuge = createConnectingDoor(`door_refuge_${refugeLevel}`, roomToBox(living), roomToBox(refugeRoom), 1050, { isFlatEntrance: true });
-      if (dRefuge) {
+  const connectingRoom = rooms.find(r => r.id === origLiving?.id);
+  if (refugeRoom && connectingRoom) {
+    const dRefuge = createConnectingDoor(`door_refuge_${refugeLevel}`, roomToBox(connectingRoom), roomToBox(refugeRoom), 1050, { isFlatEntrance: true });
+    if (dRefuge) {
+      const hostWall = walls.find(w => w.roomIds.includes(connectingRoom.id) && w.roomIds.includes(refugeRoom.id))
+        ?? walls.find(w => openingFitsApartmentWall(w, { x: snap10(dRefuge.rect.x + dRefuge.rect.width / 2), y: snap10(dRefuge.rect.y + dRefuge.rect.height / 2) }, 1050));
+      if (hostWall) {
         doors.push({
           id: dRefuge.id,
           floorId,
-          wallId: `apt-wall:refuge`,
+          wallId: hostWall.id,
           position: { x: snap10(dRefuge.rect.x + dRefuge.rect.width / 2), y: snap10(dRefuge.rect.y + dRefuge.rect.height / 2) },
           width: 1050,
           height: 2100,
           type: DoorType.Single,
-          swingDirection: SwingDirection.Outward,
-          connectsRooms: [living.id, refugeRoom.id],
+          swingDirection: SwingDirection.Inward,
+          connectsRooms: [connectingRoom.id, refugeRoom.id],
         });
+        (hostWall as { hasOpening: boolean }).hasOpening = true;
       }
     }
   }
@@ -1397,7 +1519,7 @@ export interface TerraceSheetResult {
 }
 
 export function solveTerraceSheet(
-  _config: MultiSheetApartmentConfig,
+  config: MultiSheetApartmentConfig,
   envelope: Box2D,
   macro: MacroPartition,
   terraceLevel: number,
@@ -1411,6 +1533,7 @@ export function solveTerraceSheet(
   const mumty1 = createBoxRoom({
     id: 'terrace__stair_mumty_1',
     name: 'Staircase 01 Mumty & Headroom',
+    architecturalRole: 'STAIR_MUMTY',
     type: RoomType.Staircase,
     spaceUse: 'CORE',
     box: macro.stairBoxes[0]!,
@@ -1419,23 +1542,27 @@ export function solveTerraceSheet(
   });
   rooms.push(mumty1);
 
-  if (macro.stairBoxes[1]) {
-    const mumty2 = createBoxRoom({
-      id: 'terrace__stair_mumty_2',
-      name: 'Staircase 02 Mumty & Fire Escape Headroom',
+  // A mumty over EVERY stair, not only the first two: a split-core
+  // organization has more, and a stair without roof headroom would terminate
+  // into slab.
+  for (let i = 1; i < macro.stairBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: `terrace__stair_mumty_${i + 1}`,
+      name: i === 1 ? 'Staircase 02 Mumty & Fire Escape Headroom' : `Staircase 0${i + 1} Mumty & Headroom`,
+      architecturalRole: 'STAIR_MUMTY',
       type: RoomType.Staircase,
       spaceUse: 'CORE',
-      box: macro.stairBoxes[1]!,
+      box: macro.stairBoxes[i]!,
       floorId,
       tags: ['terrace:core'],
-    });
-    rooms.push(mumty2);
+    }));
   }
 
   // Lift Machine Room (LMR) over Lifts
   const lmr1 = createBoxRoom({
     id: 'terrace__lift_machine_room_1',
-    name: 'Lift Machine Room 01 (LMR)',
+    name: config.architectureOptions?.liftSystem === 'MACHINE_ROOM_REQUIRED' ? 'Lift equipment room 01' : 'Lift headroom reservation 01',
+    architecturalRole: config.architectureOptions?.liftSystem === 'MACHINE_ROOM_REQUIRED' ? 'LIFT_EQUIPMENT' : 'ROOF_EQUIPMENT_ZONE',
     type: RoomType.Custom,
     spaceUse: 'CORE',
     box: macro.liftBoxes[0]!,
@@ -1444,49 +1571,76 @@ export function solveTerraceSheet(
   });
   rooms.push(lmr1);
 
-  if (macro.liftBoxes[1]) {
-    const lmr2 = createBoxRoom({
-      id: 'terrace__lift_machine_room_2',
-      name: 'Lift Machine Room 02 (LMR)',
+  for (let i = 1; i < macro.liftBoxes.length; i++) {
+    const machineRoom = config.architectureOptions?.liftSystem === 'MACHINE_ROOM_REQUIRED';
+    rooms.push(createBoxRoom({
+      id: `terrace__lift_machine_room_${i + 1}`,
+      name: machineRoom ? `Lift equipment room 0${i + 1}` : `Lift headroom reservation 0${i + 1}`,
+      architecturalRole: machineRoom ? 'LIFT_EQUIPMENT' : 'ROOF_EQUIPMENT_ZONE',
       type: RoomType.Custom,
       spaceUse: 'CORE',
-      box: macro.liftBoxes[1]!,
+      box: macro.liftBoxes[i]!,
       floorId,
       tags: ['terrace:core'],
-    });
-    rooms.push(lmr2);
+    }));
   }
 
-  // Overhead Water Tank (OHWT) over Central Lobby & Core
-  const ohwt = createBoxRoom({
+  // Overhead Water Tank (OHWT) over the primary lobby; any further lobby of the
+  // chosen organization becomes roof plant area, so the terrace tiles exactly.
+  // The overhead water tank sits over a real lift lobby where the organization
+  // has one; any further lobby becomes roof plant area. Where the lifts open
+  // straight onto the corridor there is no lobby rectangle to build on, and
+  // the tank goes over the first circulation run instead.
+  const terraceLobbyBoxes = macroLobbyBoxes(macro);
+  const terraceCorridorBoxes = macroCorridorBoxes(macro);
+  const tankBox = terraceLobbyBoxes[0] ?? terraceCorridorBoxes[0]!;
+  const tankTookCorridor = !terraceLobbyBoxes.length;
+
+  rooms.push(createBoxRoom({
     id: 'terrace__ohwt_tank',
+    architecturalRole: 'ROOF_EQUIPMENT_ZONE',
     name: 'Overhead Water Tank (OHWT — Domestic & Fire Reserve)',
     type: RoomType.Custom,
     spaceUse: 'SERVICE',
-    box: macro.lobbyBox,
+    box: tankBox,
     floorId,
     tags: ['terrace:core'],
-  });
-  rooms.push(ohwt);
+  }));
 
-  // Central Roof Terrace Passage
-  const roofCorr = createBoxRoom({
-    id: 'terrace__corridor_vestibule',
-    name: 'Terrace Access Vestibule',
-    type: RoomType.Corridor,
-    spaceUse: 'COMMON',
-    box: macro.corridorBox,
-    floorId,
-    tags: ['terrace:core'],
-  });
-  rooms.push(roofCorr);
+  for (let i = 1; i < terraceLobbyBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: `terrace__roof_plant_${i + 1}`,
+      architecturalRole: 'ROOF_EQUIPMENT_ZONE',
+      name: `Roof Services Plant Zone 0${i + 1}`,
+      type: RoomType.Custom,
+      spaceUse: 'SERVICE',
+      box: terraceLobbyBoxes[i]!,
+      floorId,
+      tags: ['terrace:core'],
+    }));
+  }
+
+  // Terrace access vestibule over each remaining circulation run above, so the
+  // roof tiles the same envelope exactly without doubling up on the tank.
+  for (let i = tankTookCorridor ? 1 : 0; i < terraceCorridorBoxes.length; i++) {
+    rooms.push(createBoxRoom({
+      id: i === 0 ? 'terrace__corridor_vestibule' : `terrace__corridor_vestibule_${i + 1}`,
+      name: terraceCorridorBoxes.length > 1 ? `Terrace Access Vestibule 0${i + 1}` : 'Terrace Access Vestibule',
+      type: RoomType.Corridor,
+      spaceUse: 'COMMON',
+      box: terraceCorridorBoxes[i]!,
+      floorId,
+      tags: ['terrace:core'],
+    }));
+  }
 
   // Covered Weatherproof MEP Skylights over shafts
   for (let s = 0; s < macro.shaftBoxes.length; s++) {
     rooms.push(
       createBoxRoom({
         id: `terrace__shaft_head_${s + 1}`,
-        name: `Covered MEP Duct Vent Head 0${s + 1}`,
+        architecturalRole: macro.shaftRoles?.[s] === 'OPEN_TO_SKY_VOID' ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT',
+        name: macro.shaftRoles?.[s] === 'OPEN_TO_SKY_VOID' ? 'Open-to-sky courtyard (no roof)' : `Service duct vent head 0${s + 1}`,
         type: RoomType.ServiceShaft,
         spaceUse: 'SERVICE',
         box: macro.shaftBoxes[s]!,
@@ -1543,22 +1697,17 @@ export function solveTerraceSheet(
 
   // 4. Parapet Walls & Perimeter
   const terraceBoundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
-  const walls = generateApartmentWalls(rooms, floorId, terraceBoundary);
+  const walls = generateApartmentWalls(rooms, floorId, terraceBoundary, true, config.architectureOptions?.guardHeightMm);
 
-  // 5. Door from Stair Mumty to Open Terrace
-  const dMumty = createConnectingDoor('door_terrace_mumty', roomToBox(mumty1), roomToBox(roofCorr), 1050);
-  if (dMumty) {
-    doors.push({
-      id: dMumty.id,
-      floorId,
-      wallId: `apt-wall:mumty`,
-      position: { x: snap10(dMumty.rect.x + dMumty.rect.width / 2), y: snap10(dMumty.rect.y + dMumty.rect.height / 2) },
-      width: 1050,
-      height: 2100,
-      type: DoorType.Single,
-      swingDirection: SwingDirection.Outward,
-      connectsRooms: [mumty1.id, roofCorr.id],
-    });
+  // Explicit roof access: host every mumty exit on its real shared boundary.
+  for (const mumty of rooms.filter(r => r.architecturalRole === 'STAIR_MUMTY')) {
+    const hosts = walls.filter(w => w.roomIds.includes(mumty.id) && w.roomIds.some(id => rooms.some(r => r.id === id && ['OPEN_CIRCULATION', 'OPEN_TERRACE', 'ROOF_EQUIPMENT_ZONE'].includes(r.architecturalRole ?? ''))));
+    const host = hosts.find(w => openingFitsApartmentWall(w, { x: (w.startPoint.x + w.endPoint.x) / 2, y: (w.startPoint.y + w.endPoint.y) / 2 }, 1050));
+    if (!host) throw new Error(`ROOF_STAIR_ACCESS_UNAVAILABLE: ${mumty.id}`);
+    const other = host.roomIds.find(id => id !== mumty.id)!;
+    doors.push({ id: `${mumty.id}:roof-access`, floorId, wallId: host.id,
+      position: { x: (host.startPoint.x + host.endPoint.x) / 2, y: (host.startPoint.y + host.endPoint.y) / 2 },
+      width: 1050, height: 2100, type: DoorType.Single, swingDirection: SwingDirection.Outward, connectsRooms: [mumty.id, other] });
   }
 
   const floor: Floor = {
@@ -1813,11 +1962,31 @@ export function solveMultiSheetApartmentProject(
     };
   }
 
-  if (envelope.w < 12000 || envelope.h < 16000) throw new Error('The requested setbacks leave too little buildable space for this apartment topology. Increase the plot or reduce the program.');
+  if (envelope.w < 11000 || envelope.h < 11000) throw new Error('The requested setbacks leave too little buildable space for this apartment topology. Increase the plot or reduce the program.');
 
   onStage?.('UNIT_SPATIAL_SLICING');
-  // 2. Resolve Macro Partitioning (Anchored directly onto space-filling-snapper)
-  const macro = partitionMacroFootprint(envelope, config.flatsPerFloor);
+
+  // 2. Select the architectural organization.
+  //
+  // The generative topology engine interprets the brief, builds every viable
+  // organization for this envelope, validates each against mandatory access,
+  // facade and ventilation requirements, scores them and returns the ranked
+  // distinct concepts. The top-ranked concept drives the whole stack, so the
+  // stilt, typical, refuge and terrace sheets all repeat one coherent core.
+  //
+  // If no organization is feasible, fall back to the historical central-core
+  // partition rather than failing a brief the previous engine could build.
+  const topology = selectProductionTopology({
+    envelope,
+    flatsPerFloor: config.flatsPerFloor,
+    unitTypes: (config.units ?? []).map(unit => unit.bhkType),
+    aiPrompt: config.aiPrompt,
+    seed: config.generationSeed,
+  });
+
+  const macro = topology
+    ? topology.macro
+    : partitionMacroFootprint(envelope, config.flatsPerFloor, interpretArchitecturalPlacement(config.aiPrompt));
 
   onStage?.('WALL_AND_OPENING_TOPOLOGY');
   // 3. Solve Sheet 1: SITE_PLAN
@@ -1830,7 +1999,7 @@ export function solveMultiSheetApartmentProject(
   const numFloors = Math.max(1, config.numTypicalFloors ?? 4);
   const residentialSheets: TypicalFloorSheetResult[] = [];
   for (let fl = 1; fl <= numFloors; fl++) {
-    residentialSheets.push(solveTypicalFloorSheet(config, envelope, config.verticalStackType === 'G_PLUS_N' ? fl - 1 : fl));
+    residentialSheets.push(solveTypicalFloorSheet(config, envelope, config.verticalStackType === 'G_PLUS_N' ? fl - 1 : fl, topology));
   }
   const typicalSheet = residentialSheets[0]!;
 
@@ -1966,17 +2135,16 @@ export function solveMultiSheetApartmentProject(
 
   const buildingWithFurniture = populateCanonicalFurniture(rawBuilding);
 
-  // Wire validateAndRepairBuildingGeometry() into default multi-sheet project generation:
-  // Snaps and deduplicates columns (S-COLS, min 2000 mm spacing - zero C2/C3 or C7/C8 overlaps, zero floating columns),
-  // generates complete primary, secondary, and cantilever beams (S-BEAM, 230 x 450 mm),
-  // enforces continuous canonicalStaircases on every floor with unobstructed OPEN_PASSAGE lobby access,
-  // and validates planar conservation (Delta = 0.000 mm²).
-  const placedStructure = new GeometryValidator().auditAndFixColumnAndBeamGrid(buildingWithFurniture, true).building;
+  // Architectural generation defers structure. Only an explicit provisional structural
+  // workflow may place the existing column/beam profile; neither profile is certified.
+  const deferredStructure = config.structuralLayoutMode !== 'PROVISIONAL_EXISTING_PROFILE';
+  const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...(buildingWithFurniture.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : buildingWithFurniture;
+  const placedStructure = deferredStructure ? architecturalBuilding : new GeometryValidator().auditAndFixColumnAndBeamGrid(architecturalBuilding, true).building;
   const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
   const finalFloors = audit.building.floors.map(namespaceFloorEntities);
-  const validatedBuilding: Building = { ...audit.building, floors: finalFloors,
+  const validatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({ ...audit.building, floors: finalFloors,
     furniture: [...finalFloors.flatMap(floor => floor.furniture ?? []), ...(audit.building.furniture ?? []).filter(item => item.siteZoneId)],
-  };
+  }));
   const validationReport = { ...audit.report, errors: audit.report.errors.map(error => ({ ...error,
     elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
   })) };
@@ -1991,7 +2159,8 @@ export function solveMultiSheetApartmentProject(
 
   return {
     config,
-    building: validatedBuilding,
+    building: { ...validatedBuilding, metadata: { ...validatedBuilding.metadata,
+      bedroomBalconySchedule: bedroomBalconySchedule(validatedBuilding) } },
     sheets: updatedSheets,
     schedule,
     validationReport,

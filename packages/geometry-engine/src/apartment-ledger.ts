@@ -1,3 +1,4 @@
+import { isPhysicalBoundary } from '@ai-floor-planner/core';
 import { partitionPlanarCells } from "./planar-cells";
 import type { Floor, Room, Point, Polygon } from "@ai-floor-planner/core";
 import { polygonArea } from "./polygon";
@@ -25,7 +26,7 @@ function pointInPolygon(point: Point, polygon: Polygon): boolean {
  * Areas are mm2; boundaries are centreline cells, usable area excludes wall solids.
  */
 export function measureApartmentAreaLedger(floor: Floor) {
-  const wallPolygons = floor.walls.map((w) => wallToPolygon(w));
+  const wallPolygons = floor.walls.filter(isPhysicalBoundary).map((w) => wallToPolygon(w));
   const polys = [
     floor.boundary,
     ...(floor.voidBoundaries ?? []),
@@ -104,7 +105,9 @@ export function measureApartmentAreaLedger(floor: Floor) {
     roomUsable[r.id] = (roomUsable[r.id] ?? 0) + a;
     const use = r.spaceUse ?? roomSpaceUse(r);
     const category =
-      use === "OUTDOOR"
+      use === "VOID"
+        ? "void"
+        : use === "OUTDOOR"
         ? "balcony"
         : use === "CORE"
           ? "core"

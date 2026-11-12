@@ -1,0 +1,4172 @@
+{
+  "generatedAt": "2026-11-11T21:40:44.913Z",
+  "totalFiles": 694,
+  "testFiles": 228,
+  "sourceFiles": 466,
+  "files": [
+    {
+      "path": "packages\\core\\package.json",
+      "size": 571,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\architectural-review.ts",
+      "size": 1478,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\capabilities.ts",
+      "size": 528,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\compliance\\udcpr-residential-types.ts",
+      "size": 2213,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\compliance\\vastu-advisory-types.ts",
+      "size": 1356,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\constants.ts",
+      "size": 2712,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\batch-command.ts",
+      "size": 1997,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\delete-commands.ts",
+      "size": 5919,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\door-commands.ts",
+      "size": 6183,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\floor-commands.ts",
+      "size": 3217,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\index.ts",
+      "size": 1171,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\replace-building-command.ts",
+      "size": 911,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\room-area-command.ts",
+      "size": 3304,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\room-commands.ts",
+      "size": 8458,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\selection-commands.ts",
+      "size": 4912,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\update-regulatory-context-command.ts",
+      "size": 612,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\update-site-command.ts",
+      "size": 3645,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\commands\\window-commands.ts",
+      "size": 6308,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\engine.ts",
+      "size": 11721,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\history.ts",
+      "size": 4233,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\index.ts",
+      "size": 1470,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\editor\\types.ts",
+      "size": 6853,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\index.ts",
+      "size": 867,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\mep\\mep-contracts.ts",
+      "size": 4510,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\mep\\mep-validation.ts",
+      "size": 3445,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\architectural-semantics.ts",
+      "size": 6291,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\building-budget.ts",
+      "size": 10844,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\canonical-revision.ts",
+      "size": 973,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\errors.ts",
+      "size": 1784,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\factory.ts",
+      "size": 14228,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\footprint.ts",
+      "size": 18415,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\generation-control.ts",
+      "size": 2733,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\id.ts",
+      "size": 899,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\index.ts",
+      "size": 3438,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\opening-migration.ts",
+      "size": 2994,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\requirements-normalization.ts",
+      "size": 6580,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\reviewed-generation.ts",
+      "size": 3249,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\serialization.ts",
+      "size": 1882,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\site-intelligence.ts",
+      "size": 7448,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\space-catalog.ts",
+      "size": 18561,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\space-program.ts",
+      "size": 22642,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\structural-export-validation.ts",
+      "size": 16937,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\updaters.ts",
+      "size": 20112,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\validation.ts",
+      "size": 17604,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\models\\versioning.ts",
+      "size": 4097,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\ai.ts",
+      "size": 5388,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\apartment-manifest.ts",
+      "size": 17970,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\architectural-elements.ts",
+      "size": 1971,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\building-budget.ts",
+      "size": 2834,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\building.ts",
+      "size": 13632,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\constraints.ts",
+      "size": 3641,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\customizable.ts",
+      "size": 1214,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\design-intelligence.ts",
+      "size": 22170,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\enums.ts",
+      "size": 4406,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\etabs-connector.ts",
+      "size": 3572,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\etabs-native-evidence.ts",
+      "size": 848,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\etabs-structural-export.ts",
+      "size": 2360,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\etabs.ts",
+      "size": 1653,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\export-manifest.ts",
+      "size": 3025,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\footprint.ts",
+      "size": 3425,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\furniture.ts",
+      "size": 1499,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\generation-control.ts",
+      "size": 924,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\geometry-validation.ts",
+      "size": 1079,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\geometry.ts",
+      "size": 1159,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\index.ts",
+      "size": 5809,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\indian-codes.ts",
+      "size": 16323,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\multi-sheet-apartment.ts",
+      "size": 7829,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\rendering.ts",
+      "size": 2116,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\requirements.ts",
+      "size": 1499,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\residential-cad-export.ts",
+      "size": 2612,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\space-program.ts",
+      "size": 5591,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\structural-analysis.ts",
+      "size": 4895,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\structural-drawings.ts",
+      "size": 3416,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\structural-review.ts",
+      "size": 1483,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\structural.ts",
+      "size": 1673,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\types\\udcpr.ts",
+      "size": 5019,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\architectural-opening-semantics.test.ts",
+      "size": 1515,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\architectural-review.test.ts",
+      "size": 2106,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\architecture-workspace.test.ts",
+      "size": 2657,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\building-budget.test.ts",
+      "size": 7552,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\door-system-integrity.test.ts",
+      "size": 6332,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\dynamic-apartment-manifest.test.ts",
+      "size": 7542,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\editor-commands.test.ts",
+      "size": 7497,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\editor-foundation.test.ts",
+      "size": 11541,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\factory.test.ts",
+      "size": 7699,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\floor-commands.test.ts",
+      "size": 2074,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\footprint.test.ts",
+      "size": 10417,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\generation-control-editor.test.ts",
+      "size": 1285,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\generation-control.test.ts",
+      "size": 2539,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\multi-floor-invariants.test.ts",
+      "size": 3017,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\program-intent.test.ts",
+      "size": 5635,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\requirements-normalization.test.ts",
+      "size": 3255,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\serialization.test.ts",
+      "size": 3909,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\site-intelligence.test.ts",
+      "size": 3795,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\space-program.test.ts",
+      "size": 9724,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\update-site-command.test.ts",
+      "size": 2413,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\updaters.test.ts",
+      "size": 6198,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\src\\__tests__\\versioning.test.ts",
+      "size": 3896,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\core\\tsconfig.json",
+      "size": 146,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\core\\vitest.config.ts",
+      "size": 282,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\package.json",
+      "size": 611,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\annotation-layout.ts",
+      "size": 3105,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\apartment-ledger.ts",
+      "size": 5623,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\apartment-walls.ts",
+      "size": 6390,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\architectural-solids.ts",
+      "size": 6719,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\architectural-validation.ts",
+      "size": 3986,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\area.ts",
+      "size": 1445,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\collision.ts",
+      "size": 3354,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\coordinates.ts",
+      "size": 3551,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\curves.ts",
+      "size": 3524,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\debug.ts",
+      "size": 6439,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\doors.ts",
+      "size": 8083,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\errors.ts",
+      "size": 1603,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\floor-bounds.ts",
+      "size": 1806,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\hardening-geometry.ts",
+      "size": 6888,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\index.ts",
+      "size": 6724,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\line.ts",
+      "size": 3005,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\mep.ts",
+      "size": 15709,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\nine-zone.ts",
+      "size": 1739,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\opening-geometry.ts",
+      "size": 1693,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\planar-cells.ts",
+      "size": 2655,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\plot.ts",
+      "size": 5145,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\point.ts",
+      "size": 4444,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\polygon.ts",
+      "size": 13040,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\rectangle.ts",
+      "size": 7119,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\regulatory-measurements.ts",
+      "size": 21844,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\residential-envelope.ts",
+      "size": 10279,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\room-regeneration-integrity.ts",
+      "size": 3445,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\room.ts",
+      "size": 3643,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\segment.ts",
+      "size": 5904,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\snapping.ts",
+      "size": 4172,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\spatial-index\\index.ts",
+      "size": 4950,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\stairs.ts",
+      "size": 7337,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\units.ts",
+      "size": 7484,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\vector.ts",
+      "size": 4056,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\walls.ts",
+      "size": 10022,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\windows.ts",
+      "size": 5493,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\__tests__\\coordinates.test.ts",
+      "size": 6856,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\__tests__\\geometry.test.ts",
+      "size": 35972,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\__tests__\\opening-contract.test.ts",
+      "size": 2491,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\__tests__\\residential-envelope.test.ts",
+      "size": 846,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\geometry-engine\\src\\__tests__\\stair-solids.test.ts",
+      "size": 2516,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\geometry-engine\\tsconfig.json",
+      "size": 195,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\geometry-engine\\vitest.config.ts",
+      "size": 282,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\package.json",
+      "size": 697,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\apartment-closure.ts",
+      "size": 18349,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\compat.ts",
+      "size": 2633,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\config.ts",
+      "size": 2243,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\accessibility.ts",
+      "size": 4271,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\door-validity.ts",
+      "size": 6960,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\floor-consistency.ts",
+      "size": 3796,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\geometry-validity.ts",
+      "size": 6300,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\index.ts",
+      "size": 1952,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\minimum-size.ts",
+      "size": 3820,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\plot-containment.ts",
+      "size": 4427,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\required-rooms.ts",
+      "size": 3348,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\room-overlap.ts",
+      "size": 2661,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\stair-validity.ts",
+      "size": 5714,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\vertical-continuity.ts",
+      "size": 4851,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\hard\\window-validity.ts",
+      "size": 4845,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\index.ts",
+      "size": 1282,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\adjacency.ts",
+      "size": 6814,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\circulation.ts",
+      "size": 7039,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\daylight.ts",
+      "size": 9029,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\geometry-proportion.ts",
+      "size": 6106,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\index.ts",
+      "size": 2312,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\privacy.ts",
+      "size": 8425,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\space-utilization.ts",
+      "size": 2048,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\structural.ts",
+      "size": 4226,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\constraints\\soft\\zoning.ts",
+      "size": 6745,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\context.ts",
+      "size": 2197,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\engine.ts",
+      "size": 5089,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\evaluation-status.ts",
+      "size": 3945,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\hard-constraints.ts",
+      "size": 11127,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\helpers\\connectivity.ts",
+      "size": 3743,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\helpers\\direction.ts",
+      "size": 5164,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\helpers\\index.ts",
+      "size": 136,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\helpers\\room-queries.ts",
+      "size": 2638,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\helpers\\zone-classification.ts",
+      "size": 2448,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\index.ts",
+      "size": 3569,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\providers\\index.ts",
+      "size": 167,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\providers\\regulatory-provider.ts",
+      "size": 1137,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\providers\\vastu-provider.ts",
+      "size": 16037,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\raw-planar-conservation.ts",
+      "size": 835,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\registry.ts",
+      "size": 1566,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\scoring.ts",
+      "size": 4686,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\soft-scorers.ts",
+      "size": 12836,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\types.ts",
+      "size": 10965,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\validator.ts",
+      "size": 10434,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\constraint.test.ts",
+      "size": 4815,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\context.test.ts",
+      "size": 2793,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\dynamic-apartment-closure.test.ts",
+      "size": 7549,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\e2e-phase4-verification.test.ts",
+      "size": 25907,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\accessibility.test.ts",
+      "size": 6322,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\door-validity.test.ts",
+      "size": 3462,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\floor-consistency.test.ts",
+      "size": 1933,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\geometry-validity.test.ts",
+      "size": 4239,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\minimum-size.test.ts",
+      "size": 3904,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\plot-containment.test.ts",
+      "size": 3038,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\required-rooms.test.ts",
+      "size": 2977,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\room-overlap.test.ts",
+      "size": 1793,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\stair-validity.test.ts",
+      "size": 4743,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\hard\\window-validity.test.ts",
+      "size": 4251,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\helpers\\connectivity.test.ts",
+      "size": 1703,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\helpers\\direction.test.ts",
+      "size": 2841,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\helpers\\zone-classification.test.ts",
+      "size": 2490,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\multi-floor-constraints.test.ts",
+      "size": 3506,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\performance.test.ts",
+      "size": 2386,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\providers\\regulatory-provider.test.ts",
+      "size": 845,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\providers\\vastu-provider.test.ts",
+      "size": 2583,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\registry.test.ts",
+      "size": 5774,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\scoring.test.ts",
+      "size": 4818,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\adjacency.test.ts",
+      "size": 2576,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\circulation.test.ts",
+      "size": 2526,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\daylight.test.ts",
+      "size": 4233,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\geometry-proportion.test.ts",
+      "size": 1769,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\privacy.test.ts",
+      "size": 2349,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\structural.test.ts",
+      "size": 1746,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\soft\\zoning.test.ts",
+      "size": 1786,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\src\\__tests__\\validator.test.ts",
+      "size": 21363,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\constraint-engine\\tsconfig.json",
+      "size": 245,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\constraint-engine\\vitest.config.ts",
+      "size": 295,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\package.json",
+      "size": 810,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\apartment\\multi-sheet-apartment-solver.ts",
+      "size": 77828,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\compliance\\apartment-vastu-evaluator.ts",
+      "size": 7506,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\compliance\\jurisdiction-context.ts",
+      "size": 3651,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\compliance\\residential-udcpr-evaluator.ts",
+      "size": 3457,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\compliance\\rules\\entitlements.ts",
+      "size": 4431,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\compliance\\source-registry.ts",
+      "size": 3822,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\core\\vertical-core-solver.ts",
+      "size": 7325,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\diagnostics\\design-evaluator.ts",
+      "size": 26486,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\evidence\\architectural-closeout.ts",
+      "size": 9180,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\evidence\\architectural-evidence.ts",
+      "size": 15030,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\evidence\\candidate-diversity.ts",
+      "size": 5209,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generation\\reviewed-workflow.ts",
+      "size": 5036,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generation\\workflow.ts",
+      "size": 8810,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\architectural-layout-engine.ts",
+      "size": 39836,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\candidate-generator.ts",
+      "size": 22864,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\massing-generator.ts",
+      "size": 10624,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\polygon-layout.ts",
+      "size": 35293,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\stair-coordination.ts",
+      "size": 13388,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\generator\\structured-layout.ts",
+      "size": 34475,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\graph\\builder.ts",
+      "size": 7868,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\graph\\scorer.ts",
+      "size": 4452,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\index.ts",
+      "size": 8164,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\apartment-plan.ts",
+      "size": 55320,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\extraction-analysis.ts",
+      "size": 6468,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\extraction-building.ts",
+      "size": 11119,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\extraction-parser.ts",
+      "size": 10805,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\extraction-validation.ts",
+      "size": 4415,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\extraction.ts",
+      "size": 5416,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\interpretation\\space-filling-snapper.ts",
+      "size": 55045,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\layout\\apartment-unit-packer.ts",
+      "size": 6436,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\layout\\opening-integrity-solver.ts",
+      "size": 9214,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\layout\\stilt-layout-solver.ts",
+      "size": 2377,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\multi-floor\\planner.ts",
+      "size": 21801,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\pipeline\\architectural-connections.ts",
+      "size": 7562,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\pipeline\\multi-story-residential-synthesizer.ts",
+      "size": 5767,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\pipeline\\residential-layout-builder.ts",
+      "size": 28361,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\pipeline\\stage-progress-emitter.ts",
+      "size": 10978,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\auto-furnish-apartment.ts",
+      "size": 29427,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\index.ts",
+      "size": 252,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\pc-parser.ts",
+      "size": 9784,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\pcf-parser.ts",
+      "size": 9641,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\plancraft-bridge.ts",
+      "size": 10133,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\resolve-anchors.ts",
+      "size": 3661,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\plancraft\\types.ts",
+      "size": 3301,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\program\\generator.ts",
+      "size": 12557,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\refinement\\room-area-optimizer.ts",
+      "size": 41963,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\refinement\\targeted-regeneration.ts",
+      "size": 16193,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\regions\\orthogonal-decomposition.ts",
+      "size": 6139,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\repair\\apartment-error-repair.ts",
+      "size": 60287,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\repair\\engine.ts",
+      "size": 12108,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\requirements\\validator.ts",
+      "size": 12279,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\site\\site-analyzer.ts",
+      "size": 4907,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\site\\site-planner.ts",
+      "size": 41223,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\strategy\\design-strategy.ts",
+      "size": 4623,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\structural\\beam-network-generator.ts",
+      "size": 6197,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\structural\\column-grid-generator.ts",
+      "size": 11239,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\structural\\hardened-residential-generation.ts",
+      "size": 3649,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\structural\\residential-acceptance.ts",
+      "size": 1802,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\structural\\solver-result.ts",
+      "size": 1372,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\validator\\geometry-validator.ts",
+      "size": 39419,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\validator\\udcpr-engine.ts",
+      "size": 33543,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\vastu\\optimizer.ts",
+      "size": 6813,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\apartment-error-repair.test.ts",
+      "size": 16672,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\architectural-closeout.test.ts",
+      "size": 9046,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\architectural-evidence.test.ts",
+      "size": 20308,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\architectural-generation-benchmark.test.ts",
+      "size": 10300,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\architectural-zoning.test.ts",
+      "size": 3663,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\area-conservation-stress.test.ts",
+      "size": 5843,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\candidate-deduplication.test.ts",
+      "size": 3087,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\candidate-diversity.test.ts",
+      "size": 8837,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\candidate-generation-3bhk.test.ts",
+      "size": 1842,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\candidate-seed-diversity.test.ts",
+      "size": 6707,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\diagnose-issues.test.ts",
+      "size": 2107,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\enclosed-room-walls.test.ts",
+      "size": 5078,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\exact-browser-reproduction.test.ts",
+      "size": 4069,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\extraction-parser.test.ts",
+      "size": 3483,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\extraction.test.ts",
+      "size": 9160,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\feasibility-conflict.test.ts",
+      "size": 1656,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\feasibility-gate.test.ts",
+      "size": 3208,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\fixtures\\architectural-program.ts",
+      "size": 2495,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\fixtures\\placement-benchmark.ts",
+      "size": 1505,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\fixtures\\rbea-001.ts",
+      "size": 21333,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\fixtures\\rbea-002.ts",
+      "size": 17903,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\fixtures\\rbea-003.ts",
+      "size": 15560,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\full-plot-50x50.test.ts",
+      "size": 5250,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\generation-workflow.test.ts",
+      "size": 9079,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\geometry-validator.test.ts",
+      "size": 18297,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\large-site-footprint.test.ts",
+      "size": 3272,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\layout-hardening.test.ts",
+      "size": 8146,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\multi-floor-reliability.test.ts",
+      "size": 7262,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\multi-sheet-apartment-solver.test.ts",
+      "size": 15299,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\multi-story-synthesis.test.ts",
+      "size": 9866,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\multifloor-hard-issues.test.ts",
+      "size": 2141,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\multiple-scenarios-audit.test.ts",
+      "size": 9569,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\opening-integrity.test.ts",
+      "size": 3863,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\orthogonal-decomposition.test.ts",
+      "size": 2675,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\phase1-generation.test.ts",
+      "size": 4079,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\phase1-honest-geometry.test.ts",
+      "size": 4485,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\phase3-compliance.test.ts",
+      "size": 18970,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\plancraft-integration.test.ts",
+      "size": 20127,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\planning.test.ts",
+      "size": 23473,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\plot-fitting.test.ts",
+      "size": 1824,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\private-suite-repair.test.ts",
+      "size": 10146,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\program-intent.test.ts",
+      "size": 13304,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\rbea-001-reference.test.ts",
+      "size": 11127,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\rbea-002-reference.test.ts",
+      "size": 11144,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\rbea-003-reference.test.ts",
+      "size": 10733,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\repair-safety.test.ts",
+      "size": 6860,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\reproduce-video-crash.test.ts",
+      "size": 1719,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\residential-advisory.test.ts",
+      "size": 8096,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\reviewed-workflow.test.ts",
+      "size": 3454,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\room-area-optimizer.test.ts",
+      "size": 32111,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\room-proportions.test.ts",
+      "size": 2963,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\site-utilization-50x50.test.ts",
+      "size": 6271,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\site-utilization.test.ts",
+      "size": 6361,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\space-filling-snapper.test.ts",
+      "size": 25804,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\stage3-18x25-reproduce.test.ts",
+      "size": 2174,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\stair-coordination.test.ts",
+      "size": 6638,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\structural-grid.test.ts",
+      "size": 8229,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\suite-placement.test.ts",
+      "size": 3128,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\targeted-regeneration.test.ts",
+      "size": 8751,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\src\\__tests__\\vertical-core.test.ts",
+      "size": 6141,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\planning-engine\\tsconfig.json",
+      "size": 332,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\planning-engine\\vitest.config.ts",
+      "size": 707,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\package.json",
+      "size": 806,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\apartment-structure.ts",
+      "size": 5705,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\area-budget.ts",
+      "size": 8720,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\building-stack.ts",
+      "size": 5652,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\candidate-search.ts",
+      "size": 13855,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\contract.ts",
+      "size": 15272,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\core-optimizer.ts",
+      "size": 10094,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\envelope-solver.ts",
+      "size": 26873,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\feasibility.ts",
+      "size": 11959,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\floor-configuration.ts",
+      "size": 6759,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\jurisdiction.ts",
+      "size": 32517,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\layout-planner.ts",
+      "size": 58679,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\manifest.ts",
+      "size": 20193,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\metrics.ts",
+      "size": 5177,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\program-registry.ts",
+      "size": 15540,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\questionnaire.ts",
+      "size": 5174,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\reference-library.ts",
+      "size": 5104,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\schematic-renderer.ts",
+      "size": 20031,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\schematic.ts",
+      "size": 30203,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\site-defaults.ts",
+      "size": 1460,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\topology-library.ts",
+      "size": 7224,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\typologies.ts",
+      "size": 13885,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\apartment\\unit-topology-solver.ts",
+      "size": 10121,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\command.ts",
+      "size": 1622,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\context.ts",
+      "size": 1546,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\parser.ts",
+      "size": 5311,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\planner.ts",
+      "size": 9105,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\schema.ts",
+      "size": 1368,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\target-resolver.ts",
+      "size": 4254,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\types.ts",
+      "size": 2854,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\editing\\validation.ts",
+      "size": 2968,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\index.ts",
+      "size": 8929,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\apartment-preflight.ts",
+      "size": 14924,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\architectural-evaluation.ts",
+      "size": 5233,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\aspect-ratio.ts",
+      "size": 3003,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\image-prompt-compiler.ts",
+      "size": 24433,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\image-quality-gate.ts",
+      "size": 3164,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\service.ts",
+      "size": 10809,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\orchestration\\vision-interpretation.ts",
+      "size": 14336,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\base.ts",
+      "size": 665,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\gemini.ts",
+      "size": 13591,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\http.ts",
+      "size": 6299,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\image-generation.ts",
+      "size": 25110,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\openai.ts",
+      "size": 3936,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\providers\\rule-based.ts",
+      "size": 7090,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\requirements\\schema.ts",
+      "size": 4009,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\requirements\\validation.ts",
+      "size": 5318,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\research\\architectural-research-agent.ts",
+      "size": 8787,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\types\\apartment.ts",
+      "size": 6052,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\apartment-pipeline.test.ts",
+      "size": 25292,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\apartment-preflight.test.ts",
+      "size": 4475,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\aspect-ratio.test.ts",
+      "size": 2542,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\cloudflare-image-provider.test.ts",
+      "size": 7370,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\dynamic-prompt-compiler.test.ts",
+      "size": 6354,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\editing.test.ts",
+      "size": 10216,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\gemini-image-transport.test.ts",
+      "size": 6581,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\gemini-live.test.ts",
+      "size": 1578,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\gemini-retry.test.ts",
+      "size": 8695,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\golden-3x3bhk-regression.test.ts",
+      "size": 14445,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\holdout-acceptance.test.ts",
+      "size": 25366,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\image-prompt-compiler.test.ts",
+      "size": 8634,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\layout-planner.test.ts",
+      "size": 11143,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\manifest.test.ts",
+      "size": 17535,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\multi-floor-parser.test.ts",
+      "size": 759,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\orchestration.test.ts",
+      "size": 10280,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\phase1-render-concepts.test.ts",
+      "size": 2828,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\phase2-reference-aspect.test.ts",
+      "size": 8170,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\reference-library.test.ts",
+      "size": 5355,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\schematic-renderer.test.ts",
+      "size": 2675,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\src\\__tests__\\vision-evaluation.test.ts",
+      "size": 5427,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\ai-orchestration\\tsconfig.json",
+      "size": 233,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\ai-orchestration\\vitest.config.ts",
+      "size": 725,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\package.json",
+      "size": 772,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\blender\\blender-script-generator.ts",
+      "size": 11502,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\building-scene-projector.ts",
+      "size": 19605,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\index.ts",
+      "size": 216,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\mep-scene-projector.ts",
+      "size": 5028,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\project-building.ts",
+      "size": 14851,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\settings.ts",
+      "size": 2176,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\types.ts",
+      "size": 5395,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\units.ts",
+      "size": 306,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\src\\__tests__\\blender-procedural-export.test.ts",
+      "size": 8463,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\projection-3d\\src\\__tests__\\phase4-consistency.test.ts",
+      "size": 4622,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\projection-3d\\src\\__tests__\\projection.test.ts",
+      "size": 12028,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\projection-3d\\src\\__tests__\\room-area-projection.test.ts",
+      "size": 2988,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\projection-3d\\tsconfig.json",
+      "size": 272,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\projection-3d\\vitest.config.ts",
+      "size": 204,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\package.json",
+      "size": 689,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\coordinate-transform.ts",
+      "size": 828,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\index.ts",
+      "size": 654,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\plancraft-symbols.ts",
+      "size": 24043,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\reference-furniture.ts",
+      "size": 6679,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\render-config.ts",
+      "size": 16398,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\svg-renderer.ts",
+      "size": 56108,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\architectural-openings.test.ts",
+      "size": 5309,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\editor-synchronization.test.ts",
+      "size": 2654,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\multi-floor-renderer.test.ts",
+      "size": 3083,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\reference-furniture.test.ts",
+      "size": 4551,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\render-config.test.ts",
+      "size": 14182,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\renderer.test.ts",
+      "size": 2896,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\src\\__tests__\\site-zones.test.ts",
+      "size": 2616,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\renderer\\tsconfig.json",
+      "size": 233,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\renderer\\vitest.config.ts",
+      "size": 282,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\package.json",
+      "size": 1373,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\postcss.config.js",
+      "size": 67,
+      "ext": ".js",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\App.tsx",
+      "size": 495,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\ai-design\\AIDesignModal.tsx",
+      "size": 29844,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\ai-edit\\AIEditPanel.tsx",
+      "size": 8764,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ArchitecturalCADWorkspace.tsx",
+      "size": 6784,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ArgonStudioShell.tsx",
+      "size": 15065,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\Building3DCustomizer.tsx",
+      "size": 22164,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ETABSExportPanel.tsx",
+      "size": 6374,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ExportCenterWorkspace.tsx",
+      "size": 16024,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\FloorIsometricEditor.tsx",
+      "size": 10446,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\GenerationProgressModal.tsx",
+      "size": 7691,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ProjectSetupWizard.tsx",
+      "size": 5435,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\RoomAreaCustomizerPanel.tsx",
+      "size": 36929,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\StructuralCADWorkspace.tsx",
+      "size": 36912,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\UdcprEtabsAnalysis.tsx",
+      "size": 24571,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonBadge.tsx",
+      "size": 1330,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonButton.tsx",
+      "size": 2153,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonCard.tsx",
+      "size": 1543,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonCounter.tsx",
+      "size": 1913,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonInput.tsx",
+      "size": 2087,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonSelect.tsx",
+      "size": 2206,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\ArgonStepper.tsx",
+      "size": 2794,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\ui\\index.ts",
+      "size": 216,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\wizard\\Stage1PlotAndSetbacks.tsx",
+      "size": 9690,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\wizard\\Stage2FloorsAndParking.tsx",
+      "size": 9492,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\wizard\\Stage3FlatsAndBhkMix.tsx",
+      "size": 9242,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\argon\\wizard\\Stage4PromptAndUpload.tsx",
+      "size": 7795,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\budget\\BuildingBudgetWorkspace.tsx",
+      "size": 10939,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\canvas\\ArchitecturalCanvas.tsx",
+      "size": 53580,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\diagnostics\\DesignDiagnosticsPanel.tsx",
+      "size": 9555,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\footprint\\FootprintWorkspace.tsx",
+      "size": 26094,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\generation\\AiConceptImagePanel.tsx",
+      "size": 7047,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\generation\\ArchitecturalEvidencePanel.tsx",
+      "size": 5621,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\generation\\GenerationWorkspace.tsx",
+      "size": 19029,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\generation\\ImageToPlanPanel.tsx",
+      "size": 7283,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\inspector\\PropertyInspector.tsx",
+      "size": 27563,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\layout\\AppShell.tsx",
+      "size": 12821,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\layout\\StatusBar.tsx",
+      "size": 3167,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\layout\\ToolPalette.tsx",
+      "size": 2518,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\layout\\TopBar.tsx",
+      "size": 6051,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\modals\\ExportModal.tsx",
+      "size": 21942,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\modals\\NewProjectModal.tsx",
+      "size": 8833,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\model-3d\\ModelWorkspace.tsx",
+      "size": 14562,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\model-3d\\projection-shape.ts",
+      "size": 724,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\model-3d\\ThreeBuildingScene.tsx",
+      "size": 22358,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\program\\ProgramWorkspace.tsx",
+      "size": 22340,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\projects\\ProjectDashboard.tsx",
+      "size": 6971,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\refinement\\RefinementPanel.tsx",
+      "size": 12145,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\site\\SiteWorkspace.tsx",
+      "size": 18618,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\studio\\ApartmentConfiguratorSidebar.tsx",
+      "size": 42036,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\studio\\CinematicWelcomeScene.tsx",
+      "size": 33067,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\studio\\ConceptCardsPanel.tsx",
+      "size": 8927,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\studio\\RHWelcomeScreen.tsx",
+      "size": 8554,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\studio\\StudioShell.tsx",
+      "size": 209672,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\wizard\\NewApartmentWizard.tsx",
+      "size": 39484,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\workspace\\BuildingNavigator.tsx",
+      "size": 4063,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\components\\workspace\\CommandPalette.tsx",
+      "size": 3282,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\hooks\\use3dAnimations.ts",
+      "size": 12038,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\main.tsx",
+      "size": 314,
+      "ext": ".tsx",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\advanced-export.ts",
+      "size": 40611,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\ai-concept-image.ts",
+      "size": 3191,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\ai-provider.ts",
+      "size": 1041,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\argon-planning.worker.ts",
+      "size": 559,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\argon-request.ts",
+      "size": 2575,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\backend-api.ts",
+      "size": 21828,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\blender-export.ts",
+      "size": 10130,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\design-site-context.ts",
+      "size": 1543,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\export-client.ts",
+      "size": 2663,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\floor-camera.ts",
+      "size": 1211,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\image-to-plan.ts",
+      "size": 7479,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\model-camera.ts",
+      "size": 1035,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\projection-preferences.ts",
+      "size": 3605,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\reviewed-generation.ts",
+      "size": 1645,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\room-area-solver.ts",
+      "size": 1449,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\room-area.worker.ts",
+      "size": 549,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\storage.ts",
+      "size": 24295,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\two-ai-candidates.ts",
+      "size": 17536,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\services\\workspace-commands.ts",
+      "size": 2024,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\stores\\editor-store.ts",
+      "size": 16493,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\stores\\useStudioStore.ts",
+      "size": 8965,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\views\\animations\\FloorIsometricSceneConfig.ts",
+      "size": 1912,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\vite-env.d.ts",
+      "size": 162,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\advanced-export.test.ts",
+      "size": 5693,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\ai-concept-image-panel.test.tsx",
+      "size": 5069,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\ai-concept-image.test.ts",
+      "size": 4033,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\ai-provider.test.ts",
+      "size": 1861,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\apartment-configurator-sidebar.test.tsx",
+      "size": 3663,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\architectural-canvas-sheets.test.tsx",
+      "size": 2950,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\architectural-evidence-panel.test.tsx",
+      "size": 4454,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\argon-phase1.test.tsx",
+      "size": 2952,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\blender-export.test.ts",
+      "size": 4812,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\building-3d-customizer.test.tsx",
+      "size": 11753,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\download-path.test.ts",
+      "size": 5897,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\etabs-export-panel.test.tsx",
+      "size": 1829,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\floor-camera.test.ts",
+      "size": 2131,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\floor-capabilities.test.ts",
+      "size": 789,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\floor-isometric-editor.test.tsx",
+      "size": 9745,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\image-boundary.test.ts",
+      "size": 4031,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\image-to-plan.test.ts",
+      "size": 3913,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\multi-floor-ui.test.ts",
+      "size": 1515,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\multi-floor-workflow.test.ts",
+      "size": 3532,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\phase2-cad-workspace.test.tsx",
+      "size": 6010,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\phase2-export-center.test.tsx",
+      "size": 5750,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\phase2-export-client.test.ts",
+      "size": 1994,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\phase3-compliance-ui.test.tsx",
+      "size": 8379,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\phase5-honest-stage-ui.test.ts",
+      "size": 7091,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\projection-preferences.test.ts",
+      "size": 2502,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\projection-shape.test.ts",
+      "size": 1291,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\reviewed-intent.test.ts",
+      "size": 4638,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\room-area-customizer.test.tsx",
+      "size": 12422,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\room-area-worker.test.ts",
+      "size": 1446,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\stage6a-studio-intake.test.tsx",
+      "size": 10809,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\storage.test.ts",
+      "size": 11099,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\structural-cad-workspace.test.tsx",
+      "size": 5292,
+      "ext": ".tsx",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\two-ai-candidates.test.ts",
+      "size": 6136,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\two-phase-concept-cards.test.ts",
+      "size": 6254,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\unified-input-prompt.test.ts",
+      "size": 3028,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\workflow-repair.test.ts",
+      "size": 3647,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\workflow-stabilization.test.ts",
+      "size": 7254,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\src\\__tests__\\workspace-commands.test.ts",
+      "size": 3093,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\frontend\\tailwind.config.js",
+      "size": 974,
+      "ext": ".js",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\tsconfig.json",
+      "size": 571,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\frontend\\vite.config.ts",
+      "size": 299,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\etabs-bridge\\Program.cs",
+      "size": 18718,
+      "ext": ".cs",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\etabs-bridge\\StructuralModelTransfer.cs",
+      "size": 22543,
+      "ext": ".cs",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\package.json",
+      "size": 1565,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\api\\etabs-export-routes.ts",
+      "size": 4256,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\api\\export-routes.ts",
+      "size": 8291,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\api\\image-routes.ts",
+      "size": 4152,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\api\\interpretation-routes.ts",
+      "size": 7976,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\blender\\blender-runner.ts",
+      "size": 2718,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\cad\\accoreconsole-runner.ts",
+      "size": 8400,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\cad\\residential-cad-export-registry.ts",
+      "size": 8367,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\cad\\residential-cad-serializer.ts",
+      "size": 31056,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\env.ts",
+      "size": 3338,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\index.ts",
+      "size": 2348,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\routes\\export-routes.ts",
+      "size": 356,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\server.ts",
+      "size": 21975,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\apartment-structure.ts",
+      "size": 170,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\artifact-registry.ts",
+      "size": 16233,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\artifact-verifier.ts",
+      "size": 21794,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\blender-export-service.ts",
+      "size": 8484,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\cad-export-service.ts",
+      "size": 72216,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\cad-export.ts",
+      "size": 41,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\compliance-report-service.ts",
+      "size": 5475,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\deterministic-fallback.ts",
+      "size": 7464,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-connector.ts",
+      "size": 14366,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-design-checks.ts",
+      "size": 777,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-evidence-report.ts",
+      "size": 6861,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-fixture-analysis.ts",
+      "size": 7923,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-provenance.ts",
+      "size": 2287,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-report-pdf.ts",
+      "size": 489,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-screenshot-service.ts",
+      "size": 10281,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-structural-comparison.ts",
+      "size": 10252,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\etabs-structural-export.ts",
+      "size": 11906,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\export-selection.ts",
+      "size": 6100,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\extraction-pipeline.ts",
+      "size": 8314,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\generation-orchestrator.ts",
+      "size": 91658,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\geometry-report.ts",
+      "size": 5803,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\image-artifact-store.ts",
+      "size": 5249,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\indian-code-loading.ts",
+      "size": 2441,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\local-stub-image-provider.ts",
+      "size": 6166,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\local-stub-plan-interpreter.ts",
+      "size": 5397,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\pdf-export-service.ts",
+      "size": 16258,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\structural-analysis-engine.ts",
+      "size": 540,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\structural-drawings-service.ts",
+      "size": 512,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\structural-export-geometry.ts",
+      "size": 3629,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\services\\structural-review.ts",
+      "size": 3985,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\__fixtures__\\canonical-building.ts",
+      "size": 8670,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\accoreconsole-runner.test.ts",
+      "size": 4168,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\architectural-elements.test.ts",
+      "size": 14287,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\blender-procedural-export.test.ts",
+      "size": 10667,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\cad-export.test.ts",
+      "size": 35348,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-connector.test.ts",
+      "size": 5444,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-download-native.test.ts",
+      "size": 6107,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-evidence-delivery.test.ts",
+      "size": 2709,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-export-routes.test.ts",
+      "size": 4516,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-load-validation.test.ts",
+      "size": 1295,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-loaded-native.test.ts",
+      "size": 1233,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-native.test.ts",
+      "size": 5544,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-provenance.test.ts",
+      "size": 1227,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-review-gate.test.ts",
+      "size": 3785,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-structural-export.test.ts",
+      "size": 8227,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\etabs-structural-native.test.ts",
+      "size": 2423,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\extraction-pipeline.test.ts",
+      "size": 3435,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\fixtures\\apartment-interpretation.ts",
+      "size": 5124,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\fixtures\\etabs-loaded-projects.ts",
+      "size": 2108,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\fixtures\\structural-export-projects.ts",
+      "size": 3539,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\generation-orchestrator.test.ts",
+      "size": 19046,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\image-artifact-store.test.ts",
+      "size": 4942,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\image-routes.test.ts",
+      "size": 8738,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\interpretation-routes.test.ts",
+      "size": 3265,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\live-export-http.test.ts",
+      "size": 6491,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\local-stub-image-provider.test.ts",
+      "size": 1708,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\multi-story-cad-export.test.ts",
+      "size": 14262,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase1-cad-acceptance.test.ts",
+      "size": 13683,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase2-artifacts.test.ts",
+      "size": 13943,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase3-compliance-report.test.ts",
+      "size": 5870,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase3-honest-gate-fallback.test.ts",
+      "size": 20546,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase3-live-replay.test.ts",
+      "size": 6768,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase4-image-to-2d.test.ts",
+      "size": 19039,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase4-live-interpretation.test.ts",
+      "size": 8320,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase5-evaluation-and-sweep.test.ts",
+      "size": 15662,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\phase5-live-sweep.test.ts",
+      "size": 10314,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\real-provider-smoke.test.ts",
+      "size": 7451,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\room-area-export.test.ts",
+      "size": 7475,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\structural-drawings-and-reports.test.ts",
+      "size": 4267,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\structural-review.test.ts",
+      "size": 8738,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\src\\__tests__\\two-phase-concepts.test.ts",
+      "size": 10181,
+      "ext": ".ts",
+      "isTest": true
+    },
+    {
+      "path": "packages\\backend\\tsconfig.json",
+      "size": 417,
+      "ext": ".json",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\vitest.config.ts",
+      "size": 1240,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "packages\\backend\\vitest.integration.config.ts",
+      "size": 1002,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\bundle-backend.mjs",
+      "size": 1929,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\debug-cf-400.mjs",
+      "size": 1781,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\dev-server.mjs",
+      "size": 2141,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\e2e-user-journeys.cjs",
+      "size": 13035,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\full-real-world-uat.cjs",
+      "size": 10209,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\generate-acceptance-package.ts",
+      "size": 21183,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\generate-golden-phase-artifacts.ts",
+      "size": 421,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\inspect-blend-file.py",
+      "size": 3295,
+      "ext": ".py",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\probe-cf-flux-models.mjs",
+      "size": 1773,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\render-schematic-png.mjs",
+      "size": 5899,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\run-golden-3x3bhk.ts",
+      "size": 119,
+      "ext": ".ts",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\run-real-acceptance-test.mjs",
+      "size": 5677,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\stage1-baseline.cjs",
+      "size": 3081,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\stage3-generate-18x25.cjs",
+      "size": 7175,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-cf-flux-steps.mjs",
+      "size": 7162,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-click-room-picker.cjs",
+      "size": 2215,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-generation-18x25.cjs",
+      "size": 6152,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-phase2-acceptance-live.mjs",
+      "size": 6309,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-phase2-exit-gate.mjs",
+      "size": 3815,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-phase3-acceptance-live.mjs",
+      "size": 5264,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-pipeline-direct.mjs",
+      "size": 1964,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-preflight-reference.cjs",
+      "size": 1314,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-preflight-reference.mjs",
+      "size": 1309,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-real-apartment-manifest.mjs",
+      "size": 6311,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-room-area-customizer-detail.cjs",
+      "size": 2638,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-room-selection-and-blender.cjs",
+      "size": 4543,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-svg-ref.mjs",
+      "size": 2281,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\test-two-phase-concepts-live.mjs",
+      "size": 6036,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\verify-acceptance.cjs",
+      "size": 993,
+      "ext": ".cjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\verify-real-exports.mjs",
+      "size": 7091,
+      "ext": ".mjs",
+      "isTest": false
+    },
+    {
+      "path": "scripts\\verify-structural-exports.mjs",
+      "size": 6691,
+      "ext": ".mjs",
+      "isTest": false
+    }
+  ]
+}

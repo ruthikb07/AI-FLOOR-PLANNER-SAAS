@@ -1,0 +1,473 @@
+/**
+ * Indian-Code Residential Structural Loading Service (§P3.3).
+ *
+ * Implements deterministic calculation of:
+ * - Dead Loads (IS 875 Part 1:1987)
+ * - Live Loads (IS 875 Part 2:1987)
+ * - Wind Loads (IS 875 Part 3:2015)
+ * - Seismic Weight & Base Shear (IS 1893 Part 1:2016)
+ * - Standard IS 456 / IS 1893 Load Combinations
+ *
+ * Enforces ENGINEERING_INPUTS_REQUIRED for any incomplete or unapproved parameters.
+ */
+
+import type {
+  Building,
+  Floor,
+  IndianConcreteGrade,
+  IndianSteelGrade,
+  IndianDeadLoadConfig,
+  IndianResidentialLiveLoadConfig,
+  IndianWindConfig,
+  IndianSeismicConfig,
+  IndianStructuralLoadingConfig,
+  StructuralLoadCase,
+  StructuralLoadCombination,
+} from '@ai-floor-planner/core';
+import {
+  DEFAULT_INDIAN_DEAD_LOADS,
+  DEFAULT_INDIAN_LIVE_LOADS,
+  DEFAULT_INDIAN_WIND_CONFIG,
+  DEFAULT_INDIAN_SEISMIC_CONFIG,
+  SEISMIC_ZONE_FACTORS,
+} from '@ai-floor-planner/core';
+
+export interface StoreyLoadSummary {
+  storeyId: string;
+  storeyName: string;
+  level: number;
+  elevationMm: number;
+  heightMm: number;
+  floorAreaSqm: number;
+  slabDeadLoadKn: number;
+  finishesDeadLoadKn: number;
+  wallsDeadLoadKn: number;
+  totalDeadLoadKn: number;
+  habitableLiveLoadKn: number;
+  seismicLiveLoadReductionFactor: number;
+  effectiveSeismicLiveLoadKn: number;
+  totalStoreySeismicWeightWiKn: number;
+  lateralSeismicForceQiKn: number;
+}
+
+export interface BuildingSeismicCalculation {
+  totalSeismicWeightWKn: number;
+  fundamentalPeriodTaSec: number;
+  spectralAccelerationSaPerG: number;
+  horizontalSeismicCoefficientAh: number;
+  designBaseShearVBKn: number;
+  storeys: StoreyLoadSummary[];
+}
+
+export class IndianCodeLoadingService {
+  /**
+   * Validate parameters and generate the versioned IndianStructuralLoadingConfig.
+   * If any mandatory engineer inputs are missing, flags ENGINEERING_INPUTS_REQUIRED.
+   */
+  public createLoadingConfig(
+    building: Building,
+    options: {
+      concreteGrade?: IndianConcreteGrade;
+      rebarGrade?: IndianSteelGrade;
+      deadLoads?: Partial<IndianDeadLoadConfig>;
+      liveLoads?: Partial<IndianResidentialLiveLoadConfig>;
+      wind?: Partial<IndianWindConfig>;
+      seismic?: Partial<IndianSeismicConfig>;
+      engineerApprovalId?: string;
+    } = {},
+  ): IndianStructuralLoadingConfig {
+    const missingInputs: string[] = [];
+
+    const concreteGrade: IndianConcreteGrade = options.concreteGrade ?? 'M25';
+    const rebarGrade: IndianSteelGrade = options.rebarGrade ?? 'Fe500D';
+
+    const deadLoads: IndianDeadLoadConfig = {
+      ...DEFAULT_INDIAN_DEAD_LOADS,
+      ...(options.deadLoads ?? {}),
+    };
+
+    const liveLoads: IndianResidentialLiveLoadConfig = {
+      ...DEFAULT_INDIAN_LIVE_LOADS,
+      ...(options.liveLoads ?? {}),
+    };
+
+    const wind: IndianWindConfig = {
+      ...DEFAULT_INDIAN_WIND_CONFIG,
+      ...(options.wind ?? {}),
+    };
+
+    const totalHeightM = building.floors.reduce((sum, f) => sum + (f.floorHeight ?? 3050), 0) / 1000;
+    const plotWidthM = (building.site?.plotWidth ?? 18000) / 1000;
+    const plotDepthM = (building.site?.plotDepth ?? 25000) / 1000;
+
+    const seismic: IndianSeismicConfig = {
+      ...DEFAULT_INDIAN_SEISMIC_CONFIG,
+      buildingHeightM: totalHeightM > 0 ? totalHeightM : 12.2,
+      planDimensionXM: plotWidthM > 0 ? plotWidthM : 14.0,
+      planDimensionYM: plotDepthM > 0 ? plotDepthM : 20.0,
+      ...(options.seismic ?? {}),
+    };
+
+    // Update zone factor based on zone selection
+    seismic.zoneFactorZ = SEISMIC_ZONE_FACTORS[seismic.zone];
+
+    if (!options.engineerApprovalId) {
+      missingInputs.push('Licensed Structural Engineer (SE-1) calculation sign-off required');
+    }
+    if (!building.site?.plotWidth || !building.site?.plotDepth) {
+      missingInputs.push('Site plot dimensions required for diaphragm wind & seismic exposure');
+    }
+
+    const reviewStatus = missingInputs.length === 0 ? 'ENGINEER_APPROVED' : 'ENGINEERING_INPUTS_REQUIRED';
+
+    return {
+      configVersion: 'IS-STRUCTURAL-2026.1',
+      sourceBuildingId: building.id,
+      architecturalRevision: building.version,
+      concreteGrade,
+      rebarGrade,
+      deadLoads,
+      liveLoads,
+      wind,
+      seismic,
+      reviewStatus,
+      missingInputs,
+    };
+  }
+
+  /**
+   * Compute storey-wise Dead, Live, and Equivalent Static Base Shear per IS 1893:2016.
+   */
+  public calculateSeismicAndGravityLoads(
+    building: Building,
+    config: IndianStructuralLoadingConfig,
+  ): BuildingSeismicCalculation {
+    const h = config.seismic.buildingHeightM;
+    const dx = config.seismic.planDimensionXM;
+
+    // IS 1893:2016 cl 7.6.2(b): RC frame building with masonry infills:
+    // Ta = 0.09 * h / sqrt(d)
+    const fundamentalPeriodTaSec = Number(((0.09 * h) / Math.sqrt(Math.max(1, dx))).toFixed(3));
+
+    // IS 1893:2016 cl 6.4.2: Sa/g for Medium Soil (Type II):
+    // For 0.10 <= T <= 0.55: Sa/g = 2.50
+    // For 0.55 < T <= 4.00: Sa/g = 1.36 / T
+    let spectralAccelerationSaPerG = 2.50;
+    if (fundamentalPeriodTaSec > 0.55) {
+      spectralAccelerationSaPerG = Number((1.36 / fundamentalPeriodTaSec).toFixed(3));
+    }
+
+    // Horizontal seismic coefficient Ah = (Z / 2) * (I / R) * (Sa / g) per cl 6.4.2
+    const Z = config.seismic.zoneFactorZ;
+    const I = config.seismic.importanceFactorI;
+    const R = config.seismic.responseReductionFactorR;
+    const horizontalSeismicCoefficientAh = Number(((Z / 2) * (I / R) * spectralAccelerationSaPerG).toFixed(4));
+
+    // Calculate Storey Dead and Live Loads
+    let currentElevationMm = 0;
+    const storeys: StoreyLoadSummary[] = [];
+
+    for (let i = 0; i < building.floors.length; i++) {
+      const fl = building.floors[i]!;
+      const storeyHeightMm = fl.floorHeight ?? 3050;
+      currentElevationMm += storeyHeightMm;
+
+      // Approximate floor area from boundary points or rooms
+      const floorAreaSqm = this.estimateFloorAreaSqm(fl);
+
+      // Dead loads:
+      // Slab: 125mm concrete = 0.125 * 25 = 3.125 kN/m²
+      const slabDeadLoadKn = floorAreaSqm * 3.125;
+      // Finishes: 1.0 kN/m²
+      const finishesDeadLoadKn = floorAreaSqm * config.deadLoads.floorFinishKnPerM2;
+      // Infill walls: 230mm brick masonry perimeter wall (approx 2.8m height)
+      const perimeterM = Math.sqrt(floorAreaSqm) * 4;
+      const wallAreaSqm = perimeterM * ((storeyHeightMm - 450) / 1000);
+      const wallLoadPerSqm = (config.deadLoads.externalWallThicknessMm / 1000) * config.deadLoads.masonryDensityKnPerM3;
+      const wallsDeadLoadKn = wallAreaSqm * wallLoadPerSqm;
+      const totalDeadLoadKn = Number((slabDeadLoadKn + finishesDeadLoadKn + wallsDeadLoadKn).toFixed(1));
+
+      // Live loads: IS 875 Part 2
+      const isTerrace = i === building.floors.length - 1;
+      const liveIntensityKnPerM2 = isTerrace
+        ? config.liveLoads.accessibleTerraceKnPerM2
+        : config.liveLoads.habitableRoomsKnPerM2;
+      const habitableLiveLoadKn = Number((floorAreaSqm * liveIntensityKnPerM2).toFixed(1));
+
+      // IS 1893:2016 Table 10: Percentage of Imposed Load to be considered in Seismic Weight:
+      // Up to and including 3.0 kN/m²: 25%
+      // Above 3.0 kN/m²: 50%
+      // Roof / Terrace: 0%
+      const reductionFactor = isTerrace ? 0 : (liveIntensityKnPerM2 <= 3.0 ? 0.25 : 0.50);
+      const effectiveSeismicLiveLoadKn = Number((habitableLiveLoadKn * reductionFactor).toFixed(1));
+      const totalStoreySeismicWeightWiKn = Number((totalDeadLoadKn + effectiveSeismicLiveLoadKn).toFixed(1));
+
+      storeys.push({
+        storeyId: fl.id,
+        storeyName: fl.name,
+        level: fl.level,
+        elevationMm: currentElevationMm,
+        heightMm: storeyHeightMm,
+        floorAreaSqm,
+        slabDeadLoadKn,
+        finishesDeadLoadKn,
+        wallsDeadLoadKn,
+        totalDeadLoadKn,
+        habitableLiveLoadKn,
+        seismicLiveLoadReductionFactor: reductionFactor,
+        effectiveSeismicLiveLoadKn,
+        totalStoreySeismicWeightWiKn,
+        lateralSeismicForceQiKn: 0, // Computed below
+      });
+    }
+
+    // Total Seismic Weight W = sum(Wi)
+    const totalSeismicWeightWKn = Number(storeys.reduce((sum, s) => sum + s.totalStoreySeismicWeightWiKn, 0).toFixed(1));
+
+    // Base shear VB = Ah * W per IS 1893 cl 7.6.1
+    const designBaseShearVBKn = Number((horizontalSeismicCoefficientAh * totalSeismicWeightWKn).toFixed(1));
+
+    // Vertical distribution of Base Shear Qi = VB * (Wi * hi^2) / sum(Wj * hj^2) per cl 7.6.3
+    const sumWiHi2 = storeys.reduce((sum, s) => sum + s.totalStoreySeismicWeightWiKn * Math.pow(s.elevationMm / 1000, 2), 0);
+
+    for (const storey of storeys) {
+      if (sumWiHi2 > 0) {
+        const wiHi2 = storey.totalStoreySeismicWeightWiKn * Math.pow(storey.elevationMm / 1000, 2);
+        storey.lateralSeismicForceQiKn = Number(((designBaseShearVBKn * wiHi2) / sumWiHi2).toFixed(2));
+      }
+    }
+
+    return {
+      totalSeismicWeightWKn,
+      fundamentalPeriodTaSec,
+      spectralAccelerationSaPerG,
+      horizontalSeismicCoefficientAh,
+      designBaseShearVBKn,
+      storeys,
+    };
+  }
+
+  /**
+   * Generate canonical Indian standard load cases and combinations (IS 456 Table 18 & IS 1893 cl 6.3.2.1).
+   */
+  public generateLoadCasesAndCombinations(
+    revisionId: string,
+    seismicCalc: BuildingSeismicCalculation,
+  ): {
+    loadCases: StructuralLoadCase[];
+    loadCombinations: StructuralLoadCombination[];
+  } {
+    const loadCases: StructuralLoadCase[] = [
+      {
+        id: 'lc-dead',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'DEAD',
+        patternType: 'DEAD',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 1.0,
+        nodalLoads: [],
+      },
+      {
+        id: 'lc-live',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'LIVE',
+        patternType: 'LIVE',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 0.0,
+        nodalLoads: [],
+      },
+      {
+        id: 'lc-eqx',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'EQX',
+        patternType: 'QUAKE',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 0.0,
+        nodalLoads: [],
+      },
+      {
+        id: 'lc-eqy',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'EQY',
+        patternType: 'QUAKE',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 0.0,
+        nodalLoads: [],
+      },
+      {
+        id: 'lc-wlx',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'WLX',
+        patternType: 'WIND',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 0.0,
+        nodalLoads: [],
+      },
+      {
+        id: 'lc-wly',
+        sourceArchitecturalRevisionId: revisionId,
+        name: 'WLY',
+        patternType: 'WIND',
+        analysisType: 'LINEAR_STATIC',
+        selfWeightMultiplier: 0.0,
+        nodalLoads: [],
+      },
+    ];
+
+    // Standard IS 456:2000 Table 18 & IS 1893:2016 cl 6.3.2.1 combinations
+    const comboDefinitions: { name: string; terms: { caseId: string; factor: number }[] }[] = [
+      // 1. 1.5 (DL + LL)
+      {
+        name: '1.5(DL+LL)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.5 },
+          { caseId: 'lc-live', factor: 1.5 },
+        ],
+      },
+      // 2. 1.2 (DL + LL + EQX)
+      {
+        name: '1.2(DL+LL+EQX)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.2 },
+          { caseId: 'lc-live', factor: 1.2 },
+          { caseId: 'lc-eqx', factor: 1.2 },
+        ],
+      },
+      // 3. 1.2 (DL + LL - EQX)
+      {
+        name: '1.2(DL+LL-EQX)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.2 },
+          { caseId: 'lc-live', factor: 1.2 },
+          { caseId: 'lc-eqx', factor: -1.2 },
+        ],
+      },
+      // 4. 1.2 (DL + LL + EQY)
+      {
+        name: '1.2(DL+LL+EQY)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.2 },
+          { caseId: 'lc-live', factor: 1.2 },
+          { caseId: 'lc-eqy', factor: 1.2 },
+        ],
+      },
+      // 5. 1.2 (DL + LL - EQY)
+      {
+        name: '1.2(DL+LL-EQY)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.2 },
+          { caseId: 'lc-live', factor: 1.2 },
+          { caseId: 'lc-eqy', factor: -1.2 },
+        ],
+      },
+      // 6. 1.5 (DL + EQX)
+      {
+        name: '1.5(DL+EQX)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.5 },
+          { caseId: 'lc-eqx', factor: 1.5 },
+        ],
+      },
+      // 7. 1.5 (DL - EQX)
+      {
+        name: '1.5(DL-EQX)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.5 },
+          { caseId: 'lc-eqx', factor: -1.5 },
+        ],
+      },
+      // 8. 1.5 (DL + EQY)
+      {
+        name: '1.5(DL+EQY)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.5 },
+          { caseId: 'lc-eqy', factor: 1.5 },
+        ],
+      },
+      // 9. 1.5 (DL - EQY)
+      {
+        name: '1.5(DL-EQY)',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.5 },
+          { caseId: 'lc-eqy', factor: -1.5 },
+        ],
+      },
+      // 10. 0.9 DL + 1.5 EQX (Overturning / Uplift)
+      {
+        name: '0.9DL+1.5EQX',
+        terms: [
+          { caseId: 'lc-dead', factor: 0.9 },
+          { caseId: 'lc-eqx', factor: 1.5 },
+        ],
+      },
+      // 11. 0.9 DL - 1.5 EQX
+      {
+        name: '0.9DL-1.5EQX',
+        terms: [
+          { caseId: 'lc-dead', factor: 0.9 },
+          { caseId: 'lc-eqx', factor: -1.5 },
+        ],
+      },
+      // 12. 0.9 DL + 1.5 EQY
+      {
+        name: '0.9DL+1.5EQY',
+        terms: [
+          { caseId: 'lc-dead', factor: 0.9 },
+          { caseId: 'lc-eqy', factor: 1.5 },
+        ],
+      },
+      // 13. 0.9 DL - 1.5 EQY
+      {
+        name: '0.9DL-1.5EQY',
+        terms: [
+          { caseId: 'lc-dead', factor: 0.9 },
+          { caseId: 'lc-eqy', factor: -1.5 },
+        ],
+      },
+      // 14. Serviceability 1.0 (DL + LL)
+      {
+        name: '1.0(DL+LL)_SLS',
+        terms: [
+          { caseId: 'lc-dead', factor: 1.0 },
+          { caseId: 'lc-live', factor: 1.0 },
+        ],
+      },
+    ];
+
+    const loadCombinations: StructuralLoadCombination[] = comboDefinitions.map((c, idx) => ({
+      id: `comb-${idx + 1}`,
+      sourceArchitecturalRevisionId: revisionId,
+      name: c.name,
+      method: 'LINEAR_ADDITIVE',
+      terms: c.terms.map((t) => ({
+        loadCaseId: t.caseId,
+        factor: t.factor,
+      })),
+    }));
+
+    return { loadCases, loadCombinations };
+  }
+
+  private estimateFloorAreaSqm(floor: Floor): number {
+    if (floor.boundary?.points && floor.boundary.points.length >= 3) {
+      // Shoelace polygon area
+      const pts = floor.boundary.points;
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const j = (i + 1) % pts.length;
+        area += pts[i]!.x * pts[j]!.y;
+        area -= pts[j]!.x * pts[i]!.y;
+      }
+      const sqm = Math.abs(area) / 2 / 1_000_000;
+      if (sqm > 10) return Number(sqm.toFixed(1));
+    }
+
+    if (floor.rooms && floor.rooms.length > 0) {
+      const roomSumSqm = floor.rooms.reduce((sum, r) => sum + (r.area ?? (r.width * r.height) / 1_000_000), 0);
+      if (roomSumSqm > 10) return Number(roomSumSqm.toFixed(1));
+    }
+
+    return 200.0; // default residential floor footprint
+  }
+}
+
