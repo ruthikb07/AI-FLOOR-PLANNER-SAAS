@@ -242,6 +242,11 @@ export function furnishRoom(
           if (items.length > init) break;
         }
       }
+      if (!items.some(i => i.roomId === room.id && i.type === 'tv_console')) {
+        const tvX = Math.max(innerMinX, Math.min(innerMaxX - 450, rx + rw - 450 - 200));
+        const tvY = Math.max(innerMinY, Math.min(innerMaxY - 1200, ry + (rh - 1200) / 2));
+        addItem('tv_console', tvX, tvY, 450, 1200, 90, 'EAST', true);
+      }
     } else {
       // Fallback: place coffee table and tv console
       addItem('coffee_table', rx + (rw - 1000) / 2, ry + (rh - 500) / 2, 1000, 500, 0, 'CENTER');

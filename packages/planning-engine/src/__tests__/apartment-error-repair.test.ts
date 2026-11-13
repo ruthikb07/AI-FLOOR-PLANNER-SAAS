@@ -63,7 +63,7 @@ function createMockExtractedPlan(flatsCount: 2 | 3 | 4, mix: ApartmentBhkType[])
       aspectMismatchRatio: 0,
       orientationDegrees: 0,
       roadFacing: 'north',
-      extractionSource: 'cloudflare_flux_gemini_vision',
+      extractionSource: 'deterministic_schematic',
       confidence: 'confirmed',
       normalizedAt: new Date().toISOString(),
     },

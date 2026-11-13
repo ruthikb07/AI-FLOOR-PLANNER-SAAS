@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "reportType": "UDCPR_COMPLIANCE_REPORT",
-  "buildingId": "1fc739f7-82e8-4550-a9de-d820d2817d55",
+  "buildingId": "ec538ba6-ab4f-478b-bdc9-20c56977196a",
   "buildingVersion": 1,
-  "canonicalHash": "c0e2176b9577ce07d050e207ee9dd397dac1ee6af2985e5db48c858d632a6a7d",
+  "canonicalHash": "44759e03b21b71e2efffa92d3971eb4fa4445ff20753b99de26a862930d1c31b",
   "contextHash": "4208bde7953dc1c47b53e8b958ee29c9ff6ea5ba2bb8207fbe9a538951aa7db2",
   "regulatoryContext": {
     "authorityType": "MUNICIPAL_COUNCIL",
@@ -191,7 +191,7 @@
       "required": true,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Assign floorUse; roof drawing sheets must not be counted as residential storeys."
     },
@@ -204,7 +204,7 @@
       "required": 1,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Reconcile physical storeys and the brief; drawing-only roof sheets are excluded."
     },
@@ -217,7 +217,7 @@
       "required": false,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Reconcile stilt parking inputs with physical floor roles."
     },
@@ -230,7 +230,7 @@
       "required": true,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Resolve unsupported polygons, overlaps or unassigned ledger cells; no area rounding is used."
     },
@@ -276,7 +276,7 @@
       "required": "Explicit floor areas and exemption clauses",
       "status": "NOT_VERIFIED",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "mm2",
       "remediation": "Review FSI exemptions, including explicit none; never auto-exempt an entire core/stilt by name."
@@ -290,7 +290,7 @@
       "required": null,
       "status": "NOT_VERIFIED",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "ratio",
       "remediation": "Reduce reckonable area or provide reviewed entitlements/exemptions; exact unrounded ratio is compared."
@@ -304,7 +304,7 @@
       "required": 3000,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "mm",
       "remediation": "Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate. Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites."
@@ -318,7 +318,7 @@
       "required": 1500,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "mm",
       "remediation": "Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate. Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites."
@@ -332,7 +332,7 @@
       "required": 1500,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "mm",
       "remediation": "Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate. Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites."
@@ -346,7 +346,7 @@
       "required": 1500,
       "status": "PASS",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "mm",
       "remediation": "Table 6-D + 6.2.3 H/5 above table limits; special-building/fire-access review is separate. Rectangular single-road plots only; supply edge roles/street centreline for unsupported sites."
@@ -360,7 +360,7 @@
       "required": "Authority/scheme-specific coverage limit",
       "status": "NOT_VERIFIED",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "unit": "%",
       "remediation": "Confirm applicable ground-coverage restrictions; residual plot area is never counted as ROS."
@@ -378,7 +378,7 @@
       "remediation": "Designate reviewed ROS polygons, verify independent/common access, original holding and DP/RP deductions. A generic garden or residual driveway is not certified ROS."
     },
     {
-      "id": "parking.carpet.3082ae91-6f5b-4234-9997-5f1d63d42f8c",
+      "id": "parking.carpet.5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7",
       "sourceId": "parking",
       "clause": "UDCPR 8.1.1 Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C",
       "description": "Per-unit measured carpet including internal partitions",
@@ -390,7 +390,7 @@
       ],
       "unit": "mm2",
       "remediation": "Resolve wall classifications/ownership and verify the carpet convention for the parking schedule.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
       "id": "parking.missing",
@@ -401,7 +401,7 @@
       "required": "Actual marked parking provision",
       "status": "VIOLATION",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Provide actual marked stalls and a verified parking schedule."
     },
@@ -453,7 +453,7 @@
       "remediation": "Verify connected street access, swept paths and section headroom; width alone is insufficient."
     },
     {
-      "id": "stairs.3082ae91-6f5b-4234-9997-5f1d63d42f8c.missing",
+      "id": "stairs.5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7.missing",
       "sourceId": "egress",
       "clause": "UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3",
       "description": "At least one canonical staircase per physical floor",
@@ -461,13 +461,13 @@
       "required": 1,
       "status": "VIOLATION",
       "elementIds": [
-        "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+        "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
       ],
       "remediation": "Provide canonical staircase and OPEN_PASSAGE circulation access.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
-      "id": "travel.3082ae91-6f5b-4234-9997-5f1d63d42f8c",
+      "id": "travel.5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7",
       "sourceId": "egress",
       "clause": "UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3",
       "description": "Constrained room/door/corridor route: No canonical staircase.",
@@ -475,14 +475,14 @@
       "required": 22500,
       "status": "VIOLATION",
       "elementIds": [
-        "384a933c-cc24-4e82-ba55-4c77a7609e8e"
+        "ddf47694-ea2e-4fdd-aab9-2da13b6ff434"
       ],
       "unit": "mm",
       "remediation": "Provide complete door topology and unobstructed common circulation to OPEN_PASSAGE. Residential limit is 22.5m; no assumed 18m or 30m.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
-      "id": "lift.3082ae91-6f5b-4234-9997-5f1d63d42f8c",
+      "id": "lift.5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7",
       "sourceId": "egress",
       "clause": "UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3",
       "description": "Measured lift shaft provision",
@@ -492,10 +492,10 @@
       "elementIds": [],
       "unit": "shafts",
       "remediation": "Provide required lift shafts and verify lift capacity/accessibility; lifts are not fire exits.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
-      "id": "room.384a933c-cc24-4e82-ba55-4c77a7609e8e.height",
+      "id": "room.ddf47694-ea2e-4fdd-aab9-2da13b6ff434.height",
       "sourceId": "rooms",
       "clause": "UDCPR 9.2, 9.3, 9.4",
       "description": "Explicit clear room height below slab/beam",
@@ -503,14 +503,14 @@
       "required": 2750,
       "status": "NOT_VERIFIED",
       "elementIds": [
-        "384a933c-cc24-4e82-ba55-4c77a7609e8e"
+        "ddf47694-ea2e-4fdd-aab9-2da13b6ff434"
       ],
       "unit": "mm",
       "remediation": "Supply measured section clear height; floor-to-floor height alone does not establish clearance.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
-      "id": "room.384a933c-cc24-4e82-ba55-4c77a7609e8e.size",
+      "id": "room.ddf47694-ea2e-4fdd-aab9-2da13b6ff434.size",
       "sourceId": "rooms",
       "clause": "UDCPR 9.2, 9.3, 9.4",
       "description": "Clear area / width / aspect: Living Room",
@@ -518,13 +518,13 @@
       "required": "UDCPR 9.2.1 / 9.3.1 owner requirements; NBC review pending",
       "status": "NOT_VERIFIED",
       "elementIds": [
-        "384a933c-cc24-4e82-ba55-4c77a7609e8e"
+        "ddf47694-ea2e-4fdd-aab9-2da13b6ff434"
       ],
       "remediation": "Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience provisions as numerical statutory minima.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
-      "id": "room.384a933c-cc24-4e82-ba55-4c77a7609e8e.ventilation",
+      "id": "room.ddf47694-ea2e-4fdd-aab9-2da13b6ff434.ventilation",
       "sourceId": "ventilation",
       "clause": "UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3",
       "description": "Actual exterior/balcony/shaft window openings: Living Room",
@@ -532,11 +532,11 @@
       "required": 10,
       "status": "VIOLATION",
       "elementIds": [
-        "384a933c-cc24-4e82-ba55-4c77a7609e8e"
+        "ddf47694-ea2e-4fdd-aab9-2da13b6ff434"
       ],
       "unit": "m2",
       "remediation": "Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment; opening area alone is insufficient.",
-      "floorId": "3082ae91-6f5b-4234-9997-5f1d63d42f8c"
+      "floorId": "5b1c725c-44eb-4ed2-974a-bbd8e75ca9e7"
     },
     {
       "id": "stairs.alignment",
@@ -621,5 +621,5 @@
     "actualTravelDistanceMm": null,
     "compliant": false
   },
-  "generatedAt": "2026-11-12T20:05:46.621Z"
+  "generatedAt": "2026-11-13T07:24:56.869Z"
 }

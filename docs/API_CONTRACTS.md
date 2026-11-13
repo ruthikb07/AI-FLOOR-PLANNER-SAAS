@@ -83,6 +83,15 @@ interface Renderer {
 
 Base URL: `/api/v1`
 
+> **Implemented backend surface.** The running `packages/backend` server currently exposes
+> `GET /api/v1/health`, `POST /api/v1/architecture/evaluate` (advisory commentary on an
+> already-validated plan) and the CAD/PDF/Blender/ETABS export routes. The rest of this
+> section is the target contract, not a description of implemented endpoints.
+>
+> **There are no image-generation or image-to-plan endpoints.** Plan generation is
+> deterministic and runs in `planning-engine`, which the studio calls directly in a web
+> worker. No image model decides layout, counts or geometry.
+
 ### 3.1 Authentication
 
 | Endpoint | Method | Description |

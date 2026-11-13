@@ -448,14 +448,13 @@ function localCorridorStrip(
   return { x: frame.localW, y: lo, w: Math.max(1500, local.w), h: Math.max(0, hi - lo) };
 }
 
-/** True when the box lies on an edge of the buildable envelope. */
+/** True when a face strip actually lies along an outer boundary of the buildable envelope. */
 function onEnvelopeEdge(box: Box2D, env: Box2D): boolean {
-  return (
-    Math.abs(box.x - env.x) <= 1 ||
-    Math.abs(box.y - env.y) <= 1 ||
-    Math.abs(box.x + box.w - (env.x + env.w)) <= 1 ||
-    Math.abs(box.y + box.h - (env.y + env.h)) <= 1
-  );
+  if (box.w >= box.h) {
+    return Math.abs(box.y - env.y) <= 1 || Math.abs(box.y + box.h - (env.y + env.h)) <= 1;
+  } else {
+    return Math.abs(box.x - env.x) <= 1 || Math.abs(box.x + box.w - (env.x + env.w)) <= 1;
+  }
 }
 
 /**

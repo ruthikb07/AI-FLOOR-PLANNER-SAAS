@@ -15,7 +15,8 @@
  *   PASSAGE band              private passage serving the bedroom wing
  *   FACADE band               living/dining and bedrooms on the external edge
  *
- * Flat depth/length follow the target areas (FLUX never decides areas). Four
+ * Flat depth/length follow the target areas: the deterministic planner owns
+ * every dimension, and no AI model decides areas. Four
  * controlled strategies vary the organisation, not the requirements: flat
  * count, unit mix, bedroom counts, core counts and areas are identical for all.
  *
@@ -42,7 +43,7 @@ export interface ApartmentConceptStrategy {
   /** 1-based candidate number (Candidate 01 … 04). */
   readonly candidateNumber: number;
   readonly label: string;
-  /** One-line organisational intent (UI + FLUX prompt). */
+  /** One-line organisational intent, for the UI. */
   readonly intent: string;
 }
 
@@ -540,7 +541,7 @@ function planUnitUV(
   // Model minimum (core MINIMUM_ROOM_AREAS / MINIMUM_DIMENSIONS) used by hard
   // validation, so a planned room can never be rejected for being undersized.
   // A small margin keeps planned rooms clear of the minima after an image
-  // round-trip (FLUX drawing → Gemini reading → mm), where exact-minimum rooms
+  // round-trip through a drawing and back to mm, where exact-minimum rooms
   // would flip to "below minimum" on rounding alone.
   const canon = (key: string) => ({
     area: ((MINIMUM_ROOM_AREAS[key] ?? 0) / 1e6) * 1.04,

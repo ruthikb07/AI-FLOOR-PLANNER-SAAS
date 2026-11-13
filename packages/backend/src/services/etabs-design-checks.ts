@@ -35,7 +35,7 @@ export interface ETABSDesignCheckOptions {
  */
 export class ETABSDesignCheckEngine {
   public verifyStructuralDesign(
-    _building: Building,
+    building: Building,
     loadingConfig: IndianStructuralLoadingConfig,
     options: ETABSDesignCheckOptions = {},
   ): IndianStructuralVerificationResult {
@@ -103,8 +103,9 @@ export class ETABSDesignCheckEngine {
 
       if (isColumn) {
         // --- COLUMN DESIGN CHECKS (IS 456:2000 Cl 39 & IS 13920:2016 Cl 7) ---
-        const width = 300;
-        const depth = 500;
+        const firstFloor = building.floors[0] as unknown as { columnWidthMm?: number; columnDepthMm?: number; beamWidthMm?: number; beamDepthMm?: number } | undefined;
+        const width = firstFloor?.columnWidthMm ?? 300;
+        const depth = firstFloor?.columnDepthMm ?? 500;
         const lengthMm = 3000;
 
         // Minimum eccentricity per Cl 25.4: e_min = L/500 + D/30 >= 20mm
@@ -199,8 +200,9 @@ export class ETABSDesignCheckEngine {
         });
       } else {
         // --- BEAM DESIGN CHECKS (IS 456:2000 Cl 38/40 & IS 13920:2016 Cl 6) ---
-        const width = 230;
-        const depth = 450;
+        const firstFloor = building.floors[0] as unknown as { columnWidthMm?: number; columnDepthMm?: number; beamWidthMm?: number; beamDepthMm?: number } | undefined;
+        const width = firstFloor?.beamWidthMm ?? 230;
+        const depth = firstFloor?.beamDepthMm ?? 450;
         const effectiveDepth = depth - 40; // 40mm clear cover + stirrup + bar radius
         const spanMm = 4500;
 

@@ -169,7 +169,7 @@ describe('Phase 1 — spatial relationship graph & apartment logic', () => {
 });
 
 describe('Phase 1 — area control and feasibility', () => {
-  it.each(STRATEGIES)('%s: each flat is sized from its target (±15%%), FLUX never decides areas', strategy => {
+  it.each(STRATEGIES)('%s: each flat is sized from its target (±15%%); no AI model decides areas', strategy => {
     const s = plan(strategy);
     for (const report of s.areaReport.units) {
       expect(Math.abs(report.deviationPct)).toBeLessThanOrEqual(15);

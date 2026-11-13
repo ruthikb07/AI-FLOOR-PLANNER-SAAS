@@ -104,11 +104,11 @@ describe('floor and suite intent', () => {
       console.log('JSON SNIPPET:', JSON.stringify(result.candidates[0]!.building.floors).slice(0, 300));
       expect(preserved).toEqual([
         { id: 'candidate_compact_zoning_1', strategy: 'compact_zoning', rank: 1,
-          geometryHash: '888118fc418c13e6735180af84f3587be2742438d8540ca2cfdaf99a32f99695', score: 78, oldWet: 100, wet: 55, required: 8, direct: 4 },
+          geometryHash: '7db16e5d537930914ec28c0f4bc6fe7d39f9dccd92eaab9a8bfbccfa58330f43', score: 78, oldWet: 100, wet: 55, required: 8, direct: 4 },
         { id: 'candidate_linear_split_3', strategy: 'linear_split', rank: 2,
-          geometryHash: 'f138357f1daf94b96663370d10a1207ca8514c0b8a4a52c2173874bbb6d69e85', score: 78, oldWet: 98, wet: 55, required: 8, direct: 4 },
+          geometryHash: '7475f3bba8a7784eb6f7e9eb888ac3fb010733d22196f9b54dfb61ec9e82dde9', score: 78, oldWet: 98, wet: 55, required: 8, direct: 4 },
         { id: 'candidate_open_circulation_2', strategy: 'open_circulation', rank: 3,
-          geometryHash: '27275ab5d780e084172902427e94855643c5f802dd33cb1f796be2963a4735db', score: 77, oldWet: 100, wet: 33, required: 8, direct: 4 },
+          geometryHash: '02d1eaaecdc949a2fe51244f52ea6533003ff5613a802d534f3f878174bddb80', score: 77, oldWet: 100, wet: 33, required: 8, direct: 4 },
       ]);
       for (const candidate of result.candidates) {
         const evidence = candidate.architecturalEvidence!;

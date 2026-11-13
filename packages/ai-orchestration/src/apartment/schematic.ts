@@ -2,7 +2,8 @@
  * Deterministic Apartment Schematic Engine (§13–§18).
  *
  * Implements:
- * - Deterministic mathematical schematic generated BEFORE FLUX is called.
+ * - Deterministic mathematical schematic. It is the authoritative schematic;
+ *   no image model participates in producing it.
  * - Generalized multi-unit layout (2–8 flats) for any unit mix (1BHK, 2BHK, 3BHK, 4BHK).
  * - Exact flat count (schematic.units.length === flatsPerFloor).
  * - Clear zoning (public / service / private), real door swings, and spatial relationship graph:

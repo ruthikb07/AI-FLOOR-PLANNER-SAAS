@@ -15,7 +15,7 @@ The project targets high-quality, editable residential architectural 2D generati
 
 ### Core Architectural Axioms
 1. **Canonical Model Primacy:** The canonical `Building` contract from `@ai-floor-planner/core` is the sole source of authoritative state. SVG, Three.js, React components, and exported CAD files are pure projections.
-2. **Deterministic Solvers First:** AI interprets user intent and generates schematic proposals. All geometry creation, wall sizing, room allocation, column/beam grids, and statutory compliance checks are owned by deterministic computational geometry solvers.
+2. **Deterministic Solvers Only:** AI interprets the user's brief into structured intent, and nothing more. All geometry creation, wall sizing, room allocation, column/beam grids, and statutory compliance checks are owned by deterministic computational geometry solvers. No image model participates in deciding layout, counts or geometry, and geometry is never read back out of an image; the former Cloudflare FLUX generation, image-to-plan vision interpretation and visual preflight paths have been removed.
 3. **Honest Gate Reporting:** If an external service, solver, or environment requirement is missing or unverified, the system must report `NOT_RUN`, `BLOCKED`, or `PROFESSIONAL_REVIEW_REQUIRED`. Never fabricate a passing score or structural safety approval.
 
 ---

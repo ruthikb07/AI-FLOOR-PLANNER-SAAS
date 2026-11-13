@@ -262,6 +262,12 @@ export interface Floor {
   readonly elevationMm?: number;
   readonly floorUse?: 'RESIDENTIAL' | 'STILT_PARKING' | 'ROOF';
   readonly slabThicknessMm?: number;
+  /** Column dimensions (mm) — used for P-M interaction checks in ETABS */
+  readonly columnWidthMm?: number;
+  readonly columnDepthMm?: number;
+  /** Beam dimensions (mm) — used for flexural & shear design in ETABS */
+  readonly beamWidthMm?: number;
+  readonly beamDepthMm?: number;
   readonly voidBoundaries?: readonly Polygon[];
   readonly apartmentUnits?: readonly { id: string; boundary: Polygon; unitType: string }[];
   readonly id: string;
@@ -286,6 +292,7 @@ export interface Floor {
 
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
+  readonly generationReport?: import('./multi-sheet-apartment').ApartmentGenerationReport;
   readonly bedroomBalconySchedule?: readonly {
     flatId: string | null; floorId: string; bedroomId: string; balconyId: string | null;
     accessDoorId: string | null; dimensionsMm: { width: number; depth: number } | null; areaM2: number | null;

@@ -4,7 +4,6 @@
  */
 
 import type { Building, BuildingBudgetIntent, CandidatePlan, FootprintIntent, GenerationControlState, SpaceProgram } from '@ai-floor-planner/core';
-import type { FloorPlanImagePromptRequest } from '@ai-floor-planner/ai-orchestration';
 import {
   projectStore,
   type IndexedDbProjectStore,
@@ -105,7 +104,7 @@ export interface FloorPlanImageSession {
   readonly provider: string;
   readonly mimeType: string;
   readonly imageBase64: string;
-  readonly request: FloorPlanImagePromptRequest;
+  readonly request: Record<string, unknown>;
   /** Canonical building identity/version the image was generated from. */
   readonly contextSignature: string;
 }

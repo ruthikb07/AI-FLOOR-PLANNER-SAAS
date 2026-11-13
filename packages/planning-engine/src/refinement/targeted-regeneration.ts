@@ -127,7 +127,13 @@ function rebuildDependencies(floor: Floor, rooms: readonly Room[], selected: Set
     doors.push({ id: sourceDoor?.id ?? `refinement-door-${floor.id}-${variant}-${index}`, floorId: floor.id, wallId: wall.id, position: isVertical ? { x: edge.startPoint.x, y: edge.startPoint.y + (length - doorWidth) / 2 } : { x: edge.startPoint.x + (length - doorWidth) / 2, y: edge.startPoint.y }, width: doorWidth, height: sourceDoor?.height ?? 2100, type: sourceDoor?.type ?? DoorType.Single, swingDirection: sourceDoor?.swingDirection ?? SwingDirection.Left, connectsRooms: [room.id, other.id] });
     index += 1;
   }));
-  return { ...floor, rooms: floor.rooms.map(room => rooms.find(value => value.id === room.id) ?? room), walls: [...floor.walls.filter(wall => !mutableWalls.includes(wall)), ...walls], doors: [...floor.doors.filter(door => !mutableDoors.includes(door)), ...doors], windows: floor.windows.filter(window => !selected.has(window.roomId)) };
+  const updatedRooms = floor.rooms.map(room => rooms.find(value => value.id === room.id) ?? room);
+  const preservedWindows = floor.windows.filter(window => {
+    if (!selected.has(window.roomId)) return true;
+    const room = updatedRooms.find(value => value.id === window.roomId);
+    return room ? pointOnRoomBoundary(room, window.position) : false;
+  });
+  return { ...floor, rooms: updatedRooms, walls: [...floor.walls.filter(wall => !mutableWalls.includes(wall)), ...walls], doors: [...floor.doors.filter(door => !mutableDoors.includes(door)), ...doors], windows: preservedWindows };
 }
 
 function assertProtectedEquality(before: Building, after: Building, selected: Set<string>): void {

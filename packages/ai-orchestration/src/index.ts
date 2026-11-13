@@ -54,33 +54,6 @@ export {
   type RoomSizingRecommendation,
 } from './research/architectural-research-agent';
 export {
-  compileFloorPlanImagePrompt,
-  compileApartmentFloorPlanImagePrompt,
-  compileDynamicApartmentFloorPlanImagePrompt,
-  APARTMENT_NEGATIVE_PROMPT,
-  FLOOR_PLAN_PROMPT_VERSION,
-  type FloorPlanImagePromptInput,
-  type ApartmentFloorPlanImagePromptInput,
-  type DynamicApartmentFloorPlanPromptInput,
-  type FloorPlanImagePromptRequest,
-  type ReferenceImageInput,
-} from './orchestration/image-prompt-compiler';
-export {
-  CloudflareImageProvider,
-  DEFAULT_FLUX_MODEL,
-  ImageProviderError,
-  buildCloudflareImageRequestBody,
-  buildCloudflareFormData,
-  type CloudflareImageProviderOptions,
-  type GeneratedPlanImage,
-  type ImageGenerationProvider,
-  type ImageProviderErrorCode,
-} from './providers/image-generation';
-export {
-  verifyImageQuality,
-  type ImageQualityCheckResult,
-} from './orchestration/image-quality-gate';
-export {
   checkApartmentCompleteness,
   validateApartmentFeasibility,
   validateIndianApartmentFeasibility,
@@ -118,18 +91,6 @@ export {
   type DetailedApartmentFeasibilityResult,
   type ApartmentFeasibilityConflict,
 } from './types/apartment';
-export {
-  interpretPlanImageWithGemini,
-  IMAGE_INTERPRETATION_SCHEMA,
-  APARTMENT_IMAGE_INTERPRETATION_SCHEMA,
-  APARTMENT_INTERPRETATION_FRAME,
-  COMMON_AREA_FLAT_ID,
-  buildDynamicApartmentVisionSchema,
-  type ApartmentInterpretationContext,
-  type InterpretPlanImageOptions,
-  type InterpretationCoordinateFrame,
-  type PlanInterpretationResponse,
-} from './orchestration/vision-interpretation';
 export { buildGeminiParts, GEMINI_SUPPORTED_IMAGE_MIME_TYPES } from './providers/gemini';
 export {
   evaluatePlanArchitecturally,
@@ -137,15 +98,6 @@ export {
   type ArchitecturalEvaluationOptions,
   type ArchitecturalEvaluationResult,
 } from './orchestration/architectural-evaluation';
-export {
-  runGeminiApartmentPreflight,
-  evaluateApartmentPreflight,
-  APARTMENT_PREFLIGHT_SCHEMA,
-  APARTMENT_PREFLIGHT_PROMPT,
-  type ExpectedApartmentBrief,
-  type DetectedApartmentFeatures,
-  type ApartmentVisualPreflightResult,
-} from './orchestration/apartment-preflight';
 export {
   buildApartmentGenerationManifest,
   renderApartmentManifestText,
@@ -177,27 +129,7 @@ export {
   type UnitAreaReport,
 } from './apartment/layout-planner';
 export {
-  computeAspectAdaptedDimensions,
-  MIN_OUTPUT_DIMENSION_PX,
-  MAX_OUTPUT_DIMENSION_PX,
-  OUTPUT_DIMENSION_STEP_PX,
-  TARGET_PIXEL_BUDGET,
-  type AspectAdaptedDimensions,
-} from './orchestration/aspect-ratio';
-export {
-  resolveApartmentReferenceBucket,
-  selectReferenceCandidates,
-  finalizeReferenceSelection,
-  ALL_APARTMENT_REFERENCE_BUCKETS,
-  type ApartmentReferenceBucket,
-  type ReferenceStatus,
-  type ReferenceDropRecord,
-  type ReferenceSelectionDiagnostics,
-  type AvailableReferenceFile,
-} from './apartment/reference-library';
-export {
   apartmentExpectationFromManifest,
-  apartmentInterpretationContextFromManifest,
   schematicToApartmentStructure,
 } from './apartment/apartment-structure';
 export {

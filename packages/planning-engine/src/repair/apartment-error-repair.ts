@@ -360,11 +360,12 @@ function repairManifestMismatch(params: ManifestRepairParams): {
     const match = String(bhkType).match(/^([1234])BHK$/i);
     const defaultBeds = match ? parseInt(match[1]!, 10) : 3;
     const expectedBeds = typeof unitSpec?.bedrooms === 'number' ? unitSpec.bedrooms : defaultBeds;
+    const defaultBaths = bhkType === '1BHK' ? 1 : bhkType === '2BHK' ? 2 : bhkType === '3BHK' ? 2 : 3;
     const expectedBaths = typeof unitSpec?.bathrooms === 'number'
       ? unitSpec.bathrooms
       : unitSpec?.attachedBathCount !== undefined
       ? unitSpec.attachedBathCount + 1
-      : expectedBeds;
+      : defaultBaths;
 
     // 1. Living / Dining room check and entry reclassification
     const livingRooms = unitRooms.filter(r => r.type === RoomType.Living || r.tags.includes('role:living'));
@@ -622,10 +623,9 @@ function splitRoomForSynthesis(
   };
   const minDim = minSynthDims[synthType] ?? { w: 1500, h: 1800 };
 
-  // When splitting a room along the vertical exterior facade (e.g. West edge at x <= 50),
-  // split along the Y-axis so both halves retain access to the exterior facade for windows.
-  const isAlongExteriorFacade = pRect.x <= 50;
-  const splitAlongY = isAlongExteriorFacade || pRect.h > pRect.w;
+  // Splitting along Y ensures both halves retain exterior facade access on West and East edges.
+  // Only split along X if the room is too short vertically (pRect.h < 3600) to yield two viable rooms.
+  const splitAlongY = pRect.h >= 3600;
 
   if (!splitAlongY) {
     // Split along longest axis (X-axis)
@@ -1021,8 +1021,13 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
         }
       }
 
-      // Check for orphan rooms inside this unit
-      const unreachable = unitRooms.filter(r => !visited.has(r.id));
+      // Check for orphan rooms inside this unit (heal corridors/passages before bedrooms)
+      const unreachable = unitRooms
+        .filter(r => !visited.has(r.id))
+        .sort((a, b) => {
+          const priority = (r: Room) => (r.type === RoomType.Corridor ? 0 : r.type === RoomType.Bedroom ? 1 : 2);
+          return priority(a) - priority(b);
+        });
       for (const orphan of unreachable) {
         if (visited.has(orphan.id)) continue;
         // Connect orphan to a reachable room sharing a wall segment
@@ -1044,9 +1049,16 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
           }
         }
 
-        // Otherwise find any reachable room sharing longest boundary (never route through a bathroom)
+        // Otherwise find any reachable room sharing longest boundary (never route through a bathroom, and never connect a bedroom directly into a kitchen or utility)
         if (!targetReachable && !orphan.bathroomOwnerRoomId) {
-          const candidates = unitRooms.filter(r => visited.has(r.id) && !r.bathroomOwnerRoomId && r.type !== RoomType.Bathroom && findSharedWallSegment(orphan, r));
+          const candidates = unitRooms.filter(
+            r =>
+              visited.has(r.id) &&
+              !r.bathroomOwnerRoomId &&
+              r.type !== RoomType.Bathroom &&
+              !(orphan.type === RoomType.Bedroom && (r.type === RoomType.Kitchen || r.type === RoomType.Utility)) &&
+              findSharedWallSegment(orphan, r),
+          );
           if (candidates.length > 0) {
             candidates.sort((a, b) => {
               const lenA = findSharedWallSegment(orphan, a)?.len ?? 0;
@@ -1354,14 +1366,17 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
     // B. Bathrooms: Exterior window or Service Shaft ventilation
     if (r.type === RoomType.Bathroom) {
       const hasVent = windows.some(w => w.roomId === r.id);
-      const touchesShaft = walls.some(w => w.roomIds.includes(r.id) && w.wallUse === 'SHAFT');
-
-      if (!hasVent && !touchesShaft) {
-        const extWall = walls.find(w => w.roomIds.includes(r.id) && (w.wallUse === 'EXTERNAL' || w.roomIds.length === 1));
-        if (extWall) {
+      if (!hasVent) {
+        const candWalls = walls.filter(w =>
+          w.roomIds.includes(r.id) &&
+          (w.wallUse === 'EXTERNAL' || w.wallUse === 'SHAFT' || w.roomIds.length === 1) &&
+          w.boundaryRole !== 'OPEN_BOUNDARY' &&
+          w.boundaryRole !== 'PARAPET',
+        );
+        for (const extWall of candWalls) {
           const len = Math.hypot(extWall.endPoint.x - extWall.startPoint.x, extWall.endPoint.y - extWall.startPoint.y);
-          if (len >= 800) {
-            const ventWidth = 600;
+          if (len >= 600) {
+            const ventWidth = Math.min(600, Math.max(350, Math.round(len - 200)));
             const pos: Point = {
               x: snap10((extWall.startPoint.x + extWall.endPoint.x) / 2),
               y: snap10((extWall.startPoint.y + extWall.endPoint.y) / 2),
@@ -1379,12 +1394,14 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
                 roomId: r.id,
               };
               windows.push(newVent);
+              (extWall as { hasOpening: boolean }).hasOpening = true;
               repaired = true;
               repairs.push({
                 category: 'DAYLIGHT_SHAFT',
-                description: `Added 600 mm ventilator window on exterior wall for bathroom ${r.id}`,
+                description: `Added ${ventWidth} mm ventilator window on ${extWall.wallUse} wall for bathroom ${r.id}`,
                 targetEntities: [newVent.id, r.id],
               });
+              break;
             }
           }
         }

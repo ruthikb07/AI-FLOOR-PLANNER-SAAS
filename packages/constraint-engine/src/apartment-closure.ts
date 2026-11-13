@@ -224,11 +224,12 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
       const match = String(bhkType).match(/^([1234])BHK$/i);
       const defaultBeds = match ? parseInt(match[1]!, 10) : 3;
       const expectedBeds = typeof unitSpec?.bedrooms === 'number' ? unitSpec.bedrooms : defaultBeds;
+      const defaultBaths = bhkType === '1BHK' ? 1 : bhkType === '2BHK' ? 2 : bhkType === '3BHK' ? 2 : 3;
       const expectedBaths = typeof unitSpec?.bathrooms === 'number'
         ? unitSpec.bathrooms
         : unitSpec?.attachedBathCount !== undefined
         ? unitSpec.attachedBathCount + 1
-        : expectedBeds;
+        : defaultBaths;
 
       const livingCount = unitRooms.filter(r => r.type === 'living' || r.tags.includes('role:living')).length;
       if (livingCount === 0) add('UNIT_ROOM_MANIFEST_INCOMPLETE', `${u.id}: missing living room for ${bhkType}`);

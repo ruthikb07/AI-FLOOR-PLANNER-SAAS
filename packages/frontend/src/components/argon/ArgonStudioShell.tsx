@@ -77,11 +77,12 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
    * is a different situation from a generation that failed.
    */
   const [saveWarning, setSaveWarning] = useState('');
+  const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
   useEffect(() => () => workerRef.current?.terminate(), []);
   const handleGenerate = (data: ProjectSetupWizardData) => {
     workerRef.current?.terminate();
     lastBrief.current = data;
-    setIsGenerating(true); setPipelineProgress(null); setGenerationError('');
+    setIsGenerating(true); setPipelineProgress(null); setGenerationError(''); setGenerationFindings([]);
     try {
       const request = createArgonRequest(data);
       const worker = new Worker(new URL('../../services/argon-planning.worker.ts', import.meta.url), { type: 'module' });
@@ -100,8 +101,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             // The plan is handed to the editor and the user is taken to it
             // immediately. Persistence is reported separately below: a storage
             // problem must not read as a generation failure, and must not
-            // discard a plan that has already passed every geometric and
-            // regulatory check.
+            // discard the reviewable plan. Findings remain attached to it.
+            const report = event.data.result.building.metadata.generationReport;
+            setGenerationFindings(report?.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`) ?? []);
             const outcome = editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
             const firstResidential = event.data.result.building.floors.find(floor => floor.apartmentUnits?.length);
             if (firstResidential) editor.switchFloor(firstResidential.id);
@@ -314,6 +316,12 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           by exporting. This is deliberately not an error banner: the plan is
           complete and usable, only its storage is at risk.
         */}
+        {generationFindings.length > 0 && (
+          <details className="absolute top-4 right-4 z-40 max-w-lg max-h-72 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 shadow-lg">
+            <summary>Best-effort plan — {generationFindings.length} findings; professional review required</summary>
+            <ol className="mt-2 space-y-2">{generationFindings.map((finding, i) => <li key={i}>{finding}</li>)}</ol>
+          </details>
+        )}
         {saveWarning && (
           <div
             role="status"

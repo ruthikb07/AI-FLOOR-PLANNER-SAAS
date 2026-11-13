@@ -232,3 +232,4 @@ export * from './layout/apartment-unit-packer';
 export * from './layout/opening-integrity-solver';
 
 export * from './pipeline/multi-story-residential-synthesizer';
+export { generateApartmentOutcome } from './apartment/generation-outcome';

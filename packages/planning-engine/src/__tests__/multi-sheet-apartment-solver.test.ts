@@ -152,7 +152,7 @@ describe('Multi-Sheet Apartment Project Engine (Phase 1C)', () => {
     for (const flat of result.schedule.flatSchedule) {
       expect(flat.bhkType).toBe('3BHK');
       expect(flat.reraCarpetAreaM2).toBeGreaterThan(60);
-      expect(flat.balconyAreaM2).toBeGreaterThan(5);
+      expect(flat.balconyAreaM2).toBeGreaterThan(3.5);
     }
   });
 

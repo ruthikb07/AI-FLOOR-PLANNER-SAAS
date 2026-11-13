@@ -90,7 +90,7 @@ export const FLAT_BOUNDS = {
   /** Span at which the slicer can carve bedroom balconies. */
   balconySpanMm: 9000,
   /** Along the room stack (service band + living + bedrooms + baths). */
-  minRunMm: 9000,
+  minRunMm: 6800,
   /**
    * Upper span and run bounds.
    *
@@ -146,7 +146,7 @@ export interface TopologyPartition {
 
 export interface TopologyContext {
   readonly envelope: Box2D;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly program: ArchitecturalProgram;
 }
 
@@ -205,7 +205,7 @@ export interface FootprintPlan {
  */
 export function planFootprint(
   envelope: Box2D,
-  flatsPerFloor: 2 | 3 | 4,
+  flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6,
   compact: boolean,
   unitTypes: readonly string[] = [],
 ): FootprintPlan {
@@ -355,6 +355,10 @@ interface CoreBandOptions {
   readonly liftsAtLowSide: boolean;
   /** Prefer leftover band area to read as an open-to-sky void. */
   readonly preferOts: boolean;
+  /** Explicitly prohibit OPEN_TO_SKY_VOID in the core band (honours NO OTS). */
+  readonly noOts?: boolean;
+  /** Override lift car count when the brief explicitly requests a single lift. */
+  readonly liftCountOverride?: 1 | 2;
   /** Which band faces carry a full-length corridor. */
   readonly corridorSides: CorridorSides;
   /**
@@ -402,10 +406,12 @@ export function requiredCoreBandLength(opts: {
   compact: boolean;
   stairCount: 1 | 2;
   corridorSides?: CorridorSides;
+  liftCount?: 1 | 2;
 }): number {
   const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
   const crossLink = opts.corridorSides === 'BOTH' ? corridorWidth(opts.compact) : 0;
-  return stairRun * opts.stairCount + CORE_BOUNDS.liftDepth * CORE_BOUNDS.liftCount + crossLink;
+  const liftCount = opts.liftCount ?? CORE_BOUNDS.liftCount;
+  return stairRun * opts.stairCount + CORE_BOUNDS.liftDepth * liftCount + crossLink;
 }
 
 /**
@@ -444,15 +450,17 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     );
   }
 
+  const liftCount = opts.liftCountOverride ?? CORE_BOUNDS.liftCount;
   const requiredLength = requiredCoreBandLength({
     compact: opts.compact,
     stairCount: opts.stairCount,
     corridorSides: sides,
+    liftCount,
   });
   if (band.h < requiredLength) {
     reasons.push(
       `core band runs ${Math.round(band.h)} mm, below the ${requiredLength} mm needed for ` +
-      `${opts.stairCount} stair(s), ${CORE_BOUNDS.liftCount} lifts` +
+      `${opts.stairCount} stair(s), ${liftCount} lifts` +
       (sides === 'BOTH' ? ' and a link around the end of the core' : ''),
     );
   }
@@ -495,11 +503,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   if (crossLink) corridorBoxes.push(out(crossLink));
 
   const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
-  const liftBankRun = CORE_BOUNDS.liftDepth * CORE_BOUNDS.liftCount;
-  const alongSizes = opts.stairCount === 2
-    ? [stairRun, liftBankRun, stairRun, 0]
-    : [stairRun, liftBankRun, 0];
-  const segments = splitY(stack, alongSizes);
+  const liftBankRun = CORE_BOUNDS.liftDepth * liftCount;
 
   const stairBoxes: Box2D[] = [];
   const liftBoxes: Box2D[] = [];
@@ -507,18 +511,64 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const shaftBoxes: Box2D[] = [];
   const shaftRoles: ShaftRole[] = [];
 
-  // Primary stair occupies the full stack width.
-  stairBoxes.push(out(segments[0]!));
+  let firstStairSeg: Box2D;
+  let liftSeg: Box2D;
+  let secondStairSeg: Box2D | undefined;
+  let tailSeg: Box2D | undefined;
+
+  if (opts.noOts && opts.stairCount === 2) {
+    // Position the two staircases at opposite ends of the stack with the lift
+    // centered in the middle segment, and any middle remainder as SERVICE_SHAFT.
+    const middleH = stack.h - 2 * stairRun;
+    const [topStair, midZone, botStair] = splitY(stack, [stairRun, middleH, 0]) as [Box2D, Box2D, Box2D];
+    firstStairSeg = topStair;
+    secondStairSeg = botStair;
+    const remMidH = midZone.h - liftBankRun;
+    const topPad = snap10(remMidH / 2);
+    const botPad = remMidH - topPad;
+    if (topPad > 0 && botPad > 0) {
+      const [padTop, liftCenter, padBot] = splitY(midZone, [topPad, liftBankRun, 0]) as [Box2D, Box2D, Box2D];
+      shaftBoxes.push(out(padTop));
+      shaftRoles.push('SERVICE_SHAFT');
+      liftSeg = liftCenter;
+      shaftBoxes.push(out(padBot));
+      shaftRoles.push('SERVICE_SHAFT');
+    } else if (remMidH > 0) {
+      const [liftCenter, padBot] = splitY(midZone, [liftBankRun, 0]) as [Box2D, Box2D];
+      liftSeg = liftCenter;
+      shaftBoxes.push(out(padBot));
+      shaftRoles.push('SERVICE_SHAFT');
+    } else {
+      liftSeg = midZone;
+    }
+  } else {
+    const alongSizes = opts.stairCount === 2
+      ? [stairRun, liftBankRun, stairRun, 0]
+      : [stairRun, liftBankRun, 0];
+    const segments = splitY(stack, alongSizes);
+    firstStairSeg = segments[0]!;
+    liftSeg = segments[1]!;
+    secondStairSeg = opts.stairCount === 2 ? segments[2]! : undefined;
+    tailSeg = segments[segments.length - 1]!;
+  }
+
+  // Primary stair: bounded to catalogue maximum (3000 mm) to prevent oversized 5.8m stairrooms
+  const stairW = Math.min(stack.w, CORE_BOUNDS.stairWidthMax);
+  const stairSurplusW = stack.w - stairW;
+  if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
+    const [stairCol, shaftCol] = opts.liftsAtLowSide
+      ? splitX(firstStairSeg, [stairW, 0])
+      : splitX(firstStairSeg, [stairSurplusW, 0]);
+    stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
+    shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
+    shaftRoles.push('SERVICE_SHAFT');
+  } else {
+    stairBoxes.push(out(firstStairSeg));
+  }
 
   // Lift bank: cars stacked along the band beside a lobby landing that spans
   // the whole lift segment, so the lobby reaches both cars and the corridor.
-  //
-  // `liftSeg` is exactly two car depths by construction, so splitting it in two
-  // gives two cars. Guard that anyway: a segment that ever came through deeper
-  // would otherwise make the trailing "car" a slab the size of the remainder,
-  // which then reads as a lift overlapping whatever lies beyond it.
-  const liftSeg = segments[1]!;
-  const carDepth = Math.min(CORE_BOUNDS.liftDepth, Math.floor(liftSeg.h / CORE_BOUNDS.liftCount));
+  const carDepth = Math.min(CORE_BOUNDS.liftDepth, Math.floor(liftSeg.h / liftCount));
   // The car width is clamped to the catalogue range and snapped to 10 mm, so on
   // a narrow stack the clamp's lower bound can exceed the stack itself and the
   // car would hang over whatever lies beyond. Bound it by the stack as well.
@@ -528,15 +578,15 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   );
   const lobbyW = stack.w - liftW;
 
-  /** Stacks exactly `liftCount` cars in `column`, with any remainder as shaft. */
+  /** Stacks `liftCount` cars in `column`, with any remainder as shaft. */
   const stackCars = (column: Box2D): void => {
-    const depths = Array.from({ length: CORE_BOUNDS.liftCount }, () => carDepth);
+    const depths = Array.from({ length: liftCount }, () => carDepth);
     const pieces = splitY(column, [...depths, 0]);
-    for (let i = 0; i < CORE_BOUNDS.liftCount; i++) liftBoxes.push(out(pieces[i]!));
+    for (let i = 0; i < liftCount; i++) liftBoxes.push(out(pieces[i]!));
     const tail = pieces[pieces.length - 1]!;
     if (tail.h > 0) {
       shaftBoxes.push(out(tail));
-      shaftRoles.push(roleFor(tail, opts.preferOts));
+      shaftRoles.push(roleFor(tail, opts.preferOts, opts.noOts));
     }
   };
 
@@ -547,10 +597,10 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     stackCars(liftCol);
     lobbyBoxes.push(out(lobbyCol));
   } else {
-    // Too narrow for a landing beside the cars. The cars take the full stack
-    // width and open straight onto a corridor, which then serves as the
-    // landing — either one this band supplies, or one the family places
-    // alongside the stack.
+    // Too narrow for a landing beside the cars. The cars open straight onto a
+    // corridor, which serves as the landing. Bound car width to manufacturer
+    // standard (1.9–2.2 m); any surplus becomes a MEP/service shaft rather
+    // than a giant non-standard 3m car.
     if (corridorCount === 0 && !opts.landingSuppliedExternally) {
       return {
         ...empty,
@@ -560,17 +610,38 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
         ],
       };
     }
-    stackCars(liftSeg);
+    const carW = Math.min(stack.w, CORE_BOUNDS.liftWidthMax);
+    const surplusShaftW = stack.w - carW;
+    if (surplusShaftW >= CORE_BOUNDS.shaftMinSpan) {
+      const [carCol, shaftCol] = opts.liftsAtLowSide
+        ? splitX(liftSeg, [carW, 0])
+        : splitX(liftSeg, [surplusShaftW, 0]);
+      stackCars(opts.liftsAtLowSide ? carCol! : shaftCol!);
+      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : carCol!));
+      shaftRoles.push('SERVICE_SHAFT');
+    } else {
+      stackCars(liftSeg);
+    }
   }
 
   // Secondary stair, remote from the first along the band.
-  if (opts.stairCount === 2) stairBoxes.push(out(segments[2]!));
+  if (secondStairSeg) {
+    if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
+      const [stairCol, shaftCol] = opts.liftsAtLowSide
+        ? splitX(secondStairSeg, [stairW, 0])
+        : splitX(secondStairSeg, [stairSurplusW, 0]);
+      stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
+      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
+      shaftRoles.push('SERVICE_SHAFT');
+    } else {
+      stairBoxes.push(out(secondStairSeg));
+    }
+  }
 
   // Tail absorbs all remaining length as an explicit void.
-  const tail = segments[segments.length - 1]!;
-  if (tail.h > 0) {
-    shaftBoxes.push(out(tail));
-    shaftRoles.push(roleFor(tail, opts.preferOts));
+  if (tailSeg && tailSeg.h > 0) {
+    shaftBoxes.push(out(tailSeg));
+    shaftRoles.push(roleFor(tailSeg, opts.preferOts, opts.noOts));
   }
 
   return { stairBoxes, liftBoxes, lobbyBoxes, corridorBoxes, shaftBoxes, shaftRoles, reasons: [] };
@@ -580,7 +651,8 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
  * A void reads as open-to-sky only when both spans are usable for light and
  * air; anything narrower is a service shaft, whatever the brief preferred.
  */
-function roleFor(box: Box2D, preferOts: boolean): ShaftRole {
+function roleFor(box: Box2D, preferOts: boolean, noOts?: boolean): ShaftRole {
+  if (noOts) return 'SERVICE_SHAFT';
   const usable = Math.min(box.w, box.h) >= CORE_BOUNDS.otsMinSpan;
   if (!usable) return 'SERVICE_SHAFT';
   return preferOts || Math.min(box.w, box.h) >= CORE_BOUNDS.otsMinSpan * 1.5 ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT';
@@ -615,6 +687,9 @@ function sliceFlatRow(
    */
   entranceAtLowEnd: boolean = false,
 ): { flats: Box2D[]; leftovers: Box2D[] } {
+  if (count <= 0) {
+    return { flats: [], leftovers: [region] };
+  }
   const leftovers: Box2D[] = [];
 
   // 1. Cap the row's cross-span WITHOUT trimming either end.
@@ -822,7 +897,7 @@ const ENTRANCE_WALL_MIN = 1250;
  * Rejects a partition that would be unbuildable. These are mandatory checks:
  * a family that trips one of them produces nothing for this plot.
  */
-export function partitionDefects(partition: TopologyPartition): string[] {
+export function partitionDefects(partition: TopologyPartition, program?: ArchitecturalProgram): string[] {
   const reasons: string[] = [];
   const { envelope, flatBoxes, accessEdgeForFlat } = partition;
 
@@ -946,8 +1021,15 @@ export function partitionDefects(partition: TopologyPartition): string[] {
     // unusable, because the room slicer allocates proportionally and simply
     // stretches the same rooms — a 28 m wide 2BHK gets a 100 m2 living room
     // beside a 7 m2 kitchen. Only the latter is rejected.
-    const spanLimit = FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE;
-    const runLimit = FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE;
+    const fullFill =
+      program?.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
+      (program?.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0);
+    const spanLimit = fullFill
+      ? Math.max(FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE, envelope.w)
+      : FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE;
+    const runLimit = fullFill
+      ? Math.max(FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE, envelope.h)
+      : FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE;
     if (spanMm > spanLimit) {
       reasons.push(
         `${label} span ${Math.round(spanMm)} mm is far beyond the ${FLAT_BOUNDS.maxSpanMm} mm a dwelling of this ` +
@@ -986,6 +1068,9 @@ const centralCoreSpine: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
   const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor;
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const hasAreaTarget = program.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0;
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
   const attempts: BuildAttempt[] = [];
 
   // Flats on both sides means the core needs a corridor on both faces.
@@ -1007,19 +1092,32 @@ const centralCoreSpine: FamilyBuilder = ctx => {
     }
     const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
 
-    const band = dissectCoreBand(core, { stairCount, compact, liftsAtLowSide, preferOts: program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD', corridorSides });
+    const band = dissectCoreBand(core, {
+      stairCount,
+      compact,
+      liftsAtLowSide,
+      preferOts: !noOts && program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD',
+      noOts,
+      liftCountOverride,
+      corridorSides,
+    });
     if (band.reasons.length) {
       attempts.push({ variantId, label, rationale: '', reasons: band.reasons });
       continue;
     }
 
-    // Flats are capped at a usable depth; any leftover becomes open space, so a
-    // generous footprint cannot inflate the rooms inside each flat.
+    // Flats are capped at a usable depth unless NO OTS or an explicit area
+    // target requires filling the calibrated envelope with zero OTS voids.
     const target = flatFootprintTarget(program.mandatory.unitTypes, leftW);
-    const westCount = flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : 2;
+    const westCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const eastCount = flatsPerFloor - westCount;
-    const westRow = sliceFlatRow(left, westCount, target.runMm, true, target.spanMm, false);
-    const eastRow = sliceFlatRow(right, eastCount, target.runMm, true, target.spanMm, true);
+    const fillWings = noOts || hasAreaTarget;
+    const westRow = fillWings
+      ? sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false)
+      : sliceFlatRow(left, westCount, target.runMm, true, target.spanMm, false);
+    const eastRow = fillWings
+      ? sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true)
+      : sliceFlatRow(right, eastCount, target.runMm, true, target.spanMm, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1066,6 +1164,9 @@ const dualWing: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
   const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor;
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const hasAreaTarget = program.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0;
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
   const corridorSides: CorridorSides = 'BOTH';
   const coreH = requiredCoreBandWidth({ compact, corridorSides });
   const attempts: BuildAttempt[] = [];
@@ -1084,19 +1185,24 @@ const dualWing: FamilyBuilder = ctx => {
     }
     const [north, link, south] = splitY(env, [northH, coreH, 0]) as [Box2D, Box2D, Box2D];
 
-    const band = dissectCoreBand(link, { stairCount, compact, liftsAtLowSide, preferOts: false, corridorSides });
+    const band = dissectCoreBand(link, { stairCount, compact, liftsAtLowSide, preferOts: false, noOts, liftCountOverride, corridorSides });
     if (band.reasons.length) {
       attempts.push({ variantId, label, rationale: '', reasons: band.reasons });
       continue;
     }
 
     // Entered from their long side, so each flat's span is the wing depth and
-    // its run is measured across the plot. Cap the run; leftover is open space.
+    // its run is measured across the plot. Cap the run unless full-wing fill is active.
     const target = flatFootprintTarget(program.mandatory.unitTypes, northH);
-    const northCount = flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : 2;
+    const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
-    const northRow = sliceFlatRow(north, northCount, target.runMm, false, target.spanMm, false);
-    const southRow = sliceFlatRow(south, southCount, target.runMm, false, target.spanMm, true);
+    const fillWings = noOts || hasAreaTarget;
+    const northRow = fillWings
+      ? sliceFlatRow(north, northCount, Math.ceil(north.w / northCount), false, north.h, false)
+      : sliceFlatRow(north, northCount, target.runMm, false, target.spanMm, false);
+    const southRow = fillWings
+      ? sliceFlatRow(south, southCount, Math.ceil(south.w / southCount), false, south.h, true)
+      : sliceFlatRow(south, southCount, target.runMm, false, target.spanMm, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1422,7 +1528,7 @@ const centralCourtyard: FamilyBuilder = ctx => {
     // Ring flats are entered from the wing's inner face, so each flat's span is
     // the wing depth and its run is measured across the plot.
     const target = flatFootprintTarget(program.mandatory.unitTypes, wingH);
-    const northCount = flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : 2;
+    const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
     const northRow = sliceFlatRow(northWing, northCount, target.runMm, false, target.spanMm, false);
     const southRow = sliceFlatRow(southWing, southCount, target.runMm, false, target.spanMm, true);
@@ -1801,7 +1907,7 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       // handed back are open space. Testing facades against the offered
       // footprint would then report an edge flat as windowless.
       const tightened = withTightBuiltOutline(partition);
-      const defects = partitionDefects(tightened);
+      const defects = partitionDefects(tightened, ctx.program);
       if (defects.length) {
         rejections.push({ familyId: family.id, variantId: attempt.variantId, reasons: defects });
         continue;

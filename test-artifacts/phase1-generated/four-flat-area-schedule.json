@@ -19,13 +19,13 @@
         "id": "floor_stilt_00::stilt__lift_1",
         "type": "lift",
         "name": "Passenger Lift 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_stilt_00::stilt__lift_2",
         "type": "lift",
         "name": "Stretcher / Fire Lift 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_stilt_00::stilt__corridor_spine",
@@ -37,13 +37,19 @@
         "id": "floor_stilt_00::stilt__shaft_1",
         "type": "service_shaft",
         "name": "MEP Service Shaft 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_stilt_00::stilt__shaft_2",
         "type": "service_shaft",
         "name": "Open-to-sky courtyard at stilt",
         "areaM2": 833
+      },
+      {
+        "id": "floor_stilt_00::stilt__shaft_3",
+        "type": "service_shaft",
+        "name": "Open-to-sky courtyard at stilt",
+        "areaM2": 87.3
       },
       {
         "id": "floor_stilt_00::stilt__grand_lobby",
@@ -501,13 +507,13 @@
         "id": "floor_typical_01::apt-room:core_lift_1",
         "type": "lift",
         "name": "Passenger Lift 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_typical_01::apt-room:core_lift_2",
         "type": "lift",
         "name": "Passenger Lift 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_typical_01::apt-room:core_stair_1",
@@ -531,13 +537,19 @@
         "id": "floor_typical_01::apt-room:core_shaft_1",
         "type": "service_shaft",
         "name": "MEP / Plumbing Duct 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_typical_01::apt-room:core_shaft_2",
         "type": "service_shaft",
         "name": "Open-to-Sky Court / Light and Air Void",
         "areaM2": 833
+      },
+      {
+        "id": "floor_typical_01::apt-room:core_shaft_3",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 87.3
       }
     ],
     "windows": [
@@ -1067,13 +1079,13 @@
         "id": "floor_level_02::apt-room:core_lift_1",
         "type": "lift",
         "name": "Passenger Lift 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_02::apt-room:core_lift_2",
         "type": "lift",
         "name": "Passenger Lift 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_02::apt-room:core_stair_1",
@@ -1097,13 +1109,19 @@
         "id": "floor_level_02::apt-room:core_shaft_1",
         "type": "service_shaft",
         "name": "MEP / Plumbing Duct 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_level_02::apt-room:core_shaft_2",
         "type": "service_shaft",
         "name": "Open-to-Sky Court / Light and Air Void",
         "areaM2": 833
+      },
+      {
+        "id": "floor_level_02::apt-room:core_shaft_3",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 87.3
       }
     ],
     "windows": [
@@ -1633,13 +1651,13 @@
         "id": "floor_level_03::apt-room:core_lift_1",
         "type": "lift",
         "name": "Passenger Lift 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_03::apt-room:core_lift_2",
         "type": "lift",
         "name": "Passenger Lift 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_03::apt-room:core_stair_1",
@@ -1663,13 +1681,19 @@
         "id": "floor_level_03::apt-room:core_shaft_1",
         "type": "service_shaft",
         "name": "MEP / Plumbing Duct 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_level_03::apt-room:core_shaft_2",
         "type": "service_shaft",
         "name": "Open-to-Sky Court / Light and Air Void",
         "areaM2": 833
+      },
+      {
+        "id": "floor_level_03::apt-room:core_shaft_3",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 87.3
       }
     ],
     "windows": [
@@ -2199,13 +2223,13 @@
         "id": "floor_level_04::apt-room:core_lift_1",
         "type": "lift",
         "name": "Passenger Lift 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_04::apt-room:core_lift_2",
         "type": "lift",
         "name": "Passenger Lift 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_level_04::apt-room:core_stair_1",
@@ -2229,13 +2253,19 @@
         "id": "floor_level_04::apt-room:core_shaft_1",
         "type": "service_shaft",
         "name": "MEP / Plumbing Duct 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_level_04::apt-room:core_shaft_2",
         "type": "service_shaft",
         "name": "Open-to-Sky Court / Light and Air Void",
         "areaM2": 833
+      },
+      {
+        "id": "floor_level_04::apt-room:core_shaft_3",
+        "type": "service_shaft",
+        "name": "Open-to-Sky Court / Light and Air Void",
+        "areaM2": 87.3
       }
     ],
     "windows": [
@@ -2483,13 +2513,13 @@
         "id": "floor_terrace_05::terrace__lift_machine_room_1",
         "type": "custom",
         "name": "Lift headroom reservation 01",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_terrace_05::terrace__lift_machine_room_2",
         "type": "custom",
         "name": "Lift headroom reservation 02",
-        "areaM2": 6.6
+        "areaM2": 4.84
       },
       {
         "id": "floor_terrace_05::terrace__ohwt_tank",
@@ -2501,13 +2531,19 @@
         "id": "floor_terrace_05::terrace__shaft_head_1",
         "type": "service_shaft",
         "name": "Service duct vent head 01",
-        "areaM2": 87.3
+        "areaM2": 3.52
       },
       {
         "id": "floor_terrace_05::terrace__shaft_head_2",
         "type": "service_shaft",
         "name": "Open-to-sky courtyard (no roof)",
         "areaM2": 833
+      },
+      {
+        "id": "floor_terrace_05::terrace__shaft_head_3",
+        "type": "service_shaft",
+        "name": "Open-to-sky courtyard (no roof)",
+        "areaM2": 87.3
       },
       {
         "id": "floor_terrace_05::terrace__solar_pv_array",

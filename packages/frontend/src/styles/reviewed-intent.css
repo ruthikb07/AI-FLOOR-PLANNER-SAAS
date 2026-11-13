@@ -51,7 +51,7 @@
 .program-workspace .program-item-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
 :is(.site-workspace,.program-workspace,.generation-workspace) :is(.btn-primary,.program-footprint-action) :is(strong,small,span) { color: #fff; }
 
-/* ---- Phase 2: AI concept image (FLUX) ---- */
+/* ---- Reviewed-intent panels ---- */
 .generation-concept-image {
   display: flex;
   flex-direction: column;

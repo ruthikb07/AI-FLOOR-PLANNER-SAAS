@@ -55,7 +55,6 @@ export interface ArchitecturalCanvasProps {
   activeSheetTab?: number;
   onSelectSheetTab?: (tab: number) => void;
   apartmentResult?: MultiSheetApartmentResult | null;
-  conceptImageBase64?: string | null;
 }
 
 type DragMode = 'none' | 'pan' | 'move_room' | 'resize_room' | 'move_door' | 'move_window';
@@ -82,7 +81,6 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
   activeSheetTab: externalSheetTab,
   onSelectSheetTab,
   apartmentResult: _apartmentResult,
-  conceptImageBase64,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 });
@@ -205,10 +203,6 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
       if (terrFloor) editor.switchFloor(terrFloor.id);
     }
   };
-
-  // FLUX.2 AI Concept Underlay state
-  const [showUnderlay, setShowUnderlay] = useState<boolean>(true);
-  const [underlayOpacity, setUnderlayOpacity] = useState<number>(0.35);
 
   // Viewport Camera State in Authoritative ViewTransform (scale, offsetX, offsetY)
   const [transform, setTransform] = useState<ViewTransform>({
@@ -643,12 +637,6 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
     };
   }, [currentTab, editor.activeFloor, editor.building.site]);
 
-  // Concept Underlay Image Source
-  const conceptImageSrc = useMemo(() => {
-    if (conceptImageBase64) return conceptImageBase64;
-    return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="%23f1f5f9"/><rect x="80" y="80" width="640" height="440" rx="16" fill="%23e2e8f0" stroke="%2394a3b8" stroke-width="2" stroke-dasharray="8 8"/><text x="400" y="290" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="700" fill="%2364748b">FLUX.2 KLEIN AI CONCEPT UNDERLAY</text><text x="400" y="325" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2394a3b8">Aligned with Space-Filling Snapper Vector Grid</text></svg>';
-  }, [conceptImageBase64]);
-
   return (
     <div
       ref={containerRef}
@@ -723,39 +711,8 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
           })}
         </div>
 
-        {/* Right Controls: FLUX.2 Underlay & Canvas Actions */}
+        {/* Right Controls: Canvas Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {currentTab === 2 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 6, padding: '3px 8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showUnderlay}
-                  onChange={e => setShowUnderlay(e.target.checked)}
-                  style={{ accentColor: '#C86D48', cursor: 'pointer' }}
-                />
-                <span>FLUX.2 AI Underlay</span>
-              </label>
-
-              {showUnderlay && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <input
-                    type="range"
-                    min="5"
-                    max="100"
-                    value={Math.round(underlayOpacity * 100)}
-                    onChange={e => setUnderlayOpacity(Number(e.target.value) / 100)}
-                    style={{ width: 60, accentColor: '#C86D48', cursor: 'pointer' }}
-                    title={`Underlay Opacity: ${Math.round(underlayOpacity * 100)}%`}
-                  />
-                  <span style={{ fontSize: 10, fontFamily: 'var(--studio-font-mono)', color: '#6B7280', width: 28 }}>
-                    {Math.round(underlayOpacity * 100)}%
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
           <label
             style={{
               display: 'flex',
@@ -938,36 +895,6 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
       ) : (
         /* Regular SVG Floor Canvas */
         <>
-          {/* FLUX.2 Concept Underlay (Tab 3) */}
-          {!modelOnly && currentTab === 2 && showUnderlay && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: viewportSize.width,
-                height: viewportSize.height,
-                pointerEvents: 'none',
-                zIndex: 1,
-                overflow: 'hidden',
-              }}
-            >
-              <img
-                src={conceptImageSrc}
-                alt="FLUX.2 AI Architectural Concept Underlay"
-                style={{
-                  position: 'absolute',
-                  left: worldToScreen({ x: 0, y: 0 }, transform).x,
-                  top: worldToScreen({ x: 0, y: 0 }, transform).y,
-                  width: scaleToScreen(editor.building.site.plotWidth || 45000, transform),
-                  height: scaleToScreen(editor.building.site.plotDepth || 35000, transform),
-                  opacity: underlayOpacity,
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
-          )}
-
           {/* SVG Canvas rendered from Authoritative Renderer */}
           <div
             dangerouslySetInnerHTML={{ __html: svgContent }}

@@ -192,7 +192,6 @@ describe('ARGON 4 Multi-Project Architectural Scenario Testing via executeAudite
       terraceAmenities: DEFAULT_TERRACE_AMENITIES,
       parkingMode: 'STILT_ONLY',
     });
-    console.log('Scenario 6 SUCCESS: Floors count =', res.building.floors.length, 'Validation valid =', res.validationReport.isValid);
     expect(res.building.floors.length).toBe(5);
     expect(res.validationReport.isValid).toBe(true);
   });

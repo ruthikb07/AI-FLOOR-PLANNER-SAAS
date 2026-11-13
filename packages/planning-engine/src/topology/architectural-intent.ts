@@ -62,7 +62,7 @@ export interface IntentClause {
 
 /** Mandatory requirements: a candidate that breaks one of these is rejected. */
 export interface MandatoryRequirements {
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly everyBathroomVentilated: true;
   readonly everyFlatAccessibleFromCommonCore: true;
@@ -70,8 +70,16 @@ export interface MandatoryRequirements {
   readonly withinBuildingEnvelope: true;
   /** Set only when the brief states a core side as a requirement. */
   readonly corePlacement?: CorePreference;
-  /** Set only when the brief requires a courtyard rather than preferring one. */
+  /** Set only when the brief requires a courtyard or perimeter-only ventilation rather than preferring one. */
   readonly ventilationStrategy?: VentilationStrategy;
+  /** Set when the brief or config explicitly requires centering the building inside the permissible envelope. */
+  readonly centerBuilding?: boolean;
+  /** Set when the brief explicitly asks for a single central lift car rather than a multi-lift bank. */
+  readonly singleLift?: boolean;
+  /** Explicit area target in sq. ft. when stated in brief or config. */
+  readonly targetAreaSqFt?: number;
+  /** Explicit scope for targetAreaSqFt. */
+  readonly areaTargetScope?: 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
 }
 
 /** Soft preferences: these bias topology choice and scoring weights. */
@@ -116,7 +124,7 @@ function clausesOf(prompt: string): string[] {
 }
 
 const has = (clause: string, re: RegExp) => re.test(clause);
-const NEGATED = /\b(not|avoid|don't|do not|never|without)\b/;
+const NEGATED = /\b(no|not|avoid|don't|do not|never|without|omit|exclude|zero)\b/;
 
 interface Accumulator<T> {
   readonly values: Set<T>;
@@ -142,7 +150,8 @@ function sole<T>(acc: Accumulator<T>, code: string, label: string): T | undefine
 
 export interface InterpretIntentInput {
   readonly prompt?: string;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly aiPrompt?: string;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
   /** Road-facing side, used only to resolve "road-facing" style phrasing. */
   readonly roadSide?: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
@@ -155,7 +164,7 @@ export interface InterpretIntentInput {
  * so the user sees the conflict instead of an arbitrary resolution.
  */
 export function interpretArchitecturalIntent(input: InterpretIntentInput): ArchitecturalProgram {
-  const prompt = input.prompt ?? '';
+  const prompt = input.prompt ?? input.aiPrompt ?? '';
   const clauses = clausesOf(prompt);
   const found: IntentClause[] = [];
 
@@ -175,6 +184,29 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   let minimizeCorridor = false;
   let bedroomBalconies: SoftPreferences['bedroomBalconies'] = 'NONE_REQUESTED';
   let stairCount = 2;
+  let centerBuilding = false;
+  let singleLift = false;
+  let targetAreaSqFt: number | undefined;
+  let areaTargetScope: MandatoryRequirements['areaTargetScope'];
+
+  const fullLower = prompt.toLowerCase();
+  if (/\b(?:building\s+center(?:ed)?|center(?:ed)?\s+(?:the\s+)?building|center(?:ed)?\s+inside\s+(?:the\s+)?permissible)\b/.test(fullLower)) {
+    centerBuilding = true;
+  }
+  const areaMatch = fullLower.match(/\b(\d[\d,]*(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sqft|square\s+feet)\b/);
+  if (areaMatch) {
+    const parsedArea = Number(areaMatch[1]!.replace(/,/g, ''));
+    if (Number.isFinite(parsedArea) && parsedArea > 0) {
+      targetAreaSqFt = parsedArea;
+      if (/\bgross\s+floor\s+area\b/.test(fullLower)) {
+        areaTargetScope = 'GROSS_FLOOR_AREA';
+      } else if (/\b(?:total\s+carpet\s+area\s+per\s+floor|carpet\s+area\s+per\s+floor|floor\s+total\s+carpet)\b/.test(fullLower)) {
+        areaTargetScope = 'FLOOR_TOTAL_CARPET';
+      } else if (/\b(?:carpet\s+area\s+per\s+(?:apartment|flat|unit)|per\s+(?:apartment|flat|unit)\s+carpet)\b/.test(fullLower)) {
+        areaTargetScope = 'PER_APARTMENT_CARPET';
+      }
+    }
+  }
 
   for (const clause of clauses) {
     // ── Vertical circulation placement ────────────────────────────────────
@@ -199,8 +231,16 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
       for (const [, dir] of matchedDirs) record(core, dir, clause);
       if (central) record(core, 'CENTRAL', clause);
       if (split) record(core, 'SPLIT', clause);
-      // "Place the core ..." / "position the core ..." reads as an instruction.
-      if (has(clause, /\b(place|position|put|locate|keep|move|shift)\b/)) coreIsRequired = true;
+      // "Place the core ..." / "provide a central lift core" / "central lift" reads as an instruction.
+      if (
+        has(clause, /\b(place|position|put|locate|keep|move|shift|provide|with|have|having|include|feature)\b/) ||
+        ((matchedDirs.length > 0 || central || split) && !has(clause, /\b(prefer\w*|ideal\w*|optional\w*)\b/))
+      ) {
+        coreIsRequired = true;
+      }
+      if (has(clause, /\b(?:one|1|single|central)\s+lift\b/) && !has(clause, /\blift\s+(?:core|bank|shafts)\b/) && !has(clause, /\blifts\b/)) {
+        singleLift = true;
+      }
 
       if (has(clause, /\b(compact|tight|efficient|minimal|narrow)\b/)) record(compactness, 'COMPACT', clause);
       if (has(clause, /\b(spacious|generous|wide|grand)\b/)) record(compactness, 'STANDARD', clause);
@@ -209,23 +249,24 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
       if (stairMatch) {
         const word = stairMatch[1]!;
         stairCount = word === 'one' || word === '1' ? 1 : word === 'three' || word === '3' ? 3 : 2;
+      } else if (has(clause, /\b(?:stairs?|staircases?)\s+(?:positioned\s+)?on\s+(?:both|either)\s+sides?\b/)) {
+        stairCount = 2;
       }
     }
 
     // ── Ventilation / daylight strategy ──────────────────────────────────
     if (has(clause, /\b(courtyards?|atriums?|open[\s-]to[\s-]sky|ots|light\s+well|air\s+well)\b/)) {
       if (has(clause, NEGATED)) {
-        throw new IntentConflictError(
-          'AMBIGUOUS_VENTILATION_STRATEGY',
-          'state the desired ventilation strategy directly; a negated clause is not silently inverted',
-        );
-      }
-      if (has(clause, /\b(central|centre|center|middle|internal)\b/) || !has(clause, /\b(side|lateral|perimeter|flank)\b/)) {
-        record(vent, 'CENTRAL_COURTYARD', clause);
+        record(vent, 'PERIMETER_ONLY', clause);
+        ventIsRequired = true;
       } else {
-        record(vent, 'SIDE_SHAFTS', clause);
+        if (has(clause, /\b(central|centre|center|middle|internal)\b/) || !has(clause, /\b(side|lateral|perimeter|flank)\b/)) {
+          record(vent, 'CENTRAL_COURTYARD', clause);
+        } else {
+          record(vent, 'SIDE_SHAFTS', clause);
+        }
+        if (has(clause, /\b(around|organiz|organis|centred|centered|design(?:ed)?)\b/)) ventIsRequired = true;
       }
-      if (has(clause, /\b(around|organiz|organis|centred|centered|design(?:ed)?)\b/)) ventIsRequired = true;
     } else if (has(clause, /\b(shafts?|ducts?)\b/) && has(clause, /\b(side|lateral|perimeter|flank)\b/)) {
       record(vent, 'SIDE_SHAFTS', clause);
     }
@@ -347,6 +388,10 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
     withinBuildingEnvelope: true,
     ...(coreIsRequired && corePick ? { corePlacement: corePick } : {}),
     ...(ventIsRequired && ventPick ? { ventilationStrategy: ventPick } : {}),
+    ...(centerBuilding ? { centerBuilding: true } : {}),
+    ...(singleLift ? { singleLift: true } : {}),
+    ...(targetAreaSqFt !== undefined ? { targetAreaSqFt } : {}),
+    ...(areaTargetScope !== undefined ? { areaTargetScope } : {}),
   };
 
   // The seed digest covers only the choices that affect WHICH organization is
@@ -399,7 +444,7 @@ export function validateProgram(program: ArchitecturalProgram): { readonly valid
   const issues: string[] = [];
   const { mandatory, preferences } = program;
 
-  if (![2, 3, 4].includes(mandatory.flatsPerFloor)) issues.push('flatsPerFloor must be 2, 3 or 4');
+  if (![1, 2, 3, 4, 5, 6].includes(mandatory.flatsPerFloor)) issues.push('flatsPerFloor must be 1, 2, 3, 4, 5 or 6');
   if (mandatory.unitTypes.length !== mandatory.flatsPerFloor) {
     issues.push(`unitTypes length ${mandatory.unitTypes.length} must equal flatsPerFloor ${mandatory.flatsPerFloor}`);
   }

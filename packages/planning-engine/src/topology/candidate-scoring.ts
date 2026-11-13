@@ -271,6 +271,12 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
   } else if (requiredVent === 'SIDE_SHAFTS') {
     ventOk = partition.shaftBoxes.length > 0;
     ventDetail = ventOk ? 'side ventilation shafts are present' : 'no ventilation shafts present';
+  } else if (requiredVent === 'PERIMETER_ONLY') {
+    const otsArea = otsAreaOf(partition);
+    ventOk = otsArea === 0;
+    ventDetail = ventOk
+      ? 'no open-to-sky (OTS) void is present, honouring perimeter-only / NO OTS requirement'
+      : `the brief prohibits OTS voids, but ${(otsArea / 1_000_000).toFixed(1)} m2 of OPEN_TO_SKY_VOID is present`;
   }
   hardConstraints.push({ id: 'REQUIRED_VENTILATION_STRATEGY_HONOURED', satisfied: ventOk, detail: ventDetail });
 

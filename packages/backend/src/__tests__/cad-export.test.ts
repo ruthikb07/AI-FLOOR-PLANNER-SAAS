@@ -4,9 +4,7 @@ import {
   CadExportService,
 } from '../services/cad-export-service.js';
 import { createBackendServer } from '../server.js';
-import { resolveImageServiceConfig } from '../env.js';
-import { ImageArtifactStore } from '../services/image-artifact-store.js';
-import { LocalStubImageProvider } from '../services/local-stub-image-provider.js';
+import { resolveServiceConfig } from '../env.js';
 import {
   solveOrthogonalSpaceFillingApartment,
   apartmentStructureToBuilding,
@@ -430,12 +428,10 @@ describe('Comprehensive AutoCAD Binary DWG & DXF Round-Trip HTTP Verification Ga
   let serverUrl = '';
 
   beforeAll(async () => {
-    const config = resolveImageServiceConfig();
+    const config = resolveServiceConfig();
     const deps = {
-      provider: new LocalStubImageProvider(),
-      store: new ImageArtifactStore(config.artifactDir),
       gemini: null,
-      interpreterKind: 'local-stub' as const,
+      briefInterpreterKind: 'local-stub' as const,
       config,
     };
     server = createBackendServer(deps);

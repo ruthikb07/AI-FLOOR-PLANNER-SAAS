@@ -4,7 +4,7 @@
  * Implements:
  * - Deterministic ApartmentAreaBudget modeling for 1BHK, 2BHK, 3BHK, 4BHK.
  * - Dynamic Floor Feasibility: validates FloorPlateArea >= sum(flats.builtUpArea + coreArea + circulation + walls).
- * - Feasibility Before FLUX: returns PROGRAM_NOT_FEASIBLE_IN_APPROVED_FLOOR_PLATE if required area exceeds available area.
+ * - Feasibility gate: returns PROGRAM_NOT_FEASIBLE_IN_APPROVED_FLOOR_PLATE if required area exceeds available area.
  * - Reconciled area accounting with explicit component breakdown.
  */
 

@@ -73,7 +73,7 @@ export interface DesignConcept {
 
 export interface GenerateConceptsInput {
   readonly envelope: Box2D;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly aiPrompt?: string;
   readonly manifest?: DynamicApartmentManifest;
@@ -96,6 +96,8 @@ export interface RejectedCandidate {
 }
 
 export interface GenerateConceptsResult {
+  /** Review/repair candidate only. Never included among feasible concepts. */
+  readonly bestEffort?: DesignConcept;
   readonly program: ArchitecturalProgram;
   readonly concepts: readonly DesignConcept[];
   readonly rejected: readonly RejectedCandidate[];
@@ -171,10 +173,12 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     .map(x => x.t);
 
   const scored: ScoredCandidate[] = [];
+  const failed: ScoredCandidate[] = [];
+  let assembledCount = 0;
   let timedOut = false;
 
   for (const topology of ordered) {
-    if (scored.length >= maxCandidates) {
+    if (assembledCount >= maxCandidates) {
       rejected.push({
         familyId: topology.familyId,
         variantId: topology.variantId,
@@ -194,6 +198,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       continue;
     }
 
+    assembledCount++;
     let assembled;
     try {
       assembled = assembleStructureFromPartition({
@@ -221,6 +226,8 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     });
 
     if (!score.feasible) {
+      failed.push({ topology, partition: topology.partition, structure: assembled.structure,
+        score, fingerprint: layoutFingerprint(assembled.structure, topology.partition) });
       rejected.push({
         familyId: topology.familyId,
         variantId: topology.variantId,
@@ -285,7 +292,21 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     ? describeShortfall(concepts.length, conceptLimit, rejected, timedOut)
     : undefined;
 
+  // Failed candidates remain failed. Choose the fewest hard violations first,
+  // then measured utility, with a stable identity tie-break for review/repair.
+  const leastBad = [...failed].sort((a, b) =>
+    a.score.hardConstraints.filter(c => !c.satisfied).length - b.score.hardConstraints.filter(c => !c.satisfied).length
+    || b.score.weightedTotal - a.score.weightedTotal
+    || a.topology.variantId.localeCompare(b.topology.variantId))[0];
+  const bestEffort: DesignConcept | undefined = leastBad ? {
+    conceptId: 'best_effort', familyId: leastBad.topology.familyId,
+    variantId: leastBad.topology.variantId, label: leastBad.topology.label,
+    rationale: leastBad.topology.rationale, partition: leastBad.partition,
+    structure: leastBad.structure, score: leastBad.score, fingerprint: leastBad.fingerprint,
+    rankingExplanation: 'Best assembled failed candidate: fewest hard violations, then measured utility. Requires repair and review.',
+  } : undefined;
   return {
+    bestEffort,
     program,
     concepts,
     rejected,
@@ -294,7 +315,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       engineVersion: TOPOLOGY_ENGINE_VERSION,
       seed,
       topologyVariantsTried: topologies.length + rejections.length,
-      assembledCandidates: scored.length,
+      assembledCandidates: assembledCount,
       feasibleCandidates: scored.length,
       elapsedMs: Date.now() - startedAt,
       timedOut,

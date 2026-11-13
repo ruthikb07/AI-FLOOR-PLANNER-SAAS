@@ -784,11 +784,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -799,10 +799,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "core:lift"
@@ -827,11 +827,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -842,10 +842,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "core:lift"
@@ -909,29 +909,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "core:shaft"
@@ -975,6 +975,50 @@
           "height": 42500,
           "rotation": 0,
           "area": 833000000,
+          "priority": 1,
+          "tags": [
+            "core:shaft"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_stilt_00::stilt__shaft_3",
+          "name": "Open-to-sky courtyard at stilt",
+          "type": "service_shaft",
+          "floorId": "floor_stilt_00",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
           "priority": 1,
           "tags": [
             "core:shaft"
@@ -2016,14 +2060,14 @@
       ],
       "walls": [
         {
-          "id": "floor_stilt_00::apt-wall:x:11900:34000:37000",
+          "id": "floor_stilt_00::apt-wall:x:11900:34000:36200",
           "floorId": "floor_stilt_00",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -2037,6 +2081,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_stilt_00::stilt__stair_2",
           "rightRoomId": "floor_stilt_00::stilt__lift_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_stilt_00::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_stilt_00",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_stilt_00::stilt__shaft_1",
+            "floor_stilt_00::stilt__stair_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_stilt_00::stilt__stair_2",
+          "rightRoomId": "floor_stilt_00::stilt__shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -2271,13 +2341,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_stilt_00::stilt__shaft_1",
+            "floor_stilt_00::stilt__shaft_3",
             "floor_stilt_00::stilt__stair_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_stilt_00::stilt__shaft_1",
+          "leftRoomId": "floor_stilt_00::stilt__shaft_3",
           "rightRoomId": "floor_stilt_00::stilt__stair_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -3059,12 +3129,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_stilt_00::stilt__shaft_1"
+            "floor_stilt_00::stilt__shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_stilt_00::stilt__shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_stilt_00::stilt__shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -3280,14 +3351,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_stilt_00::apt-wall:x:7500:34000:37000",
+          "id": "floor_stilt_00::apt-wall:x:7500:34000:36200",
           "floorId": "floor_stilt_00",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -3306,14 +3377,40 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_stilt_00::apt-wall:x:9700:34000:37000",
+          "id": "floor_stilt_00::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_stilt_00",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_stilt_00::stilt__shaft_1",
+            "floor_stilt_00::stilt__stair_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_stilt_00::stilt__shaft_1",
+          "rightRoomId": "floor_stilt_00::stilt__stair_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_stilt_00::apt-wall:x:9700:34000:36200",
           "floorId": "floor_stilt_00",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -4440,12 +4537,65 @@
           "type": "internal",
           "roomIds": [
             "floor_stilt_00::stilt__corridor_spine",
+            "floor_stilt_00::stilt__shaft_3"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_stilt_00::stilt__corridor_spine",
+          "rightRoomId": "floor_stilt_00::stilt__shaft_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_stilt_00::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_stilt_00",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_stilt_00::stilt__lift_1",
             "floor_stilt_00::stilt__shaft_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_stilt_00::stilt__corridor_spine",
+          "leftRoomId": "floor_stilt_00::stilt__lift_1",
+          "rightRoomId": "floor_stilt_00::stilt__shaft_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_stilt_00::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_stilt_00",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_stilt_00::stilt__lift_2",
+            "floor_stilt_00::stilt__shaft_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_stilt_00::stilt__lift_2",
           "rightRoomId": "floor_stilt_00::stilt__shaft_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -4476,7 +4626,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_stilt_00::apt-wall:y:37000:7500:9700",
+          "id": "floor_stilt_00::apt-wall:y:37000:7500:11900",
           "floorId": "floor_stilt_00",
           "startPoint": {
             "x": 37000,
@@ -4484,41 +4634,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_stilt_00::stilt__lift_1"
-          ],
-          "unitIds": [],
-          "wallUse": "CORE",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_stilt_00::stilt__lift_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_stilt_00::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_stilt_00",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_stilt_00::stilt__lift_2"
+            "floor_stilt_00::stilt__shaft_1"
           ],
           "unitIds": [],
-          "wallUse": "CORE",
+          "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_stilt_00::stilt__lift_2",
+          "leftRoomId": "floor_stilt_00::stilt__shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -4561,12 +4687,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_stilt_00::stilt__shaft_1"
+            "floor_stilt_00::stilt__shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_stilt_00::stilt__shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_stilt_00::stilt__shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -5199,6 +5326,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_stilt_00::stilt__shaft_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_stilt_00",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_stilt_00::stilt__shaft_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_stilt_00::stilt__grand_lobby:architecture:OPEN_CIRCULATION",
             "floorId": "floor_stilt_00",
             "role": "OPEN_CIRCULATION",
@@ -5449,12 +5586,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_stilt_00",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:x:11900:34000:37000"
+              "id": "floor_stilt_00::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_stilt_00::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_stilt_00",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_stilt_00::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -5839,9 +5986,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_stilt_00",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_stilt_00::apt-wall:x:45500:34000:37000"
@@ -5929,22 +6076,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_stilt_00",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:x:7500:34000:37000"
+              "id": "floor_stilt_00::apt-wall:x:7500:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:x:9700:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_stilt_00",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:x:9700:34000:37000"
+              "id": "floor_stilt_00::apt-wall:x:7500:36200:37000"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_stilt_00::apt-wall:x:9700:34000:36200:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_stilt_00",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_stilt_00::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -6359,12 +6516,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_stilt_00",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_stilt_00::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_stilt_00::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_stilt_00",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:y:34000:16400:45500"
+              "id": "floor_stilt_00::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_stilt_00::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_stilt_00",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_stilt_00::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -6379,22 +6556,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:y:37000:7500:9700:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_stilt_00",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_stilt_00::apt-wall:y:37000:9700:11900:architecture:FULL_HEIGHT_WALL",
-            "floorId": "floor_stilt_00",
-            "role": "FULL_HEIGHT_WALL",
-            "source": {
-              "collection": "walls",
-              "id": "floor_stilt_00::apt-wall:y:37000:9700:11900"
+              "id": "floor_stilt_00::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -6409,9 +6576,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_stilt_00::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_stilt_00::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_stilt_00",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_stilt_00::apt-wall:y:37000:16400:45500"
@@ -8470,11 +8637,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -8485,10 +8652,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_1"
@@ -8513,11 +8680,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -8528,10 +8695,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_2"
@@ -8681,29 +8848,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_1"
@@ -8750,6 +8917,50 @@
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_2"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_shaft_3",
+          "name": "Open-to-Sky Court / Light and Air Void",
+          "type": "service_shaft",
+          "floorId": "floor_typical_01",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
+          "priority": 1,
+          "tags": [
+            "apt-room:core_shaft_3"
           ],
           "adjacencyRequirements": [],
           "daylightRequirement": "medium",
@@ -8819,14 +9030,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_typical_01::apt-wall:x:11900:34000:37000",
+          "id": "floor_typical_01::apt-wall:x:11900:34000:36200",
           "floorId": "floor_typical_01",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -8840,6 +9051,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_typical_01::apt-room:core_stair_2",
           "rightRoomId": "floor_typical_01::apt-room:core_lift_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_typical_01::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_typical_01",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_typical_01::apt-room:core_shaft_1",
+            "floor_typical_01::apt-room:core_stair_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_typical_01::apt-room:core_stair_2",
+          "rightRoomId": "floor_typical_01::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -9001,13 +9238,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_typical_01::apt-room:core_shaft_1",
+            "floor_typical_01::apt-room:core_shaft_3",
             "floor_typical_01::apt-room:core_stair_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_typical_01::apt-room:core_shaft_1",
+          "leftRoomId": "floor_typical_01::apt-room:core_shaft_3",
           "rightRoomId": "floor_typical_01::apt-room:core_stair_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -10264,12 +10501,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_typical_01::apt-room:core_shaft_1"
+            "floor_typical_01::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_typical_01::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_typical_01::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -10387,14 +10625,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_typical_01::apt-wall:x:7500:34000:37000",
+          "id": "floor_typical_01::apt-wall:x:7500:34000:36200",
           "floorId": "floor_typical_01",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -10407,6 +10645,32 @@
           "wallUse": "CORE",
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_typical_01::apt-room:core_lift_1",
+          "rightRoomId": "floor_typical_01::apt-room:core_stair_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_typical_01::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_typical_01",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_typical_01::apt-room:core_shaft_1",
+            "floor_typical_01::apt-room:core_stair_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_typical_01::apt-room:core_shaft_1",
           "rightRoomId": "floor_typical_01::apt-room:core_stair_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -10497,14 +10761,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_typical_01::apt-wall:x:9700:34000:37000",
+          "id": "floor_typical_01::apt-wall:x:9700:34000:36200",
           "floorId": "floor_typical_01",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -12629,13 +12893,66 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_typical_01::apt-room:core_shaft_1",
+            "floor_typical_01::apt-room:core_shaft_3",
             "floor_typical_01::apt-room:corridor_1"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_typical_01::apt-room:corridor_1",
+          "rightRoomId": "floor_typical_01::apt-room:core_shaft_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_typical_01::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_typical_01",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_typical_01::apt-room:core_lift_1",
+            "floor_typical_01::apt-room:core_shaft_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_typical_01::apt-room:corridor_1",
+          "leftRoomId": "floor_typical_01::apt-room:core_lift_1",
+          "rightRoomId": "floor_typical_01::apt-room:core_shaft_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_typical_01::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_typical_01",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_typical_01::apt-room:core_lift_2",
+            "floor_typical_01::apt-room:core_shaft_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_typical_01::apt-room:core_lift_2",
           "rightRoomId": "floor_typical_01::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -12666,7 +12983,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_typical_01::apt-wall:y:37000:7500:9700",
+          "id": "floor_typical_01::apt-wall:y:37000:7500:11900",
           "floorId": "floor_typical_01",
           "startPoint": {
             "x": 37000,
@@ -12674,41 +12991,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_typical_01::apt-room:core_lift_1"
-          ],
-          "unitIds": [],
-          "wallUse": "CORE",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_typical_01::apt-room:core_lift_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_typical_01::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_typical_01",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_typical_01::apt-room:core_lift_2"
+            "floor_typical_01::apt-room:core_shaft_1"
           ],
           "unitIds": [],
-          "wallUse": "CORE",
+          "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_typical_01::apt-room:core_lift_2",
+          "leftRoomId": "floor_typical_01::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -12751,12 +13044,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_typical_01::apt-room:core_shaft_1"
+            "floor_typical_01::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_typical_01::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_typical_01::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -15917,6 +16211,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_typical_01::apt-room:core_shaft_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_typical_01",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_typical_01::apt-room:core_shaft_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_typical_01::apt-wall:x:10080:22600:25530:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
@@ -15937,12 +16241,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_typical_01::apt-wall:x:11900:34000:37000"
+              "id": "floor_typical_01::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_typical_01::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_typical_01",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_typical_01::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -16457,9 +16771,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_typical_01",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_typical_01::apt-wall:x:45500:34000:37000"
@@ -16507,12 +16821,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_typical_01::apt-wall:x:7500:34000:37000"
+              "id": "floor_typical_01::apt-wall:x:7500:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_typical_01::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_typical_01",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_typical_01::apt-wall:x:7500:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -16547,12 +16871,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:x:9700:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:x:9700:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_typical_01::apt-wall:x:9700:34000:37000"
+              "id": "floor_typical_01::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -17307,12 +17631,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_typical_01",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_typical_01::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_typical_01::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_typical_01::apt-wall:y:34000:16400:45500"
+              "id": "floor_typical_01::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_typical_01::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_typical_01",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_typical_01::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -17327,22 +17671,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:y:37000:7500:9700:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_typical_01",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_typical_01::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_typical_01::apt-wall:y:37000:9700:11900:architecture:FULL_HEIGHT_WALL",
-            "floorId": "floor_typical_01",
-            "role": "FULL_HEIGHT_WALL",
-            "source": {
-              "collection": "walls",
-              "id": "floor_typical_01::apt-wall:y:37000:9700:11900"
+              "id": "floor_typical_01::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -17357,9 +17691,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_typical_01::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_typical_01::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_typical_01",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_typical_01::apt-wall:y:37000:16400:45500"
@@ -19978,11 +20312,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -19993,10 +20327,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_1"
@@ -20021,11 +20355,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -20036,10 +20370,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_2"
@@ -20189,29 +20523,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_1"
@@ -20258,6 +20592,50 @@
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_2"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_level_02::apt-room:core_shaft_3",
+          "name": "Open-to-Sky Court / Light and Air Void",
+          "type": "service_shaft",
+          "floorId": "floor_level_02",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
+          "priority": 1,
+          "tags": [
+            "apt-room:core_shaft_3"
           ],
           "adjacencyRequirements": [],
           "daylightRequirement": "medium",
@@ -20327,14 +20705,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_02::apt-wall:x:11900:34000:37000",
+          "id": "floor_level_02::apt-wall:x:11900:34000:36200",
           "floorId": "floor_level_02",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -20348,6 +20726,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_02::apt-room:core_stair_2",
           "rightRoomId": "floor_level_02::apt-room:core_lift_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_02::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_level_02",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_02::apt-room:core_shaft_1",
+            "floor_level_02::apt-room:core_stair_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_02::apt-room:core_stair_2",
+          "rightRoomId": "floor_level_02::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -20509,13 +20913,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_02::apt-room:core_shaft_1",
+            "floor_level_02::apt-room:core_shaft_3",
             "floor_level_02::apt-room:core_stair_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_02::apt-room:core_shaft_1",
+          "leftRoomId": "floor_level_02::apt-room:core_shaft_3",
           "rightRoomId": "floor_level_02::apt-room:core_stair_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -21772,12 +22176,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_02::apt-room:core_shaft_1"
+            "floor_level_02::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_level_02::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_level_02::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -21895,14 +22300,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_02::apt-wall:x:7500:34000:37000",
+          "id": "floor_level_02::apt-wall:x:7500:34000:36200",
           "floorId": "floor_level_02",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -21915,6 +22320,32 @@
           "wallUse": "CORE",
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_02::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_02::apt-room:core_stair_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_02::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_level_02",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_02::apt-room:core_shaft_1",
+            "floor_level_02::apt-room:core_stair_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_02::apt-room:core_shaft_1",
           "rightRoomId": "floor_level_02::apt-room:core_stair_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -22005,14 +22436,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_02::apt-wall:x:9700:34000:37000",
+          "id": "floor_level_02::apt-wall:x:9700:34000:36200",
           "floorId": "floor_level_02",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -24137,13 +24568,66 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_02::apt-room:core_shaft_1",
+            "floor_level_02::apt-room:core_shaft_3",
             "floor_level_02::apt-room:corridor_1"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_02::apt-room:corridor_1",
+          "rightRoomId": "floor_level_02::apt-room:core_shaft_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_02::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_level_02",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_02::apt-room:core_lift_1",
+            "floor_level_02::apt-room:core_shaft_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_02::apt-room:corridor_1",
+          "leftRoomId": "floor_level_02::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_02::apt-room:core_shaft_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_02::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_level_02",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_02::apt-room:core_lift_2",
+            "floor_level_02::apt-room:core_shaft_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_02::apt-room:core_lift_2",
           "rightRoomId": "floor_level_02::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -24174,7 +24658,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_02::apt-wall:y:37000:7500:9700",
+          "id": "floor_level_02::apt-wall:y:37000:7500:11900",
           "floorId": "floor_level_02",
           "startPoint": {
             "x": 37000,
@@ -24182,41 +24666,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_level_02::apt-room:core_lift_1"
-          ],
-          "unitIds": [],
-          "wallUse": "CORE",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_02::apt-room:core_lift_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_level_02::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_level_02",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_02::apt-room:core_lift_2"
+            "floor_level_02::apt-room:core_shaft_1"
           ],
           "unitIds": [],
-          "wallUse": "CORE",
+          "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_02::apt-room:core_lift_2",
+          "leftRoomId": "floor_level_02::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -24259,12 +24719,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_02::apt-room:core_shaft_1"
+            "floor_level_02::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_02::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_02::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -27425,6 +27886,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_level_02::apt-room:core_shaft_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_level_02",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_level_02::apt-room:core_shaft_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_level_02::apt-wall:x:10080:22600:25530:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
@@ -27445,12 +27916,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_02::apt-wall:x:11900:34000:37000"
+              "id": "floor_level_02::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_02::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_02",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_02::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -27965,9 +28446,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_level_02",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_02::apt-wall:x:45500:34000:37000"
@@ -28015,12 +28496,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_02::apt-wall:x:7500:34000:37000"
+              "id": "floor_level_02::apt-wall:x:7500:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_02::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_02",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_02::apt-wall:x:7500:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -28055,12 +28546,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:x:9700:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:x:9700:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_02::apt-wall:x:9700:34000:37000"
+              "id": "floor_level_02::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -28815,12 +29306,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_level_02",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_02::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_02::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_02::apt-wall:y:34000:16400:45500"
+              "id": "floor_level_02::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_02::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_02",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_02::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -28835,22 +29346,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:y:37000:7500:9700:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_02",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_02::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_level_02::apt-wall:y:37000:9700:11900:architecture:FULL_HEIGHT_WALL",
-            "floorId": "floor_level_02",
-            "role": "FULL_HEIGHT_WALL",
-            "source": {
-              "collection": "walls",
-              "id": "floor_level_02::apt-wall:y:37000:9700:11900"
+              "id": "floor_level_02::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -28865,9 +29366,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_02::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_02::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_level_02",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_02::apt-wall:y:37000:16400:45500"
@@ -31486,11 +31987,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -31501,10 +32002,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_1"
@@ -31529,11 +32030,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -31544,10 +32045,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_2"
@@ -31697,29 +32198,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_1"
@@ -31766,6 +32267,50 @@
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_2"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_level_03::apt-room:core_shaft_3",
+          "name": "Open-to-Sky Court / Light and Air Void",
+          "type": "service_shaft",
+          "floorId": "floor_level_03",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
+          "priority": 1,
+          "tags": [
+            "apt-room:core_shaft_3"
           ],
           "adjacencyRequirements": [],
           "daylightRequirement": "medium",
@@ -31835,14 +32380,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_03::apt-wall:x:11900:34000:37000",
+          "id": "floor_level_03::apt-wall:x:11900:34000:36200",
           "floorId": "floor_level_03",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -31856,6 +32401,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_03::apt-room:core_stair_2",
           "rightRoomId": "floor_level_03::apt-room:core_lift_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_03::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_level_03",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_03::apt-room:core_shaft_1",
+            "floor_level_03::apt-room:core_stair_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_03::apt-room:core_stair_2",
+          "rightRoomId": "floor_level_03::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -32017,13 +32588,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_03::apt-room:core_shaft_1",
+            "floor_level_03::apt-room:core_shaft_3",
             "floor_level_03::apt-room:core_stair_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_03::apt-room:core_shaft_1",
+          "leftRoomId": "floor_level_03::apt-room:core_shaft_3",
           "rightRoomId": "floor_level_03::apt-room:core_stair_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -33280,12 +33851,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_03::apt-room:core_shaft_1"
+            "floor_level_03::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_level_03::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_level_03::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -33403,14 +33975,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_03::apt-wall:x:7500:34000:37000",
+          "id": "floor_level_03::apt-wall:x:7500:34000:36200",
           "floorId": "floor_level_03",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -33423,6 +33995,32 @@
           "wallUse": "CORE",
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_03::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_03::apt-room:core_stair_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_03::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_level_03",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_03::apt-room:core_shaft_1",
+            "floor_level_03::apt-room:core_stair_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_03::apt-room:core_shaft_1",
           "rightRoomId": "floor_level_03::apt-room:core_stair_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -33513,14 +34111,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_03::apt-wall:x:9700:34000:37000",
+          "id": "floor_level_03::apt-wall:x:9700:34000:36200",
           "floorId": "floor_level_03",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -35645,13 +36243,66 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_03::apt-room:core_shaft_1",
+            "floor_level_03::apt-room:core_shaft_3",
             "floor_level_03::apt-room:corridor_1"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_03::apt-room:corridor_1",
+          "rightRoomId": "floor_level_03::apt-room:core_shaft_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_03::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_level_03",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_03::apt-room:core_lift_1",
+            "floor_level_03::apt-room:core_shaft_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_03::apt-room:corridor_1",
+          "leftRoomId": "floor_level_03::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_03::apt-room:core_shaft_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_03::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_level_03",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_03::apt-room:core_lift_2",
+            "floor_level_03::apt-room:core_shaft_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_03::apt-room:core_lift_2",
           "rightRoomId": "floor_level_03::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -35682,7 +36333,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_03::apt-wall:y:37000:7500:9700",
+          "id": "floor_level_03::apt-wall:y:37000:7500:11900",
           "floorId": "floor_level_03",
           "startPoint": {
             "x": 37000,
@@ -35690,41 +36341,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_level_03::apt-room:core_lift_1"
-          ],
-          "unitIds": [],
-          "wallUse": "CORE",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_03::apt-room:core_lift_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_level_03::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_level_03",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_03::apt-room:core_lift_2"
+            "floor_level_03::apt-room:core_shaft_1"
           ],
           "unitIds": [],
-          "wallUse": "CORE",
+          "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_03::apt-room:core_lift_2",
+          "leftRoomId": "floor_level_03::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -35767,12 +36394,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_03::apt-room:core_shaft_1"
+            "floor_level_03::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_03::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_03::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -38933,6 +39561,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_level_03::apt-room:core_shaft_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_level_03",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_level_03::apt-room:core_shaft_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_level_03::apt-wall:x:10080:22600:25530:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
@@ -38953,12 +39591,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_03::apt-wall:x:11900:34000:37000"
+              "id": "floor_level_03::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_03::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_03",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_03::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -39473,9 +40121,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_level_03",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_03::apt-wall:x:45500:34000:37000"
@@ -39523,12 +40171,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_03::apt-wall:x:7500:34000:37000"
+              "id": "floor_level_03::apt-wall:x:7500:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_03::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_03",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_03::apt-wall:x:7500:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -39563,12 +40221,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:x:9700:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:x:9700:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_03::apt-wall:x:9700:34000:37000"
+              "id": "floor_level_03::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -40323,12 +40981,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_level_03",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_03::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_03::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_03::apt-wall:y:34000:16400:45500"
+              "id": "floor_level_03::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_03::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_03",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_03::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -40343,22 +41021,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:y:37000:7500:9700:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_03",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_03::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_level_03::apt-wall:y:37000:9700:11900:architecture:FULL_HEIGHT_WALL",
-            "floorId": "floor_level_03",
-            "role": "FULL_HEIGHT_WALL",
-            "source": {
-              "collection": "walls",
-              "id": "floor_level_03::apt-wall:y:37000:9700:11900"
+              "id": "floor_level_03::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -40373,9 +41041,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_03::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_03::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_level_03",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_03::apt-wall:y:37000:16400:45500"
@@ -42994,11 +43662,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -43009,10 +43677,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_1"
@@ -43037,11 +43705,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -43052,10 +43720,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "apt-room:core_lift_2"
@@ -43205,29 +43873,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_1"
@@ -43274,6 +43942,50 @@
           "priority": 1,
           "tags": [
             "apt-room:core_shaft_2"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_level_04::apt-room:core_shaft_3",
+          "name": "Open-to-Sky Court / Light and Air Void",
+          "type": "service_shaft",
+          "floorId": "floor_level_04",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
+          "priority": 1,
+          "tags": [
+            "apt-room:core_shaft_3"
           ],
           "adjacencyRequirements": [],
           "daylightRequirement": "medium",
@@ -43343,14 +44055,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_04::apt-wall:x:11900:34000:37000",
+          "id": "floor_level_04::apt-wall:x:11900:34000:36200",
           "floorId": "floor_level_04",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -43364,6 +44076,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_04::apt-room:core_stair_2",
           "rightRoomId": "floor_level_04::apt-room:core_lift_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_04::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_level_04",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_04::apt-room:core_shaft_1",
+            "floor_level_04::apt-room:core_stair_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_04::apt-room:core_stair_2",
+          "rightRoomId": "floor_level_04::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -43525,13 +44263,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_04::apt-room:core_shaft_1",
+            "floor_level_04::apt-room:core_shaft_3",
             "floor_level_04::apt-room:core_stair_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_04::apt-room:core_shaft_1",
+          "leftRoomId": "floor_level_04::apt-room:core_shaft_3",
           "rightRoomId": "floor_level_04::apt-room:core_stair_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -44788,12 +45526,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_04::apt-room:core_shaft_1"
+            "floor_level_04::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_level_04::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_level_04::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -44911,14 +45650,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_04::apt-wall:x:7500:34000:37000",
+          "id": "floor_level_04::apt-wall:x:7500:34000:36200",
           "floorId": "floor_level_04",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -44931,6 +45670,32 @@
           "wallUse": "CORE",
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_level_04::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_04::apt-room:core_stair_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_04::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_level_04",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_04::apt-room:core_shaft_1",
+            "floor_level_04::apt-room:core_stair_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_04::apt-room:core_shaft_1",
           "rightRoomId": "floor_level_04::apt-room:core_stair_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -45021,14 +45786,14 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_04::apt-wall:x:9700:34000:37000",
+          "id": "floor_level_04::apt-wall:x:9700:34000:36200",
           "floorId": "floor_level_04",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -47153,13 +47918,66 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_level_04::apt-room:core_shaft_1",
+            "floor_level_04::apt-room:core_shaft_3",
             "floor_level_04::apt-room:corridor_1"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_04::apt-room:corridor_1",
+          "rightRoomId": "floor_level_04::apt-room:core_shaft_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_04::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_level_04",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_04::apt-room:core_lift_1",
+            "floor_level_04::apt-room:core_shaft_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_04::apt-room:corridor_1",
+          "leftRoomId": "floor_level_04::apt-room:core_lift_1",
+          "rightRoomId": "floor_level_04::apt-room:core_shaft_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_level_04::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_level_04",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_level_04::apt-room:core_lift_2",
+            "floor_level_04::apt-room:core_shaft_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_level_04::apt-room:core_lift_2",
           "rightRoomId": "floor_level_04::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -47190,7 +48008,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_level_04::apt-wall:y:37000:7500:9700",
+          "id": "floor_level_04::apt-wall:y:37000:7500:11900",
           "floorId": "floor_level_04",
           "startPoint": {
             "x": 37000,
@@ -47198,41 +48016,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_level_04::apt-room:core_lift_1"
-          ],
-          "unitIds": [],
-          "wallUse": "CORE",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_04::apt-room:core_lift_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_level_04::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_level_04",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_04::apt-room:core_lift_2"
+            "floor_level_04::apt-room:core_shaft_1"
           ],
           "unitIds": [],
-          "wallUse": "CORE",
+          "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_04::apt-room:core_lift_2",
+          "leftRoomId": "floor_level_04::apt-room:core_shaft_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -47275,12 +48069,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_level_04::apt-room:core_shaft_1"
+            "floor_level_04::apt-room:core_shaft_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_level_04::apt-room:core_shaft_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_level_04::apt-room:core_shaft_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -50441,6 +51236,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_level_04::apt-room:core_shaft_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_level_04",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_level_04::apt-room:core_shaft_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_level_04::apt-wall:x:10080:22600:25530:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
@@ -50461,12 +51266,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_04::apt-wall:x:11900:34000:37000"
+              "id": "floor_level_04::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_04::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_04",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_04::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -50981,9 +51796,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_level_04",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_04::apt-wall:x:45500:34000:37000"
@@ -51031,12 +51846,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_04::apt-wall:x:7500:34000:37000"
+              "id": "floor_level_04::apt-wall:x:7500:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_04::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_04",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_04::apt-wall:x:7500:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -51071,12 +51896,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:x:9700:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:x:9700:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_04::apt-wall:x:9700:34000:37000"
+              "id": "floor_level_04::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -51831,12 +52656,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_level_04",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_04::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_04::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_04::apt-wall:y:34000:16400:45500"
+              "id": "floor_level_04::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_level_04::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_level_04",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_level_04::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -51851,22 +52696,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:y:37000:7500:9700:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_level_04",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_level_04::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_level_04::apt-wall:y:37000:9700:11900:architecture:FULL_HEIGHT_WALL",
-            "floorId": "floor_level_04",
-            "role": "FULL_HEIGHT_WALL",
-            "source": {
-              "collection": "walls",
-              "id": "floor_level_04::apt-wall:y:37000:9700:11900"
+              "id": "floor_level_04::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -51881,9 +52716,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_level_04::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_level_04::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_level_04",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_level_04::apt-wall:y:37000:16400:45500"
@@ -52690,11 +53525,11 @@
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 7500
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
@@ -52705,10 +53540,10 @@
           },
           "x": 34000,
           "y": 7500,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "terrace:core"
@@ -52733,11 +53568,11 @@
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 9700
               },
               {
-                "x": 37000,
+                "x": 36200,
                 "y": 11900
               },
               {
@@ -52748,10 +53583,10 @@
           },
           "x": 34000,
           "y": 9700,
-          "width": 3000,
+          "width": 2200,
           "height": 2200,
           "rotation": 0,
-          "area": 6600000,
+          "area": 4840000,
           "priority": 1,
           "tags": [
             "terrace:core"
@@ -52815,29 +53650,29 @@
           "boundary": {
             "points": [
               {
-                "x": 34000,
-                "y": 16400
+                "x": 36200,
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 16400
+                "y": 7500
               },
               {
                 "x": 37000,
-                "y": 45500
+                "y": 11900
               },
               {
-                "x": 34000,
-                "y": 45500
+                "x": 36200,
+                "y": 11900
               }
             ]
           },
-          "x": 34000,
-          "y": 16400,
-          "width": 3000,
-          "height": 29100,
+          "x": 36200,
+          "y": 7500,
+          "width": 800,
+          "height": 4400,
           "rotation": 0,
-          "area": 87300000,
+          "area": 3520000,
           "priority": 1,
           "tags": [
             "terrace:core"
@@ -52881,6 +53716,50 @@
           "height": 42500,
           "rotation": 0,
           "area": 833000000,
+          "priority": 1,
+          "tags": [
+            "terrace:core"
+          ],
+          "adjacencyRequirements": [],
+          "daylightRequirement": "medium",
+          "privacyRequirement": "medium",
+          "ventilationRequired": true,
+          "isFixed": true,
+          "spaceUse": "VOID",
+          "architecturalRole": "OPEN_TO_SKY_VOID",
+          "openToSky": true
+        },
+        {
+          "id": "floor_terrace_05::terrace__shaft_head_3",
+          "name": "Open-to-sky courtyard (no roof)",
+          "type": "service_shaft",
+          "floorId": "floor_terrace_05",
+          "boundary": {
+            "points": [
+              {
+                "x": 34000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 16400
+              },
+              {
+                "x": 37000,
+                "y": 45500
+              },
+              {
+                "x": 34000,
+                "y": 45500
+              }
+            ]
+          },
+          "x": 34000,
+          "y": 16400,
+          "width": 3000,
+          "height": 29100,
+          "rotation": 0,
+          "area": 87300000,
           "priority": 1,
           "tags": [
             "terrace:core"
@@ -53198,14 +54077,14 @@
       ],
       "walls": [
         {
-          "id": "floor_terrace_05::apt-wall:x:11900:34000:37000",
+          "id": "floor_terrace_05::apt-wall:x:11900:34000:36200",
           "floorId": "floor_terrace_05",
           "startPoint": {
             "x": 34000,
             "y": 11900
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 11900
           },
           "thickness": 150,
@@ -53219,6 +54098,32 @@
           "boundaryRole": "FULL_HEIGHT_WALL",
           "leftRoomId": "floor_terrace_05::terrace__stair_mumty_2",
           "rightRoomId": "floor_terrace_05::terrace__lift_machine_room_2",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_terrace_05::apt-wall:x:11900:36200:37000",
+          "floorId": "floor_terrace_05",
+          "startPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_terrace_05::terrace__shaft_head_1",
+            "floor_terrace_05::terrace__stair_mumty_2"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_terrace_05::terrace__stair_mumty_2",
+          "rightRoomId": "floor_terrace_05::terrace__shaft_head_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -53264,13 +54169,13 @@
           "thickness": 100,
           "type": "internal",
           "roomIds": [
-            "floor_terrace_05::terrace__shaft_head_1",
+            "floor_terrace_05::terrace__shaft_head_3",
             "floor_terrace_05::terrace__stair_mumty_2"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_terrace_05::terrace__shaft_head_1",
+          "leftRoomId": "floor_terrace_05::terrace__shaft_head_3",
           "rightRoomId": "floor_terrace_05::terrace__stair_mumty_2",
           "hasOpening": false,
           "loadBearing": false,
@@ -53599,25 +54504,26 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_terrace_05::terrace__shaft_head_1"
+            "floor_terrace_05::terrace__shaft_head_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "rightRoomId": "floor_terrace_05::terrace__shaft_head_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "rightRoomId": "floor_terrace_05::terrace__shaft_head_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_terrace_05::apt-wall:x:7500:34000:37000",
+          "id": "floor_terrace_05::apt-wall:x:7500:34000:36200",
           "floorId": "floor_terrace_05",
           "startPoint": {
             "x": 34000,
             "y": 7500
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 7500
           },
           "thickness": 150,
@@ -53636,14 +54542,40 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_terrace_05::apt-wall:x:9700:34000:37000",
+          "id": "floor_terrace_05::apt-wall:x:7500:36200:37000",
+          "floorId": "floor_terrace_05",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 37000,
+            "y": 7500
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_terrace_05::terrace__shaft_head_1",
+            "floor_terrace_05::terrace__stair_mumty_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_terrace_05::terrace__shaft_head_1",
+          "rightRoomId": "floor_terrace_05::terrace__stair_mumty_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_terrace_05::apt-wall:x:9700:34000:36200",
           "floorId": "floor_terrace_05",
           "startPoint": {
             "x": 34000,
             "y": 9700
           },
           "endPoint": {
-            "x": 37000,
+            "x": 36200,
             "y": 9700
           },
           "thickness": 150,
@@ -54186,12 +55118,65 @@
           "type": "internal",
           "roomIds": [
             "floor_terrace_05::terrace__ohwt_tank",
+            "floor_terrace_05::terrace__shaft_head_3"
+          ],
+          "unitIds": [],
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_terrace_05::terrace__ohwt_tank",
+          "rightRoomId": "floor_terrace_05::terrace__shaft_head_3",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_terrace_05::apt-wall:y:36200:7500:9700",
+          "floorId": "floor_terrace_05",
+          "startPoint": {
+            "x": 36200,
+            "y": 7500
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_terrace_05::terrace__lift_machine_room_1",
             "floor_terrace_05::terrace__shaft_head_1"
           ],
           "unitIds": [],
           "wallUse": "SHAFT",
           "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_terrace_05::terrace__ohwt_tank",
+          "leftRoomId": "floor_terrace_05::terrace__lift_machine_room_1",
+          "rightRoomId": "floor_terrace_05::terrace__shaft_head_1",
+          "hasOpening": false,
+          "loadBearing": false,
+          "provenance": "PROVISIONAL_HEURISTIC"
+        },
+        {
+          "id": "floor_terrace_05::apt-wall:y:36200:9700:11900",
+          "floorId": "floor_terrace_05",
+          "startPoint": {
+            "x": 36200,
+            "y": 9700
+          },
+          "endPoint": {
+            "x": 36200,
+            "y": 11900
+          },
+          "thickness": 100,
+          "type": "internal",
+          "roomIds": [
+            "floor_terrace_05::terrace__lift_machine_room_2",
+            "floor_terrace_05::terrace__shaft_head_1"
+          ],
+          "unitIds": [],
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_terrace_05::terrace__lift_machine_room_2",
           "rightRoomId": "floor_terrace_05::terrace__shaft_head_1",
           "hasOpening": false,
           "loadBearing": false,
@@ -54222,7 +55207,7 @@
           "provenance": "PROVISIONAL_HEURISTIC"
         },
         {
-          "id": "floor_terrace_05::apt-wall:y:37000:7500:9700",
+          "id": "floor_terrace_05::apt-wall:y:37000:7500:11900",
           "floorId": "floor_terrace_05",
           "startPoint": {
             "x": 37000,
@@ -54230,43 +55215,17 @@
           },
           "endPoint": {
             "x": 37000,
-            "y": 9700
-          },
-          "thickness": 150,
-          "type": "external",
-          "roomIds": [
-            "floor_terrace_05::terrace__lift_machine_room_1"
-          ],
-          "unitIds": [],
-          "wallUse": "PARAPET",
-          "boundaryRole": "PARAPET",
-          "heightMm": 1100,
-          "leftRoomId": "floor_terrace_05::terrace__lift_machine_room_1",
-          "hasOpening": false,
-          "loadBearing": false,
-          "provenance": "PROVISIONAL_HEURISTIC"
-        },
-        {
-          "id": "floor_terrace_05::apt-wall:y:37000:9700:11900",
-          "floorId": "floor_terrace_05",
-          "startPoint": {
-            "x": 37000,
-            "y": 9700
-          },
-          "endPoint": {
-            "x": 37000,
             "y": 11900
           },
-          "thickness": 150,
+          "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_terrace_05::terrace__lift_machine_room_2"
+            "floor_terrace_05::terrace__shaft_head_1"
           ],
           "unitIds": [],
-          "wallUse": "PARAPET",
-          "boundaryRole": "PARAPET",
-          "heightMm": 1100,
-          "leftRoomId": "floor_terrace_05::terrace__lift_machine_room_2",
+          "wallUse": "SHAFT",
+          "boundaryRole": "FULL_HEIGHT_WALL",
+          "leftRoomId": "floor_terrace_05::terrace__shaft_head_1",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -54309,12 +55268,13 @@
           "thickness": 100,
           "type": "external",
           "roomIds": [
-            "floor_terrace_05::terrace__shaft_head_1"
+            "floor_terrace_05::terrace__shaft_head_3"
           ],
           "unitIds": [],
-          "wallUse": "SHAFT",
-          "boundaryRole": "FULL_HEIGHT_WALL",
-          "leftRoomId": "floor_terrace_05::terrace__shaft_head_1",
+          "wallUse": "PARAPET",
+          "boundaryRole": "PARAPET",
+          "heightMm": 1100,
+          "leftRoomId": "floor_terrace_05::terrace__shaft_head_3",
           "hasOpening": false,
           "loadBearing": false,
           "provenance": "PROVISIONAL_HEURISTIC"
@@ -54766,6 +55726,16 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
+            "id": "floor_terrace_05::terrace__shaft_head_3:architecture:OPEN_TO_SKY_VOID",
+            "floorId": "floor_terrace_05",
+            "role": "OPEN_TO_SKY_VOID",
+            "source": {
+              "collection": "rooms",
+              "id": "floor_terrace_05::terrace__shaft_head_3"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
             "id": "floor_terrace_05::terrace__solar_pv_array:architecture:OPEN_TERRACE",
             "floorId": "floor_terrace_05",
             "role": "OPEN_TERRACE",
@@ -54836,12 +55806,22 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:x:11900:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_terrace_05::apt-wall:x:11900:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_terrace_05",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:x:11900:34000:37000"
+              "id": "floor_terrace_05::apt-wall:x:11900:34000:36200"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_terrace_05::apt-wall:x:11900:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_terrace_05",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_terrace_05::apt-wall:x:11900:36200:37000"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -54986,9 +55966,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:x:45500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_terrace_05::apt-wall:x:45500:34000:37000:architecture:PARAPET",
             "floorId": "floor_terrace_05",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_terrace_05::apt-wall:x:45500:34000:37000"
@@ -54996,22 +55976,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:x:7500:34000:37000:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_terrace_05::apt-wall:x:7500:34000:36200:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_terrace_05",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:x:7500:34000:37000"
+              "id": "floor_terrace_05::apt-wall:x:7500:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:x:9700:34000:37000:architecture:OPEN_BOUNDARY",
+            "id": "floor_terrace_05::apt-wall:x:7500:36200:37000:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_terrace_05",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_terrace_05::apt-wall:x:7500:36200:37000"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_terrace_05::apt-wall:x:9700:34000:36200:architecture:OPEN_BOUNDARY",
             "floorId": "floor_terrace_05",
             "role": "OPEN_BOUNDARY",
             "source": {
               "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:x:9700:34000:37000"
+              "id": "floor_terrace_05::apt-wall:x:9700:34000:36200"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -55206,12 +56196,32 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:y:34000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_terrace_05::apt-wall:y:34000:16400:45500:architecture:PARAPET",
+            "floorId": "floor_terrace_05",
+            "role": "PARAPET",
+            "source": {
+              "collection": "walls",
+              "id": "floor_terrace_05::apt-wall:y:34000:16400:45500"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_terrace_05::apt-wall:y:36200:7500:9700:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_terrace_05",
             "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:y:34000:16400:45500"
+              "id": "floor_terrace_05::apt-wall:y:36200:7500:9700"
+            },
+            "reviewStatus": "DESIGN_PROPOSAL"
+          },
+          {
+            "id": "floor_terrace_05::apt-wall:y:36200:9700:11900:architecture:FULL_HEIGHT_WALL",
+            "floorId": "floor_terrace_05",
+            "role": "FULL_HEIGHT_WALL",
+            "source": {
+              "collection": "walls",
+              "id": "floor_terrace_05::apt-wall:y:36200:9700:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -55226,22 +56236,12 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:y:37000:7500:9700:architecture:PARAPET",
+            "id": "floor_terrace_05::apt-wall:y:37000:7500:11900:architecture:FULL_HEIGHT_WALL",
             "floorId": "floor_terrace_05",
-            "role": "PARAPET",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:y:37000:7500:9700"
-            },
-            "reviewStatus": "DESIGN_PROPOSAL"
-          },
-          {
-            "id": "floor_terrace_05::apt-wall:y:37000:9700:11900:architecture:PARAPET",
-            "floorId": "floor_terrace_05",
-            "role": "PARAPET",
-            "source": {
-              "collection": "walls",
-              "id": "floor_terrace_05::apt-wall:y:37000:9700:11900"
+              "id": "floor_terrace_05::apt-wall:y:37000:7500:11900"
             },
             "reviewStatus": "DESIGN_PROPOSAL"
           },
@@ -55256,9 +56256,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "floor_terrace_05::apt-wall:y:37000:16400:45500:architecture:FULL_HEIGHT_WALL",
+            "id": "floor_terrace_05::apt-wall:y:37000:16400:45500:architecture:PARAPET",
             "floorId": "floor_terrace_05",
-            "role": "FULL_HEIGHT_WALL",
+            "role": "PARAPET",
             "source": {
               "collection": "walls",
               "id": "floor_terrace_05::apt-wall:y:37000:16400:45500"
@@ -55431,6 +56431,669 @@
       "canonical_model",
       "STRUCTURAL_DESIGN_DEFERRED"
     ],
+    "generationReport": {
+      "strategy": "VALIDATED_TOPOLOGY",
+      "selectedFamily": "LINEAR_SINGLE_LOADED",
+      "selectedVariant": "linear:ns:corridor=east",
+      "rejectedCandidates": [
+        {
+          "familyId": "SIDE_CORE",
+          "variantId": "side:east",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "SIDE_CORE",
+          "variantId": "side:west",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "SIDE_CORE",
+          "variantId": "side:north",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "SIDE_CORE",
+          "variantId": "side:south",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "SPLIT_CORE",
+          "variantId": "split:ns",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded",
+            "lift 3 does not adjoin common circulation, so its car could not be boarded",
+            "lift 4 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "SPLIT_CORE",
+          "variantId": "split:ew",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded",
+            "lift 3 does not adjoin common circulation, so its car could not be boarded",
+            "lift 4 does not adjoin common circulation, so its car could not be boarded",
+            "flat 1 run 5800 mm is below the 6800 mm needed to stack service, living and sleeping bands",
+            "flat 2 run 5800 mm is below the 6800 mm needed to stack service, living and sleeping bands",
+            "flat 3 run 5800 mm is below the 6800 mm needed to stack service, living and sleeping bands",
+            "flat 4 run 5800 mm is below the 6800 mm needed to stack service, living and sleeping bands"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "CENTRAL_COURTYARD",
+          "variantId": "courtyard:lifts=outer",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 3 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "LINEAR_SINGLE_LOADED",
+          "variantId": "linear:ns:corridor=west",
+          "reasons": [
+            "lift 1 does not adjoin common circulation, so its car could not be boarded",
+            "lift 2 does not adjoin common circulation, so its car could not be boarded"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "PERIMETER_HABITABLE",
+          "variantId": "perimeter:nw",
+          "reasons": [
+            "staircase 1 does not adjoin common circulation, so it cannot be entered",
+            "staircase 2 does not adjoin common circulation, so it cannot be entered",
+            "flat 4 run 31700 mm is far beyond the 16000 mm a dwelling of this type can use; its rooms would be stretched rather than more numerous"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "PERIMETER_HABITABLE",
+          "variantId": "perimeter:ne",
+          "reasons": [
+            "staircase 1 does not adjoin common circulation, so it cannot be entered",
+            "staircase 2 does not adjoin common circulation, so it cannot be entered",
+            "flat 4 run 31700 mm is far beyond the 16000 mm a dwelling of this type can use; its rooms would be stretched rather than more numerous"
+          ],
+          "stage": "TOPOLOGY"
+        },
+        {
+          "familyId": "DUAL_WING",
+          "variantId": "dualwing:lifts=west",
+          "reasons": [
+            "These layouts are identical up to mirroring or rotation, so they are one design, not two."
+          ],
+          "stage": "DIVERSITY"
+        },
+        {
+          "familyId": "CENTRAL_CORE_SPINE",
+          "variantId": "central:lifts=east",
+          "reasons": [
+            "beyond the requested number of concepts"
+          ],
+          "stage": "DIVERSITY"
+        },
+        {
+          "familyId": "CENTRAL_COURTYARD",
+          "variantId": "courtyard:lifts=inner",
+          "reasons": [
+            "beyond the requested number of concepts"
+          ],
+          "stage": "DIVERSITY"
+        }
+      ],
+      "professionalReviewRequired": true,
+      "status": "BEST_EFFORT",
+      "violations": [
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_01__balcony",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 1
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_04__balcony",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 2
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_01__balcony",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 3
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_04__balcony",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 4
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_01__balcony",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 5
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_04__balcony",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 6
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_01__balcony",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 7
+        },
+        {
+          "code": "BALCONY_TOO_SMALL",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_04__balcony",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 8
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_01__bed_2",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 9
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_02__balcony",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 10
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_02__bed_2",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 11
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_02__living",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 12
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_02__master_bed",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 13
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_03__balcony",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 14
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_03__bed_2",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 15
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_03__living",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 16
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_03__master_bed",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 17
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_02::apt-room:flat_04__master_bed",
+          "floorId": "floor_level_02",
+          "elementIds": [
+            "floor_level_02"
+          ],
+          "rank": 18
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_01__bed_2",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 19
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_02__balcony",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 20
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_02__bed_2",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 21
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_02__living",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 22
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_02__master_bed",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 23
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_03__balcony",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 24
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_03__bed_2",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 25
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_03__living",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 26
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_03__master_bed",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 27
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_03::apt-room:flat_04__master_bed",
+          "floorId": "floor_level_03",
+          "elementIds": [
+            "floor_level_03"
+          ],
+          "rank": 28
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_01__bed_2",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 29
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_02__balcony",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 30
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_02__bed_2",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 31
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_02__living",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 32
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_02__master_bed",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 33
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_03__balcony",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 34
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_03__bed_2",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 35
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_03__living",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 36
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_03__master_bed",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 37
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_level_04::apt-room:flat_04__master_bed",
+          "floorId": "floor_level_04",
+          "elementIds": [
+            "floor_level_04"
+          ],
+          "rank": 38
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_01__bed_2",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 39
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_02__balcony",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 40
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_02__bed_2",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 41
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_02__living",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 42
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_02__master_bed",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 43
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_03__balcony",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 44
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_03__bed_2",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 45
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_03__living",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 46
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_03__master_bed",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 47
+        },
+        {
+          "code": "DAYLIGHT_OPENING_UNVERIFIED",
+          "severity": "WARNING",
+          "source": "CLOSURE",
+          "description": "floor_typical_01::apt-room:flat_04__master_bed",
+          "floorId": "floor_typical_01",
+          "elementIds": [
+            "floor_typical_01"
+          ],
+          "rank": 48
+        }
+      ]
+    },
     "bedroomBalconySchedule": [
       {
         "flatId": "flat_01",
@@ -55979,8 +57642,8 @@
     ]
   },
   "version": 1,
-  "createdAt": "2026-11-12T20:27:26.239Z",
-  "updatedAt": "2026-11-12T20:27:26.239Z",
+  "createdAt": "2026-11-13T13:38:22.649Z",
+  "updatedAt": "2026-11-13T13:38:22.649Z",
   "furniture": [
     {
       "id": "floor_stilt_00::stilt__staff_toilet__furn_toilet_1",

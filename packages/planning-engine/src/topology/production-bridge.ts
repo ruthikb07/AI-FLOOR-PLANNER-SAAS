@@ -84,8 +84,10 @@ export function macroFromTopology(partition: TopologyPartition): MacroPartition 
 }
 
 export interface SelectTopologyInput {
+  readonly allowBestEffort?: boolean;
+  readonly onEvaluated?: (result: GenerateConceptsResult) => void;
   readonly envelope: Box2D;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly aiPrompt?: string;
   readonly seed?: number;
@@ -102,9 +104,9 @@ export interface SelectedTopology {
  * Runs the topology engine and returns the top-ranked concept, converted for
  * the production sheet solvers.
  *
- * Returns `undefined` when no organization is feasible for this envelope and
- * brief, so the caller can fall back to the legacy partition rather than fail
- * a generation the previous engine could complete.
+ * By default returns only feasible concepts. Production may explicitly request
+ * a failed assembled candidate for bounded repair; its score remains infeasible.
+ * All rejection evidence is delivered to onEvaluated, even without a selection.
  */
 export function selectProductionTopology(input: SelectTopologyInput): SelectedTopology | undefined {
   // A caller may omit the unit mix; the solver then plans a default type per
@@ -123,7 +125,8 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     conceptLimit: input.conceptLimit ?? 3,
   });
 
-  const chosen = result.concepts[0];
+  input.onEvaluated?.(result);
+  const chosen = result.concepts[0] ?? (input.allowBestEffort ? result.bestEffort : undefined);
   if (!chosen) return undefined;
 
   return { macro: macroFromTopology(chosen.partition), chosen, result };
