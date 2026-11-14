@@ -302,10 +302,22 @@ export interface BuildingMetadata {
   readonly projectId: string;
   readonly clientName?: string;
   readonly generationBrief?: {
-    readonly source: 'DETERMINISTIC';
+    readonly source: 'DETERMINISTIC' | 'HYBRID' | 'AI_ASSISTED';
     readonly aiPrompt?: string;
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+    readonly generationSeed?: number;
+    readonly topologyHash?: string;
+    readonly archetype?: string;
+    readonly buildingMassingShape?: string;
+    readonly aiProposal?: Record<string, unknown>;
+    readonly aiTelemetry?: {
+      readonly geminiInvoked: boolean;
+      readonly provider: string;
+      readonly modelUsed?: string;
+      readonly fallbackReason?: string;
+      readonly referenceImageUsedForGeometry: boolean;
+    };
   };
   readonly description?: string;
   readonly tags?: readonly string[];
@@ -341,10 +353,22 @@ export interface Project {
   readonly description?: string;
   readonly clientName?: string;
   readonly generationBrief?: {
-    readonly source: 'DETERMINISTIC';
+    readonly source: 'DETERMINISTIC' | 'HYBRID' | 'AI_ASSISTED';
     readonly aiPrompt?: string;
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+    readonly generationSeed?: number;
+    readonly topologyHash?: string;
+    readonly archetype?: string;
+    readonly buildingMassingShape?: string;
+    readonly aiProposal?: Record<string, unknown>;
+    readonly aiTelemetry?: {
+      readonly geminiInvoked: boolean;
+      readonly provider: string;
+      readonly modelUsed?: string;
+      readonly fallbackReason?: string;
+      readonly referenceImageUsedForGeometry: boolean;
+    };
   };
   readonly status: ProjectStatus;
   readonly buildings: readonly Building[];

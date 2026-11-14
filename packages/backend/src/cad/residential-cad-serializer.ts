@@ -540,6 +540,20 @@ export class ResidentialCadSerializer {
         for (const stair of floor.canonicalStaircases ?? []) {
           for (const part of canonicalStairSolids(stair, floor.floorHeight, floor.slabThicknessMm).filter(p => floor.floorUse !== "ROOF" || p.top === 0))
             poly(part.boundary.points.map(cad), "A-STAIR");
+          if (floor.floorUse !== "ROOF") {
+            const midC = polygonCentroid(stair.midLanding);
+            const flC = stair.floorLanding ? polygonCentroid(stair.floorLanding) : polygonCentroid(stair.polygon);
+            const f1C = polygonCentroid(stair.flight1);
+            const f2C = polygonCentroid(stair.flight2);
+            const dx = midC.x - flC.x, dy = midC.y - flC.y, len = Math.hypot(dx, dy);
+            if (len > 100) {
+              const ux = dx / len, uy = dy / len;
+              const f1Box = polygonBoundingBox(stair.flight1);
+              const runHalf = Math.max(150, (Math.abs(ux) > Math.abs(uy) ? f1Box.width : f1Box.height) * 0.34);
+              line(cad({ x: f1C.x - ux * runHalf, y: f1C.y - uy * runHalf }), cad({ x: f1C.x + ux * runHalf, y: f1C.y + uy * runHalf }), "A-STAIR");
+              line(cad({ x: f2C.x + ux * runHalf, y: f2C.y + uy * runHalf }), cad({ x: f2C.x - ux * runHalf, y: f2C.y - uy * runHalf }), "A-STAIR");
+            }
+          }
         }
         if (floor.floorUse === "STILT_PARKING")
           for (const drive of building.site.siteZones?.filter(

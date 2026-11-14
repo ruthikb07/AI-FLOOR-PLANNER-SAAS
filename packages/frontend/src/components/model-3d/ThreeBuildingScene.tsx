@@ -116,9 +116,42 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
     controls.screenSpacePanning = true;
+    controls.zoomToCursor = true;
+    controls.zoomSpeed = 1.15;
     controls.minDistance = 0.3;
     controls.maxDistance = 2000;
     controls.target.set(5, 2, 5);
+    renderer.domElement.setAttribute('data-zoom-to-cursor', 'true');
+
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const wheelRaycaster = new THREE.Raycaster();
+    const wheelPointer = new THREE.Vector2();
+    const planeHit = new THREE.Vector3();
+
+    const handleWheelCursorZoom = (event: WheelEvent) => {
+      controls.zoomToCursor = true;
+      const rect = renderer.domElement.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      wheelPointer.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      wheelRaycaster.setFromCamera(wheelPointer, camera);
+      const buildingGroup = scene.getObjectByName('building-projection');
+      const hits = buildingGroup ? wheelRaycaster.intersectObjects(buildingGroup.children, true) : [];
+      const hitPoint = hits[0]?.point ?? (wheelRaycaster.ray.intersectPlane(groundPlane, planeHit) ? planeHit : null);
+      if (hitPoint && event.deltaY < 0) {
+        const shift = hitPoint.clone().sub(controls.target).multiplyScalar(0.12);
+        controls.target.add(shift);
+        camera.position.add(shift);
+        const nightGlow = scene.getObjectByName('night-glow-light') as THREE.PointLight | undefined;
+        if (nightGlow && nightGlow.visible) {
+          nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 3), controls.target.z);
+        }
+      }
+      renderer.render(scene, camera);
+    };
+    renderer.domElement.addEventListener('wheel', handleWheelCursorZoom, { passive: true });
 
     const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x182235, 2.2);
     hemiLight.name = 'hemi-light';
@@ -153,6 +186,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     render();
     return () => {
       resize.disconnect();
+      renderer.domElement.removeEventListener('wheel', handleWheelCursorZoom);
       controls.removeEventListener('change', render);
       controls.dispose();
       disposeObject(scene);
@@ -167,7 +201,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime) return;
-    const { scene, renderer, camera } = runtime;
+    const { scene, renderer, camera, controls } = runtime;
+    controls.zoomToCursor = true;
     const hemi = scene.getObjectByName('hemi-light') as THREE.HemisphereLight | undefined;
     const key = scene.getObjectByName('key-light') as THREE.DirectionalLight | undefined;
     const nightGlowName = 'night-glow-light';
@@ -178,18 +213,19 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       if (hemi) {
         hemi.color.setHex(0x1e1b4b);
         hemi.groundColor.setHex(0x0f172a);
-        hemi.intensity = 0.8;
+        hemi.intensity = 1.15;
       }
       if (key) {
         key.color.setHex(0x818cf8);
-        key.intensity = 0.9;
+        key.intensity = 1.25;
       }
       if (!nightGlow) {
-        nightGlow = new THREE.PointLight(0xfbbf24, 2.5, 30);
+        nightGlow = new THREE.PointLight(0xfbbf24, 2.8, 120, 1.2);
         nightGlow.name = nightGlowName;
-        nightGlow.position.set(5, 4, 5);
+        nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 4), controls.target.z);
         scene.add(nightGlow);
       } else {
+        nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 4), controls.target.z);
         nightGlow.visible = true;
       }
     } else {

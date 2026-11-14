@@ -78,6 +78,7 @@ export interface ApartmentCoreElement {
   readonly id: string;
   readonly name: string;
   readonly rect: ApartmentRectMm;
+  readonly tags?: readonly string[];
   /** Flat the source assigned this element to; any non-null value is a validation error for core elements. */
   readonly assignedFlatId: string | null;
 }

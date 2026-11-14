@@ -29,6 +29,14 @@ import type { GeometryValidationReport } from './geometry-validation';
 export type VerticalStackType = 'G_PLUS_N' | 'STILT_PLUS_N' | 'BASEMENT_STILT_PLUS_N';
 export type ParkingMode = 'STILT_AND_SURFACE' | 'STILT_ONLY' | 'MECHANICAL_STACK';
 export type AreaTargetScope = 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
+export type BuildingMassingShape =
+  | 'COMPACT_DOUBLE_LOADED'
+  | 'H_SHAPE_WING'
+  | 'U_SHAPE_COURTYARD'
+  | 'L_SHAPE_CORNER'
+  | 'CRUCIFORM_PLUS'
+  | 'PINWHEEL_CLUSTER'
+  | 'STEPPED_OFFSET_BLOCK';
 
 export interface AreaTargetDiagnostic {
   readonly scope: AreaTargetScope;
@@ -38,6 +46,12 @@ export interface AreaTargetDiagnostic {
   readonly achievedAreaM2: number;
   readonly minFeasibleGrossAreaM2?: number;
   readonly minFeasibleGrossAreaSqFt?: number;
+  /** Compatibility aliases for callers checking Phase 0 shortened names. */
+  readonly requestedSqFt?: number;
+  readonly requestedM2?: number;
+  readonly achievedSqFt?: number;
+  readonly achievedM2?: number;
+  readonly minimumFeasibleGrossM2?: number;
   readonly status: 'ACHIEVED' | 'CLAMPED_TO_ENVELOPE_MAX' | 'INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE';
   readonly explanation: string;
 }
@@ -91,6 +105,17 @@ export interface MultiSheetApartmentConfig {
    * a constraint is satisfied. Defaults to 1.
    */
   readonly generationSeed?: number;
+  readonly rejectedTopologyHashes?: readonly string[];
+  readonly preferredArchetype?: string;
+  readonly buildingMassingShape?: BuildingMassingShape;
+  readonly aiProposal?: Record<string, unknown>;
+  readonly aiTelemetryOverride?: {
+    readonly geminiInvoked: boolean;
+    readonly provider: string;
+    readonly modelUsed?: string;
+    readonly fallbackReason?: string;
+    readonly referenceImageUsedForGeometry: boolean;
+  };
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
   readonly plotWidthMm: number;

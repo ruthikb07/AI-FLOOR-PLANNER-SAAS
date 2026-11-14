@@ -221,6 +221,7 @@ export * from './compliance/rules/entitlements';
 
 export * from './compliance/residential-udcpr-evaluator';
 export * from './compliance/apartment-vastu-evaluator';
+export * from './compliance/architectural-compliance-score';
 
 export * from './structural/solver-result';
 export * from './structural/column-grid-generator';

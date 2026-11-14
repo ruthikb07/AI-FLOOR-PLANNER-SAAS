@@ -30,6 +30,7 @@ export interface PdfExportOptions {
   readonly includeNorthArrow?: boolean;
   readonly includeScaleBar?: boolean;
   readonly includeTitleBlock?: boolean;
+  readonly includeScheduleSheet?: boolean;
 }
 
 export interface PdfExportResult {
@@ -96,7 +97,9 @@ export class PdfExportService {
     const usableWidth = pageWidth - margin * 2;
     const usableHeight = pageHeight - margin * 2 - titleHeight;
 
-    const pageCount = floorsToExport.length;
+    const totalFloorPages = floorsToExport.length;
+    const includeScheduleSheet = options.includeScheduleSheet === true;
+    const pageCount = totalFloorPages + (includeScheduleSheet ? 1 : 0);
     const objects: string[] = [
       '<< /Type /Catalog /Pages 2 0 R >>',
       '', // Placeholder for Pages object
@@ -105,7 +108,7 @@ export class PdfExportService {
 
     const pageRefs: string[] = [];
 
-    for (let pIdx = 0; pIdx < pageCount; pIdx++) {
+    for (let pIdx = 0; pIdx < totalFloorPages; pIdx++) {
       const canonicalFloor = floorsToExport[pIdx]!;
       const floor = options.drawingKind==='STRUCTURAL'?{...canonicalFloor,name:`${canonicalFloor.name} - Structural Layout`,rooms:[],walls:[],doors:[],windows:[],stairs:[],canonicalStaircases:[],furniture:[]}:canonicalFloor;
       const bounds = getFloorContentBounds(floor);
@@ -246,6 +249,123 @@ export class PdfExportService {
       pageRefs.push(`${pageObjIndex} 0 R`);
     }
 
+    if (includeScheduleSheet) {
+      const schedCommands: string[] = [
+        '0.08 0.1 0.13 RG',
+        '0.8 w',
+        `${margin} ${margin} ${pageWidth - margin * 2} ${pageHeight - margin * 2} re S`,
+        '0.08 0.1 0.13 rg',
+        `BT /F1 15 Tf ${margin + 14} ${pageHeight - margin - 28} Td (Sheet A-901: RERA Carpet Area & Compliance Schedule - ${ascii(building.name)}) Tj ET`,
+        `BT /F1 9 Tf ${margin + 14} ${pageHeight - margin - 46} Td (Plot: ${Math.round(building.site.plotWidth)} x ${Math.round(building.site.plotDepth)} mm | Rev ${building.version} | ISO ${options.paperSize ?? 'A3'} Landscape) Tj ET`,
+      ];
+
+      // Table Header
+      const tableX = margin + 14;
+      const tableW = pageWidth - margin * 2 - 28;
+      let rowY = pageHeight - margin - 78;
+      const rowH = 20;
+      const cols = [0, 170, 320, 460, 590, 740, tableW];
+      const drawRow = (cells: readonly string[], isHeader = false) => {
+        if (isHeader) {
+          schedCommands.push('0.91 0.93 0.96 rg', `${tableX} ${rowY} ${tableW} ${rowH} re f`);
+        }
+        schedCommands.push('0.45 0.5 0.55 RG', '0.5 w', `${tableX} ${rowY} ${tableW} ${rowH} re S`);
+        for (let c = 1; c < cols.length - 1; c++) {
+          const cx = tableX + cols[c]!;
+          schedCommands.push(`${cx} ${rowY} m ${cx} ${rowY + rowH} l S`);
+        }
+        schedCommands.push('0.08 0.1 0.13 rg');
+        cells.forEach((cell, idx) => {
+          const cx = tableX + cols[idx]! + 6;
+          schedCommands.push(`BT /F1 ${isHeader ? 9 : 8} Tf ${cx} ${rowY + 6} Td (${ascii(cell)}) Tj ET`);
+        });
+        rowY -= rowH;
+      };
+
+      drawRow(['Floor / Sheet', 'Unit / Program', 'RERA Carpet (sq.m)', 'Carpet (sq.ft)', 'Outdoor / Util (sq.m)', 'Gross Built (sq.m)'], true);
+
+      let totalCarpetM2 = 0;
+      let totalOutdoorM2 = 0;
+      let totalGrossM2 = 0;
+
+      for (const fl of building.floors) {
+        if (rowY < margin + 95) break;
+        const units = fl.apartmentUnits ?? [];
+        if (units.length > 0) {
+          for (const unit of units) {
+            if (rowY < margin + 95) break;
+            const unitRooms = fl.rooms.filter(
+              (r) => r.unitId === unit.id || r.id.startsWith(`${unit.id}_`),
+            );
+            const outdoorM2 = unitRooms
+              .filter((r) => r.type === 'balcony' || r.type === 'utility' || r.type === 'terrace')
+              .reduce((acc, r) => acc + r.area / 1_000_000, 0);
+            const roomSumM2 = unitRooms.reduce((acc, r) => acc + r.area / 1_000_000, 0);
+            const reraM2 = Math.max(0, roomSumM2 - outdoorM2);
+            const grossM2 = roomSumM2;
+            totalCarpetM2 += reraM2;
+            totalOutdoorM2 += outdoorM2;
+            totalGrossM2 += grossM2;
+            drawRow([
+              fl.name.slice(0, 24),
+              `${unit.id} (${unit.unitType})`,
+              `${reraM2.toFixed(2)} sq.m`,
+              `${(reraM2 * 10.7639).toFixed(1)} sq.ft`,
+              `${outdoorM2.toFixed(2)} sq.m`,
+              `${grossM2.toFixed(2)} sq.m`,
+            ]);
+          }
+        } else {
+          const flOutdoorM2 = fl.rooms
+            .filter((r) => r.type === 'balcony' || r.type === 'utility' || r.type === 'terrace')
+            .reduce((acc, r) => acc + r.area / 1_000_000, 0);
+          const flRoomM2 = fl.rooms.reduce((acc, r) => acc + r.area / 1_000_000, 0);
+          const flCarpetM2 = Math.max(0, flRoomM2 - flOutdoorM2);
+          totalCarpetM2 += flCarpetM2;
+          totalOutdoorM2 += flOutdoorM2;
+          totalGrossM2 += flRoomM2;
+          drawRow([
+            fl.name.slice(0, 24),
+            `${fl.rooms.length} Spaces`,
+            `${flCarpetM2.toFixed(2)} sq.m`,
+            `${(flCarpetM2 * 10.7639).toFixed(1)} sq.ft`,
+            `${flOutdoorM2.toFixed(2)} sq.m`,
+            `${flRoomM2.toFixed(2)} sq.m`,
+          ]);
+        }
+      }
+
+      drawRow([
+        'PROJECT TOTAL',
+        `${building.floors.length} Sheets`,
+        `${totalCarpetM2.toFixed(2)} sq.m`,
+        `${(totalCarpetM2 * 10.7639).toFixed(1)} sq.ft`,
+        `${totalOutdoorM2.toFixed(2)} sq.m`,
+        `${totalGrossM2.toFixed(2)} sq.m`,
+      ], true);
+
+      schedCommands.push(
+        '0.08 0.1 0.13 rg',
+        `BT /F1 8 Tf ${tableX} ${margin + 66} Td (Summary: ${building.floors.length} Sheets | Total RERA Carpet: ${totalCarpetM2.toFixed(2)} sq.m (${(totalCarpetM2 * 10.7639).toFixed(1)} sq.ft) | Total Built: ${totalGrossM2.toFixed(2)} sq.m) Tj ET`,
+      );
+
+      if (options.includeTitleBlock !== false) {
+        schedCommands.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
+        schedCommands.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
+        schedCommands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (Sheet A-901: Statutory RERA Carpet Area Schedule | ISO ${options.paperSize ?? 'A3'} | Rev ${building.version}) Tj ET`);
+        schedCommands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 46} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION - PROFESSIONAL REVIEW REQUIRED) Tj ET`);
+      }
+
+      const schedStream = `${schedCommands.join('\n')}\n`;
+      const sPageObjIndex = objects.length + 1;
+      const sContentObjIndex = sPageObjIndex + 1;
+      objects.push(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${sContentObjIndex} 0 R >>`,
+      );
+      objects.push(`<< /Length ${byteLength(schedStream)} >>\nstream\n${schedStream}endstream`);
+      pageRefs.push(`${sPageObjIndex} 0 R`);
+    }
+
     // Set Pages dictionary
     objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(' ')}] /Count ${pageCount} >>`;
 
@@ -278,5 +398,18 @@ export class PdfExportService {
       data,
       pageCount,
     };
+  }
+
+  public exportMultiSheetPdf(
+    building: Building,
+    options: Omit<PdfExportOptions, 'exportScope' | 'includeScheduleSheet'> = {},
+  ): PdfExportResult {
+    return this.exportPdf(building, {
+      ...options,
+      exportScope: 'complete_project',
+      paperSize: options.paperSize ?? 'A3',
+      orientation: options.orientation ?? 'landscape',
+      includeScheduleSheet: true,
+    });
   }
 }

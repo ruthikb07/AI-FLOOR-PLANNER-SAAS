@@ -47,13 +47,19 @@ export function canonicalStairSolids(
     bottom: counts[0] * step - thickness,
     top: counts[0] * step,
   });
-  const lc = s.midLanding.points.reduce(
-    (a, p) => ({
-      x: a.x + p.x / s.midLanding.points.length,
-      y: a.y + p.y / s.midLanding.points.length,
-    }),
-    { x: 0, y: 0 },
-  );
+  const segDist = (pt: Point, u: Point, v: Point): number => {
+    const dx = v.x - u.x,
+      dy = v.y - u.y,
+      len2 = dx * dx + dy * dy;
+    const t =
+      len2 > 0
+        ? Math.max(
+            0,
+            Math.min(1, ((pt.x - u.x) * dx + (pt.y - u.y) * dy) / len2),
+          )
+        : 0;
+    return Math.hypot(pt.x - (u.x + t * dx), pt.y - (u.y + t * dy));
+  };
   for (const [flight, n, base, up] of [
     [s.flight1, counts[0], 0, true],
     [s.flight2, counts[1], counts[0], false],
@@ -66,7 +72,16 @@ export function canonicalStairSolids(
     for (let j = 0; j < 4; j++) {
       const a = p[j]!,
         b = p[(j + 1) % 4]!,
-        d = Math.hypot((a.x + b.x) / 2 - lc.x, (a.y + b.y) / 2 - lc.y);
+        mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        d = Math.min(
+          ...s.midLanding.points.map((m1, idx) =>
+            segDist(
+              mid,
+              m1,
+              s.midLanding.points[(idx + 1) % s.midLanding.points.length]!,
+            ),
+          ),
+        );
       if (d < best) {
         best = d;
         edge = j;
@@ -153,10 +168,17 @@ export function proposeArchitecturalStair(
       point(u, v + b),
     ],
   });
-  const flightWidth = Math.min(targetFlightWidth, width / 2),
-    landing = flightWidth;
+  const flightWidth = Math.min(
+    width / 2,
+    Math.max(targetFlightWidth, Math.floor((width - 200) / 2)),
+  );
   const riserCount = 2 * Math.ceil(rise / (2 * targetRiser)),
     count = riserCount / 2,
+    nominalLanding = Math.min(targetFlightWidth, flightWidth),
+    landing =
+      depth - 2 * nominalLanding >= (count - 1) * 200
+        ? nominalLanding
+        : Math.max(600, Math.floor(depth * 0.23)),
     run = depth - 2 * landing;
   if (!(run > 0 && count >= 2 && flightWidth > 0))
     throw new Error(`Stair flights and landings do not fit: ${room.id}`);

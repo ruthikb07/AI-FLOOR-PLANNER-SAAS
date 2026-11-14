@@ -91,10 +91,17 @@ export function furnishRoom(
   const rw = room.width;
   const rh = room.height;
   const rName = (room.name || '').toUpperCase();
-  // A bedroom/kitchen name in a balcony label describes its host, not its use.
-  // Keep outdoor spaces free of indoor fixtures even for legacy mislabeled models.
-  if (room.type === RoomType.Balcony || room.type === RoomType.Utility ||
-      /BALCONY|SIT[ -]?OUT|TERRACE/.test(rName)) return items;
+  // A bedroom/kitchen name in a balcony or passage label describes its host, not its use.
+  // Keep outdoor spaces and circulation corridors/passages free of indoor fixtures.
+  if (
+    room.type === RoomType.Balcony ||
+    room.type === RoomType.Utility ||
+    room.type === RoomType.Corridor ||
+    room.type === RoomType.Foyer ||
+    /BALCONY|SIT[ -]?OUT|TERRACE|PASSAGE|CORRIDOR|FOYER|VESTIBULE|LOBBY|AISLE/.test(rName)
+  ) {
+    return items;
+  }
   const areaM2 = room.area / 1_000_000;
 
   const doorBoxes = getRoomDoorClearanceBoxes(room, floor);
@@ -282,7 +289,12 @@ export function furnishRoom(
   }
 
   // ─── 3. Bedrooms (Master Suite & Habitable Bedrooms) ───────────────────────
-  else if (room.type === RoomType.Bedroom || rName.includes('BED')) {
+  else if (
+    (room.type === RoomType.Bedroom || rName.includes('BED')) &&
+    room.type !== RoomType.Corridor &&
+    room.type !== RoomType.Foyer &&
+    !/PASSAGE|CORRIDOR|BALCONY|FOYER|TOILET|BATH/.test(rName)
+  ) {
     const isMaster = rName.includes('MASTER') || areaM2 >= 13.0;
     const bedW = isMaster ? 1800 : 1500; // King vs Queen
     const bedD = 2000;

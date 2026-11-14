@@ -1,4 +1,4 @@
-import { architecturalBoundaryRole, WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/core';
+import { architecturalBoundaryRole, architecturalSpaceRole, WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/core';
 import { polygonSignedArea, containsPolygon } from './polygon';
 
 /** Millimetres. Numerical coincidence is separate from opening corner clearance. */
@@ -43,17 +43,20 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
       if(!owners.length) continue;
       const ids=[...new Set(owners.map(e=>e.room.id))].sort();
       const unitIds=[...new Set(owners.flatMap(e=>e.room.unitId?[e.room.unitId]:[]))].sort();
+      const uniqueRooms = [...new Map(owners.map(e => [e.room.id, e.room])).values()];
       const uses=owners.map(e=>e.room.spaceUse);
-      const external = ids.length === 1;
+      const nonVoidOwners = uniqueRooms.filter(r => architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID');
+      const hasPerimeterRecess = uniqueRooms.some(r => architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' && r.tags?.includes('recess:perimeter'));
+      const external = ids.length === 1 || (nonVoidOwners.length === 1 && hasPerimeterRecess);
       const isUnitSeparation = unitIds.length > 1;
       // A wall onto an explicit open-to-sky void is a shaft wall, like one onto
-      // a service duct: it can carry a bathroom ventilator. Open-to-sky spaces
-      // carry spaceUse 'VOID' rather than 'SERVICE', so without this a bathroom
-      // facing a light court would be treated as having no ventilation path at
-      // all — which is the opposite of the truth.
-      const ventilates = uses.includes('SERVICE') || uses.includes('VOID');
-      const use:NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : uses.includes('OUTDOOR') ? 'BALCONY' : uses.includes('CORE') ? 'CORE' : uses.includes('COMMON')&&unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
-      const boundaryRole = semantic ? architecturalBoundaryRole(owners.map(e => e.room), external) : undefined;
+      // a service duct: it can carry a bathroom ventilator. Exterior building
+      // shape recesses (`recess:perimeter`) behave as exterior facade boundaries.
+      const isInternalShaftRoom = (r: Room) => !r.tags?.includes('recess:perimeter') && (r.spaceUse === 'SERVICE' || r.spaceUse === 'VOID' || architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' || architecturalSpaceRole(r) === 'SERVICE_SHAFT');
+      const ventilates = owners.some(e => isInternalShaftRoom(e.room));
+      const effectiveUses = hasPerimeterRecess ? nonVoidOwners.map(r => r.spaceUse) : uses;
+      const use:NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : effectiveUses.includes('OUTDOOR') ? 'BALCONY' : effectiveUses.includes('CORE') ? 'CORE' : effectiveUses.includes('COMMON')&&unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
+      const boundaryRole = semantic ? architecturalBoundaryRole(uniqueRooms, external) : undefined;
       const thickness =
         use === 'EXTERNAL' || use === 'UNIT_SEPARATION' ? 230 :
         use === 'COMMON_CORRIDOR' || use === 'CORE' ? 150 :

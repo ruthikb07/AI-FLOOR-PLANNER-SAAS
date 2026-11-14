@@ -1,7 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
-import { StructuralExportValidationError } from '@ai-floor-planner/core';
+import { StructuralExportValidationError, type Building, type StructuralProject } from '@ai-floor-planner/core';
 import { configuredETABSExportService, type ETABSStructuralExportService } from '../services/etabs-structural-export.js';
+import {
+  generateETABSE2KFromBuilding,
+  generateETABSE2KFromStructuralProject,
+} from '../services/etabs-e2k-generator.js';
 import { ExportError } from '../services/export-selection.js';
 
 interface RouteConfig { token?: string; allowedOrigins: readonly string[] }
@@ -12,6 +16,51 @@ export function createETABSExportRoute(
     allowedOrigins:(process.env.RH_ETABS_ALLOWED_ORIGINS??'http://localhost:5173,http://127.0.0.1:5173').split(',')}),
 ) {
   return async(request:IncomingMessage,response:ServerResponse,url:URL,readBody:(request:IncomingMessage)=>Promise<string>):Promise<boolean>=>{
+    if (url.pathname === '/api/v1/export/etabs/e2k' || url.pathname === '/api/export/etabs/e2k') {
+      const origin = request.headers.origin;
+      const e2kHeaders: Record<string, string> = {
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'Access-Control-Allow-Origin': origin ?? '*',
+        'Access-Control-Expose-Headers': 'Content-Disposition, Content-Length, X-ETABS-Format',
+      };
+      if (request.method !== 'POST') {
+        response.writeHead(405, { 'Content-Type': 'application/json', ...e2kHeaders });
+        response.end(JSON.stringify({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Use POST to export CSI ETABS .e2k' } }));
+        return true;
+      }
+      try {
+        const raw = await readBody(request);
+        const body = raw.length > 0 ? (JSON.parse(raw) as { building?: Building; project?: StructuralProject }) : {};
+        let e2kContent: string;
+        let fileName = 'rh_planner_model.e2k';
+        if (body.project && Array.isArray(body.project.levels)) {
+          e2kContent = generateETABSE2KFromStructuralProject(body.project, body.building?.name ?? 'RH Planner Project');
+          fileName = `${(body.project.id || 'structural_model').replace(/[^a-zA-Z0-9_-]/g, '_')}.e2k`;
+        } else if (body.building && Array.isArray(body.building.floors)) {
+          e2kContent = generateETABSE2KFromBuilding(body.building);
+          fileName = `${(body.building.name || body.building.id || 'etabs_model').replace(/[^a-zA-Z0-9_-]/g, '_')}.e2k`;
+        } else {
+          response.writeHead(400, { 'Content-Type': 'application/json', ...e2kHeaders });
+          response.end(JSON.stringify({ error: { code: 'INVALID_REQUEST', message: 'building or project payload is required.' } }));
+          return true;
+        }
+        const buf = Buffer.from(e2kContent, 'utf-8');
+        response.writeHead(200, {
+          ...e2kHeaders,
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Length': String(buf.length),
+          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'X-ETABS-Format': 'E2K',
+        });
+        response.end(buf);
+      } catch (error) {
+        response.writeHead(400, { 'Content-Type': 'application/json', ...e2kHeaders });
+        response.end(JSON.stringify({ error: { code: 'INVALID_REQUEST', message: error instanceof Error ? error.message : 'Invalid JSON payload' } }));
+      }
+      return true;
+    }
+
     const match=url.pathname.match(/^\/api(?:\/v1)?\/export\/etabs(?:\/download\/([^/]+))?$/);
     if(!match)return false;
     const headers:Record<string,string>={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};

@@ -23,6 +23,7 @@ import { boxArea, type Box2D } from './rect-frame';
 import {
   circulationAreaOf,
   flatAreaOf,
+  isPerimeterRecess,
   otsAreaOf,
   sharedEdgeLength,
   type TopologyPartition,
@@ -94,8 +95,8 @@ const PRIORITY_EMPHASIS: Record<DesignPriority, readonly ObjectiveId[]> = {
   // user asking for a larger kitchen could receive a smaller one in a different
   // plan. The preference still reaches the geometry through the room slicer and
   // is still measured by KITCHEN_USABILITY; it just does not reorder topologies.
-  KITCHEN_DINING: ['FACADE_ALLOCATION', 'ENVELOPE_UTILIZATION', 'DAYLIGHT_EXPOSURE', 'PRIVACY_SEPARATION'],
-  UNSPECIFIED: ['FACADE_ALLOCATION', 'ENVELOPE_UTILIZATION', 'DAYLIGHT_EXPOSURE', 'PRIVACY_SEPARATION'],
+  KITCHEN_DINING: ['FACADE_ALLOCATION', 'ENVELOPE_UTILIZATION', 'DAYLIGHT_EXPOSURE', 'PRIVACY_SEPARATION', 'BEDROOM_BALCONY_ACCESS'],
+  UNSPECIFIED: ['FACADE_ALLOCATION', 'ENVELOPE_UTILIZATION', 'DAYLIGHT_EXPOSURE', 'PRIVACY_SEPARATION', 'BEDROOM_BALCONY_ACCESS'],
 };
 
 /** Presentation weights. Deliberately not used for ranking decisions. */
@@ -184,14 +185,16 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
       : `all ${wetRooms.length} bathrooms touch the external facade or a ventilation shaft`,
   });
 
+  const recessBoxes = partition.shaftBoxes.filter((_, i) => isPerimeterRecess(partition, i));
   const flatsOffFacade = structure.flats.filter(flat => {
     const b = rectBox(flat.rect);
-    return !(
+    const touchesOuterEnv =
       Math.abs(b.x - env.x) <= 1 ||
       Math.abs(b.y - env.y) <= 1 ||
       Math.abs(b.x + b.w - (env.x + env.w)) <= 1 ||
-      Math.abs(b.y + b.h - (env.y + env.h)) <= 1
-    );
+      Math.abs(b.y + b.h - (env.y + env.h)) <= 1;
+    const touchesPerimeterRecess = recessBoxes.some(r => sharedEdgeLength(b, r) >= 1600);
+    return !(touchesOuterEnv || touchesPerimeterRecess);
   });
   hardConstraints.push({
     id: 'EVERY_FLAT_REACHES_FACADE',
@@ -258,7 +261,12 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
   let ventOk = true;
   let ventDetail = 'no mandatory ventilation strategy was stated';
   if (requiredVent === 'CENTRAL_COURTYARD') {
-    const courts = partition.shaftBoxes.filter((_, i) => partition.shaftRoles[i] === 'OPEN_TO_SKY_VOID');
+    const courts = partition.shaftBoxes.filter(
+      (b, i) =>
+        partition.shaftRoles[i] === 'OPEN_TO_SKY_VOID' &&
+        !isPerimeterRecess(partition, i) &&
+        Math.min(b.w, b.h) >= 3000,
+    );
     const central = courts.filter(b => {
       const fx = (b.x + b.w / 2 - env.x) / env.w;
       const fy = (b.y + b.h / 2 - env.y) / env.h;
@@ -277,6 +285,14 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     ventDetail = ventOk
       ? 'no open-to-sky (OTS) void is present, honouring perimeter-only / NO OTS requirement'
       : `the brief prohibits OTS voids, but ${(otsArea / 1_000_000).toFixed(1)} m2 of OPEN_TO_SKY_VOID is present`;
+  } else if (program.preferences.ventilatedCentralOtsShafts) {
+    const anyOts = partition.shaftBoxes.filter(
+      (_, i) => partition.shaftRoles[i] === 'OPEN_TO_SKY_VOID',
+    );
+    ventOk = anyOts.length > 0;
+    ventDetail = ventOk
+      ? `${anyOts.length} ventilated OTS shaft(s)/court(s) present`
+      : 'the brief requests ventilated central OTS shafts; this layout has none';
   }
   hardConstraints.push({ id: 'REQUIRED_VENTILATION_STRATEGY_HONOURED', satisfied: ventOk, detail: ventDetail });
 
@@ -416,17 +432,17 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     explanation: `stairs and lifts occupy ${(coreShare * 100).toFixed(1)}% of the envelope (${(coreArea / 1_000_000).toFixed(1)} m2)`,
   });
 
-  // Room proportion: habitable rooms should not be slivers.
-  const ratios = habitable.map(r => {
+  // Room proportion: habitable rooms should not be slivers, and bedrooms must have >= 3,000 mm clear width.
+  const badProportionRooms = habitable.filter(r => {
     const long = Math.max(r.rect.width, r.rect.height);
     const short = Math.min(r.rect.width, r.rect.height);
-    return short > 0 ? long / short : 99;
-  });
-  const badRatios = ratios.filter(r => r > 2.2).length;
+    const ratio = short > 0 ? long / short : 99;
+    return ratio > 2.2 || (isBed(r) && short < 3000);
+  }).length;
   objectives.push({
     id: 'ROOM_PROPORTION',
-    score: ratios.length ? clamp01(1 - badRatios / ratios.length) : 0,
-    explanation: `${badRatios} of ${ratios.length} habitable rooms exceed a 2.2:1 proportion`,
+    score: habitable.length ? clamp01(1 - badProportionRooms / habitable.length) : 0,
+    explanation: `${badProportionRooms} of ${habitable.length} habitable rooms violate a 2.2:1 proportion or 3.0 m bedroom width`,
   });
 
   // Preference satisfaction: how many soft preferences the geometry honours.
@@ -539,3 +555,9 @@ export function explainRanking(better: CandidateScore, worse: CandidateScore): s
     : `Both layouts score equally on the emphasized priorities; the order reflects the overall weighted total ` +
       `(${better.weightedTotal.toFixed(3)} against ${worse.weightedTotal.toFixed(3)}) and is not a strong preference.`;
 }
+
+export {
+  evaluateArchitecturalComplianceScore,
+  type ArchitecturalComplianceReport,
+  type ArchitecturalComplianceCategoryScore,
+} from '../compliance/architectural-compliance-score';

@@ -23,6 +23,7 @@ import {
   createConnectingDoor,
   sliceFlatRooms,
   type Box2D as SnapperBox,
+  type RoomSlicingArchetypeId,
 } from '../interpretation/space-filling-snapper';
 import type { ArchitecturalPlacement } from '../interpretation/architectural-placement';
 import type {
@@ -71,6 +72,7 @@ export interface AssembleInput {
   readonly manifest?: DynamicApartmentManifest;
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly rawRooms?: readonly ExtractedRoom[];
+  readonly archetype?: RoomSlicingArchetypeId;
 }
 
 export interface AssembledPlan {
@@ -154,6 +156,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       corridorBox: asSnapper(localCorridor),
       envelope: asSnapper(localEnvelope),
       placement,
+      archetype: input.archetype,
     });
 
     // Carry rooms back into world coordinates.
@@ -213,9 +216,8 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     if (entry && entry.shared > 0) {
       const target =
         finalRooms.find(r => r.type === 'living' && sharedEdgeLength(rectToBox(r.rect), entry.c.box) >= 1250)
-        ?? finalRooms.find(r => r.type === 'dining' && sharedEdgeLength(rectToBox(r.rect), entry.c.box) >= 1250)
-        ?? finalRooms.find(r => sharedEdgeLength(rectToBox(r.rect), entry.c.box) >= 1250
-          && (r.type === 'living' || r.type === 'dining' || r.type === 'corridor'));
+        ?? finalRooms.find(r => r.type === 'foyer' && sharedEdgeLength(rectToBox(r.rect), entry.c.box) >= 1250)
+        ?? finalRooms.find(r => r.type === 'dining' && sharedEdgeLength(rectToBox(r.rect), entry.c.box) >= 1250);
 
       const door = target
         ? createConnectingDoor(
@@ -273,13 +275,18 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
 
   const shafts: ApartmentCoreElement[] = partition.shaftBoxes.map((b, i) => {
     const role: ShaftRole = partition.shaftRoles[i] ?? 'SERVICE_SHAFT';
+    const tags = partition.shaftTags?.[i];
+    const isPerimeterRecess = tags?.includes('recess:perimeter');
     return {
       id: `core_shaft_${i + 1}`,
       architecturalRole: role,
-      name: role === 'OPEN_TO_SKY_VOID'
-        ? 'Open-to-Sky Court / Light and Air Void'
-        : `MEP / Plumbing Duct 0${i + 1}`,
+      name: isPerimeterRecess
+        ? 'Perimeter Courtyard Setback Recess'
+        : role === 'OPEN_TO_SKY_VOID'
+          ? 'Open-to-Sky Court / Light and Air Void'
+          : `MEP / Plumbing Duct 0${i + 1}`,
       rect: boxToRect(b),
+      ...(tags ? { tags } : {}),
       assignedFlatId: null,
     };
   });
@@ -417,7 +424,11 @@ function serviceBandEnvelope(
  * abuts the neighbouring flat, not the outside. So the face the balcony sits on
  * is identified first, then checked against the corresponding outline face.
  */
-function projectsToOutsideFace(balcony: Box2D, flat: Box2D, outline: Box2D): boolean {
+function projectsToOutsideFace(
+  balcony: Box2D,
+  flat: Box2D,
+  outline: Box2D,
+): boolean {
   const near = (a: number, b: number) => Math.abs(a - b) <= 1;
 
   // A corner balcony can touch two faces. An internal first face must not

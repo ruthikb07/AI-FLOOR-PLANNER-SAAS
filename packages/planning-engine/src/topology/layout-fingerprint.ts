@@ -169,7 +169,9 @@ export function layoutFingerprint(
 
   // ── Mirror-invariant canonical form ─────────────────────────────────────
   // Take the lexicographic minimum over all eight dihedral views, so a plan
-  // and its mirror share a canonical fingerprint.
+  // and its mirror share a canonical fingerprint. Include massingShape so
+  // distinctly shaped macro building footprints never collide.
+  const massingShape = partition.massingShape ?? 'COMPACT_DOUBLE_LOADED';
   const views: string[] = [];
   for (let v = 0; v < D4_NINTH_MAPS.length; v++) {
     const nmap = D4_NINTH_MAPS[v]!;
@@ -183,7 +185,7 @@ export function layoutFingerprint(
       })
       .sort()
       .join(',');
-    views.push(`${adjacency}||${core}|${dirs}||${zoning}`);
+    views.push(`${massingShape}||${adjacency}||${core}|${dirs}||${zoning}`);
   }
   views.sort();
   const canonical = views[0]!;
@@ -305,6 +307,11 @@ export function compareLayouts(
   }
   if (zoningDistance >= DIVERSITY_THRESHOLDS.zoningDistance) {
     routes.push(`public/private zoning differs by ${(zoningDistance * 100).toFixed(0)}%`);
+  }
+  const shapeA = a.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED';
+  const shapeB = b.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED';
+  if (shapeA !== shapeB) {
+    routes.push(`building massing shape differs (${shapeA} vs ${shapeB})`);
   }
 
   // A mirror image is never two designs, whatever the raw numbers say.

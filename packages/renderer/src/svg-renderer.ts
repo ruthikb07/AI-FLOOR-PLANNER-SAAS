@@ -253,10 +253,11 @@ function renderSiteZones(building: Building, transform: ViewTransform): string {
 
 function renderFloorBoundary(floor: Floor, transform: ViewTransform): string {
   if (floor.boundary.points.length < 3) return '';
+  const hasPerimeterRecess = floor.rooms.some(r => r.tags?.includes('recess:perimeter'));
   const points = polygonToSvgPoints(floor.boundary, transform);
 
   return `<g class="layer-floor" data-layer="${RenderLayer.Floor}">
-  <polygon points="${points}" fill="#ffffff" stroke="#333" stroke-width="0.5"/>
+  <polygon points="${points}" fill="${hasPerimeterRecess ? 'none' : '#ffffff'}" stroke="${hasPerimeterRecess ? 'none' : '#333'}" stroke-width="${hasPerimeterRecess ? '0' : '0.5'}"/>
 </g>`;
 }
 
@@ -305,6 +306,7 @@ function renderRooms(
   const elements: string[] = [];
 
   for (const room of floor.rooms) {
+    if (room.tags?.includes('recess:perimeter')) continue;
     const color = ROOM_COLORS[room.type] ?? '#F5F5F5';
     const points = polygonToSvgPoints(room.boundary, transform);
 
@@ -313,7 +315,7 @@ function renderRooms(
       `<polygon points="${points}" fill="${color}" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="${room.id}" data-architectural-role="${architecturalSpaceRole(room)}"/>`,
     );
     const hatch = room.type === RoomType.Bathroom ? 'wet-hatch'
-      : room.type === RoomType.ServiceShaft ? 'outdoor-hatch'
+      : room.type === RoomType.ServiceShaft || room.type === RoomType.OTS ? 'outdoor-hatch'
       : [RoomType.Balcony, RoomType.Terrace, RoomType.Utility].includes(room.type) ? 'outdoor-hatch' : 'tile-hatch';
     if (!labelsOnly && ![RoomType.Staircase, RoomType.Lift].includes(room.type)) elements.push(`<polygon points="${points}" fill="url(#${hatch})" pointer-events="none"/>`);
 
@@ -327,20 +329,46 @@ function renderRooms(
       if (isVertical) {
         const wellW = Math.max(3, scaleToScreen(150, transform));
         const flightW = (rw - wellW) / 2;
-        const landingH = Math.min(scaleToScreen(1200, transform), rh * 0.35);
-        const flightL = rh - landingH;
-        const treadCount = Math.max(8, Math.min(12, Math.floor(room.height / 250)));
+        const landingH = Math.min(scaleToScreen(1200, transform), rh * 0.28);
+        const flightL = rh - landingH * 2;
+        const startY = rTopLeft.y + landingH;
+        const treadCount = Math.max(8, Math.min(12, Math.floor((room.height * 0.5) / 250)));
         const stepY = flightL / treadCount;
-        for (let i = 1; i < treadCount; i++) {
-          const ty = rTopLeft.y + i * stepY;
+        for (let i = 0; i <= treadCount; i++) {
+          const ty = startY + i * stepY;
           elements.push(
-            `<line x1="${rTopLeft.x.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(rTopLeft.x + flightW).toFixed(1)}" y2="${ty.toFixed(1)}" stroke="#94a3b8" stroke-width="0.6"/>`,
-            `<line x1="${(rTopLeft.x + flightW + wellW).toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(rTopLeft.x + rw).toFixed(1)}" y2="${ty.toFixed(1)}" stroke="#94a3b8" stroke-width="0.6"/>`,
+            `<line x1="${rTopLeft.x.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(rTopLeft.x + flightW).toFixed(1)}" y2="${ty.toFixed(1)}" stroke="#64748b" stroke-width="0.7"/>`,
+            `<line x1="${(rTopLeft.x + flightW + wellW).toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(rTopLeft.x + rw).toFixed(1)}" y2="${ty.toFixed(1)}" stroke="#64748b" stroke-width="0.7"/>`,
           );
         }
+        const f1Cx = rTopLeft.x + flightW / 2;
+        const f2Cx = rTopLeft.x + flightW + wellW + flightW / 2;
         elements.push(
-          `<rect x="${(rTopLeft.x + flightW).toFixed(1)}" y="${rTopLeft.y.toFixed(1)}" width="${wellW.toFixed(1)}" height="${flightL.toFixed(1)}" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="0.5"/>`,
-          `<line x1="${rTopLeft.x.toFixed(1)}" y1="${(rTopLeft.y + flightL).toFixed(1)}" x2="${(rTopLeft.x + rw).toFixed(1)}" y2="${(rTopLeft.y + flightL).toFixed(1)}" stroke="#94a3b8" stroke-width="0.75"/>`,
+          `<rect x="${(rTopLeft.x + flightW).toFixed(1)}" y="${startY.toFixed(1)}" width="${wellW.toFixed(1)}" height="${flightL.toFixed(1)}" fill="#e2e8f0" stroke="#94a3b8" stroke-width="0.6"/>`,
+          `<line class="stair-up-route" x1="${f1Cx.toFixed(1)}" y1="${(startY + flightL * 0.85).toFixed(1)}" x2="${f1Cx.toFixed(1)}" y2="${(startY + flightL * 0.15).toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
+          `<line class="stair-dn-route" x1="${f2Cx.toFixed(1)}" y1="${(startY + flightL * 0.15).toFixed(1)}" x2="${f2Cx.toFixed(1)}" y2="${(startY + flightL * 0.85).toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
+        );
+      } else {
+        const wellH = Math.max(3, scaleToScreen(150, transform));
+        const flightH = (rh - wellH) / 2;
+        const landingW = Math.min(scaleToScreen(1200, transform), rw * 0.25);
+        const flightL = rw - landingW * 2;
+        const startX = rTopLeft.x + landingW;
+        const treadCount = Math.max(8, Math.min(12, Math.floor((room.width * 0.55) / 250)));
+        const stepX = flightL / treadCount;
+        for (let i = 0; i <= treadCount; i++) {
+          const tx = startX + i * stepX;
+          elements.push(
+            `<line x1="${tx.toFixed(1)}" y1="${rTopLeft.y.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(rTopLeft.y + flightH).toFixed(1)}" stroke="#64748b" stroke-width="0.7"/>`,
+            `<line x1="${tx.toFixed(1)}" y1="${(rTopLeft.y + flightH + wellH).toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(rTopLeft.y + rh).toFixed(1)}" stroke="#64748b" stroke-width="0.7"/>`,
+          );
+        }
+        const f1Cy = rTopLeft.y + flightH / 2;
+        const f2Cy = rTopLeft.y + flightH + wellH + flightH / 2;
+        elements.push(
+          `<rect x="${startX.toFixed(1)}" y="${(rTopLeft.y + flightH).toFixed(1)}" width="${flightL.toFixed(1)}" height="${wellH.toFixed(1)}" fill="#e2e8f0" stroke="#94a3b8" stroke-width="0.6"/>`,
+          `<line class="stair-up-route" x1="${(startX + flightL * 0.15).toFixed(1)}" y1="${f1Cy.toFixed(1)}" x2="${(startX + flightL * 0.85).toFixed(1)}" y2="${f1Cy.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
+          `<line class="stair-dn-route" x1="${(startX + flightL * 0.85).toFixed(1)}" y1="${f2Cy.toFixed(1)}" x2="${(startX + flightL * 0.15).toFixed(1)}" y2="${f2Cy.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
         );
       }
     }
@@ -360,13 +388,50 @@ function renderRooms(
       }
     }
 
-    if(labelsOnly && (showLabels||showAreas)) {
-      const annotation=roomAnnotation(room);
-      annotation.lines.forEach((line,i)=>{
-        if((i===0&&!showLabels)||(i===2&&!showAreas))return;
-        const point=worldToScreen({x:annotation.center.x,y:annotation.center.y+(i-(annotation.lines.length-1)/2)*1.65*annotation.height},transform);
-        const height=scaleToScreen(annotation.height,transform);
-        elements.push(`<text x="${point.x}" y="${point.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="${height}" fill="#0f172a" data-room-name="${escapeXml(room.name)}">${escapeXml(line)}</text>`);
+    if (labelsOnly && (showLabels || showAreas)) {
+      const annotation = roomAnnotation(room);
+      let labelCenter = { x: annotation.center.x, y: annotation.center.y };
+      const roomFurn = (floor.furniture ?? []).filter(
+        f => f.roomId === room.id && ['bed', 'king_bed', 'queen_bed', 'single_bed', 'sectional_sofa', 'l_sofa', 'sofa', 'dining_table'].includes(f.type),
+      );
+      if (roomFurn.length > 0 && room.width >= 2600 && room.height >= 2600) {
+        const labelHalfW = Math.min(room.width * 0.35, 950);
+        const labelHalfH = annotation.height * 2.5;
+        const overlapsFurn = (pt: Point) =>
+          roomFurn.some(f => {
+            const isOrth = f.rotationDeg === 90 || f.rotationDeg === 270;
+            const fw = isOrth ? f.depthMm : f.widthMm;
+            const fd = isOrth ? f.widthMm : f.depthMm;
+            return (
+              pt.x + labelHalfW > f.xMm + 80 &&
+              pt.x - labelHalfW < f.xMm + fw - 80 &&
+              pt.y + labelHalfH > f.yMm + 80 &&
+              pt.y - labelHalfH < f.yMm + fd - 80
+            );
+          });
+        if (overlapsFurn(labelCenter)) {
+          const candidates: Point[] = [
+            { x: room.x + room.width * 0.50, y: room.y + room.height * 0.72 },
+            { x: room.x + room.width * 0.50, y: room.y + room.height * 0.28 },
+            { x: room.x + room.width * 0.68, y: room.y + room.height * 0.50 },
+            { x: room.x + room.width * 0.32, y: room.y + room.height * 0.50 },
+            { x: room.x + room.width * 0.66, y: room.y + room.height * 0.68 },
+            { x: room.x + room.width * 0.34, y: room.y + room.height * 0.68 },
+          ];
+          const clearCand = candidates.find(c => !overlapsFurn(c));
+          if (clearCand) labelCenter = clearCand;
+        }
+      }
+      annotation.lines.forEach((line, i) => {
+        if ((i === 0 && !showLabels) || (i === 2 && !showAreas)) return;
+        const point = worldToScreen(
+          { x: labelCenter.x, y: labelCenter.y + (i - (annotation.lines.length - 1) / 2) * 1.65 * annotation.height },
+          transform,
+        );
+        const height = scaleToScreen(annotation.height, transform);
+        elements.push(
+          `<text x="${point.x}" y="${point.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="${height}" fill="#0f172a" paint-order="stroke" stroke="#ffffff" stroke-width="2.2" stroke-opacity="0.88" stroke-linejoin="round" data-room-name="${escapeXml(room.name)}">${escapeXml(line)}</text>`,
+        );
       });
     }
   }
@@ -614,10 +679,37 @@ function renderWindows(floor: Floor, transform: ViewTransform): string {
 
 function renderStairs(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
-  if(floor.canonicalStaircases?.length) {
+  if (floor.canonicalStaircases?.length) {
     for (const stair of floor.canonicalStaircases) {
       const parts = canonicalStairSolids(stair, floor.floorHeight, floor.slabThicknessMm);
-      for (const part of parts.filter(p => floor.floorUse !== 'ROOF' || p.top === 0)) elements.push(`<polygon points="${polygonToSvgPoints(part.boundary,transform)}" fill="none" stroke="#64748b" stroke-width="0.8" data-entity-type="stair" data-stair-part="${part.kind}" data-entity-id="${escapeXml(stair.id)}"/>`);
+      for (const part of parts.filter(p => floor.floorUse !== 'ROOF' || p.top === 0)) {
+        elements.push(`<polygon points="${polygonToSvgPoints(part.boundary, transform)}" fill="none" stroke="#64748b" stroke-width="0.8" data-entity-type="stair" data-stair-part="${part.kind}" data-entity-id="${escapeXml(stair.id)}"/>`);
+      }
+      if (floor.floorUse !== 'ROOF') {
+        const midC = polygonCentroid(stair.midLanding);
+        const flC = stair.floorLanding ? polygonCentroid(stair.floorLanding) : polygonCentroid(stair.polygon);
+        const f1C = polygonCentroid(stair.flight1);
+        const f2C = polygonCentroid(stair.flight2);
+        const dx = midC.x - flC.x;
+        const dy = midC.y - flC.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 100) {
+          const ux = dx / len;
+          const uy = dy / len;
+          const f1Box = polygonBoundingBox(stair.flight1);
+          const runHalf = Math.max(150, (Math.abs(ux) > Math.abs(uy) ? f1Box.width : f1Box.height) * 0.34);
+          const upStart = worldToScreen({ x: f1C.x - ux * runHalf, y: f1C.y - uy * runHalf }, transform);
+          const upEnd = worldToScreen({ x: f1C.x + ux * runHalf, y: f1C.y + uy * runHalf }, transform);
+          const dnStart = worldToScreen({ x: f2C.x + ux * runHalf, y: f2C.y + uy * runHalf }, transform);
+          const dnEnd = worldToScreen({ x: f2C.x - ux * runHalf, y: f2C.y - uy * runHalf }, transform);
+          elements.push(
+            `<line class="stair-up-route" x1="${upStart.x.toFixed(1)}" y1="${upStart.y.toFixed(1)}" x2="${upEnd.x.toFixed(1)}" y2="${upEnd.y.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
+            `<line class="stair-dn-route" x1="${dnStart.x.toFixed(1)}" y1="${dnStart.y.toFixed(1)}" x2="${dnEnd.x.toFixed(1)}" y2="${dnEnd.y.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
+            `<text x="${upStart.x.toFixed(1)}" y="${(upStart.y - 3).toFixed(1)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.5" font-weight="700" fill="#1e293b">UP</text>`,
+            `<text x="${dnStart.x.toFixed(1)}" y="${(dnStart.y - 3).toFixed(1)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.5" font-weight="700" fill="#475569">DN</text>`,
+          );
+        }
+      }
     }
     return `<g class="layer-stairs" data-layer="stairs">${elements.join('')}</g>`;
   }
@@ -722,21 +814,22 @@ function renderDimensions(floor: Floor, building: Building, transform: ViewTrans
     'vertical',
   ));
 
-  // Room dimensions
+  // Room dimensions (placed inside each room near its lower inner margin so they never spill into adjacent rooms)
   for (const room of floor.rooms) {
+    if (room.tags?.includes('recess:perimeter')) continue;
     const sWidth = scaleToScreen(room.width, transform);
     const sHeight = scaleToScreen(room.height, transform);
-    if (sWidth < 45 || sHeight < 32) continue;
+    if (sWidth < 56 || sHeight < 48) continue;
 
-    const roomTopLeft = worldToScreen({ x: room.x, y: room.y + room.height }, transform);
-    const roomTopRight = worldToScreen({ x: room.x + room.width, y: room.y + room.height }, transform);
+    const roomBottomLeft = worldToScreen({ x: room.x, y: room.y + room.height }, transform);
+    const roomBottomRight = worldToScreen({ x: room.x + room.width, y: room.y + room.height }, transform);
 
-    const fontSize = Math.max(6, Math.min(9, scaleToScreen(250, transform)));
-    const midX = (roomTopLeft.x + roomTopRight.x) / 2;
-    const dimY = roomTopLeft.y + 12;
+    const fontSize = Math.max(6, Math.min(8.5, scaleToScreen(220, transform)));
+    const midX = (roomBottomLeft.x + roomBottomRight.x) / 2;
+    const dimY = roomBottomLeft.y - Math.max(5, scaleToScreen(220, transform));
 
     elements.push(
-      `<text x="${midX.toFixed(1)}" y="${dimY.toFixed(1)}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${fontSize.toFixed(1)}" fill="#0066cc">${mmToFtDisplay(room.width)}' × ${mmToFtDisplay(room.height)}'</text>`,
+      `<text x="${midX.toFixed(1)}" y="${dimY.toFixed(1)}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${fontSize.toFixed(1)}" fill="#0066cc" paint-order="stroke" stroke="#ffffff" stroke-width="2" stroke-opacity="0.85">${mmToFtDisplay(room.width)}' × ${mmToFtDisplay(room.height)}'</text>`,
     );
   }
 

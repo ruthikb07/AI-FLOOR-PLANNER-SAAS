@@ -33,13 +33,19 @@ import {
   type ArchitecturalProgram,
 } from './architectural-intent';
 import {
+  BUILDING_MASSING_SHAPES,
   generateTopologyCandidates,
+  type BuildingMassingShape,
   type TopologyCandidate,
   type TopologyFamilyId,
   type TopologyPartition,
   type TopologyRejection,
 } from './topology-families';
 import { assembleStructureFromPartition } from './plan-assembler';
+import {
+  ROOM_SLICING_ARCHETYPES,
+  type RoomSlicingArchetypeId,
+} from '../interpretation/space-filling-snapper';
 import {
   layoutFingerprint,
   selectDistinct,
@@ -86,6 +92,12 @@ export interface GenerateConceptsInput {
   readonly maxCandidates?: number;
   /** Abort generation when it exceeds this budget, in ms. Default 20000. */
   readonly timeBudgetMs?: number;
+  /** Optional room-slicing archetype to differentiate variants across seeds. */
+  readonly preferredArchetype?: RoomSlicingArchetypeId;
+  /** Optional macro building footprint shape to prioritize across seeds/proposals. */
+  readonly preferredMassingShape?: BuildingMassingShape;
+  /** Canonical topology digests or variant IDs rejected from prior generations. */
+  readonly rejectedTopologyHashes?: readonly string[];
 }
 
 export interface RejectedCandidate {
@@ -101,6 +113,10 @@ export interface GenerateConceptsResult {
   readonly program: ArchitecturalProgram;
   readonly concepts: readonly DesignConcept[];
   readonly rejected: readonly RejectedCandidate[];
+  /** Room-slicing archetype applied to all assembled candidates in this run. */
+  readonly archetype?: RoomSlicingArchetypeId;
+  /** Macro building footprint shape of the selected concept. */
+  readonly massingShape?: BuildingMassingShape;
   /** Present when fewer concepts were produced than requested. */
   readonly shortfallExplanation?: string;
   readonly diagnostics: {
@@ -152,10 +168,25 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
   const seed = fnv1a(`${input.seed ?? 1}:${program.intentDigest}:${TOPOLOGY_ENGINE_VERSION}`);
   const random = mulberry32(seed);
 
+  const effectiveArchetype: RoomSlicingArchetypeId =
+    input.preferredArchetype ??
+    (input.seed && input.seed > 1
+      ? ROOM_SLICING_ARCHETYPES[(input.seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
+      : 'CENTRAL_LIVING_SPLIT_BEDROOMS');
+  const effectiveMassingShape: BuildingMassingShape | undefined =
+    input.preferredMassingShape ??
+    program.preferences.preferredMassingShape ??
+    (program.preferences.requestsDifferentShape
+      ? BUILDING_MASSING_SHAPES[(input.seed ?? 1) % BUILDING_MASSING_SHAPES.length]
+      : input.seed && input.seed > 1
+        ? BUILDING_MASSING_SHAPES[(input.seed - 1) % BUILDING_MASSING_SHAPES.length]
+        : undefined);
+
   const { candidates: topologies, rejections } = generateTopologyCandidates({
     envelope: input.envelope,
     flatsPerFloor: input.flatsPerFloor,
     program,
+    enableMacroShapes: Boolean(effectiveMassingShape && effectiveMassingShape !== 'COMPACT_DOUBLE_LOADED'),
   });
 
   const rejected: RejectedCandidate[] = rejections.map((r: TopologyRejection) => ({
@@ -171,6 +202,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     .map(t => ({ t, key: explorationKey(t, program, random()) }))
     .sort((a, b) => a.key - b.key)
     .map(x => x.t);
+  const rejectedHashSet = new Set(input.rejectedTopologyHashes ?? []);
 
   const scored: ScoredCandidate[] = [];
   const failed: ScoredCandidate[] = [];
@@ -207,6 +239,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         manifest: input.manifest,
         unitTypes: input.unitTypes,
         rawRooms: input.rawRooms,
+        archetype: effectiveArchetype,
       });
     } catch (error) {
       rejected.push({
@@ -255,13 +288,41 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
   // that has them. Ranking by weighted score alone would hand the user a plan
   // that silently drops a feature they asked for.
   const wantsBalconies = program.preferences.bedroomBalconies !== 'NONE_REQUESTED';
-  const withBalconies = wantsBalconies
-    ? scored.filter(c => countBedroomBalconies(c.structure) > 0)
+  const wantsAllBalconies = program.preferences.bedroomBalconies === 'ALL_BEDROOMS';
+  const allWithBalconies = wantsAllBalconies
+    ? scored.filter(c => {
+        const beds = countBedrooms(c.structure);
+        return beds > 0 && countBedroomBalconies(c.structure) >= beds;
+      })
     : [];
+  const withBalconies = wantsBalconies
+    ? scored.filter(c => countBedroomBalconies(c.structure) > 0 && !allWithBalconies.includes(c))
+    : [];
+  const withoutBalconies = scored.filter(
+    c => !allWithBalconies.includes(c) && !withBalconies.includes(c),
+  );
 
-  const ranked = withBalconies.length
-    ? [...rankCandidates(withBalconies), ...rankCandidates(scored.filter(c => !withBalconies.includes(c)))]
-    : rankCandidates(scored);
+  const basePool = [
+    ...rankCandidates(allWithBalconies),
+    ...rankCandidates(withBalconies),
+    ...rankCandidates(withoutBalconies),
+  ];
+  const matchingShape = effectiveMassingShape
+    ? basePool.filter(c => (c.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED') === effectiveMassingShape)
+    : [];
+  const baseRanked = matchingShape.length
+    ? [...matchingShape, ...basePool.filter(c => !matchingShape.includes(c))]
+    : basePool;
+  const isRejectedCandidate = (c: ScoredCandidate) =>
+    rejectedHashSet.has(c.fingerprint.digests.canonical)
+    || rejectedHashSet.has(c.fingerprint.canonical)
+    || rejectedHashSet.has(c.topology.variantId);
+  const freshRanked = rejectedHashSet.size > 0
+    ? baseRanked.filter(c => !isRejectedCandidate(c))
+    : baseRanked;
+  const ranked = freshRanked.length > 0
+    ? [...freshRanked, ...baseRanked.filter(c => isRejectedCandidate(c))]
+    : baseRanked;
   const { selected, suppressed } = selectDistinct(ranked, conceptLimit);
 
   for (const s of suppressed) {
@@ -310,6 +371,8 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     program,
     concepts,
     rejected,
+    archetype: effectiveArchetype,
+    massingShape: concepts[0]?.partition.massingShape ?? effectiveMassingShape,
     shortfallExplanation,
     diagnostics: {
       engineVersion: TOPOLOGY_ENGINE_VERSION,
@@ -395,6 +458,17 @@ function describeShortfall(
 
   parts.push('No alternative has been invented to reach the requested count.');
   return parts.join(' ');
+}
+
+/** Total number of bedrooms across all flats in this plan. */
+function countBedrooms(structure: ApartmentPlanStructure): number {
+  let count = 0;
+  for (const flat of structure.flats) {
+    for (const room of flat.rooms) {
+      if (room.type === 'bedroom') count++;
+    }
+  }
+  return count;
 }
 
 /** How many bedrooms in this plan have an attached balcony. */

@@ -70,11 +70,16 @@ import {
   macroLobbyBoxes,
   type Box2D,
   type MacroPartition,
+  type RoomSlicingArchetypeId,
 } from '../interpretation/space-filling-snapper';
 import { selectProductionTopology, type SelectedTopology } from '../topology/production-bridge';
 import { assembleStructureFromPartition } from '../topology/plan-assembler';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { GeometryValidator, validateAndRepairBuildingGeometry } from '../validator/geometry-validator';
+import {
+  evaluateArchitecturalComplianceScore,
+  type ArchitecturalComplianceReport,
+} from '../compliance/architectural-compliance-score';
 
 // ─── Stack Parameters & Height Solver ────────────────────────────────────────
 
@@ -187,7 +192,7 @@ function createBoxRoom(params: {
     daylightRequirement: 'medium' as never,
     privacyRequirement: 'medium' as never,
     ventilationRequired: true,
-    isFixed: true,
+    isFixed: !params.unitId,
     spaceUse: params.spaceUse,
     planningZone: params.planningZone,
     unitId: params.unitId,
@@ -634,8 +639,33 @@ export function deriveCleanStructuralColumns(
     }
   }
 
-  // 3. Filter out any points on outer balcony corners (cantilevered slab)
-  const nonBalconyPoints = rawPoints.filter(p => !isOuterBalconyCorner(p));
+  // 3. Filter out points on outer balcony corners (cantilevered slab) or strictly inside/only-touching OPEN_TO_SKY_VOID cutouts
+  const roomToBox = (r: Room) =>
+    r.boundary?.points?.length
+      ? {
+          x: Math.min(...r.boundary.points.map(pt => pt.x)),
+          y: Math.min(...r.boundary.points.map(pt => pt.y)),
+          w: Math.max(...r.boundary.points.map(pt => pt.x)) - Math.min(...r.boundary.points.map(pt => pt.x)),
+          h: Math.max(...r.boundary.points.map(pt => pt.y)) - Math.min(...r.boundary.points.map(pt => pt.y)),
+        }
+      : { x: r.x, y: r.y, w: r.width, h: r.height };
+  const voidBoxes = floor.rooms
+    .filter(r => r.architecturalRole === 'OPEN_TO_SKY_VOID' && r.tags?.includes('recess:perimeter'))
+    .map(roomToBox);
+  const builtBoxes = floor.rooms
+    .filter(r => r.architecturalRole !== 'OPEN_TO_SKY_VOID')
+    .map(roomToBox);
+  const inVoidOnly = (pt: { x: number; y: number }): boolean => {
+    if (!voidBoxes.length) return false;
+    if (voidBoxes.some(b => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)) {
+      return true;
+    }
+    if (!builtBoxes.length) return false;
+    return !builtBoxes.some(
+      b => pt.x >= b.x - 150 && pt.x <= b.x + b.w + 150 && pt.y >= b.y - 150 && pt.y <= b.y + b.h + 150,
+    );
+  };
+  const nonBalconyPoints = rawPoints.filter(p => !isOuterBalconyCorner(p) && !inVoidOnly(p));
 
   // 4. Deduplicate: merge any points closer than 500 mm
   const deduplicated: Array<{ x: number; y: number }> = [];
@@ -815,7 +845,7 @@ export function solveStiltParkingSheet(
       spaceUse: 'SERVICE',
       box: macro.shaftBoxes[s]!,
       floorId,
-      tags: ['core:shaft'],
+      tags: ['core:shaft', ...(macro.shaftTags?.[s] ?? [])],
     });
     rooms.push(shaft);
   }
@@ -834,6 +864,7 @@ export function solveStiltParkingSheet(
 
   const grandLobby = createBoxRoom({
     id: 'stilt__grand_lobby',
+    architecturalRole: 'ENCLOSED_HABITABLE',
     name: 'Grand Entrance Double-Height Lobby',
     type: RoomType.Foyer,
     spaceUse: 'COMMON',
@@ -1047,6 +1078,34 @@ export function solveStiltParkingSheet(
   const stiltBoundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
   const walls = generateApartmentWalls(rooms, floorId, stiltBoundary, true, config.architectureOptions?.guardHeightMm);
 
+  // Main Ground / Stilt Entrance Door on Grand Entrance Lobby exterior facade
+  const lobbyExtWalls = walls
+    .filter(w => w.roomIds.length === 1 && w.roomIds.includes(grandLobby.id) && w.boundaryRole === 'FULL_HEIGHT_WALL')
+    .sort((a, b) => Math.hypot(b.endPoint.x - b.startPoint.x, b.endPoint.y - b.startPoint.y) - Math.hypot(a.endPoint.x - a.startPoint.x, a.endPoint.y - a.startPoint.y));
+  const mainEntryWall = lobbyExtWalls[0];
+  if (mainEntryWall) {
+    const wallLen = Math.hypot(mainEntryWall.endPoint.x - mainEntryWall.startPoint.x, mainEntryWall.endPoint.y - mainEntryWall.startPoint.y);
+    const entryDoorW = wallLen >= 1800 ? 1500 : wallLen >= 1300 ? 1050 : 0;
+    const entryPos = {
+      x: snap10((mainEntryWall.startPoint.x + mainEntryWall.endPoint.x) / 2),
+      y: snap10((mainEntryWall.startPoint.y + mainEntryWall.endPoint.y) / 2),
+    };
+    if (entryDoorW > 0 && openingFitsApartmentWall(mainEntryWall, entryPos, entryDoorW)) {
+      doors.push({
+        id: 'door_stilt_grand_lobby_main_entrance',
+        floorId,
+        wallId: mainEntryWall.id,
+        position: entryPos,
+        width: entryDoorW,
+        height: 2100,
+        type: entryDoorW >= 1500 ? DoorType.Double : DoorType.Single,
+        swingDirection: SwingDirection.Inward,
+        connectsRooms: [grandLobby.id, 'EXTERIOR'],
+      });
+      (mainEntryWall as { hasOpening: boolean }).hasOpening = true;
+    }
+  }
+
   // 5. Host-fitting Open Passage Walkthrough for Staircase 01 (Clean 1200mm, Zero Swinging Door)
   const dStair1 = createConnectingDoor('door_stilt_stair1', roomToBox(stiltLobby), roomToBox(stair1), 1200, { doorType: 'open_passage' });
   if (dStair1) {
@@ -1178,6 +1237,7 @@ export function solveTypicalFloorSheet(
         program: topology.result.program,
         manifest,
         unitTypes: (config.units ?? []).map(u => u.bhkType),
+        archetype: topology.result.archetype ?? (config.preferredArchetype as RoomSlicingArchetypeId | undefined),
       }).structure
     : solveOrthogonalSpaceFillingApartment({
         aiPrompt: config.aiPrompt,
@@ -1200,7 +1260,7 @@ export function solveTypicalFloorSheet(
 
   const rooms: Room[] = [];
   const addRoom = (
-    r: { id: string; name: string; architecturalRole?: Room['architecturalRole']; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string },
+    r: { id: string; name: string; architecturalRole?: Room['architecturalRole']; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string; tags?: readonly string[] },
     defaultType: RoomType,
     unitId?: string,
   ) => {
@@ -1216,7 +1276,7 @@ export function solveTypicalFloorSheet(
         box: { x: r.rect.x, y: r.rect.y, w: r.rect.width, h: r.rect.height },
         floorId,
         unitId,
-        tags: [`apt-room:${r.id}`],
+        tags: [`apt-room:${r.id}`, ...(r.tags ?? [])],
       }),
     );
   };
@@ -1234,8 +1294,8 @@ export function solveTypicalFloorSheet(
   }
   for (const el of structure.lifts) addRoom(el, RoomType.Lift);
   for (const el of structure.stairs) addRoom(el, RoomType.Staircase);
-  for (const el of structure.lobbies) addRoom(el, RoomType.Corridor);
-  for (const el of structure.corridors) addRoom(el, RoomType.Corridor);
+  for (const el of structure.lobbies) addRoom({ ...el, tags: [...(el.tags ?? []), 'core:lobby'] }, RoomType.Corridor);
+  for (const el of structure.corridors) addRoom({ ...el, tags: [...(el.tags ?? []), 'core:corridor'] }, RoomType.Corridor);
   for (const el of structure.shafts) addRoom(el, RoomType.ServiceShaft);
 
   const boundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
@@ -1680,7 +1740,7 @@ export function solveTerraceSheet(
         spaceUse: 'SERVICE',
         box: macro.shaftBoxes[s]!,
         floorId,
-        tags: ['terrace:core'],
+        tags: ['terrace:core', ...(macro.shaftTags?.[s] ?? [])],
       }),
     );
   }
@@ -1945,12 +2005,18 @@ export function generateApartmentProjectSchedule(params: {
     }
     areaTargetDiagnostic = {
       scope,
+      requestedAreaSqFt: targetSqFt,
+      requestedAreaM2: requestedM2,
+      achievedAreaSqFt: achievedSqFt,
+      achievedAreaM2: achievedM2,
+      minFeasibleGrossAreaM2: minHabitableGrossM2,
+      minFeasibleGrossAreaSqFt: Math.round(minHabitableGrossM2 * 10.7639),
       requestedSqFt: targetSqFt,
       requestedM2,
       achievedSqFt,
       achievedM2,
-      status,
       minimumFeasibleGrossM2: minHabitableGrossM2,
+      status,
       explanation,
     };
   }
@@ -1998,7 +2064,11 @@ function namespaceFloorEntities(floor: Floor): Floor {
 export function solveMultiSheetApartmentProject(
   rawConfig: MultiSheetApartmentConfig,
   onStage?: (stage: 'UNIT_SPATIAL_SLICING' | 'WALL_AND_OPENING_TOPOLOGY' | 'COLUMN_AND_BEAM_GRID') => void,
-  recovery?: { readonly legacyOnly: boolean },
+  recovery?: {
+    readonly legacyOnly?: boolean;
+    readonly skipComplianceGate?: boolean;
+    readonly complianceAttempt?: number;
+  },
 ): MultiSheetApartmentResult {
   const plotWidthMm = rawConfig.plotWidthMm ?? (rawConfig as any).siteWidthMm ?? 50000;
   const plotDepthMm = rawConfig.plotDepthMm ?? (rawConfig as any).siteDepthMm ?? 50000;
@@ -2172,6 +2242,9 @@ export function solveMultiSheetApartmentProject(
     unitTypes: (config.units ?? []).map(unit => unit.bhkType),
     aiPrompt: effectiveAiPrompt,
     seed: config.generationSeed,
+    preferredArchetype: config.preferredArchetype as RoomSlicingArchetypeId | undefined,
+    preferredMassingShape: config.buildingMassingShape,
+    rejectedTopologyHashes: config.rejectedTopologyHashes,
   });
 
   const macro = topology
@@ -2315,11 +2388,22 @@ export function solveMultiSheetApartmentProject(
     metadata: {
       projectId: config.projectId ?? 'apartment_project',
       generationBrief: {
-        source: 'DETERMINISTIC',
+        source: config.aiTelemetryOverride?.geminiInvoked ? 'HYBRID' : 'DETERMINISTIC',
         aiPrompt: config.aiPrompt,
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
-        aiTelemetry: {
+        ...(config.generationSeed !== undefined ? { generationSeed: config.generationSeed } : {}),
+        ...(topology?.chosen.fingerprint.digests.canonical ? { topologyHash: topology.chosen.fingerprint.digests.canonical } : {}),
+        ...(topology?.result.archetype
+          ? { archetype: topology.result.archetype }
+          : config.preferredArchetype
+            ? { archetype: config.preferredArchetype }
+            : {}),
+        ...((topology?.chosen.partition.massingShape ?? topology?.result.massingShape ?? config.buildingMassingShape)
+          ? { buildingMassingShape: topology?.chosen.partition.massingShape ?? topology?.result.massingShape ?? config.buildingMassingShape }
+          : {}),
+        ...(config.aiProposal ? { aiProposal: config.aiProposal } : {}),
+        aiTelemetry: config.aiTelemetryOverride ?? {
           geminiInvoked: false,
           provider: 'deterministic-rule-engine',
           referenceImageUsedForGeometry: false,
@@ -2384,19 +2468,103 @@ export function solveMultiSheetApartmentProject(
     hasRefugeFloor: stackParams.requiresRefugeFloor,
     refugeFloorLevels: stackParams.refugeFloorLevels,
   };
+  const attachCompliance = (
+    res: MultiSheetApartmentResult,
+    attemptNum: number,
+  ): { result: MultiSheetApartmentResult; compliance: ArchitecturalComplianceReport } => {
+    const compliance = evaluateArchitecturalComplianceScore(res.building, {
+      config,
+      permissibleEnvelopeMm: permissibleEnvelope,
+      attemptCount: attemptNum,
+    });
+    const nextBuilding: Building = {
+      ...res.building,
+      complianceRating: compliance,
+      metadata: {
+        ...res.building.metadata,
+        complianceScore: compliance.score,
+        complianceReport: compliance,
+        complianceRating: compliance,
+      } as Building['metadata'],
+    } as Building;
+    return {
+      result: { ...res, building: nextBuilding },
+      compliance,
+    };
+  };
+
+  let { result: finalResult, compliance: finalCompliance } = attachCompliance(
+    result,
+    (recovery?.complianceAttempt ?? 0) + 1,
+  );
+
+  // Bounded Auto-Regeneration Quality Gate Loop (up to 12 total attempts):
+  // If complianceScore < 85 or redConflictCount > 0, automatically reject the candidate,
+  // append its topology hash to rejectedTopologyHashes, mutate the seed, and regenerate.
+  if (
+    !finalCompliance.passed &&
+    !recovery?.legacyOnly &&
+    !recovery?.skipComplianceGate &&
+    (recovery?.complianceAttempt ?? 0) === 0
+  ) {
+    const baseSeed = Math.max(1, Math.floor(Number(rawConfig.generationSeed ?? 1)));
+    const rejectedHashes = new Set<string>(rawConfig.rejectedTopologyHashes ?? []);
+    const initialHash = (finalResult.building.metadata as Record<string, unknown>)?.topologyHash;
+    if (typeof initialHash === 'string' && initialHash.length > 0) {
+      rejectedHashes.add(initialHash);
+    }
+
+    for (let attempt = 1; attempt < 12; attempt++) {
+      try {
+        const nextRaw = solveMultiSheetApartmentProject(
+          {
+            ...rawConfig,
+            generationSeed: baseSeed + attempt,
+            rejectedTopologyHashes: [...rejectedHashes],
+          },
+          undefined,
+          {
+            legacyOnly: false,
+            skipComplianceGate: true,
+            complianceAttempt: attempt,
+          },
+        );
+        const { result: nextEvaluated, compliance: nextCompliance } = attachCompliance(nextRaw, attempt + 1);
+        const nextHash = (nextEvaluated.building.metadata as Record<string, unknown>)?.topologyHash;
+        if (typeof nextHash === 'string' && nextHash.length > 0) {
+          rejectedHashes.add(nextHash);
+        }
+
+        const isBetter =
+          nextCompliance.score > finalCompliance.score ||
+          (nextCompliance.score === finalCompliance.score &&
+            nextCompliance.redConflictCount < finalCompliance.redConflictCount);
+        if (isBetter) {
+          finalResult = nextEvaluated;
+          finalCompliance = nextCompliance;
+        }
+        if (nextCompliance.passed) {
+          return nextEvaluated;
+        }
+      } catch {
+        // Continue trying remaining seeds
+      }
+    }
+  }
+
   if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly) {
     // One bounded comparison after repair. Never replace a previously conserved
     // solution with an unassigned/overlapping candidate solely to avoid fallback.
     try {
-      const legacy = solveMultiSheetApartmentProject(rawConfig, undefined, { legacyOnly: true });
+      const legacy = solveMultiSheetApartmentProject(rawConfig, undefined, { legacyOnly: true, skipComplianceGate: true });
       const quality = (r: MultiSheetApartmentResult) => [
         r.sheets.filter(s => !s.audit.isPlanarConserved).length,
         r.generationReport?.violations.filter(v => v.severity === 'CRITICAL').length ?? 0,
         r.generationReport?.violations.filter(v => v.source !== 'TOPOLOGY' && v.source !== 'GENERATION').length ?? 0,
       ];
-      const candidateQuality = quality(result), legacyQuality = quality(legacy);
+      const candidateQuality = quality(finalResult), legacyQuality = quality(legacy);
       const differing = candidateQuality.findIndex((v, i) => v !== legacyQuality[i]);
-      const balconyRegression = result.schedule.flatSchedule.some((flat, i) =>
+      const balconyRegression = finalResult.schedule.flatSchedule.some((flat, i) =>
         config.units?.[i]?.hasUtilityBalcony && flat.balconyAreaM2 < (legacy.schedule.flatSchedule[i]?.balconyAreaM2 ?? 0));
       if (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!)) {
         const report = legacy.generationReport!;
@@ -2405,9 +2573,13 @@ export function solveMultiSheetApartmentProject(
           description: `Repaired ${topology.chosen.familyId}/${topology.chosen.variantId} scored ${candidateQuality.join('/')} versus legacy ${legacyQuality.join('/')} (failed sheet ledgers / critical findings / final findings); requested balcony area regression=${balconyRegression}. Legacy retained.`,
           elementIds: [], rank: report.violations.length + 1,
         }] };
-        return { ...legacy, generationReport: updated, building: { ...legacy.building, metadata: { ...legacy.building.metadata, generationReport: updated } } };
+        const { result: legacyWithCompliance } = attachCompliance(
+          { ...legacy, generationReport: updated, building: { ...legacy.building, metadata: { ...legacy.building.metadata, generationReport: updated } } },
+          finalCompliance.attemptCount ?? 1,
+        );
+        return legacyWithCompliance;
       }
     } catch { /* Keep the reviewable repaired candidate if the legacy attempt fails. */ }
   }
-  return result;
+  return finalResult;
 }

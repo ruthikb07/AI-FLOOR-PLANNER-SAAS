@@ -26,6 +26,8 @@ function createPhase0Config(overrides: Partial<MultiSheetApartmentConfig> = {}):
     plotDepthMm: 40_000,
     roadWidthMm: 18_000,
     roadAccessSides: [Direction.South],
+    lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT',
+    jurisdiction: 'pune_pmc',
     setbacksMm: { front: 4_500, rear: 3_000, left: 3_000, right: 3_000 },
     numTypicalFloors: 5,
     verticalStackType: 'STILT_PLUS_N',
@@ -36,6 +38,34 @@ function createPhase0Config(overrides: Partial<MultiSheetApartmentConfig> = {}):
       { unitIndex: 3, bhkType: '2BHK', targetCarpetSqFt: 850, hasUtilityBalcony: true },
       { unitIndex: 4, bhkType: '2BHK', targetCarpetSqFt: 850, hasUtilityBalcony: true },
     ],
+    siteAmenities: {
+      securityCabin: true,
+      landscapeGardenRos: true,
+      childrenPlayTotLot: true,
+      seniorCitizenSitout: true,
+      transformerDgYard: true,
+      ugwtPumpRoom: true,
+      stpPlant: true,
+      owcWasteYard: true,
+      rainwaterHarvestingPits: true,
+      evChargingBays: true,
+    },
+    stiltAmenities: {
+      grandEntranceLobby: true,
+      societyOffice: true,
+      fitnessGymnasium: true,
+      multipurposeHall: true,
+      meterBmsRoom: true,
+      driverStaffToilet: true,
+    },
+    terraceAmenities: {
+      stairMumtyHeadroom: true,
+      liftMachineRoom: true,
+      overheadWaterTank: true,
+      solarPvArray: true,
+      terraceYogaDeck: true,
+    },
+    parkingMode: 'STILT_AND_SURFACE',
     aiPrompt: BASE_PHASE0_PROMPT,
     ...overrides,
   };
@@ -108,9 +138,9 @@ describe('RH Phase 0 — Reproducible Test Scenario & Controlled Repairs', () =>
 
     expect(diag).toBeDefined();
     expect(diag!.scope).toBe('GROSS_FLOOR_AREA');
-    expect(diag!.requestedSqFt).toBe(2000);
+    expect(diag!.requestedAreaSqFt).toBe(2000);
     expect(diag!.status).toBe('INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE');
-    expect(diag!.achievedM2).toBeGreaterThanOrEqual(diag!.minimumFeasibleGrossM2);
+    expect(diag!.achievedAreaM2).toBeGreaterThanOrEqual(diag!.minFeasibleGrossAreaM2 ?? 0);
 
     const typicalFloor = result.building.floors.find(f => f.floorUse === 'RESIDENTIAL')!;
     // Verify NO OTS (zero OPEN_TO_SKY_VOID rooms)
@@ -162,8 +192,8 @@ describe('RH Phase 0 — Reproducible Test Scenario & Controlled Repairs', () =>
     expect(diag).toBeDefined();
     expect(diag!.scope).toBe('FLOOR_TOTAL_CARPET');
     expect(diag!.status).toBe('ACHIEVED');
-    expect(diag!.achievedM2).toBeGreaterThan(165);
-    expect(diag!.achievedM2).toBeLessThan(215);
+    expect(diag!.achievedAreaM2).toBeGreaterThan(165);
+    expect(diag!.achievedAreaM2).toBeLessThan(215);
 
     // Every flat on the first residential floor has private bedroom balconies
     const balcSchedule = (result.building.metadata as Record<string, any>)?.bedroomBalconySchedule as Array<{
@@ -199,8 +229,8 @@ describe('RH Phase 0 — Reproducible Test Scenario & Controlled Repairs', () =>
 
     expect(largeDiag.scope).toBe('PER_APARTMENT_CARPET');
     expect(largeDiag.status).toBe('ACHIEVED');
-    expect(largeDiag.achievedM2).toBeGreaterThan(165);
-    expect(largeDiag.achievedM2).toBeLessThan(208);
+    expect(largeDiag.achievedAreaM2).toBeGreaterThan(165);
+    expect(largeDiag.achievedAreaM2).toBeLessThan(208);
     expect(largeResult.schedule.overallDeltaMm2).toBeLessThan(0.001);
 
     // On a smaller plot (30m x 25m), it utilizes 100% of the permissible envelope and reports CLAMPED_TO_ENVELOPE_MAX

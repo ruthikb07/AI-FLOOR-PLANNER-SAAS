@@ -40,7 +40,20 @@ import {
   splitX,
   splitY,
 } from './rect-frame';
+import type { BuildingMassingShape } from '@ai-floor-planner/core';
 import type { ArchitecturalProgram } from './architectural-intent';
+
+export type { BuildingMassingShape };
+
+export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
+  'COMPACT_DOUBLE_LOADED',
+  'H_SHAPE_WING',
+  'U_SHAPE_COURTYARD',
+  'L_SHAPE_CORNER',
+  'CRUCIFORM_PLUS',
+  'PINWHEEL_CLUSTER',
+  'STEPPED_OFFSET_BLOCK',
+] as const;
 
 const snap10 = (v: number): number => Math.round(v / 10) * 10;
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
@@ -140,6 +153,10 @@ export interface TopologyPartition {
   readonly stairBoxes: readonly Box2D[];
   readonly shaftBoxes: readonly Box2D[];
   readonly shaftRoles: readonly ShaftRole[];
+  /** Optional semantic tags aligned 1:1 with shaftBoxes (e.g. ['recess:perimeter'], ['shaft:ots']). */
+  readonly shaftTags?: readonly (readonly string[])[];
+  /** Macro building footprint silhouette represented by this partition. */
+  readonly massingShape?: BuildingMassingShape;
   /** Bounding region(s) occupied by vertical circulation, for reporting. */
   readonly coreBoxes: readonly Box2D[];
 }
@@ -148,6 +165,7 @@ export interface TopologyContext {
   readonly envelope: Box2D;
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly program: ArchitecturalProgram;
+  readonly enableMacroShapes?: boolean;
 }
 
 export interface TopologyCandidate {
@@ -355,6 +373,8 @@ interface CoreBandOptions {
   readonly liftsAtLowSide: boolean;
   /** Prefer leftover band area to read as an open-to-sky void. */
   readonly preferOts: boolean;
+  /** Allow compact (1,500–2,400 x 2,400–3,600 mm) ventilated central OTS shafts in the core spine. */
+  readonly preferCompactOts?: boolean;
   /** Explicitly prohibit OPEN_TO_SKY_VOID in the core band (honours NO OTS). */
   readonly noOts?: boolean;
   /** Override lift car count when the brief explicitly requests a single lift. */
@@ -376,6 +396,7 @@ interface CoreBandResult {
   readonly corridorBoxes: Box2D[];
   readonly shaftBoxes: Box2D[];
   readonly shaftRoles: ShaftRole[];
+  readonly shaftTags: (readonly string[])[];
   readonly reasons: string[];
 }
 
@@ -434,7 +455,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const out = (b: Box2D): Box2D => (wide ? transpose(b) : b);
 
   const empty: CoreBandResult = {
-    stairBoxes: [], liftBoxes: [], lobbyBoxes: [], corridorBoxes: [], shaftBoxes: [], shaftRoles: [], reasons: [],
+    stairBoxes: [], liftBoxes: [], lobbyBoxes: [], corridorBoxes: [], shaftBoxes: [], shaftRoles: [], shaftTags: [], reasons: [],
   };
 
   const reasons: string[] = [];
@@ -510,6 +531,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const lobbyBoxes: Box2D[] = [];
   const shaftBoxes: Box2D[] = [];
   const shaftRoles: ShaftRole[] = [];
+  const shaftTags: (readonly string[])[] = [];
 
   let firstStairSeg: Box2D;
   let liftSeg: Box2D;
@@ -530,14 +552,17 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
       const [padTop, liftCenter, padBot] = splitY(midZone, [topPad, liftBankRun, 0]) as [Box2D, Box2D, Box2D];
       shaftBoxes.push(out(padTop));
       shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
       liftSeg = liftCenter;
       shaftBoxes.push(out(padBot));
       shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
     } else if (remMidH > 0) {
       const [liftCenter, padBot] = splitY(midZone, [liftBankRun, 0]) as [Box2D, Box2D];
       liftSeg = liftCenter;
       shaftBoxes.push(out(padBot));
       shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
     } else {
       liftSeg = midZone;
     }
@@ -562,6 +587,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
     shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
     shaftRoles.push('SERVICE_SHAFT');
+    shaftTags.push([]);
   } else {
     stairBoxes.push(out(firstStairSeg));
   }
@@ -585,8 +611,10 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     for (let i = 0; i < liftCount; i++) liftBoxes.push(out(pieces[i]!));
     const tail = pieces[pieces.length - 1]!;
     if (tail.h > 0) {
+      const carTailRole = roleFor(tail, opts.preferOts, opts.noOts, opts.preferCompactOts);
       shaftBoxes.push(out(tail));
-      shaftRoles.push(roleFor(tail, opts.preferOts, opts.noOts));
+      shaftRoles.push(carTailRole);
+      shaftTags.push(carTailRole === 'OPEN_TO_SKY_VOID' ? ['shaft:ots'] : []);
     }
   };
 
@@ -619,6 +647,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
       stackCars(opts.liftsAtLowSide ? carCol! : shaftCol!);
       shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : carCol!));
       shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
     } else {
       stackCars(liftSeg);
     }
@@ -633,26 +662,45 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
       stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
       shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
       shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
     } else {
       stairBoxes.push(out(secondStairSeg));
     }
   }
 
-  // Tail absorbs all remaining length as an explicit void.
+  // Tail absorbs remaining spine length: cap compact OTS shafts to 2,400–3,200 mm
+  // along the spine and convert any surplus (>= 1,200 mm) into a service shaft.
   if (tailSeg && tailSeg.h > 0) {
-    shaftBoxes.push(out(tailSeg));
-    shaftRoles.push(roleFor(tailSeg, opts.preferOts, opts.noOts));
+    const tailRole = roleFor(tailSeg, opts.preferOts, opts.noOts, opts.preferCompactOts);
+    const maxCompactOtsH = 3200;
+    const minCompactOtsH = 2400;
+    if ((opts.preferOts || opts.preferCompactOts) && tailRole === 'OPEN_TO_SKY_VOID' && tailSeg.h > maxCompactOtsH && tailSeg.h - minCompactOtsH >= 1200) {
+      const compactOtsH = snap10(Math.min(maxCompactOtsH, tailSeg.h - 1200));
+      const [otsPiece, serviceSurplus] = splitY(tailSeg, [compactOtsH, 0]) as [Box2D, Box2D];
+      shaftBoxes.push(out(otsPiece), out(serviceSurplus));
+      shaftRoles.push('OPEN_TO_SKY_VOID', 'SERVICE_SHAFT');
+      shaftTags.push(['shaft:ots'], []);
+    } else {
+      shaftBoxes.push(out(tailSeg));
+      shaftRoles.push(tailRole);
+      shaftTags.push(tailRole === 'OPEN_TO_SKY_VOID' ? ['shaft:ots'] : []);
+    }
   }
 
-  return { stairBoxes, liftBoxes, lobbyBoxes, corridorBoxes, shaftBoxes, shaftRoles, reasons: [] };
+  return { stairBoxes, liftBoxes, lobbyBoxes, corridorBoxes, shaftBoxes, shaftRoles, shaftTags, reasons: [] };
 }
 
 /**
  * A void reads as open-to-sky only when both spans are usable for light and
  * air; anything narrower is a service shaft, whatever the brief preferred.
  */
-function roleFor(box: Box2D, preferOts: boolean, noOts?: boolean): ShaftRole {
+function roleFor(box: Box2D, preferOts: boolean, noOts?: boolean, preferCompactOts?: boolean): ShaftRole {
   if (noOts) return 'SERVICE_SHAFT';
+  if (preferCompactOts) {
+    return Math.min(box.w, box.h) >= 1500 && Math.max(box.w, box.h) >= 2400
+      ? 'OPEN_TO_SKY_VOID'
+      : 'SERVICE_SHAFT';
+  }
   const usable = Math.min(box.w, box.h) >= CORE_BOUNDS.otsMinSpan;
   if (!usable) return 'SERVICE_SHAFT';
   return preferOts || Math.min(box.w, box.h) >= CORE_BOUNDS.otsMinSpan * 1.5 ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT';
@@ -1066,7 +1114,7 @@ type FamilyBuilder = (ctx: TopologyContext) => BuildAttempt[];
  */
 const centralCoreSpine: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
-  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor;
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
   const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
   const hasAreaTarget = program.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0;
@@ -1097,6 +1145,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
       compact,
       liftsAtLowSide,
       preferOts: !noOts && program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD',
+      preferCompactOts: !noOts && Boolean(program.preferences.ventilatedCentralOtsShafts),
       noOts,
       liftCountOverride,
       corridorSides,
@@ -1106,18 +1155,24 @@ const centralCoreSpine: FamilyBuilder = ctx => {
       continue;
     }
 
-    // Flats are capped at a usable depth unless NO OTS or an explicit area
-    // target requires filling the calibrated envelope with zero OTS voids.
+    // Fill wings cleanly when space utilization or OTS shafts are requested or
+    // wing dimensions remain within oversize sanity limits (eliminates giant side voids).
     const target = flatFootprintTarget(program.mandatory.unitTypes, leftW);
     const westCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const eastCount = flatsPerFloor - westCount;
-    const fillWings = noOts || hasAreaTarget;
+    const fillWings =
+      noOts ||
+      hasAreaTarget ||
+      Boolean(program.preferences.properSpaceUtilization) ||
+      Boolean(program.preferences.ventilatedCentralOtsShafts);
+    const spanCapW = left.w <= FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE ? left.w : target.spanMm;
+    const spanCapE = right.w <= FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE ? right.w : target.spanMm;
     const westRow = fillWings
       ? sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false)
-      : sliceFlatRow(left, westCount, target.runMm, true, target.spanMm, false);
+      : sliceFlatRow(left, westCount, target.runMm, true, spanCapW, false);
     const eastRow = fillWings
       ? sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true)
-      : sliceFlatRow(right, eastCount, target.runMm, true, target.spanMm, true);
+      : sliceFlatRow(right, eastCount, target.runMm, true, spanCapE, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1137,6 +1192,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
       partition: {
         familyId: 'CENTRAL_CORE_SPINE',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1147,6 +1203,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
         coreBoxes: [core],
       },
     });
@@ -1162,7 +1219,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
  */
 const dualWing: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
-  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor;
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
   const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
   const hasAreaTarget = program.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0;
@@ -1185,18 +1242,30 @@ const dualWing: FamilyBuilder = ctx => {
     }
     const [north, link, south] = splitY(env, [northH, coreH, 0]) as [Box2D, Box2D, Box2D];
 
-    const band = dissectCoreBand(link, { stairCount, compact, liftsAtLowSide, preferOts: false, noOts, liftCountOverride, corridorSides });
+    const band = dissectCoreBand(link, {
+      stairCount,
+      compact,
+      liftsAtLowSide,
+      preferOts: !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts)),
+      noOts,
+      liftCountOverride,
+      corridorSides,
+    });
     if (band.reasons.length) {
       attempts.push({ variantId, label, rationale: '', reasons: band.reasons });
       continue;
     }
 
     // Entered from their long side, so each flat's span is the wing depth and
-    // its run is measured across the plot. Cap the run unless full-wing fill is active.
+    // its run is measured across the plot. Fill wings cleanly unless oversized beyond sanity tolerance.
     const target = flatFootprintTarget(program.mandatory.unitTypes, northH);
     const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
-    const fillWings = noOts || hasAreaTarget;
+    const fillWings =
+      noOts ||
+      hasAreaTarget ||
+      Boolean(program.preferences.properSpaceUtilization) ||
+      Boolean(program.preferences.ventilatedCentralOtsShafts);
     const northRow = fillWings
       ? sliceFlatRow(north, northCount, Math.ceil(north.w / northCount), false, north.h, false)
       : sliceFlatRow(north, northCount, target.runMm, false, target.spanMm, false);
@@ -1221,6 +1290,7 @@ const dualWing: FamilyBuilder = ctx => {
       partition: {
         familyId: 'DUAL_WING',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1231,6 +1301,7 @@ const dualWing: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
         coreBoxes: [link],
       },
     });
@@ -1324,6 +1395,7 @@ const sideCore: FamilyBuilder = ctx => {
       partition: {
         familyId: 'SIDE_CORE',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1334,6 +1406,7 @@ const sideCore: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
         coreBoxes: [core],
       },
     });
@@ -1439,6 +1512,7 @@ const splitCore: FamilyBuilder = ctx => {
       partition: {
         familyId: 'SPLIT_CORE',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1449,6 +1523,7 @@ const splitCore: FamilyBuilder = ctx => {
         stairBoxes: [...bandA.stairBoxes, ...bandB.stairBoxes],
         shaftBoxes: [...bandA.shaftBoxes, ...bandB.shaftBoxes, ...openSpace],
         shaftRoles: [...bandA.shaftRoles, ...bandB.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...bandA.shaftTags, ...bandB.shaftTags, ...openSpace.map(() => [] as const)],
         coreBoxes: [coreA, coreB],
       },
     });
@@ -1554,6 +1629,7 @@ const centralCourtyard: FamilyBuilder = ctx => {
       partition: {
         familyId: 'CENTRAL_COURTYARD',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1566,6 +1642,7 @@ const centralCourtyard: FamilyBuilder = ctx => {
         stairBoxes: [...west.stairBoxes, ...east.stairBoxes],
         shaftBoxes: [...west.shaftBoxes, ...east.shaftBoxes, court, ...openSpace],
         shaftRoles: [...west.shaftRoles, ...east.shaftRoles, 'OPEN_TO_SKY_VOID', ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...west.shaftTags, ...east.shaftTags, ['shaft:ots'], ...openSpace.map(() => [] as const)],
         coreBoxes: [coreWest, coreEast],
       },
     });
@@ -1664,13 +1741,17 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
 
     const shaftBoxes = [...band.shaftBoxes];
     const shaftRoles = [...band.shaftRoles];
+    const shaftTags: (readonly string[])[] = [...band.shaftTags];
     for (const strip of row.leftovers) {
       shaftBoxes.push(strip);
       shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push([]);
     }
     if ((alongY ? stackTail.h : stackTail.w) > 0) {
       shaftBoxes.push(stackTail);
-      shaftRoles.push(Math.min(stackTail.w, stackTail.h) >= CORE_BOUNDS.otsMinSpan ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT');
+      const stackTailRole: ShaftRole = Math.min(stackTail.w, stackTail.h) >= CORE_BOUNDS.otsMinSpan ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT';
+      shaftRoles.push(stackTailRole);
+      shaftTags.push([]);
     }
 
     attempts.push({
@@ -1684,6 +1765,7 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
       partition: {
         familyId: 'LINEAR_SINGLE_LOADED',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1694,6 +1776,7 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes,
         shaftRoles,
+        shaftTags,
         coreBoxes: [coreBox],
       },
     });
@@ -1803,6 +1886,7 @@ const perimeterHabitable: FamilyBuilder = ctx => {
       partition: {
         familyId: 'PERIMETER_HABITABLE',
         variantId,
+        massingShape: 'COMPACT_DOUBLE_LOADED',
         envelope: env,
         builtOutline: env,
         flatBoxes,
@@ -1813,6 +1897,7 @@ const perimeterHabitable: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
         coreBoxes: [coreBox],
       },
     });
@@ -1829,6 +1914,625 @@ export const TOPOLOGY_FAMILIES: ReadonlyArray<{ readonly id: TopologyFamilyId; r
   { id: 'DUAL_WING', build: dualWing },
   { id: 'LINEAR_SINGLE_LOADED', build: linearSingleLoaded },
   { id: 'PERIMETER_HABITABLE', build: perimeterHabitable },
+];
+
+/**
+ * H_SHAPE_WING — symmetric projecting west/east wings linked by a recessed central core bridge
+ * with open-to-sky perimeter courts on both the north and south centers (`recess:perimeter`).
+ */
+const hShapeWing: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const variantId = 'massing:h-shape';
+  const label = 'H-shaped twin-wing perimeter massing';
+  if (flatsPerFloor < 2) {
+    return [{ variantId, label, rationale: '', reasons: ['H-shape massing requires at least 2 flats per floor'] }];
+  }
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corridorSides: CorridorSides = 'BOTH';
+  const coreW = requiredCoreBandWidth({ compact, corridorSides });
+  const leftW = snap10((env.w - coreW) / 2);
+  if (leftW < FLAT_BOUNDS.minSpanMm) {
+    return [{ variantId, label, rationale: '', reasons: [`H-shape wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
+  }
+
+  const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
+  const maxFlatsOnSide = Math.max(westCount, eastCount);
+  const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides, liftCount: liftCountOverride });
+  const maxByAccess = Math.floor(env.h / maxFlatsOnSide) - 1600;
+  const maxByCore = Math.floor((env.h - coreReqLen) / 2);
+  const recessH = snap10(Math.min(Math.max(3000, env.h * 0.17), maxByAccess, maxByCore));
+  if (recessH < 2400) {
+    return [{ variantId, label, rationale: '', reasons: [`plot depth ${Math.round(env.h)} mm cannot spare H-shape courts beside a ${coreReqLen} mm core`] }];
+  }
+
+  const [left, coreCol, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
+  const midH = env.h - 2 * recessH;
+  const [northRecess, midCore, southRecess] = splitY(coreCol, [recessH, midH, 0]) as [Box2D, Box2D, Box2D];
+
+  const band = dissectCoreBand(midCore, {
+    stairCount,
+    compact,
+    liftsAtLowSide: false,
+    preferOts,
+    noOts,
+    liftCountOverride,
+    corridorSides,
+  });
+  if (band.reasons.length) {
+    return [{ variantId, label, rationale: '', reasons: band.reasons }];
+  }
+
+  const westRow = sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false);
+  const eastRow = sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true);
+  const flatBoxes: Box2D[] = [];
+  const edges: AccessEdge[] = [];
+  for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
+  for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+
+  return [{
+    variantId,
+    label,
+    rationale: `H-shaped footprint with projecting west and east habitable wings and recessed north/south open courts (${Math.round(coreW)} x ${Math.round(recessH)} mm) flanking the central core bridge.`,
+    partition: {
+      familyId: 'CENTRAL_CORE_SPINE',
+      variantId,
+      massingShape: 'H_SHAPE_WING',
+      envelope: env,
+      builtOutline: env,
+      flatBoxes,
+      accessEdgeForFlat: edges,
+      corridorBoxes: band.corridorBoxes,
+      lobbyBoxes: band.lobbyBoxes,
+      liftBoxes: band.liftBoxes,
+      stairBoxes: band.stairBoxes,
+      shaftBoxes: [...band.shaftBoxes, northRecess, southRecess],
+      shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
+      shaftTags: [...band.shaftTags, ['recess:perimeter'], ['recess:perimeter']],
+      coreBoxes: [midCore],
+    },
+  }];
+};
+
+/**
+ * U_SHAPE_COURTYARD — open-ended courtyard embraced by projecting wings and a connecting base.
+ */
+const uShapeCourtyard: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corrW = corridorWidth(compact);
+  const attempts: BuildAttempt[] = [];
+
+  // Primary 3-wing open courtyard U (works cleanly for 4..6 flats).
+  if (flatsPerFloor >= 4 && env.h >= 17_500) {
+    const coreBandW = requiredCoreBandWidth({ compact, corridorSides: 'LOW' });
+    const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: 'LOW', liftCount: liftCountOverride });
+    const hTop = snap10(Math.max(FLAT_BOUNDS.minRunMm + 200, Math.min(env.h * 0.42, env.h - coreReqLen - corrW)));
+    const hBot = env.h - hTop - corrW;
+    const nwW = snap10(env.w * 0.36);
+    const courtW = env.w - 2 * nwW;
+    const swW = snap10((env.w - coreBandW) / 2);
+    const seW = env.w - coreBandW - swW;
+    const botCount = flatsPerFloor - 2;
+    const botWestCount = Math.floor(botCount / 2);
+    const botEastCount = botCount - botWestCount;
+    if (
+      hTop >= FLAT_BOUNDS.minRunMm &&
+      hBot >= Math.max(FLAT_BOUNDS.minRunMm, coreReqLen) &&
+      nwW >= FLAT_BOUNDS.minSpanMm &&
+      courtW >= 3000 &&
+      swW / Math.max(1, botWestCount) >= FLAT_BOUNDS.minSpanMm &&
+      seW / Math.max(1, botEastCount) >= FLAT_BOUNDS.minSpanMm
+    ) {
+      const [topBand, linkCorr, botBand] = splitY(env, [hTop, corrW, 0]) as [Box2D, Box2D, Box2D];
+      const [nwFlat, northCourt, neFlat] = splitX(topBand, [nwW, courtW, 0]) as [Box2D, Box2D, Box2D];
+      const [swWing, coreCol, seWing] = splitX(botBand, [swW, coreBandW, 0]) as [Box2D, Box2D, Box2D];
+      const band = dissectCoreBand(coreCol, {
+        stairCount,
+        compact,
+        liftsAtLowSide: true,
+        preferOts,
+        noOts,
+        liftCountOverride,
+        corridorSides: 'LOW',
+      });
+      if (!band.reasons.length) {
+        const swRow = sliceFlatRow(swWing, botWestCount, Math.ceil(swWing.w / botWestCount), false, swWing.h, true);
+        const seRow = sliceFlatRow(seWing, botEastCount, Math.ceil(seWing.w / botEastCount), false, seWing.h, true);
+        const flatBoxes: Box2D[] = [nwFlat, neFlat, ...swRow.flats, ...seRow.flats];
+        const edges: AccessEdge[] = ['SOUTH', 'SOUTH', ...swRow.flats.map(() => 'NORTH' as AccessEdge), ...seRow.flats.map(() => 'NORTH' as AccessEdge)];
+        attempts.push({
+          variantId: 'massing:u-shape:courtyard',
+          label: 'U-shaped open courtyard massing',
+          rationale: `U-shaped footprint with projecting north-west and north-east wings flanking an open ${Math.round(courtW)} x ${Math.round(hTop)} mm courtyard and linked across a continuous south wing.`,
+          partition: {
+            familyId: 'DUAL_WING',
+            variantId: 'massing:u-shape:courtyard',
+            massingShape: 'U_SHAPE_COURTYARD',
+            envelope: env,
+            builtOutline: env,
+            flatBoxes,
+            accessEdgeForFlat: edges,
+            corridorBoxes: [linkCorr, ...band.corridorBoxes],
+            lobbyBoxes: band.lobbyBoxes,
+            liftBoxes: band.liftBoxes,
+            stairBoxes: band.stairBoxes,
+            shaftBoxes: [...band.shaftBoxes, northCourt],
+            shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID'],
+            shaftTags: [...band.shaftTags, ['recess:perimeter']],
+            coreBoxes: [linkCorr, coreCol],
+          },
+        });
+      }
+    }
+  }
+
+  // Fallback / single-court north-open U-wing geometry for 2..6 flats.
+  const coreW = requiredCoreBandWidth({ compact, corridorSides: 'BOTH' });
+  const leftW = snap10((env.w - coreW) / 2);
+  if (flatsPerFloor >= 2 && leftW >= FLAT_BOUNDS.minSpanMm) {
+    const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
+    const eastCount = flatsPerFloor - westCount;
+    const maxFlatsOnSide = Math.max(westCount, eastCount);
+    const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: 'BOTH', liftCount: liftCountOverride });
+    const maxByAccess = Math.floor(env.h / maxFlatsOnSide) - 1600;
+    const maxByCore = env.h - coreReqLen;
+    const recessH = snap10(Math.min(Math.max(3600, env.h * 0.25), maxByAccess, maxByCore));
+    if (recessH >= 2800) {
+      const [left, coreCol, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
+      const [northRecess, midSouthCore] = splitY(coreCol, [recessH, 0]) as [Box2D, Box2D];
+      const band = dissectCoreBand(midSouthCore, {
+        stairCount,
+        compact,
+        liftsAtLowSide: false,
+        preferOts,
+        noOts,
+        liftCountOverride,
+        corridorSides: 'BOTH',
+      });
+      if (!band.reasons.length) {
+        const westRow = sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false);
+        const eastRow = sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true);
+        const flatBoxes: Box2D[] = [];
+        const edges: AccessEdge[] = [];
+        for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
+        for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+        attempts.push({
+          variantId: 'massing:u-shape:wing',
+          label: 'U-shaped north courtyard wing massing',
+          rationale: `U-shaped building with west and east projecting north arms embracing an open north court (${Math.round(coreW)} x ${Math.round(recessH)} mm) above the south circulation core.`,
+          partition: {
+            familyId: 'CENTRAL_CORE_SPINE',
+            variantId: 'massing:u-shape:wing',
+            massingShape: 'U_SHAPE_COURTYARD',
+            envelope: env,
+            builtOutline: env,
+            flatBoxes,
+            accessEdgeForFlat: edges,
+            corridorBoxes: band.corridorBoxes,
+            lobbyBoxes: band.lobbyBoxes,
+            liftBoxes: band.liftBoxes,
+            stairBoxes: band.stairBoxes,
+            shaftBoxes: [...band.shaftBoxes, northRecess],
+            shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID'],
+            shaftTags: [...band.shaftTags, ['recess:perimeter']],
+            coreBoxes: [midSouthCore],
+          },
+        });
+      }
+    }
+  }
+
+  return attempts.length ? attempts : [{ variantId: 'massing:u-shape', label: 'U-shaped open courtyard massing', rationale: '', reasons: ['envelope dimensions insufficient for U-shape courtyard geometry'] }];
+};
+
+/**
+ * L_SHAPE_CORNER — continuous west wing + continuous south wing leaving an open north-east corner court.
+ */
+const lShapeCorner: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const variantId = 'massing:l-shape';
+  const label = 'L-shaped corner wing massing';
+  if (flatsPerFloor < 2) {
+    return [{ variantId, label, rationale: '', reasons: ['L-shape massing requires at least 2 flats per floor'] }];
+  }
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corrW = corridorWidth(compact);
+  const coreBandW = requiredCoreBandWidth({ compact, corridorSides: 'LOW' });
+  const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: 'LOW', liftCount: liftCountOverride });
+
+  const southBandH = snap10(
+    Math.max(FLAT_BOUNDS.minRunMm + 200, coreReqLen, Math.min(env.h * 0.48, env.h - FLAT_BOUNDS.minRunMm - corrW)),
+  );
+  const hTop = env.h - southBandH - corrW;
+  if (hTop < FLAT_BOUNDS.minRunMm || southBandH < coreReqLen) {
+    return [{ variantId, label, rationale: '', reasons: [`plot depth ${Math.round(env.h)} mm insufficient for L-shape upper wing + ${corrW} mm corridor + ${southBandH} mm south band`] }];
+  }
+
+  const nwCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const southCount = flatsPerFloor - nwCount;
+  const [topBand, corrRow, southBand] = splitY(env, [hTop, corrW, 0]) as [Box2D, Box2D, Box2D];
+
+  const shaftBoxes: Box2D[] = [];
+  const shaftRoles: ShaftRole[] = [];
+  const shaftTags: (readonly string[])[] = [];
+  const corridorBoxes: Box2D[] = [corrRow];
+  const flatBoxes: Box2D[] = [];
+  const edges: AccessEdge[] = [];
+
+  if (env.w >= nwCount * FLAT_BOUNDS.minSpanMm + 3000) {
+    const nwWingW = snap10(
+      clamp(
+        nwCount === 1 ? env.w * 0.46 : env.w * 0.56,
+        nwCount * FLAT_BOUNDS.minSpanMm,
+        env.w - 3000,
+      ),
+    );
+    const [nwBuilt, neRecess] = splitX(topBand, [nwWingW, 0]) as [Box2D, Box2D];
+    const nwRow = sliceFlatRow(nwBuilt, nwCount, Math.ceil(nwBuilt.w / nwCount), false, nwBuilt.h, true);
+    for (const f of nwRow.flats) { flatBoxes.push(f); edges.push('SOUTH'); }
+    shaftBoxes.push(neRecess);
+    shaftRoles.push('OPEN_TO_SKY_VOID');
+    shaftTags.push(['recess:perimeter']);
+  } else if (Math.floor(hTop / nwCount) >= FLAT_BOUNDS.minRunMm && env.w >= FLAT_BOUNDS.minSpanMm + corrW + 3600) {
+    const nwFlatW = snap10(clamp(env.w * 0.42, FLAT_BOUNDS.minSpanMm, env.w - corrW - 3600));
+    const [nwCol, nwCorr, neRecess] = splitX(topBand, [nwFlatW, corrW, 0]) as [Box2D, Box2D, Box2D];
+    corridorBoxes.push(nwCorr);
+    const nwRow = sliceFlatRow(nwCol, nwCount, Math.ceil(nwCol.h / nwCount), true, nwCol.w, false);
+    for (const f of nwRow.flats) { flatBoxes.push(f); edges.push('EAST'); }
+    shaftBoxes.push(neRecess);
+    shaftRoles.push('OPEN_TO_SKY_VOID');
+    shaftTags.push(['recess:perimeter']);
+  } else {
+    return [{ variantId, label, rationale: '', reasons: ['L-shape north-west wing cannot fit requested flats alongside corner cutout'] }];
+  }
+
+  let coreCol: Box2D;
+  if (southCount === 1) {
+    const swFlatW = snap10(Math.min(env.w - coreBandW, FLAT_BOUNDS.maxSpanMm * 1.4));
+    if (swFlatW < FLAT_BOUNDS.minSpanMm) {
+      return [{ variantId, label, rationale: '', reasons: ['L-shape south wing too narrow after core'] }];
+    }
+    const remW = env.w - coreBandW - swFlatW;
+    if (remW >= 3000) {
+      const [cCol, seBuilt, seExt] = splitX(southBand, [coreBandW, swFlatW, 0]) as [Box2D, Box2D, Box2D];
+      coreCol = cCol;
+      flatBoxes.push(seBuilt);
+      edges.push('NORTH');
+      shaftBoxes.push(seExt);
+      shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push(['recess:perimeter']);
+    } else {
+      const [cCol, seBuilt] = splitX(southBand, [coreBandW, 0]) as [Box2D, Box2D];
+      coreCol = cCol;
+      flatBoxes.push(seBuilt);
+      edges.push('NORTH');
+    }
+  } else {
+    const swCount = Math.floor(southCount / 2);
+    const seCount = southCount - swCount;
+    const swW = snap10(((env.w - coreBandW) * swCount) / southCount);
+    const seW = env.w - coreBandW - swW;
+    if (swW / swCount < FLAT_BOUNDS.minSpanMm || seW / seCount < FLAT_BOUNDS.minSpanMm) {
+      return [{ variantId, label, rationale: '', reasons: ['L-shape south flats below minimum span'] }];
+    }
+    const [swWing, cCol, seWing] = splitX(southBand, [swW, coreBandW, 0]) as [Box2D, Box2D, Box2D];
+    coreCol = cCol;
+    const swRow = sliceFlatRow(swWing, swCount, Math.ceil(swWing.w / swCount), false, swWing.h, true);
+    const seRow = sliceFlatRow(seWing, seCount, Math.ceil(seWing.w / seCount), false, seWing.h, true);
+    for (const f of [...swRow.flats, ...seRow.flats]) { flatBoxes.push(f); edges.push('NORTH'); }
+  }
+
+  const band = dissectCoreBand(coreCol, {
+    stairCount,
+    compact,
+    liftsAtLowSide: true,
+    preferOts,
+    noOts,
+    liftCountOverride,
+    corridorSides: 'LOW',
+  });
+  if (band.reasons.length) {
+    return [{ variantId, label, rationale: '', reasons: band.reasons }];
+  }
+
+  return [{
+    variantId,
+    label,
+    rationale: 'L-shaped massing wrapping the west and south street frontages around a generous open north-east corner court.',
+    partition: {
+      familyId: 'CENTRAL_CORE_SPINE',
+      variantId,
+      massingShape: 'L_SHAPE_CORNER',
+      envelope: env,
+      builtOutline: env,
+      flatBoxes,
+      accessEdgeForFlat: edges,
+      corridorBoxes: [...corridorBoxes, ...band.corridorBoxes],
+      lobbyBoxes: band.lobbyBoxes,
+      liftBoxes: band.liftBoxes,
+      stairBoxes: band.stairBoxes,
+      shaftBoxes: [...band.shaftBoxes, ...shaftBoxes],
+      shaftRoles: [...band.shaftRoles, ...shaftRoles],
+      shaftTags: [...band.shaftTags, ...shaftTags],
+      coreBoxes: [corrRow, coreCol],
+    },
+  }];
+};
+
+/**
+ * CRUCIFORM_PLUS — four symmetric protruding corner-recessed wings radiating
+ * around the central core spine with all four outer corners recessed.
+ */
+const cruciformPlus: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const variantId = 'massing:cruciform-plus';
+  const label = 'Cruciform (+) four-arm corner-recessed massing';
+  if (flatsPerFloor < 4) {
+    return [{ variantId, label, rationale: '', reasons: ['Cruciform (+) massing requires at least 4 flats per floor'] }];
+  }
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corridorSides: CorridorSides = 'BOTH';
+  const coreW = requiredCoreBandWidth({ compact, corridorSides });
+  const leftW = snap10((env.w - coreW) / 2);
+  if (leftW < FLAT_BOUNDS.minSpanMm) {
+    return [{ variantId, label, rationale: '', reasons: [`Cruciform (+) wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
+  }
+
+  const westCount = Math.floor(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
+  const maxTotalRecess = Math.min(
+    env.h - westCount * FLAT_BOUNDS.minRunMm,
+    env.h - eastCount * FLAT_BOUNDS.minRunMm,
+  );
+  const recessH = snap10(Math.min(Math.max(2400, env.h * 0.15), 3800, Math.floor(maxTotalRecess / 2)));
+  if (recessH < 2000) {
+    return [{ variantId, label, rationale: '', reasons: [`envelope height ${Math.round(env.h)} mm too tight for 4-corner cruciform setbacks`] }];
+  }
+
+  const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
+  const band = dissectCoreBand(core, {
+    stairCount,
+    compact,
+    liftsAtLowSide: false,
+    preferOts,
+    noOts,
+    liftCountOverride,
+    corridorSides,
+  });
+  if (band.reasons.length) {
+    return [{ variantId, label, rationale: '', reasons: band.reasons }];
+  }
+
+  const [nwRecess, leftBuilt, swRecess] = splitY(left, [recessH, env.h - 2 * recessH, 0]) as [Box2D, Box2D, Box2D];
+  const [neRecess, rightBuilt, seRecess] = splitY(right, [recessH, env.h - 2 * recessH, 0]) as [Box2D, Box2D, Box2D];
+  const westRow = sliceFlatRow(leftBuilt, westCount, Math.ceil(leftBuilt.h / westCount), true, leftBuilt.w, false);
+  const eastRow = sliceFlatRow(rightBuilt, eastCount, Math.ceil(rightBuilt.h / eastCount), true, rightBuilt.w, true);
+  const flatBoxes: Box2D[] = [];
+  const edges: AccessEdge[] = [];
+  for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
+  for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+
+  const recesses = [nwRecess, neRecess, swRecess, seRecess];
+  return [{
+    variantId,
+    label,
+    rationale: `Cruciform (+) floorplate with projecting central core arms and four open-to-sky corner terraces (${Math.round(leftW)} x ${Math.round(recessH)} mm).`,
+    partition: {
+      familyId: 'CENTRAL_CORE_SPINE',
+      variantId,
+      massingShape: 'CRUCIFORM_PLUS',
+      envelope: env,
+      builtOutline: env,
+      flatBoxes,
+      accessEdgeForFlat: edges,
+      corridorBoxes: band.corridorBoxes,
+      lobbyBoxes: band.lobbyBoxes,
+      liftBoxes: band.liftBoxes,
+      stairBoxes: band.stairBoxes,
+      shaftBoxes: [...band.shaftBoxes, ...recesses],
+      shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
+      shaftTags: [...band.shaftTags, ['recess:perimeter'], ['recess:perimeter'], ['recess:perimeter'], ['recess:perimeter']],
+      coreBoxes: [core],
+    },
+  }];
+};
+
+/**
+ * PINWHEEL_CLUSTER — diagonally staggered wing blades with north-west and south-east open corner cutouts.
+ */
+const pinwheelCluster: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const variantId = 'massing:pinwheel';
+  const label = 'Pinwheel diagonally staggered wing massing';
+  if (flatsPerFloor < 2) {
+    return [{ variantId, label, rationale: '', reasons: ['Pinwheel massing requires at least 2 flats per floor'] }];
+  }
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corridorSides: CorridorSides = 'BOTH';
+  const coreW = requiredCoreBandWidth({ compact, corridorSides });
+  const leftW = snap10((env.w - coreW) / 2);
+  if (leftW < FLAT_BOUNDS.minSpanMm) {
+    return [{ variantId, label, rationale: '', reasons: [`Pinwheel wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
+  }
+
+  const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
+  const maxRecessW = env.h - westCount * FLAT_BOUNDS.minRunMm;
+  const maxRecessE = env.h - eastCount * FLAT_BOUNDS.minRunMm;
+  const recessH = snap10(Math.min(Math.max(3000, env.h * 0.18), 4800, maxRecessW, maxRecessE));
+  if (recessH < 2400) {
+    return [{ variantId, label, rationale: '', reasons: ['envelope height too tight for pinwheel diagonal setbacks'] }];
+  }
+
+  const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
+  const band = dissectCoreBand(core, {
+    stairCount,
+    compact,
+    liftsAtLowSide: false,
+    preferOts,
+    noOts,
+    liftCountOverride,
+    corridorSides,
+  });
+  if (band.reasons.length) {
+    return [{ variantId, label, rationale: '', reasons: band.reasons }];
+  }
+
+  const [nwRecess, leftBuilt] = splitY(left, [recessH, 0]) as [Box2D, Box2D];
+  const [rightBuilt, seRecess] = splitY(right, [env.h - recessH, 0]) as [Box2D, Box2D];
+  const westRow = sliceFlatRow(leftBuilt, westCount, Math.ceil(leftBuilt.h / westCount), true, leftBuilt.w, false);
+  const eastRow = sliceFlatRow(rightBuilt, eastCount, Math.ceil(rightBuilt.h / eastCount), true, rightBuilt.w, true);
+  const flatBoxes: Box2D[] = [];
+  const edges: AccessEdge[] = [];
+  for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
+  for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+
+  return [{
+    variantId,
+    label,
+    rationale: `Diagonally offset pinwheel wings with recessed north-west and south-east exterior terraces (${Math.round(leftW)} x ${Math.round(recessH)} mm) optimizing oblique daylight and solar exposure.`,
+    partition: {
+      familyId: 'CENTRAL_CORE_SPINE',
+      variantId,
+      massingShape: 'PINWHEEL_CLUSTER',
+      envelope: env,
+      builtOutline: env,
+      flatBoxes,
+      accessEdgeForFlat: edges,
+      corridorBoxes: band.corridorBoxes,
+      lobbyBoxes: band.lobbyBoxes,
+      liftBoxes: band.liftBoxes,
+      stairBoxes: band.stairBoxes,
+      shaftBoxes: [...band.shaftBoxes, nwRecess, seRecess],
+      shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
+      shaftTags: [...band.shaftTags, ['recess:perimeter'], ['recess:perimeter']],
+      coreBoxes: [core],
+    },
+  }];
+};
+
+/**
+ * STEPPED_OFFSET_BLOCK — asymmetric stepped facade massing setting alternating wing bays inward from the outer perimeter.
+ */
+const steppedOffsetBlock: FamilyBuilder = ctx => {
+  const { envelope: env, flatsPerFloor, program } = ctx;
+  const variantId = 'massing:stepped-offset';
+  const label = 'Stepped asymmetric facade block';
+  if (flatsPerFloor < 3) {
+    return [{ variantId, label, rationale: '', reasons: ['Stepped facade massing requires at least 3 flats per floor'] }];
+  }
+  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
+  const corridorSides: CorridorSides = 'BOTH';
+  const coreW = requiredCoreBandWidth({ compact, corridorSides });
+  const leftW = snap10((env.w - coreW) / 2);
+  const rightW = env.w - coreW - leftW;
+  if (Math.min(leftW, rightW) < FLAT_BOUNDS.minSpanMm + 3000) {
+    return [{ variantId, label, rationale: '', reasons: ['wing spans too narrow for stepped perimeter offsets alongside >= 5800 mm flat depth'] }];
+  }
+
+  const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
+  const band = dissectCoreBand(core, {
+    stairCount,
+    compact,
+    liftsAtLowSide: false,
+    preferOts,
+    noOts,
+    liftCountOverride,
+    corridorSides,
+  });
+  if (band.reasons.length) {
+    return [{ variantId, label, rationale: '', reasons: band.reasons }];
+  }
+
+  const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
+  const westRow = sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false);
+  const eastRow = sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true);
+
+  const flatBoxes: Box2D[] = [];
+  const edges: AccessEdge[] = [];
+  const recesses: Box2D[] = [];
+
+  const westStep = snap10(clamp(left.w * 0.28, 3000, left.w - FLAT_BOUNDS.minSpanMm));
+  westRow.flats.forEach((b, idx) => {
+    if (idx === 0 && westStep >= 3000) {
+      const [rec, flat] = splitX(b, [westStep, 0]) as [Box2D, Box2D];
+      recesses.push(rec);
+      flatBoxes.push(flat);
+    } else {
+      flatBoxes.push(b);
+    }
+    edges.push('EAST');
+  });
+
+  const eastStep = snap10(clamp(right.w * 0.34, 3000, right.w - FLAT_BOUNDS.minSpanMm));
+  eastRow.flats.forEach((b, idx) => {
+    if (idx === eastRow.flats.length - 1 && eastStep >= 3000 && eastCount >= 2) {
+      const [flat, rec] = splitX(b, [b.w - eastStep, 0]) as [Box2D, Box2D];
+      flatBoxes.push(flat);
+      recesses.push(rec);
+    } else {
+      flatBoxes.push(b);
+    }
+    edges.push('WEST');
+  });
+
+  return [{
+    variantId,
+    label,
+    rationale: `Asymmetric stepped facade block setting back alternating west (${Math.round(westStep)} mm) and east (${Math.round(eastStep)} mm) bays to create articulated terraces and distinct elevation relief.`,
+    partition: {
+      familyId: 'CENTRAL_CORE_SPINE',
+      variantId,
+      massingShape: 'STEPPED_OFFSET_BLOCK',
+      envelope: env,
+      builtOutline: env,
+      flatBoxes,
+      accessEdgeForFlat: edges,
+      corridorBoxes: band.corridorBoxes,
+      lobbyBoxes: band.lobbyBoxes,
+      liftBoxes: band.liftBoxes,
+      stairBoxes: band.stairBoxes,
+      shaftBoxes: [...band.shaftBoxes, ...recesses],
+      shaftRoles: [...band.shaftRoles, ...recesses.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
+      shaftTags: [...band.shaftTags, ...recesses.map(() => ['recess:perimeter'] as const)],
+      coreBoxes: [core],
+    },
+  }];
+};
+
+const MACRO_SHAPE_BUILDERS: ReadonlyArray<{ readonly id: TopologyFamilyId; readonly build: FamilyBuilder }> = [
+  { id: 'CENTRAL_CORE_SPINE', build: hShapeWing },
+  { id: 'DUAL_WING', build: uShapeCourtyard },
+  { id: 'SPLIT_CORE', build: lShapeCorner },
+  { id: 'CENTRAL_CORE_SPINE', build: cruciformPlus },
+  { id: 'CENTRAL_CORE_SPINE', build: pinwheelCluster },
+  { id: 'CENTRAL_CORE_SPINE', build: steppedOffsetBlock },
 ];
 
 export interface TopologyGenerationResult {
@@ -1867,7 +2571,15 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
   const footprint: FootprintPlan = { built: ctx.envelope, surplus: [], surplusAreaMm2: 0 };
   const buildCtx: TopologyContext = ctx;
 
-  for (const family of TOPOLOGY_FAMILIES) {
+  const includeMacroShapes = Boolean(
+    ctx.enableMacroShapes ||
+    ctx.program.preferences.preferredMassingShape ||
+    ctx.program.preferences.requestsDifferentShape,
+  );
+  const activeFamilies = includeMacroShapes
+    ? [...TOPOLOGY_FAMILIES, ...MACRO_SHAPE_BUILDERS]
+    : TOPOLOGY_FAMILIES;
+  for (const family of activeFamilies) {
     let attempts: BuildAttempt[];
     try {
       attempts = family.build(buildCtx);
@@ -1956,6 +2668,13 @@ export const flatAreaOf = (p: TopologyPartition): number => p.flatBoxes.reduce((
 export const circulationAreaOf = (p: TopologyPartition): number =>
   [...p.corridorBoxes, ...p.lobbyBoxes].reduce((s, b) => s + boxArea(b), 0);
 
-/** Area of voids that genuinely read as open to sky. */
+/** True when a shaft entry represents an exterior building-shape recess cutout. */
+export const isPerimeterRecess = (p: TopologyPartition, index: number): boolean =>
+  Boolean(p.shaftTags?.[index]?.includes('recess:perimeter'));
+
+/** Area of internal open-to-sky voids (excludes exterior building-shape recesses). */
 export const otsAreaOf = (p: TopologyPartition): number =>
-  p.shaftBoxes.reduce((s, b, i) => (p.shaftRoles[i] === 'OPEN_TO_SKY_VOID' ? s + boxArea(b) : s), 0);
+  p.shaftBoxes.reduce(
+    (s, b, i) => (p.shaftRoles[i] === 'OPEN_TO_SKY_VOID' && !isPerimeterRecess(p, i) ? s + boxArea(b) : s),
+    0,
+  );

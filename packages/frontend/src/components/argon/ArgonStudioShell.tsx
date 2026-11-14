@@ -70,6 +70,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const workerRef = useRef<Worker | null>(null);
   const lastBrief = useRef<ProjectSetupWizardData | null>(null);
+  const rejectedTopologyHashes = useRef<string[]>([]);
+  const [generationSeed, setGenerationSeed] = useState(1);
   const [generationError, setGenerationError] = useState('');
   /**
    * Set when geometry generated successfully but the durable save did not.
@@ -79,12 +81,21 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const [saveWarning, setSaveWarning] = useState('');
   const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
   useEffect(() => () => workerRef.current?.terminate(), []);
-  const handleGenerate = (data: ProjectSetupWizardData) => {
+
+  const runGeneration = (
+    data: ProjectSetupWizardData,
+    seed: number,
+    rejectedHashes: readonly string[],
+  ) => {
     workerRef.current?.terminate();
     lastBrief.current = data;
     setIsGenerating(true); setPipelineProgress(null); setGenerationError(''); setGenerationFindings([]);
     try {
-      const request = createArgonRequest(data);
+      const request = {
+        ...createArgonRequest(data),
+        generationSeed: seed,
+        rejectedTopologyHashes: [...rejectedHashes],
+      };
       const worker = new Worker(new URL('../../services/argon-planning.worker.ts', import.meta.url), { type: 'module' });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<{
@@ -131,6 +142,24 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       worker.postMessage(request);
     } catch (error) { setGenerationError(error instanceof Error ? error.message : String(error)); }
   };
+
+  const handleGenerate = (data: ProjectSetupWizardData) => {
+    rejectedTopologyHashes.current = [];
+    setGenerationSeed(1);
+    runGeneration(data, 1, []);
+  };
+
+  const handleRegenerateVariant = () => {
+    if (!lastBrief.current) return;
+    const currentHash = editor.building.metadata.generationBrief?.topologyHash;
+    if (currentHash && !rejectedTopologyHashes.current.includes(currentHash)) {
+      rejectedTopologyHashes.current = [...rejectedTopologyHashes.current, currentHash];
+    }
+    const nextSeed = generationSeed + 1;
+    setGenerationSeed(nextSeed);
+    runGeneration(lastBrief.current, nextSeed, rejectedTopologyHashes.current);
+  };
+
   const cancelGeneration = () => { workerRef.current?.terminate(); workerRef.current = null; setIsGenerating(false); };
 
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -292,7 +321,13 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           />
         )}
         {activeWorkspace === 'cad_2d' && (
-          <ArchitecturalCADWorkspace editor={editor} />
+          <ArchitecturalCADWorkspace
+            editor={editor}
+            onRegeneratePlan={handleRegenerateVariant}
+            generationSeed={generationSeed}
+            isGenerating={isGenerating}
+            canRegenerate={Boolean(lastBrief.current)}
+          />
         )}
         {activeWorkspace === 'isometric' && (
           <FloorIsometricEditor editor={editor} />

@@ -1,12 +1,32 @@
 import React, { useMemo, useState } from 'react';
-import { GeometryValidator } from '@ai-floor-planner/planning-engine';
+import {
+  GeometryValidator,
+  evaluateArchitecturalComplianceScore,
+} from '@ai-floor-planner/planning-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { ArchitecturalCanvas } from '../canvas/ArchitecturalCanvas';
 import { PropertyInspector } from '../inspector/PropertyInspector';
 import { requestVerifiedExport, downloadVerifiedExport } from '../../services/export-client';
 import type { WorkspaceLayer } from '../workspace/BuildingNavigator';
 
-export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
+export interface ArchitecturalCADWorkspaceProps {
+  editor: EditorContextValue;
+  onRegeneratePlan?: () => void;
+  generationSeed?: number;
+  isGenerating?: boolean;
+  canRegenerate?: boolean;
+}
+
+export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps> = ({
+  editor,
+  onRegeneratePlan,
+  generationSeed = 1,
+  isGenerating = false,
+  canRegenerate = true,
+}) => {
+  const aiTelemetry = editor.building.metadata.generationBrief?.aiTelemetry;
+  const activeArchetype = editor.building.metadata.generationBrief?.archetype;
+  const activeMassingShape = editor.building.metadata.generationBrief?.buildingMassingShape;
   const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [exportStatus, setExportStatus] = useState('');
   const controller = React.useRef(new AbortController());
@@ -51,6 +71,12 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
     () => new GeometryValidator({ autoCorrect: false }).audit(editor.building, false).report,
     [editor.building],
   );
+  const complianceReport = useMemo(
+    () =>
+      (editor.building.metadata as { complianceReport?: ReturnType<typeof evaluateArchitecturalComplianceScore> })
+        ?.complianceReport ?? evaluateArchitecturalComplianceScore(editor.building),
+    [editor.building],
+  );
   return (
     <section
       className="flex h-full min-h-0 flex-col bg-slate-950 text-slate-100"
@@ -58,6 +84,47 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
     >
       <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 p-3">
         <strong>2D CAD Studio</strong>
+        {onRegeneratePlan && (
+          <button
+            type="button"
+            disabled={isGenerating || !canRegenerate}
+            onClick={onRegeneratePlan}
+            className="rounded bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+          >
+            {isGenerating ? 'Regenerating...' : `Regenerate Variant (Seed #${generationSeed})`}
+          </button>
+        )}
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+            aiTelemetry?.geminiInvoked
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+              : 'border-slate-600 bg-slate-800 text-slate-300'
+          }`}
+          title={
+            aiTelemetry?.geminiInvoked
+              ? `Gemini proposal active (${aiTelemetry.modelUsed ?? 'gemini'})${aiTelemetry.referenceImageUsedForGeometry ? ' + Vision Spatial Graph' : ''}${activeMassingShape ? ` · ${activeMassingShape}` : ''}${activeArchetype ? ` · ${activeArchetype}` : ''}`
+              : aiTelemetry?.fallbackReason ?? `Deterministic solver engine${activeMassingShape ? ` · ${activeMassingShape}` : ''}`
+          }
+        >
+          {aiTelemetry?.geminiInvoked
+            ? `Gemini AI (${aiTelemetry.modelUsed ?? 'gemini'})`
+            : 'Deterministic Engine'}
+          {activeMassingShape ? ` · ${activeMassingShape.replace(/_/g, ' ')}` : ''}
+        </span>
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            complianceReport.score >= 85 && complianceReport.redConflictCount === 0
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+              : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
+          }`}
+          title={
+            complianceReport.violations.length > 0
+              ? complianceReport.violations.map((v) => v.message).join(' | ')
+              : 'All 6 architectural & code compliance checks passed (>= 85 / 100).'
+          }
+        >
+          Compliance Score: {complianceReport.score} / 100
+        </span>
         {(['dwg', 'dxf', 'pdf'] as const).map((format) => (
           <button
             key={format}

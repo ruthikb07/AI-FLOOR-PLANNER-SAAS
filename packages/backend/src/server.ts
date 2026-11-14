@@ -19,6 +19,7 @@ import { handleExportRoute } from './api/export-routes.js';
 import { GeminiProvider, type BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import { resolveServiceConfig, type ServiceConfig } from './env.js';
 import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
+import { handleProjectGeneration } from './api/generation-routes.js';
 
 // Auto-load .env file if available in process.env or common locations
 if (typeof process.loadEnvFile === 'function') {
@@ -26,11 +27,11 @@ if (typeof process.loadEnvFile === 'function') {
     '.env',
     path.join(process.cwd(), '.env'),
     path.join(process.cwd(), 'packages', 'backend', '.env'),
+    path.join(process.cwd(), '..', '..', '.env'),
   ]) {
     try {
       if (fs.existsSync(candidate)) {
         process.loadEnvFile(candidate);
-        break;
       }
     } catch {
       // Ignored
@@ -60,6 +61,8 @@ export function createGeminiProvider(config: ServiceConfig): GeminiProvider | nu
     apiKey: config.geminiApiKey,
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
+    fallbackModels: ['gemini-3.7-flash', config.geminiFallbackModel],
+    maxRetriesOn503: 1,
     timeoutMs: config.providerTimeoutMs,
   });
 }
@@ -81,13 +84,14 @@ export interface ProviderStatusInfo {
   readonly reachable: boolean;
   readonly status: GeminiStatus | string;
   readonly model: string;
+  readonly fallbackModel?: string;
   readonly detail?: string;
 }
 
 export interface BackendHealthResponse {
   readonly status: 'ok' | 'degraded';
-  /** Plan generation is deterministic and does not depend on any provider. */
-  readonly planGeneration: 'deterministic';
+  /** Plan generation mode: hybrid-gemini when live Gemini key is configured, else deterministic. */
+  readonly planGeneration: 'deterministic' | 'hybrid-gemini';
   readonly gemini: ProviderStatusInfo;
 }
 
@@ -143,12 +147,20 @@ export async function checkProviderHealth(
     }
   }
 
+  const planGeneration: BackendHealthResponse['planGeneration'] =
+    config.geminiApiKey.length > 0 && deps.briefInterpreterKind === 'gemini'
+      ? 'hybrid-gemini'
+      : 'deterministic';
+
   return {
     // Deterministic generation is always available, so the service is `ok`
     // even when the optional interpretation provider is not reachable.
     status: 'ok',
-    planGeneration: 'deterministic',
-    gemini: geminiStatus,
+    planGeneration,
+    gemini: {
+      ...geminiStatus,
+      fallbackModel: config.geminiFallbackModel,
+    },
   };
 }
 
@@ -206,6 +218,20 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
     if (method === 'GET' && url.pathname === '/api/v1/health') {
       const config = deps.config ?? resolveServiceConfig();
       sendJson(response, 200, await checkProviderHealth(config, deps));
+      return;
+    }
+
+    if (method === 'POST' && (url.pathname === '/api/projects/generate' || url.pathname === '/api/v1/projects/generate')) {
+      const raw = await readBody(request);
+      let body: unknown = null;
+      try {
+        body = raw.length > 0 ? JSON.parse(raw) : null;
+      } catch {
+        sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+        return;
+      }
+      const result = await handleProjectGeneration(body, deps);
+      sendJson(response, result.status, result.json);
       return;
     }
 

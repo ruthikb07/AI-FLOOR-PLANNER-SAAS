@@ -1,6 +1,6 @@
 import type { Building, Door, Floor, GenerationControlState, Polygon, RefinementIntent, Room, Wall } from '@ai-floor-planner/core';
 import { DoorType, SwingDirection, WallType, stableValueHash } from '@ai-floor-planner/core';
-import { containsPolygon } from '@ai-floor-planner/geometry-engine';
+import { containsPolygon, generateApartmentWalls } from '@ai-floor-planner/geometry-engine';
 import { evaluateDesign } from '../diagnostics/design-evaluator';
 import { diagnosticsToValidation, type ValidationSummary } from '../repair/engine';
 
@@ -113,6 +113,53 @@ function expandSingleRoom(room: Room, floor: Floor, protectedRooms: readonly Roo
 }
 
 function rebuildDependencies(floor: Floor, rooms: readonly Room[], selected: Set<string>, variant: number): Floor {
+  const updatedRooms = floor.rooms.map(room => rooms.find(value => value.id === room.id) ?? room);
+  if (floor.walls.some(w => w.id.includes('apt-wall:'))) {
+    const guardHeightMm = floor.walls.find(w => w.boundaryRole === 'PARAPET')?.heightMm ?? 1100;
+    const usesFloorPrefix = floor.walls.some(w => w.id.startsWith(`${floor.id}::`));
+    const rawRegenWalls = generateApartmentWalls(updatedRooms, floor.id, floor.boundary, true, guardHeightMm);
+    const regenWalls = usesFloorPrefix
+      ? rawRegenWalls.map(w => (w.id.startsWith(`${floor.id}::`) ? w : { ...w, id: `${floor.id}::${w.id}` }))
+      : rawRegenWalls;
+    const regenDoors: Door[] = floor.doors.map(door => {
+      const connIds = door.connectsRooms.filter((id): id is string => Boolean(id));
+      const touchesSelected = connIds.some(id => selected.has(id));
+      const host = regenWalls.find(w => connIds.length > 0 && connIds.every(id => w.roomIds.includes(id)))
+        ?? regenWalls.find(w => w.id === door.wallId)
+        ?? regenWalls[0]!;
+      if (!touchesSelected && host.id === door.wallId) return door;
+      const connRooms = connIds.map(id => updatedRooms.find(r => r.id === id)).filter((r): r is Room => Boolean(r));
+      const vertical = Math.abs(host.startPoint.x - host.endPoint.x) < 1;
+      const wLo = Math.min(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+      const wHi = Math.max(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+      const lo = connRooms.length ? Math.max(wLo, ...connRooms.map(r => (vertical ? r.y : r.x))) : wLo;
+      const hi = connRooms.length ? Math.min(wHi, ...connRooms.map(r => (vertical ? r.y + r.height : r.x + r.width))) : wHi;
+      const mid = Math.round((lo + hi) / 20) * 10;
+      const nextPos = vertical ? { x: host.startPoint.x, y: mid } : { x: mid, y: host.startPoint.y };
+      return { ...door, wallId: host.id, position: nextPos };
+    });
+    const regenWindows = floor.windows.map(win => {
+      if (!selected.has(win.roomId)) return win;
+      const roomObj = updatedRooms.find(r => r.id === win.roomId);
+      const host = regenWalls.find(w => w.id === win.wallId && w.roomIds.includes(win.roomId))
+        ?? regenWalls.find(w => w.roomIds.includes(win.roomId) && (w.wallUse === 'EXTERNAL' || w.wallUse === 'SHAFT'))
+        ?? regenWalls.find(w => w.id === win.wallId)
+        ?? regenWalls[0]!;
+      const vertical = Math.abs(host.startPoint.x - host.endPoint.x) < 1;
+      const wLo = Math.min(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+      const wHi = Math.max(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+      const lo = roomObj ? Math.max(wLo, vertical ? roomObj.y : roomObj.x) : wLo;
+      const hi = roomObj ? Math.min(wHi, vertical ? roomObj.y + roomObj.height : roomObj.x + roomObj.width) : wHi;
+      const mid = Math.round((lo + hi) / 20) * 10;
+      const nextPos = vertical ? { x: host.startPoint.x, y: mid } : { x: mid, y: host.startPoint.y };
+      return { ...win, wallId: host.id, position: nextPos };
+    });
+    const wallsWithOpenings = regenWalls.map(w => ({
+      ...w,
+      hasOpening: regenDoors.some(d => d.wallId === w.id) || regenWindows.some(win => win.wallId === w.id),
+    }));
+    return { ...floor, rooms: updatedRooms, walls: wallsWithOpenings, doors: regenDoors, windows: regenWindows };
+  }
   const mutableWalls = floor.walls.filter(wall => wall.roomIds.length > 0 && wall.roomIds.every(id => selected.has(id)));
   const mutableWallIds = new Set(mutableWalls.map(wall => wall.id));
   const mutableDoors = floor.doors.filter(door => mutableWallIds.has(door.wallId) || door.connectsRooms.every(id => selected.has(id)));
@@ -127,13 +174,99 @@ function rebuildDependencies(floor: Floor, rooms: readonly Room[], selected: Set
     doors.push({ id: sourceDoor?.id ?? `refinement-door-${floor.id}-${variant}-${index}`, floorId: floor.id, wallId: wall.id, position: isVertical ? { x: edge.startPoint.x, y: edge.startPoint.y + (length - doorWidth) / 2 } : { x: edge.startPoint.x + (length - doorWidth) / 2, y: edge.startPoint.y }, width: doorWidth, height: sourceDoor?.height ?? 2100, type: sourceDoor?.type ?? DoorType.Single, swingDirection: sourceDoor?.swingDirection ?? SwingDirection.Left, connectsRooms: [room.id, other.id] });
     index += 1;
   }));
-  const updatedRooms = floor.rooms.map(room => rooms.find(value => value.id === room.id) ?? room);
   const preservedWindows = floor.windows.filter(window => {
     if (!selected.has(window.roomId)) return true;
     const room = updatedRooms.find(value => value.id === window.roomId);
     return room ? pointOnRoomBoundary(room, window.position) : false;
   });
   return { ...floor, rooms: updatedRooms, walls: [...floor.walls.filter(wall => !mutableWalls.includes(wall)), ...walls], doors: [...floor.doors.filter(door => !mutableDoors.includes(door)), ...doors], windows: preservedWindows };
+}
+
+function coRepartitionSingleApartmentRoom(
+  single: Room,
+  floor: Floor,
+  locked: Set<string>,
+  variant: number,
+): readonly Room[] | undefined {
+  if (!single.unitId) return undefined;
+  const unitSiblings = floor.rooms.filter(
+    r => r.id !== single.id && r.unitId === single.unitId && !locked.has(r.id) && r.type !== 'staircase' && r.type !== 'lift',
+  );
+  // 1. Check 1-to-1 full-edge sibling in the same flat
+  const fullEdgeSibs = unitSiblings.filter(sib => {
+    const edge = sharedEdge(single, sib);
+    if (!edge) return false;
+    const sameRow = Math.abs(single.y - sib.y) <= 5 && Math.abs(single.height - sib.height) <= 5;
+    const sameCol = Math.abs(single.x - sib.x) <= 5 && Math.abs(single.width - sib.width) <= 5;
+    return sameRow || sameCol;
+  });
+  if (fullEdgeSibs.length > 0) {
+    const sib = fullEdgeSibs[Math.floor(variant / 2) % fullEdgeSibs.length]!;
+    try {
+      return repartitionRooms([single, sib], variant);
+    } catch {
+      // Fall through to composite sibling check
+    }
+  }
+  // 2. Check composite sibling group tiling one full edge of `single`
+  const deltaMag = variant < 4 ? 250 : 400;
+  const sign = variant % 2 === 0 ? 1 : -1;
+  for (const dir of ['east', 'west', 'south', 'north'] as const) {
+    if (dir === 'east' || dir === 'west') {
+      const edgeX = dir === 'east' ? single.x + single.width : single.x;
+      const group = unitSiblings.filter(n =>
+        (dir === 'east' ? Math.abs(n.x - edgeX) <= 5 : Math.abs(n.x + n.width - edgeX) <= 5) &&
+        n.y >= single.y - 5 &&
+        n.y + n.height <= single.y + single.height + 5,
+      );
+      if (group.length < 2) continue;
+      if (Math.abs(group.reduce((s, g) => s + g.height, 0) - single.height) > 10) continue;
+      const deltaX = sign * deltaMag;
+      const newSingleX = dir === 'east' ? single.x : single.x - deltaX;
+      const newSingleW = single.width + deltaX;
+      if (newSingleW < 1200) continue;
+      const nextGroup: Room[] = [];
+      let ok = true;
+      for (const g of group) {
+        const newGX = dir === 'east' ? g.x + deltaX : g.x;
+        const newGW = g.width - deltaX;
+        if (newGW < 1000) { ok = false; break; }
+        nextGroup.push({ ...g, x: newGX, width: newGW, area: newGW * g.height, boundary: rectPolygon(newGX, g.y, newGW, g.height) });
+      }
+      if (!ok) continue;
+      return [
+        { ...single, x: newSingleX, width: newSingleW, area: newSingleW * single.height, boundary: rectPolygon(newSingleX, single.y, newSingleW, single.height) },
+        ...nextGroup,
+      ];
+    } else {
+      const edgeY = dir === 'south' ? single.y + single.height : single.y;
+      const group = unitSiblings.filter(n =>
+        (dir === 'south' ? Math.abs(n.y - edgeY) <= 5 : Math.abs(n.y + n.height - edgeY) <= 5) &&
+        n.x >= single.x - 5 &&
+        n.x + n.width <= single.x + single.width + 5,
+      );
+      if (group.length < 2) continue;
+      if (Math.abs(group.reduce((s, g) => s + g.width, 0) - single.width) > 10) continue;
+      const deltaY = sign * deltaMag;
+      const newSingleY = dir === 'south' ? single.y : single.y - deltaY;
+      const newSingleH = single.height + deltaY;
+      if (newSingleH < 1200) continue;
+      const nextGroup: Room[] = [];
+      let ok = true;
+      for (const g of group) {
+        const newGY = dir === 'south' ? g.y + deltaY : g.y;
+        const newGH = g.height - deltaY;
+        if (newGH < 1000) { ok = false; break; }
+        nextGroup.push({ ...g, y: newGY, height: newGH, area: g.width * newGH, boundary: rectPolygon(g.x, newGY, g.width, newGH) });
+      }
+      if (!ok) continue;
+      return [
+        { ...single, y: newSingleY, height: newSingleH, area: single.width * newSingleH, boundary: rectPolygon(single.x, newSingleY, single.width, newSingleH) },
+        ...nextGroup,
+      ];
+    }
+  }
+  return undefined;
 }
 
 function assertProtectedEquality(before: Building, after: Building, selected: Set<string>): void {
@@ -158,23 +291,46 @@ export function generateTargetedRefinements(input: TargetedRegenerationInput): r
   for (let variant = 0; variant < 8 && raw.length < 4; variant += 1) {
     try {
       let floors = [...input.building.floors];
+      const effectiveSelected = new Set(selected);
       for (const floor of input.building.floors) {
         const floorSelected = floor.rooms.filter(room => selected.has(room.id)); if (!floorSelected.length) continue;
-        const changed = floorSelected.length === 1 ? [expandSingleRoom(floorSelected[0]!, floor, floor.rooms.filter(room => !selected.has(room.id)), variant)].filter((room): room is Room => Boolean(room)) : [...repartitionRooms(floorSelected, variant)];
-        if (changed.length !== floorSelected.length) throw new RefinementError('NO_VALID_REFINEMENT', 'No free local expansion exists without crossing protected geometry.');
-        floors = floors.map(value => value.id === floor.id ? rebuildDependencies(floor, changed, selected, variant) : value);
+        let changed: Room[];
+        if (floorSelected.length === 1) {
+          const singleExp = expandSingleRoom(floorSelected[0]!, floor, floor.rooms.filter(room => !selected.has(room.id)), variant);
+          if (singleExp) {
+            changed = [singleExp];
+          } else {
+            const coRep = coRepartitionSingleApartmentRoom(floorSelected[0]!, floor, locked, variant);
+            if (!coRep || coRep.length === 0) {
+              throw new RefinementError('NO_VALID_REFINEMENT', 'No free local expansion exists without crossing protected geometry.');
+            }
+            changed = [...coRep];
+            changed.forEach(r => effectiveSelected.add(r.id));
+          }
+        } else {
+          changed = [...repartitionRooms(floorSelected, variant)];
+        }
+        floors = floors.map(value => value.id === floor.id ? rebuildDependencies(floor, changed, effectiveSelected, variant) : value);
       }
       const building: Building = { ...input.building, floors, version: input.building.version + 1 };
-      assertProtectedEquality(input.building, building, selected);
+      assertProtectedEquality(input.building, building, effectiveSelected);
       const diag = evaluateDesign(building);
-      if (!diag.geometryHealthy) continue;
+      const isMultiSheetApartmentBuilding = input.building.floors.some(f => f.walls.some(w => w.id.includes('apt-wall:')));
+      if (isMultiSheetApartmentBuilding) {
+        const hasModifiedRoomError = diag.warnings.some(
+          w => w.severity === 'error' && w.affectedEntityIds?.some(id => effectiveSelected.has(id)),
+        );
+        if (hasModifiedRoomError) continue;
+      } else if (!diag.geometryHealthy) {
+        continue;
+      }
       const validation = diagnosticsToValidation(building);
-      const changedRooms = building.floors.flatMap(floor => floor.rooms).filter(room => selected.has(room.id));
+      const changedRooms = building.floors.flatMap(floor => floor.rooms).filter(room => effectiveSelected.has(room.id));
       const geometryKey = canonical(changedRooms.map(room => ({ id: room.id, x: room.x, y: room.y, width: room.width, height: room.height })));
-      if (raw.some(candidate => canonical(candidate.building.floors.flatMap(floor => floor.rooms).filter(room => selected.has(room.id)).map(room => ({ id: room.id, x: room.x, y: room.y, width: room.width, height: room.height }))) === geometryKey)) continue;
-      const changes = changedRooms.map(room => { const before = selectedRooms.find(value => value.id === room.id)!; return { roomId: room.id, roomName: room.name, beforeAreaMm2: before.area, afterAreaMm2: room.area, deltaAreaMm2: room.area - before.area }; }).filter(change => change.deltaAreaMm2 !== 0 || canonical(selectedRooms.find(room => room.id === change.roomId)?.boundary) !== canonical(changedRooms.find(room => room.id === change.roomId)?.boundary));
+      if (raw.some(candidate => canonical(candidate.building.floors.flatMap(floor => floor.rooms).filter(room => effectiveSelected.has(room.id)).map(room => ({ id: room.id, x: room.x, y: room.y, width: room.width, height: room.height }))) === geometryKey)) continue;
+      const changes = changedRooms.map(room => { const before = allRooms.find(value => value.id === room.id)!; return { roomId: room.id, roomName: room.name, beforeAreaMm2: before.area, afterAreaMm2: room.area, deltaAreaMm2: room.area - before.area }; }).filter(change => change.deltaAreaMm2 !== 0 || canonical(allRooms.find(room => room.id === change.roomId)?.boundary) !== canonical(changedRooms.find(room => room.id === change.roomId)?.boundary));
       if (!changes.length) continue;
-      raw.push({ id: `refinement-${variant + 1}`, name: variant % 2 === 0 ? 'Balanced Boundary Shift' : 'Alternative Boundary Shift', intent: input.intent ?? 'balanced', building, validation, changedRoomIds: [...selected].sort(), preservedRoomIds: allRooms.filter(room => !selected.has(room.id)).map(room => room.id).sort(), changes, scoreDelta: validation.overallScore - baseline.overallScore, baseRevision, rank: 0 });
+      raw.push({ id: `refinement-${variant + 1}`, name: variant % 2 === 0 ? 'Balanced Boundary Shift' : 'Alternative Boundary Shift', intent: input.intent ?? 'balanced', building, validation, changedRoomIds: [...effectiveSelected].sort(), preservedRoomIds: allRooms.filter(room => !effectiveSelected.has(room.id)).map(room => room.id).sort(), changes, scoreDelta: validation.overallScore - baseline.overallScore, baseRevision, rank: 0 });
     } catch (error) { if (!(error instanceof RefinementError)) throw error; }
   }
   if (!raw.length) {

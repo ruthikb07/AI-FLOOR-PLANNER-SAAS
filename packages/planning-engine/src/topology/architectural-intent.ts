@@ -22,7 +22,7 @@
  * This module makes no claim of statutory compliance.
  */
 
-import type { ApartmentBhkType } from '@ai-floor-planner/core';
+import type { ApartmentBhkType, BuildingMassingShape } from '@ai-floor-planner/core';
 
 /** Where the user wants vertical circulation to sit. */
 export type CorePreference =
@@ -96,6 +96,10 @@ export interface SoftPreferences {
   readonly minimizeCorridor: boolean;
   readonly coreCompactness: 'COMPACT' | 'STANDARD';
   readonly livingOrientation: 'EAST' | 'WEST' | 'NORTH' | 'SOUTH' | 'UNSPECIFIED';
+  readonly properSpaceUtilization?: boolean;
+  readonly ventilatedCentralOtsShafts?: boolean;
+  readonly requestsDifferentShape?: boolean;
+  readonly preferredMassingShape?: BuildingMassingShape;
 }
 
 export interface ArchitecturalProgram {
@@ -114,10 +118,20 @@ export class IntentConflictError extends Error {
   }
 }
 
+function normalizeBriefSpelling(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\b(?:cental|centeral)\b/g, 'central')
+    .replace(/\b(?:differnt|diffrent|diferent)\b/g, 'different')
+    .replace(/\b(?:apartement|appartment|aprtment)\b/g, 'apartment')
+    .replace(/\b(?:vasthu|vaastu)\b/g, 'vastu')
+    .replace(/\b(?:ventilatation|ventillation)\b/g, 'ventilation')
+    .replace(/\b(?:stairecase|staircsae)\b/g, 'staircase');
+}
+
 /** Split a brief into clauses so an "east" in one sentence cannot leak into another. */
 function clausesOf(prompt: string): string[] {
-  return prompt
-    .toLowerCase()
+  return normalizeBriefSpelling(prompt)
     .split(/[.;\n]|\b(?:and|but|while|whereas)\b|,/)
     .map(c => c.trim())
     .filter(Boolean);
@@ -188,11 +202,32 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   let singleLift = false;
   let targetAreaSqFt: number | undefined;
   let areaTargetScope: MandatoryRequirements['areaTargetScope'];
+  let properSpaceUtilization = false;
+  let ventilatedCentralOtsShafts = false;
+  let requestsDifferentShape = false;
+  let preferredMassingShape: BuildingMassingShape | undefined;
 
-  const fullLower = prompt.toLowerCase();
+  const fullLower = normalizeBriefSpelling(prompt);
   if (/\b(?:building\s+center(?:ed)?|center(?:ed)?\s+(?:the\s+)?building|center(?:ed)?\s+inside\s+(?:the\s+)?permissible)\b/.test(fullLower)) {
     centerBuilding = true;
   }
+  if (/\b(?:proper\s+space\s+utilization|space\s+utilization|efficient\s+space|high\s+efficiency|compact\s+(?:layout|plan|building|footprint|efficiency|floor\s+plate|massing)|no\s+wasted\s+space|minimize\s+wasted|maximi[sz]e\s+usable)\b/.test(fullLower)) {
+    properSpaceUtilization = true;
+  }
+  const negOtsGlobal = /\b(?:no|not|without|omit|exclude|zero)\s+(?:any\s+)?(?:ots|open[\s-]to[\s-]sky)\b/.test(fullLower);
+  if (!negOtsGlobal && /\b(?:ventilated?\s+(?:central\s+)?ots|central\s+ots\s+shafts?|ots\s+shafts?|ventilation\s+shafts?|light\s+wells?)\b/.test(fullLower)) {
+    ventilatedCentralOtsShafts = true;
+  }
+  if (/\b(?:different\s+shape|non[\s-]standard\s+shape|unique\s+shape|varied\s+shape|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|cruciform|plus[\s-]?shape|pinwheel|stepped)\b/.test(fullLower)) {
+    requestsDifferentShape = true;
+  }
+  if (/\bh[\s-]?shape|h[\s-]?wing\b/.test(fullLower)) preferredMassingShape = 'H_SHAPE_WING';
+  else if (/\bu[\s-]?shape\b/.test(fullLower)) preferredMassingShape = 'U_SHAPE_COURTYARD';
+  else if (/\bl[\s-]?shape|corner[\s-]?wing\b/.test(fullLower)) preferredMassingShape = 'L_SHAPE_CORNER';
+  else if (/\bcruciform|plus[\s-]?shape\b/.test(fullLower)) preferredMassingShape = 'CRUCIFORM_PLUS';
+  else if (/\bpinwheel\b/.test(fullLower)) preferredMassingShape = 'PINWHEEL_CLUSTER';
+  else if (/\bstepped(?:\s+offset)?\b/.test(fullLower)) preferredMassingShape = 'STEPPED_OFFSET_BLOCK';
+  else if (/\bcompact\s+(?:double[\s-]loaded\s+)?block\b/.test(fullLower)) preferredMassingShape = 'COMPACT_DOUBLE_LOADED';
   const areaMatch = fullLower.match(/\b(\d[\d,]*(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sqft|square\s+feet)\b/);
   if (areaMatch) {
     const parsedArea = Number(areaMatch[1]!.replace(/,/g, ''));
@@ -222,7 +257,14 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
       const central = has(clause, /\b(central|centre|center|middle|core\s+in\s+the\s+middle)\b/);
       const split = has(clause, /\b(split|separate(?:d)?\s+cores?|two\s+cores?|distributed)\b/);
 
-      if ((matchedDirs.length > 0 || central || split) && has(clause, NEGATED)) {
+      // Strip explicit non-core negations (e.g. "NO OTS", "no balconies") so an
+      // unpunctuated clause like "NO OTS CENTER BUILDING central lift" does not
+      // misinterpret "NO" as negating the lift/core placement.
+      const clauseWithoutNonCoreNegation = clause.replace(
+        /\b(?:no|not|avoid|don't|do\s+not|never|without|omit|exclude|zero)\s+(?:any\s+)?(?:ots|open[\s-]to[\s-]sky(?:\s+courtyard)?|courtyards?|atriums?|light\s+wells?|air\s+wells?|balcon(?:y|ies)|utility(?:\s+balcon(?:y|ies))?)\b/g,
+        '',
+      );
+      if ((matchedDirs.length > 0 || central || split) && has(clauseWithoutNonCoreNegation, NEGATED)) {
         throw new IntentConflictError(
           'AMBIGUOUS_CORE_PLACEMENT',
           'state the desired core placement directly; a negated placement is not silently inverted',
@@ -377,6 +419,10 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
     minimizeCorridor,
     coreCompactness: compactnessPick ?? 'STANDARD',
     livingOrientation: livingFacingPick ?? 'UNSPECIFIED',
+    ...(properSpaceUtilization ? { properSpaceUtilization: true } : {}),
+    ...(ventilatedCentralOtsShafts ? { ventilatedCentralOtsShafts: true } : {}),
+    ...(requestsDifferentShape ? { requestsDifferentShape: true } : {}),
+    ...(preferredMassingShape ? { preferredMassingShape } : {}),
   };
 
   const mandatory: MandatoryRequirements = {

@@ -51,9 +51,33 @@ export function ETABSExportPanel({ building }: { building: Building }) {
     } catch (e) { if (requestGeneration === generation.current) setError(e instanceof Error ? e.message : String(e)); }
     finally { if (requestGeneration === generation.current) setBusy(false); }
   }
+  async function downloadE2k() {
+    const requestGeneration = ++generation.current;
+    setBusy(true); setError('');
+    try {
+      const response = await fetch('/api/v1/export/etabs/e2k', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building }),
+      });
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error?.message ?? 'ETABS .e2k generation failed');
+      }
+      const e2kText = await response.text();
+      if (requestGeneration !== generation.current) return;
+      const safeName = (building.name || building.id || 'etabs_model').replace(/[^a-zA-Z0-9_-]/g, '_');
+      save(new Blob([e2kText], { type: 'text/plain;charset=utf-8' }), `${safeName}.e2k`);
+    } catch (e) {
+      if (requestGeneration === generation.current) setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      if (requestGeneration === generation.current) setBusy(false);
+    }
+  }
+
   return <section aria-label="Native ETABS export" className="my-6 rounded border border-slate-700 p-4">
-    <h3 className="font-semibold">Export to ETABS (.edb)</h3>
-    <p className="my-2 text-sm text-slate-400">Import the engineer-reviewed StructuralProject for this architectural revision. Export transfers supported inputs; it does not run analysis or certify design safety.</p>
+    <h3 className="font-semibold">Export to ETABS (.edb / .e2k)</h3>
+    <p className="my-2 text-sm text-slate-400">Download a ready-to-import CSI ETABS text model (.e2k) directly, or upload an engineer-reviewed StructuralProject for local native .edb creation. Export transfers supported inputs; it does not run analysis or certify design safety.</p>
     <label className="block">Reviewed StructuralProject JSON<input aria-label="Reviewed StructuralProject JSON" type="file" accept=".json,application/json" disabled={busy} onChange={async e => {
       const file = e.target.files?.[0]; if (!file) return;
       const requestedBuilding = building;
@@ -61,7 +85,17 @@ export function ETABSExportPanel({ building }: { building: Building }) {
       const value = await file.text(); if (current.current === requestedBuilding) changeSource(value);
     }} /></label>
     <label className="my-3 block">Local export token<input aria-label="Local export token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} className="ml-3 bg-slate-800 p-2" /></label>
-    <button disabled={busy || !source || token.length < 32} onClick={() => void exportModel()} className="rounded bg-indigo-700 p-2 disabled:opacity-40">{busy ? 'Working with native ETABS…' : 'Export to ETABS (.edb)'}</button>
+    <div className="flex flex-wrap gap-2">
+      <button disabled={busy || !source || token.length < 32} onClick={() => void exportModel()} className="rounded bg-indigo-700 p-2 disabled:opacity-40">{busy ? 'Working with native ETABS…' : 'Export to ETABS (.edb)'}</button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void downloadE2k()}
+        className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40"
+      >
+        Download CSI ETABS (.e2k)
+      </button>
+    </div>
     {error && <p role="alert" className="mt-3 text-red-300">{error}</p>}
     {artifact && <div className="mt-3">
       <p>{artifact.exportMode === 'ANALYSIS_READY' ? 'Analysis-ready model' : 'Model-only'} · NOT ANALYZED · Design NOT VERIFIED</p>

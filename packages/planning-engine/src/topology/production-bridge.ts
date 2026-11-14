@@ -18,8 +18,12 @@
  * shaft present on one floor but not another would put a slab through a duct.
  */
 
-import type { ApartmentBhkType } from '@ai-floor-planner/core';
-import type { Box2D as SnapperBox, MacroPartition } from '../interpretation/space-filling-snapper';
+import type { ApartmentBhkType, BuildingMassingShape } from '@ai-floor-planner/core';
+import type {
+  Box2D as SnapperBox,
+  MacroPartition,
+  RoomSlicingArchetypeId,
+} from '../interpretation/space-filling-snapper';
 import type { Box2D } from './rect-frame';
 import type { TopologyPartition } from './topology-families';
 import {
@@ -76,6 +80,7 @@ export function macroFromTopology(partition: TopologyPartition): MacroPartition 
     stairBoxes: partition.stairBoxes.map(toSnapper),
     shaftBoxes: partition.shaftBoxes.map(toSnapper),
     shaftRoles: [...partition.shaftRoles],
+    shaftTags: partition.shaftTags ? partition.shaftTags.map(t => [...t]) : undefined,
     corridorIsEastForFlat: partition.accessEdgeForFlat.map(edge => edge === 'EAST' || edge === 'SOUTH'),
     corridorBoxes: corridors,
     lobbyBoxes: lobbies,
@@ -92,6 +97,9 @@ export interface SelectTopologyInput {
   readonly aiPrompt?: string;
   readonly seed?: number;
   readonly conceptLimit?: number;
+  readonly preferredArchetype?: RoomSlicingArchetypeId;
+  readonly preferredMassingShape?: BuildingMassingShape;
+  readonly rejectedTopologyHashes?: readonly string[];
 }
 
 export interface SelectedTopology {
@@ -123,10 +131,24 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     aiPrompt: input.aiPrompt,
     seed: input.seed,
     conceptLimit: input.conceptLimit ?? 3,
+    preferredArchetype: input.preferredArchetype,
+    preferredMassingShape: input.preferredMassingShape,
+    rejectedTopologyHashes: input.rejectedTopologyHashes,
   });
 
   input.onEvaluated?.(result);
-  const chosen = result.concepts[0] ?? (input.allowBestEffort ? result.bestEffort : undefined);
+  const rejectedSet = new Set(input.rejectedTopologyHashes ?? []);
+  const chosen =
+    (rejectedSet.size > 0
+      ? result.concepts.find(
+          c =>
+            !rejectedSet.has(c.fingerprint.digests.canonical) &&
+            !rejectedSet.has(c.fingerprint.canonical) &&
+            !rejectedSet.has(c.variantId),
+        )
+      : undefined)
+    ?? result.concepts[0]
+    ?? (input.allowBestEffort ? result.bestEffort : undefined);
   if (!chosen) return undefined;
 
   return { macro: macroFromTopology(chosen.partition), chosen, result };

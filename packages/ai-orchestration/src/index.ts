@@ -99,6 +99,18 @@ export {
   type ArchitecturalEvaluationResult,
 } from './orchestration/architectural-evaluation';
 export {
+  generateArchitecturalProposal,
+  ARCHITECTURAL_PROPOSAL_SCHEMA,
+  ROOM_SLICING_ARCHETYPES,
+  type RoomSlicingArchetypeId,
+  type ProposalTopologyFamilyId,
+  type ReferenceSpatialGraph,
+  type ArchitecturalProposal,
+  type ArchitecturalProposalTelemetry,
+  type ArchitecturalProposalResult,
+  type GenerateArchitecturalProposalOptions,
+} from './orchestration/architectural-proposal';
+export {
   buildApartmentGenerationManifest,
   renderApartmentManifestText,
   validateSchematicMatchesManifest,

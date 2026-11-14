@@ -32,6 +32,8 @@ export interface GeminiProviderOptions {
   readonly apiKey: string;
   readonly model?: string;
   readonly fallbackModel?: string;
+  readonly fallbackModels?: readonly string[];
+  readonly maxRetriesOn503?: number;
   readonly endpointBase?: string;
   readonly timeoutMs?: number;
   readonly fetchImplementation?: ProviderFetch;
@@ -124,6 +126,8 @@ export class GeminiProvider extends BaseAIProvider {
     readonly apiKey: string;
     readonly model: string;
     readonly fallbackModel?: string;
+    readonly fallbackModels: readonly string[];
+    readonly maxRetriesOn503?: number;
     readonly timeoutMs: number;
     readonly fetchImplementation: ProviderFetch;
   };
@@ -136,10 +140,25 @@ export class GeminiProvider extends BaseAIProvider {
     const model = options.model ?? 'gemini-3.6-flash';
     const endpointBase = options.endpointBase ?? 'https://generativelanguage.googleapis.com/v1beta/models';
     this.endpointBase = endpointBase;
+    const rawFallbacks = [
+      ...(options.fallbackModels ?? []),
+      ...(options.fallbackModel ? [options.fallbackModel] : []),
+    ];
+    const seen = new Set<string>([model]);
+    const fallbackModels: string[] = [];
+    for (const candidate of rawFallbacks) {
+      const trimmed = candidate.trim();
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed);
+        fallbackModels.push(trimmed);
+      }
+    }
     this.options = {
       apiKey: options.apiKey,
       model,
-      fallbackModel: options.fallbackModel,
+      fallbackModel: fallbackModels[0],
+      fallbackModels,
+      maxRetriesOn503: options.maxRetriesOn503,
       timeoutMs: options.timeoutMs ?? 15_000,
       fetchImplementation: options.fetchImplementation ?? fetch,
     };
@@ -179,27 +198,20 @@ export class GeminiProvider extends BaseAIProvider {
     };
 
     const primaryModel = this.options.model;
-    const fallbackModel = this.options.fallbackModel && this.options.fallbackModel !== primaryModel
-      ? this.options.fallbackModel
-      : undefined;
-
-    const modelsToExecute: string[] = [primaryModel];
-    if (fallbackModel) {
-      modelsToExecute.push(fallbackModel);
-    }
+    const modelsToExecute: string[] = [primaryModel, ...this.options.fallbackModels];
 
     let lastError: unknown;
 
     for (let mIdx = 0; mIdx < modelsToExecute.length; mIdx++) {
       const currentModel = modelsToExecute[mIdx]!;
-      const isFallback = mIdx > 0;
+      const hasNextFallback = mIdx < modelsToExecute.length - 1;
       let nextDelayMs: number | undefined;
 
       for (let attempt = 0; attempt <= this.retryPolicy.maxRetries; attempt++) {
         if (attempt > 0) {
           const delayMs = nextDelayMs ?? calculateDelayWithJitter(attempt, this.retryPolicy);
           console.warn(
-            `[GeminiProvider] Transient error on model "${currentModel}" (attempt ${attempt}/${this.retryPolicy.maxRetries}). Retrying in ${delayMs}ms with exponential backoff & jitter...`,
+            `[GeminiProvider] Transient error on model "${currentModel}" (attempt ${attempt}/${this.retryPolicy.maxRetries}). Retrying in ${delayMs}ms...`,
           );
           await this.sleepFn(delayMs);
           nextDelayMs = undefined;
@@ -207,12 +219,15 @@ export class GeminiProvider extends BaseAIProvider {
 
         try {
           const endpoint = `${this.endpointBase}/${encodeURIComponent(currentModel)}:generateContent`;
+          const perAttemptTimeout = hasNextFallback
+            ? Math.min(this.options.timeoutMs, 5_000)
+            : this.options.timeoutMs;
           const result = await postJson(
             {
               apiKey: this.options.apiKey,
               model: currentModel,
               endpoint,
-              timeoutMs: this.options.timeoutMs,
+              timeoutMs: perAttemptTimeout,
               fetchImplementation: this.options.fetchImplementation,
             },
             { 'x-goog-api-key': this.options.apiKey },
@@ -237,7 +252,15 @@ export class GeminiProvider extends BaseAIProvider {
             throw err;
           }
 
-          // 2. If client error (400, 404), throw immediately - no retry
+          // 2. If 404 and another fallback model exists, immediately cascade without retrying
+          if (status === 404 && hasNextFallback) {
+            console.warn(
+              `[GeminiProvider] Model "${currentModel}" returned 404. Cascading immediately to "${modelsToExecute[mIdx + 1]}"...`,
+            );
+            break;
+          }
+
+          // 3. If client error (400, or terminal 404), throw immediately - no retry
           if (status === 400 || status === 404) {
             throw err;
           }
@@ -246,30 +269,42 @@ export class GeminiProvider extends BaseAIProvider {
           const isTransient = isTransientHttpError(status, err);
           const isSafetyOrParseError = err instanceof AISafetyError;
 
-          // 3. If NOT transient, NOT timeout, and NOT recoverable safety/parse error, throw immediately
+          // 4. If NOT transient, NOT timeout, and NOT recoverable safety/parse error, throw immediately
           if (!isTransient && !isTimeout && !isSafetyOrParseError) {
             throw err;
           }
 
-          // Compute delay for next attempt respecting Retry-After where available
-          const retryAfterMs = err instanceof HttpProviderError ? err.retryAfterMs : undefined;
-          nextDelayMs = calculateDelayWithJitter(attempt + 1, this.retryPolicy, retryAfterMs);
+          const isServiceUnavailable = status === 503 || (err instanceof Error && /503|UNAVAILABLE|high demand|overloaded/i.test(err.message));
+          const maxRetriesForError = (isTimeout || isSafetyOrParseError) && hasNextFallback
+            ? 0
+            : isServiceUnavailable && hasNextFallback
+              ? Math.min(this.retryPolicy.maxRetries, this.options.maxRetriesOn503 ?? 1)
+              : this.retryPolicy.maxRetries;
 
-          // 4. Transient error (503, 429, 5xx, or parse glitch):
-          if (attempt < this.retryPolicy.maxRetries) {
-            continue;
+          if (attempt >= maxRetriesForError) {
+            console.warn(
+              `[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (status ${status ?? 'parse/safety'}).`,
+            );
+            break; // move to next fallback model if available
           }
 
-          console.warn(
-            `[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (status ${status ?? 'parse/safety'}).`,
-          );
-          break; // move to fallback model if available
+          // Fast 503 backoff when fallback models are queued so cascading completes well under 4s
+          const retryAfterMs = err instanceof HttpProviderError ? err.retryAfterMs : undefined;
+          if (isServiceUnavailable && hasNextFallback) {
+            const cappedBase = Math.min(this.retryPolicy.initialDelayMs, 500);
+            const jitter = Math.round(cappedBase * this.retryPolicy.jitterRatio * (Math.random() * 2 - 1));
+            nextDelayMs = retryAfterMs !== undefined
+              ? Math.min(1000, Math.max(50, retryAfterMs))
+              : Math.max(20, cappedBase + jitter);
+          } else {
+            nextDelayMs = calculateDelayWithJitter(attempt + 1, this.retryPolicy, retryAfterMs);
+          }
         }
       }
 
-      if (fallbackModel && !isFallback) {
+      if (hasNextFallback) {
         console.warn(
-          `[GeminiProvider] Primary model "${primaryModel}" temporarily unavailable (503/transient). Falling back to "${fallbackModel}"...`,
+          `[GeminiProvider] Model "${currentModel}" temporarily unavailable (503/transient). Falling back to "${modelsToExecute[mIdx + 1]}"...`,
         );
       }
     }
