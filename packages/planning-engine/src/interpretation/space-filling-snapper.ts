@@ -115,6 +115,7 @@ export function createConnectingDoor(
     width >= 1050 && sharedXLen >= 1200 ? 1000 :
     width >= 1050 && sharedXLen >= 1000 ? 900 :
     width >= 900 && sharedXLen >= 1000 ? 800 :
+    width < 900 && width >= 750 && sharedXLen >= width + 100 ? width :
     width < 900 && width >= 750 && sharedXLen >= 900 ? 700 :
     width;
 
@@ -124,16 +125,23 @@ export function createConnectingDoor(
 
   const cornerNib = options?.isFlatEntrance ? 100 : 150;
   const reqMargin = options?.isFlatEntrance ? 100 : 200;
+  const horizReqMargin =
+    !options?.isFlatEntrance && width < 900 && width >= 750 && sharedXLen >= width + 100 && sharedXLen < width + 200
+      ? 100
+      : reqMargin;
+  const horizCornerNib = options?.isFlatEntrance
+    ? 100
+    : Math.min(cornerNib, Math.max(50, Math.floor((sharedXLen - effectiveHorizWidth) / 2)));
 
-  if (touchesHoriz && sharedXLen >= effectiveHorizWidth + reqMargin) {
+  if (touchesHoriz && sharedXLen >= effectiveHorizWidth + horizReqMargin) {
     const sharedY = Math.abs(aRect.y + aRect.height - bRect.y) <= 1 ? aRect.y + aRect.height : bRect.y + bRect.height;
-    const minDoorX = loX + cornerNib;
-    const maxDoorX = hiX - cornerNib - effectiveHorizWidth;
+    const minDoorX = loX + horizCornerNib;
+    const maxDoorX = hiX - horizCornerNib - effectiveHorizWidth;
     const doorX = options?.doorType === 'open_passage' && effectiveHorizWidth >= 1200
       ? snap10((loX + hiX - effectiveHorizWidth) / 2)
       : options?.anchorSide === 'end'
-        ? Math.max(minDoorX, Math.min(maxDoorX, Math.floor((hiX - cornerNib - effectiveHorizWidth) / 10) * 10))
-        : Math.max(minDoorX, Math.min(maxDoorX, Math.ceil((loX + cornerNib) / 10) * 10));
+        ? Math.max(minDoorX, Math.min(maxDoorX, Math.floor((hiX - horizCornerNib - effectiveHorizWidth) / 10) * 10))
+        : Math.max(minDoorX, Math.min(maxDoorX, Math.ceil((loX + horizCornerNib) / 10) * 10));
 
     return {
       id,
@@ -161,18 +169,27 @@ export function createConnectingDoor(
     width >= 1050 && sharedYLen >= 1200 ? 1000 :
     width >= 1050 && sharedYLen >= 1000 ? 900 :
     width >= 900 && sharedYLen >= 1000 ? 800 :
+    width < 900 && width >= 750 && sharedYLen >= width + 100 ? width :
     width < 900 && width >= 750 && sharedYLen >= 900 ? 700 :
     width;
 
-  if (touchesVert && sharedYLen >= effectiveVertWidth + reqMargin) {
+  const vertReqMargin =
+    !options?.isFlatEntrance && width < 900 && width >= 750 && sharedYLen >= width + 100 && sharedYLen < width + 200
+      ? 100
+      : reqMargin;
+  const vertCornerNib = options?.isFlatEntrance
+    ? 100
+    : Math.min(cornerNib, Math.max(50, Math.floor((sharedYLen - effectiveVertWidth) / 2)));
+
+  if (touchesVert && sharedYLen >= effectiveVertWidth + vertReqMargin) {
     const sharedX = Math.abs(aRect.x + aRect.width - bRect.x) <= 1 ? aRect.x + aRect.width : bRect.x + bRect.width;
-    const minDoorY = loY + cornerNib;
-    const maxDoorY = hiY - cornerNib - effectiveVertWidth;
+    const minDoorY = loY + vertCornerNib;
+    const maxDoorY = hiY - vertCornerNib - effectiveVertWidth;
     const doorY = options?.doorType === 'open_passage' && effectiveVertWidth >= 1200
       ? snap10((loY + hiY - effectiveVertWidth) / 2)
       : options?.anchorSide === 'end'
-        ? Math.max(minDoorY, Math.min(maxDoorY, Math.floor((hiY - cornerNib - effectiveVertWidth) / 10) * 10))
-        : Math.max(minDoorY, Math.min(maxDoorY, Math.ceil((loY + cornerNib) / 10) * 10));
+        ? Math.max(minDoorY, Math.min(maxDoorY, Math.floor((hiY - vertCornerNib - effectiveVertWidth) / 10) * 10))
+        : Math.max(minDoorY, Math.min(maxDoorY, Math.ceil((loY + vertCornerNib) / 10) * 10));
 
     return {
       id,
@@ -905,7 +922,7 @@ export function sliceFlatRooms(params: {
     : (corridorIsEast ? livingZoneX : livingZoneX + livW);
 
   const utilDepth = box.h < 7000 ? 1000 : box.h < 9000 ? 1200 : 1430;
-  const baseBalconyDepth = box.h < 9000 ? 1200 : (placement?.sitoutSize === 'COMPACT' ? 1500 : 1800);
+  const baseBalconyDepth = box.h < 9000 ? 1450 : (placement?.sitoutSize === 'COMPACT' ? 1550 : 1830);
   const balconyDepth = arch.extraBalconyDepth > 0 && box.h >= 9000
     ? Math.min(2000, baseBalconyDepth + arch.extraBalconyDepth)
     : baseBalconyDepth;
@@ -1046,8 +1063,12 @@ export function sliceFlatRooms(params: {
   const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: 'open_passage' });
   if (dLivDin) flatOpenings.push(dLivDin);
 
-  // 2. Dining to Sit-out Balcony sliding door (900 mm)
-  const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, 900, { doorType: 'sliding' });
+  // 2. Dining to Sit-out Balcony wide sliding glass door (>= 1200 mm, up to 2400 mm)
+  const balcDoorWidth = Math.min(
+    2400,
+    Math.max(1200, Math.floor(Math.min(diningRoom.rect.width, balconyRoom.rect.width) - 250)),
+  );
+  const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcDoorWidth, { doorType: 'sliding' });
   if (dBalcony) flatOpenings.push(dBalcony);
 
   // 3. Dining to Kitchen connection (single door or open passage)
@@ -1474,7 +1495,7 @@ export function sliceFlatRooms(params: {
         botBandH = remBedH - topBandH;
       }
 
-      const bathW = snap10(Math.max(1800, Math.min(2400, colExtW - 1100)));
+      const bathW = snap10(Math.max(1800, Math.min(2600, colExtW - 1100)));
       const passW = bedZoneW - bathW;
       const bathX = corridorIsEast ? bedZoneX : bedZoneX + passW;
       const passX = corridorIsEast ? bedZoneX + bathW : bedZoneX;
@@ -1777,180 +1798,389 @@ export function sliceFlatRooms(params: {
       const colIntW = bedZoneW - colExtW;
       const xExt = corridorIsEast ? bedZoneX : bedZoneX + colIntW;
       const xInt = corridorIsEast ? bedZoneX + colExtW : bedZoneX;
+      const northIsExterior = Math.abs(box.y - envelope.y) <= 10;
+      const southIsExterior = Math.abs((box.y + box.h) - (envelope.y + envelope.h)) <= 10;
+      const isHalfDepthQuadrant = northIsExterior !== southIsExterior;
 
-      const minBothBedsH = Math.min(6000, snap10(box.h * 0.72));
-      const wantFourBaths = (box.h - minBothBedsH) >= 3800;
-      const bathBlockH = snap10(Math.min(5200, Math.max(wantFourBaths ? 3800 : 2800, Math.min(box.h - minBothBedsH, box.h * 0.26))));
-      const availBedH = box.h - bathBlockH;
+      if (isHalfDepthQuadrant) {
+        // When North or South is an internal party wall (Quad layouts), keep all 4 bedrooms
+        // and all bathrooms on the exterior L-perimeter (xExt facade + outer North/South edge)
+        // so zero bedrooms or wet rooms end up landlocked against the party wall.
+        const hasNorthPartyWall = !northIsExterior;
+        const partyBandRawH = Math.max(
+          3400,
+          Math.min(snap10(box.h * 0.30), Math.max(snap10(bedZoneW / 2.05), snap10(box.h * 0.24))),
+        );
+        const partyBandH = box.h >= 13000
+          ? Math.min(partyBandRawH, box.h - 9600)
+          : Math.max(3000, Math.min(partyBandRawH, box.h - 6000));
+        const remAfterParty = box.h - partyBandH;
+        const wantFourBaths = remAfterParty >= 14500;
+        const bathBlockH = snap10(
+          Math.min(4800, Math.max(wantFourBaths ? 4400 : 3000, remAfterParty * 0.28)),
+        );
+        const remBedsH = remAfterParty - bathBlockH;
+        const bed2H = snap10(Math.max(3000, Math.min(remBedsH - 3600, remBedsH * 0.42)));
+        const bed3H = remBedsH - bed2H;
+        const passOverlap = Math.min(1600, Math.max(1200, Math.min(bed3H - 3000, snap10(bed3H * 0.20))));
+        const bed4H = bed3H - passOverlap;
 
-      const maxTwoBandH = snap10(Math.min(colExtW, colIntW) * 3.6);
-      const extraBandH = availBedH > maxTwoBandH && availBedH - maxTwoBandH >= 2000 ? availBedH - maxTwoBandH : 0;
-      const remBedH = availBedH - extraBandH;
+        const studyOverflow = bedZoneW > partyBandH * 2.2 && colIntW >= 3000
+          ? Math.min(colIntW - 1200, Math.max(0, bedZoneW - snap10(partyBandH * 2.1)))
+          : 0;
+        const useSideStudy = studyOverflow >= 1500;
+        const masterW = useSideStudy ? bedZoneW - studyOverflow : bedZoneW;
+        const masterX = corridorIsEast ? bedZoneX : bedZoneX + (bedZoneW - masterW);
 
-      let topBandH = snap10(Math.max(3000, Math.min(remBedH - 3000, remBedH * (arch.invertBedroomOrder ? 0.48 : 0.52))));
-      let botBandH = remBedH - topBandH;
+        const bath1H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
+        const bath2H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
+        const bath3H = wantFourBaths ? snap10(bathBlockH * 0.25) : 0;
+        const bathLastH = bathBlockH - bath1H - bath2H - bath3H;
 
-      const livStart = livingRoom.rect.y;
-      const livEnd = livStart + livingRoom.rect.height;
-      const passStart = box.y + topBandH;
-      const passEnd = passStart + bathBlockH;
-      const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
-      if (overlap < 1100 && remBedH >= 6000) {
-        const minRun = 3000;
-        const maxRun = remBedH - 3000;
-        const targetTopH = isSouth
-          ? snap10(livEnd - 1100 - box.y)
-          : snap10(livStart + 1100 - bathBlockH - box.y);
-        topBandH = Math.max(minRun, Math.min(maxRun, targetTopH));
-        botBandH = remBedH - topBandH;
-      }
+        const masterY = hasNorthPartyWall ? box.y : box.y + box.h - partyBandH;
+        const bathTopY = hasNorthPartyWall ? box.y + partyBandH : box.y + bed3H + bed2H;
+        const bed2Y = hasNorthPartyWall ? bathTopY + bathBlockH : box.y + bed3H;
+        const bed3Y = hasNorthPartyWall ? bed2Y + bed2H : box.y;
+        const bed4Y = hasNorthPartyWall ? bed3Y + passOverlap : box.y;
+        const passY = hasNorthPartyWall ? box.y + partyBandH : box.y + bed4H;
 
-      const bathW = snap10(Math.max(1800, Math.min(2400, colExtW - 1100)));
-      const passW = bedZoneW - bathW;
-      const bathX = corridorIsEast ? bedZoneX : bedZoneX + passW;
-      const passX = corridorIsEast ? bedZoneX + bathW : bedZoneX;
+        const masterBed: ApartmentPlanRoom = {
+          id: `${flatId}__master_bed`,
+          name: `${flatLabel} Master Bedroom`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: masterX, y: masterY, width: masterW, height: partyBandH },
+        };
+        const bed2: ApartmentPlanRoom = {
+          id: `${flatId}__bed_2`,
+          name: `${flatLabel} Bedroom 02`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xExt, y: bed2Y, width: colExtW, height: bed2H },
+        };
+        const bed3: ApartmentPlanRoom = {
+          id: `${flatId}__bed_3`,
+          name: `${flatLabel} Bedroom 03`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xExt, y: bed3Y, width: colExtW, height: bed3H },
+        };
+        const bed4: ApartmentPlanRoom = {
+          id: `${flatId}__bed_4`,
+          name: `${flatLabel} Bedroom 04`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xInt, y: bed4Y, width: colIntW, height: bed4H },
+        };
+        const passage: ApartmentPlanRoom = {
+          id: `${flatId}__internal_passage`,
+          name: `${flatLabel} Internal Passage`,
+          type: 'corridor',
+          planningZone: 'SERVICE',
+          rect: { x: xInt, y: passY, width: colIntW, height: bathBlockH + bed2H + passOverlap },
+        };
+        rooms.push(masterBed, bed2, bed3, bed4, passage);
 
-      // Top Band: Master Bedroom (exterior column) + Bedroom 02 (interior column)
-      const masterBed: ApartmentPlanRoom = {
-        id: `${flatId}__master_bed`,
-        name: `${flatLabel} Master Bedroom`,
-        type: 'bedroom',
-        planningZone: 'PRIVATE',
-        rect: { x: xExt, y: box.y, width: colExtW, height: topBandH },
-      };
-      const bed2: ApartmentPlanRoom = {
-        id: `${flatId}__bed_2`,
-        name: `${flatLabel} Bedroom 02`,
-        type: 'bedroom',
-        planningZone: 'PRIVATE',
-        rect: { x: xInt, y: box.y, width: colIntW, height: topBandH },
-      };
-      rooms.push(masterBed, bed2);
+        let extraStudy: ApartmentPlanRoom | undefined;
+        if (useSideStudy) {
+          extraStudy = {
+            id: `${flatId}__study`,
+            name: `${flatLabel} Study & Home Office`,
+            type: 'study',
+            planningZone: 'PRIVATE',
+            rect: {
+              x: corridorIsEast ? bedZoneX + masterW : bedZoneX,
+              y: masterY,
+              width: studyOverflow,
+              height: partyBandH,
+            },
+          };
+          rooms.push(extraStudy);
+        }
 
-      // Middle Band: Exterior Bathroom Stack + Single Central Internal Passage
-      const midY = box.y + topBandH;
-      const bath1H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
-      const bath2H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
-      const bath3H = wantFourBaths ? snap10(bathBlockH * 0.25) : 0;
-      const bathLastH = bathBlockH - bath1H - bath2H - bath3H;
+        const masterBathY = hasNorthPartyWall ? bathTopY : bathTopY + bathBlockH - bath1H;
+        const commonBathY = hasNorthPartyWall ? bathTopY + bath1H : masterBathY - bath2H;
+        const bath3Y = hasNorthPartyWall ? bathTopY + bath1H + bath2H : bathTopY + bathLastH;
+        const bath2Y = hasNorthPartyWall ? bathTopY + bath1H + bath2H + bath3H : bathTopY;
 
-      const masterBath: ApartmentPlanRoom = {
-        id: `${flatId}__master_bath`,
-        name: `${flatLabel} Master Toilet`,
-        type: 'bathroom',
-        planningZone: 'SERVICE',
-        bathroomOwnerRoomId: masterBed.id,
-        rect: { x: bathX, y: midY, width: bathW, height: bath1H },
-      };
-      const commonBath: ApartmentPlanRoom = {
-        id: `${flatId}__common_bath`,
-        name: `${flatLabel} Common Bathroom`,
-        type: 'common_toilet',
-        planningZone: 'SERVICE',
-        rect: { x: bathX, y: midY + bath1H, width: bathW, height: bath2H },
-      };
-      rooms.push(masterBath, commonBath);
-
-      let bath3Room: ApartmentPlanRoom | undefined;
-      if (wantFourBaths) {
-        bath3Room = {
-          id: `${flatId}__bath_3`,
-          name: `${flatLabel} Common Toilet 03`,
+        const masterBath: ApartmentPlanRoom = {
+          id: `${flatId}__master_bath`,
+          name: `${flatLabel} Master Toilet`,
+          type: 'bathroom',
+          planningZone: 'SERVICE',
+          bathroomOwnerRoomId: masterBed.id,
+          rect: { x: xExt, y: masterBathY, width: colExtW, height: bath1H },
+        };
+        const commonBath: ApartmentPlanRoom = {
+          id: `${flatId}__common_bath`,
+          name: `${flatLabel} Common Bathroom`,
           type: 'common_toilet',
           planningZone: 'SERVICE',
-          rect: { x: bathX, y: midY + bath1H + bath2H, width: bathW, height: bath3H },
+          rect: { x: xExt, y: commonBathY, width: colExtW, height: bath2H },
         };
-        rooms.push(bath3Room);
-      }
+        const bath2Room: ApartmentPlanRoom = {
+          id: `${flatId}__bath_2`,
+          name: `${flatLabel} Toilet 02`,
+          type: 'bathroom',
+          planningZone: 'SERVICE',
+          bathroomOwnerRoomId: bed2.id,
+          rect: { x: xExt, y: bath2Y, width: colExtW, height: bathLastH },
+        };
+        rooms.push(masterBath, commonBath, bath2Room);
 
-      const botY = midY + bathBlockH;
-      const bed3: ApartmentPlanRoom = {
-        id: `${flatId}__bed_3`,
-        name: `${flatLabel} Bedroom 03`,
-        type: 'bedroom',
-        planningZone: 'PRIVATE',
-        rect: { x: xExt, y: botY, width: colExtW, height: botBandH },
-      };
-      const bed4: ApartmentPlanRoom = {
-        id: `${flatId}__bed_4`,
-        name: `${flatLabel} Bedroom 04`,
-        type: 'bedroom',
-        planningZone: 'PRIVATE',
-        rect: { x: xInt, y: botY, width: colIntW, height: botBandH },
-      };
+        let bath3Room: ApartmentPlanRoom | undefined;
+        if (wantFourBaths) {
+          bath3Room = {
+            id: `${flatId}__bath_3`,
+            name: `${flatLabel} Common Toilet 03`,
+            type: 'common_toilet',
+            planningZone: 'SERVICE',
+            rect: { x: xExt, y: bath3Y, width: colExtW, height: bath3H },
+          };
+          rooms.push(bath3Room);
+        }
 
-      const bath2Room: ApartmentPlanRoom = {
-        id: `${flatId}__bath_2`,
-        name: `${flatLabel} Toilet 02`,
-        type: 'bathroom',
-        planningZone: 'SERVICE',
-        bathroomOwnerRoomId: bed3.id,
-        rect: { x: bathX, y: midY + bath1H + bath2H + bath3H, width: bathW, height: bathLastH },
-      };
-      rooms.push(bath2Room);
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' })
+          ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
+        if (dPass) flatOpenings.push(dPass);
 
-      const passage: ApartmentPlanRoom = {
-        id: `${flatId}__internal_passage`,
-        name: `${flatLabel} Internal Passage`,
-        type: 'corridor',
-        planningZone: 'SERVICE',
-        rect: { x: passX, y: midY, width: passW, height: bathBlockH },
-      };
-      rooms.push(passage, bed3, bed4);
+        const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
+        if (dMasterBath) flatOpenings.push(dMasterBath);
 
-      let extraStudy: ApartmentPlanRoom | undefined;
-      if (extraBandH > 0) {
-        extraStudy = {
-          id: `${flatId}__study`,
-          name: `${flatLabel} Study & Home Office`,
-          type: 'study',
+        const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
+        if (dCommonBath) flatOpenings.push(dCommonBath);
+
+        if (bath3Room) {
+          const dBath3 = createConnectingDoor(`${flatId}__door_bath_3`, passage, bath3Room, 750);
+          if (dBath3) flatOpenings.push(dBath3);
+        }
+
+        const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, bed2, bath2Room, 750)
+          ?? createConnectingDoor(`${flatId}__door_bath_2`, passage, bath2Room, 750);
+        if (dBath2) flatOpenings.push(dBath2);
+
+        const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900)
+          ?? createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
+        if (dMaster) flatOpenings.push(dMaster);
+
+        const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_2`, livingRoom, bed2, 900);
+        if (dBed2) flatOpenings.push(dBed2);
+
+        const dBed3 = createConnectingDoor(`${flatId}__door_bed_3`, passage, bed3, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_3`, livingRoom, bed3, 900);
+        if (dBed3) flatOpenings.push(dBed3);
+
+        const dBed4 = createConnectingDoor(`${flatId}__door_bed_4`, passage, bed4, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_4`, livingRoom, bed4, 900);
+        if (dBed4) flatOpenings.push(dBed4);
+
+        if (extraStudy) {
+          const dStudy = createConnectingDoor(`${flatId}__door_study`, passage, extraStudy, 900)
+            ?? createConnectingDoor(`${flatId}__door_study`, livingRoom, extraStudy, 900)
+            ?? createConnectingDoor(`${flatId}__door_study`, diningRoom, extraStudy, 900);
+          if (dStudy) flatOpenings.push(dStudy);
+        }
+      } else {
+        const minBothBedsH = Math.min(6000, snap10(box.h * 0.72));
+        const wantFourBaths = (box.h - minBothBedsH) >= 3800;
+        const bathBlockH = snap10(Math.min(5200, Math.max(wantFourBaths ? 3800 : 2800, Math.min(box.h - minBothBedsH, box.h * 0.26))));
+        const availBedH = box.h - bathBlockH;
+
+        const maxTwoBandH = snap10(Math.min(colExtW, colIntW) * 3.6);
+        const extraBandH = availBedH > maxTwoBandH && availBedH - maxTwoBandH >= 2000 ? availBedH - maxTwoBandH : 0;
+        const remBedH = availBedH - extraBandH;
+
+        let topBandH = snap10(Math.max(3000, Math.min(remBedH - 3000, remBedH * (arch.invertBedroomOrder ? 0.48 : 0.52))));
+        let botBandH = remBedH - topBandH;
+
+        const livStart = livingRoom.rect.y;
+        const livEnd = livStart + livingRoom.rect.height;
+        const passStart = box.y + topBandH;
+        const passEnd = passStart + bathBlockH;
+        const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
+        if (overlap < 1100 && remBedH >= 6000) {
+          const minRun = 3000;
+          const maxRun = remBedH - 3000;
+          const targetTopH = isSouth
+            ? snap10(livEnd - 1100 - box.y)
+            : snap10(livStart + 1100 - bathBlockH - box.y);
+          topBandH = Math.max(minRun, Math.min(maxRun, targetTopH));
+          botBandH = remBedH - topBandH;
+        }
+
+        const bathW = snap10(Math.max(1800, Math.min(2600, colExtW - 1100)));
+        const passW = bedZoneW - bathW;
+        const bathX = corridorIsEast ? bedZoneX : bedZoneX + passW;
+        const passX = corridorIsEast ? bedZoneX + bathW : bedZoneX;
+
+        // Top Band: Master Bedroom (exterior column) + Bedroom 02 (interior column)
+        const masterBed: ApartmentPlanRoom = {
+          id: `${flatId}__master_bed`,
+          name: `${flatLabel} Master Bedroom`,
+          type: 'bedroom',
           planningZone: 'PRIVATE',
-          rect: { x: bedZoneX, y: botY + botBandH, width: bedZoneW, height: extraBandH },
+          rect: { x: xExt, y: box.y, width: colExtW, height: topBandH },
         };
-        rooms.push(extraStudy);
-      }
+        const bed2: ApartmentPlanRoom = {
+          id: `${flatId}__bed_2`,
+          name: `${flatLabel} Bedroom 02`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xInt, y: box.y, width: colIntW, height: topBandH },
+        };
+        rooms.push(masterBed, bed2);
 
-      const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' })
-        ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
-      if (dPass) flatOpenings.push(dPass);
+        // Middle Band: Exterior Bathroom Stack + Single Central Internal Passage
+        const midY = box.y + topBandH;
+        const bath1H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
+        const bath2H = wantFourBaths ? snap10(bathBlockH * 0.25) : snap10(bathBlockH / 3);
+        const bath3H = wantFourBaths ? snap10(bathBlockH * 0.25) : 0;
+        const bathLastH = bathBlockH - bath1H - bath2H - bath3H;
 
-      const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
-      if (dMasterBath) flatOpenings.push(dMasterBath);
+        const masterBath: ApartmentPlanRoom = {
+          id: `${flatId}__master_bath`,
+          name: `${flatLabel} Master Toilet`,
+          type: 'bathroom',
+          planningZone: 'SERVICE',
+          bathroomOwnerRoomId: masterBed.id,
+          rect: { x: bathX, y: midY, width: bathW, height: bath1H },
+        };
+        const commonBath: ApartmentPlanRoom = {
+          id: `${flatId}__common_bath`,
+          name: `${flatLabel} Common Bathroom`,
+          type: 'common_toilet',
+          planningZone: 'SERVICE',
+          rect: { x: bathX, y: midY + bath1H, width: bathW, height: bath2H },
+        };
+        rooms.push(masterBath, commonBath);
 
-      const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
-      if (dCommonBath) flatOpenings.push(dCommonBath);
+        let bath3Room: ApartmentPlanRoom | undefined;
+        if (wantFourBaths) {
+          bath3Room = {
+            id: `${flatId}__bath_3`,
+            name: `${flatLabel} Common Toilet 03`,
+            type: 'common_toilet',
+            planningZone: 'SERVICE',
+            rect: { x: bathX, y: midY + bath1H + bath2H, width: bathW, height: bath3H },
+          };
+          rooms.push(bath3Room);
+        }
 
-      if (bath3Room) {
-        const dBath3 = createConnectingDoor(`${flatId}__door_bath_3`, passage, bath3Room, 750);
-        if (dBath3) flatOpenings.push(dBath3);
-      }
+        // Keep Study + Lower Passage in middle band when extraBandH > 0 so Bed 3 & Bed 4
+        // remain flush on the South exterior facade and never end up windowless.
+        const botY = midY + bathBlockH + extraBandH;
+        const bed3: ApartmentPlanRoom = {
+          id: `${flatId}__bed_3`,
+          name: `${flatLabel} Bedroom 03`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xExt, y: botY, width: colExtW, height: botBandH },
+        };
+        const bed4: ApartmentPlanRoom = {
+          id: `${flatId}__bed_4`,
+          name: `${flatLabel} Bedroom 04`,
+          type: 'bedroom',
+          planningZone: 'PRIVATE',
+          rect: { x: xInt, y: botY, width: colIntW, height: botBandH },
+        };
 
-      const dBath2 = createConnectingDoor(`${flatId}__door_bath_2`, bed3, bath2Room, 750)
-        ?? createConnectingDoor(`${flatId}__door_bath_2`, passage, bath2Room, 750);
-      if (dBath2) flatOpenings.push(dBath2);
+        const bath2Room: ApartmentPlanRoom = {
+          id: `${flatId}__bath_2`,
+          name: `${flatLabel} Toilet 02`,
+          type: extraBandH > 0 ? 'common_toilet' : 'bathroom',
+          planningZone: 'SERVICE',
+          ...(extraBandH === 0 ? { bathroomOwnerRoomId: bed3.id } : {}),
+          rect: { x: bathX, y: midY + bath1H + bath2H + bath3H, width: bathW, height: bathLastH },
+        };
+        rooms.push(bath2Room);
 
-      const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900)
-        ?? createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
-      if (dMaster) flatOpenings.push(dMaster);
+        const passage: ApartmentPlanRoom = {
+          id: `${flatId}__internal_passage`,
+          name: `${flatLabel} Internal Passage`,
+          type: 'corridor',
+          planningZone: 'SERVICE',
+          rect: { x: passX, y: midY, width: passW, height: bathBlockH },
+        };
+        rooms.push(passage, bed3, bed4);
 
-      const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900)
-        ?? createConnectingDoor(`${flatId}__door_bed_2`, livingRoom, bed2, 900);
-      if (dBed2) flatOpenings.push(dBed2);
+        let extraStudy: ApartmentPlanRoom | undefined;
+        let lowerPassage: ApartmentPlanRoom | undefined;
+        if (extraBandH > 0) {
+          const studyW = Math.max(bathW, Math.min(colExtW - 1100, snap10(bedZoneW * 0.40)));
+          const lowerPassW = bedZoneW - studyW;
+          const studyX = corridorIsEast ? bedZoneX : bedZoneX + lowerPassW;
+          const lowerPassX = corridorIsEast ? bedZoneX + studyW : bedZoneX;
+          extraStudy = {
+            id: `${flatId}__study`,
+            name: `${flatLabel} Study & Home Office`,
+            type: 'study',
+            planningZone: 'PRIVATE',
+            rect: { x: studyX, y: midY + bathBlockH, width: studyW, height: extraBandH },
+          };
+          lowerPassage = {
+            id: `${flatId}__lower_passage`,
+            name: `${flatLabel} Lower Passage`,
+            type: 'corridor',
+            planningZone: 'SERVICE',
+            rect: { x: lowerPassX, y: midY + bathBlockH, width: lowerPassW, height: extraBandH },
+          };
+          rooms.push(extraStudy, lowerPassage);
+        }
 
-      const dBed3 = createConnectingDoor(`${flatId}__door_bed_3`, passage, bed3, 900)
-        ?? createConnectingDoor(`${flatId}__door_bed_3`, livingRoom, bed3, 900);
-      if (dBed3) flatOpenings.push(dBed3);
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' })
+          ?? (lowerPassage ? createConnectingDoor(`${flatId}__door_passage`, livingRoom, lowerPassage, 900, { doorType: 'open_passage' }) : null)
+          ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
+        if (dPass) flatOpenings.push(dPass);
 
-      const dBed4 = createConnectingDoor(`${flatId}__door_bed_4`, passage, bed4, 900)
-        ?? createConnectingDoor(`${flatId}__door_bed_4`, livingRoom, bed4, 900);
-      if (dBed4) flatOpenings.push(dBed4);
+        if (lowerPassage) {
+          const dLowerPass = createConnectingDoor(`${flatId}__door_lower_passage`, passage, lowerPassage, 1200, { doorType: 'open_passage' });
+          if (dLowerPass) flatOpenings.push(dLowerPass);
+          const dLowerLiv = createConnectingDoor(`${flatId}__door_lower_passage_living`, livingRoom, lowerPassage, 900, { doorType: 'open_passage' })
+            ?? createConnectingDoor(`${flatId}__door_lower_passage_dining`, diningRoom, lowerPassage, 900, { doorType: 'open_passage' });
+          if (dLowerLiv && dLowerLiv.id !== dPass?.id) flatOpenings.push(dLowerLiv);
+        }
 
-      if (extraStudy) {
-        const dExtra = createConnectingDoor(`${flatId}__door_study`, livingRoom, extraStudy, 900)
-          ?? createConnectingDoor(`${flatId}__door_study`, diningRoom, extraStudy, 900)
-          ?? createConnectingDoor(`${flatId}__door_study`, bed4, extraStudy, 900)
-          ?? createConnectingDoor(`${flatId}__door_study`, bed3, extraStudy, 900);
-        if (dExtra) flatOpenings.push(dExtra);
+        const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
+        if (dMasterBath) flatOpenings.push(dMasterBath);
+
+        const dCommonBath = createConnectingDoor(`${flatId}__door_common_bath`, passage, commonBath, 750);
+        if (dCommonBath) flatOpenings.push(dCommonBath);
+
+        if (bath3Room) {
+          const dBath3 = createConnectingDoor(`${flatId}__door_bath_3`, passage, bath3Room, 750);
+          if (dBath3) flatOpenings.push(dBath3);
+        }
+
+        const dBath2 = extraBandH > 0
+          ? createConnectingDoor(`${flatId}__door_bath_2`, passage, bath2Room, 750)
+          : (createConnectingDoor(`${flatId}__door_bath_2`, bed3, bath2Room, 750)
+            ?? createConnectingDoor(`${flatId}__door_bath_2`, passage, bath2Room, 750));
+        if (dBath2) flatOpenings.push(dBath2);
+
+        const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900)
+          ?? createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
+        if (dMaster) flatOpenings.push(dMaster);
+
+        const dBed2 = createConnectingDoor(`${flatId}__door_bed_2`, passage, bed2, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_2`, livingRoom, bed2, 900);
+        if (dBed2) flatOpenings.push(dBed2);
+
+        const southPassTarget = lowerPassage ?? passage;
+        const dBed3 = createConnectingDoor(`${flatId}__door_bed_3`, southPassTarget, bed3, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_3`, livingRoom, bed3, 900);
+        if (dBed3) flatOpenings.push(dBed3);
+
+        const dBed4 = createConnectingDoor(`${flatId}__door_bed_4`, southPassTarget, bed4, 900)
+          ?? createConnectingDoor(`${flatId}__door_bed_4`, livingRoom, bed4, 900);
+        if (dBed4) flatOpenings.push(dBed4);
+
+        if (extraStudy) {
+          const dExtra = createConnectingDoor(`${flatId}__door_study`, lowerPassage ?? passage, extraStudy, 900)
+            ?? createConnectingDoor(`${flatId}__door_study`, livingRoom, extraStudy, 900)
+            ?? createConnectingDoor(`${flatId}__door_study`, diningRoom, extraStudy, 900);
+          if (dExtra) flatOpenings.push(dExtra);
+        }
       }
     } else {
       // Compact 4BHK fallback when bedZoneW < 5800 mm: single unified Internal Passage (never two disconnected passages)
@@ -2088,55 +2318,87 @@ export function sliceFlatRooms(params: {
   // Inset balconies consume their bedroom's existing allocation; they never
   // project into setbacks or borrow area from a neighbour, kitchen or core.
   // Maintain >= 3,000 mm minimum clear bedroom width and height after carving.
-  for (const bedroom of [...rooms].filter(r => r.type === 'bedroom')) {
+  // When staggeredBalconies is enabled across multi-floor stacks, Odd floors favor
+  // primary/odd bedroom bays while Even floors favor alternate even-indexed bays
+  // with columns, lifts, stairs, and wet shafts remaining identically stacked.
+  const allBedrooms = [...rooms].filter(r => r.type === 'bedroom');
+  const staggerActive = Boolean(placement?.staggeredBalconies && allBedrooms.length >= 2);
+  const orderedBedrooms = staggerActive && placement?.floorVariant === 'EVEN'
+    ? [
+        ...allBedrooms.filter((_, idx) => idx % 2 === 1),
+        ...allBedrooms.filter((_, idx) => idx % 2 === 0),
+      ]
+    : allBedrooms;
+  for (let bIdx = 0; bIdx < orderedBedrooms.length; bIdx++) {
+    const bedroom = orderedBedrooms[bIdx]!;
+    if (staggerActive) {
+      const origIdx = allBedrooms.findIndex(b => b.id === bedroom.id);
+      const wantEvenBay = placement?.floorVariant === 'EVEN';
+      const isPreferredBay = wantEvenBay ? origIdx % 2 === 1 : origIdx % 2 === 0;
+      const alreadyCarved = rooms.some(rm => rm.id.endsWith('__balcony') && rm.id !== `${flatId}__balcony`);
+      if (!isPreferredBay && (alreadyCarved || origIdx === 0)) continue;
+    }
     const r = bedroom.rect;
+    const minRemW = 3000;
+    const minRemH = 3000;
     const forceBedBalc =
       placement?.bedroomBalconies === 'ALL_BEDROOMS' &&
       ((r.width < 4500 && r.width >= 4200) || (r.height < 4500 && r.height >= 4200));
-    const depth = (r.width < 4500 || r.height < 4500) && forceBedBalc ? 1200 : 1500;
-    const minRemW = 3000;
-    const minRemH = 3000;
+    const depthX = forceBedBalc && r.width < 4500 ? Math.max(1200, r.width - minRemW) : 1500;
+    const depthY = forceBedBalc && r.height < 4500 ? Math.max(1200, r.height - minRemH) : 1500;
     const west = Math.abs(r.x - envelope.x) < 0.001;
     const east = Math.abs(r.x + r.width - envelope.x - envelope.w) < 0.001;
     const north = Math.abs(r.y - envelope.y) < 0.001;
     const south = Math.abs(r.y + r.height - envelope.y - envelope.h) < 0.001;
-    let trimmed: ApartmentPlanRoom | null = null;
-    let balcony: ApartmentPlanRoom | null = null;
-    if ((west || east) && r.width - depth >= minRemW && r.height >= minRemH) {
-      trimmed = { ...bedroom, rect: { ...r, x: r.x + (west ? depth : 0), width: r.width - depth } };
-      balcony = {
-        id: bedroom.id + '__balcony',
-        name: bedroom.name + ' Balcony',
-        type: 'balcony',
-        planningZone: 'OUTDOOR',
-        rect: { x: west ? r.x : r.x + r.width - depth, y: r.y, width: depth, height: r.height },
-      };
-    } else if (placement?.bedroomBalconies === 'ALL_BEDROOMS' && (north || south) && r.height - depth >= minRemH && r.width >= minRemW) {
-      trimmed = { ...bedroom, rect: { ...r, y: r.y + (north ? depth : 0), height: r.height - depth } };
-      balcony = {
-        id: bedroom.id + '__balcony',
-        name: bedroom.name + ' Balcony',
-        type: 'balcony',
-        planningZone: 'OUTDOOR',
-        rect: { x: r.x, y: north ? r.y : r.y + r.height - depth, width: r.width, height: depth },
-      };
+    const hasBedroomBalcony = rooms.some(
+      rm => rm.id.endsWith('__balcony') && rm.id !== `${flatId}__balcony`,
+    );
+
+    const candidates: Array<{ trimmed: ApartmentPlanRoom; balcony: ApartmentPlanRoom }> = [];
+    if ((west || east) && r.width - depthX >= minRemW && r.height >= minRemH) {
+      candidates.push({
+        trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
+        balcony: {
+          id: bedroom.id + '__balcony',
+          name: bedroom.name + ' Balcony',
+          type: 'balcony',
+          planningZone: 'OUTDOOR',
+          rect: { x: west ? r.x : r.x + r.width - depthX, y: r.y, width: depthX, height: r.height },
+        },
+      });
     }
-    if (!trimmed || !balcony) continue;
-    const access = createConnectingDoor(bedroom.id + '__balcony_door', trimmed, balcony, 900, { doorType: 'sliding' });
-    if (!access) continue;
-    const affected = flatOpenings.filter(d => d.connects?.includes(bedroom.id));
-    const replacements = affected.map(d => {
-      const otherId = d.connects!.find(id => id !== bedroom.id)!;
-      const other = rooms.find(room => room.id === otherId);
-      return other ? createConnectingDoor(d.id, trimmed, other, Math.max(d.rect.width, d.rect.height),
-        { doorType: d.doorType, isFlatEntrance: d.isFlatEntrance, swingDirection: d.swingDirection }) : null;
-    });
-    // Keep the original room if carving would sever an existing connection.
-    if (replacements.some(d => !d)) continue;
-    rooms[rooms.findIndex(room => room.id === bedroom.id)] = trimmed;
-    rooms.push(balcony);
-    affected.forEach((door, i) => { flatOpenings[flatOpenings.indexOf(door)] = replacements[i]!; });
-    flatOpenings.push(access);
+    if ((placement?.bedroomBalconies === 'ALL_BEDROOMS' || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minRemH && r.width >= minRemW) {
+      candidates.push({
+        trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
+        balcony: {
+          id: bedroom.id + '__balcony',
+          name: bedroom.name + ' Balcony',
+          type: 'balcony',
+          planningZone: 'OUTDOOR',
+          rect: { x: r.x, y: north ? r.y : r.y + r.height - depthY, width: r.width, height: depthY },
+        },
+      });
+    }
+
+    for (const candidate of candidates) {
+      const { trimmed, balcony } = candidate;
+      const access = createConnectingDoor(bedroom.id + '__balcony_door', trimmed, balcony, 900, { doorType: 'sliding' });
+      if (!access) continue;
+      const affected = flatOpenings.filter(d => d.connects?.includes(bedroom.id));
+      const replacements = affected.map(d => {
+        const otherId = d.connects!.find(id => id !== bedroom.id)!;
+        const other = rooms.find(room => room.id === otherId);
+        return other ? createConnectingDoor(d.id, trimmed, other, Math.max(d.rect.width, d.rect.height),
+          { doorType: d.doorType, isFlatEntrance: d.isFlatEntrance, swingDirection: d.swingDirection }) : null;
+      });
+      // Keep the original room if carving would sever an existing connection.
+      if (replacements.some(d => !d)) continue;
+      rooms[rooms.findIndex(room => room.id === bedroom.id)] = trimmed;
+      rooms.push(balcony);
+      affected.forEach((door, i) => { flatOpenings[flatOpenings.indexOf(door)] = replacements[i]!; });
+      flatOpenings.push(access);
+      break;
+    }
   }
   return { rooms, flatOpenings };
 }

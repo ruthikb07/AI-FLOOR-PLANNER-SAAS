@@ -30,6 +30,7 @@ import {
   type Floor,
   type AlignmentGuide,
   type ViewTransform,
+  type EngineeringOverlay,
 } from '@ai-floor-planner/core';
 import {
   snapToGrid,
@@ -46,6 +47,7 @@ export interface ArchitecturalCanvasProps {
   editor?: EditorContextValue;
   modelOnly?: boolean;
   entityLayers?: {columns:boolean;beams:boolean;furniture:boolean};
+  disciplines?: Partial<Record<EngineeringOverlay, boolean>>;
   building?: Building;
   onCursorMove?: (worldPos: { x: number; y: number }) => void;
   onZoomChange?: (zoom: number) => void;
@@ -72,6 +74,7 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
   editor: externalEditor,
   modelOnly = false,
   entityLayers = {columns:true,beams:true,furniture:true},
+  disciplines,
   building: externalBuilding,
   onCursorMove,
   onZoomChange,
@@ -327,9 +330,10 @@ export const ArchitecturalCanvas: React.FC<ArchitecturalCanvasProps> = ({
           [RenderLayer.SiteZones]: currentTab === 0 && layers.siteZones,
           [RenderLayer.Plot]: true,
         },
+        disciplines,
       },
     );
-  }, [editor.activeFloor, editor.building, transform, viewportSize.width, viewportSize.height, layers, currentTab, showFurniture, entityLayers]);
+  }, [editor.activeFloor, editor.building, transform, viewportSize.width, viewportSize.height, layers, currentTab, showFurniture, entityLayers, disciplines]);
 
   // Screen to World Conversion using Authoritative transform
   const getScreenToWorld = useCallback((screenX: number, screenY: number) => {

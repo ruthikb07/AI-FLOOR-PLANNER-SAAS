@@ -27,5 +27,7 @@ export function createArgonRequest(data: ProjectSetupWizardData): MultiSheetApar
     lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT', jurisdiction: 'generic_maharashtra',
     siteAmenities: DEFAULT_SITE_AMENITIES, stiltAmenities: { ...DEFAULT_STILT_AMENITIES, societyOffice: false, fitnessGymnasium: false, multipurposeHall: false },
     terraceAmenities: DEFAULT_TERRACE_AMENITIES, parkingMode: data.hasStiltParking ? 'STILT_ONLY' : 'STILT_AND_SURFACE',
+    includeWindowChajjas: data.includeWindowChajjas ?? true,
+    staggeredBalconies: data.staggeredBalconies ?? false,
   };
 }

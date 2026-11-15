@@ -1,5 +1,12 @@
-import type { AIImageInput, AIProvider, BuildingMassingShape, MultiSheetApartmentConfig } from '@ai-floor-planner/core';
-import { AITaskType } from '@ai-floor-planner/core';
+import {
+  type AIImageInput,
+  type AIProvider,
+  type BuildingMassingShape,
+  type MultiSheetApartmentConfig,
+  AITaskType,
+  mixedUnitSpecs,
+  parseMixedUnitProgram,
+} from '@ai-floor-planner/core';
 import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES } from '../providers/gemini';
 
 export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
@@ -483,8 +490,23 @@ export async function generateArchitecturalProposal(
     }
     const effectiveAiPrompt = [basePrompt, ...synthesizedClauses].filter(Boolean).join(' ').trim();
 
+    const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(input.config.aiPrompt));
+    const currentUnitTypes = (input.config.units ?? []).map(u => u.bhkType);
+    const shouldOverrideMixedUnits = Boolean(
+      parsedMixed &&
+      parsedMixed.length >= 2 &&
+      parsedMixed.length <= 6 &&
+      (currentUnitTypes.length !== parsedMixed.length || new Set(currentUnitTypes).size <= 1),
+    );
+    const resolvedFlatsPerFloor = shouldOverrideMixedUnits
+      ? (parsedMixed!.length as 1 | 2 | 3 | 4 | 5 | 6)
+      : input.config.flatsPerFloor;
+    const resolvedUnits = shouldOverrideMixedUnits ? mixedUnitSpecs(parsedMixed!) : input.config.units;
+
     const enrichedConfig: MultiSheetApartmentConfig = {
       ...input.config,
+      flatsPerFloor: resolvedFlatsPerFloor,
+      ...(resolvedUnits ? { units: resolvedUnits } : {}),
       ...(effectiveAiPrompt ? { aiPrompt: effectiveAiPrompt } : {}),
       generationSeed: seed,
       rejectedTopologyHashes: rejected,

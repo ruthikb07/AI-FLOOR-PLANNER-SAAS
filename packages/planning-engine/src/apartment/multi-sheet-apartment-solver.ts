@@ -1,9 +1,10 @@
 import { interpretArchitecturalPlacement } from '../interpretation/architectural-placement.js';
 import { coordinateArchitecturalStairs } from '../pipeline/architectural-connections.js';
+import { withMepEngineering } from '../mep/mep-synthesizer.js';
 import { bedroomBalconySchedule } from './bedroom-balcony-audit.js';
 import { createGenerationReport } from './generation-report';
 import type { GenerateConceptsResult } from '../topology/generative-topology-engine';
-import { architecturalSpaceRole, withArchitecturalElements } from '@ai-floor-planner/core';
+import { architecturalSpaceRole, withArchitecturalElements, parseMixedUnitProgram, mixedUnitSpecs } from '@ai-floor-planner/core';
 /**
  * Multi-Sheet Apartment Project Engine (Phase 1C).
  *
@@ -34,6 +35,7 @@ import {
   type Building,
   type Floor,
   type Room,
+  type Wall,
   type Door,
   type Window,
   type Column,
@@ -53,13 +55,16 @@ import {
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
 } from '@ai-floor-planner/core';
-import { repairApartmentPlan } from '../repair/apartment-error-repair';
+import { repairApartmentPlan, healFloorGeometryForCompliance } from '../repair/apartment-error-repair';
 import { populateCanonicalFurniture } from '../plancraft/auto-furnish-apartment.js';
 import {
   generateApartmentWalls,
   openingFitsApartmentWall,
   measureApartmentAreaLedger,
   polygonArea,
+  columnFootprint,
+  wallToPolygon,
+  uncoveredResidentialOverlap,
 } from '@ai-floor-planner/geometry-engine';
 import {
   solveOrthogonalSpaceFillingApartment,
@@ -665,7 +670,17 @@ export function deriveCleanStructuralColumns(
       b => pt.x >= b.x - 150 && pt.x <= b.x + b.w + 150 && pt.y >= b.y - 150 && pt.y <= b.y + b.h + 150,
     );
   };
-  const nonBalconyPoints = rawPoints.filter(p => !isOuterBalconyCorner(p) && !inVoidOnly(p));
+  // Phase 3: no column may stand inside a stilt drive aisle or across the
+  // entry edge of a parking bay (the bay edge shared with an aisle).
+  const aisleBoxes = floor.rooms.filter(r => r.architecturalRole === 'VEHICLE_AISLE').map(roomToBox);
+  const blocksDriveAisle = (pt: { x: number; y: number }): boolean =>
+    aisleBoxes.some(b => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)
+    || aisleBoxes.some(b => {
+      const onHorizontalEdge = (Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150;
+      const onVerticalEdge = (Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150;
+      return onHorizontalEdge || onVerticalEdge;
+    });
+  const nonBalconyPoints = rawPoints.filter(p => !isOuterBalconyCorner(p) && !inVoidOnly(p) && !blocksDriveAisle(p));
 
   // 4. Deduplicate: merge any points closer than 500 mm
   const deduplicated: Array<{ x: number; y: number }> = [];
@@ -928,32 +943,163 @@ export function solveStiltParkingSheet(
   let bikeBaysCount = 0;
 
   const packParkingBox = (box: Box2D, zoneKey: string) => {
-    // A bay is 5000 mm deep, but the region offered may be shallower once the
-    // core and circulation have been clipped out of it. Packing a fixed depth
-    // into a shallower region drives the stalls straight through whatever lies
-    // beyond, so the depth is bounded by the region and a region too shallow
-    // for a vehicle is left as open stilt area rather than mislabelled.
+    // Standard Indian car stall is 2,500 x 5,000 mm abutting a clear driveway aisle
+    // (>= 3,600 mm one-way or >= 6,000 mm two-way). Never create an aisle narrower than 3,600 mm.
     const stallWidth = 2500;
-    const stallDepth = Math.min(5000, Math.floor(box.h / 2) >= 5000 ? 5000 : box.h);
-    if (stallDepth < 2500) return;
+    const stallDepth = 5000;
+    const minOneWayAisle = 3600;
+    const minTwoWayAisle = 6000;
+
+    const horizFit = box.w >= stallWidth && box.h >= stallDepth + minOneWayAisle;
+    const horizDouble = horizFit && box.h >= 2 * stallDepth + minTwoWayAisle;
+    const horizCount = horizFit ? Math.floor(box.w / stallWidth) * (horizDouble ? 2 : 1) : 0;
+
+    const vertFit = box.h >= stallWidth && box.w >= stallDepth + minOneWayAisle;
+    const vertDouble = vertFit && box.w >= 2 * stallDepth + minTwoWayAisle;
+    const vertCount = vertFit ? Math.floor(box.h / stallWidth) * (vertDouble ? 2 : 1) : 0;
+
+    if (horizCount === 0 && vertCount === 0) {
+      rooms.push(
+        createBoxRoom({
+          id: `stilt__driveway_${zoneKey}`,
+          architecturalRole: Math.min(box.w, box.h) >= minOneWayAisle ? 'VEHICLE_AISLE' : 'OPEN_CIRCULATION',
+          name: Math.min(box.w, box.h) >= minOneWayAisle
+            ? `Stilt Vehicular Driveway & Maneuvering Aisle (${zoneKey})`
+            : `Stilt Circulation Apron (${zoneKey})`,
+          type: RoomType.Corridor,
+          spaceUse: 'COMMON',
+          box,
+          floorId,
+        }),
+      );
+      return;
+    }
+
+    if (vertCount > horizCount) {
+      // Rotated layout: 5,000 mm deep (X) x 2,500 mm wide (Y) stalls abutting a clear vertical aisle.
+      const numRows = Math.floor(box.h / stallWidth);
+      const stallsH = numRows * stallWidth;
+      const remH = box.h - stallsH;
+
+      // West Column of Car Bays (5,000 x 2,500 mm, P-01..)
+      for (let r = 0; r < numRows; r++) {
+        carBaysCount++;
+        const tag = `P-${String(carBaysCount).padStart(2, '0')}`;
+        const bayId = `stilt__car_bay_p${String(carBaysCount).padStart(2, '0')}`;
+        rooms.push(
+          createBoxRoom({
+            id: bayId,
+            architecturalRole: 'PARKING_BAY',
+            name: `Covered Car Parking Bay ${tag} (2.5x5.0m)`,
+            type: RoomType.Parking,
+            spaceUse: 'COMMON',
+            box: { x: box.x, y: box.y + r * stallWidth, w: stallDepth, h: stallWidth },
+            floorId,
+            tags: [`parking:${tag}`],
+          }),
+        );
+      }
+
+      if (remH > 0) {
+        bikeBaysCount += remH >= 1000 ? 2 : 0;
+        rooms.push(
+          createBoxRoom({
+            id: remH >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
+            name: remH >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
+            type: remH >= 1000 ? RoomType.Parking : RoomType.Foyer,
+            spaceUse: 'COMMON',
+            box: { x: box.x, y: box.y + stallsH, w: stallDepth, h: remH },
+            floorId,
+          }),
+        );
+      }
+
+      if (vertDouble) {
+        const eastX = box.x + box.w - stallDepth;
+        for (let r = 0; r < numRows; r++) {
+          carBaysCount++;
+          const tag = `P-${String(carBaysCount).padStart(2, '0')}`;
+          const bayId = `stilt__car_bay_p${String(carBaysCount).padStart(2, '0')}`;
+          rooms.push(
+            createBoxRoom({
+              id: bayId,
+              architecturalRole: 'PARKING_BAY',
+              name: `Covered Car Parking Bay ${tag} (2.5x5.0m)`,
+              type: RoomType.Parking,
+              spaceUse: 'COMMON',
+              box: { x: eastX, y: box.y + r * stallWidth, w: stallDepth, h: stallWidth },
+              floorId,
+              tags: [`parking:${tag}`],
+            }),
+          );
+        }
+
+        if (remH > 0) {
+          bikeBaysCount += remH >= 1000 ? 2 : 0;
+          rooms.push(
+            createBoxRoom({
+              id: remH >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
+              name: remH >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
+              type: remH >= 1000 ? RoomType.Parking : RoomType.Foyer,
+              spaceUse: 'COMMON',
+              box: { x: eastX, y: box.y + stallsH, w: stallDepth, h: remH },
+              floorId,
+            }),
+          );
+        }
+
+        const driveW = box.w - 2 * stallDepth;
+        rooms.push(
+          createBoxRoom({
+            id: `stilt__driveway_${zoneKey}`,
+            architecturalRole: 'VEHICLE_AISLE',
+            name: `Two-Way Vehicular Driveway (${(driveW / 1000).toFixed(1)}m Clear)`,
+            type: RoomType.Corridor,
+            spaceUse: 'COMMON',
+            box: { x: box.x + stallDepth, y: box.y, w: driveW, h: box.h },
+            floorId,
+            tags: ['driveway:two_way'],
+          }),
+        );
+      } else {
+        const driveW = box.w - stallDepth;
+        rooms.push(
+          createBoxRoom({
+            id: `stilt__driveway_${zoneKey}`,
+            architecturalRole: 'VEHICLE_AISLE',
+            name: `${driveW >= minTwoWayAisle ? 'Two-Way' : 'One-Way'} Vehicular Driveway (${(driveW / 1000).toFixed(1)}m Clear)`,
+            type: RoomType.Corridor,
+            spaceUse: 'COMMON',
+            box: { x: box.x + stallDepth, y: box.y, w: driveW, h: box.h },
+            floorId,
+            tags: [driveW >= minTwoWayAisle ? 'driveway:two_way' : 'driveway:one_way'],
+          }),
+        );
+      }
+      return;
+    }
+
     const numStalls = Math.floor(box.w / stallWidth);
     const stallsW = numStalls * stallWidth;
     const remW = box.w - stallsW;
-    // Two rows only fit when the region is deep enough for both plus an aisle.
-    const isDoubleLoaded = box.h >= 2 * stallDepth + 3000;
+    // Double-loaded only when the remaining central driveway is >= 6,000 mm (two-way).
+    const isDoubleLoaded = box.h >= 2 * stallDepth + minTwoWayAisle;
 
-    // North Row of Car Bays
+    // North Row of Car Bays (2,500 x 5,000 mm, P-01..)
     for (let s = 0; s < numStalls; s++) {
       carBaysCount++;
-      const bayId = `stilt__car_bay_c${String(carBaysCount).padStart(2, '0')}`;
+      const tag = `P-${String(carBaysCount).padStart(2, '0')}`;
+      const bayId = `stilt__car_bay_p${String(carBaysCount).padStart(2, '0')}`;
       rooms.push(
         createBoxRoom({
           id: bayId,
-          name: `Covered Car Parking Stall C-${String(carBaysCount).padStart(2, '0')} (2.5x5.0m)`,
+          architecturalRole: 'PARKING_BAY',
+          name: `Covered Car Parking Bay ${tag} (2.5x5.0m)`,
           type: RoomType.Parking,
           spaceUse: 'COMMON',
           box: { x: box.x + s * stallWidth, y: box.y, w: stallWidth, h: stallDepth },
           floorId,
+          tags: [`parking:${tag}`],
         }),
       );
     }
@@ -974,19 +1120,22 @@ export function solveStiltParkingSheet(
     }
 
     if (isDoubleLoaded) {
-      // South Row of Car Bays
+      // South Row of Car Bays (2,500 x 5,000 mm, P-01..)
       const southY = box.y + box.h - stallDepth;
       for (let s = 0; s < numStalls; s++) {
         carBaysCount++;
-        const bayId = `stilt__car_bay_c${String(carBaysCount).padStart(2, '0')}`;
+        const tag = `P-${String(carBaysCount).padStart(2, '0')}`;
+        const bayId = `stilt__car_bay_p${String(carBaysCount).padStart(2, '0')}`;
         rooms.push(
           createBoxRoom({
             id: bayId,
-            name: `Covered Car Parking Stall C-${String(carBaysCount).padStart(2, '0')} (2.5x5.0m)`,
+            architecturalRole: 'PARKING_BAY',
+            name: `Covered Car Parking Bay ${tag} (2.5x5.0m)`,
             type: RoomType.Parking,
             spaceUse: 'COMMON',
             box: { x: box.x + s * stallWidth, y: southY, w: stallWidth, h: stallDepth },
             floorId,
+            tags: [`parking:${tag}`],
           }),
         );
       }
@@ -1006,31 +1155,33 @@ export function solveStiltParkingSheet(
         );
       }
 
-      // Central Driveway Aisle
+      // Central Two-Way Driveway Aisle (>= 6,000 mm)
       const driveH = box.h - 2 * stallDepth;
       rooms.push(
         createBoxRoom({
           id: `stilt__driveway_${zoneKey}`,
           architecturalRole: 'VEHICLE_AISLE',
-          name: `Stilt Vehicular Driveway & Maneuvering Aisle (${zoneKey})`,
+          name: `Two-Way Vehicular Driveway (${(driveH / 1000).toFixed(1)}m Clear)`,
           type: RoomType.Corridor,
           spaceUse: 'COMMON',
           box: { x: box.x, y: box.y + stallDepth, w: box.w, h: driveH },
           floorId,
+          tags: ['driveway:two_way'],
         }),
       );
     } else {
-      // Single Row Driveway Aisle
+      // Single Row + One-Way Driveway Aisle (>= 3,600 mm)
       const driveH = box.h - stallDepth;
       rooms.push(
         createBoxRoom({
           id: `stilt__driveway_${zoneKey}`,
           architecturalRole: 'VEHICLE_AISLE',
-          name: `Stilt Vehicular Driveway & Maneuvering Aisle (${zoneKey})`,
+          name: `${driveH >= minTwoWayAisle ? 'Two-Way' : 'One-Way'} Vehicular Driveway (${(driveH / 1000).toFixed(1)}m Clear)`,
           type: RoomType.Corridor,
           spaceUse: 'COMMON',
           box: { x: box.x, y: box.y + stallDepth, w: box.w, h: driveH },
           floorId,
+          tags: [driveH >= minTwoWayAisle ? 'driveway:two_way' : 'driveway:one_way'],
         }),
       );
     }
@@ -1212,6 +1363,7 @@ export function solveTypicalFloorSheet(
    * which then get the historical single central-core partition.
    */
   topology?: SelectedTopology,
+  options?: { floorVariant?: 'ODD' | 'EVEN' },
 ): TypicalFloorSheetResult {
   const floorId = floorLevel === 1 ? 'floor_typical_01' : `floor_level_${String(floorLevel).padStart(2, '0')}`;
   const floorName = floorLevel === 0 ? 'GROUND_FLOOR_PLAN' : floorLevel === 1 ? '1ST_FLOOR_PLAN'
@@ -1238,6 +1390,8 @@ export function solveTypicalFloorSheet(
         manifest,
         unitTypes: (config.units ?? []).map(u => u.bhkType),
         archetype: topology.result.archetype ?? (config.preferredArchetype as RoomSlicingArchetypeId | undefined),
+        staggeredBalconies: config.staggeredBalconies,
+        floorVariant: options?.floorVariant,
       }).structure
     : solveOrthogonalSpaceFillingApartment({
         aiPrompt: config.aiPrompt,
@@ -1331,8 +1485,14 @@ export function solveTypicalFloorSheet(
   for (const r of rooms) {
     if (r.spaceUse === 'OUTDOOR' || r.type === RoomType.ServiceShaft) continue;
     const isBath = r.type === RoomType.Bathroom;
+    const hasOtsShaftWall = (w: Wall) =>
+      w.wallUse === 'SHAFT' &&
+      w.roomIds.some(id => {
+        const owner = rooms.find(room => room.id === id);
+        return owner?.architecturalRole === 'OPEN_TO_SKY_VOID';
+      });
     const extWalls = walls.filter(w =>
-      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT')) &&
+      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT') || hasOtsShaftWall(w)) &&
       w.boundaryRole !== 'OPEN_BOUNDARY' &&
       w.boundaryRole !== 'PARAPET' &&
       w.roomIds.includes(r.id),
@@ -1408,7 +1568,22 @@ export function solveTypicalFloorSheet(
   };
 
   const flOrdinal = floorLevel === 1 ? '1st' : floorLevel === 2 ? '2nd' : floorLevel === 3 ? '3rd' : `${floorLevel}th`;
-  const repairedFloor = repairApartmentPlan({ id: 'typical', projectId: 'typical', name: floorName, site: { plotWidth: config.plotWidthMm, plotDepth: config.plotDepthMm } as Site, floors: [floor], metadata: { projectId: 'typical' }, version: 1, createdAt: '', updatedAt: '' }, manifest).building.floors[0]!;
+  const repairManifest = topology
+    ? createDynamicApartmentManifest({
+        plotWidthMm: config.plotWidthMm,
+        plotDepthMm: config.plotDepthMm,
+        flatsPerFloor: config.flatsPerFloor,
+        units: structure.flats.map((f, idx) => ({
+          ...(config.units?.[idx] ?? { hasUtilityBalcony: true }),
+          unitIndex: idx + 1,
+          bhkType: f.unitType as ApartmentBhkType,
+        })),
+        jurisdiction: config.jurisdiction,
+        lotAllotmentMode: config.lotAllotmentMode,
+      })
+    : manifest;
+  const baseRepairedFloor = repairApartmentPlan({ id: 'typical', projectId: 'typical', name: floorName, site: { plotWidth: config.plotWidthMm, plotDepth: config.plotDepthMm } as Site, floors: [floor], metadata: { projectId: 'typical' }, version: 1, createdAt: '', updatedAt: '' }, repairManifest).building.floors[0]!;
+  const repairedFloor = healFloorGeometryForCompliance(baseRepairedFloor).floor;
   const ledger = measureApartmentAreaLedger(repairedFloor);
   const audit: SheetLedgerAudit = {
     sheetId: floorLevel === 1 ? 'sheet_03_typical_plan' : `sheet_03_level_${floorLevel}_plan`,
@@ -2078,7 +2253,16 @@ export function solveMultiSheetApartmentProject(
   const lotAllotmentMode = rawConfig.lotAllotmentMode ?? 'STATUTORY_SETBACK_100_PERCENT';
   const jurisdiction = rawConfig.jurisdiction ?? 'pune_pmc';
   const verticalStackType = rawConfig.verticalStackType ?? 'STILT_PLUS_N';
-  const flatsPerFloor = rawConfig.flatsPerFloor ?? 4;
+  const parsedMixed = parseMixedUnitProgram(rawConfig.aiPrompt);
+  const existingTypes = (rawConfig.units ?? []).map(u => u.bhkType);
+  const applyMixed = Boolean(
+    parsedMixed &&
+    parsedMixed.length >= 2 &&
+    parsedMixed.length <= 6 &&
+    (existingTypes.length !== parsedMixed.length || new Set(existingTypes).size <= 1),
+  );
+  const flatsPerFloor = (applyMixed ? parsedMixed!.length : rawConfig.flatsPerFloor ?? 4) as 1 | 2 | 3 | 4 | 5 | 6;
+  const resolvedUnits = applyMixed ? mixedUnitSpecs(parsedMixed!) : rawConfig.units;
   const siteAmenities = rawConfig.siteAmenities ?? DEFAULT_SITE_AMENITIES;
   const stiltAmenities = rawConfig.stiltAmenities ?? DEFAULT_STILT_AMENITIES;
   const terraceAmenities = rawConfig.terraceAmenities ?? DEFAULT_TERRACE_AMENITIES;
@@ -2095,6 +2279,7 @@ export function solveMultiSheetApartmentProject(
     jurisdiction,
     verticalStackType,
     flatsPerFloor,
+    ...(resolvedUnits ? { units: resolvedUnits } : {}),
     siteAmenities,
     stiltAmenities,
     terraceAmenities,
@@ -2166,16 +2351,22 @@ export function solveMultiSheetApartmentProject(
       }
     } else if (effectiveAreaScope === 'FLOOR_TOTAL_CARPET') {
       const targetCarpetPerFlatM2 = targetM2 / Math.max(1, config.flatsPerFloor);
-      const targetGrossPerFlatMm2 = (targetCarpetPerFlatM2 / 0.70) * 1e6;
-      const wingW = Math.max(7800, snap10(Math.sqrt(targetGrossPerFlatMm2 * 0.91)));
-      const flatH = Math.max(8500, snap10(targetGrossPerFlatMm2 / Math.max(1, wingW)));
+      const wantsBedBalcs = Boolean(
+        promptIntent?.preferences.bedroomBalconies && promptIntent.preferences.bedroomBalconies !== 'NONE_REQUESTED',
+      );
+      const netToGrossFloorRatio = wantsBedBalcs ? 0.69 : 0.80;
+      const targetGrossPerFlatMm2 = (targetCarpetPerFlatM2 / netToGrossFloorRatio) * 1e6;
+      const minWingW = wantsBedBalcs ? 7800 : 7200;
+      const minFlatH = wantsBedBalcs ? 8550 : 7600;
+      const wingW = Math.max(minWingW, snap10(Math.sqrt(targetGrossPerFlatMm2 * 0.91)));
+      const flatH = Math.max(minFlatH, snap10(targetGrossPerFlatMm2 / Math.max(1, wingW)));
       const flatsPerWing = Math.max(1, Math.ceil(config.flatsPerFloor / 2));
       builtW = Math.min(permissibleEnvelope.w, Math.max(minHabitableW, 2 * wingW + coreW));
       builtH = Math.min(permissibleEnvelope.h, Math.max(minHabitableH, flatsPerWing * flatH));
     } else {
       // PER_APARTMENT_CARPET
       const targetCarpetPerFlatM2 = targetM2;
-      const netToGrossRatio = targetCarpetPerFlatM2 >= 120 ? 0.81 : 0.73;
+      const netToGrossRatio = targetCarpetPerFlatM2 >= 120 ? 0.78 : 0.73;
       const targetGrossPerFlatMm2 = (targetCarpetPerFlatM2 / netToGrossRatio) * 1e6;
       const wingW = Math.max(7600, snap10(Math.sqrt(targetGrossPerFlatMm2)));
       const flatH = Math.max(6800, snap10(targetGrossPerFlatMm2 / Math.max(1, wingW)));
@@ -2262,7 +2453,15 @@ export function solveMultiSheetApartmentProject(
   const numFloors = Math.max(1, config.numTypicalFloors ?? 4);
   const residentialSheets: TypicalFloorSheetResult[] = [];
   for (let fl = 1; fl <= numFloors; fl++) {
-    residentialSheets.push(solveTypicalFloorSheet(config, envelope, config.verticalStackType === 'G_PLUS_N' ? fl - 1 : fl, topology));
+    residentialSheets.push(
+      solveTypicalFloorSheet(
+        config,
+        envelope,
+        config.verticalStackType === 'G_PLUS_N' ? fl - 1 : fl,
+        topology,
+        { floorVariant: fl % 2 === 1 ? 'ODD' : 'EVEN' },
+      ),
+    );
   }
   const typicalSheet = residentialSheets[0]!;
 
@@ -2392,6 +2591,8 @@ export function solveMultiSheetApartmentProject(
         aiPrompt: config.aiPrompt,
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
+        includeWindowChajjas: config.includeWindowChajjas ?? true,
+        staggeredBalconies: config.staggeredBalconies ?? false,
         ...(config.generationSeed !== undefined ? { generationSeed: config.generationSeed } : {}),
         ...(topology?.chosen.fingerprint.digests.canonical ? { topologyHash: topology.chosen.fingerprint.digests.canonical } : {}),
         ...(topology?.result.archetype
@@ -2423,12 +2624,105 @@ export function solveMultiSheetApartmentProject(
   // workflow may place the existing column/beam profile; neither profile is certified.
   const deferredStructure = config.structuralLayoutMode !== 'PROVISIONAL_EXISTING_PROFILE';
   const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...(buildingWithFurniture.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : buildingWithFurniture;
-  const placedStructure = deferredStructure ? architecturalBuilding : new GeometryValidator().auditAndFixColumnAndBeamGrid(architecturalBuilding, true).building;
+  let placedStructure = deferredStructure ? architecturalBuilding : new GeometryValidator().auditAndFixColumnAndBeamGrid(architecturalBuilding, true).building;
+  if (!deferredStructure) {
+    // Phase 3 structural continuity: derive one deduplicated column grid from typical
+    // residential walls, exclude stilt VEHICLE_AISLE drive lanes & bay entries as well as
+    // cantilevered balcony corners, and project it identically down through Stilt + Typicals.
+    const refRes = placedStructure.floors.find(f => f.floorUse === 'RESIDENTIAL');
+    const stiltFl = placedStructure.floors.find(f => f.floorUse === 'STILT_PARKING');
+    const aisleBoxes = (stiltFl?.rooms ?? [])
+      .filter(r => r.architecturalRole === 'VEHICLE_AISLE')
+      .map(r => r.boundary?.points?.length
+        ? {
+            x: Math.min(...r.boundary.points.map(p => p.x)),
+            y: Math.min(...r.boundary.points.map(p => p.y)),
+            w: Math.max(...r.boundary.points.map(p => p.x)) - Math.min(...r.boundary.points.map(p => p.x)),
+            h: Math.max(...r.boundary.points.map(p => p.y)) - Math.min(...r.boundary.points.map(p => p.y)),
+          }
+        : { x: r.x, y: r.y, w: r.width, h: r.height });
+    const blocksAisle = (pt: { x: number; y: number }) =>
+      aisleBoxes.some(b => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)
+      || aisleBoxes.some(b =>
+        ((Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150)
+        || ((Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150));
+    if (refRes) {
+      const refWallPolys = refRes.walls.map(wallToPolygon);
+      const refOutdoorRooms = refRes.rooms.filter(r => ['balcony', 'utility'].includes(r.type));
+      const continuous: Column[] = [];
+      for (const col of refRes.columns) {
+        if (blocksAisle(col.position)) continue;
+        if (continuous.some(d => Math.hypot(d.position.x - col.position.x, d.position.y - col.position.y) < 500)) continue;
+        let resolvedCol = col;
+        const intrudes = (c: Column) =>
+          refOutdoorRooms.some(r => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, refWallPolys) >= 0.001);
+        if (intrudes(resolvedCol)) {
+          const flushCol: Column = { ...col, width: 200, depth: 200 };
+          if (intrudes(flushCol)) continue;
+          resolvedCol = flushCol;
+        }
+        const footingOverlaps = continuous.some(
+          d =>
+            Math.abs(d.position.x - resolvedCol.position.x) < (d.width + resolvedCol.width) * 1.5 + 10
+            && Math.abs(d.position.y - resolvedCol.position.y) < (d.depth + resolvedCol.depth) * 1.5 + 10,
+        );
+        if (footingOverlaps) continue;
+        continuous.push(resolvedCol);
+      }
+      placedStructure = {
+        ...placedStructure,
+        floors: placedStructure.floors.map(f => ({
+          ...f,
+          columns: continuous.map((c, idx) => ({
+            ...c,
+            id: `col_${idx + 1}`,
+            floorId: f.id,
+            gridReference: `C${idx + 1}`,
+          })),
+        })),
+      };
+    }
+  }
   const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
   const finalFloors = audit.building.floors.map(namespaceFloorEntities);
-  const validatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({ ...audit.building, floors: finalFloors,
+  const rawValidatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({ ...audit.building, floors: finalFloors,
     furniture: [...finalFloors.flatMap(floor => floor.furniture ?? []), ...(audit.building.furniture ?? []).filter(item => item.siteZoneId)],
   }));
+  const filterFloorBeams = (fl: Floor, beams: Floor['beams']): NonNullable<Floor['beams']> => {
+    if (!beams?.length) return [];
+    const builtBoxes = fl.rooms
+      .filter(r => !r.tags?.includes('recess:perimeter') && architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID')
+      .map(roomToBox);
+    if (!builtBoxes.length) return [];
+    const nearBuilt = (pt: { x: number; y: number }) =>
+      builtBoxes.some(
+        bx =>
+          pt.x >= bx.rect.x - 160 &&
+          pt.x <= bx.rect.x + bx.rect.width + 160 &&
+          pt.y >= bx.rect.y - 160 &&
+          pt.y <= bx.rect.y + bx.rect.height + 160,
+      );
+    return beams.filter(bm => {
+      const mid = { x: (bm.startPoint.x + bm.endPoint.x) / 2, y: (bm.startPoint.y + bm.endPoint.y) / 2 };
+      return nearBuilt(bm.startPoint) && nearBuilt(bm.endPoint) && nearBuilt(mid);
+    });
+  };
+  const filteredFloors = rawValidatedBuilding.floors.map(f =>
+    f.beams?.length ? { ...f, beams: filterFloorBeams(f, f.beams) } : f,
+  );
+  const filteredFloorMap = new Map(filteredFloors.map(f => [f.id, f]));
+  const validatedBuilding: Building = {
+    ...rawValidatedBuilding,
+    floors: filteredFloors,
+    ...(rawValidatedBuilding.beams?.length
+      ? {
+          beams: rawValidatedBuilding.beams.filter(bm => {
+            const fl = filteredFloorMap.get(bm.floorId);
+            return !fl || filterFloorBeams(fl, [bm]).length > 0;
+          }),
+        }
+      : {}),
+  };
   const finalAudit = validateAndRepairBuildingGeometry(validatedBuilding, { autoCorrect: false });
   const validationReport = { ...finalAudit.report, errors: finalAudit.report.errors.map(error => ({ ...error,
     elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
@@ -2498,6 +2792,11 @@ export function solveMultiSheetApartmentProject(
     (recovery?.complianceAttempt ?? 0) + 1,
   );
 
+  const finalizeWithMep = (res: MultiSheetApartmentResult): MultiSheetApartmentResult => ({
+    ...res,
+    building: res.building.mepEngineering ? res.building : withMepEngineering(res.building),
+  });
+
   // Bounded Auto-Regeneration Quality Gate Loop (up to 12 total attempts):
   // If complianceScore < 85 or redConflictCount > 0, automatically reject the candidate,
   // append its topology hash to rejectedTopologyHashes, mutate the seed, and regenerate.
@@ -2509,17 +2808,35 @@ export function solveMultiSheetApartmentProject(
   ) {
     const baseSeed = Math.max(1, Math.floor(Number(rawConfig.generationSeed ?? 1)));
     const rejectedHashes = new Set<string>(rawConfig.rejectedTopologyHashes ?? []);
-    const initialHash = (finalResult.building.metadata as Record<string, unknown>)?.topologyHash;
+    const initialHash = (finalResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
     if (typeof initialHash === 'string' && initialHash.length > 0) {
       rejectedHashes.add(initialHash);
     }
+    const initialVariant = finalResult.generationReport?.selectedVariant;
+    if (typeof initialVariant === 'string' && initialVariant.length > 0) {
+      rejectedHashes.add(initialVariant);
+    }
 
-    for (let attempt = 1; attempt < 12; attempt++) {
+    const lockedMassingShape =
+      rawConfig.buildingMassingShape ??
+      (!promptIntent?.preferences.requestsDifferentShape ? 'COMPACT_DOUBLE_LOADED' : undefined);
+    const archetypeRotation: readonly (RoomSlicingArchetypeId | undefined)[] = [
+      rawConfig.preferredArchetype as RoomSlicingArchetypeId | undefined,
+      'CENTRAL_LIVING_SPLIT_BEDROOMS',
+      'CORNER_L_LIVING_REAR_SLEEPING',
+      'FRONT_BALCONY_OPEN_KITCHEN',
+      'LINEAR_TANDEM_DEEP_PLATE',
+      'MIRRORED_WET_CORE_STACK',
+    ];
+    for (let attempt = 1; attempt < 16; attempt++) {
       try {
+        const altArchetype = attempt >= 4 ? archetypeRotation[attempt % archetypeRotation.length] : (rawConfig.preferredArchetype as RoomSlicingArchetypeId | undefined);
         const nextRaw = solveMultiSheetApartmentProject(
           {
             ...rawConfig,
             generationSeed: baseSeed + attempt,
+            ...(lockedMassingShape ? { buildingMassingShape: lockedMassingShape } : {}),
+            ...(altArchetype ? { preferredArchetype: altArchetype } : {}),
             rejectedTopologyHashes: [...rejectedHashes],
           },
           undefined,
@@ -2529,10 +2846,21 @@ export function solveMultiSheetApartmentProject(
             complianceAttempt: attempt,
           },
         );
+        if (
+          rawConfig.buildingMassingShape &&
+          nextRaw.building.metadata.generationBrief?.buildingMassingShape &&
+          nextRaw.building.metadata.generationBrief.buildingMassingShape !== rawConfig.buildingMassingShape
+        ) {
+          continue;
+        }
         const { result: nextEvaluated, compliance: nextCompliance } = attachCompliance(nextRaw, attempt + 1);
-        const nextHash = (nextEvaluated.building.metadata as Record<string, unknown>)?.topologyHash;
+        const nextHash = (nextEvaluated.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
         if (typeof nextHash === 'string' && nextHash.length > 0) {
           rejectedHashes.add(nextHash);
+        }
+        const nextVariant = nextEvaluated.generationReport?.selectedVariant;
+        if (typeof nextVariant === 'string' && nextVariant.length > 0) {
+          rejectedHashes.add(nextVariant);
         }
 
         const isBetter =
@@ -2544,7 +2872,7 @@ export function solveMultiSheetApartmentProject(
           finalCompliance = nextCompliance;
         }
         if (nextCompliance.passed) {
-          return nextEvaluated;
+          return finalizeWithMep(nextEvaluated);
         }
       } catch {
         // Continue trying remaining seeds
@@ -2566,7 +2894,13 @@ export function solveMultiSheetApartmentProject(
       const differing = candidateQuality.findIndex((v, i) => v !== legacyQuality[i]);
       const balconyRegression = finalResult.schedule.flatSchedule.some((flat, i) =>
         config.units?.[i]?.hasUtilityBalcony && flat.balconyAreaM2 < (legacy.schedule.flatSchedule[i]?.balconyAreaM2 ?? 0));
-      if (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!)) {
+      const legacyCompliance = evaluateArchitecturalComplianceScore(legacy.building, { config: rawConfig });
+      const legacyMeetsComplianceFloor =
+        legacyCompliance.score >= 85 &&
+        legacyCompliance.redConflictCount === 0 &&
+        legacyCompliance.score >= finalCompliance.score &&
+        legacyCompliance.redConflictCount <= finalCompliance.redConflictCount;
+      if (legacyMeetsComplianceFloor && (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!))) {
         const report = legacy.generationReport!;
         const updated = { ...report, violations: [...report.violations, {
           code: 'REPAIRED_CANDIDATE_OUTRANKED', severity: 'WARNING' as const, source: 'GENERATION' as const,
@@ -2577,9 +2911,9 @@ export function solveMultiSheetApartmentProject(
           { ...legacy, generationReport: updated, building: { ...legacy.building, metadata: { ...legacy.building.metadata, generationReport: updated } } },
           finalCompliance.attemptCount ?? 1,
         );
-        return legacyWithCompliance;
+        return finalizeWithMep(legacyWithCompliance);
       }
     } catch { /* Keep the reviewable repaired candidate if the legacy attempt fails. */ }
   }
-  return finalResult;
+  return recovery?.skipComplianceGate ? finalResult : finalizeWithMep(finalResult);
 }

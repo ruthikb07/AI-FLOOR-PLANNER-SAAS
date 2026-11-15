@@ -90,8 +90,8 @@ export async function handleProjectGeneration(
       config: proposalResult.enrichedConfig,
     });
 
-    // If compliance < 85 after deterministic solver loop, escalate to a corrective re-proposal
-    if (!complianceReport.passed) {
+    // If compliance < 85 after deterministic solver loop, escalate up to 3 corrective re-proposals
+    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= 3; retryIdx++) {
       const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
       const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
         ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
@@ -100,16 +100,20 @@ export async function handleProjectGeneration(
       const retryProposal = await generateArchitecturalProposal(deps.gemini, {
         config: {
           ...parsed.config,
-          aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION: ${correctiveHint}]`.trim(),
+          aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
         },
-        seed: parsed.seed + 12,
+        seed: parsed.seed + retryIdx * 12,
         rejectedTopologyHashes: updatedRejected,
       });
       const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
       const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
         config: retryProposal.enrichedConfig,
       });
-      if (retryCompliance.score >= complianceReport.score) {
+      const retryIsBetter =
+        retryCompliance.redConflictCount < complianceReport.redConflictCount ||
+        (retryCompliance.redConflictCount === complianceReport.redConflictCount &&
+          retryCompliance.score >= complianceReport.score);
+      if (retryIsBetter) {
         proposalResult = retryProposal;
         pipelineResult = retryPipeline;
         complianceReport = retryCompliance;

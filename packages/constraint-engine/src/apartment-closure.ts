@@ -1,4 +1,5 @@
 import type { Building, Room, DynamicApartmentManifest, ApartmentBhkType } from '@ai-floor-planner/core';
+import { architecturalSpaceRole } from '@ai-floor-planner/core';
 import { containsPolygon, polygonIntersectionArea, measureApartmentAreaLedger, openingFitsApartmentWall } from '@ai-floor-planner/geometry-engine';
 
 function sharesBoundarySegment(
@@ -99,7 +100,7 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
           add('UNIT_OVERLAP', `${u.id}/${units[j]!.id}`);
         }
       }
-      for (const r of rooms.filter(r => !r.unitId)) {
+      for (const r of rooms.filter(r => !r.unitId && !r.tags?.includes('shaft:interflat'))) {
         if (polygonIntersectionArea(u.boundary, r.boundary) > 1) {
           add('UNIT_CORE_CONFLICT', `${u.id}/${r.id}`);
         }
@@ -282,7 +283,18 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
     if (ledger.unassigned >= 0.001) add('AREA_UNASSIGNED', `${floor.id}: ${ledger.unassigned} mm2`);
     for (const balcony of ledger.balconies) {
       if (!balcony.unitId || !balcony.accessDoorIds.some(id => validDoors.has(id))) add('BALCONY_ACCESS_MISSING', balcony.id);
-      if (!floor.walls.some(w => w.roomIds.length === 1 && w.roomIds.includes(balcony.id))) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);
+      const hasExteriorOrOtsEdge = floor.walls.some(
+        w =>
+          w.roomIds.includes(balcony.id) &&
+          (w.roomIds.length === 1 ||
+            w.wallUse === 'SHAFT' ||
+            w.roomIds.some(id => {
+              if (id === balcony.id) return false;
+              const other = rooms.find(rm => rm.id === id);
+              return other ? architecturalSpaceRole(other) === 'OPEN_TO_SKY_VOID' : false;
+            })),
+      );
+      if (!hasExteriorOrOtsEdge) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);
       if (balcony.usableDepth < 1200) add('BALCONY_CLEAR_DEPTH_SUBSTANDARD', `${balcony.id}: clear depth ${balcony.usableDepth} mm < 1200 mm`);
       const r = rooms.find(room => room.id === balcony.id);
       const isBedBalcony = balcony.id.toLowerCase().includes('bed') || r?.name?.toLowerCase().includes('bedroom');

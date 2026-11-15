@@ -23,11 +23,20 @@ import type {
   Room,
   Window,
 } from '@ai-floor-planner/core';
-import { rectToPolygon, RoomType, ApplyRoomAreaRegenerationCommand, canonicalBuildingHash } from '@ai-floor-planner/core';
 import {
+  rectToPolygon,
+  RoomType,
+  ApplyRoomAreaRegenerationCommand,
+  canonicalBuildingHash,
+  architecturalSpaceRole,
+} from '@ai-floor-planner/core';
+import {
+  apartmentFloorRegions,
   containsPolygon,
   generateApartmentWalls,
+  measureApartmentAreaLedger,
   polygonArea,
+  polygonBoundingBox,
   polygonIntersectionArea,
   roomRegenerationIntegrityIssues,
   wallToPolygon,
@@ -49,6 +58,10 @@ export interface RoomAreaRegenerationOptions {
   readonly preserveStructural?: boolean;
   /** Active locking and protection state */
   readonly control?: GenerationControlState;
+  /** Mode A: allow expanding exterior floor/flat boundary into available setback margin without crushing neighbors. */
+  readonly allowEnvelopeExpansion?: boolean;
+  /** Minimum preserved setback margin (mm) when expanding boundary into plot setbacks. */
+  readonly minSetbackMm?: number;
 }
 
 export interface ModifiedRoomDetail {
@@ -134,6 +147,21 @@ const rectPolygon = (x: number, y: number, width: number, height: number): Polyg
     { x, y: y + height },
   ],
 });
+
+/** Choose 10 mm architectural module step when within tolerance; fall back to 1 mm exact step so -0.4 m² rounding drift never fails. */
+function exactDeltaStepMm(
+  deltaAreaMm2: number,
+  perpSpanMm: number,
+  currentAlongMm: number,
+  targetAreaMm2: number,
+  toleranceMm2: number,
+): number {
+  const step10 = Math.round(deltaAreaMm2 / perpSpanMm / 10) * 10;
+  if (Math.abs((currentAlongMm + step10) * perpSpanMm - targetAreaMm2) <= toleranceMm2) {
+    return step10;
+  }
+  return Math.round(deltaAreaMm2 / perpSpanMm);
+}
 
 function isAxisAlignedRectangle(polygon: Polygon): boolean {
   if (polygon.points.length !== 4) return false;
@@ -590,7 +618,7 @@ export function optimizeRoomArea(
 
   // 5. Check Maximum Envelope Boundary Capacity
   const floorArea = polygonArea(floor.boundary);
-  if (targetAreaMm2 > floorArea) {
+  if (targetAreaMm2 > floorArea && !options.allowEnvelopeExpansion && control.footprintLocked) {
     const reqM2 = sqMmToSqM(targetAreaMm2).toFixed(2);
     const maxM2 = sqMmToSqM(floorArea).toFixed(2);
     return {
@@ -612,17 +640,22 @@ export function optimizeRoomArea(
     })
     .filter((entry): entry is { neighbor: Room; edge: SharedEdge } => entry !== null);
 
+  const isCrossFlatProtected = (neighbor: Room) =>
+    Boolean(room.unitId && neighbor.unitId && room.unitId !== neighbor.unitId);
+
   const lockedNeighbors = adjacentEdges.filter(
     (e) =>
       e.neighbor.isFixed || control.protectedCoreIds.includes(e.neighbor.id) || control.lockedEntityIds.includes(e.neighbor.id) ||
       e.neighbor.type === RoomType.Staircase ||
-      e.neighbor.type === RoomType.Lift
+      e.neighbor.type === RoomType.Lift ||
+      isCrossFlatProtected(e.neighbor)
   );
   const unlockedNeighbors = adjacentEdges.filter(
     (e) =>
       !e.neighbor.isFixed && !control.protectedCoreIds.includes(e.neighbor.id) && !control.lockedEntityIds.includes(e.neighbor.id) &&
       e.neighbor.type !== RoomType.Staircase &&
-      e.neighbor.type !== RoomType.Lift
+      e.neighbor.type !== RoomType.Lift &&
+      !isCrossFlatProtected(e.neighbor)
   );
 
   const deltaAreaMm2 = targetAreaMm2 - room.area;
@@ -691,17 +724,17 @@ export function optimizeRoomArea(
     let candidateH = room.height;
 
     if (side === 'east') {
-      const deltaW = Math.round(deltaAreaMm2 / room.height / 10) * 10;
+      const deltaW = exactDeltaStepMm(deltaAreaMm2, room.height, room.width, targetAreaMm2, toleranceMm2);
       candidateW += deltaW;
     } else if (side === 'west') {
-      const deltaW = Math.round(deltaAreaMm2 / room.height / 10) * 10;
+      const deltaW = exactDeltaStepMm(deltaAreaMm2, room.height, room.width, targetAreaMm2, toleranceMm2);
       candidateX -= deltaW;
       candidateW += deltaW;
     } else if (side === 'south') {
-      const deltaH = Math.round(deltaAreaMm2 / room.width / 10) * 10;
+      const deltaH = exactDeltaStepMm(deltaAreaMm2, room.width, room.height, targetAreaMm2, toleranceMm2);
       candidateH += deltaH;
     } else if (side === 'north') {
-      const deltaH = Math.round(deltaAreaMm2 / room.width / 10) * 10;
+      const deltaH = exactDeltaStepMm(deltaAreaMm2, room.width, room.height, targetAreaMm2, toleranceMm2);
       candidateY -= deltaH;
       candidateH += deltaH;
     }
@@ -870,7 +903,7 @@ export function optimizeRoomArea(
       const isNeighborWest = Math.abs(neighbor.x + neighbor.width - room.x) < 5;
       if (!isNeighborEast && !isNeighborWest) continue;
 
-      const deltaX = Math.round(deltaAreaMm2 / room.height / 10) * 10;
+      const deltaX = exactDeltaStepMm(deltaAreaMm2, room.height, room.width, targetAreaMm2, toleranceMm2);
       let newRoomX = room.x;
       let newRoomW = room.width;
       let newNeighborX = neighbor.x;
@@ -946,7 +979,7 @@ export function optimizeRoomArea(
       const isNeighborNorth = Math.abs(neighbor.y + neighbor.height - room.y) < 5;
       if (!isNeighborSouth && !isNeighborNorth) continue;
 
-      const deltaY = Math.round(deltaAreaMm2 / room.width / 10) * 10;
+      const deltaY = exactDeltaStepMm(deltaAreaMm2, room.width, room.height, targetAreaMm2, toleranceMm2);
       let newRoomY = room.y;
       let newRoomH = room.height;
       let newNeighborY = neighbor.y;
@@ -1035,7 +1068,7 @@ export function optimizeRoomArea(
         const totalSpanH = group.reduce((s, g) => s + g.height, 0);
         if (Math.abs(totalSpanH - room.height) > 10) continue;
 
-        const deltaX = Math.round(deltaAreaMm2 / room.height / 10) * 10;
+        const deltaX = exactDeltaStepMm(deltaAreaMm2, room.height, room.width, targetAreaMm2, toleranceMm2);
         const newRoomX = dir === 'east' ? room.x : room.x - deltaX;
         const newRoomW = room.width + deltaX;
         if (newRoomW < minPermittedWidth) continue;
@@ -1094,7 +1127,7 @@ export function optimizeRoomArea(
         const totalSpanW = group.reduce((s, g) => s + g.width, 0);
         if (Math.abs(totalSpanW - room.width) > 10) continue;
 
-        const deltaY = Math.round(deltaAreaMm2 / room.width / 10) * 10;
+        const deltaY = exactDeltaStepMm(deltaAreaMm2, room.width, room.height, targetAreaMm2, toleranceMm2);
         const newRoomY = dir === 'south' ? room.y : room.y - deltaY;
         const newRoomH = room.height + deltaY;
         if (newRoomH < minPermittedWidth) continue;
@@ -1148,6 +1181,15 @@ export function optimizeRoomArea(
 
   // 10. Final Candidate Assembly & Evaluation
   if (multiRoomCandidates.length === 0) {
+    if (options.allowEnvelopeExpansion || !control.footprintLocked) {
+      const expanded = expandFlatIntoSetbackMargin(building, roomId, targetAreaMm2, {
+        ...options,
+        floorId: floor.id,
+      });
+      if (expanded.isFeasible && expanded.candidates.length > 0) {
+        return expanded;
+      }
+    }
     const neighborList = unlockedNeighbors.map((e) => e.neighbor.name).join(', ') || 'adjacent rooms';
     return {
       isFeasible: false,
@@ -1314,4 +1356,856 @@ export function createRoomAreaRegenerationCommand(
     const replay = optimizeRoomArea(current, room.id, { ...frozenOptions, targetAreaMm2: snapshot.requestedAreaMm2, control });
     if (!replay.candidates.some(c => c.feasibilityStatus === 'FEASIBLE' && canonicalBuildingHash({ ...c.building, version: proposed.version }) === canonicalBuildingHash(proposed))) throw new Error('Candidate failed deterministic acceptance validation');
   });
+}
+
+// ============================================================================
+// Phase 4 Mode A (Setback Boundary Expansion) & Mode B (Ratio-Preserving Scale)
+// ============================================================================
+
+export interface SetbackExpansionOptions extends Omit<RoomAreaRegenerationOptions, 'targetAreaMm2'> {
+  readonly floorId?: string;
+  readonly targetAreaMm2?: number;
+  readonly minSetbackMm?: number;
+  readonly synchronizeMatchingFloors?: boolean;
+}
+
+export interface PreservedRatioRegenerationOptions {
+  readonly floorId?: string;
+  readonly unitId?: string;
+  readonly editedRoomId?: string;
+  readonly targetRoomAreaMm2?: number;
+  readonly targetFlatSqFt?: number;
+  readonly scaleFactor?: number;
+  readonly minSetbackMm?: number;
+  readonly editedRoomRatios?: Readonly<Record<string, number>>;
+}
+
+export interface PreservedRatioRegenerationResult {
+  readonly isFeasible: boolean;
+  readonly building: Building;
+  readonly appliedScaleFactor: number;
+  readonly achievedUnitSqFt?: number;
+  readonly modifiedRooms: readonly ModifiedRoomDetail[];
+  readonly error?: string;
+}
+
+function dedupeSortedGrid(coords: readonly number[]): number[] {
+  const sorted = [...coords].filter(Number.isFinite).sort((a, b) => a - b);
+  const out: number[] = [];
+  for (const v of sorted) {
+    if (out.length === 0 || Math.abs(v - out[out.length - 1]!) > 1) {
+      out.push(Math.round(v));
+    }
+  }
+  return out;
+}
+
+function collectFloorGrid(floor: Floor): { xs: number[]; ys: number[] } {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const pushPoly = (poly: Polygon | undefined) => {
+    if (!poly) return;
+    for (const pt of poly.points) {
+      xs.push(pt.x);
+      ys.push(pt.y);
+    }
+  };
+  pushPoly(floor.boundary);
+  floor.rooms.forEach((r) => pushPoly(r.boundary));
+  (floor.voidBoundaries ?? []).forEach((v) => pushPoly(v));
+  (floor.apartmentUnits ?? []).forEach((u) => pushPoly(u.boundary));
+  return { xs: dedupeSortedGrid(xs), ys: dedupeSortedGrid(ys) };
+}
+
+function mapPiecewiseCoord(val: number, oldGrid: readonly number[], newGrid: readonly number[]): number {
+  if (oldGrid.length === 0 || oldGrid.length !== newGrid.length) return val;
+  if (val <= oldGrid[0]! + 1) return Math.round(newGrid[0]! + (val - oldGrid[0]!));
+  const last = oldGrid.length - 1;
+  if (val >= oldGrid[last]! - 1) return Math.round(newGrid[last]! + (val - oldGrid[last]!));
+  for (let i = 0; i < last; i++) {
+    const a = oldGrid[i]!;
+    const b = oldGrid[i + 1]!;
+    if (val >= a - 1 && val <= b + 1) {
+      const span = b - a;
+      const t = span > 0 ? Math.max(0, Math.min(1, (val - a) / span)) : 0;
+      return Math.round(newGrid[i]! + t * (newGrid[i + 1]! - newGrid[i]!));
+    }
+  }
+  return Math.round(val);
+}
+
+function mapPolygonPoints(
+  poly: Polygon,
+  oldXs: readonly number[],
+  newXs: readonly number[],
+  oldYs: readonly number[],
+  newYs: readonly number[],
+  dxShift = 0,
+  dyShift = 0,
+): Polygon {
+  return {
+    points: poly.points.map((pt) => ({
+      x: mapPiecewiseCoord(pt.x, oldXs, newXs) + dxShift,
+      y: mapPiecewiseCoord(pt.y, oldYs, newYs) + dyShift,
+    })),
+  };
+}
+
+function resolvePlotPermissibleBounds(building: Building, minSetbackOverride?: number) {
+  const plotPts = building.site.plotBoundary?.points ?? [];
+  const plotMinX = plotPts.length ? Math.min(...plotPts.map((p) => p.x)) : 0;
+  const plotMaxX = plotPts.length ? Math.max(...plotPts.map((p) => p.x)) : building.site.plotWidth;
+  const plotMinY = plotPts.length ? Math.min(...plotPts.map((p) => p.y)) : 0;
+  const plotMaxY = plotPts.length ? Math.max(...plotPts.map((p) => p.y)) : building.site.plotDepth;
+  const sb = building.site.setbacks;
+  const left = minSetbackOverride ?? sb.left ?? 0;
+  const right = minSetbackOverride ?? sb.right ?? 0;
+  const rear = minSetbackOverride ?? sb.rear ?? 0;
+  const front = minSetbackOverride ?? sb.front ?? 0;
+  return {
+    minX: plotMinX + left,
+    maxX: plotMaxX - right,
+    minY: plotMinY + rear,
+    maxY: plotMaxY - front,
+  };
+}
+
+function rebuildFloorAfterGridRemap(
+  floor: Floor,
+  oldXs: readonly number[],
+  newXs: readonly number[],
+  oldYs: readonly number[],
+  newYs: readonly number[],
+  dxShift: number,
+  dyShift: number,
+  customRoomsOverride?: readonly Room[],
+  customBoundaryOverride?: Polygon,
+  customUnitsOverride?: Floor['apartmentUnits'],
+): Floor {
+  const mapX = (x: number) => mapPiecewiseCoord(x, oldXs, newXs) + dxShift;
+  const mapY = (y: number) => mapPiecewiseCoord(y, oldYs, newYs) + dyShift;
+  const nextBoundary = customBoundaryOverride ?? mapPolygonPoints(floor.boundary, oldXs, newXs, oldYs, newYs, dxShift, dyShift);
+  const nextRooms: Room[] = (customRoomsOverride ?? floor.rooms).map((r) => {
+    if (customRoomsOverride) return r;
+    const mappedPoly = mapPolygonPoints(r.boundary, oldXs, newXs, oldYs, newYs, dxShift, dyShift);
+    const box = polygonBoundingBox(mappedPoly);
+    return {
+      ...r,
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+      area: polygonArea(mappedPoly),
+      boundary: mappedPoly,
+    };
+  });
+  const nextVoids = floor.voidBoundaries?.map((v) =>
+    mapPolygonPoints(v, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+  );
+  const nextUnits =
+    customUnitsOverride ??
+    floor.apartmentUnits?.map((u) => ({
+      ...u,
+      boundary: mapPolygonPoints(u.boundary, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+    }));
+  const nextColumns = floor.columns.map((c) => ({
+    ...c,
+    position: { x: mapX(c.position.x), y: mapY(c.position.y) },
+  }));
+  const nextBeams = floor.beams?.map((b) => ({
+    ...b,
+    startPoint: { x: mapX(b.startPoint.x), y: mapY(b.startPoint.y) },
+    endPoint: { x: mapX(b.endPoint.x), y: mapY(b.endPoint.y) },
+  }));
+  const nextCanonicalStairs = floor.canonicalStaircases?.map((s) => {
+    const oldBox = polygonBoundingBox(s.polygon);
+    const stairRoom = nextRooms.find(
+      (r) =>
+        r.type === RoomType.Staircase &&
+        Math.abs((r.x + r.width / 2) - (mapX(oldBox.x + oldBox.width / 2))) < Math.max(oldBox.width, r.width),
+    );
+    if (stairRoom && Math.abs(stairRoom.width - oldBox.width) <= 2 && Math.abs(stairRoom.height - oldBox.height) <= 2) {
+      const tx = stairRoom.x - oldBox.x;
+      const ty = stairRoom.y - oldBox.y;
+      const shiftPoly = (p: Polygon): Polygon => ({ points: p.points.map((pt) => ({ x: pt.x + tx, y: pt.y + ty })) });
+      return {
+        ...s,
+        polygon: shiftPoly(s.polygon),
+        flight1: shiftPoly(s.flight1),
+        flight2: shiftPoly(s.flight2),
+        midLanding: shiftPoly(s.midLanding),
+        floorLanding: s.floorLanding ? shiftPoly(s.floorLanding) : undefined,
+      };
+    }
+    return {
+      ...s,
+      polygon: mapPolygonPoints(s.polygon, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+      flight1: mapPolygonPoints(s.flight1, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+      flight2: mapPolygonPoints(s.flight2, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+      midLanding: mapPolygonPoints(s.midLanding, oldXs, newXs, oldYs, newYs, dxShift, dyShift),
+      floorLanding: s.floorLanding
+        ? mapPolygonPoints(s.floorLanding, oldXs, newXs, oldYs, newYs, dxShift, dyShift)
+        : undefined,
+    };
+  });
+  const nextStairs = floor.stairs.map((st) => {
+    const oldRoom = floor.rooms.find((r) => r.type === RoomType.Staircase && st.x >= r.x - 50 && st.x <= r.x + r.width + 50);
+    const nextRoom = oldRoom ? nextRooms.find((r) => r.id === oldRoom.id) : undefined;
+    if (nextRoom && Math.abs(nextRoom.width - st.width) <= 2 && Math.abs(nextRoom.height - st.length) <= 2) {
+      return {
+        ...st,
+        x: nextRoom.x,
+        y: nextRoom.y,
+        boundary: rectPolygon(nextRoom.x, nextRoom.y, st.width, st.length),
+      };
+    }
+    const nx = mapX(st.x);
+    const ny = mapY(st.y);
+    const nw = Math.max(1200, mapX(st.x + st.width) - nx);
+    const nh = Math.max(1200, mapY(st.y + st.length) - ny);
+    return {
+      ...st,
+      x: nx,
+      y: ny,
+      width: nw,
+      length: nh,
+      boundary: rectPolygon(nx, ny, nw, nh),
+    };
+  });
+
+  const guardHeightMm = floor.walls.find((w) => w.boundaryRole === 'PARAPET')?.heightMm ?? 1100;
+  const usesFloorPrefix = floor.walls.some((w) => w.id.startsWith(`${floor.id}::`));
+  const openStairPairs = new Set(
+    floor.walls
+      .filter((w) => w.boundaryRole === 'OPEN_BOUNDARY')
+      .map((w) => [...w.roomIds].sort().join('|')),
+  );
+  const rawWalls = generateApartmentWalls(nextRooms, floor.id, nextBoundary, true, guardHeightMm).map((w) => {
+    const key = [...w.roomIds].sort().join('|');
+    const id = usesFloorPrefix && !w.id.startsWith(`${floor.id}::`) ? `${floor.id}::${w.id}` : w.id;
+    return openStairPairs.has(key)
+      ? { ...w, id, boundaryRole: 'OPEN_BOUNDARY' as const, heightMm: 0 }
+      : { ...w, id };
+  });
+
+  const findMatchedWall = (oldWallId: string, roomIdsHint: readonly string[], mappedPos: { x: number; y: number }) => {
+    const origWall = floor.walls.find((w) => w.id === oldWallId);
+    const origWasVertical = origWall ? Math.abs(origWall.startPoint.x - origWall.endPoint.x) < 1 : undefined;
+    if (origWall) {
+      const exactKey = [...origWall.roomIds].sort().join('|');
+      const byPair = rawWalls.find(
+        (w) =>
+          [...w.roomIds].sort().join('|') === exactKey &&
+          (origWasVertical === undefined || (Math.abs(w.startPoint.x - w.endPoint.x) < 1) === origWasVertical),
+      );
+      if (byPair) return byPair;
+    }
+    const hintMatches = rawWalls.filter((w) => roomIdsHint.length > 0 && roomIdsHint.every((id) => w.roomIds.includes(id)));
+    if (hintMatches.length) {
+      return hintMatches.sort((a, b) => {
+        const da = Math.hypot((a.startPoint.x + a.endPoint.x) / 2 - mappedPos.x, (a.startPoint.y + a.endPoint.y) / 2 - mappedPos.y);
+        const db = Math.hypot((b.startPoint.x + b.endPoint.x) / 2 - mappedPos.x, (b.startPoint.y + b.endPoint.y) / 2 - mappedPos.y);
+        return da - db;
+      })[0]!;
+    }
+    return rawWalls.find((w) => w.id === oldWallId) ?? rawWalls[0];
+  };
+
+  const clampPosToHost = (host: (typeof rawWalls)[number], targetPt: { x: number; y: number }, openingW: number) => {
+    const vertical = Math.abs(host.startPoint.x - host.endPoint.x) < 1;
+    const lo = Math.min(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+    const hi = Math.max(vertical ? host.startPoint.y : host.startPoint.x, vertical ? host.endPoint.y : host.endPoint.x);
+    const safeMin = lo + Math.min(openingW / 2 + 50, (hi - lo) / 2);
+    const safeMax = hi - Math.min(openingW / 2 + 50, (hi - lo) / 2);
+    const rawAlong = vertical ? targetPt.y : targetPt.x;
+    const along = Math.round(Math.max(safeMin, Math.min(safeMax, rawAlong)));
+    return vertical ? { x: host.startPoint.x, y: along } : { x: along, y: host.startPoint.y };
+  };
+
+  const nextDoors = floor.doors.map((d) => {
+    const mappedPos = { x: mapX(d.position.x), y: mapY(d.position.y) };
+    const host = findMatchedWall(d.wallId, d.connectsRooms.filter(Boolean), mappedPos);
+    if (!host) return { ...d, position: mappedPos };
+    return { ...d, wallId: host.id, position: clampPosToHost(host, mappedPos, d.width) };
+  });
+
+  const nextWindows = floor.windows.map((win) => {
+    const mappedPos = { x: mapX(win.position.x), y: mapY(win.position.y) };
+    const host = findMatchedWall(win.wallId, [win.roomId], mappedPos);
+    if (!host) return { ...win, position: mappedPos };
+    return { ...win, wallId: host.id, position: clampPosToHost(host, mappedPos, win.width) };
+  });
+
+  const wallsWithOpenings = rawWalls.map((w) => ({
+    ...w,
+    hasOpening: nextDoors.some((d) => d.wallId === w.id) || nextWindows.some((win) => win.wallId === w.id),
+  }));
+
+  const rawParking = (floor as Floor & {
+    parkingLayout?: {
+      bays: ReadonlyArray<{ boundary: Polygon; [k: string]: unknown }>;
+      [k: string]: unknown;
+    };
+  }).parkingLayout;
+  const nextParking = rawParking
+    ? {
+        ...rawParking,
+        bays: rawParking.bays.map((b) => ({
+          ...b,
+          boundary: { points: b.boundary.points.map((pt) => ({ x: pt.x + dxShift, y: pt.y + dyShift })) },
+        })),
+      }
+    : undefined;
+
+  return {
+    ...floor,
+    boundary: nextBoundary,
+    rooms: nextRooms,
+    walls: wallsWithOpenings,
+    doors: nextDoors,
+    windows: nextWindows,
+    columns: nextColumns,
+    beams: nextBeams,
+    stairs: nextStairs,
+    canonicalStaircases: nextCanonicalStairs,
+    voidBoundaries: nextVoids,
+    apartmentUnits: nextUnits,
+    ...(nextParking ? { parkingLayout: nextParking } : {}),
+  };
+}
+
+/**
+ * Mode A — Setback Margin Boundary Expansion:
+ * Expands a selected room along its exterior building perimeter into free plot setback
+ * margin while keeping adjacent/neighboring rooms uncrushed and maintaining delta === 0.000 mm².
+ */
+export function expandFlatIntoSetbackMargin(
+  building: Building,
+  roomId: string,
+  targetAreaMm2?: number,
+  options: SetbackExpansionOptions = {},
+): RoomAreaOptimizationResult {
+  const timestamp = new Date().toISOString();
+  const floor = options.floorId
+    ? building.floors.find((f) => f.id === options.floorId && f.rooms.some((r) => r.id === roomId))
+    : building.floors.find((f) => f.rooms.some((r) => r.id === roomId));
+
+  if (!floor) {
+    return {
+      isFeasible: false,
+      targetRoom: {
+        id: roomId,
+        name: 'Unknown Room',
+        type: RoomType.Bedroom,
+        floorId: '',
+        floorName: '',
+        originalAreaMm2: 0,
+        requestedAreaMm2: targetAreaMm2 ?? 0,
+        minPermittedAreaMm2: 0,
+        dimensions: { width: 0, height: 0 },
+      },
+      candidates: [],
+      infeasibilityReason: `Room '${roomId}' was not found.`,
+      diagnostics: ['ROOM_NOT_FOUND'],
+      timestamp,
+    };
+  }
+
+  const room = floor.rooms.find((r) => r.id === roomId)!;
+  const reqAreaMm2 = targetAreaMm2 ?? room.area;
+  const minPermittedArea = room.minArea ?? ENGINEERING_MIN_ROOM_AREAS[room.type] ?? 6_000_000;
+  const minPermittedWidth = ENGINEERING_MIN_ROOM_WIDTH[room.type] ?? 1000;
+  const toleranceMm2 = options.toleranceMm2 ?? Math.max(100_000, reqAreaMm2 * 0.01);
+  const control: GenerationControlState = {
+    schemaVersion: 1,
+    revisionId: options.control?.revisionId ?? 'rev-0',
+    lockedEntityIds: options.control?.lockedEntityIds ?? [],
+    lockedFloorIds: options.control?.lockedFloorIds ?? [],
+    protectedCoreIds: options.control?.protectedCoreIds ?? [],
+    footprintLocked: options.control?.footprintLocked ?? true,
+    updatedAt: timestamp,
+  };
+  const targetRoomSummary = {
+    id: room.id,
+    name: room.name,
+    type: room.type,
+    floorId: floor.id,
+    floorName: floor.name,
+    originalAreaMm2: room.area,
+    requestedAreaMm2: reqAreaMm2,
+    minPermittedAreaMm2: minPermittedArea,
+    dimensions: { width: room.width, height: room.height },
+  };
+
+  if (reqAreaMm2 < minPermittedArea || room.type === RoomType.Staircase || room.type === RoomType.Lift || room.isFixed || !isAxisAlignedRectangle(room.boundary)) {
+    return {
+      isFeasible: false,
+      targetRoom: targetRoomSummary,
+      candidates: [],
+      infeasibilityReason: `Room '${room.name}' cannot expand outside floor boundaries because of lock, core, minimum area, or non-rectangular constraint.`,
+      diagnostics: ['MODE_A_PRECONDITION_FAILED'],
+      timestamp,
+    };
+  }
+
+  const fBox = polygonBoundingBox(floor.boundary);
+  const permissible = resolvePlotPermissibleBounds(building, options.minSetbackMm);
+  const margin = {
+    west: Math.max(0, Math.round(fBox.x - permissible.minX)),
+    east: Math.max(0, Math.round(permissible.maxX - (fBox.x + fBox.width))),
+    north: Math.max(0, Math.round(fBox.y - permissible.minY)),
+    south: Math.max(0, Math.round(permissible.maxY - (fBox.y + fBox.height))),
+  };
+  const deltaAreaMm2 = reqAreaMm2 - room.area;
+  const baseRevision = buildingRefinementRevision(building, options.control ?? control);
+  const { xs: oldXs, ys: oldYs } = collectFloorGrid(floor);
+  const candidates: RoomAreaCandidate[] = [];
+
+  const sides: Array<{ side: 'west' | 'east' | 'north' | 'south'; onOuter: boolean; avail: number; span: number; cur: number }> = [
+    { side: 'west', onOuter: Math.abs(room.x - fBox.x) <= 5, avail: margin.west, span: room.height, cur: room.width },
+    { side: 'east', onOuter: Math.abs(room.x + room.width - (fBox.x + fBox.width)) <= 5, avail: margin.east, span: room.height, cur: room.width },
+    { side: 'north', onOuter: Math.abs(room.y - fBox.y) <= 5, avail: margin.north, span: room.width, cur: room.height },
+    { side: 'south', onOuter: Math.abs(room.y + room.height - (fBox.y + fBox.height)) <= 5, avail: margin.south, span: room.width, cur: room.height },
+  ];
+
+  for (const cfg of sides) {
+    if (!cfg.onOuter || deltaAreaMm2 <= 0) continue;
+    const deltaMm = exactDeltaStepMm(deltaAreaMm2, cfg.span, cfg.cur, reqAreaMm2, toleranceMm2);
+    if (deltaMm <= 0 || deltaMm > cfg.avail) continue;
+    if (cfg.cur + deltaMm < minPermittedWidth) continue;
+
+    const pushCandidateIfValid = (nextBuilding: Building, suffix: string, descSuffix: string, tradeOffText: string): boolean => {
+      const nextFloor = nextBuilding.floors.find((fl) => fl.id === floor.id)!;
+      const ledger = measureApartmentAreaLedger(nextFloor);
+      if (!ledger.supported || Math.abs(ledger.delta) >= 0.001 || ledger.overlap >= 0.001) return false;
+
+      const nextTarget = nextFloor.rooms.find((r) => r.id === room.id)!;
+      const diffMm2 = nextTarget.area - reqAreaMm2;
+      if (Math.abs(diffMm2) > toleranceMm2) return false;
+
+      const modifiedRooms: ModifiedRoomDetail[] = nextFloor.rooms
+        .map((nr) => {
+          const or = floor.rooms.find((r) => r.id === nr.id);
+          if (!or || (nr.x === or.x && nr.y === or.y && nr.width === or.width && nr.height === or.height)) return null;
+          return {
+            roomId: nr.id,
+            roomName: nr.name,
+            beforeAreaMm2: or.area,
+            afterAreaMm2: nr.area,
+            deltaAreaMm2: nr.area - or.area,
+            beforeDimensions: { width: or.width, height: or.height },
+            afterDimensions: { width: nr.width, height: nr.height },
+          };
+        })
+        .filter((m): m is ModifiedRoomDetail => m !== null);
+
+      const candType: 'A' | 'B' | 'C' = candidates.length === 0 ? 'A' : candidates.length === 1 ? 'B' : 'C';
+      candidates.push({
+        id: `mode-a-${cfg.side}-${suffix}-${candType.toLowerCase()}`,
+        candidateType: candType,
+        name: `Mode A — Expand ${cfg.side.toUpperCase()} Exterior into Setback Margin`,
+        description: `Extends '${room.name}' ${cfg.side}ward by ${deltaMm} mm into available plot setback margin ${descSuffix}`,
+        targetRoomId: room.id,
+        requestedAreaMm2: reqAreaMm2,
+        achievedAreaMm2: nextTarget.area,
+        differenceMm2: diffMm2,
+        toleranceSatisfied: true,
+        modifiedRooms,
+        modifiedWalls: nextFloor.walls.map((w) => w.id),
+        affectedDoors: [],
+        constraintViolations: [],
+        tradeOffs: tradeOffText,
+        feasibilityStatus: 'FEASIBLE',
+        building: nextBuilding,
+        baseRevision,
+        rank: candidates.length + 1,
+      });
+      return true;
+    };
+
+    // Protect stair/lift if it sits flush on this same moving boundary line without an interior gap
+    const blocksCoreOnEdge = floor.rooms.some((r) => {
+      if (r.type !== RoomType.Staircase && r.type !== RoomType.Lift) return false;
+      if (cfg.side === 'west') return Math.abs(r.x - fBox.x) <= 5;
+      if (cfg.side === 'east') return Math.abs(r.x + r.width - (fBox.x + fBox.width)) <= 5;
+      if (cfg.side === 'north') return Math.abs(r.y - fBox.y) <= 5;
+      return Math.abs(r.y + r.height - (fBox.y + fBox.height)) <= 5;
+    });
+
+    let acceptedUniform = false;
+    if (!blocksCoreOnEdge) {
+      const newXs = [...oldXs];
+      const newYs = [...oldYs];
+      if (cfg.side === 'west') newXs[0] = newXs[0]! - deltaMm;
+      if (cfg.side === 'east') newXs[newXs.length - 1] = newXs[newXs.length - 1]! + deltaMm;
+      if (cfg.side === 'north') newYs[0] = newYs[0]! - deltaMm;
+      if (cfg.side === 'south') newYs[newYs.length - 1] = newYs[newYs.length - 1]! + deltaMm;
+
+      const updatedFloors = building.floors.map((fl) => {
+        const flBox = polygonBoundingBox(fl.boundary);
+        const compatible =
+          fl.id === floor.id ||
+          (options.synchronizeMatchingFloors !== false &&
+            Math.abs(flBox.x - fBox.x) <= 5 &&
+            Math.abs(flBox.width - fBox.width) <= 5 &&
+            Math.abs(flBox.y - fBox.y) <= 5 &&
+            Math.abs(flBox.height - fBox.height) <= 5);
+        if (!compatible) return fl;
+        return rebuildFloorAfterGridRemap(fl, oldXs, newXs, oldYs, newYs, 0, 0);
+      });
+      const updatedBeams = building.beams?.map((b) => ({
+        ...b,
+        startPoint: {
+          x: mapPiecewiseCoord(b.startPoint.x, oldXs, newXs),
+          y: mapPiecewiseCoord(b.startPoint.y, oldYs, newYs),
+        },
+        endPoint: {
+          x: mapPiecewiseCoord(b.endPoint.x, oldXs, newXs),
+          y: mapPiecewiseCoord(b.endPoint.y, oldYs, newYs),
+        },
+      }));
+      const nextBuilding: Building = {
+        ...building,
+        version: building.version + 1,
+        floors: updatedFloors,
+        ...(updatedBeams ? { beams: updatedBeams } : {}),
+      };
+      acceptedUniform = pushCandidateIfValid(
+        nextBuilding,
+        'edge',
+        'while preserving all neighbors.',
+        `Uses ${(deltaMm / 1000).toFixed(2)} m of setback margin on the ${cfg.side} edge; zero neighboring room shrinkage.`,
+      );
+    }
+
+    // Fallback when a vertical core sits on the same outer wall line or uniform slab push fails:
+    // extrude only the target exterior room orthogonally into the free setback margin (stepped boundary),
+    // leaving staircases, lifts, and all other neighbors completely unmoved.
+    if (!acceptedUniform) {
+      try {
+        const updatedFloors = building.floors.map((fl) => {
+          const flBox = polygonBoundingBox(fl.boundary);
+          const compatible =
+            fl.id === floor.id ||
+            (options.synchronizeMatchingFloors !== false &&
+              Math.abs(flBox.x - fBox.x) <= 5 &&
+              Math.abs(flBox.width - fBox.width) <= 5 &&
+              Math.abs(flBox.y - fBox.y) <= 5 &&
+              Math.abs(flBox.height - fBox.height) <= 5);
+          if (!compatible) return fl;
+
+          const flTarget =
+            fl.id === floor.id
+              ? fl.rooms.find((r) => r.id === room.id)
+              : fl.rooms.find(
+                  (r) =>
+                    r.name === room.name &&
+                    r.unitId === room.unitId &&
+                    Math.abs(r.x - room.x) <= 5 &&
+                    Math.abs(r.y - room.y) <= 5 &&
+                    Math.abs(r.width - room.width) <= 5 &&
+                    Math.abs(r.height - room.height) <= 5,
+                );
+          if (!flTarget) return fl;
+
+          const nx = cfg.side === 'west' ? flTarget.x - deltaMm : flTarget.x;
+          const ny = cfg.side === 'north' ? flTarget.y - deltaMm : flTarget.y;
+          const nw = cfg.side === 'west' || cfg.side === 'east' ? flTarget.width + deltaMm : flTarget.width;
+          const nh = cfg.side === 'north' || cfg.side === 'south' ? flTarget.height + deltaMm : flTarget.height;
+          if (
+            nx < permissible.minX - 1 ||
+            nx + nw > permissible.maxX + 1 ||
+            ny < permissible.minY - 1 ||
+            ny + nh > permissible.maxY + 1
+          ) {
+            return fl;
+          }
+
+          const poly = rectToPolygon(nx, ny, nw, nh);
+          const customRooms = fl.rooms.map((r) =>
+            r.id === flTarget.id
+              ? { ...r, x: nx, y: ny, width: nw, height: nh, area: polygonArea(poly), boundary: poly }
+              : r,
+          );
+          const guardHeightMm = fl.walls.find((w) => w.boundaryRole === 'PARAPET')?.heightMm ?? 1100;
+          const testWalls = generateApartmentWalls(customRooms, fl.id, fl.boundary, true, guardHeightMm);
+          const steppedBoundary = apartmentFloorRegions(testWalls).boundary;
+          const customUnits = fl.apartmentUnits?.map((u) => {
+            if (u.id !== flTarget.unitId) return u;
+            const unitRooms = customRooms.filter((r) => r.unitId === u.id);
+            if (!unitRooms.length) return u;
+            try {
+              const uWalls = generateApartmentWalls(unitRooms, fl.id, steppedBoundary, true, guardHeightMm);
+              return { ...u, boundary: apartmentFloorRegions(uWalls).boundary };
+            } catch {
+              return u;
+            }
+          });
+          const { xs: flXs, ys: flYs } = collectFloorGrid(fl);
+          return rebuildFloorAfterGridRemap(
+            fl,
+            flXs,
+            flXs,
+            flYs,
+            flYs,
+            0,
+            0,
+            customRooms,
+            steppedBoundary,
+            customUnits,
+          );
+        });
+        const steppedBuilding: Building = {
+          ...building,
+          version: building.version + 1,
+          floors: updatedFloors,
+        };
+        pushCandidateIfValid(
+          steppedBuilding,
+          'stepped',
+          'using a stepped exterior boundary while keeping all neighboring rooms and vertical cores fixed.',
+          `Steps '${room.name}' outward ${(deltaMm / 1000).toFixed(2)} m into setback on ${cfg.side}; zero core or neighbor displacement.`,
+        );
+      } catch {
+        // Ignore non-manifold stepped geometry attempts on this side.
+      }
+    }
+  }
+
+  return {
+    isFeasible: candidates.length > 0,
+    targetRoom: targetRoomSummary,
+    candidates,
+    infeasibilityReason: candidates.length
+      ? undefined
+      : `Setback margin outside '${room.name}' cannot accommodate ${sqMmToSqM(deltaAreaMm2).toFixed(2)} m² without violating minimum plot setbacks.`,
+    diagnostics: candidates.length ? ['MODE_A_SETBACK_EXPANSION_SATISFIED'] : ['MODE_A_SETBACK_LIMIT_REACHED'],
+    timestamp,
+  };
+}
+
+/**
+ * Mode B — Proportional Ratio-Preserving Scaling:
+ * Scales wings/flats proportionally so edited room area ratios (e.g. Room / Flat Area) stay intact
+ * while lifting/shrinking total flat sq.ft. (e.g. 1,300 -> 1,385 sq.ft.) with zero delta and locked cores.
+ */
+export function regenerateWithPreservedRatios(
+  building: Building,
+  options: PreservedRatioRegenerationOptions,
+): PreservedRatioRegenerationResult {
+  const floor =
+    (options.floorId ? building.floors.find((f) => f.id === options.floorId) : undefined) ??
+    building.floors.find((f) => f.floorUse === 'RESIDENTIAL') ??
+    building.floors[0];
+
+  if (!floor) {
+    return { isFeasible: false, building, appliedScaleFactor: 1, modifiedRooms: [], error: 'No target floor found.' };
+  }
+
+  const targetUnitId =
+    options.unitId ??
+    (options.editedRoomId ? floor.rooms.find((r) => r.id === options.editedRoomId)?.unitId : undefined) ??
+    floor.apartmentUnits?.[0]?.id ??
+    floor.rooms.find((r) => Boolean(r.unitId) && architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID')?.unitId;
+
+  const targetUnitRooms = floor.rooms.filter((r) => {
+    if (architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID') return false;
+    if (targetUnitId) return r.unitId === targetUnitId;
+    return r.type !== RoomType.Staircase && r.type !== RoomType.Lift && r.type !== RoomType.Corridor;
+  });
+
+  const currentUnitAreaMm2 = targetUnitRooms.reduce((sum, r) => sum + polygonArea(r.boundary), 0);
+  let areaScale = 1;
+  if (options.targetFlatSqFt && options.targetFlatSqFt > 0 && currentUnitAreaMm2 > 0) {
+    areaScale = (options.targetFlatSqFt * 92_903.04) / currentUnitAreaMm2;
+  } else if (options.editedRoomId && options.targetRoomAreaMm2 && options.targetRoomAreaMm2 > 0) {
+    const edited = floor.rooms.find((r) => r.id === options.editedRoomId);
+    if (edited && edited.area > 0) {
+      areaScale = options.targetRoomAreaMm2 / edited.area;
+    }
+  } else if (options.scaleFactor && options.scaleFactor > 0) {
+    areaScale = options.scaleFactor * options.scaleFactor;
+  }
+
+  if (!Number.isFinite(areaScale) || areaScale <= 0) {
+    return { isFeasible: false, building, appliedScaleFactor: 1, modifiedRooms: [], error: 'Invalid scaling target.' };
+  }
+
+  const k = Math.sqrt(areaScale);
+  const { xs: oldXs, ys: oldYs } = collectFloorGrid(floor);
+  if (oldXs.length < 2 || oldYs.length < 2) {
+    return { isFeasible: false, building, appliedScaleFactor: 1, modifiedRooms: [], error: 'Floor has insufficient rectilinear grid.' };
+  }
+
+  const coreRooms = floor.rooms.filter((r) => r.type === RoomType.Staircase || r.type === RoomType.Lift);
+  const unitSpanRooms = targetUnitRooms.length > 0 ? targetUnitRooms : floor.rooms;
+  const isCoreXBand = oldXs.slice(0, -1).map((x0, idx) => {
+    const x1 = oldXs[idx + 1]!;
+    const cx = (x0 + x1) / 2;
+    const hasCore = coreRooms.some((c) => cx > c.x + 1 && cx < c.x + c.width - 1);
+    const hasUnitRoom = unitSpanRooms.some((u) => cx > u.x + 1 && cx < u.x + u.width - 1);
+    return hasCore && !hasUnitRoom;
+  });
+  const isCoreYBand = oldYs.slice(0, -1).map((y0, idx) => {
+    const y1 = oldYs[idx + 1]!;
+    const cy = (y0 + y1) / 2;
+    const hasCore = coreRooms.some((c) => cy > c.y + 1 && cy < c.y + c.height - 1);
+    const hasUnitRoom = unitSpanRooms.some((u) => cy > u.y + 1 && cy < u.y + u.height - 1);
+    return hasCore && !hasUnitRoom;
+  });
+
+  const buildScaledGrid = (coords: readonly number[], fixedBand: readonly boolean[], factor: number): number[] => {
+    const out = [coords[0]!];
+    for (let i = 0; i < coords.length - 1; i++) {
+      const span = coords[i + 1]! - coords[i]!;
+      const nextSpan = fixedBand[i] ? span : Math.max(100, Math.round(span * factor));
+      out.push(out[out.length - 1]! + nextSpan);
+    }
+    return out;
+  };
+
+  const newXs = buildScaledGrid(oldXs, isCoreXBand, k);
+  const newYs = buildScaledGrid(oldYs, isCoreYBand, k);
+
+  // Center within permissible plot bounds so setbacks remain honored
+  const permissible = resolvePlotPermissibleBounds(building, options.minSetbackMm);
+  const newW = newXs[newXs.length - 1]! - newXs[0]!;
+  const newH = newYs[newYs.length - 1]! - newYs[0]!;
+  const permW = permissible.maxX - permissible.minX;
+  const permH = permissible.maxY - permissible.minY;
+  if (newW > permW + 2 || newH > permH + 2) {
+    return {
+      isFeasible: false,
+      building,
+      appliedScaleFactor: k,
+      modifiedRooms: [],
+      error: `Proportional scale (${(k * 100).toFixed(1)}%) expands footprint (${(newW / 1000).toFixed(2)}m x ${(newH / 1000).toFixed(2)}m) beyond permissible plot envelope (${(permW / 1000).toFixed(2)}m x ${(permH / 1000).toFixed(2)}m).`,
+    };
+  }
+
+  let dxShift = 0;
+  let dyShift = 0;
+  if (newXs[0]! < permissible.minX || newXs[newXs.length - 1]! > permissible.maxX) {
+    dxShift = Math.round((permissible.minX + permissible.maxX) / 2 - (newXs[0]! + newXs[newXs.length - 1]!) / 2);
+  }
+  if (newYs[0]! < permissible.minY || newYs[newYs.length - 1]! > permissible.maxY) {
+    dyShift = Math.round((permissible.minY + permissible.maxY) / 2 - (newYs[0]! + newYs[newYs.length - 1]!) / 2);
+  }
+
+  // Keep Staircase/Lift heights exact inside core X-band if abutting Corridor/Foyer exists directly above/below in same X-span
+  const adjustCoreRoomsY = (mappedFloor: Floor): Room[] => {
+    const rms = mappedFloor.rooms.map((r) => ({ ...r }));
+    for (const origCore of coreRooms) {
+      const mCoreIdx = rms.findIndex((r) => r.id === origCore.id);
+      if (mCoreIdx < 0) continue;
+      const mCore = rms[mCoreIdx]!;
+      const deltaH = mCore.height - origCore.height;
+      if (Math.abs(deltaH) <= 2) continue;
+      const adjIdx = rms.findIndex(
+        (r) =>
+          (r.type === RoomType.Corridor || r.type === RoomType.Foyer) &&
+          Math.abs(r.x - mCore.x) <= 2 &&
+          Math.abs(r.width - mCore.width) <= 2 &&
+          (Math.abs(r.y - (mCore.y + mCore.height)) <= 2 || Math.abs(r.y + r.height - mCore.y) <= 2),
+      );
+      if (adjIdx >= 0) {
+        const adj = rms[adjIdx]!;
+        if (adj.height + deltaH < 1200) continue;
+        const adjIsBelow = Math.abs(adj.y - (mCore.y + mCore.height)) <= 2;
+        const lockedCorePoly = rectPolygon(mCore.x, adjIsBelow ? mCore.y : mCore.y + deltaH, mCore.width, origCore.height);
+        rms[mCoreIdx] = {
+          ...mCore,
+          y: adjIsBelow ? mCore.y : mCore.y + deltaH,
+          height: origCore.height,
+          area: polygonArea(lockedCorePoly),
+          boundary: lockedCorePoly,
+        };
+        const nextAdjY = adjIsBelow ? mCore.y + origCore.height : adj.y;
+        const nextAdjH = adj.height + deltaH;
+        const nextAdjPoly = rectPolygon(adj.x, nextAdjY, adj.width, nextAdjH);
+        rms[adjIdx] = {
+          ...adj,
+          y: nextAdjY,
+          height: nextAdjH,
+          area: polygonArea(nextAdjPoly),
+          boundary: nextAdjPoly,
+        };
+      }
+    }
+    return rms;
+  };
+
+  const remappedFloors = building.floors.map((fl) => {
+    const initial = rebuildFloorAfterGridRemap(fl, oldXs, newXs, oldYs, newYs, dxShift, dyShift);
+    const lockableCorePresent =
+      coreRooms.length > 0 &&
+      initial.rooms.some((r) => r.type === RoomType.Staircase || r.type === RoomType.Lift);
+    if (!lockableCorePresent || initial.floorUse === 'STILT_PARKING') return initial;
+    const adjusted = adjustCoreRoomsY(initial);
+    const sameRooms = adjusted.every((r, i) => r.height === initial.rooms[i]!.height && r.y === initial.rooms[i]!.y);
+    return sameRooms ? initial : rebuildFloorAfterGridRemap(fl, oldXs, newXs, oldYs, newYs, dxShift, dyShift, adjusted);
+  });
+
+  const remappedBeams = building.beams?.map((b) => ({
+    ...b,
+    startPoint: {
+      x: mapPiecewiseCoord(b.startPoint.x, oldXs, newXs) + dxShift,
+      y: mapPiecewiseCoord(b.startPoint.y, oldYs, newYs) + dyShift,
+    },
+    endPoint: {
+      x: mapPiecewiseCoord(b.endPoint.x, oldXs, newXs) + dxShift,
+      y: mapPiecewiseCoord(b.endPoint.y, oldYs, newYs) + dyShift,
+    },
+  }));
+
+  const nextBuilding: Building = {
+    ...building,
+    version: building.version + 1,
+    floors: remappedFloors,
+    ...(remappedBeams ? { beams: remappedBeams } : {}),
+  };
+
+  const nextTargetFloor = nextBuilding.floors.find((fl) => fl.id === floor.id)!;
+  const ledger = measureApartmentAreaLedger(nextTargetFloor);
+  if (!ledger.supported || Math.abs(ledger.delta) >= 0.001 || ledger.overlap >= 0.001) {
+    return {
+      isFeasible: false,
+      building,
+      appliedScaleFactor: k,
+      modifiedRooms: [],
+      error: `Proportional scaling failed area ledger invariant (delta=${ledger.delta.toFixed(3)} mm²).`,
+    };
+  }
+
+  const nextUnitRooms = nextTargetFloor.rooms.filter((r) => {
+    if (architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID') return false;
+    if (targetUnitId) return r.unitId === targetUnitId;
+    return r.type !== RoomType.Staircase && r.type !== RoomType.Lift && r.type !== RoomType.Corridor;
+  });
+  const achievedUnitSqFt =
+    nextUnitRooms.reduce((sum, r) => sum + polygonArea(r.boundary), 0) / 92_903.04;
+
+  const modifiedRooms: ModifiedRoomDetail[] = nextTargetFloor.rooms
+    .map((nr) => {
+      const or = floor.rooms.find((r) => r.id === nr.id);
+      if (!or || (nr.area === or.area && nr.width === or.width && nr.height === or.height)) return null;
+      return {
+        roomId: nr.id,
+        roomName: nr.name,
+        beforeAreaMm2: or.area,
+        afterAreaMm2: nr.area,
+        deltaAreaMm2: nr.area - or.area,
+        beforeDimensions: { width: or.width, height: or.height },
+        afterDimensions: { width: nr.width, height: nr.height },
+      };
+    })
+    .filter((m): m is ModifiedRoomDetail => m !== null);
+
+  return {
+    isFeasible: true,
+    building: nextBuilding,
+    appliedScaleFactor: k,
+    achievedUnitSqFt,
+    modifiedRooms,
+  };
 }

@@ -15,11 +15,13 @@ import {
   User,
   Plus,
   Check,
+  Edit3,
 } from 'lucide-react';
 import { useEditorStore } from '../../stores/editor-store';
 import { ProjectSetupWizard, type ProjectSetupWizardData } from './ProjectSetupWizard';
 import { RHWelcomeScreen } from '../studio/RHWelcomeScreen';
 import { ArchitecturalCADWorkspace } from './ArchitecturalCADWorkspace';
+import { InteractivePlanEditorPage } from './InteractivePlanEditorPage';
 import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { Building3DCustomizer } from './Building3DCustomizer';
 import { StructuralCADWorkspace } from './StructuralCADWorkspace';
@@ -37,6 +39,7 @@ import { createArgonRequest } from '../../services/argon-request';
 export type ArgonWorkspaceId =
   | 'setup'
   | 'cad_2d'
+  | 'edit_plan'
   | 'isometric'
   | 'building_3d'
   | 'structural_cad'
@@ -61,11 +64,12 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const workspaces: Array<{ id: ArgonWorkspaceId; label: string; icon: React.ReactNode }> = [
     { id: 'setup', label: '01 • Setup Wizard', icon: <Compass className="w-4 h-4" /> },
     { id: 'cad_2d', label: '02 • 2D CAD Studio', icon: <DraftingCompass className="w-4 h-4" /> },
-    { id: 'isometric', label: '03 • Floor Editor', icon: <Layers className="w-4 h-4" /> },
-    { id: 'building_3d', label: '04 • 3D Building', icon: <Box className="w-4 h-4" /> },
-    { id: 'structural_cad', label: '05 • Structural CAD', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'engineering', label: '06 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
-    { id: 'export', label: '07 • Export Center', icon: <Download className="w-4 h-4" /> },
+    { id: 'edit_plan', label: '03 • Edit Plan', icon: <Edit3 className="w-4 h-4" /> },
+    { id: 'isometric', label: '04 • Floor Editor', icon: <Layers className="w-4 h-4" /> },
+    { id: 'building_3d', label: '05 • 3D Building', icon: <Box className="w-4 h-4" /> },
+    { id: 'structural_cad', label: '06 • Structural CAD', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'engineering', label: '07 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'export', label: '08 • Export Center', icon: <Download className="w-4 h-4" /> },
   ];
 
   const workerRef = useRef<Worker | null>(null);
@@ -113,8 +117,12 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             // immediately. Persistence is reported separately below: a storage
             // problem must not read as a generation failure, and must not
             // discard the reviewable plan. Findings remain attached to it.
-            const report = event.data.result.building.metadata.generationReport;
-            setGenerationFindings(report?.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`) ?? []);
+            const report = event.data.result.building.metadata?.generationReport;
+            setGenerationFindings(
+              Array.isArray(report?.violations)
+                ? report.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`)
+                : [],
+            );
             const outcome = editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
             const firstResidential = event.data.result.building.floors.find(floor => floor.apartmentUnits?.length);
             if (firstResidential) editor.switchFloor(firstResidential.id);
@@ -162,12 +170,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const cancelGeneration = () => { workerRef.current?.terminate(); workerRef.current = null; setIsGenerating(false); };
 
-  const [showWelcome, setShowWelcome] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !sessionStorage.getItem('rh_welcome_dismissed');
-    }
-    return true;
-  });
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const dismissWelcome = () => {
     if (typeof window !== 'undefined') {
@@ -324,9 +327,16 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           <ArchitecturalCADWorkspace
             editor={editor}
             onRegeneratePlan={handleRegenerateVariant}
+            onOpenEditPlan={() => setActiveWorkspace('edit_plan')}
             generationSeed={generationSeed}
             isGenerating={isGenerating}
             canRegenerate={Boolean(lastBrief.current)}
+          />
+        )}
+        {activeWorkspace === 'edit_plan' && (
+          <InteractivePlanEditorPage
+            editor={editor}
+            onBackToCad={() => setActiveWorkspace('cad_2d')}
           />
         )}
         {activeWorkspace === 'isometric' && (

@@ -40,13 +40,18 @@ interface DerivedColumn {
   readonly section: string;
 }
 
+interface DerivedSlabArea {
+  readonly id: string;
+  readonly pointIds: readonly string[];
+}
+
 interface DerivedFloorFrame {
   readonly storyName: string;
   readonly elevationM: number;
   readonly heightM: number;
-  readonly points: readonly DerivedPoint[];
   readonly columns: readonly DerivedColumn[];
   readonly beams: readonly DerivedBeam[];
+  readonly slabId: string;
   readonly slabBoundaryPointIds: readonly string[];
 }
 
@@ -78,6 +83,11 @@ function extractFloorBoundsM(floor: Floor, building: Building): {
 
 function buildFloorFrames(building: Building): {
   frames: DerivedFloorFrame[];
+  points: DerivedPoint[];
+  uniqueColumns: DerivedColumn[];
+  uniqueBeams: DerivedBeam[];
+  uniqueSlabs: DerivedSlabArea[];
+  baseColumnPointIds: string[];
   xGrids: number[];
   yGrids: number[];
   sections: Set<string>;
@@ -88,6 +98,50 @@ function buildFloorFrames(building: Building): {
   const yGridSet = new Set<number>();
   const frames: DerivedFloorFrame[] = [];
 
+  // Shared plan dictionary across all stories so ETABS receives each (X, Y) node and vertical line once
+  const pointByCoord = new Map<string, DerivedPoint>();
+  const ensurePoint = (xM: number, yM: number): string => {
+    const rx = Number(xM.toFixed(3));
+    const ry = Number(yM.toFixed(3));
+    const key = `${rx}:${ry}`;
+    const existing = pointByCoord.get(key);
+    if (existing) return existing.id;
+    const id = `P_${pointByCoord.size + 1}`;
+    pointByCoord.set(key, { id, xM: rx, yM: ry });
+    xGridSet.add(rx);
+    yGridSet.add(ry);
+    return id;
+  };
+
+  const uniqueColumnByPlanPoint = new Map<string, DerivedColumn>();
+  const ensureColumnId = (planPointId: string, section: string): string => {
+    const existing = uniqueColumnByPlanPoint.get(planPointId);
+    if (existing) return existing.id;
+    const id = `C_${uniqueColumnByPlanPoint.size + 1}`;
+    uniqueColumnByPlanPoint.set(planPointId, { id, p: planPointId, section });
+    return id;
+  };
+
+  const uniqueBeamBySpan = new Map<string, DerivedBeam>();
+  const ensureBeamId = (p1: string, p2: string, section: string): string => {
+    const spanKey = p1 < p2 ? `${p1}:${p2}` : `${p2}:${p1}`;
+    const existing = uniqueBeamBySpan.get(spanKey);
+    if (existing) return existing.id;
+    const id = `B_${uniqueBeamBySpan.size + 1}`;
+    uniqueBeamBySpan.set(spanKey, { id, p1, p2, section });
+    return id;
+  };
+
+  const uniqueSlabByPolygon = new Map<string, DerivedSlabArea>();
+  const ensureSlabId = (pointIds: readonly string[]): string => {
+    const polyKey = pointIds.join(':');
+    const existing = uniqueSlabByPolygon.get(polyKey);
+    if (existing) return existing.id;
+    const id = `SLAB_${uniqueSlabByPolygon.size + 1}`;
+    uniqueSlabByPolygon.set(polyKey, { id, pointIds });
+    return id;
+  };
+
   let runningElevM = 0;
   for (let fIdx = 0; fIdx < sortedFloors.length; fIdx++) {
     const floor = sortedFloors[fIdx]!;
@@ -96,30 +150,22 @@ function buildFloorFrames(building: Building): {
     const storyName = safeId(floor.name || `STORY_${fIdx + 1}`, `STORY_${fIdx + 1}`);
     const bounds = extractFloorBoundsM(floor, building);
 
-    const pointByCoord = new Map<string, DerivedPoint>();
-    const ensurePoint = (xM: number, yM: number): string => {
-      const rx = Number(xM.toFixed(3));
-      const ry = Number(yM.toFixed(3));
-      const key = `${rx}:${ry}`;
-      const existing = pointByCoord.get(key);
-      if (existing) return existing.id;
-      const id = `P_${fIdx + 1}_${pointByCoord.size + 1}`;
-      pointByCoord.set(key, { id, xM: rx, yM: ry });
-      xGridSet.add(rx);
-      yGridSet.add(ry);
-      return id;
-    };
-
     const columns: DerivedColumn[] = [];
     const beams: DerivedBeam[] = [];
+    const seenStoryCols = new Set<string>();
+    const seenStoryBeams = new Set<string>();
 
     if (floor.columns && floor.columns.length > 0) {
-      floor.columns.forEach((col, cIdx) => {
+      for (const col of floor.columns) {
         const p = ensurePoint(toMeters(col.position.x), toMeters(col.position.y));
         const sec = `COL${Math.round(col.width || 300)}X${Math.round(col.depth || 600)}`;
         sections.add(sec);
-        columns.push({ id: `C_${fIdx + 1}_${cIdx + 1}`, p, section: sec });
-      });
+        const colId = ensureColumnId(p, sec);
+        if (!seenStoryCols.has(colId)) {
+          seenStoryCols.add(colId);
+          columns.push({ id: colId, p, section: sec });
+        }
+      }
     } else {
       // Auto-derive corner + intermediate perimeter grid points when structural columns were deferred
       const xSpan = Math.max(4, bounds.maxX - bounds.minX);
@@ -128,72 +174,88 @@ function buildFloorFrames(building: Building): {
       const ny = Math.max(2, Math.min(6, Math.round(ySpan / 4.5) + 1));
       const xs = Array.from({ length: nx }, (_, i) => bounds.minX + (xSpan * i) / (nx - 1));
       const ys = Array.from({ length: ny }, (_, j) => bounds.minY + (ySpan * j) / (ny - 1));
-      let colCount = 0;
       const gridIds: string[][] = [];
       for (let ix = 0; ix < xs.length; ix++) {
         gridIds[ix] = [];
         for (let iy = 0; iy < ys.length; iy++) {
           const pid = ensurePoint(xs[ix]!, ys[iy]!);
           gridIds[ix]![iy] = pid;
-          colCount++;
-          columns.push({ id: `C_${fIdx + 1}_${colCount}`, p: pid, section: 'COL450X450' });
+          const colId = ensureColumnId(pid, 'COL450X450');
+          if (!seenStoryCols.has(colId)) {
+            seenStoryCols.add(colId);
+            columns.push({ id: colId, p: pid, section: 'COL450X450' });
+          }
         }
       }
-      let beamCount = 0;
       for (let ix = 0; ix < xs.length; ix++) {
         for (let iy = 0; iy < ys.length; iy++) {
           if (ix + 1 < xs.length) {
-            beamCount++;
-            beams.push({
-              id: `B_${fIdx + 1}_${beamCount}`,
-              p1: gridIds[ix]![iy]!,
-              p2: gridIds[ix + 1]![iy]!,
-              section: 'BEAM230X450',
-            });
+            const p1 = gridIds[ix]![iy]!;
+            const p2 = gridIds[ix + 1]![iy]!;
+            const beamId = ensureBeamId(p1, p2, 'BEAM230X450');
+            if (!seenStoryBeams.has(beamId)) {
+              seenStoryBeams.add(beamId);
+              beams.push({ id: beamId, p1, p2, section: 'BEAM230X450' });
+            }
           }
           if (iy + 1 < ys.length) {
-            beamCount++;
-            beams.push({
-              id: `B_${fIdx + 1}_${beamCount}`,
-              p1: gridIds[ix]![iy]!,
-              p2: gridIds[ix]![iy + 1]!,
-              section: 'BEAM230X450',
-            });
+            const p1 = gridIds[ix]![iy]!;
+            const p2 = gridIds[ix]![iy + 1]!;
+            const beamId = ensureBeamId(p1, p2, 'BEAM230X450');
+            if (!seenStoryBeams.has(beamId)) {
+              seenStoryBeams.add(beamId);
+              beams.push({ id: beamId, p1, p2, section: 'BEAM230X450' });
+            }
           }
         }
       }
     }
 
     if (floor.beams && floor.beams.length > 0 && beams.length === 0) {
-      floor.beams.forEach((beam, bIdx) => {
+      for (const beam of floor.beams) {
         const p1 = ensurePoint(toMeters(beam.startPoint.x), toMeters(beam.startPoint.y));
         const p2 = ensurePoint(toMeters(beam.endPoint.x), toMeters(beam.endPoint.y));
         const sec = `BEAM${Math.round(beam.widthMm || 230)}X${Math.round(beam.depthMm || 450)}`;
         sections.add(sec);
         if (p1 !== p2) {
-          beams.push({ id: `B_${fIdx + 1}_${bIdx + 1}`, p1, p2, section: sec });
+          const beamId = ensureBeamId(p1, p2, sec);
+          if (!seenStoryBeams.has(beamId)) {
+            seenStoryBeams.add(beamId);
+            beams.push({ id: beamId, p1, p2, section: sec });
+          }
         }
-      });
+      }
     }
 
     const s1 = ensurePoint(bounds.minX, bounds.minY);
     const s2 = ensurePoint(bounds.maxX, bounds.minY);
     const s3 = ensurePoint(bounds.maxX, bounds.maxY);
     const s4 = ensurePoint(bounds.minX, bounds.maxY);
+    const slabBoundaryPointIds = [s1, s2, s3, s4];
+    const slabId = ensureSlabId(slabBoundaryPointIds);
 
     frames.push({
       storyName,
       elevationM: runningElevM,
       heightM,
-      points: Array.from(pointByCoord.values()),
       columns,
       beams,
-      slabBoundaryPointIds: [s1, s2, s3, s4],
+      slabId,
+      slabBoundaryPointIds,
     });
   }
 
+  const baseColumnPointIds = Array.from(
+    new Set((frames[0]?.columns ?? []).map((col) => col.p)),
+  );
+
   return {
     frames,
+    points: Array.from(pointByCoord.values()),
+    uniqueColumns: Array.from(uniqueColumnByPlanPoint.values()),
+    uniqueBeams: Array.from(uniqueBeamBySpan.values()),
+    uniqueSlabs: Array.from(uniqueSlabByPolygon.values()),
+    baseColumnPointIds,
     xGrids: Array.from(xGridSet).sort((a, b) => a - b),
     yGrids: Array.from(yGridSet).sort((a, b) => a - b),
     sections,
@@ -201,7 +263,17 @@ function buildFloorFrames(building: Building): {
 }
 
 export function generateETABSE2KFromBuilding(building: Building): string {
-  const { frames, xGrids, yGrids, sections } = buildFloorFrames(building);
+  const {
+    frames,
+    points,
+    uniqueColumns,
+    uniqueBeams,
+    uniqueSlabs,
+    baseColumnPointIds,
+    xGrids,
+    yGrids,
+    sections,
+  } = buildFloorFrames(building);
   const lines: string[] = [];
 
   lines.push(`$ File exported by RH Planner / AI Floor Planner Studio`);
@@ -247,36 +319,27 @@ export function generateETABSE2KFromBuilding(building: Building): string {
   lines.push('  SHELLPROP  "SLAB150"  PROPTYPE "Slab"  MATERIAL "M25"  MODELINGTYPE "ShellThin"  SLABTHICKNESS 0.15');
   lines.push('');
   lines.push('$ POINT COORDINATES');
-  const seenPoints = new Set<string>();
-  const bottomPoints = frames[0]?.points ?? [];
-  for (const frame of frames) {
-    for (const pt of frame.points) {
-      if (!seenPoints.has(pt.id)) {
-        seenPoints.add(pt.id);
-        lines.push(`  POINT "${pt.id}"  ${fmt(pt.xM)} ${fmt(pt.yM)}`);
-      }
-    }
+  for (const pt of points) {
+    lines.push(`  POINT "${pt.id}"  ${fmt(pt.xM)} ${fmt(pt.yM)}`);
   }
   lines.push('');
   lines.push('$ LINE CONNECTIVITIES');
-  for (const frame of frames) {
-    for (const col of frame.columns) {
-      lines.push(`  LINE  "${col.id}"  COLUMN  "${col.p}"  "${col.p}"  1`);
-    }
-    for (const beam of frame.beams) {
-      lines.push(`  LINE  "${beam.id}"  BEAM  "${beam.p1}"  "${beam.p2}"  0`);
-    }
+  for (const col of uniqueColumns) {
+    lines.push(`  LINE  "${col.id}"  COLUMN  "${col.p}"  "${col.p}"  1`);
+  }
+  for (const beam of uniqueBeams) {
+    lines.push(`  LINE  "${beam.id}"  BEAM  "${beam.p1}"  "${beam.p2}"  0`);
   }
   lines.push('');
   lines.push('$ AREA CONNECTIVITIES');
-  frames.forEach((frame, fIdx) => {
-    const [p1, p2, p3, p4] = frame.slabBoundaryPointIds;
-    lines.push(`  AREA  "SLAB_${fIdx + 1}"  FLOOR  4  "${p1}"  "${p2}"  "${p3}"  "${p4}"`);
-  });
+  for (const slab of uniqueSlabs) {
+    const [p1, p2, p3, p4] = slab.pointIds;
+    lines.push(`  AREA  "${slab.id}"  FLOOR  4  "${p1}"  "${p2}"  "${p3}"  "${p4}"`);
+  }
   lines.push('');
   lines.push('$ POINT ASSIGNS');
-  for (const pt of bottomPoints) {
-    lines.push(`  POINTASSIGN  "${pt.id}"  "BASE"  RESTRAINT "UX UY UZ RX RY RZ"`);
+  for (const pid of baseColumnPointIds) {
+    lines.push(`  POINTASSIGN  "${pid}"  "BASE"  RESTRAINT "UX UY UZ RX RY RZ"`);
   }
   lines.push('');
   lines.push('$ LINE ASSIGNS');
@@ -290,9 +353,9 @@ export function generateETABSE2KFromBuilding(building: Building): string {
   }
   lines.push('');
   lines.push('$ AREA ASSIGNS');
-  frames.forEach((frame, fIdx) => {
-    lines.push(`  AREAASSIGN  "SLAB_${fIdx + 1}"  "${frame.storyName}"  SECTION "SLAB150"  OBJMESH "DEFAULT"`);
-  });
+  for (const frame of frames) {
+    lines.push(`  AREAASSIGN  "${frame.slabId}"  "${frame.storyName}"  SECTION "SLAB150"  OBJMESH "DEFAULT"`);
+  }
   lines.push('');
   lines.push('$ LOAD PATTERNS');
   lines.push('  LOADPATTERN "DEAD"  TYPE "Dead"  SELFWEIGHT 1');
@@ -416,31 +479,43 @@ export function generateETABSE2KFromStructuralProject(
 
   const colLines: string[] = [];
   const colAssigns: string[] = [];
+  const colIdByPlanPoint = new Map<string, string>();
   project.columns.forEach((col, i) => {
     const pStart = nodeIdToPointId.get(col.startNodeId);
     const pEnd = nodeIdToPointId.get(col.endNodeId);
     const endNode = nodeById.get(col.endNodeId);
     if (!pStart || !pEnd) return;
-    const id = safeId(col.id, `C_${i + 1}`);
+    const planKey = `${pStart}:${pEnd}`;
+    let id = colIdByPlanPoint.get(planKey);
+    if (!id) {
+      id = pStart === pEnd ? `C_${colIdByPlanPoint.size + 1}` : safeId(col.id, `C_${i + 1}`);
+      colIdByPlanPoint.set(planKey, id);
+      colLines.push(`  LINE  "${id}"  COLUMN  "${pStart}"  "${pEnd}"  1`);
+    }
     const sec = `SEC_${Math.round(col.section.widthMm)}X${Math.round(col.section.depthMm)}`;
     const storyLvl = endNode ? levelById.get(endNode.levelId) : levels[0];
     const story = storyLvl ? safeId(storyLvl.name, storyLvl.id) : 'STORY1';
-    colLines.push(`  LINE  "${id}"  COLUMN  "${pStart}"  "${pEnd}"  1`);
     colAssigns.push(`  LINEASSIGN  "${id}"  "${story}"  SECTION "${sec}"`);
   });
 
   const beamLines: string[] = [];
   const beamAssigns: string[] = [];
-  project.beams.forEach((b, i) => {
+  const beamIdBySpan = new Map<string, string>();
+  project.beams.forEach((b) => {
     const p1 = nodeIdToPointId.get(b.startNodeId);
     const p2 = nodeIdToPointId.get(b.endNodeId);
     const startNode = nodeById.get(b.startNodeId);
     if (!p1 || !p2 || p1 === p2) return;
-    const id = safeId(b.id, `B_${i + 1}`);
+    const spanKey = p1 < p2 ? `${p1}:${p2}` : `${p2}:${p1}`;
+    let id = beamIdBySpan.get(spanKey);
+    if (!id) {
+      id = `B_${beamIdBySpan.size + 1}`;
+      beamIdBySpan.set(spanKey, id);
+      beamLines.push(`  LINE  "${id}"  BEAM  "${p1}"  "${p2}"  0`);
+    }
     const sec = `SEC_${Math.round(b.section.widthMm)}X${Math.round(b.section.depthMm)}`;
     const storyLvl = startNode ? levelById.get(startNode.levelId) : levels[0];
     const story = storyLvl ? safeId(storyLvl.name, storyLvl.id) : 'STORY1';
-    beamLines.push(`  LINE  "${id}"  BEAM  "${p1}"  "${p2}"  0`);
     beamAssigns.push(`  LINEASSIGN  "${id}"  "${story}"  SECTION "${sec}"`);
   });
 

@@ -37,6 +37,8 @@ export interface ProjectSetupWizardData {
     carpetAreaSqFt: number;
     count: number;
   }>;
+  includeWindowChajjas?: boolean;
+  staggeredBalconies?: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };

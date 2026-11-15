@@ -310,6 +310,8 @@ export interface BuildingMetadata {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly includeWindowChajjas?: boolean;
+    readonly staggeredBalconies?: boolean;
     readonly aiProposal?: Record<string, unknown>;
     readonly aiTelemetry?: {
       readonly geminiInvoked: boolean;
@@ -326,6 +328,15 @@ export interface BuildingMetadata {
 /** The root building entity — source of truth for all plan data. */
 export interface Building {
   readonly mep?: CanonicalMepSystems;
+  /** Phase 3 coordinated electrical / plumbing / ceiling / fire / cantilever plan. */
+  readonly mepEngineering?: import('../mep/mep-engineering-plan').CoordinatedMepEngineeringPlan;
+  readonly complianceRating?: {
+    readonly score: number;
+    readonly passed: boolean;
+    readonly redConflictCount: number;
+    readonly hardRejected?: boolean;
+    readonly attemptCount?: number;
+  };
   readonly regulatoryContext?: RegulatoryContextInput;
   readonly id: string;
   readonly projectId: string;
@@ -361,6 +372,8 @@ export interface Project {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly includeWindowChajjas?: boolean;
+    readonly staggeredBalconies?: boolean;
     readonly aiProposal?: Record<string, unknown>;
     readonly aiTelemetry?: {
       readonly geminiInvoked: boolean;

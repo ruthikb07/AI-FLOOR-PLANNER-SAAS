@@ -117,11 +117,20 @@ export function coordinateArchitecturalStairs(building: Building): Building {
         : f.floorHeight;
     let doors = [...f.doors];
     const canonicalStaircases: CanonicalStaircase[] = [];
+    const openStairHostWallIds = new Set<string>();
     const stairs = f.rooms.filter(stairRoom).map((r, index) => {
       const key = coreKey(r),
         position = templates.get(key)!;
       const host = accessHosts(f, r).find((w) => hostFits(w, position));
       if (!host) throw new Error(`STAIR_ACCESS_HOST_MISSING: ${r.id}`);
+      const role = r.architecturalRole;
+      if (
+        f.floorUse !== 'ROOF' &&
+        (role === 'STAIR_ENCLOSURE' || !role) &&
+        host.roomIds.length === 2
+      ) {
+        openStairHostWallIds.add(host.id);
+      }
       const existing = doors.find((d) => d.connectsRooms.includes(r.id));
       let door = {
         ...(existing ?? {}),
@@ -200,6 +209,13 @@ export function coordinateArchitecturalStairs(building: Building): Building {
     });
     return {
       ...f,
+      walls: openStairHostWallIds.size
+        ? f.walls.map(w =>
+            openStairHostWallIds.has(w.id)
+              ? { ...w, boundaryRole: 'OPEN_BOUNDARY' as const, heightMm: 0 }
+              : w,
+          )
+        : f.walls,
       elevationMm: elevations.get(f.id),
       // Both generation producers and their bounded repair routines emit centres.
       // This annotation applies only to fresh generation, never saved-project loading.

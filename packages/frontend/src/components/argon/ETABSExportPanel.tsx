@@ -13,6 +13,7 @@ export function ETABSExportPanel({ building }: { building: Building }) {
   const [source, setSource] = useState(''), [token, setToken] = useState('');
   const [artifact, setArtifact] = useState<ETABSExportDescriptor | null>(null);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const [showImportGuide, setShowImportGuide] = useState(false);
   const generation = useRef(0);
   const current = useRef(building); current.current = building;
   useEffect(() => { generation.current++; setSource(''); setArtifact(null); setError(''); setBusy(false); }, [building]);
@@ -95,7 +96,41 @@ export function ETABSExportPanel({ building }: { building: Building }) {
       >
         Download CSI ETABS (.e2k)
       </button>
+      <button
+        type="button"
+        onClick={() => setShowImportGuide((v) => !v)}
+        title="View step-by-step instructions to open .e2k in CSI ETABS"
+        className="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700"
+      >
+        {showImportGuide ? 'Hide ETABS Import Guide' : 'How to Import .e2k in ETABS'}
+      </button>
     </div>
+    {showImportGuide && (
+      <div
+        role="region"
+        aria-label="CSI ETABS .e2k Import Guide"
+        className="mt-3 rounded border border-emerald-500/40 bg-slate-900/80 p-3 text-xs text-slate-200"
+      >
+        <p className="mb-1.5 font-semibold text-emerald-300">
+          CSI ETABS 3-Step Import Guide (.e2k Text Model — Units: kN, m, C)
+        </p>
+        <ol className="list-decimal space-y-1 pl-4 text-slate-300">
+          <li>
+            Launch <strong>CSI ETABS</strong> (v18–v22) and open{' '}
+            <code>File → Import → ETABS .e2k Text File...</code> (do not use double-click).
+          </li>
+          <li>
+            Select the downloaded <code>.e2k</code> file and verify units are{' '}
+            <strong>KN / M / C</strong> and Story Definitions match from Top to <code>BASE</code>.
+          </li>
+          <li>
+            Run <code>Analyze → Check Model</code> (0 overlapping joint warnings), review IS 456 load combos{' '}
+            (<code>IS456_1.5(DL+LL)</code>, <code>EQX</code>, <code>EQY</code>), then save natively as{' '}
+            <code>.edb</code>.
+          </li>
+        </ol>
+      </div>
+    )}
     {error && <p role="alert" className="mt-3 text-red-300">{error}</p>}
     {artifact && <div className="mt-3">
       <p>{artifact.exportMode === 'ANALYSIS_READY' ? 'Analysis-ready model' : 'Model-only'} · NOT ANALYZED · Design NOT VERIFIED</p>

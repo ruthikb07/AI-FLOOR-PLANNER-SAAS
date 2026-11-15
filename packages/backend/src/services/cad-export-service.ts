@@ -6,6 +6,8 @@ import {
   type Building,
   canonicalRevisionJson,
   type Floor,
+  type FloorMepEngineeringPlan,
+  MEP_CAD_LAYER_COLORS,
   type Site,
   type StructuralBeam,
   type IndependentExportManifest,
@@ -103,6 +105,13 @@ const ARCHITECTURAL_LAYERS: readonly LayerSpec[] = [
   { name: 'S-COLS', colorIndex: 1, lineWeight: acad.LineWeightType.W35, description: 'Structural reinforced concrete columns (alias)' },
   { name: 'S-GRID', colorIndex: 6, lineWeight: acad.LineWeightType.W18, description: 'Structural column grid lines and bubble markers' },
   { name: 'S-BEAM', colorIndex: 6, lineWeight: acad.LineWeightType.W25, description: 'Structural beams and structural framing grid' },
+  { name: 'S-BEAM-CANTILEVER', colorIndex: MEP_CAD_LAYER_COLORS['S-BEAM-CANTILEVER'], lineWeight: acad.LineWeightType.W25, description: 'Cantilever balcony beams supporting uncolumned balcony projections' },
+  { name: 'M-ELEC-SYMB', colorIndex: MEP_CAD_LAYER_COLORS['M-ELEC-SYMB'], lineWeight: acad.LineWeightType.W18, description: 'Electrical distribution boards, fans, switches, outlets and AC units' },
+  { name: 'M-ELEC-WIRE', colorIndex: MEP_CAD_LAYER_COLORS['M-ELEC-WIRE'], lineWeight: acad.LineWeightType.W13, description: 'Electrical circuit wiring loops' },
+  { name: 'M-PLUMB-PIPE', colorIndex: MEP_CAD_LAYER_COLORS['M-PLUMB-PIPE'], lineWeight: acad.LineWeightType.W20, description: 'Water supply, soil and waste plumbing lines' },
+  { name: 'M-PLUMB-FIXT', colorIndex: MEP_CAD_LAYER_COLORS['M-PLUMB-FIXT'], lineWeight: acad.LineWeightType.W18, description: 'Vertical plumbing shafts and floor/nahni traps' },
+  { name: 'A-CEIL-GRID', colorIndex: MEP_CAD_LAYER_COLORS['A-CEIL-GRID'], lineWeight: acad.LineWeightType.W13, description: 'Reflected ceiling plan cove, pelmet and 600x600 grid' },
+  { name: 'F-FIRE-SYMB', colorIndex: MEP_CAD_LAYER_COLORS['F-FIRE-SYMB'], lineWeight: acad.LineWeightType.W20, description: 'Fire safety risers, FACP, detectors, exit signs and sprinklers' },
   { name: 'A-STAIR', colorIndex: 6, lineWeight: acad.LineWeightType.W25, description: 'Stair flights, treads, and risers' },
   { name: 'A-LIFT', colorIndex: 30, lineWeight: acad.LineWeightType.W35, description: 'Lift shafts and vertical cores' },
   { name: 'A-BALC', colorIndex: 2, lineWeight: acad.LineWeightType.W25, description: 'Balconies, parapets, and railings' },
@@ -405,6 +414,7 @@ export class CadExportService {
         addSanitizedCircle,
         addSanitizedText,
         addSanitizedAlignedDim,
+        building.mepEngineering?.floors.find((m) => m.floorId === floor.id),
       );
 
       // Floor sheet label underneath
@@ -580,6 +590,7 @@ export class CadExportService {
     addSanitizedCircle: (cx: number, cy: number, radius: number, layer: acad.Layer) => void,
     addSanitizedText: (value: string, x: number, y: number, height: number, layer: acad.Layer, alignCenter?: boolean) => void,
     addSanitizedAlignedDim: (p1x: number, p1y: number, p2x: number, p2y: number, defX: number, defY: number, layer: acad.Layer) => void,
+    floorMep?: FloorMepEngineeringPlan,
   ): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number } {
     // 1. Gather raw SVG bounding box across all floor geometry
     let rawMinX = Infinity;
@@ -1159,6 +1170,62 @@ export class CadExportService {
             toCadX(beam.endPoint.x), toCadY(beam.endPoint.y),
             beamLayer,
           );
+        }
+      }
+    }
+
+    // I2. Phase 3 Coordinated MEP Engineering & Cantilever Balcony Framing
+    if (floorMep) {
+      if (options.includeStructural !== false) {
+        const cantLayer = getLayer('S-BEAM-CANTILEVER');
+        for (const cb of floorMep.cantileverBeams) {
+          addSanitizedLine(toCadX(cb.start.x), toCadY(cb.start.y), toCadX(cb.end.x), toCadY(cb.end.y), cantLayer);
+        }
+      }
+      if (options.drawingKind !== 'STRUCTURAL') {
+        const ceilLayer = getLayer('A-CEIL-GRID');
+        for (const cz of floorMep.ceilings) {
+          if (cz.outline.length >= 3) {
+            addSanitizedPolyline(
+              cz.outline.map((p) => ({ x: toCadX(p.x), y: toCadY(p.y) })),
+              ceilLayer,
+              true,
+            );
+          }
+          for (const [a, b] of cz.gridLines ?? []) {
+            addSanitizedLine(toCadX(a.x), toCadY(a.y), toCadX(b.x), toCadY(b.y), ceilLayer);
+          }
+        }
+        for (const run of floorMep.runs) {
+          const runLayer = getLayer(run.layer);
+          for (let i = 0; i < run.points.length - 1; i++) {
+            const p1 = run.points[i]!;
+            const p2 = run.points[i + 1]!;
+            addSanitizedLine(toCadX(p1.x), toCadY(p1.y), toCadX(p2.x), toCadY(p2.y), runLayer);
+          }
+        }
+        for (const sym of floorMep.symbols) {
+          const symLayer = getLayer(sym.layer);
+          const cx = toCadX(sym.position.x);
+          const cy = toCadY(sym.position.y);
+          if (sym.widthMm && sym.depthMm) {
+            const hw = sym.widthMm / 2;
+            const hd = sym.depthMm / 2;
+            addSanitizedPolyline(
+              [
+                { x: cx - hw, y: cy - hd },
+                { x: cx + hw, y: cy - hd },
+                { x: cx + hw, y: cy + hd },
+                { x: cx - hw, y: cy + hd },
+              ],
+              symLayer,
+              true,
+            );
+            addSanitizedLine(cx - hw, cy - hd, cx + hw, cy + hd, symLayer);
+            addSanitizedLine(cx + hw, cy - hd, cx - hw, cy + hd, symLayer);
+          } else {
+            addSanitizedCircle(cx, cy, 110, symLayer);
+          }
         }
       }
     }

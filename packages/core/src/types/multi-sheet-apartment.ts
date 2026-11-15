@@ -142,6 +142,12 @@ export interface MultiSheetApartmentConfig {
   readonly areaTargetScope?: AreaTargetScope;
   /** Center the building footprint inside the permissible setback envelope when smaller than the envelope. */
   readonly centerBuildingInEnvelope?: boolean;
+  /** Render 600 mm concrete window sunshade chajjas in 2D dashed A-CHAJJA, DXF, and 3D (default true). */
+  readonly includeWindowChajjas?: boolean;
+  /** Alternate cantilever balcony bays across Odd vs Even upper floors while locking vertical structure/MEP cores. */
+  readonly staggeredBalconies?: boolean;
+  /** Internal tag set during multi-floor coordination when generating Odd vs Even typical floor variants. */
+  readonly floorVariant?: 'ODD' | 'EVEN';
 }
 
 /** Default Indian apartment project amenities configuration. */

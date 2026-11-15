@@ -285,7 +285,7 @@ export function evaluateArchitecturalComplianceScore(
           hardReject: true,
           roomId: insideRoom.id,
           unitId: unit.id,
-          message: `Main entrance of ${unit.name} opens into ${insideRoom.name} (${insideRoom.type}) instead of Living/Dining or Foyer.`,
+          message: `Main entrance of ${unit.id} opens into ${insideRoom.name} (${insideRoom.type}) instead of Living/Dining or Foyer.`,
         });
         hardRejected = true;
       }
@@ -372,7 +372,10 @@ export function evaluateArchitecturalComplianceScore(
 
   // ─── 5. Envelope Utilization & Setback Accuracy (-15 pts per violation) ───
   const promptText = options?.config?.aiPrompt ?? '';
-  const explicitShapeRequested = /\b(h[- ]?shape|u[- ]?shape|l[- ]?shape|courtyard|cruciform|pinwheel|stepped)\b/i.test(promptText);
+  const configMassing = options?.config?.buildingMassingShape;
+  const explicitShapeRequested =
+    (configMassing !== undefined && configMassing !== 'COMPACT_DOUBLE_LOADED') ||
+    /\b(h[- ]?shape|u[- ]?shape|l[- ]?shape|courtyard|cruciform|pinwheel|stepped)\b/i.test(promptText);
   const fullUtilRequested =
     options?.requireFullEnvelopeUtilization ??
     (/\b(utili[sz]e\s+(the\s+)?(full|entire|maximum)\s+(plot|floor|setback|envelope)|proper\s+space\s+utili[sz]ation)\b/i.test(
@@ -402,9 +405,14 @@ export function evaluateArchitecturalComplianceScore(
   if (groundFloor) {
     const groundLobbies = groundFloor.rooms.filter(
       r =>
-        r.id === 'stilt__grand_lobby' ||
-        r.type === RoomType.Foyer ||
-        r.tags?.includes('core:lobby'),
+        (r.id.endsWith('stilt__grand_lobby') ||
+          r.tags?.includes('core:lobby') ||
+          (r.type === RoomType.Foyer &&
+            !/open\s*parking|remainder/i.test(r.name) &&
+            !r.id.includes('open_remainder'))) &&
+        r.architecturalRole !== 'VEHICLE_AISLE' &&
+        r.architecturalRole !== 'PARKING_BAY' &&
+        r.architecturalRole !== 'PARKING_AREA',
     );
     for (const lobby of groundLobbies) {
       const openExtWall = groundFloor.walls.find(
@@ -434,7 +442,7 @@ export function evaluateArchitecturalComplianceScore(
   } else {
     for (const stairRoom of stairRooms) {
       const hasCanonicalStair = (typicalFloor.canonicalStaircases ?? []).some(
-        s => s.roomId === stairRoom.id || polygonIntersectionArea(s.polygon, stairRoom.boundary) > 100_000,
+        s => polygonIntersectionArea(s.polygon, stairRoom.boundary) > 100_000,
       );
       const hasFloorStair = (typicalFloor.stairs ?? []).length >= stairRooms.length;
       if (!hasCanonicalStair && !hasFloorStair) {

@@ -61,12 +61,17 @@ export type {
 } from './refinement/targeted-regeneration';
 export {
   optimizeRoomArea,
+  expandFlatIntoSetbackMargin,
+  regenerateWithPreservedRatios,
   createRoomAreaRegenerationCommand,
   ENGINEERING_MIN_ROOM_AREAS,
   ENGINEERING_MIN_ROOM_WIDTH,
   STATUTORY_MIN_ROOM_AREAS,
   STATUTORY_MIN_ROOM_WIDTH,
   type RoomAreaRegenerationOptions,
+  type SetbackExpansionOptions,
+  type PreservedRatioRegenerationOptions,
+  type PreservedRatioRegenerationResult,
   type RoomAreaCandidate,
   type RoomAreaOptimizationResult,
   type ModifiedRoomDetail,
@@ -234,3 +239,12 @@ export * from './layout/opening-integrity-solver';
 
 export * from './pipeline/multi-story-residential-synthesizer';
 export { generateApartmentOutcome } from './apartment/generation-outcome';
+export {
+  synthesizeMepEngineering,
+  withMepEngineering,
+  PLUMB_SHAFT_MIN,
+  COVE_INSET_MM,
+  CEILING_GRID_MM,
+  SPRINKLER_SPACING_MM,
+  SWITCH_OFFSET_FROM_FRAME_MM,
+} from './mep/mep-synthesizer';

@@ -29,7 +29,7 @@ function createApartmentConfig(
     numTypicalFloors: 5,
     floorToFloorHeightMm: 3000,
     stiltHeightMm: 3000,
-    flatsPerFloor: bhkTypes.length,
+    flatsPerFloor: bhkTypes.length as 1 | 2 | 3 | 4 | 5 | 6,
     units: bhkTypes.map((bhkType, idx) => ({
       unitIndex: idx + 1,
       bhkType,
@@ -40,7 +40,7 @@ function createApartmentConfig(
     terraceAmenities: DEFAULT_TERRACE_AMENITIES,
     parkingMode: 'STILT_AND_SURFACE',
     visitorParkingPercent: 10,
-    explicitSetbacksMm: {
+    setbacksMm: {
       front: 2000,
       rear: 2000,
       left: 2000,
@@ -76,7 +76,7 @@ describe('RH Planner Phase 2 — >= 85 Compliance Gate, Room Proportions, Circul
       const { building } = getSolvedProject(scenario.bhkTypes);
       const compliance = evaluateArchitecturalComplianceScore(building);
 
-      expect(compliance.score, `${scenario.label}: ${compliance.violations.join('; ')}`).toBeGreaterThanOrEqual(85);
+      expect(compliance.score, `${scenario.label}: ${JSON.stringify(compliance.violations)}`).toBeGreaterThanOrEqual(85);
       expect(compliance.passed, `${scenario.label} passed flag`).toBe(true);
       expect(compliance.redConflictCount, `${scenario.label} red conflicts`).toBe(0);
       expect(building.complianceRating?.score).toBeGreaterThanOrEqual(85);
@@ -107,7 +107,7 @@ describe('RH Planner Phase 2 — >= 85 Compliance Gate, Room Proportions, Circul
     const envWidthMm = 44000 - 4000;
     const envDepthMm = 34000 - 4000;
     const nonVoidAreaMm2 = typFloor.rooms
-      .filter(r => r.type !== RoomType.Void && !r.id.includes('courtyard_void'))
+      .filter(r => (r.type as string) !== 'void' && r.type !== RoomType.OTS && !r.id.includes('courtyard_void'))
       .reduce((sum, r) => sum + r.width * r.height, 0);
     const utilization = nonVoidAreaMm2 / (envWidthMm * envDepthMm);
     expect(utilization).toBeGreaterThanOrEqual(0.82);
@@ -131,7 +131,7 @@ describe('RH Planner Phase 2 — >= 85 Compliance Gate, Room Proportions, Circul
           r =>
             r.type === RoomType.Corridor ||
             r.type === RoomType.Foyer ||
-            r.type === RoomType.EntranceLobby ||
+            r.name.toLowerCase().includes('lobby') ||
             r.name.toLowerCase().includes('passage') ||
             r.name.toLowerCase().includes('corridor'),
         )
@@ -187,7 +187,7 @@ describe('RH Planner Phase 2 — >= 85 Compliance Gate, Room Proportions, Circul
     const { building } = getSolvedProject(['2BHK', '2BHK', '2BHK', '2BHK']);
     const stiltFloor = building.floors.find(f => f.level === 0)!;
 
-    const grandLobby = stiltFloor.rooms.find(r => r.id.includes('grand_lobby') || r.type === RoomType.EntranceLobby)!;
+    const grandLobby = stiltFloor.rooms.find(r => r.id.includes('grand_lobby') || r.type === RoomType.Foyer)!;
     expect(grandLobby).toBeDefined();
     expect(grandLobby.architecturalRole).toBe('ENCLOSED_HABITABLE');
 

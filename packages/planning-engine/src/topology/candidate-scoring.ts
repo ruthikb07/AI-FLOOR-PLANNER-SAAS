@@ -79,6 +79,8 @@ export interface CandidateScore {
   readonly weightedTotal: number;
   /** Objectives emphasized by the brief, which drive Pareto comparison. */
   readonly emphasized: readonly ObjectiveId[];
+  /** 2 = all bedrooms >= 3000 mm & <= 2.2:1, 1 = >= 2850 mm & <= 2.4:1, 0 = hard bedroom failure. */
+  readonly bedroomQualityTier?: 0 | 1 | 2;
 }
 
 /**
@@ -439,6 +441,21 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     const ratio = short > 0 ? long / short : 99;
     return ratio > 2.2 || (isBed(r) && short < 3000);
   }).length;
+  const bedroomQualityTier: 0 | 1 | 2 = bedrooms.every(r => {
+    const long = Math.max(r.rect.width, r.rect.height);
+    const short = Math.min(r.rect.width, r.rect.height);
+    const ratio = short > 0 ? long / short : 99;
+    return short >= 3000 && ratio <= 2.2;
+  })
+    ? 2
+    : bedrooms.every(r => {
+        const long = Math.max(r.rect.width, r.rect.height);
+        const short = Math.min(r.rect.width, r.rect.height);
+        const ratio = short > 0 ? long / short : 99;
+        return short >= 2850 && ratio <= 2.4;
+      })
+      ? 1
+      : 0;
   objectives.push({
     id: 'ROOM_PROPORTION',
     score: habitable.length ? clamp01(1 - badProportionRooms / habitable.length) : 0,
@@ -487,6 +504,7 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     objectives,
     weightedTotal,
     emphasized: PRIORITY_EMPHASIS[program.preferences.priority],
+    bedroomQualityTier,
   };
 }
 
@@ -520,13 +538,15 @@ export function rankCandidates<T extends { readonly score: CandidateScore }>(can
   const infeasible = candidates.filter(c => !c.score.feasible);
 
   const layered: T[] = [];
-  let pool = [...feasible];
-  while (pool.length) {
-    const front = pool.filter(c => !pool.some(other => other !== c && dominates(other.score, c.score)));
-    const chosen = front.length ? front : pool;
-    chosen.sort((a, b) => b.score.weightedTotal - a.score.weightedTotal);
-    layered.push(...chosen);
-    pool = pool.filter(c => !chosen.includes(c));
+  for (const tier of [2, 1, 0] as const) {
+    let pool = feasible.filter(c => (c.score.bedroomQualityTier ?? 2) === tier);
+    while (pool.length) {
+      const front = pool.filter(c => !pool.some(other => other !== c && dominates(other.score, c.score)));
+      const chosen = front.length ? front : pool;
+      chosen.sort((a, b) => b.score.weightedTotal - a.score.weightedTotal);
+      layered.push(...chosen);
+      pool = pool.filter(c => !chosen.includes(c));
+    }
   }
 
   infeasible.sort((a, b) => b.score.weightedTotal - a.score.weightedTotal);
@@ -559,5 +579,5 @@ export function explainRanking(better: CandidateScore, worse: CandidateScore): s
 export {
   evaluateArchitecturalComplianceScore,
   type ArchitecturalComplianceReport,
-  type ArchitecturalComplianceCategoryScore,
+  type ComplianceViolationItem,
 } from '../compliance/architectural-compliance-score';

@@ -37,6 +37,7 @@ import type { ExtractedRoom } from '../interpretation/extraction';
 import { frameFor, type Box2D } from './rect-frame';
 import {
   sharedEdgeLength,
+  assignUnitTypesToBoxes,
   type ShaftRole,
   type TopologyPartition,
 } from './topology-families';
@@ -52,7 +53,10 @@ const boxToRect = (b: Box2D) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
  * existing room slicer understands. The topology itself now carries core and
  * ventilation decisions, so only the in-flat preferences are passed through.
  */
-export function placementFromProgram(program: ArchitecturalProgram): ArchitecturalPlacement {
+export function placementFromProgram(
+  program: ArchitecturalProgram,
+  opts?: { staggeredBalconies?: boolean; floorVariant?: 'ODD' | 'EVEN' },
+): ArchitecturalPlacement {
   const p = program.preferences;
   return {
     liftSide: p.corePreference === 'EAST' ? 'EAST' : 'WEST',
@@ -63,6 +67,8 @@ export function placementFromProgram(program: ArchitecturalProgram): Architectur
     sitoutSize: p.sitoutSize,
     entranceStyle: 'LIVING_FIRST',
     bedroomBalconies: p.bedroomBalconies === 'NONE_REQUESTED' ? 'STANDARD' : 'ALL_BEDROOMS',
+    ...(opts?.staggeredBalconies ? { staggeredBalconies: true } : {}),
+    ...(opts?.floorVariant ? { floorVariant: opts.floorVariant } : {}),
   };
 }
 
@@ -73,6 +79,8 @@ export interface AssembleInput {
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly rawRooms?: readonly ExtractedRoom[];
   readonly archetype?: RoomSlicingArchetypeId;
+  readonly staggeredBalconies?: boolean;
+  readonly floorVariant?: 'ODD' | 'EVEN';
 }
 
 export interface AssembledPlan {
@@ -90,7 +98,10 @@ export interface AssembledPlan {
  */
 export function assembleStructureFromPartition(input: AssembleInput): AssembledPlan {
   const { partition, program, unitTypes } = input;
-  const placement = placementFromProgram(program);
+  const placement = placementFromProgram(program, {
+    staggeredBalconies: input.staggeredBalconies,
+    floorVariant: input.floorVariant,
+  });
   const env = partition.envelope;
   // Balconies are tested against the FLOOR ENVELOPE, not the built outline.
   //
@@ -105,6 +116,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
   const flats: ApartmentPlanFlat[] = [];
   const openings: ApartmentPlanOpening[] = [];
   const flatsWithoutEntrance: string[] = [];
+  const interflatOtsShafts: ApartmentCoreElement[] = [];
 
   // Spaces a flat may legitimately be entered from.
   const circulation: Array<{ id: string; box: Box2D }> = [
@@ -112,12 +124,13 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     ...partition.lobbyBoxes.map((b, i) => ({ id: `core_lobby_${i + 1}`, box: b })),
   ];
 
+  const assignedUnitTypes = assignUnitTypesToBoxes(partition.flatBoxes, unitTypes);
   for (let i = 0; i < partition.flatBoxes.length; i++) {
     const worldBox = partition.flatBoxes[i]!;
     const accessEdge = partition.accessEdgeForFlat[i]!;
     const flatId = `flat_0${i + 1}`;
     const flatLabel = `Flat 0${i + 1}`;
-    const unitType = unitTypes[i] ?? '2BHK';
+    const unitType = (assignedUnitTypes[i] ?? unitTypes[i] ?? '2BHK') as ApartmentBhkType;
 
     // The circulation space this flat actually shares the most wall with; that
     // is the one its entrance can be hosted on.
@@ -165,25 +178,6 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       rect: boxToRect(frame.toWorld(rectToBox(room.rect))),
     }));
 
-    // Rebuild in-flat openings in world space. Rebuilding rather than
-    // transforming keeps each door centred on the wall it actually hosts on,
-    // and lets `createConnectingDoor` re-apply its clearance rules.
-    for (const opening of sliced.flatOpenings) {
-      if (opening.isFlatEntrance) continue; // entrance is placed below
-      const [aId, bId] = opening.connects ?? [];
-      const a = worldRooms.find(r => r.id === aId);
-      const b = worldRooms.find(r => r.id === bId);
-      if (!a || !b) continue;
-      const rebuilt = createConnectingDoor(
-        opening.id,
-        { id: a.id, rect: a.rect },
-        { id: b.id, rect: b.rect },
-        Math.max(opening.rect.width, opening.rect.height),
-        { doorType: opening.doorType, swingDirection: opening.swingDirection },
-      );
-      if (rebuilt) openings.push(rebuilt);
-    }
-
     // Drop any balcony that does not reach a real exterior face of the building.
     //
     // The slicer places the service band (sit-out, utility, kitchen) at one end
@@ -201,16 +195,53 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     const balconyIds = new Set([
       ...worldRooms.filter(r => r.type === 'bedroom').map(r => `${r.id}__balcony`),
       `${flatId}__balcony`,
+      `${flatId}__utility`,
     ]);
     const keptRooms = worldRooms.filter(room => {
       if (!balconyIds.has(room.id)) return true;
       return projectsToOutsideFace(rectToBox(room.rect), worldBox, builtFace);
     });
 
+    // When a flat's Sit-out Balcony sits on an interior party wall (between
+    // adjacent flats) instead of an exterior facade, carve a 5' x 6' (1600 x
+    // 1830 mm) Open-To-Sky ventilation shaft directly beside the Sit-out
+    // Balcony so natural light and cross-air reach both adjacent flats and
+    // the Sit-out remains an open-air balcony instead of an enclosed room.
+    const droppedRaw = worldRooms.filter(r => !keptRooms.includes(r));
+    const carvedInterflat = carveInterflatOtsForDroppedSitout(
+      flatId,
+      i,
+      keptRooms,
+      droppedRaw,
+    );
+    if (carvedInterflat.otsShaft) {
+      interflatOtsShafts.push(carvedInterflat.otsShaft);
+    }
+
     // Re-absorb any dropped balcony into its bedroom so the flat still tiles
     // exactly; an unassigned sliver would fail the area ledger.
-    const dropped = worldRooms.filter(r => !keptRooms.includes(r));
-    const finalRooms = dropped.length ? reabsorbDropped(keptRooms, dropped) : keptRooms;
+    const finalRooms = carvedInterflat.droppedRemaining.length
+      ? reabsorbDropped(carvedInterflat.keptRooms, carvedInterflat.droppedRemaining)
+      : carvedInterflat.keptRooms;
+
+    // Rebuild in-flat openings in world space AFTER finalRooms are settled so
+    // kept Sit-out Balconies preserve their wide sliding doors and dropped rooms
+    // leave zero dangling wall/opening references.
+    for (const opening of sliced.flatOpenings) {
+      if (opening.isFlatEntrance) continue; // entrance is placed below
+      const [aId, bId] = opening.connects ?? [];
+      const a = finalRooms.find(r => r.id === aId);
+      const b = finalRooms.find(r => r.id === bId);
+      if (!a || !b) continue;
+      const rebuilt = createConnectingDoor(
+        opening.id,
+        { id: a.id, rect: a.rect },
+        { id: b.id, rect: b.rect },
+        Math.max(opening.rect.width, opening.rect.height),
+        { doorType: opening.doorType, swingDirection: opening.swingDirection },
+      );
+      if (rebuilt) openings.push(rebuilt);
+    }
 
     // Flat entrance: hosted on the real shared wall with the real corridor.
     if (entry && entry.shared > 0) {
@@ -273,7 +304,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     assignedFlatId: null,
   }));
 
-  const shafts: ApartmentCoreElement[] = partition.shaftBoxes.map((b, i) => {
+  const baseShafts: ApartmentCoreElement[] = partition.shaftBoxes.map((b, i) => {
     const role: ShaftRole = partition.shaftRoles[i] ?? 'SERVICE_SHAFT';
     const tags = partition.shaftTags?.[i];
     const isPerimeterRecess = tags?.includes('recess:perimeter');
@@ -290,6 +321,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       assignedFlatId: null,
     };
   });
+  const shafts: ApartmentCoreElement[] = [...baseShafts, ...interflatOtsShafts];
 
   // Every common/core space must be door-connected, or the closure validator
   // reports a stranded core. Connect each stair and lift to the circulation
@@ -480,6 +512,98 @@ function onEnvelopeEdge(box: Box2D, env: Box2D): boolean {
  *    Restoring it as a balcony would put back the very room that has no
  *    exterior wall, and the canonical model rejects that.
  */
+function carveInterflatOtsForDroppedSitout(
+  flatId: string,
+  flatIndex: number,
+  keptRooms: readonly ApartmentPlanRoom[],
+  dropped: readonly ApartmentPlanRoom[],
+): {
+  keptRooms: ApartmentPlanRoom[];
+  droppedRemaining: ApartmentPlanRoom[];
+  otsShaft?: ApartmentCoreElement;
+} {
+  const sitout = dropped.find(r => r.id === `${flatId}__balcony`);
+  if (!sitout) {
+    return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
+  }
+
+  const util = dropped.find(r => r.id === `${flatId}__utility`);
+  const sBox = rectToBox(sitout.rect);
+  const horiz = sBox.w >= sBox.h;
+  const uBox = util ? rectToBox(util.rect) : undefined;
+  const utilAdjacent =
+    uBox !== undefined &&
+    (horiz
+      ? Math.abs(uBox.y - sBox.y) <= 1 &&
+        Math.abs(uBox.h - sBox.h) <= 1 &&
+        (Math.abs(uBox.x + uBox.w - sBox.x) <= 1 || Math.abs(sBox.x + sBox.w - uBox.x) <= 1)
+      : Math.abs(uBox.x - sBox.x) <= 1 &&
+        Math.abs(uBox.w - sBox.w) <= 1 &&
+        (Math.abs(uBox.y + uBox.h - sBox.y) <= 1 || Math.abs(sBox.y + sBox.h - uBox.y) <= 1));
+
+  const bandBox: Box2D = utilAdjacent && uBox
+    ? {
+        x: Math.min(sBox.x, uBox.x),
+        y: Math.min(sBox.y, uBox.y),
+        w: horiz ? sBox.w + uBox.w : sBox.w,
+        h: horiz ? sBox.h : sBox.h + uBox.h,
+      }
+    : sBox;
+
+  const bandLen = horiz ? bandBox.w : bandBox.h;
+  const bandDep = horiz ? bandBox.h : bandBox.w;
+  if (bandLen < 4100 || bandDep < 1500) {
+    return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
+  }
+
+  const otsLen = Math.min(1800, Math.max(1550, Math.min(1600, bandLen - 2550)));
+  const uLen = utilAdjacent && uBox ? (horiz ? uBox.w : uBox.h) : 0;
+  const utilRemLen = utilAdjacent && uLen >= otsLen + 100 ? uLen - otsLen : 0;
+  const sitoutLen = bandLen - utilRemLen - otsLen;
+  if (sitoutLen < 2500) {
+    return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
+  }
+
+  const utilAtLowSide =
+    utilAdjacent && uBox
+      ? horiz
+        ? uBox.x < sBox.x
+        : uBox.y < sBox.y
+      : true;
+  const bandStart = horiz ? bandBox.x : bandBox.y;
+  const makeSpanBox = (offset: number, span: number): Box2D =>
+    horiz
+      ? { x: bandStart + offset, y: bandBox.y, w: span, h: bandBox.h }
+      : { x: bandBox.x, y: bandStart + offset, w: bandBox.w, h: span };
+
+  const utilBoxNew = utilRemLen > 0
+    ? makeSpanBox(utilAtLowSide ? 0 : bandLen - utilRemLen, utilRemLen)
+    : undefined;
+  const otsBox = makeSpanBox(utilAtLowSide ? utilRemLen : sitoutLen, otsLen);
+  const sitoutBoxNew = makeSpanBox(utilAtLowSide ? utilRemLen + otsLen : 0, sitoutLen);
+
+  const nextKept = [...keptRooms, { ...sitout, rect: boxToRect(sitoutBoxNew) }];
+  const nextDropped = dropped.filter(
+    r => r.id !== sitout.id && (!utilAdjacent || r.id !== util?.id),
+  );
+  if (utilAdjacent && util && utilBoxNew) {
+    nextDropped.push({ ...util, rect: boxToRect(utilBoxNew) });
+  }
+
+  return {
+    keptRooms: nextKept,
+    droppedRemaining: nextDropped,
+    otsShaft: {
+      id: `core_shaft_interflat_${flatIndex + 1}`,
+      architecturalRole: 'OPEN_TO_SKY_VOID',
+      name: 'Inter-Flat Ventilation OTS Shaft',
+      rect: boxToRect(otsBox),
+      tags: ['shaft:ots', 'shaft:interflat'],
+      assignedFlatId: null,
+    },
+  };
+}
+
 function reabsorbDropped(
   kept: readonly ApartmentPlanRoom[],
   dropped: readonly ApartmentPlanRoom[],

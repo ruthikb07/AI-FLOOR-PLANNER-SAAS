@@ -500,9 +500,9 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   // Across split: corridors flank the stack on the served faces.
   const acrossSizes =
     sides === 'BOTH' ? [corrW, stackW, 0] :
-    sides === 'LOW' ? [corrW, 0] :
-    sides === 'HIGH' ? [stackW, 0] :
-    [0];
+      sides === 'LOW' ? [corrW, 0] :
+        sides === 'HIGH' ? [stackW, 0] :
+          [0];
   const acrossPieces = splitX(stackZone, acrossSizes);
 
   const corridorBoxes: Box2D[] = [];
@@ -851,11 +851,18 @@ function sliceFlatRow(
 function flatFootprintTarget(
   unitTypes: readonly string[],
   availableSpan: number,
+  targetAreaSqFt?: number,
+  availableRun?: number,
 ): { spanMm: number; runMm: number } {
   const bounds = unitTypes.length
     ? unitTypes.map(t => FLAT_AREA_BOUNDS_SQM[t] ?? FLAT_AREA_BOUNDS_SQM['2BHK']!)
     : [FLAT_AREA_BOUNDS_SQM['2BHK']!];
-  const targetSqm = Math.max(...bounds.map(b => b.max));
+  const explicitTargetSqm =
+    targetAreaSqFt !== undefined && targetAreaSqFt > 0
+      ? targetAreaSqFt / 10.7639
+      : undefined;
+  // Gross up carpet target slightly (~14%) to account for interior partition walls & ducts
+  const targetSqm = explicitTargetSqm ? explicitTargetSqm / 0.86 : Math.max(...bounds.map(b => b.max));
   const targetMm2 = targetSqm * 1_000_000;
 
   // Aim for a span of about 1.45 : 1 against the run, which keeps the living
@@ -870,13 +877,75 @@ function flatFootprintTarget(
   const wanted = availableSpan >= FLAT_BOUNDS.balconySpanMm
     ? Math.max(idealSpan, FLAT_BOUNDS.balconySpanMm)
     : idealSpan;
-  const spanMm = clamp(
+  const maxAllowedSpan = explicitTargetSqm
+    ? Math.max(FLAT_BOUNDS.maxSpanMm, availableSpan)
+    : FLAT_BOUNDS.maxSpanMm;
+  let spanMm = clamp(
     Math.min(wanted, availableSpan),
     FLAT_BOUNDS.minSpanMm,
-    FLAT_BOUNDS.maxSpanMm,
+    maxAllowedSpan,
   );
-  const runMm = clamp(snap10(targetMm2 / spanMm), FLAT_BOUNDS.minRunMm, FLAT_BOUNDS.maxRunMm);
+  let rawRunMm = snap10(targetMm2 / spanMm);
+  if (explicitTargetSqm && availableRun !== undefined && availableRun > 0 && rawRunMm > availableRun) {
+    const cappedRun = Math.max(FLAT_BOUNDS.minRunMm, snap10(availableRun));
+    const neededSpan = Math.min(availableSpan, snap10(targetMm2 / cappedRun));
+    if (neededSpan > spanMm) {
+      spanMm = clamp(neededSpan, FLAT_BOUNDS.minSpanMm, maxAllowedSpan);
+      rawRunMm = snap10(targetMm2 / spanMm);
+    }
+  }
+  const maxAllowedRun = explicitTargetSqm
+    ? Math.max(FLAT_BOUNDS.maxRunMm, rawRunMm)
+    : FLAT_BOUNDS.maxRunMm;
+  const runMm = clamp(rawRunMm, FLAT_BOUNDS.minRunMm, maxAllowedRun);
   return { spanMm, runMm };
+}
+
+function resolveWingFillMode(program: ArchitecturalProgram): {
+  noOts: boolean;
+  hasAreaTarget: boolean;
+  fillWings: boolean;
+  targetAreaSqFt: number | undefined;
+} {
+  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
+  const targetAreaSqFt = program.mandatory.targetAreaSqFt;
+  const hasAreaTarget = targetAreaSqFt !== undefined && targetAreaSqFt > 0;
+  const fillWings =
+    !hasAreaTarget &&
+    (noOts ||
+      Boolean(program.preferences.properSpaceUtilization) ||
+      Boolean(program.preferences.ventilatedCentralOtsShafts));
+  return { noOts, hasAreaTarget, fillWings, targetAreaSqFt };
+}
+
+function rebalanceMixedWingPair(
+  aSpan: number,
+  aRun: number,
+  aMinSpan: number,
+  aMinRun: number,
+  aWeightAvg: number,
+  bSpan: number,
+  bRun: number,
+  bMinSpan: number,
+  bMinRun: number,
+  bWeightAvg: number,
+): { aSpan: number; aRun: number; bSpan: number; bRun: number } {
+  const aA = aSpan * aRun;
+  const aB = bSpan * bRun;
+  if (bWeightAvg > 0 && aA > aB * (aWeightAvg / bWeightAvg) * 1.02) {
+    const desiredAA = aB * (aWeightAvg / bWeightAvg);
+    aRun = Math.max(aMinRun, Math.min(aRun, snap10(desiredAA / aSpan)));
+    if (aSpan * aRun > desiredAA * 1.02) {
+      aSpan = Math.max(aMinSpan, Math.min(aSpan, snap10(desiredAA / aRun)));
+    }
+  } else if (aWeightAvg > 0 && aB > aA * (bWeightAvg / aWeightAvg) * 1.02) {
+    const desiredAB = aA * (bWeightAvg / aWeightAvg);
+    bRun = Math.max(bMinRun, Math.min(bRun, snap10(desiredAB / bSpan)));
+    if (bSpan * bRun > desiredAB * 1.02) {
+      bSpan = Math.max(bMinSpan, Math.min(bSpan, snap10(desiredAB / bRun)));
+    }
+  }
+  return { aSpan, aRun, bSpan, bRun };
 }
 
 /**
@@ -887,6 +956,92 @@ function flatFootprintTarget(
  * face of the actual built form? — rather than measuring against a footprint
  * the family chose not to fill.
  */
+/** Relative floor-plate weight of each unit type for mixed-BHK bay allocation. */
+export const BHK_BAY_WEIGHTS: Readonly<Record<string, number>> = {
+  '1BHK': 0.75,
+  '2BHK': 1.0,
+  '3BHK': 1.35,
+  '4BHK': 1.7,
+};
+
+/**
+ * Pairs BHK types with flat boxes in caller-specified index order (`[...unitTypes]`)
+ * so unit indices (`flat_01..N`) always honor the user's or test's explicit slot
+ * order; mixed-BHK size differentiation is handled by proportional wing sizing
+ * and `rebalanceFlatRowsByBhkWeight`.
+ */
+export function assignUnitTypesToBoxes(
+  flatBoxes: readonly Box2D[],
+  unitTypes: readonly string[],
+): string[] {
+  void flatBoxes;
+  return [...unitTypes];
+}
+
+/**
+ * Redistributes the run of contiguous flats that share a row so each flat's
+ * share is proportional to its BHK weight. Only flats that tile a common band
+ * edge-to-edge are touched, so the union of the row (and therefore the exact
+ * dissection of the envelope) is unchanged: the area ledger stays at 0 mm².
+ * Returns the original partition object when nothing changes.
+ */
+export function rebalanceFlatRowsByBhkWeight(
+  partition: TopologyPartition,
+  unitTypes: readonly string[],
+): TopologyPartition {
+  if (unitTypes.length !== partition.flatBoxes.length) return partition;
+  if (new Set(unitTypes).size <= 1) return partition;
+  const assignedTypes = assignUnitTypesToBoxes(partition.flatBoxes, unitTypes);
+  const weightOf = (i: number): number => BHK_BAY_WEIGHTS[assignedTypes[i] ?? '2BHK'] ?? 1;
+  const boxes = partition.flatBoxes.map(b => ({ ...b }));
+  const touched = new Set<number>();
+  let changed = false;
+
+  const rebalance = (horizontal: boolean): void => {
+    const groups = new Map<string, number[]>();
+    boxes.forEach((b, i) => {
+      if (touched.has(i)) return;
+      const key = horizontal ? `${b.y}|${b.h}` : `${b.x}|${b.w}`;
+      groups.set(key, [...(groups.get(key) ?? []), i]);
+    });
+    for (const indices of groups.values()) {
+      const sorted = [...indices].sort((a, b) => horizontal ? boxes[a]!.x - boxes[b]!.x : boxes[a]!.y - boxes[b]!.y);
+      const chains: number[][] = [];
+      for (const i of sorted) {
+        const chain = chains.at(-1);
+        const prev = chain ? boxes[chain.at(-1)!]! : undefined;
+        const cur = boxes[i]!;
+        if (chain && prev && (horizontal ? prev.x + prev.w === cur.x : prev.y + prev.h === cur.y)) chain.push(i);
+        else chains.push([i]);
+      }
+      for (const chain of chains) {
+        if (chain.length < 2) continue;
+        const weights = chain.map(weightOf);
+        if (weights.every(w => w === weights[0])) continue;
+        const first = boxes[chain[0]!]!;
+        const last = boxes[chain.at(-1)!]!;
+        const start = horizontal ? first.x : first.y;
+        const total = horizontal ? last.x + last.w - start : last.y + last.h - start;
+        const sumW = weights.reduce((s, w) => s + w, 0);
+        const sizes = weights.map(w => snap10((total * w) / sumW));
+        sizes[sizes.length - 1] = total - sizes.slice(0, -1).reduce((s, v) => s + v, 0);
+        if (sizes.some(s => s < FLAT_BOUNDS.minSpanMm)) continue;
+        let cursor = start;
+        chain.forEach((idx, k) => {
+          const b = boxes[idx]!;
+          if (horizontal) { b.x = cursor; b.w = sizes[k]!; } else { b.y = cursor; b.h = sizes[k]!; }
+          cursor += sizes[k]!;
+          touched.add(idx);
+        });
+        changed = true;
+      }
+    }
+  };
+  rebalance(true);
+  rebalance(false);
+  return changed ? { ...partition, flatBoxes: boxes } : partition;
+}
+
 function withTightBuiltOutline(partition: TopologyPartition): TopologyPartition {
   const built: Box2D[] = [
     ...partition.flatBoxes,
@@ -1071,12 +1226,15 @@ export function partitionDefects(partition: TopologyPartition, program?: Archite
     // beside a 7 m2 kitchen. Only the latter is rejected.
     const fullFill =
       program?.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
-      (program?.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0);
+      (program?.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0) ||
+      Boolean(program?.preferences.properSpaceUtilization) ||
+      Boolean(program?.preferences.ventilatedCentralOtsShafts);
+    const maxEnvelopeDim = Math.max(envelope.w, envelope.h);
     const spanLimit = fullFill
-      ? Math.max(FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE, envelope.w)
+      ? Math.max(FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE, maxEnvelopeDim)
       : FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE;
     const runLimit = fullFill
-      ? Math.max(FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE, envelope.h)
+      ? Math.max(FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE, maxEnvelopeDim)
       : FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE;
     if (spanMm > spanLimit) {
       reasons.push(
@@ -1125,16 +1283,30 @@ const centralCoreSpine: FamilyBuilder = ctx => {
   const bothSides = flatsPerFloor >= 2;
   const corridorSides: CorridorSides = bothSides ? 'BOTH' : 'LOW';
   const coreW = requiredCoreBandWidth({ compact, corridorSides });
+  const westCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
+  const availW = env.w - coreW;
+  const unitTypes = program.mandatory.unitTypes;
+  const westTypes = unitTypes.length === flatsPerFloor ? unitTypes.slice(0, westCount) : unitTypes;
+  const eastTypes = unitTypes.length === flatsPerFloor ? unitTypes.slice(westCount) : unitTypes;
+  const isMixed = new Set(unitTypes).size > 1 && westCount > 0 && eastCount > 0;
+  const weightOf = (ts: readonly string[]) => ts.reduce((s, t) => s + (BHK_BAY_WEIGHTS[t] ?? 1), 0);
+  const westWeight = weightOf(westTypes);
+  const eastWeight = weightOf(eastTypes);
+  const minWingSpan = availW >= 2 * FLAT_BOUNDS.balconySpanMm ? FLAT_BOUNDS.balconySpanMm : FLAT_BOUNDS.minSpanMm;
+  const balancedLeftW = isMixed && westWeight + eastWeight > 0
+    ? snap10(clamp(availW * (westWeight / (westWeight + eastWeight)), minWingSpan, availW - minWingSpan))
+    : snap10(availW / 2);
 
   for (const liftsAtLowSide of [false, true]) {
     const variantId = `central:lifts=${liftsAtLowSide ? 'west' : 'east'}`;
     const label = 'Central circulation core';
 
-    const leftW = snap10((env.w - coreW) / 2);
-    if (leftW < FLAT_BOUNDS.minSpanMm) {
+    const leftW = balancedLeftW;
+    if (leftW < FLAT_BOUNDS.minSpanMm || availW - leftW < FLAT_BOUNDS.minSpanMm) {
       attempts.push({
         variantId, label, rationale: '',
-        reasons: [`a ${Math.round(coreW)} mm central core leaves wings only ${Math.round(leftW)} mm across`],
+        reasons: [`a ${Math.round(coreW)} mm central core leaves wings only ${Math.round(Math.min(leftW, availW - leftW))} mm across`],
       });
       continue;
     }
@@ -1157,22 +1329,33 @@ const centralCoreSpine: FamilyBuilder = ctx => {
 
     // Fill wings cleanly when space utilization or OTS shafts are requested or
     // wing dimensions remain within oversize sanity limits (eliminates giant side voids).
-    const target = flatFootprintTarget(program.mandatory.unitTypes, leftW);
-    const westCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
-    const eastCount = flatsPerFloor - westCount;
-    const fillWings =
-      noOts ||
-      hasAreaTarget ||
-      Boolean(program.preferences.properSpaceUtilization) ||
-      Boolean(program.preferences.ventilatedCentralOtsShafts);
-    const spanCapW = left.w <= FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE ? left.w : target.spanMm;
-    const spanCapE = right.w <= FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE ? right.w : target.spanMm;
-    const westRow = fillWings
-      ? sliceFlatRow(left, westCount, Math.ceil(left.h / westCount), true, left.w, false)
-      : sliceFlatRow(left, westCount, target.runMm, true, spanCapW, false);
-    const eastRow = fillWings
-      ? sliceFlatRow(right, eastCount, Math.ceil(right.h / eastCount), true, right.w, true)
-      : sliceFlatRow(right, eastCount, target.runMm, true, spanCapE, true);
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const westTarget = flatFootprintTarget(westTypes, leftW, targetAreaSqFt, Math.ceil(left.h / westCount));
+    const eastTarget = flatFootprintTarget(eastTypes, right.w, targetAreaSqFt, Math.ceil(right.h / eastCount));
+    let spanCapW = fillWings
+      ? left.w
+      : hasAreaTarget
+        ? Math.min(left.w, westTarget.spanMm)
+        : Math.min(left.w, Math.max(westTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
+    let spanCapE = fillWings
+      ? right.w
+      : hasAreaTarget
+        ? Math.min(right.w, eastTarget.spanMm)
+        : Math.min(right.w, Math.max(eastTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
+    let runW = fillWings ? Math.ceil(left.h / westCount) : Math.min(Math.ceil(left.h / westCount), westTarget.runMm);
+    let runE = fillWings ? Math.ceil(right.h / eastCount) : Math.min(Math.ceil(right.h / eastCount), eastTarget.runMm);
+    if (isMixed && fillWings && eastCount > 0 && westCount > 0) {
+      const rebalanced = rebalanceMixedWingPair(
+        spanCapW, runW, FLAT_BOUNDS.balconySpanMm, westTarget.runMm, westWeight / westCount,
+        spanCapE, runE, FLAT_BOUNDS.balconySpanMm, eastTarget.runMm, eastWeight / eastCount,
+      );
+      spanCapW = rebalanced.aSpan;
+      runW = rebalanced.aRun;
+      spanCapE = rebalanced.bSpan;
+      runE = rebalanced.bRun;
+    }
+    const westRow = sliceFlatRow(left, westCount, runW, true, spanCapW, false);
+    const eastRow = sliceFlatRow(right, eastCount, runE, true, spanCapE, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1180,6 +1363,9 @@ const centralCoreSpine: FamilyBuilder = ctx => {
     for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
 
     const openSpace = [...westRow.leftovers, ...eastRow.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     attempts.push({
       variantId,
@@ -1203,7 +1389,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
+        shaftTags: [...band.shaftTags, ...openSpaceTags],
         coreBoxes: [core],
       },
     });
@@ -1226,17 +1412,30 @@ const dualWing: FamilyBuilder = ctx => {
   const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
   const corridorSides: CorridorSides = 'BOTH';
   const coreH = requiredCoreBandWidth({ compact, corridorSides });
+  const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
+  const southCount = flatsPerFloor - northCount;
+  const availH = env.h - coreH;
+  const unitTypes = program.mandatory.unitTypes;
+  const northTypes = unitTypes.length === flatsPerFloor ? unitTypes.slice(0, northCount) : unitTypes;
+  const southTypes = unitTypes.length === flatsPerFloor ? unitTypes.slice(northCount) : unitTypes;
+  const isMixed = new Set(unitTypes).size > 1 && northCount > 0 && southCount > 0;
+  const weightOf = (ts: readonly string[]) => ts.reduce((s, t) => s + (BHK_BAY_WEIGHTS[t] ?? 1), 0);
+  const northWeight = weightOf(northTypes);
+  const southWeight = weightOf(southTypes);
+  const minWingSpan = availH >= 2 * FLAT_BOUNDS.balconySpanMm ? FLAT_BOUNDS.balconySpanMm : FLAT_BOUNDS.minSpanMm;
+  const northH = isMixed && northWeight + southWeight > 0
+    ? snap10(clamp(availH * (northWeight / (northWeight + southWeight)), minWingSpan, availH - minWingSpan))
+    : snap10(availH / 2);
   const attempts: BuildAttempt[] = [];
 
   for (const liftsAtLowSide of [false, true]) {
     const variantId = `dualwing:lifts=${liftsAtLowSide ? 'west' : 'east'}`;
     const label = 'Dual wing with cross circulation';
 
-    const northH = snap10((env.h - coreH) / 2);
-    if (northH < FLAT_BOUNDS.minSpanMm) {
+    if (northH < FLAT_BOUNDS.minSpanMm || env.h - coreH - northH < FLAT_BOUNDS.minSpanMm) {
       attempts.push({
         variantId, label, rationale: '',
-        reasons: [`a ${Math.round(coreH)} mm cross core leaves wings only ${Math.round(northH)} mm deep`],
+        reasons: [`a ${Math.round(coreH)} mm cross core leaves wings only ${Math.round(Math.min(northH, env.h - coreH - northH))} mm deep`],
       });
       continue;
     }
@@ -1246,7 +1445,8 @@ const dualWing: FamilyBuilder = ctx => {
       stairCount,
       compact,
       liftsAtLowSide,
-      preferOts: !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts)),
+      preferOts: !noOts && program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD',
+      preferCompactOts: !noOts && Boolean(program.preferences.ventilatedCentralOtsShafts),
       noOts,
       liftCountOverride,
       corridorSides,
@@ -1257,21 +1457,34 @@ const dualWing: FamilyBuilder = ctx => {
     }
 
     // Entered from their long side, so each flat's span is the wing depth and
-    // its run is measured across the plot. Fill wings cleanly unless oversized beyond sanity tolerance.
-    const target = flatFootprintTarget(program.mandatory.unitTypes, northH);
-    const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
-    const southCount = flatsPerFloor - northCount;
-    const fillWings =
-      noOts ||
-      hasAreaTarget ||
-      Boolean(program.preferences.properSpaceUtilization) ||
-      Boolean(program.preferences.ventilatedCentralOtsShafts);
-    const northRow = fillWings
-      ? sliceFlatRow(north, northCount, Math.ceil(north.w / northCount), false, north.h, false)
-      : sliceFlatRow(north, northCount, target.runMm, false, target.spanMm, false);
-    const southRow = fillWings
-      ? sliceFlatRow(south, southCount, Math.ceil(south.w / southCount), false, south.h, true)
-      : sliceFlatRow(south, southCount, target.runMm, false, target.spanMm, true);
+    // its run is measured across the plot. Fill wings cleanly when requested.
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const northTarget = flatFootprintTarget(northTypes, northH, targetAreaSqFt, Math.ceil(north.w / northCount));
+    const southTarget = flatFootprintTarget(southTypes, south.h, targetAreaSqFt, Math.ceil(south.w / southCount));
+    let maxSpanN = fillWings
+      ? north.h
+      : hasAreaTarget
+        ? Math.min(north.h, northTarget.spanMm)
+        : Math.min(north.h, Math.max(northTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
+    let maxSpanS = fillWings
+      ? south.h
+      : hasAreaTarget
+        ? Math.min(south.h, southTarget.spanMm)
+        : Math.min(south.h, Math.max(southTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
+    let runN = fillWings ? Math.ceil(north.w / northCount) : Math.min(Math.ceil(north.w / northCount), northTarget.runMm);
+    let runS = fillWings ? Math.ceil(south.w / southCount) : Math.min(Math.ceil(south.w / southCount), southTarget.runMm);
+    if (isMixed && fillWings && northCount > 0 && southCount > 0) {
+      const rebalanced = rebalanceMixedWingPair(
+        maxSpanN, runN, FLAT_BOUNDS.balconySpanMm, northTarget.runMm, northWeight / northCount,
+        maxSpanS, runS, FLAT_BOUNDS.balconySpanMm, southTarget.runMm, southWeight / southCount,
+      );
+      maxSpanN = rebalanced.aSpan;
+      runN = rebalanced.aRun;
+      maxSpanS = rebalanced.bSpan;
+      runS = rebalanced.bRun;
+    }
+    const northRow = sliceFlatRow(north, northCount, runN, false, maxSpanN, false);
+    const southRow = sliceFlatRow(south, southCount, runS, false, maxSpanS, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1279,6 +1492,9 @@ const dualWing: FamilyBuilder = ctx => {
     for (const b of southRow.flats) { flatBoxes.push(b); edges.push('NORTH'); }
 
     const openSpace = [...northRow.leftovers, ...southRow.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     attempts.push({
       variantId,
@@ -1301,7 +1517,7 @@ const dualWing: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
+        shaftTags: [...band.shaftTags, ...openSpaceTags],
         coreBoxes: [link],
       },
     });
@@ -1374,15 +1590,22 @@ const sideCore: FamilyBuilder = ctx => {
       continue;
     }
 
-    // Flats stack along the core's length so each meets the corridor, capped at
-    // a usable depth with any leftover held as open space.
+    // Flats stack along the core's length so each meets the corridor, expanding to
+    // utilize the wing cleanly when plot utilization is enabled or area-targeted.
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
     const alongY = vertical;
-    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan);
-    const row = sliceFlatRow(flatsRegion, flatsPerFloor, target.runMm, alongY, target.spanMm,
+    const availRun = alongY ? flatsRegion.h : flatsRegion.w;
+    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
+    const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
+    const spanCap = fillWings ? flatsSpan : target.spanMm;
+    const row = sliceFlatRow(flatsRegion, flatsPerFloor, runCap, alongY, spanCap,
       side === 'WEST' || side === 'NORTH');
     const flatBoxes = row.flats;
     const edges: AccessEdge[] = flatBoxes.map(() => side);
     const openSpace = [...row.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     attempts.push({
       variantId,
@@ -1406,7 +1629,7 @@ const sideCore: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
+        shaftTags: [...band.shaftTags, ...openSpaceTags],
         coreBoxes: [core],
       },
     });
@@ -1492,10 +1715,17 @@ const splitCore: FamilyBuilder = ctx => {
 
     const flatsRegion = middle;
 
-    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan);
-    const row = sliceFlatRow(flatsRegion, flatsPerFloor, target.runMm, axis === 'ns', target.spanMm, true);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const availRun = axis === 'ns' ? flatsRegion.h : flatsRegion.w;
+    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
+    const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
+    const spanCap = fillWings ? flatsSpan : target.spanMm;
+    const row = sliceFlatRow(flatsRegion, flatsPerFloor, runCap, axis === 'ns', spanCap, true);
     const flatBoxes = row.flats;
     const openSpace = [...row.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     // Every flat opens onto the spine, which lies on the same side of them all.
     const edges: AccessEdge[] = flatBoxes.map(() => (axis === 'ns' ? 'WEST' : 'NORTH'));
@@ -1523,7 +1753,7 @@ const splitCore: FamilyBuilder = ctx => {
         stairBoxes: [...bandA.stairBoxes, ...bandB.stairBoxes],
         shaftBoxes: [...bandA.shaftBoxes, ...bandB.shaftBoxes, ...openSpace],
         shaftRoles: [...bandA.shaftRoles, ...bandB.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...bandA.shaftTags, ...bandB.shaftTags, ...openSpace.map(() => [] as const)],
+        shaftTags: [...bandA.shaftTags, ...bandB.shaftTags, ...openSpaceTags],
         coreBoxes: [coreA, coreB],
       },
     });
@@ -1602,11 +1832,15 @@ const centralCourtyard: FamilyBuilder = ctx => {
 
     // Ring flats are entered from the wing's inner face, so each flat's span is
     // the wing depth and its run is measured across the plot.
-    const target = flatFootprintTarget(program.mandatory.unitTypes, wingH);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
     const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
-    const northRow = sliceFlatRow(northWing, northCount, target.runMm, false, target.spanMm, false);
-    const southRow = sliceFlatRow(southWing, southCount, target.runMm, false, target.spanMm, true);
+    const minCourtyardWingW = Math.min(Math.ceil(northWing.w / Math.max(1, northCount)), Math.ceil(southWing.w / Math.max(1, southCount)));
+    const target = flatFootprintTarget(program.mandatory.unitTypes, wingH, targetAreaSqFt, minCourtyardWingW);
+    const northFlatRun = fillWings ? Math.ceil(northWing.w / Math.max(1, northCount)) : Math.min(Math.ceil(northWing.w / Math.max(1, northCount)), target.runMm);
+    const southFlatRun = fillWings ? Math.ceil(southWing.w / Math.max(1, southCount)) : Math.min(Math.ceil(southWing.w / Math.max(1, southCount)), target.runMm);
+    const northRow = sliceFlatRow(northWing, northCount, northFlatRun, false, fillWings ? wingH : target.spanMm, false);
+    const southRow = sliceFlatRow(southWing, southCount, southFlatRun, false, fillWings ? wingH : target.spanMm, true);
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -1614,6 +1848,9 @@ const centralCourtyard: FamilyBuilder = ctx => {
     for (const b of southRow.flats) { flatBoxes.push(b); edges.push('NORTH'); }
 
     const openSpace = [...northRow.leftovers, ...southRow.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     attempts.push({
       variantId,
@@ -1642,7 +1879,7 @@ const centralCourtyard: FamilyBuilder = ctx => {
         stairBoxes: [...west.stairBoxes, ...east.stairBoxes],
         shaftBoxes: [...west.shaftBoxes, ...east.shaftBoxes, court, ...openSpace],
         shaftRoles: [...west.shaftRoles, ...east.shaftRoles, 'OPEN_TO_SKY_VOID', ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...west.shaftTags, ...east.shaftTags, ['shaft:ots'], ...openSpace.map(() => [] as const)],
+        shaftTags: [...west.shaftTags, ...east.shaftTags, ['shaft:ots'], ...openSpaceTags],
         coreBoxes: [coreWest, coreEast],
       },
     });
@@ -1733,8 +1970,12 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
       continue;
     }
 
-    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan);
-    const row = sliceFlatRow(flatsRegion, flatsPerFloor, target.runMm, alongY, target.spanMm,
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const availRun = alongY ? flatsRegion.h : flatsRegion.w;
+    const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
+    const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
+    const spanCap = fillWings ? flatsSpan : target.spanMm;
+    const row = sliceFlatRow(flatsRegion, flatsPerFloor, runCap, alongY, spanCap,
       side === 'WEST' || side === 'NORTH');
     const flatBoxes = row.flats;
     const edges: AccessEdge[] = flatBoxes.map(() => side);
@@ -1745,7 +1986,7 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
     for (const strip of row.leftovers) {
       shaftBoxes.push(strip);
       shaftRoles.push('OPEN_TO_SKY_VOID');
-      shaftTags.push([]);
+      shaftTags.push(fillWings || hasAreaTarget ? ['recess:perimeter'] : []);
     }
     if ((alongY ? stackTail.h : stackTail.w) > 0) {
       shaftBoxes.push(stackTail);
@@ -1865,14 +2106,19 @@ const perimeterHabitable: FamilyBuilder = ctx => {
     const wingEdge: AccessEdge = atWest ? 'WEST' : 'EAST';
     const wrapEdge: AccessEdge = atWest ? 'EAST' : 'WEST';
     const wingCount = flatsPerFloor - 1;
-    const target = flatFootprintTarget(program.mandatory.unitTypes, wingSpan);
-    const wingRow = sliceFlatRow(wing, wingCount, target.runMm, true, target.spanMm, wingEdge === 'WEST');
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const target = flatFootprintTarget(program.mandatory.unitTypes, wingSpan, targetAreaSqFt, Math.ceil(wing.h / wingCount));
+    const wingRun = fillWings ? Math.ceil(wing.h / wingCount) : Math.min(Math.ceil(wing.h / wingCount), target.runMm);
+    const wingRow = sliceFlatRow(wing, wingCount, wingRun, true, fillWings ? wingSpan : target.spanMm, wingEdge === 'WEST');
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
     for (const b of wingRow.flats) { flatBoxes.push(b); edges.push(wingEdge); }
     flatBoxes.push(wrapFlat);
     edges.push(wrapEdge);
     const openSpace = [...wingRow.leftovers];
+    const openSpaceTags = openSpace.map(() =>
+      (fillWings || hasAreaTarget ? (['recess:perimeter'] as const) : ([] as const)),
+    );
 
     attempts.push({
       variantId,
@@ -1897,7 +2143,7 @@ const perimeterHabitable: FamilyBuilder = ctx => {
         stairBoxes: band.stairBoxes,
         shaftBoxes: [...band.shaftBoxes, ...openSpace],
         shaftRoles: [...band.shaftRoles, ...openSpace.map(() => 'OPEN_TO_SKY_VOID' as ShaftRole)],
-        shaftTags: [...band.shaftTags, ...openSpace.map(() => [] as const)],
+        shaftTags: [...band.shaftTags, ...openSpaceTags],
         coreBoxes: [coreBox],
       },
     });
@@ -2153,8 +2399,13 @@ const lShapeCorner: FamilyBuilder = ctx => {
   const coreBandW = requiredCoreBandWidth({ compact, corridorSides: 'LOW' });
   const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: 'LOW', liftCount: liftCountOverride });
 
+  const maxWingSpan = FLAT_BOUNDS.maxSpanMm * 1.45;
   const southBandH = snap10(
-    Math.max(FLAT_BOUNDS.minRunMm + 200, coreReqLen, Math.min(env.h * 0.48, env.h - FLAT_BOUNDS.minRunMm - corrW)),
+    Math.max(
+      FLAT_BOUNDS.minRunMm + 200,
+      coreReqLen,
+      Math.min(env.h * 0.48, maxWingSpan, env.h - FLAT_BOUNDS.minRunMm - corrW),
+    ),
   );
   const hTop = env.h - southBandH - corrW;
   if (hTop < FLAT_BOUNDS.minRunMm || southBandH < coreReqLen) {
@@ -2181,8 +2432,14 @@ const lShapeCorner: FamilyBuilder = ctx => {
       ),
     );
     const [nwBuilt, neRecess] = splitX(topBand, [nwWingW, 0]) as [Box2D, Box2D];
-    const nwRow = sliceFlatRow(nwBuilt, nwCount, Math.ceil(nwBuilt.w / nwCount), false, nwBuilt.h, true);
+    const nwSpan = Math.min(nwBuilt.h, maxWingSpan);
+    const nwRow = sliceFlatRow(nwBuilt, nwCount, Math.ceil(nwBuilt.w / nwCount), false, nwSpan, false);
     for (const f of nwRow.flats) { flatBoxes.push(f); edges.push('SOUTH'); }
+    for (const rem of nwRow.leftovers) {
+      shaftBoxes.push(rem);
+      shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push(['recess:perimeter']);
+    }
     shaftBoxes.push(neRecess);
     shaftRoles.push('OPEN_TO_SKY_VOID');
     shaftTags.push(['recess:perimeter']);
@@ -2618,7 +2875,13 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       // smaller built form than the footprint it was offered, and the strips it
       // handed back are open space. Testing facades against the offered
       // footprint would then report an edge flat as windowless.
-      const tightened = withTightBuiltOutline(partition);
+      // Phase 3: mixed-BHK floor plates give each flat a run proportional to
+      // its BHK weight (2BHK : 3BHK : 4BHK = 1.0 : 1.35 : 1.70). The rebalanced
+      // dissection is only kept when it passes every partition defect check.
+      const unweighted = withTightBuiltOutline(partition);
+      const weightedPartition = rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes);
+      const weighted = weightedPartition !== partition ? withTightBuiltOutline(weightedPartition) : undefined;
+      const tightened = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
       const defects = partitionDefects(tightened, ctx.program);
       if (defects.length) {
         rejections.push({ familyId: family.id, variantId: attempt.variantId, reasons: defects });

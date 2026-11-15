@@ -8,6 +8,8 @@ export interface ArchitecturalPlacement {
   sitoutSize: 'STANDARD' | 'COMPACT';
   entranceStyle: 'LIVING_FIRST';
   bedroomBalconies: 'STANDARD' | 'ALL_BEDROOMS';
+  staggeredBalconies?: boolean;
+  floorVariant?: 'ODD' | 'EVEN';
 }
 
 export function interpretArchitecturalPlacement(prompt = ''): ArchitecturalPlacement {

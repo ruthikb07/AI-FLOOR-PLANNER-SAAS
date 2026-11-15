@@ -1,11 +1,13 @@
-import { isPhysicalBoundary } from '@ai-floor-planner/core';
+import { isPhysicalBoundary, architecturalSpaceRole } from '@ai-floor-planner/core';
 import * as acad from "@node-projects/acad-ts";
 import { createHash } from "node:crypto";
 import {
   canonicalRevisionJson,
+  MEP_CAD_LAYER_COLORS,
   validateBuildingSchema,
   type Building,
   type Floor,
+  type FloorMepEngineeringPlan,
   type Point,
   type ResidentialCadOptions,
   type ResidentialCadSheetMetadata,
@@ -19,6 +21,7 @@ import {
   columnFootprint,
   beamFootprint,
   segmentFootprint,
+  pointInPolygon,
   projectOnSegment,
   hardeningOverlapArea,
   uncoveredResidentialOverlap,
@@ -44,6 +47,7 @@ export const RESIDENTIAL_CAD_LAYERS = {
   "S-GRID": 8,
   "A-DOOR": 2,
   "A-WIND": 2,
+  "A-CHAJJA": 8,
   "A-FLOR-BALC": 3,
   "A-ANNO-TEXT": 1,
   "A-ANNO-DIMS": 7,
@@ -51,6 +55,7 @@ export const RESIDENTIAL_CAD_LAYERS = {
   "A-SLAB": 9,
   "S-FOOT-DIAG": 8,
   "S-PEDESTAL-DIAG": 9,
+  ...MEP_CAD_LAYER_COLORS,
 } as const;
 /** Display rounding only. Geometry, dimensions and area acceptance always retain raw millimetres. */
 export function residentialImperial(mm: number): string {
@@ -489,6 +494,51 @@ export class ResidentialCadSerializer {
           poly(segmentFootprint(a, b, wall.thickness).points.map(cad), name);
           if (!isDoor) {
             line(cad(a), cad(b), name);
+            if (building.metadata?.generationBrief?.includeWindowChajjas !== false && p.length > 0) {
+              const ux = (wall.endPoint.x - wall.startPoint.x) / p.length,
+                uy = (wall.endPoint.y - wall.startPoint.y) / p.length;
+              const nA = { x: -uy, y: ux },
+                nB = { x: uy, y: -ux };
+              const probeDist = wall.thickness / 2 + 120;
+              const midPt = p.pointAt(p.along);
+              const isOutsideBuilt = (pt: Point) =>
+                !floor.rooms.some(
+                  (r) => architecturalSpaceRole(r) !== "OPEN_TO_SKY_VOID" && !r.tags?.includes("recess:perimeter") && pointInPolygon(pt, r.boundary),
+                );
+              const probeA = { x: midPt.x + nA.x * probeDist, y: midPt.y + nA.y * probeDist },
+                probeB = { x: midPt.x + nB.x * probeDist, y: midPt.y + nB.y * probeDist };
+              const outA = isOutsideBuilt(probeA) || !pointInPolygon(probeA, floor.boundary);
+              const outB = isOutsideBuilt(probeB) || !pointInPolygon(probeB, floor.boundary);
+              const isExtOrShaft =
+                wall.wallUse === "EXTERNAL" ||
+                wall.wallUse === "SHAFT" ||
+                wall.type === "external" ||
+                wall.roomIds.length <= 1 ||
+                outA !== outB;
+              if (isExtOrShaft && (outA || outB)) {
+                const outN = !pointInPolygon(probeA, floor.boundary)
+                  ? nA
+                  : !pointInPolygon(probeB, floor.boundary)
+                    ? nB
+                    : outA && !outB
+                      ? nA
+                      : nB;
+                const halfChajjaW = opening.width / 2 + 150;
+                const cA = { x: midPt.x - ux * halfChajjaW, y: midPt.y - uy * halfChajjaW },
+                  cB = { x: midPt.x + ux * halfChajjaW, y: midPt.y + uy * halfChajjaW };
+                const innerOff = wall.thickness / 2,
+                  outerOff = innerOff + 600;
+                poly(
+                  [
+                    { x: cA.x + outN.x * innerOff, y: cA.y + outN.y * innerOff },
+                    { x: cB.x + outN.x * innerOff, y: cB.y + outN.y * innerOff },
+                    { x: cB.x + outN.x * outerOff, y: cB.y + outN.y * outerOff },
+                    { x: cA.x + outN.x * outerOff, y: cA.y + outN.y * outerOff },
+                  ].map(cad),
+                  "A-CHAJJA",
+                );
+              }
+            }
             continue;
           }
           const door = floor.doors.find((d) => d.id === opening.id)!;
@@ -577,26 +627,101 @@ export class ResidentialCadSerializer {
       for (const c of floor.columns) {
         poly(columnFootprint(c).points.map(cad), "S-COLS", true);
       }
+      const floorMep: FloorMepEngineeringPlan | undefined =
+        building.mepEngineering?.floors.find((m) => m.floorId === floor.id);
+      if (floorMep) {
+        for (const cb of floorMep.cantileverBeams) {
+          line(cad(cb.start), cad(cb.end), "S-BEAM-CANTILEVER");
+          const dx = cb.end.x - cb.start.x;
+          const dy = cb.end.y - cb.start.y;
+          const len = Math.hypot(dx, dy);
+          if (len > 1) {
+            const hw = (cb.widthMm || 230) / 2;
+            const nx = (-dy / len) * hw;
+            const ny = (dx / len) * hw;
+            poly(
+              [
+                cad({ x: cb.start.x + nx, y: cb.start.y + ny }),
+                cad({ x: cb.end.x + nx, y: cb.end.y + ny }),
+                cad({ x: cb.end.x - nx, y: cb.end.y - ny }),
+                cad({ x: cb.start.x - nx, y: cb.start.y - ny }),
+              ],
+              "S-BEAM-CANTILEVER",
+            );
+          }
+        }
+        for (const cz of floorMep.ceilings) {
+          if (cz.outline.length >= 3) {
+            poly(cz.outline.map(cad), "A-CEIL-GRID");
+          }
+          for (const [a, b] of cz.gridLines ?? []) {
+            line(cad(a), cad(b), "A-CEIL-GRID");
+          }
+        }
+        for (const run of floorMep.runs) {
+          for (let i = 0; i < run.points.length - 1; i++) {
+            line(cad(run.points[i]!), cad(run.points[i + 1]!), run.layer);
+          }
+        }
+        for (const sym of floorMep.symbols) {
+          const cx = sym.position.x;
+          const cy = sym.position.y;
+          if (sym.widthMm && sym.depthMm) {
+            const hw = sym.widthMm / 2;
+            const hd = sym.depthMm / 2;
+            const tl = { x: cx - hw, y: cy - hd };
+            const tr = { x: cx + hw, y: cy - hd };
+            const br = { x: cx + hw, y: cy + hd };
+            const bl = { x: cx - hw, y: cy + hd };
+            poly([cad(tl), cad(tr), cad(br), cad(bl)], sym.layer);
+            line(cad(tl), cad(br), sym.layer);
+            line(cad(tr), cad(bl), sym.layer);
+          } else {
+            const r = 120;
+            poly(
+              [
+                cad({ x: cx, y: cy - r }),
+                cad({ x: cx + r, y: cy }),
+                cad({ x: cx, y: cy + r }),
+                cad({ x: cx - r, y: cy }),
+              ],
+              sym.layer,
+            );
+            line(cad({ x: cx - r, y: cy }), cad({ x: cx + r, y: cy }), sym.layer);
+            line(cad({ x: cx, y: cy - r }), cad({ x: cx, y: cy + r }), sym.layer);
+          }
+        }
+      }
       if (options.standard === "B") {
         for (const beam of floor.beams ?? []) {
           line(cad(beam.startPoint), cad(beam.endPoint), "S-BEAM");
           poly(beamFootprint(beam).points.map(cad), "S-BEAM");
         }
+        let lastLabelX = -Infinity;
+        let xTier = 0;
         xs.forEach((x, i) => {
           line(
             cad({ x, y: bounds.y - 1000 }),
             cad({ x, y: bounds.y + bounds.height + 1000 }),
             "S-GRID",
           );
-          text(axisName(i), { x: x + shift.x, y: top + 1600 }, 140, "S-GRID");
+          if (x - lastLabelX < 240) xTier = (xTier + 1) % 3;
+          else xTier = 0;
+          lastLabelX = x;
+          text(axisName(i), { x: x + shift.x, y: top + 1600 + xTier * 260 }, 140, "S-GRID");
         });
+        let lastLabelY = -Infinity;
+        let yTier = 0;
         ys.forEach((y, i) => {
           line(
             cad({ x: bounds.x - 1000, y }),
             cad({ x: bounds.x + bounds.width + 1000, y }),
             "S-GRID",
           );
-          text(String(i + 1), { x: left - 1500, y: -y }, 140, "S-GRID");
+          if (y - lastLabelY < 240) yTier = (yTier + 1) % 3;
+          else yTier = 0;
+          lastLabelY = y;
+          text(String(i + 1), { x: left - 1500 - yTier * 320, y: -y }, 140, "S-GRID");
         });
         const block = new acad.BlockRecord(`ARGON_SCHEDULE_${panel}`);
         doc.blockRecords!.add(block);
@@ -704,6 +829,8 @@ export class ResidentialCadSerializer {
       // Editable line/text architectural dimensions and cumulative grid offsets, with ticks.
       const axis = (values: readonly number[], horizontal: boolean) => {
         const base = values[0]!;
+        let tier = 0;
+        let lastVal = -Infinity;
         for (const [i, value] of values.entries()) {
           const p = horizontal
             ? { x: value + shift.x, y: bottom - 2000 }
@@ -713,9 +840,15 @@ export class ResidentialCadSerializer {
             { x: p.x + 100, y: p.y + 100 },
             "A-ANNO-DIMS",
           );
+          const minGap = horizontal ? 750 : 220;
+          if (value - lastVal < minGap) tier = (tier + 1) % 4;
+          else tier = 0;
+          lastVal = value;
           text(
             residentialImperial(value - base),
-            horizontal ? { x: p.x, y: p.y - 350 } : { x: p.x - 1000, y: p.y },
+            horizontal
+              ? { x: p.x, y: p.y - 350 - tier * 240 }
+              : { x: p.x - 1000 - tier * 800, y: p.y },
             100,
             "A-ANNO-DIMS",
           );

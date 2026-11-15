@@ -10,6 +10,7 @@ import {
   DEFAULT_SITE_AMENITIES,
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
+  isPhysicalBoundary,
   type Building,
 } from "@ai-floor-planner/core";
 import { generateHardenedResidential } from "@ai-floor-planner/planning-engine";
@@ -200,14 +201,30 @@ it("rejects discontinuity before serializing and leaves canonical geometry uncha
       v.id === f.id
         ? {
             ...v,
-            doors: v.doors.map((d, i) =>
-              i === 0
-                ? {
-                    ...d,
-                    position: { x: d.position.x, y: d.position.y + 1000 },
-                  }
-                : d,
-            ),
+            doors: (() => {
+              const physicalIdx = v.doors.findIndex(
+                (d) =>
+                  /door/i.test(d.id) &&
+                  v.walls.some((w) => w.id === d.wallId && isPhysicalBoundary(w)),
+              );
+              const targetIdx =
+                physicalIdx >= 0
+                  ? physicalIdx
+                  : Math.max(
+                      0,
+                      v.doors.findIndex((d) =>
+                        v.walls.some((w) => w.id === d.wallId && isPhysicalBoundary(w)),
+                      ),
+                    );
+              return v.doors.map((d, i) =>
+                i === targetIdx
+                  ? {
+                      ...d,
+                      position: { x: d.position.x + 1000, y: d.position.y + 1000 },
+                    }
+                  : d,
+              );
+            })(),
           }
         : v,
     ),

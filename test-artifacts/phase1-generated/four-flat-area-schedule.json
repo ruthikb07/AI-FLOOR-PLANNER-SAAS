@@ -100,79 +100,61 @@
         "areaM2": 6.0914
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c01",
+        "id": "floor_stilt_00::stilt__car_bay_p01",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-01 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-01 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c02",
+        "id": "floor_stilt_00::stilt__car_bay_p02",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-02 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-02 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c03",
+        "id": "floor_stilt_00::stilt__bike_bay_b02",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-03 (2.5x5.0m)",
-        "areaM2": 12.5
-      },
-      {
-        "id": "floor_stilt_00::stilt__car_bay_c04",
-        "type": "parking",
-        "name": "Covered Car Parking Stall C-04 (2.5x5.0m)",
-        "areaM2": 12.5
-      },
-      {
-        "id": "floor_stilt_00::stilt__car_bay_c05",
-        "type": "parking",
-        "name": "Covered Car Parking Stall C-05 (2.5x5.0m)",
-        "areaM2": 12.5
-      },
-      {
-        "id": "floor_stilt_00::stilt__open_remainder_west_21",
-        "type": "foyer",
-        "name": "Open parking remainder (not a vehicle bay)",
-        "areaM2": 3
+        "name": "Two-Wheeler Parking Bay B-02",
+        "areaM2": 5.6
       },
       {
         "id": "floor_stilt_00::stilt__driveway_west",
         "type": "corridor",
-        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (west)",
-        "areaM2": 14.672
+        "name": "Two-Way Vehicular Driveway (8.1m Clear)",
+        "areaM2": 49.572
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c06",
+        "id": "floor_stilt_00::stilt__car_bay_p03",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-06 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-03 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c07",
+        "id": "floor_stilt_00::stilt__car_bay_p04",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-07 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-04 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c08",
+        "id": "floor_stilt_00::stilt__car_bay_p05",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-08 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-05 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c09",
+        "id": "floor_stilt_00::stilt__car_bay_p06",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-09 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-06 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c10",
+        "id": "floor_stilt_00::stilt__car_bay_p07",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-10 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-07 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__open_remainder_east_01_28",
+        "id": "floor_stilt_00::stilt__open_remainder_east_01_25",
         "type": "foyer",
         "name": "Open parking remainder (not a vehicle bay)",
         "areaM2": 3
@@ -180,41 +162,41 @@
       {
         "id": "floor_stilt_00::stilt__driveway_east_01",
         "type": "corridor",
-        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_01)",
+        "name": "One-Way Vehicular Driveway (5.6m Clear)",
         "areaM2": 72.836
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c11",
+        "id": "floor_stilt_00::stilt__car_bay_p08",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-11 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-08 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c12",
+        "id": "floor_stilt_00::stilt__car_bay_p09",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-12 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-09 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c13",
+        "id": "floor_stilt_00::stilt__car_bay_p10",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-13 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-10 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c14",
+        "id": "floor_stilt_00::stilt__car_bay_p11",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-14 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-11 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c15",
+        "id": "floor_stilt_00::stilt__car_bay_p12",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-15 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-12 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__open_remainder_east_02_35",
+        "id": "floor_stilt_00::stilt__open_remainder_east_02_32",
         "type": "foyer",
         "name": "Open parking remainder (not a vehicle bay)",
         "areaM2": 3
@@ -222,41 +204,41 @@
       {
         "id": "floor_stilt_00::stilt__driveway_east_02",
         "type": "corridor",
-        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_02)",
+        "name": "One-Way Vehicular Driveway (5.6m Clear)",
         "areaM2": 72.836
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c16",
+        "id": "floor_stilt_00::stilt__car_bay_p13",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-16 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-13 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c17",
+        "id": "floor_stilt_00::stilt__car_bay_p14",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-17 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-14 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c18",
+        "id": "floor_stilt_00::stilt__car_bay_p15",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-18 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-15 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c19",
+        "id": "floor_stilt_00::stilt__car_bay_p16",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-19 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-16 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__car_bay_c20",
+        "id": "floor_stilt_00::stilt__car_bay_p17",
         "type": "parking",
-        "name": "Covered Car Parking Stall C-20 (2.5x5.0m)",
+        "name": "Covered Car Parking Bay P-17 (2.5x5.0m)",
         "areaM2": 12.5
       },
       {
-        "id": "floor_stilt_00::stilt__open_remainder_east_03_42",
+        "id": "floor_stilt_00::stilt__open_remainder_east_03_39",
         "type": "foyer",
         "name": "Open parking remainder (not a vehicle bay)",
         "areaM2": 3
@@ -264,7 +246,7 @@
       {
         "id": "floor_stilt_00::stilt__driveway_east_03",
         "type": "corridor",
-        "name": "Stilt Vehicular Driveway & Maneuvering Aisle (east_03)",
+        "name": "One-Way Vehicular Driveway (5.6m Clear)",
         "areaM2": 72.836
       }
     ],
@@ -280,70 +262,70 @@
         "flatId": "flat_01",
         "type": "utility",
         "name": "Flat 101 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__kitchen",
         "flatId": "flat_01",
         "type": "kitchen",
         "name": "Flat 101 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__balcony",
         "flatId": "flat_01",
         "type": "balcony",
         "name": "Flat 101 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__dining",
         "flatId": "flat_01",
         "type": "dining",
         "name": "Flat 101 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__living",
         "flatId": "flat_01",
         "type": "living",
         "name": "Flat 101 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__master_bed",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 101 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__master_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 101 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__common_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 101 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__internal_passage",
         "flatId": "flat_01",
         "type": "corridor",
         "name": "Flat 101 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__bed_2",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 101 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_typical_01::apt-room:flat_01__master_bed__balcony",
@@ -364,70 +346,70 @@
         "flatId": "flat_02",
         "type": "utility",
         "name": "Flat 102 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__kitchen",
         "flatId": "flat_02",
         "type": "kitchen",
         "name": "Flat 102 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__balcony",
         "flatId": "flat_02",
         "type": "balcony",
         "name": "Flat 102 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__dining",
         "flatId": "flat_02",
         "type": "dining",
         "name": "Flat 102 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__living",
         "flatId": "flat_02",
         "type": "living",
         "name": "Flat 102 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__master_bed",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 102 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__master_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 102 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__common_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 102 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__internal_passage",
         "flatId": "flat_02",
         "type": "corridor",
         "name": "Flat 102 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__bed_2",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 102 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_typical_01::apt-room:flat_02__master_bed__balcony",
@@ -448,70 +430,70 @@
         "flatId": "flat_03",
         "type": "utility",
         "name": "Flat 103 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__kitchen",
         "flatId": "flat_03",
         "type": "kitchen",
         "name": "Flat 103 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__balcony",
         "flatId": "flat_03",
         "type": "balcony",
         "name": "Flat 103 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__dining",
         "flatId": "flat_03",
         "type": "dining",
         "name": "Flat 103 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__living",
         "flatId": "flat_03",
         "type": "living",
         "name": "Flat 103 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__master_bed",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 103 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__master_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 103 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__common_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 103 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__internal_passage",
         "flatId": "flat_03",
         "type": "corridor",
         "name": "Flat 103 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__bed_2",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 103 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_typical_01::apt-room:flat_03__master_bed__balcony",
@@ -532,70 +514,70 @@
         "flatId": "flat_04",
         "type": "utility",
         "name": "Flat 104 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__kitchen",
         "flatId": "flat_04",
         "type": "kitchen",
         "name": "Flat 104 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__balcony",
         "flatId": "flat_04",
         "type": "balcony",
         "name": "Flat 104 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__dining",
         "flatId": "flat_04",
         "type": "dining",
         "name": "Flat 104 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__living",
         "flatId": "flat_04",
         "type": "living",
         "name": "Flat 104 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__master_bed",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 104 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__master_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 104 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__common_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 104 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__internal_passage",
         "flatId": "flat_04",
         "type": "corridor",
         "name": "Flat 104 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__bed_2",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 104 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_typical_01::apt-room:flat_04__master_bed__balcony",
@@ -680,14 +662,21 @@
     ],
     "windows": [
       {
-        "id": "floor_typical_01::win_apt-room:flat_01__utility_floor_typical_01::apt-wall:x:3000:9600:13050",
+        "id": "floor_typical_01::win_apt-room:flat_01__utility_floor_typical_01::apt-wall:x:3000:9000:12760",
         "roomId": "floor_typical_01::apt-room:flat_01__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:x:3000:4500:9600",
+        "id": "floor_typical_01::win_apt-room:flat_01__living_floor_typical_01::apt-wall:x:13560:9000:16100",
+        "roomId": "floor_typical_01::apt-room:flat_01__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:x:3000:4500:9000",
         "roomId": "floor_typical_01::apt-room:flat_01__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -708,8 +697,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_02__utility_floor_typical_01::apt-wall:x:45500:9600:13050",
+        "id": "floor_typical_01::win_apt-room:flat_01__bed_2_floor_typical_01::apt-wall:x:13560:4500:9000",
+        "roomId": "floor_typical_01::apt-room:flat_01__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_02__utility_floor_typical_01::apt-wall:x:45500:9000:12760",
         "roomId": "floor_typical_01::apt-room:flat_02__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_02__living_floor_typical_01::apt-wall:x:34940:9000:16100",
+        "roomId": "floor_typical_01::apt-room:flat_02__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_02__master_bed_floor_typical_01::apt-wall:x:34940:4500:9000",
+        "roomId": "floor_typical_01::apt-room:flat_02__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -729,21 +739,28 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:x:45500:4500:9600",
+        "id": "floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:x:45500:4500:9000",
         "roomId": "floor_typical_01::apt-room:flat_02__bed_2",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_03__utility_floor_typical_01::apt-wall:x:3000:26950:30400",
+        "id": "floor_typical_01::win_apt-room:flat_03__utility_floor_typical_01::apt-wall:x:3000:27240:31000",
         "roomId": "floor_typical_01::apt-room:flat_03__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_03__master_bed_floor_typical_01::apt-wall:x:3000:30400:35500",
+        "id": "floor_typical_01::win_apt-room:flat_03__living_floor_typical_01::apt-wall:x:13560:23900:31000",
+        "roomId": "floor_typical_01::apt-room:flat_03__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_03__master_bed_floor_typical_01::apt-wall:x:3000:31000:35500",
         "roomId": "floor_typical_01::apt-room:flat_03__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -764,8 +781,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_04__utility_floor_typical_01::apt-wall:x:45500:26950:30400",
+        "id": "floor_typical_01::win_apt-room:flat_03__bed_2_floor_typical_01::apt-wall:x:13560:31000:35500",
+        "roomId": "floor_typical_01::apt-room:flat_03__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__utility_floor_typical_01::apt-wall:x:45500:27240:31000",
         "roomId": "floor_typical_01::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__living_floor_typical_01::apt-wall:x:34940:23900:31000",
+        "roomId": "floor_typical_01::apt-room:flat_04__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:flat_04__master_bed_floor_typical_01::apt-wall:x:34940:31000:35500",
+        "roomId": "floor_typical_01::apt-room:flat_04__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -785,8 +823,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_typical_01::win_apt-room:flat_04__bed_2_floor_typical_01::apt-wall:x:45500:30400:35500",
+        "id": "floor_typical_01::win_apt-room:flat_04__bed_2_floor_typical_01::apt-wall:x:45500:31000:35500",
         "roomId": "floor_typical_01::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:corridor_1_floor_typical_01::apt-wall:x:3000:16100:18500",
+        "roomId": "floor_typical_01::apt-room:corridor_1",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:corridor_2_floor_typical_01::apt-wall:x:3000:21500:23900",
+        "roomId": "floor_typical_01::apt-room:corridor_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_typical_01::win_apt-room:corridor_3_floor_typical_01::apt-wall:x:45500:16100:23900",
+        "roomId": "floor_typical_01::apt-room:corridor_3",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -940,70 +999,70 @@
         "flatId": "flat_01",
         "type": "utility",
         "name": "Flat 201 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_02::apt-room:flat_01__kitchen",
         "flatId": "flat_01",
         "type": "kitchen",
         "name": "Flat 201 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_02::apt-room:flat_01__balcony",
         "flatId": "flat_01",
         "type": "balcony",
         "name": "Flat 201 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_02::apt-room:flat_01__dining",
         "flatId": "flat_01",
         "type": "dining",
         "name": "Flat 201 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_02::apt-room:flat_01__living",
         "flatId": "flat_01",
         "type": "living",
         "name": "Flat 201 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_02::apt-room:flat_01__master_bed",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 201 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_02::apt-room:flat_01__master_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 201 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_01__common_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 201 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_01__internal_passage",
         "flatId": "flat_01",
         "type": "corridor",
         "name": "Flat 201 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_02::apt-room:flat_01__bed_2",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 201 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_02::apt-room:flat_01__master_bed__balcony",
@@ -1024,70 +1083,70 @@
         "flatId": "flat_02",
         "type": "utility",
         "name": "Flat 202 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_02::apt-room:flat_02__kitchen",
         "flatId": "flat_02",
         "type": "kitchen",
         "name": "Flat 202 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_02::apt-room:flat_02__balcony",
         "flatId": "flat_02",
         "type": "balcony",
         "name": "Flat 202 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_02::apt-room:flat_02__dining",
         "flatId": "flat_02",
         "type": "dining",
         "name": "Flat 202 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_02::apt-room:flat_02__living",
         "flatId": "flat_02",
         "type": "living",
         "name": "Flat 202 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_02::apt-room:flat_02__master_bed",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 202 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_02::apt-room:flat_02__master_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 202 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_02__common_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 202 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_02__internal_passage",
         "flatId": "flat_02",
         "type": "corridor",
         "name": "Flat 202 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_02::apt-room:flat_02__bed_2",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 202 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_02::apt-room:flat_02__master_bed__balcony",
@@ -1108,70 +1167,70 @@
         "flatId": "flat_03",
         "type": "utility",
         "name": "Flat 203 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_02::apt-room:flat_03__kitchen",
         "flatId": "flat_03",
         "type": "kitchen",
         "name": "Flat 203 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_02::apt-room:flat_03__balcony",
         "flatId": "flat_03",
         "type": "balcony",
         "name": "Flat 203 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_02::apt-room:flat_03__dining",
         "flatId": "flat_03",
         "type": "dining",
         "name": "Flat 203 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_02::apt-room:flat_03__living",
         "flatId": "flat_03",
         "type": "living",
         "name": "Flat 203 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_02::apt-room:flat_03__master_bed",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 203 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_02::apt-room:flat_03__master_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 203 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_03__common_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 203 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_03__internal_passage",
         "flatId": "flat_03",
         "type": "corridor",
         "name": "Flat 203 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_02::apt-room:flat_03__bed_2",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 203 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_02::apt-room:flat_03__master_bed__balcony",
@@ -1192,70 +1251,70 @@
         "flatId": "flat_04",
         "type": "utility",
         "name": "Flat 204 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_02::apt-room:flat_04__kitchen",
         "flatId": "flat_04",
         "type": "kitchen",
         "name": "Flat 204 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_02::apt-room:flat_04__balcony",
         "flatId": "flat_04",
         "type": "balcony",
         "name": "Flat 204 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_02::apt-room:flat_04__dining",
         "flatId": "flat_04",
         "type": "dining",
         "name": "Flat 204 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_02::apt-room:flat_04__living",
         "flatId": "flat_04",
         "type": "living",
         "name": "Flat 204 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_02::apt-room:flat_04__master_bed",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 204 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_02::apt-room:flat_04__master_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 204 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_04__common_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 204 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_02::apt-room:flat_04__internal_passage",
         "flatId": "flat_04",
         "type": "corridor",
         "name": "Flat 204 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_02::apt-room:flat_04__bed_2",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 204 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_02::apt-room:flat_04__master_bed__balcony",
@@ -1340,14 +1399,21 @@
     ],
     "windows": [
       {
-        "id": "floor_level_02::win_apt-room:flat_01__utility_floor_level_02::apt-wall:x:3000:9600:13050",
+        "id": "floor_level_02::win_apt-room:flat_01__utility_floor_level_02::apt-wall:x:3000:9000:12760",
         "roomId": "floor_level_02::apt-room:flat_01__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_01__master_bed_floor_level_02::apt-wall:x:3000:4500:9600",
+        "id": "floor_level_02::win_apt-room:flat_01__living_floor_level_02::apt-wall:x:13560:9000:16100",
+        "roomId": "floor_level_02::apt-room:flat_01__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_01__master_bed_floor_level_02::apt-wall:x:3000:4500:9000",
         "roomId": "floor_level_02::apt-room:flat_01__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -1368,8 +1434,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_02__utility_floor_level_02::apt-wall:x:45500:9600:13050",
+        "id": "floor_level_02::win_apt-room:flat_01__bed_2_floor_level_02::apt-wall:x:13560:4500:9000",
+        "roomId": "floor_level_02::apt-room:flat_01__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_02__utility_floor_level_02::apt-wall:x:45500:9000:12760",
         "roomId": "floor_level_02::apt-room:flat_02__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_02__living_floor_level_02::apt-wall:x:34940:9000:16100",
+        "roomId": "floor_level_02::apt-room:flat_02__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_02__master_bed_floor_level_02::apt-wall:x:34940:4500:9000",
+        "roomId": "floor_level_02::apt-room:flat_02__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -1389,21 +1476,28 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_02__bed_2_floor_level_02::apt-wall:x:45500:4500:9600",
+        "id": "floor_level_02::win_apt-room:flat_02__bed_2_floor_level_02::apt-wall:x:45500:4500:9000",
         "roomId": "floor_level_02::apt-room:flat_02__bed_2",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_03__utility_floor_level_02::apt-wall:x:3000:26950:30400",
+        "id": "floor_level_02::win_apt-room:flat_03__utility_floor_level_02::apt-wall:x:3000:27240:31000",
         "roomId": "floor_level_02::apt-room:flat_03__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_03__master_bed_floor_level_02::apt-wall:x:3000:30400:35500",
+        "id": "floor_level_02::win_apt-room:flat_03__living_floor_level_02::apt-wall:x:13560:23900:31000",
+        "roomId": "floor_level_02::apt-room:flat_03__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_03__master_bed_floor_level_02::apt-wall:x:3000:31000:35500",
         "roomId": "floor_level_02::apt-room:flat_03__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -1424,8 +1518,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_04__utility_floor_level_02::apt-wall:x:45500:26950:30400",
+        "id": "floor_level_02::win_apt-room:flat_03__bed_2_floor_level_02::apt-wall:x:13560:31000:35500",
+        "roomId": "floor_level_02::apt-room:flat_03__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__utility_floor_level_02::apt-wall:x:45500:27240:31000",
         "roomId": "floor_level_02::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__living_floor_level_02::apt-wall:x:34940:23900:31000",
+        "roomId": "floor_level_02::apt-room:flat_04__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:flat_04__master_bed_floor_level_02::apt-wall:x:34940:31000:35500",
+        "roomId": "floor_level_02::apt-room:flat_04__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -1445,8 +1560,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_02::win_apt-room:flat_04__bed_2_floor_level_02::apt-wall:x:45500:30400:35500",
+        "id": "floor_level_02::win_apt-room:flat_04__bed_2_floor_level_02::apt-wall:x:45500:31000:35500",
         "roomId": "floor_level_02::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:corridor_1_floor_level_02::apt-wall:x:3000:16100:18500",
+        "roomId": "floor_level_02::apt-room:corridor_1",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:corridor_2_floor_level_02::apt-wall:x:3000:21500:23900",
+        "roomId": "floor_level_02::apt-room:corridor_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_02::win_apt-room:corridor_3_floor_level_02::apt-wall:x:45500:16100:23900",
+        "roomId": "floor_level_02::apt-room:corridor_3",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -1600,70 +1736,70 @@
         "flatId": "flat_01",
         "type": "utility",
         "name": "Flat 301 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_03::apt-room:flat_01__kitchen",
         "flatId": "flat_01",
         "type": "kitchen",
         "name": "Flat 301 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_03::apt-room:flat_01__balcony",
         "flatId": "flat_01",
         "type": "balcony",
         "name": "Flat 301 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_03::apt-room:flat_01__dining",
         "flatId": "flat_01",
         "type": "dining",
         "name": "Flat 301 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_03::apt-room:flat_01__living",
         "flatId": "flat_01",
         "type": "living",
         "name": "Flat 301 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_03::apt-room:flat_01__master_bed",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 301 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_03::apt-room:flat_01__master_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 301 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_01__common_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 301 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_01__internal_passage",
         "flatId": "flat_01",
         "type": "corridor",
         "name": "Flat 301 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_03::apt-room:flat_01__bed_2",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 301 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_03::apt-room:flat_01__master_bed__balcony",
@@ -1684,70 +1820,70 @@
         "flatId": "flat_02",
         "type": "utility",
         "name": "Flat 302 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_03::apt-room:flat_02__kitchen",
         "flatId": "flat_02",
         "type": "kitchen",
         "name": "Flat 302 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_03::apt-room:flat_02__balcony",
         "flatId": "flat_02",
         "type": "balcony",
         "name": "Flat 302 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_03::apt-room:flat_02__dining",
         "flatId": "flat_02",
         "type": "dining",
         "name": "Flat 302 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_03::apt-room:flat_02__living",
         "flatId": "flat_02",
         "type": "living",
         "name": "Flat 302 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_03::apt-room:flat_02__master_bed",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 302 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_03::apt-room:flat_02__master_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 302 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_02__common_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 302 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_02__internal_passage",
         "flatId": "flat_02",
         "type": "corridor",
         "name": "Flat 302 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_03::apt-room:flat_02__bed_2",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 302 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_03::apt-room:flat_02__master_bed__balcony",
@@ -1768,70 +1904,70 @@
         "flatId": "flat_03",
         "type": "utility",
         "name": "Flat 303 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_03::apt-room:flat_03__kitchen",
         "flatId": "flat_03",
         "type": "kitchen",
         "name": "Flat 303 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_03::apt-room:flat_03__balcony",
         "flatId": "flat_03",
         "type": "balcony",
         "name": "Flat 303 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_03::apt-room:flat_03__dining",
         "flatId": "flat_03",
         "type": "dining",
         "name": "Flat 303 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_03::apt-room:flat_03__living",
         "flatId": "flat_03",
         "type": "living",
         "name": "Flat 303 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_03::apt-room:flat_03__master_bed",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 303 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_03::apt-room:flat_03__master_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 303 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_03__common_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 303 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_03__internal_passage",
         "flatId": "flat_03",
         "type": "corridor",
         "name": "Flat 303 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_03::apt-room:flat_03__bed_2",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 303 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_03::apt-room:flat_03__master_bed__balcony",
@@ -1852,70 +1988,70 @@
         "flatId": "flat_04",
         "type": "utility",
         "name": "Flat 304 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_03::apt-room:flat_04__kitchen",
         "flatId": "flat_04",
         "type": "kitchen",
         "name": "Flat 304 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_03::apt-room:flat_04__balcony",
         "flatId": "flat_04",
         "type": "balcony",
         "name": "Flat 304 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_03::apt-room:flat_04__dining",
         "flatId": "flat_04",
         "type": "dining",
         "name": "Flat 304 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_03::apt-room:flat_04__living",
         "flatId": "flat_04",
         "type": "living",
         "name": "Flat 304 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_03::apt-room:flat_04__master_bed",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 304 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_03::apt-room:flat_04__master_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 304 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_04__common_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 304 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_03::apt-room:flat_04__internal_passage",
         "flatId": "flat_04",
         "type": "corridor",
         "name": "Flat 304 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_03::apt-room:flat_04__bed_2",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 304 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_03::apt-room:flat_04__master_bed__balcony",
@@ -2000,14 +2136,21 @@
     ],
     "windows": [
       {
-        "id": "floor_level_03::win_apt-room:flat_01__utility_floor_level_03::apt-wall:x:3000:9600:13050",
+        "id": "floor_level_03::win_apt-room:flat_01__utility_floor_level_03::apt-wall:x:3000:9000:12760",
         "roomId": "floor_level_03::apt-room:flat_01__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_01__master_bed_floor_level_03::apt-wall:x:3000:4500:9600",
+        "id": "floor_level_03::win_apt-room:flat_01__living_floor_level_03::apt-wall:x:13560:9000:16100",
+        "roomId": "floor_level_03::apt-room:flat_01__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_01__master_bed_floor_level_03::apt-wall:x:3000:4500:9000",
         "roomId": "floor_level_03::apt-room:flat_01__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -2028,8 +2171,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_02__utility_floor_level_03::apt-wall:x:45500:9600:13050",
+        "id": "floor_level_03::win_apt-room:flat_01__bed_2_floor_level_03::apt-wall:x:13560:4500:9000",
+        "roomId": "floor_level_03::apt-room:flat_01__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_02__utility_floor_level_03::apt-wall:x:45500:9000:12760",
         "roomId": "floor_level_03::apt-room:flat_02__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_02__living_floor_level_03::apt-wall:x:34940:9000:16100",
+        "roomId": "floor_level_03::apt-room:flat_02__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_02__master_bed_floor_level_03::apt-wall:x:34940:4500:9000",
+        "roomId": "floor_level_03::apt-room:flat_02__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -2049,21 +2213,28 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_02__bed_2_floor_level_03::apt-wall:x:45500:4500:9600",
+        "id": "floor_level_03::win_apt-room:flat_02__bed_2_floor_level_03::apt-wall:x:45500:4500:9000",
         "roomId": "floor_level_03::apt-room:flat_02__bed_2",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_03__utility_floor_level_03::apt-wall:x:3000:26950:30400",
+        "id": "floor_level_03::win_apt-room:flat_03__utility_floor_level_03::apt-wall:x:3000:27240:31000",
         "roomId": "floor_level_03::apt-room:flat_03__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_03__master_bed_floor_level_03::apt-wall:x:3000:30400:35500",
+        "id": "floor_level_03::win_apt-room:flat_03__living_floor_level_03::apt-wall:x:13560:23900:31000",
+        "roomId": "floor_level_03::apt-room:flat_03__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_03__master_bed_floor_level_03::apt-wall:x:3000:31000:35500",
         "roomId": "floor_level_03::apt-room:flat_03__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -2084,8 +2255,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_04__utility_floor_level_03::apt-wall:x:45500:26950:30400",
+        "id": "floor_level_03::win_apt-room:flat_03__bed_2_floor_level_03::apt-wall:x:13560:31000:35500",
+        "roomId": "floor_level_03::apt-room:flat_03__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__utility_floor_level_03::apt-wall:x:45500:27240:31000",
         "roomId": "floor_level_03::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__living_floor_level_03::apt-wall:x:34940:23900:31000",
+        "roomId": "floor_level_03::apt-room:flat_04__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:flat_04__master_bed_floor_level_03::apt-wall:x:34940:31000:35500",
+        "roomId": "floor_level_03::apt-room:flat_04__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -2105,8 +2297,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_03::win_apt-room:flat_04__bed_2_floor_level_03::apt-wall:x:45500:30400:35500",
+        "id": "floor_level_03::win_apt-room:flat_04__bed_2_floor_level_03::apt-wall:x:45500:31000:35500",
         "roomId": "floor_level_03::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:corridor_1_floor_level_03::apt-wall:x:3000:16100:18500",
+        "roomId": "floor_level_03::apt-room:corridor_1",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:corridor_2_floor_level_03::apt-wall:x:3000:21500:23900",
+        "roomId": "floor_level_03::apt-room:corridor_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_03::win_apt-room:corridor_3_floor_level_03::apt-wall:x:45500:16100:23900",
+        "roomId": "floor_level_03::apt-room:corridor_3",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -2260,70 +2473,70 @@
         "flatId": "flat_01",
         "type": "utility",
         "name": "Flat 401 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_04::apt-room:flat_01__kitchen",
         "flatId": "flat_01",
         "type": "kitchen",
         "name": "Flat 401 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_04::apt-room:flat_01__balcony",
         "flatId": "flat_01",
         "type": "balcony",
         "name": "Flat 401 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_04::apt-room:flat_01__dining",
         "flatId": "flat_01",
         "type": "dining",
         "name": "Flat 401 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_04::apt-room:flat_01__living",
         "flatId": "flat_01",
         "type": "living",
         "name": "Flat 401 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_04::apt-room:flat_01__master_bed",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 401 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_04::apt-room:flat_01__master_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 401 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_01__common_bath",
         "flatId": "flat_01",
         "type": "bathroom",
         "name": "Flat 401 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_01__internal_passage",
         "flatId": "flat_01",
         "type": "corridor",
         "name": "Flat 401 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_04::apt-room:flat_01__bed_2",
         "flatId": "flat_01",
         "type": "bedroom",
         "name": "Flat 401 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_04::apt-room:flat_01__master_bed__balcony",
@@ -2344,70 +2557,70 @@
         "flatId": "flat_02",
         "type": "utility",
         "name": "Flat 402 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_04::apt-room:flat_02__kitchen",
         "flatId": "flat_02",
         "type": "kitchen",
         "name": "Flat 402 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_04::apt-room:flat_02__balcony",
         "flatId": "flat_02",
         "type": "balcony",
         "name": "Flat 402 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_04::apt-room:flat_02__dining",
         "flatId": "flat_02",
         "type": "dining",
         "name": "Flat 402 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_04::apt-room:flat_02__living",
         "flatId": "flat_02",
         "type": "living",
         "name": "Flat 402 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_04::apt-room:flat_02__master_bed",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 402 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_04::apt-room:flat_02__master_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 402 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_02__common_bath",
         "flatId": "flat_02",
         "type": "bathroom",
         "name": "Flat 402 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_02__internal_passage",
         "flatId": "flat_02",
         "type": "corridor",
         "name": "Flat 402 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_04::apt-room:flat_02__bed_2",
         "flatId": "flat_02",
         "type": "bedroom",
         "name": "Flat 402 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_04::apt-room:flat_02__master_bed__balcony",
@@ -2428,70 +2641,70 @@
         "flatId": "flat_03",
         "type": "utility",
         "name": "Flat 403 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_04::apt-room:flat_03__kitchen",
         "flatId": "flat_03",
         "type": "kitchen",
         "name": "Flat 403 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_04::apt-room:flat_03__balcony",
         "flatId": "flat_03",
         "type": "balcony",
         "name": "Flat 403 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_04::apt-room:flat_03__dining",
         "flatId": "flat_03",
         "type": "dining",
         "name": "Flat 403 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_04::apt-room:flat_03__living",
         "flatId": "flat_03",
         "type": "living",
         "name": "Flat 403 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_04::apt-room:flat_03__master_bed",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 403 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_04::apt-room:flat_03__master_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 403 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_03__common_bath",
         "flatId": "flat_03",
         "type": "bathroom",
         "name": "Flat 403 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_03__internal_passage",
         "flatId": "flat_03",
         "type": "corridor",
         "name": "Flat 403 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_04::apt-room:flat_03__bed_2",
         "flatId": "flat_03",
         "type": "bedroom",
         "name": "Flat 403 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_04::apt-room:flat_03__master_bed__balcony",
@@ -2512,70 +2725,70 @@
         "flatId": "flat_04",
         "type": "utility",
         "name": "Flat 404 Kitchen Utility Balcony",
-        "areaM2": 4.9335
+        "areaM2": 5.3768
       },
       {
         "id": "floor_level_04::apt-room:flat_04__kitchen",
         "flatId": "flat_04",
         "type": "kitchen",
         "name": "Flat 404 Kitchen",
-        "areaM2": 12.5235
+        "areaM2": 12.5208
       },
       {
         "id": "floor_level_04::apt-room:flat_04__balcony",
         "flatId": "flat_04",
         "type": "balcony",
         "name": "Flat 404 Sit-out Balcony",
-        "areaM2": 5.49
+        "areaM2": 6.1122
       },
       {
         "id": "floor_level_04::apt-room:flat_04__dining",
         "flatId": "flat_04",
         "type": "dining",
         "name": "Flat 404 Dining & Family Hall",
-        "areaM2": 9.943
+        "areaM2": 9.7862
       },
       {
         "id": "floor_level_04::apt-room:flat_04__living",
         "flatId": "flat_04",
         "type": "living",
         "name": "Flat 404 Living Room",
-        "areaM2": 35.75
+        "areaM2": 41.18
       },
       {
         "id": "floor_level_04::apt-room:flat_04__master_bed",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 404 Master Bedroom",
-        "areaM2": 20.808
+        "areaM2": 18.36
       },
       {
         "id": "floor_level_04::apt-room:flat_04__master_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 404 Master Toilet",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_04__common_bath",
         "flatId": "flat_04",
         "type": "bathroom",
         "name": "Flat 404 Common Bathroom",
-        "areaM2": 6.435
+        "areaM2": 5.85
       },
       {
         "id": "floor_level_04::apt-room:flat_04__internal_passage",
         "flatId": "flat_04",
         "type": "corridor",
         "name": "Flat 404 Internal Passage",
-        "areaM2": 6.93
+        "areaM2": 6.3
       },
       {
         "id": "floor_level_04::apt-room:flat_04__bed_2",
         "flatId": "flat_04",
         "type": "bedroom",
         "name": "Flat 404 Bedroom 02",
-        "areaM2": 17.748
+        "areaM2": 15.66
       },
       {
         "id": "floor_level_04::apt-room:flat_04__master_bed__balcony",
@@ -2660,14 +2873,21 @@
     ],
     "windows": [
       {
-        "id": "floor_level_04::win_apt-room:flat_01__utility_floor_level_04::apt-wall:x:3000:9600:13050",
+        "id": "floor_level_04::win_apt-room:flat_01__utility_floor_level_04::apt-wall:x:3000:9000:12760",
         "roomId": "floor_level_04::apt-room:flat_01__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_01__master_bed_floor_level_04::apt-wall:x:3000:4500:9600",
+        "id": "floor_level_04::win_apt-room:flat_01__living_floor_level_04::apt-wall:x:13560:9000:16100",
+        "roomId": "floor_level_04::apt-room:flat_01__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_01__master_bed_floor_level_04::apt-wall:x:3000:4500:9000",
         "roomId": "floor_level_04::apt-room:flat_01__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -2688,8 +2908,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_02__utility_floor_level_04::apt-wall:x:45500:9600:13050",
+        "id": "floor_level_04::win_apt-room:flat_01__bed_2_floor_level_04::apt-wall:x:13560:4500:9000",
+        "roomId": "floor_level_04::apt-room:flat_01__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_02__utility_floor_level_04::apt-wall:x:45500:9000:12760",
         "roomId": "floor_level_04::apt-room:flat_02__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_02__living_floor_level_04::apt-wall:x:34940:9000:16100",
+        "roomId": "floor_level_04::apt-room:flat_02__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_02__master_bed_floor_level_04::apt-wall:x:34940:4500:9000",
+        "roomId": "floor_level_04::apt-room:flat_02__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -2709,21 +2950,28 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_02__bed_2_floor_level_04::apt-wall:x:45500:4500:9600",
+        "id": "floor_level_04::win_apt-room:flat_02__bed_2_floor_level_04::apt-wall:x:45500:4500:9000",
         "roomId": "floor_level_04::apt-room:flat_02__bed_2",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_03__utility_floor_level_04::apt-wall:x:3000:26950:30400",
+        "id": "floor_level_04::win_apt-room:flat_03__utility_floor_level_04::apt-wall:x:3000:27240:31000",
         "roomId": "floor_level_04::apt-room:flat_03__utility",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_03__master_bed_floor_level_04::apt-wall:x:3000:30400:35500",
+        "id": "floor_level_04::win_apt-room:flat_03__living_floor_level_04::apt-wall:x:13560:23900:31000",
+        "roomId": "floor_level_04::apt-room:flat_03__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_03__master_bed_floor_level_04::apt-wall:x:3000:31000:35500",
         "roomId": "floor_level_04::apt-room:flat_03__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
@@ -2744,8 +2992,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_04__utility_floor_level_04::apt-wall:x:45500:26950:30400",
+        "id": "floor_level_04::win_apt-room:flat_03__bed_2_floor_level_04::apt-wall:x:13560:31000:35500",
+        "roomId": "floor_level_04::apt-room:flat_03__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__utility_floor_level_04::apt-wall:x:45500:27240:31000",
         "roomId": "floor_level_04::apt-room:flat_04__utility",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__living_floor_level_04::apt-wall:x:34940:23900:31000",
+        "roomId": "floor_level_04::apt-room:flat_04__living",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:flat_04__master_bed_floor_level_04::apt-wall:x:34940:31000:35500",
+        "roomId": "floor_level_04::apt-room:flat_04__master_bed",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44
@@ -2765,8 +3034,29 @@
         "areaM2": 0.39
       },
       {
-        "id": "floor_level_04::win_apt-room:flat_04__bed_2_floor_level_04::apt-wall:x:45500:30400:35500",
+        "id": "floor_level_04::win_apt-room:flat_04__bed_2_floor_level_04::apt-wall:x:45500:31000:35500",
         "roomId": "floor_level_04::apt-room:flat_04__bed_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:corridor_1_floor_level_04::apt-wall:x:3000:16100:18500",
+        "roomId": "floor_level_04::apt-room:corridor_1",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:corridor_2_floor_level_04::apt-wall:x:3000:21500:23900",
+        "roomId": "floor_level_04::apt-room:corridor_2",
+        "widthMm": 1200,
+        "heightMm": 1200,
+        "areaM2": 1.44
+      },
+      {
+        "id": "floor_level_04::win_apt-room:corridor_3_floor_level_04::apt-wall:x:45500:16100:23900",
+        "roomId": "floor_level_04::apt-room:corridor_3",
         "widthMm": 1200,
         "heightMm": 1200,
         "areaM2": 1.44

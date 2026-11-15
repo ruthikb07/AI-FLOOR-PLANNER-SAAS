@@ -6,6 +6,7 @@ import type { ProjectSetupWizardData } from '../components/argon/ProjectSetupWiz
 export type ArgonWorkspaceId =
   | 'setup'
   | 'cad_2d'
+  | 'edit_plan'
   | 'isometric'
   | 'building_3d'
   | 'engineering'
@@ -29,6 +30,8 @@ export interface WizardState {
   flatsPerFloor: 2 | 3 | 4;
   bhkCounts: Record<BhkType, number>;
   bhkCarpetAreas: Record<BhkType, number>;
+  includeWindowChajjas: boolean;
+  staggeredBalconies: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
@@ -69,6 +72,8 @@ const DEFAULT_WIZARD_STATE: WizardState = {
     '3BHK': 1250,
     '4BHK': 1800,
   },
+  includeWindowChajjas: true,
+  staggeredBalconies: false,
   aiPrompt:
     'Modern multi-unit residential apartment with central elevator core, ventilated OTS shafts, private balconies for bedrooms, and Vastu-compliant kitchen placement.',
 };
@@ -254,6 +259,8 @@ export const studioStoreActions = {
       hasStiltParking: wizard.hasStiltParking,
       flatsPerFloor: wizard.flatsPerFloor,
       bhkMix: bhkMixArray,
+      includeWindowChajjas: wizard.includeWindowChajjas ?? true,
+      staggeredBalconies: wizard.staggeredBalconies ?? false,
       aiPrompt: wizard.aiPrompt,
       referenceSketchName: wizard.referenceSketchName,
       referenceImage: wizard.referenceImage,

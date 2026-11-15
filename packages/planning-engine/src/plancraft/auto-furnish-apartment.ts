@@ -291,8 +291,6 @@ export function furnishRoom(
   // ─── 3. Bedrooms (Master Suite & Habitable Bedrooms) ───────────────────────
   else if (
     (room.type === RoomType.Bedroom || rName.includes('BED')) &&
-    room.type !== RoomType.Corridor &&
-    room.type !== RoomType.Foyer &&
     !/PASSAGE|CORRIDOR|BALCONY|FOYER|TOILET|BATH/.test(rName)
   ) {
     const isMaster = rName.includes('MASTER') || areaM2 >= 13.0;
@@ -352,12 +350,40 @@ export function furnishRoom(
     // Wardrobe (600mm depth) along solid wall free of doors and windows
     const wardDim1 = Math.min(1800, Math.max(900, Math.min(rw, rh) - 1000));
     const wardDim2 = 600;
-    const rawWardCandidates = [
-      { x: rx + 150, y: ry + rh - wardDim1 - 200, w: wardDim2, d: wardDim1, rot: 90 as const, wall: 'WEST' as const },
-      { x: rx + rw - wardDim2 - 150, y: ry + rh - wardDim1 - 200, w: wardDim2, d: wardDim1, rot: 270 as const, wall: 'EAST' as const },
-      { x: rx + (rw - wardDim1) / 2, y: ry + rh - wardDim2 - 150, w: wardDim1, d: wardDim2, rot: 0 as const, wall: 'SOUTH' as const },
-      { x: rx + (rw - wardDim1) / 2, y: ry + 150, w: wardDim1, d: wardDim2, rot: 0 as const, wall: 'NORTH' as const },
-    ];
+    const rawWardCandidates: Array<{
+      x: number;
+      y: number;
+      w: number;
+      d: number;
+      rot: 0 | 90 | 180 | 270;
+      wall: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+    }> = [];
+    for (const len of [...new Set([wardDim1, Math.min(wardDim1, 1400), Math.min(wardDim1, 1000)])]) {
+      const yOffsets = [...new Set([
+        ry + 200,
+        ry + Math.round(rh * 0.25),
+        ry + Math.round((rh - len) / 2),
+        ry + Math.round(rh * 0.65) - Math.round(len / 2),
+        ry + rh - len - 200,
+      ])].filter(yPos => yPos >= ry + 100 && yPos + len <= ry + rh - 100);
+      for (const yPos of yOffsets) {
+        rawWardCandidates.push(
+          { x: rx + 150, y: yPos, w: wardDim2, d: len, rot: 90, wall: 'WEST' },
+          { x: rx + rw - wardDim2 - 150, y: yPos, w: wardDim2, d: len, rot: 270, wall: 'EAST' },
+        );
+      }
+      const xOffsets = [...new Set([
+        rx + 200,
+        rx + Math.round((rw - len) / 2),
+        rx + rw - len - 200,
+      ])].filter(xPos => xPos >= rx + 100 && xPos + len <= rx + rw - 100);
+      for (const xPos of xOffsets) {
+        rawWardCandidates.push(
+          { x: xPos, y: ry + rh - wardDim2 - 150, w: len, d: wardDim2, rot: 0, wall: 'SOUTH' },
+          { x: xPos, y: ry + 150, w: len, d: wardDim2, rot: 0, wall: 'NORTH' },
+        );
+      }
+    }
     const wardCandidates = rawWardCandidates.filter(wc => {
       if (wc.wall === 'NORTH' && hasNorthWindow) return false;
       if (wc.wall === 'SOUTH' && hasSouthWindow) return false;

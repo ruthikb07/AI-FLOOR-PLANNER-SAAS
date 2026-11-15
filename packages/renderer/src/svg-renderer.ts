@@ -17,11 +17,12 @@ import type {
   Point,
 } from '@ai-floor-planner/core';
 import { RoomType, WallType, RenderLayer, DoorType, SwingDirection, type SiteZoneKind } from '@ai-floor-planner/core';
-import { getFloorContentBounds, computeStairSolids, canonicalStairSolids, polygonBoundingBox, AnnotationLayout, roomAnnotation, polygonCentroid } from '@ai-floor-planner/geometry-engine';
+import { getFloorContentBounds, computeStairSolids, canonicalStairSolids, polygonBoundingBox, AnnotationLayout, roomAnnotation, polygonCentroid, pointInPolygon } from '@ai-floor-planner/geometry-engine';
 import { worldToScreen, fitToView, scaleToScreen } from './coordinate-transform';
 import { resolveConfig } from './render-config';
 import type { DeepPartial, RenderConfig } from './render-config';
 import { PLANCRAFT_SVG_SYMBOLS } from './plancraft-symbols';
+import { renderRoadAccessOverlay, renderMepOverlays } from './mep-svg-layer';
 
 // ─── Room Colors ────────────────────────────────────────────────────────────
 
@@ -240,9 +241,9 @@ function renderSiteZones(building: Building, transform: ViewTransform): string {
     const sWidth = scaleToScreen(bbox.width, transform);
     const sHeight = scaleToScreen(bbox.height, transform);
 
-    if(sWidth>0 && sHeight>0) {
-      const name=zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i,'6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i,'MAIN ENTRY GATE');
-      const h=Math.min(scaleToScreen(80,transform),sWidth*0.75/(name.length*0.7),sHeight/3);
+    if (sWidth > 0 && sHeight > 0) {
+      const name = zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i, '6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i, 'MAIN ENTRY GATE');
+      const h = Math.min(scaleToScreen(80, transform), sWidth * 0.75 / (name.length * 0.7), sHeight / 3);
       elements.push(`<text x="${sCenter.x}" y="${sCenter.y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-size="${h}" fill="#0f172a">${escapeXml(name)}</text>`);
     }
   }
@@ -316,7 +317,7 @@ function renderRooms(
     );
     const hatch = room.type === RoomType.Bathroom ? 'wet-hatch'
       : room.type === RoomType.ServiceShaft || room.type === RoomType.OTS ? 'outdoor-hatch'
-      : [RoomType.Balcony, RoomType.Terrace, RoomType.Utility].includes(room.type) ? 'outdoor-hatch' : 'tile-hatch';
+        : [RoomType.Balcony, RoomType.Terrace, RoomType.Utility].includes(room.type) ? 'outdoor-hatch' : 'tile-hatch';
     if (!labelsOnly && ![RoomType.Staircase, RoomType.Lift].includes(room.type)) elements.push(`<polygon points="${points}" fill="url(#${hatch})" pointer-events="none"/>`);
 
     const isStair = room.type === RoomType.Staircase || /stair/i.test(room.name);
@@ -621,7 +622,7 @@ function renderDoors(floor: Floor, transform: ViewTransform): string {
   return `<g class="layer-openings" data-layer="${RenderLayer.Openings}">\n${elements.join('\n')}\n</g>`;
 }
 
-function renderWindows(floor: Floor, transform: ViewTransform): string {
+function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = true): string {
   const elements: string[] = [];
 
   for (const win of floor.windows) {
@@ -655,6 +656,58 @@ function renderWindows(floor: Floor, transform: ViewTransform): string {
       elements.push(`<g data-entity-type="window" data-entity-id="${win.id}" data-invalid-host="true"><circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="2.5" fill="#4488cc" opacity="0.6"/><title>Window ${win.id} (${win.width}mm)</title></g>`);
       continue;
     }
+
+    if (includeChajjas) {
+      const dx = win.position.x - wall.startPoint.x;
+      const dy = win.position.y - wall.startPoint.y;
+      const t = dx * frame.ux + dy * frame.uy;
+      let centerT = (t >= -25 && t + win.width <= frame.length + 25) ? t + win.width / 2 : t;
+      centerT = Math.max(win.width / 2, Math.min(frame.length - win.width / 2, centerT));
+      const cx = wall.startPoint.x + frame.ux * centerT;
+      const cy = wall.startPoint.y + frame.uy * centerT;
+      const wallThick = wall.thickness || 150;
+      const probeDist = wallThick / 2 + 120;
+      const nA = { x: -frame.uy, y: frame.ux };
+      const nB = { x: frame.uy, y: -frame.ux };
+      const isOutsideBuilt = (pt: Point) =>
+        !floor.rooms.some((r) => architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID' && !r.tags?.includes('recess:perimeter') && pointInPolygon(pt, r.boundary));
+      const probeA = { x: cx + nA.x * probeDist, y: cy + nA.y * probeDist };
+      const probeB = { x: cx + nB.x * probeDist, y: cy + nB.y * probeDist };
+      const outA = isOutsideBuilt(probeA) || !pointInPolygon(probeA, floor.boundary);
+      const outB = isOutsideBuilt(probeB) || !pointInPolygon(probeB, floor.boundary);
+      const isExtOrShaft =
+        wall.wallUse === 'EXTERNAL' ||
+        wall.wallUse === 'SHAFT' ||
+        wall.type === WallType.External ||
+        wall.roomIds.length <= 1 ||
+        outA !== outB;
+      if (isExtOrShaft && (outA || outB)) {
+        const outN = !pointInPolygon(probeA, floor.boundary)
+          ? nA
+          : !pointInPolygon(probeB, floor.boundary)
+            ? nB
+            : outA && !outB
+              ? nA
+              : nB;
+        const halfChajjaW = win.width / 2 + 150;
+        const innerOff = wallThick / 2;
+        const outerOff = innerOff + 600;
+        const t0 = centerT - halfChajjaW;
+        const t1 = centerT + halfChajjaW;
+        const chajjaWorld: Polygon = {
+          points: [
+            { x: wall.startPoint.x + frame.ux * t0 + outN.x * innerOff, y: wall.startPoint.y + frame.uy * t0 + outN.y * innerOff },
+            { x: wall.startPoint.x + frame.ux * t1 + outN.x * innerOff, y: wall.startPoint.y + frame.uy * t1 + outN.y * innerOff },
+            { x: wall.startPoint.x + frame.ux * t1 + outN.x * outerOff, y: wall.startPoint.y + frame.uy * t1 + outN.y * outerOff },
+            { x: wall.startPoint.x + frame.ux * t0 + outN.x * outerOff, y: wall.startPoint.y + frame.uy * t0 + outN.y * outerOff },
+          ],
+        };
+        elements.push(
+          `<polygon class="window-chajja" data-cad-layer="A-CHAJJA" data-entity-id="${win.id}-chajja" points="${polygonToSvgPoints(chajjaWorld, transform)}" fill="#94a3b8" fill-opacity="0.12" stroke="#475569" stroke-width="0.7" stroke-dasharray="4,2"/>`,
+        );
+      }
+    }
+
     const tr = openingTransform(wall, win.position, win.width, transform);
     const halfW = scaledWidth / 2;
     const wallThickScaled = Math.max(3, scaleToScreen(wall.thickness || 115, transform));
@@ -696,13 +749,28 @@ function renderStairs(floor: Floor, transform: ViewTransform): string {
         if (len > 100) {
           const ux = dx / len;
           const uy = dy / len;
+          const px = -uy;
+          const py = ux;
           const f1Box = polygonBoundingBox(stair.flight1);
-          const runHalf = Math.max(150, (Math.abs(ux) > Math.abs(uy) ? f1Box.width : f1Box.height) * 0.34);
+          const flightSpan = Math.abs(ux) > Math.abs(uy) ? f1Box.width : f1Box.height;
+          const runHalf = Math.max(150, flightSpan * 0.34);
+          const divHalf = Math.max(200, flightSpan * 0.48);
+          const divC = { x: (f1C.x + f2C.x) / 2, y: (f1C.y + f2C.y) / 2 };
+          const railHalfW = 22;
+          const balPoly: Polygon = {
+            points: [
+              { x: divC.x - ux * divHalf + px * railHalfW, y: divC.y - uy * divHalf + py * railHalfW },
+              { x: divC.x + ux * divHalf + px * railHalfW, y: divC.y + uy * divHalf + py * railHalfW },
+              { x: divC.x + ux * divHalf - px * railHalfW, y: divC.y + uy * divHalf - py * railHalfW },
+              { x: divC.x - ux * divHalf - px * railHalfW, y: divC.y - uy * divHalf - py * railHalfW },
+            ],
+          };
           const upStart = worldToScreen({ x: f1C.x - ux * runHalf, y: f1C.y - uy * runHalf }, transform);
           const upEnd = worldToScreen({ x: f1C.x + ux * runHalf, y: f1C.y + uy * runHalf }, transform);
           const dnStart = worldToScreen({ x: f2C.x + ux * runHalf, y: f2C.y + uy * runHalf }, transform);
           const dnEnd = worldToScreen({ x: f2C.x - ux * runHalf, y: f2C.y - uy * runHalf }, transform);
           elements.push(
+            `<polygon class="stair-balustrade" points="${polygonToSvgPoints(balPoly, transform)}" fill="#f8fafc" stroke="#334155" stroke-width="0.7" data-entity-type="stair" data-stair-part="balustrade" data-entity-id="${escapeXml(stair.id)}"/>`,
             `<line class="stair-up-route" x1="${upStart.x.toFixed(1)}" y1="${upStart.y.toFixed(1)}" x2="${upEnd.x.toFixed(1)}" y2="${upEnd.y.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
             `<line class="stair-dn-route" x1="${dnStart.x.toFixed(1)}" y1="${dnStart.y.toFixed(1)}" x2="${dnEnd.x.toFixed(1)}" y2="${dnEnd.y.toFixed(1)}" stroke="#334155" stroke-width="1.1" marker-end="url(#arrow)"/>`,
             `<text x="${upStart.x.toFixed(1)}" y="${(upStart.y - 3).toFixed(1)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.5" font-weight="700" fill="#1e293b">UP</text>`,
@@ -721,6 +789,8 @@ function renderStairs(floor: Floor, transform: ViewTransform): string {
     const topLeft = worldToScreen({ x: stair.x, y: stair.y }, transform);
     const w = scaleToScreen(stair.width, transform);
     const h = scaleToScreen(stair.length, transform);
+    const dir = String(stair.direction ?? '').toUpperCase();
+    const isHorizontalRun = dir === 'EAST' || dir === 'WEST';
 
     elements.push(`<g data-entity-type="stair" data-entity-id="${stair.id}" data-stair-diagram="${diagram}">`);
     elements.push(`  <rect x="${topLeft.x.toFixed(1)}" y="${topLeft.y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="#f0ebe5" stroke="#999" stroke-width="0.8"/>`);
@@ -732,18 +802,33 @@ function renderStairs(floor: Floor, transform: ViewTransform): string {
       }
     } else {
       const treadCount = Math.min(stair.riserCount, 20);
-      const treadH = h / treadCount;
-      for (let i = 1; i < treadCount; i++) {
-        const y = topLeft.y + i * treadH;
-        elements.push(`  <line x1="${topLeft.x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(topLeft.x + w).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#999" stroke-width="0.5"/>`);
+      if (isHorizontalRun) {
+        const treadW = w / Math.max(1, treadCount);
+        for (let i = 1; i < treadCount; i++) {
+          const x = topLeft.x + i * treadW;
+          elements.push(`  <line x1="${x.toFixed(1)}" y1="${topLeft.y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(topLeft.y + h).toFixed(1)}" stroke="#999" stroke-width="0.5"/>`);
+        }
+      } else {
+        const treadH = h / Math.max(1, treadCount);
+        for (let i = 1; i < treadCount; i++) {
+          const y = topLeft.y + i * treadH;
+          elements.push(`  <line x1="${topLeft.x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(topLeft.x + w).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#999" stroke-width="0.5"/>`);
+        }
       }
     }
 
-    // Direction arrow / route
-    const arrowX = topLeft.x + w / 2;
-    const arrowY1 = topLeft.y + h * 0.8;
-    const arrowY2 = topLeft.y + h * 0.2;
-    elements.push(`  <line class="stair-up-route" x1="${arrowX.toFixed(1)}" y1="${arrowY1.toFixed(1)}" x2="${arrowX.toFixed(1)}" y2="${arrowY2.toFixed(1)}" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+    // Direction arrow / route perpendicular to treads
+    if (isHorizontalRun) {
+      const arrowY = topLeft.y + h / 2;
+      const arrowX1 = dir === 'WEST' ? topLeft.x + w * 0.8 : topLeft.x + w * 0.2;
+      const arrowX2 = dir === 'WEST' ? topLeft.x + w * 0.2 : topLeft.x + w * 0.8;
+      elements.push(`  <line class="stair-up-route" x1="${arrowX1.toFixed(1)}" y1="${arrowY.toFixed(1)}" x2="${arrowX2.toFixed(1)}" y2="${arrowY.toFixed(1)}" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+    } else {
+      const arrowX = topLeft.x + w / 2;
+      const arrowY1 = dir === 'SOUTH' ? topLeft.y + h * 0.2 : topLeft.y + h * 0.8;
+      const arrowY2 = dir === 'SOUTH' ? topLeft.y + h * 0.8 : topLeft.y + h * 0.2;
+      elements.push(`  <line class="stair-up-route" x1="${arrowX.toFixed(1)}" y1="${arrowY1.toFixed(1)}" x2="${arrowX.toFixed(1)}" y2="${arrowY2.toFixed(1)}" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+    }
     elements.push(`</g>`);
   }
 
@@ -889,8 +974,8 @@ function renderPlancraftFurniture(floor: Floor, transform: ViewTransform): strin
   const elements: string[] = [];
 
   for (const item of items) {
-    const room=floor.rooms.find(r=>r.id===item.roomId);
-    if(room&&/utility|balcony/i.test(`${room.type} ${room.name}`)&&['stove','oven'].includes(item.type))continue;
+    const room = floor.rooms.find(r => r.id === item.roomId);
+    if (room && /utility|balcony/i.test(`${room.type} ${room.name}`) && ['stove', 'oven'].includes(item.type)) continue;
     const symbol = PLANCRAFT_SVG_SYMBOLS[item.type];
     if (!symbol) continue;
 
@@ -1000,6 +1085,8 @@ export function renderFloor(
       ? renderGrid(viewportWidth, viewportHeight, transform, resolved.gridSpacing) : '',
     resolved.layers[RenderLayer.Plot] ? renderPlotBoundary(building, transform) : '',
     resolved.layers[RenderLayer.SiteZones] ? renderSiteZones(building, transform) : '',
+    (resolved.layers[RenderLayer.SiteZones] || floor.floorUse === 'STILT_PARKING' || /STILT/i.test(floor.name))
+      ? renderRoadAccessOverlay(building, floor, transform) : '',
     resolved.layers[RenderLayer.Floor] ? renderFloorBoundary(floor, transform) : '',
     // 1. Site Zones & Room Fills
     resolved.layers[RenderLayer.Rooms]
@@ -1008,13 +1095,16 @@ export function renderFloor(
     resolved.layers[RenderLayer.Furniture] ? renderPlancraftFurniture(floor, transform) : '',
     // 3. Wall Polygons (230/150/115/100mm) & Structural Columns
     resolved.layers[RenderLayer.Walls] ? renderWalls(floor, transform) : '',
-    resolved.layers[RenderLayer.Columns] ? renderColumns(floor, transform) : '',
-    resolved.layers[RenderLayer.Beams]
+    (resolved.layers[RenderLayer.Columns] || resolved.disciplines?.STRUCTURAL)
+      ? renderColumns(floor, transform) : '',
+    (resolved.layers[RenderLayer.Beams] || resolved.disciplines?.STRUCTURAL)
       ? renderBeams(floor, transform) : '',
     // 4. Doors & 90° Swing Arcs + Windows + Stairs
     resolved.layers[RenderLayer.Openings] ? renderDoors(floor, transform) : '',
-    resolved.layers[RenderLayer.Openings] ? renderWindows(floor, transform) : '',
+    resolved.layers[RenderLayer.Openings] ? renderWindows(floor, transform, building.metadata?.generationBrief?.includeWindowChajjas !== false) : '',
     resolved.layers[RenderLayer.Stairs] ? renderStairs(floor, transform) : '',
+    // 4b. Phase 3 Engineering Discipline Overlays (MEP / Ceiling / Fire / Cantilevers)
+    renderMepOverlays(floor, building, transform, resolved),
     // 5. Stepped Dimension Lines
     resolved.layers[RenderLayer.Annotations] && resolved.showDimensions
       ? renderDimensions(floor, building, transform) : '',
@@ -1138,18 +1228,18 @@ export function exportSVG(
 }
 
 /** Resolve conservative text envelopes after layer composition, in drawing pixels. */
-export function resolveSvgAnnotations(svg:string):string {
-  const layout=new AnnotationLayout();
-  return svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g,(original,attributes:string,content:string)=>{
-    const x=Number(attributes.match(/\bx="([^"]+)"/)?.[1]);
-    const y=Number(attributes.match(/\by="([^"]+)"/)?.[1]);
-    const h=Number(attributes.match(/font-size="([^"]+)"/)?.[1]??10);
-    if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(h)||h<=0)return original;
-    const text=content.replace(/&[^;]+;/g,'X');
-    const middle=attributes.includes('text-anchor="middle"');
-    const centerX=middle?x:x+text.length*h*0.35;
-    const box=layout.place(text,centerX,y,h,undefined,/rotate\(-?90/.test(attributes));
-    const updated=attributes.replace(/\by="[^"]+"/,`y="${box.y}"`).replace(/rotate\((-?90) [^)]*\)/g,(_m:string,angle:string)=>`rotate(${angle} ${x} ${box.y})`);
+export function resolveSvgAnnotations(svg: string): string {
+  const layout = new AnnotationLayout();
+  return svg.replace(/<text\b([^>]*)>([^<]*)<\/text>/g, (original, attributes: string, content: string) => {
+    const x = Number(attributes.match(/\bx="([^"]+)"/)?.[1]);
+    const y = Number(attributes.match(/\by="([^"]+)"/)?.[1]);
+    const h = Number(attributes.match(/font-size="([^"]+)"/)?.[1] ?? 10);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(h) || h <= 0) return original;
+    const text = content.replace(/&[^;]+;/g, 'X');
+    const middle = attributes.includes('text-anchor="middle"');
+    const centerX = middle ? x : x + text.length * h * 0.35;
+    const box = layout.place(text, centerX, y, h, undefined, /rotate\(-?90/.test(attributes));
+    const updated = attributes.replace(/\by="[^"]+"/, `y="${box.y}"`).replace(/rotate\((-?90) [^)]*\)/g, (_m: string, angle: string) => `rotate(${angle} ${x} ${box.y})`);
     return `<text${updated} data-text-box="${box.x},${box.y},${box.width},${box.height}">${content}</text>`;
   });
 }

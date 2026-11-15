@@ -1,5 +1,5 @@
 import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from '@ai-floor-planner/geometry-engine';
-import { isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
+import { isPhysicalBoundary, architecturalWallHeight, architecturalSpaceRole } from '@ai-floor-planner/core';
 import { MEP_MATERIALS } from "@ai-floor-planner/core";
 import { appendMepScene } from './mep-scene-projector';
 import type {
@@ -14,6 +14,8 @@ import {
   beamFootprint,
   computeStairSolids,
   pointInPolygon,
+  polygonCentroid,
+  polygonBoundingBox,
   segmentFootprint as segment,
 } from "@ai-floor-planner/geometry-engine";
 import polygonClipping, {
@@ -411,20 +413,34 @@ export function projectBuildingScene(building: Building): BuildingScene {
           [],
           true,
         );
-        if (o.isWindow && exterior) {
-          const normal =
-            (pointInPolygon(point(centre, wall.thickness / 2 + 250), f.boundary)
-              ? -1
-              : 1) *
-            (wall.thickness / 2 + 250);
+        if (
+          o.isWindow &&
+          (exterior || wall.wallUse === "SHAFT") &&
+          building.metadata?.generationBrief?.includeWindowChajjas !== false
+        ) {
+          const probeDist = wall.thickness / 2 + 250;
+          const probePos = point(centre, probeDist);
+          const isBuiltAt = (pt: { x: number; y: number }) =>
+            f.rooms.some(
+              (r) =>
+                architecturalSpaceRole(r) !== "OPEN_TO_SKY_VOID" &&
+                !r.tags?.includes("recess:perimeter") &&
+                pointInPolygon(pt, r.boundary),
+            );
+          const posIsInside = pointInPolygon(probePos, f.boundary) && isBuiltAt(probePos);
+          const normal = (posIsInside ? -1 : 1) * (wall.thickness / 2 + 300);
+          const chajjaBottom = Math.min(
+            Math.max(z + o.sill + h, z + 2100),
+            z + Math.max(0, wallHeight - 75),
+          );
           add(
             f,
             o.id,
             "chajja",
             "MAT_Concrete_Structural",
-            segment(point(start - 100, normal), point(end + 100, normal), 500),
-            z + o.sill + h + 80,
-            z + o.sill + h + 155,
+            segment(point(start - 150, normal), point(end + 150, normal), 600),
+            chajjaBottom,
+            chajjaBottom + 75,
             [],
             true,
           );
@@ -478,6 +494,40 @@ export function projectBuildingScene(building: Building): BuildingScene {
             : columnFootprint(col);
         add(f, col.id, "S-COLS", "MAT_Concrete_Structural", footprint, z, next);
       }
+    const builtRooms = f.rooms.filter(
+      (r) =>
+        !r.tags?.includes("recess:perimeter") &&
+        r.architecturalRole !== "OPEN_TO_SKY_VOID" &&
+        r.type !== "ots",
+    );
+    const perimeterRecessVoid = f.rooms.filter((r) =>
+      r.tags?.includes("recess:perimeter"),
+    );
+    const isBeamSupported = (beam: NonNullable<Floor["beams"]>[number]) => {
+      const mid = {
+        x: (beam.startPoint.x + beam.endPoint.x) / 2,
+        y: (beam.startPoint.y + beam.endPoint.y) / 2,
+      };
+      if (perimeterRecessVoid.some((r) => pointInPolygon(mid, r.boundary))) {
+        return false;
+      }
+      if (!builtRooms.length) return true;
+      const len = Math.hypot(
+        beam.endPoint.x - beam.startPoint.x,
+        beam.endPoint.y - beam.startPoint.y,
+      );
+      if (len <= 1) return false;
+      const nx = -(beam.endPoint.y - beam.startPoint.y) / len;
+      const ny = (beam.endPoint.x - beam.startPoint.x) / len;
+      const pA = { x: mid.x + nx * 160, y: mid.y + ny * 160 };
+      const pB = { x: mid.x - nx * 160, y: mid.y - ny * 160 };
+      return builtRooms.some(
+        (r) =>
+          pointInPolygon(mid, r.boundary) ||
+          pointInPolygon(pA, r.boundary) ||
+          pointInPolygon(pB, r.boundary),
+      );
+    };
     const beams = [
       ...new Map(
         [
@@ -485,7 +535,7 @@ export function projectBuildingScene(building: Building): BuildingScene {
           ...(f.beams ?? []),
         ].map((b) => [b.id, b]),
       ).values(),
-    ];
+    ].filter(isBeamSupported);
     if (next !== undefined)
       for (const beam of beams)
         add(
@@ -497,8 +547,42 @@ export function projectBuildingScene(building: Building): BuildingScene {
           next - beam.depthMm,
           next,
         );
-    for (const stair of stairs) for (const solid of canonicalStairSolids(stair, height, slab).filter(p => next !== undefined || p.top === 0))
-      add(f, stair.id, solid.kind, 'MAT_Concrete_Structural', solid.boundary, z + solid.bottom, z + solid.top);
+    for (const stair of stairs) {
+      for (const solid of canonicalStairSolids(stair, height, slab).filter(p => next !== undefined || p.top === 0))
+        add(f, stair.id, solid.kind, 'MAT_Concrete_Structural', solid.boundary, z + solid.bottom, z + solid.top);
+      if (next !== undefined) {
+        const midC = polygonCentroid(stair.midLanding);
+        const flC = stair.floorLanding
+          ? polygonCentroid(stair.floorLanding)
+          : polygonCentroid(stair.polygon);
+        const f1C = polygonCentroid(stair.flight1);
+        const f2C = polygonCentroid(stair.flight2);
+        const dx = midC.x - flC.x;
+        const dy = midC.y - flC.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 100) {
+          const ux = dx / len;
+          const uy = dy / len;
+          const f1Box = polygonBoundingBox(stair.flight1);
+          const span = Math.abs(ux) > Math.abs(uy) ? f1Box.width : f1Box.height;
+          const divC = { x: (f1C.x + f2C.x) / 2, y: (f1C.y + f2C.y) / 2 };
+          const halfDiv = Math.max(200, span * 0.48);
+          add(
+            f,
+            stair.id,
+            "stair-balustrade",
+            "MAT_Concrete_Structural",
+            segment(
+              { x: divC.x - ux * halfDiv, y: divC.y - uy * halfDiv },
+              { x: divC.x + ux * halfDiv, y: divC.y + uy * halfDiv },
+              50,
+            ),
+            z,
+            z + 1000,
+          );
+        }
+      }
+    }
     for (const solid of mumtyCoverSolids(f)) add(f, solid.sourceId, solid.kind, 'MAT_Concrete_Structural', solid.boundary, z + solid.bottom, z + solid.top);
     if (next !== undefined)
       for (const stair of f.stairs.filter(s => !stairs.some(c => c.id === s.id))) {

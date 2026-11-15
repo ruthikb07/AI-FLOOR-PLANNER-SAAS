@@ -12,7 +12,7 @@
  * RenderConfig is always optional — DEFAULT_RENDER_CONFIG preserves existing behavior.
  */
 
-import { RoomType, WallType, RenderLayer } from '@ai-floor-planner/core';
+import { RoomType, WallType, RenderLayer, type EngineeringOverlay } from '@ai-floor-planner/core';
 
 // ─── Display Units ──────────────────────────────────────────────────────────
 
@@ -116,6 +116,8 @@ export interface RenderConfig {
   readonly labelStyle: Readonly<TextStyle>;
   readonly areaStyle: Readonly<TextStyle>;
   readonly gridStyle: Readonly<GridStyle>;
+  /** Phase 3 engineering discipline overlays (optional for backward compatibility). */
+  readonly disciplines?: Readonly<Partial<Record<EngineeringOverlay, boolean>>>;
 }
 
 // ─── Default Styles ─────────────────────────────────────────────────────────
@@ -222,9 +224,19 @@ const DEFAULT_LAYERS: Readonly<Record<RenderLayer, boolean>> = {
  * Preserves the existing renderer's expected behavior.
  * This object is deeply frozen — it cannot be mutated.
  */
+export const DEFAULT_DISCIPLINES: Readonly<Record<EngineeringOverlay, boolean>> = Object.freeze({
+  ARCHITECTURAL: true,
+  STRUCTURAL: false,
+  ELECTRICAL: false,
+  PLUMBING: false,
+  FALSE_CEILING: false,
+  FIRE_SAFETY: false,
+});
+
 export const DEFAULT_RENDER_CONFIG: Readonly<RenderConfig> = Object.freeze({
   // Layer visibility
   layers: Object.freeze({ ...DEFAULT_LAYERS }),
+  disciplines: DEFAULT_DISCIPLINES,
 
   // Display options — match current renderer defaults
   showDimensions: true,
@@ -328,6 +340,10 @@ export function mergeConfig(overrides: DeepPartial<RenderConfig>): Readonly<Rend
     gridStyle: Object.freeze({
       ...DEFAULT_RENDER_CONFIG.gridStyle,
       ...(overrides.gridStyle ?? {}),
+    }),
+    disciplines: Object.freeze({
+      ...DEFAULT_DISCIPLINES,
+      ...(overrides.disciplines ?? {}),
     }),
   };
 

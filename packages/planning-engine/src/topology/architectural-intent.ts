@@ -211,14 +211,17 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   if (/\b(?:building\s+center(?:ed)?|center(?:ed)?\s+(?:the\s+)?building|center(?:ed)?\s+inside\s+(?:the\s+)?permissible)\b/.test(fullLower)) {
     centerBuilding = true;
   }
-  if (/\b(?:proper\s+space\s+utilization|space\s+utilization|efficient\s+space|high\s+efficiency|compact\s+(?:layout|plan|building|footprint|efficiency|floor\s+plate|massing)|no\s+wasted\s+space|minimize\s+wasted|maximi[sz]e\s+usable)\b/.test(fullLower)) {
+  if (
+    /\b(?:proper\s+space\s+utilization|space\s+utilization|efficient\s+space|high\s+efficiency|compact\s+(?:layout|plan|building|footprint|efficiency|floor\s+plate|massing)|no\s+wasted\s+space|minimize\s+wasted|maximi[sz]e\s+(?:usable|plot)|utili[sz]e\s+(?:the\s+)?(?:full|entire|whole|complete)\s+plot|full\s+plot|full\s+setback|within\s+(?:the\s+)?setbacks?)\b/.test(fullLower) ||
+    /\b\d+(?:\.\d+)?\s*(?:m|ft|mm)\s+setbacks?\b/.test(fullLower)
+  ) {
     properSpaceUtilization = true;
   }
   const negOtsGlobal = /\b(?:no|not|without|omit|exclude|zero)\s+(?:any\s+)?(?:ots|open[\s-]to[\s-]sky)\b/.test(fullLower);
   if (!negOtsGlobal && /\b(?:ventilated?\s+(?:central\s+)?ots|central\s+ots\s+shafts?|ots\s+shafts?|ventilation\s+shafts?|light\s+wells?)\b/.test(fullLower)) {
     ventilatedCentralOtsShafts = true;
   }
-  if (/\b(?:different\s+shape|non[\s-]standard\s+shape|unique\s+shape|varied\s+shape|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|cruciform|plus[\s-]?shape|pinwheel|stepped)\b/.test(fullLower)) {
+  if (/\b(?:differ(?:e|a)?nt\s+(?:building\s+|footprint\s+|layout\s+)?shape|non[\s-]standard\s+(?:building\s+)?shape|unique\s+(?:building\s+)?shape|varied\s+(?:building\s+)?shape|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|cruciform|plus[\s-]?shape|pinwheel|stepped)\b/.test(fullLower)) {
     requestsDifferentShape = true;
   }
   if (/\bh[\s-]?shape|h[\s-]?wing\b/.test(fullLower)) preferredMassingShape = 'H_SHAPE_WING';
