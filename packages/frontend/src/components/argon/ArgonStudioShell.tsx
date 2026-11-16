@@ -15,12 +15,16 @@ import {
   User,
   Plus,
   Check,
+  Edit3,
 } from 'lucide-react';
 import { useEditorStore } from '../../stores/editor-store';
 import { ProjectSetupWizard, type ProjectSetupWizardData } from './ProjectSetupWizard';
+import { RHWelcomeScreen } from '../studio/RHWelcomeScreen';
 import { ArchitecturalCADWorkspace } from './ArchitecturalCADWorkspace';
+import { InteractivePlanEditorPage } from './InteractivePlanEditorPage';
 import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { Building3DCustomizer } from './Building3DCustomizer';
+import { StructuralCADWorkspace } from './StructuralCADWorkspace';
 import { UdcprEtabsAnalysis } from './UdcprEtabsAnalysis';
 import { ExportCenterWorkspace } from './ExportCenterWorkspace';
 import { GenerationProgressModal } from './GenerationProgressModal';
@@ -35,8 +39,10 @@ import { createArgonRequest } from '../../services/argon-request';
 export type ArgonWorkspaceId =
   | 'setup'
   | 'cad_2d'
+  | 'edit_plan'
   | 'isometric'
   | 'building_3d'
+  | 'structural_cad'
   | 'engineering'
   | 'export';
 
@@ -58,22 +64,42 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const workspaces: Array<{ id: ArgonWorkspaceId; label: string; icon: React.ReactNode }> = [
     { id: 'setup', label: '01 • Setup Wizard', icon: <Compass className="w-4 h-4" /> },
     { id: 'cad_2d', label: '02 • 2D CAD Studio', icon: <DraftingCompass className="w-4 h-4" /> },
-    { id: 'isometric', label: '03 • Floor Editor', icon: <Layers className="w-4 h-4" /> },
-    { id: 'building_3d', label: '04 • 3D Building', icon: <Box className="w-4 h-4" /> },
-    { id: 'engineering', label: '05 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
-    { id: 'export', label: '06 • Export Center', icon: <Download className="w-4 h-4" /> },
+    { id: 'edit_plan', label: '03 • Edit Plan', icon: <Edit3 className="w-4 h-4" /> },
+    { id: 'isometric', label: '04 • Floor Editor', icon: <Layers className="w-4 h-4" /> },
+    { id: 'building_3d', label: '05 • 3D Building', icon: <Box className="w-4 h-4" /> },
+    { id: 'structural_cad', label: '06 • Structural CAD', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'engineering', label: '07 • Engineering', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'export', label: '08 • Export Center', icon: <Download className="w-4 h-4" /> },
   ];
 
   const workerRef = useRef<Worker | null>(null);
   const lastBrief = useRef<ProjectSetupWizardData | null>(null);
+  const rejectedTopologyHashes = useRef<string[]>([]);
+  const [generationSeed, setGenerationSeed] = useState(1);
   const [generationError, setGenerationError] = useState('');
+  /**
+   * Set when geometry generated successfully but the durable save did not.
+   * Kept separate from `generationError`: the plan exists and is usable, which
+   * is a different situation from a generation that failed.
+   */
+  const [saveWarning, setSaveWarning] = useState('');
+  const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
   useEffect(() => () => workerRef.current?.terminate(), []);
-  const handleGenerate = (data: ProjectSetupWizardData) => {
+
+  const runGeneration = (
+    data: ProjectSetupWizardData,
+    seed: number,
+    rejectedHashes: readonly string[],
+  ) => {
     workerRef.current?.terminate();
     lastBrief.current = data;
-    setIsGenerating(true); setPipelineProgress(null); setGenerationError('');
+    setIsGenerating(true); setPipelineProgress(null); setGenerationError(''); setGenerationFindings([]);
     try {
-      const request = createArgonRequest(data);
+      const request = {
+        ...createArgonRequest(data),
+        generationSeed: seed,
+        rejectedTopologyHashes: [...rejectedHashes],
+      };
       const worker = new Worker(new URL('../../services/argon-planning.worker.ts', import.meta.url), { type: 'module' });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<{
@@ -87,11 +113,36 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         }
         if (event.data.type === 'complete' && event.data.result) {
           try {
-            editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
+            // The plan is handed to the editor and the user is taken to it
+            // immediately. Persistence is reported separately below: a storage
+            // problem must not read as a generation failure, and must not
+            // discard the reviewable plan. Findings remain attached to it.
+            const report = event.data.result.building.metadata?.generationReport;
+            setGenerationFindings(
+              Array.isArray(report?.violations)
+                ? report.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`)
+                : [],
+            );
+            const outcome = editor.setBuilding(event.data.result.building, data.projectName, {}, 'residential');
             const firstResidential = event.data.result.building.floors.find(floor => floor.apartmentUnits?.length);
             if (firstResidential) editor.switchFloor(firstResidential.id);
             setIsGenerating(false); setActiveWorkspace('cad_2d');
-          } catch (error) { setGenerationError(error instanceof Error ? error.message : 'Could not save the project.'); }
+            setSaveWarning('');
+
+            void outcome.durable.then(result => {
+              if (result.state === 'SAVED') return;
+              setSaveWarning(
+                result.state === 'UNAVAILABLE'
+                  ? 'This plan is open and complete, but durable storage is unavailable, so it will not '
+                    + 'survive a reload. Export the project to keep it.'
+                  : `This plan is open and complete, but it could not be saved durably: ${result.reason ?? result.state} `
+                    + 'Export the project to keep it.',
+              );
+            });
+          } catch (error) {
+            // Only a genuine defect reaches here now, not a capacity problem.
+            setGenerationError(error instanceof Error ? error.message : 'Could not open the generated project.');
+          }
           worker.terminate();
         }
       };
@@ -99,10 +150,50 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       worker.postMessage(request);
     } catch (error) { setGenerationError(error instanceof Error ? error.message : String(error)); }
   };
+
+  const handleGenerate = (data: ProjectSetupWizardData) => {
+    rejectedTopologyHashes.current = [];
+    setGenerationSeed(1);
+    runGeneration(data, 1, []);
+  };
+
+  const handleRegenerateVariant = () => {
+    if (!lastBrief.current) return;
+    const currentHash = editor.building.metadata.generationBrief?.topologyHash;
+    if (currentHash && !rejectedTopologyHashes.current.includes(currentHash)) {
+      rejectedTopologyHashes.current = [...rejectedTopologyHashes.current, currentHash];
+    }
+    const nextSeed = generationSeed + 1;
+    setGenerationSeed(nextSeed);
+    runGeneration(lastBrief.current, nextSeed, rejectedTopologyHashes.current);
+  };
+
   const cancelGeneration = () => { workerRef.current?.terminate(); workerRef.current = null; setIsGenerating(false); };
 
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  const dismissWelcome = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('rh_welcome_dismissed', 'true');
+    }
+    setShowWelcome(false);
+  };
+
   return (
-    <div className="argon-shell flex flex-col h-screen w-screen bg-argon-bg text-argon-text overflow-hidden font-sans">
+    <div className="argon-shell flex flex-col h-screen w-screen bg-argon-bg text-argon-text overflow-hidden font-sans relative">
+      {showWelcome && (
+        <RHWelcomeScreen
+          onStartNewProject={dismissWelcome}
+          onOpenExisting={() => {
+            dismissWelcome();
+            setIsProjectSwitcherOpen(true);
+          }}
+          onExplore={() => {
+            dismissWelcome();
+            setActiveWorkspace('building_3d');
+          }}
+        />
+      )}
       {/* STRICTLY ONE UNIFIED TOP HEADER BAR (H-14) */}
       <header className="h-14 bg-argon-surface/95 border-b border-argon-border flex items-center justify-between px-4 z-50 flex-shrink-0 shadow-2xs">
         {/* Left: Brand + Project Switcher */}
@@ -233,7 +324,20 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           />
         )}
         {activeWorkspace === 'cad_2d' && (
-          <ArchitecturalCADWorkspace editor={editor} />
+          <ArchitecturalCADWorkspace
+            editor={editor}
+            onRegeneratePlan={handleRegenerateVariant}
+            onOpenEditPlan={() => setActiveWorkspace('edit_plan')}
+            generationSeed={generationSeed}
+            isGenerating={isGenerating}
+            canRegenerate={Boolean(lastBrief.current)}
+          />
+        )}
+        {activeWorkspace === 'edit_plan' && (
+          <InteractivePlanEditorPage
+            editor={editor}
+            onBackToCad={() => setActiveWorkspace('cad_2d')}
+          />
         )}
         {activeWorkspace === 'isometric' && (
           <FloorIsometricEditor editor={editor} />
@@ -241,11 +345,44 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         {activeWorkspace === 'building_3d' && (
           <Building3DCustomizer editor={editor} />
         )}
+        {activeWorkspace === 'structural_cad' && (
+          <StructuralCADWorkspace editor={editor} />
+        )}
         {activeWorkspace === 'engineering' && (
           <UdcprEtabsAnalysis editor={editor} onHighlight={()=>setActiveWorkspace('cad_2d')} />
         )}
         {activeWorkspace === 'export' && (
           <ExportCenterWorkspace editor={editor} />
+        )}
+
+        {/*
+          Persistence warning. Shown when the plan generated and opened
+          successfully but the durable save did not, so the user can act on it
+          by exporting. This is deliberately not an error banner: the plan is
+          complete and usable, only its storage is at risk.
+        */}
+        {generationFindings.length > 0 && (
+          <details className="absolute top-4 right-4 z-40 max-w-lg max-h-72 overflow-auto rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 shadow-lg">
+            <summary>Best-effort plan — {generationFindings.length} findings; professional review required</summary>
+            <ol className="mt-2 space-y-2">{generationFindings.map((finding, i) => <li key={i}>{finding}</li>)}</ol>
+          </details>
+        )}
+        {saveWarning && (
+          <div
+            role="status"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-2xl px-4 py-3 rounded-lg
+                       bg-amber-50 border border-amber-300 text-amber-900 text-sm shadow-lg flex items-start gap-3"
+          >
+            <span className="font-bold shrink-0">NOT SAVED</span>
+            <span className="flex-1">{saveWarning}</span>
+            <button
+              onClick={() => setSaveWarning('')}
+              className="shrink-0 font-bold text-amber-700 hover:text-amber-900"
+              aria-label="Dismiss the storage warning"
+            >
+              ×
+            </button>
+          </div>
         )}
 
         {/* Generation Progress Modal */}

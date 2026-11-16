@@ -3,15 +3,14 @@ import * as acad from '@node-projects/acad-ts';
 import { createMockCanonicalBuilding } from '../__fixtures__/canonical-building.js';
 
 import { createBackendServer } from '../server.js';
-import { resolveImageServiceConfig } from '../env.js';
-import { ImageArtifactStore } from '../services/image-artifact-store.js';
+import { resolveServiceConfig } from '../env.js';
 import type { Server } from 'node:http';
 describe('Live CAD Export HTTP API (isolated server)', () => {
   const building = createMockCanonicalBuilding();
   let server:Server;let baseUrl='';let exportedFilename='';
   beforeAll(async()=>{
-    const config=resolveImageServiceConfig();
-    server=createBackendServer({provider:null,gemini:null,interpreterKind:'local-stub',store:new ImageArtifactStore(config.artifactDir),config});
+    const config=resolveServiceConfig();
+    server=createBackendServer({gemini:null,briefInterpreterKind:'local-stub',config});
     await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
     baseUrl=`http://127.0.0.1:${(server.address() as {port:number}).port}`;
   });

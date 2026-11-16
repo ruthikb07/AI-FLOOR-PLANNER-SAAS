@@ -1,3 +1,6 @@
+import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from '@ai-floor-planner/geometry-engine';
+import { isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
+import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 import type { Building, Floor, Point, Polygon, Wall } from '@ai-floor-planner/core';
 import { rectToPolygon, RoomType } from '@ai-floor-planner/core';
 import { resolveProjectionSettings } from './settings';
@@ -43,6 +46,7 @@ function createLevels(floors: readonly Floor[], settings: Building3DProjectionSe
   let elevation = 0;
   return sorted.map(floor => {
     const height = floorHeight(floor, settings);
+    if (floor.architecture && Number.isFinite(floor.elevationMm)) elevation = floor.elevationMm!;
     const level: Level3D = {
       floorId: floor.id,
       floorName: floor.name,
@@ -107,15 +111,15 @@ function projectOpenings(floor: Floor, elevation: number, settings: Building3DPr
   const wallById = new Map(floor.walls.map(wall => [wall.id, wall]));
   const doors: Opening3D[] = floor.doors.flatMap(door => {
     const wall = wallById.get(door.wallId);
-    if (!wall) return [];
+    if (!wall || !isPhysicalBoundary(wall)) return [];
     return [{
       sourceEntityId: door.id,
       sourceEntityType: 'door',
       doorType: door.type,
       floorId: floor.id,
       hostWallId: wall.id,
-      position: door.position,
-      alongWall: distanceAlongWall(door.position, wall),
+      position: door.openingGeometryVersion === 1 ? canonicalOpeningGeometry(door, wall).startPoint : door.position,
+      alongWall: door.openingGeometryVersion === 1 ? canonicalOpeningGeometry(door, wall).start : distanceAlongWall(door.position, wall),
       width: door.width,
       bottom: 0,
       height: door.height || settings.defaultDoorHeight.value,
@@ -124,14 +128,14 @@ function projectOpenings(floor: Floor, elevation: number, settings: Building3DPr
   });
   const windows: Opening3D[] = floor.windows.flatMap(window => {
     const wall = wallById.get(window.wallId);
-    if (!wall) return [];
+    if (!wall || !isPhysicalBoundary(wall)) return [];
     return [{
       sourceEntityId: window.id,
       sourceEntityType: 'window',
       floorId: floor.id,
       hostWallId: wall.id,
-      position: window.position,
-      alongWall: distanceAlongWall(window.position, wall),
+      position: window.openingGeometryVersion === 1 ? canonicalOpeningGeometry(window, wall).startPoint : window.position,
+      alongWall: window.openingGeometryVersion === 1 ? canonicalOpeningGeometry(window, wall).start : distanceAlongWall(window.position, wall),
       width: window.width,
       bottom: window.sillHeight ?? settings.defaultWindowSillHeight.value,
       height: window.height || settings.defaultWindowHeight.value,
@@ -159,6 +163,14 @@ export function projectBuildingTo3D(
   return {
     buildingId: building.id,
     buildingVersion: building.version,
+    architecturalSolids: building.floors.filter(f => f.architecture).flatMap(f => {
+      const level = levelByFloor.get(f.id)!;
+      const next = levels.find(l => l.level > level.level);
+      return [
+        ...(f.canonicalStaircases ?? []).flatMap(s => canonicalStairSolids(s, next ? next.elevation - level.elevation : f.floorHeight, f.slabThicknessMm ?? 150).filter(p => !!next || p.top === 0).map(p => ({ ...p, sourceEntityId: s.id, sourceEntityType: 'stair' as const, floorId: f.id, bottom: level.elevation + p.bottom, top: level.elevation + p.top }))),
+        ...mumtyCoverSolids(f).map(p => ({ ...p, sourceEntityId: p.sourceId, sourceEntityType: 'room' as const, floorId: f.id, bottom: level.elevation + p.bottom, top: level.elevation + p.top }))
+      ];
+    }),
     settings,
     levels,
     floorPlates: building.floors.map(floor => ({
@@ -166,8 +178,8 @@ export function projectBuildingTo3D(
       sourceEntityType: 'floor',
       floorId: floor.id,
       boundary: floor.boundary,
-      cutouts: [
-        ...floor.rooms.filter(room => room.type === RoomType.ServiceShaft).map(room => room.boundary),
+      cutouts: floor.architecture ? architecturalSlabCutouts(floor) : [
+        ...floor.rooms.filter(room => room.type === RoomType.ServiceShaft || room.openToSky || room.architecturalRole === 'OPEN_TO_SKY_VOID').map(room => room.boundary),
         // Cut the arrival slab from the actual lower-floor stair footprint,
         // only when the destination has an explicitly aligned representation.
         ...building.floors.filter(lower => lower.level < floor.level).flatMap(lower => lower.stairs
@@ -181,12 +193,14 @@ export function projectBuildingTo3D(
           .map(stair => stair.boundary)),
       ],
       elevation: levelByFloor.get(floor.id)?.elevation ?? 0,
-      thickness: settings.slabThickness.value,
+      thickness: floor.architecture ? floor.slabThicknessMm ?? 150 : settings.slabThickness.value,
     })),
     walls: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
-      const wallHeight = Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value));
-      return floor.walls.map(wall => {
+      const canonicalHeight = (levels.find(l => l.level > (level?.level ?? floor.level))?.elevation ?? ((level?.elevation ?? 0) + floor.floorHeight)) - (level?.elevation ?? 0) - (floor.slabThicknessMm ?? 150);
+      const wallHeight = floor.architecture ? canonicalHeight : Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value));
+      return floor.walls.filter(isPhysicalBoundary).map(wall => {
+        const physicalHeight = architecturalWallHeight(wall, wallHeight);
         const wallLength = length(wall.startPoint, wall.endPoint);
         return {
           sourceEntityId: wall.id,
@@ -197,15 +211,15 @@ export function projectBuildingTo3D(
           elevation: level?.elevation ?? 0,
           length: wallLength,
           thickness: wall.thickness,
-          height: wallHeight,
-          solidSegments: wallSolidSegments(wallLength, wallHeight, openingsByWall.get(wall.id) ?? []),
+          height: physicalHeight,
+          solidSegments: wallSolidSegments(wallLength, physicalHeight, openingsByWall.get(wall.id) ?? []),
         };
       });
     }),
     openings,
     rooms: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
-      return floor.rooms.filter(room => room.type !== RoomType.ServiceShaft).map(room => ({
+      return floor.rooms.filter(room => (!floor.architecture || room.type !== RoomType.Staircase) && room.type !== RoomType.ServiceShaft && !room.openToSky && room.architecturalRole !== 'OPEN_TO_SKY_VOID').map(room => ({
         sourceEntityId: room.id,
         sourceEntityType: 'room' as const,
         floorId: floor.id,
@@ -217,7 +231,7 @@ export function projectBuildingTo3D(
               && point.y >= room.y && point.y <= room.y + room.height))
           .map(stair => stair.boundary) : [],
         elevation: (level?.elevation ?? 0) + settings.slabThickness.value,
-        height: Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value)),
+        height: floor.architecture ? 8 : Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value)),
         name: room.name,
       }));
     }),

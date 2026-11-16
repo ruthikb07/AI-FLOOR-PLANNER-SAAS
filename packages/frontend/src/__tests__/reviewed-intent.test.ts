@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createBuilding, createEmptySpaceProgram, createProgramItem, getSpaceDefinition, createDefaultFootprintIntent, createUnreviewedBudget, approveBuildingBudget, createGenerationControlState, updateProgramItem } from '@ai-floor-planner/core';
 import { LocalStorageProjectStorage, parseAndValidateProjectJson, type ProjectEnvelope, type GenerationSession } from '../services/storage';
+import { projectStore, setIdbFactoryForTests } from '../services/durable-project-store';
+import { FakeIdb } from './helpers/fake-indexeddb';
 import { acceptGenerationResult, isGenerationSessionCurrent, reviewedWorkflowInput } from '../services/reviewed-generation';
 
 function fixture(): ProjectEnvelope {
@@ -13,6 +15,15 @@ function fixture(): ProjectEnvelope {
 beforeEach(()=>{
   const values=new Map<string,string>();
   globalThis.localStorage={getItem:k=>values.get(k)??null,setItem:(k,v)=>{values.set(k,v);},removeItem:k=>{values.delete(k);},clear:()=>values.clear(),key:i=>[...values.keys()][i]??null,get length(){return values.size;}};
+  // Canonical geometry now lives in IndexedDB. Reset the durable store too, or
+  // a record from the previous test leaks in as this test's "previous" project
+  // and its approved budget is carried forward.
+  projectStore.reset();
+  setIdbFactoryForTests(new FakeIdb());
+});
+afterEach(()=>{
+  setIdbFactoryForTests(undefined);
+  projectStore.reset();
 });
 describe('reviewed intent persistence and stale-job protection',()=>{
   it('reload preserves exact approved intent, units and request signature',()=>{

@@ -10,9 +10,6 @@ import type {
   ApartmentUnitManifestItem,
 } from './manifest.js';
 import type {
-  ApartmentInterpretationContext,
-} from '../orchestration/vision-interpretation.js';
-import type {
   DeterministicApartmentSchematic,
   Rect2D,
   SchematicDoor,
@@ -39,19 +36,6 @@ export function apartmentExpectationFromManifest(manifest: ApartmentGenerationMa
       utilities: u.utilities,
       balconies: u.balconies,
     })),
-    lifts: manifest.commonCore.lifts,
-    stairs: manifest.commonCore.stairs,
-    commonLobby: manifest.commonCore.commonLobby,
-  };
-}
-
-/** Structured apartment context sent to Gemini alongside the image (context only). */
-export function apartmentInterpretationContextFromManifest(manifest: ApartmentGenerationManifest): ApartmentInterpretationContext {
-  const mix = new Map<string, number>();
-  for (const u of manifest.units.units) mix.set(u.type, (mix.get(u.type) ?? 0) + 1);
-  return {
-    flatsPerFloor: manifest.units.exactCount,
-    unitMix: [...mix.entries()].map(([unitType, count]) => ({ unitType, count })),
     lifts: manifest.commonCore.lifts,
     stairs: manifest.commonCore.stairs,
     commonLobby: manifest.commonCore.commonLobby,

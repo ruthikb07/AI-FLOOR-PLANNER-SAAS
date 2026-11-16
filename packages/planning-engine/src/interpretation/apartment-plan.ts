@@ -74,9 +74,11 @@ export interface ApartmentPlanFlat {
 }
 
 export interface ApartmentCoreElement {
+  readonly architecturalRole?: import('@ai-floor-planner/core').ArchitecturalSpaceRole;
   readonly id: string;
   readonly name: string;
   readonly rect: ApartmentRectMm;
+  readonly tags?: readonly string[];
   /** Flat the source assigned this element to; any non-null value is a validation error for core elements. */
   readonly assignedFlatId: string | null;
 }
@@ -168,6 +170,9 @@ const CORE_ROLES: ReadonlySet<ApartmentRoomRole> = new Set(['lift', 'stair', 'lo
 export function apartmentRoomRoles(label: string): ApartmentRoomRole[] {
   const n = ` ${label.toLowerCase().replace(/[_/&,.()-]+/g, ' ').replace(/\s+/g, ' ').trim()} `;
   const has = (...words: string[]) => words.some(w => n.includes(w));
+  // Host-room names qualify an outdoor space; they do not change its use.
+  if (has('balcon', 'sit out', 'sitout', 'terrace', 'deck')) return ['balcony'];
+  if (has('utility', 'dry balc', 'service balc', 'ser bal')) return ['utility'];
   if (has(' lift', 'elevator')) return ['lift'];
   if (has('stair')) return ['stair'];
   // A flat's own passage/hallway is private circulation, distinct from the common corridor.

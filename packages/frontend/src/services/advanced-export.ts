@@ -1,3 +1,4 @@
+import { isPhysicalBoundary } from '@ai-floor-planner/core';
 import type {
   Building,
   ExportOptions,
@@ -205,7 +206,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     }
 
     commands.push('0.08 0.1 0.13 RG');
-    for (const wall of floor.walls) {
+    for (const wall of floor.walls.filter(isPhysicalBoundary)) {
       const dx = wall.endPoint.x - wall.startPoint.x, dy = wall.endPoint.y - wall.startPoint.y, len = Math.hypot(dx, dy);
       if (!len) continue;
       const openings = settings.includeOpenings ? [...floor.doors, ...floor.windows].filter(o => o.wallId === wall.id) : [];
@@ -218,7 +219,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     }
 
     if (settings.includeOpenings) for (const opening of [...floor.doors, ...floor.windows]) {
-      const wall = floor.walls.find(w => w.id === opening.wallId); if (!wall) continue;
+      const wall = floor.walls.find(w => w.id === opening.wallId); if (!wall || !isPhysicalBoundary(wall)) continue;
       const dx = wall.endPoint.x - wall.startPoint.x, dy = wall.endPoint.y - wall.startPoint.y, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
       const ax = opening.position.x - ux * opening.width / 2, ay = opening.position.y - uy * opening.width / 2, bx = ax + ux * opening.width, by = ay + uy * opening.width;
       commands.push('0.08 0.45 0.7 RG', '0.6 w', `% OPENING ${ascii(opening.id)}`);
@@ -342,7 +343,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
     }
 
     commands.push('0.08 0.1 0.13 RG');
-    for (const wall of floor.walls) {
+    for (const wall of floor.walls.filter(isPhysicalBoundary)) {
       const dx = wall.endPoint.x - wall.startPoint.x, dy = wall.endPoint.y - wall.startPoint.y, len = Math.hypot(dx, dy);
       if (!len) continue;
       const openings = settings.includeOpenings ? [...floor.doors, ...floor.windows].filter(o => o.wallId === wall.id) : [];

@@ -1,0 +1,452 @@
+[
+  {
+    "doorId": "floor_level_00::flat_01__door_living_dining",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__living",
+      "floor_level_00::apt-room:flat_01__dining"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_balcony",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__dining",
+      "floor_level_00::apt-room:flat_01__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_kitchen",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__dining",
+      "floor_level_00::apt-room:flat_01__kitchen"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_utility",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__kitchen",
+      "floor_level_00::apt-room:flat_01__utility"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_passage",
+    "type": "open_passage",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__living",
+      "floor_level_00::apt-room:flat_01__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_master_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__master_bed",
+      "floor_level_00::apt-room:flat_01__master_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_common_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__internal_passage",
+      "floor_level_00::apt-room:flat_01__common_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_bed_2",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__bed_2",
+      "floor_level_00::apt-room:flat_01__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_master_bed",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__master_bed",
+      "floor_level_00::apt-room:flat_01__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__master_bed__balcony_door",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_01__master_bed",
+      "floor_level_00::apt-room:flat_01__master_bed__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_01__door_entrance",
+    "type": "single",
+    "widthMm": 1050,
+    "connects": [
+      "floor_level_00::apt-room:corridor_1",
+      "floor_level_00::apt-room:flat_01__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_living_dining",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__living",
+      "floor_level_00::apt-room:flat_02__dining"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_balcony",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__dining",
+      "floor_level_00::apt-room:flat_02__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_kitchen",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__dining",
+      "floor_level_00::apt-room:flat_02__kitchen"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_utility",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__kitchen",
+      "floor_level_00::apt-room:flat_02__utility"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_passage",
+    "type": "open_passage",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__living",
+      "floor_level_00::apt-room:flat_02__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_master_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__master_bed",
+      "floor_level_00::apt-room:flat_02__master_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_common_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__internal_passage",
+      "floor_level_00::apt-room:flat_02__common_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_bed_2",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__bed_2",
+      "floor_level_00::apt-room:flat_02__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_master_bed",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__master_bed",
+      "floor_level_00::apt-room:flat_02__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__bed_2__balcony_door",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_02__bed_2",
+      "floor_level_00::apt-room:flat_02__bed_2__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_02__door_entrance",
+    "type": "single",
+    "widthMm": 1050,
+    "connects": [
+      "floor_level_00::apt-room:corridor_1",
+      "floor_level_00::apt-room:flat_02__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_living_dining",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__living",
+      "floor_level_00::apt-room:flat_03__dining"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_balcony",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__dining",
+      "floor_level_00::apt-room:flat_03__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_kitchen",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__dining",
+      "floor_level_00::apt-room:flat_03__kitchen"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_utility",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__kitchen",
+      "floor_level_00::apt-room:flat_03__utility"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_passage",
+    "type": "open_passage",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__living",
+      "floor_level_00::apt-room:flat_03__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_master_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__master_bed",
+      "floor_level_00::apt-room:flat_03__master_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_common_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__internal_passage",
+      "floor_level_00::apt-room:flat_03__common_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_bed_2",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__bed_2",
+      "floor_level_00::apt-room:flat_03__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_master_bed",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__master_bed",
+      "floor_level_00::apt-room:flat_03__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__master_bed__balcony_door",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_03__master_bed",
+      "floor_level_00::apt-room:flat_03__master_bed__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_03__door_entrance",
+    "type": "single",
+    "widthMm": 1050,
+    "connects": [
+      "floor_level_00::apt-room:corridor_2",
+      "floor_level_00::apt-room:flat_03__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_living_dining",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__living",
+      "floor_level_00::apt-room:flat_04__dining"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_balcony",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__dining",
+      "floor_level_00::apt-room:flat_04__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_kitchen",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__dining",
+      "floor_level_00::apt-room:flat_04__kitchen"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_utility",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__kitchen",
+      "floor_level_00::apt-room:flat_04__utility"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_passage",
+    "type": "open_passage",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__living",
+      "floor_level_00::apt-room:flat_04__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_master_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__master_bed",
+      "floor_level_00::apt-room:flat_04__master_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_common_bath",
+    "type": "single",
+    "widthMm": 750,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__internal_passage",
+      "floor_level_00::apt-room:flat_04__common_bath"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_bed_2",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__bed_2",
+      "floor_level_00::apt-room:flat_04__internal_passage"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_master_bed",
+    "type": "single",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__master_bed",
+      "floor_level_00::apt-room:flat_04__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__bed_2__balcony_door",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:flat_04__bed_2",
+      "floor_level_00::apt-room:flat_04__bed_2__balcony"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::flat_04__door_entrance",
+    "type": "single",
+    "widthMm": 1050,
+    "connects": [
+      "floor_level_00::apt-room:corridor_2",
+      "floor_level_00::apt-room:flat_04__living"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_core_stair_1",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:core_stair_1",
+      "floor_level_00::apt-room:corridor_1"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_core_stair_2",
+    "type": "open_passage",
+    "widthMm": 1200,
+    "connects": [
+      "floor_level_00::apt-room:core_stair_2",
+      "floor_level_00::apt-room:corridor_1"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_core_lift_1",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:corridor_1",
+      "floor_level_00::apt-room:core_lift_1"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_core_lift_2",
+    "type": "sliding",
+    "widthMm": 900,
+    "connects": [
+      "floor_level_00::apt-room:corridor_1",
+      "floor_level_00::apt-room:core_lift_2"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_link_corridor_1_corridor_3",
+    "type": "open_passage",
+    "widthMm": 1500,
+    "connects": [
+      "floor_level_00::apt-room:corridor_1",
+      "floor_level_00::apt-room:corridor_3"
+    ]
+  },
+  {
+    "doorId": "floor_level_00::door_link_corridor_2_corridor_3",
+    "type": "open_passage",
+    "widthMm": 1500,
+    "connects": [
+      "floor_level_00::apt-room:corridor_2",
+      "floor_level_00::apt-room:corridor_3"
+    ]
+  }
+]

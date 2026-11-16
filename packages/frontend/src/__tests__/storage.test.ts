@@ -4,7 +4,10 @@ import {
   createCanonical30x50_2BHK,
   createEmptyPlot,
   parseAndValidateProjectJson,
+  hydrateProjectStorage,
 } from '../services/storage';
+import { projectStore, setIdbFactoryForTests } from '../services/durable-project-store';
+import { FakeIdb } from './helpers/fake-indexeddb';
 import { createGenerationControlState, serializeBuilding, updateGenerationControl, type CandidatePlan } from '@ai-floor-planner/core';
 import { diagnosticsToValidation } from '@ai-floor-planner/planning-engine';
 
@@ -28,6 +31,11 @@ describe('Frontend Persistence & Storage Service', () => {
     Object.defineProperty(globalThis.localStorage, 'length', {
       get: () => Object.keys(mockStore).length,
     });
+
+    // Canonical geometry now lives in IndexedDB, which jsdom does not provide.
+    // Each test gets a fresh in-memory double and a reset store.
+    projectStore.reset();
+    setIdbFactoryForTests(new FakeIdb());
   });
 
   it('creates and saves canonical 30x50 2BHK plan', () => {
@@ -124,7 +132,7 @@ describe('Frontend Persistence & Storage Service', () => {
     expect(() => parseAndValidateProjectJson('{}')).toThrow();
   });
 
-  it('migrates legacy residential projects to a reviewable derived space program', () => {
+  it('migrates legacy residential projects to a reviewable derived space program', async () => {
     const building = createCanonical30x50_2BHK('Legacy', 'legacy-program');
     localStorage.setItem('ai_floor_planner_proj_legacy-program', JSON.stringify({
       schemaVersion: 4,
@@ -135,6 +143,10 @@ describe('Frontend Persistence & Storage Service', () => {
       category: 'residential',
       building,
     }));
+
+    // Hydration migrates the legacy localStorage record into durable
+    // storage, which is what the real app bootstrap performs.
+    await hydrateProjectStorage();
 
     const loaded = storage.load('legacy-program');
     expect(loaded?.schemaVersion).toBe(9);
@@ -167,7 +179,7 @@ describe('Frontend Persistence & Storage Service', () => {
     expect(storage.load(building.projectId)?.spaceProgram).toEqual(spaceProgram);
   });
 
-  it('migrates existing floor boundaries to a limited custom footprint without changing geometry', () => {
+  it('migrates existing floor boundaries to a limited custom footprint without changing geometry', async () => {
     const building = createCanonical30x50_2BHK('Legacy footprint', 'legacy-footprint');
     const originalBoundary = building.floors[0]!.boundary;
     localStorage.setItem('ai_floor_planner_proj_legacy-footprint', JSON.stringify({
@@ -175,6 +187,10 @@ describe('Frontend Persistence & Storage Service', () => {
       createdAt: building.createdAt, updatedAt: building.updatedAt,
       category: 'residential', building,
     }));
+
+    // Hydration migrates the legacy localStorage record into durable
+    // storage, which is what the real app bootstrap performs.
+    await hydrateProjectStorage();
     const loaded = storage.load('legacy-footprint');
     expect(loaded?.footprintIntent?.shape).toBe('custom');
     expect(loaded?.footprintIntent?.provenance).toBe('DERIVED_FROM_EXISTING_FLOOR');
@@ -219,13 +235,17 @@ describe('Frontend Persistence & Storage Service', () => {
     expect(storage.load(building.projectId)?.generationControl).toMatchObject({ lockedEntityIds: [room.id], lockedFloorIds: [floor.id], footprintLocked: true });
   });
 
-  it('cleans orphan lock references on load without rejecting the project', () => {
+  it('cleans orphan lock references on load without rejecting the project', async () => {
     const building = createCanonical30x50_2BHK('Orphan locks', 'orphan-locks');
     localStorage.setItem('ai_floor_planner_proj_orphan-locks', JSON.stringify({
       schemaVersion: 8, projectId: building.projectId, name: building.name,
       createdAt: building.createdAt, updatedAt: building.updatedAt, building,
       generationControl: updateGenerationControl(createGenerationControlState(), { lockedEntityIds: ['deleted-room'], lockedFloorIds: ['deleted-floor'], protectedCoreIds: ['deleted-core'] }),
     }));
+
+    // Hydration migrates the legacy localStorage record into durable
+    // storage, which is what the real app bootstrap performs.
+    await hydrateProjectStorage();
     expect(storage.load(building.projectId)?.generationControl).toMatchObject({ lockedEntityIds: [], lockedFloorIds: [], protectedCoreIds: [] });
   });
 });

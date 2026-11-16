@@ -1,3 +1,4 @@
+import { migrateOpeningGeometry, type LegacyOpeningReference } from './opening-migration';
 /**
  * JSON serialization and deserialization for the Building Model.
  * Guarantees round-trip fidelity: serialize → deserialize produces identical data.
@@ -34,4 +35,11 @@ export function deserializeBuilding(json: string): Building {
 /** Deep clone a Building via structuredClone. */
 export function cloneBuilding(building: Building): Building {
   return structuredClone(building);
+}
+
+/** Recoverable import boundary for the V1 opening geometry profile. */
+export function importOpeningGeometryProject(originalJson: string, evidence: Readonly<Record<string, LegacyOpeningReference>> = {}):
+  { status: 'MIGRATED'; building: Building; originalJson: string } | { status: 'QUARANTINED'; diagnostics: string[]; originalJson: string } {
+  try { return { status: 'MIGRATED', building: migrateOpeningGeometry(deserializeBuilding(originalJson), evidence), originalJson }; }
+  catch (error) { return { status: 'QUARANTINED', diagnostics: [error instanceof Error ? error.message : String(error)], originalJson }; }
 }

@@ -28,6 +28,7 @@ export interface ThreeBuildingSceneProps {
   readonly snapshotRequest?: number;
   readonly onSelect: (source: ProjectionSource) => void;
   readonly onClearSelection: () => void;
+  readonly sceneRef?: React.MutableRefObject<THREE.Scene | null>;
 }
 
 type SelectableObject = THREE.Object3D & { userData: ProjectionSource };
@@ -81,6 +82,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   snapshotRequest = 0,
   onSelect,
   onClearSelection,
+  sceneRef,
 }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number; id: number } | null>(null);
@@ -93,8 +95,10 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const host = hostRef.current;
     if (!host) return;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1120);
-    const camera = new THREE.PerspectiveCamera(38, Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight), 0.05, 500);
+    scene.background = new THREE.Color(0xe8eef5);
+    // The model inspection view must retain visibility at every site scale.
+    scene.fog = null;
+    const camera = new THREE.PerspectiveCamera(38, Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight), 0.05, 1000);
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -112,9 +116,42 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
     controls.screenSpacePanning = true;
+    controls.zoomToCursor = true;
+    controls.zoomSpeed = 1.15;
     controls.minDistance = 0.3;
     controls.maxDistance = 2000;
     controls.target.set(5, 2, 5);
+    renderer.domElement.setAttribute('data-zoom-to-cursor', 'true');
+
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const wheelRaycaster = new THREE.Raycaster();
+    const wheelPointer = new THREE.Vector2();
+    const planeHit = new THREE.Vector3();
+
+    const handleWheelCursorZoom = (event: WheelEvent) => {
+      controls.zoomToCursor = true;
+      const rect = renderer.domElement.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      wheelPointer.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      wheelRaycaster.setFromCamera(wheelPointer, camera);
+      const buildingGroup = scene.getObjectByName('building-projection');
+      const hits = buildingGroup ? wheelRaycaster.intersectObjects(buildingGroup.children, true) : [];
+      const hitPoint = hits[0]?.point ?? (wheelRaycaster.ray.intersectPlane(groundPlane, planeHit) ? planeHit : null);
+      if (hitPoint && event.deltaY < 0) {
+        const shift = hitPoint.clone().sub(controls.target).multiplyScalar(0.12);
+        controls.target.add(shift);
+        camera.position.add(shift);
+        const nightGlow = scene.getObjectByName('night-glow-light') as THREE.PointLight | undefined;
+        if (nightGlow && nightGlow.visible) {
+          nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 3), controls.target.z);
+        }
+      }
+      renderer.render(scene, camera);
+    };
+    renderer.domElement.addEventListener('wheel', handleWheelCursorZoom, { passive: true });
 
     const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x182235, 2.2);
     hemiLight.name = 'hemi-light';
@@ -140,9 +177,16 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     });
     resize.observe(host);
     runtimeRef.current = { camera, controls, renderer, scene };
+
+    // Expose scene to external animation hooks
+    if (sceneRef) {
+      sceneRef.current = scene;
+    }
+
     render();
     return () => {
       resize.disconnect();
+      renderer.domElement.removeEventListener('wheel', handleWheelCursorZoom);
       controls.removeEventListener('change', render);
       controls.dispose();
       disposeObject(scene);
@@ -157,7 +201,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime) return;
-    const { scene, renderer, camera } = runtime;
+    const { scene, renderer, camera, controls } = runtime;
+    controls.zoomToCursor = true;
     const hemi = scene.getObjectByName('hemi-light') as THREE.HemisphereLight | undefined;
     const key = scene.getObjectByName('key-light') as THREE.DirectionalLight | undefined;
     const nightGlowName = 'night-glow-light';
@@ -168,22 +213,23 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       if (hemi) {
         hemi.color.setHex(0x1e1b4b);
         hemi.groundColor.setHex(0x0f172a);
-        hemi.intensity = 0.8;
+        hemi.intensity = 1.15;
       }
       if (key) {
         key.color.setHex(0x818cf8);
-        key.intensity = 0.9;
+        key.intensity = 1.25;
       }
       if (!nightGlow) {
-        nightGlow = new THREE.PointLight(0xfbbf24, 2.5, 30);
+        nightGlow = new THREE.PointLight(0xfbbf24, 2.8, 120, 1.2);
         nightGlow.name = nightGlowName;
-        nightGlow.position.set(5, 4, 5);
+        nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 4), controls.target.z);
         scene.add(nightGlow);
       } else {
+        nightGlow.position.set(controls.target.x, Math.max(4, controls.target.y + 4), controls.target.z);
         nightGlow.visible = true;
       }
     } else {
-      scene.background = new THREE.Color(0x0a1120);
+      scene.background = new THREE.Color(0xe8eef5);
       if (hemi) {
         hemi.color.setHex(0xddeeff);
         hemi.groundColor.setHex(0x182235);
@@ -210,10 +256,20 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     group.name = 'building-projection';
     const xray = viewMode === 'xray';
 
-    const material = (color: number, opacity = 1) => new THREE.MeshStandardMaterial({ color, transparent: opacity < 1 || xray, opacity: xray ? Math.min(opacity, 0.34) : opacity, roughness: 0.82, metalness: 0.02, side: THREE.DoubleSide, depthWrite: !xray });
+    // Aether Mesh Standard Material - Metallic bronze/charcoal feel
+    const material = (color: number, opacity = 1) => new THREE.MeshStandardMaterial({
+      color,
+      transparent: opacity < 1 || xray,
+      opacity: xray ? Math.min(opacity, 0.34) : opacity,
+      roughness: 0.15, // Sleeker
+      metalness: 0.6, // Metallic finish like concept
+      side: THREE.DoubleSide,
+      depthWrite: !xray
+    });
     const addSelectable = (mesh: THREE.Mesh, source: ProjectionSource) => { mesh.userData = source; group.add(mesh); };
 
-    if (layers.site) {
+    const isGroundOrFull = !activeFloorId || floorMode !== 'isolate' || activeFloorId.includes('stilt') || activeFloorId.includes('ground') || activeFloorId === projection.floorPlates[0]?.floorId;
+    if (layers.site && isGroundOrFull) {
       const siteContext = new THREE.Group();
       siteContext.name = 'site-context';
       group.add(siteContext);
@@ -318,7 +374,15 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       addSelectable(mesh, opening);
     });
 
-    if (layers.stairs) projection.stairs.forEach(stair => {
+    (projection.architecturalSolids ?? []).forEach(part => {
+      if ((part.sourceEntityType === 'stair' && !layers.stairs) || !shouldShowFloor(part.floorId, activeFloorId, floorMode)) return;
+      const geometry = new THREE.ExtrudeGeometry(makeShape(part.boundary), { depth: (part.top - part.bottom) * MM_TO_M, bevelEnabled: false });
+      geometry.rotateX(-Math.PI / 2);
+      const mesh = new THREE.Mesh(geometry, material(0xd4a373, floorContextOpacity(part.floorId, activeFloorId, floorMode)));
+      mesh.position.y = part.bottom * MM_TO_M + floorOffset(projection, part.floorId, isExploded, explodeDistance);
+      addEdges(mesh); addSelectable(mesh, part);
+    });
+    if (layers.stairs) projection.stairs.filter(s => !projection.architecturalSolids?.some(p => p.sourceEntityId === s.sourceEntityId)).forEach(stair => {
       if (!shouldShowFloor(stair.floorId, activeFloorId, floorMode)) return;
       const result = computeStairSolids(stair.canonicalStair, stair.verticalExtent);
       result.solids.forEach(part => {
@@ -363,7 +427,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     runtime.controls.target.copy(center);
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
-  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, exploded, explodeDistance, isExploded, fitSite]);
+  }, [cameraPreset, fitRequest, projection, activeFloorId, floorMode, fitSite]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;

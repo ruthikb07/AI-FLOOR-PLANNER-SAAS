@@ -308,12 +308,29 @@ export class CandidateGenerator {
       building,
     });
 
+    const buildingWidth = Math.max(...allRooms.map(r => r.x + r.width), 10000) - Math.min(...allRooms.map(r => r.x), 0);
+    const buildingDepth = Math.max(...allRooms.map(r => r.y + r.height), 10000) - Math.min(...allRooms.map(r => r.y), 0);
+
+    // Initial architectural dimension estimation based on scale
+    const columnWidthMm = Math.max(230, Math.min(600, Math.round(buildingWidth * 0.03 / 50) * 50));
+    const columnDepthMm = Math.max(300, Math.min(900, Math.round(buildingDepth * 0.05 / 50) * 50));
+    const beamWidthMm = 230;
+    const beamDepthMm = Math.max(350, Math.min(750, Math.round(columnDepthMm * 0.85 / 50) * 50));
+
     const buildingWithSite: Building = {
       ...building,
       site: {
         ...building.site,
         siteZones: sitePlan.siteZones,
       },
+      floors: building.floors.map(f => ({
+        ...f,
+        columnWidthMm,
+        columnDepthMm,
+        beamWidthMm,
+        beamDepthMm,
+        slabThicknessMm: f.floorUse === 'ROOF' ? 150 : 130,
+      })),
     };
 
     const metrics: CandidateMetrics = {
@@ -396,9 +413,28 @@ export class CandidateGenerator {
           requirements: spec,
           building: rawBuilding,
         });
+
+        const allRooms = rawBuilding.floors.flatMap(floor => floor.rooms);
+        const buildingWidth = Math.max(...allRooms.map(r => r.x + r.width), 10000) - Math.min(...allRooms.map(r => r.x), 0);
+        const buildingDepth = Math.max(...allRooms.map(r => r.y + r.height), 10000) - Math.min(...allRooms.map(r => r.y), 0);
+
+        // Initial architectural dimension estimation based on scale
+        const columnWidthMm = Math.max(230, Math.min(600, Math.round(buildingWidth * 0.03 / 50) * 50));
+        const columnDepthMm = Math.max(300, Math.min(900, Math.round(buildingDepth * 0.05 / 50) * 50));
+        const beamWidthMm = 230;
+        const beamDepthMm = Math.max(350, Math.min(750, Math.round(columnDepthMm * 0.85 / 50) * 50));
+
         const buildingWithSite: Building = {
           ...rawBuilding,
           site: { ...rawBuilding.site, siteZones: sitePlan.siteZones },
+          floors: rawBuilding.floors.map(f => ({
+            ...f,
+            columnWidthMm,
+            columnDepthMm,
+            beamWidthMm,
+            beamDepthMm,
+            slabThicknessMm: f.floorUse === 'ROOF' ? 150 : 130,
+          })),
         };
 
         const graphEvaluation = evaluateInstanceGraph(buildingWithSite, designGraph);
@@ -411,8 +447,8 @@ export class CandidateGenerator {
         });
         const multiFloor = evaluateMultiFloorPlanning(buildingWithSite);
 
-        const allRooms = buildingWithSite.floors.flatMap(floor => floor.rooms);
-        const carpetArea = allRooms.reduce((sum, room) => sum + room.area, 0);
+        const evaluatedRooms = buildingWithSite.floors.flatMap(floor => floor.rooms);
+        const carpetArea = evaluatedRooms.reduce((sum, room) => sum + room.area, 0);
         const buildableArea = buildingWithSite.floors.reduce((sum, floor) => {
           return floor.boundary.points.length < 3 ? sum : sum + polygonArea(floor.boundary);
         }, 0);
@@ -434,7 +470,7 @@ export class CandidateGenerator {
           roomDistributionScore: multiFloor.roomDistributionScore,
           totalCarpetAreaMm2: carpetArea,
           totalBuiltupAreaMm2: Math.round(carpetArea * 1.15),
-          roomCount: allRooms.length,
+          roomCount: evaluatedRooms.length,
           zoningScore: diagnostics.scores.zoning,
           shapeScore: diagnostics.scores.shape,
           siteUtilization: sitePlan.siteUtilization,

@@ -18,6 +18,7 @@ import {
 import { GeometryValidator } from '../validator/geometry-validator';
 import { solveMultiSheetApartmentProject } from '../apartment/multi-sheet-apartment-solver';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { createGenerationReport } from '../apartment/generation-report';
 
 export type PipelineStageId =
   | 'PLOT_BOUNDARY_SOLVE'
@@ -211,11 +212,11 @@ export async function executeAuditedPlanningPipeline(
       const dimensions = [config.plotWidthMm, config.plotDepthMm, config.roadWidthMm];
       if (dimensions.some(value => !Number.isFinite(value) || value <= 0)
         || !Number.isInteger(config.numTypicalFloors) || config.numTypicalFloors < 1 || config.numTypicalFloors > 40
-        || ![2, 3, 4].includes(config.flatsPerFloor)
+        || ![1, 2, 3, 4, 5, 6].includes(config.flatsPerFloor)
         || config.units?.length !== config.flatsPerFloor
         || config.units.some(unit => !/^[1-4]BHK$/.test(unit.bhkType))
         || (config.setbacksMm && Object.values(config.setbacksMm).some(value => !Number.isFinite(value) || value < 0))) {
-        throw new Error('Provide positive plot/road dimensions, 1–40 floors, valid setbacks and an exact 2–4 unit BHK mix.');
+        throw new Error('Provide positive plot/road dimensions, 1–40 floors, valid setbacks and an exact 1–6 unit BHK mix.');
       }
       const solved = solveMultiSheetApartmentProject(config, next);
       building = solved.building;
@@ -237,8 +238,12 @@ export async function executeAuditedPlanningPipeline(
     const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length,
       errors: [...audit.report.errors, ...closureErrors] };
     emitter.completeStage(stage, validationReport.errors, validationReport);
-    if (isRequest && !validationReport.isValid) throw new Error(
-      `Geometry requires correction: ${validationReport.errors.filter(e => e.severity === 'CRITICAL' && !e.autoCorrected).slice(0, 5).map(e => e.description).join('; ')}`);
+    const prior = building.metadata.generationReport;
+    if (prior) {
+      const generationReport = createGenerationReport(building, validationReport, prior,
+        prior.violations.filter(v => v.source === 'TOPOLOGY' || v.source === 'GENERATION'));
+      building = { ...building, metadata: { ...building.metadata, generationReport } };
+    }
     stage = 'UDCPR_CHECK'; emitter.startStage(stage);
     const udcprReport = evaluateUDCPRCompliance(building);
     emitter.completeStage(stage, [], validationReport, udcprReport);

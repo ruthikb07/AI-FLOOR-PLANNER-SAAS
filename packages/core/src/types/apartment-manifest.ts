@@ -29,7 +29,7 @@ export interface DynamicApartmentManifest {
   readonly plotWidthMm: number;
   readonly plotDepthMm: number;
   readonly lotAllotmentMode: LotAllotmentMode;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly units: readonly DynamicApartmentUnitSpec[];
   readonly jurisdiction: ApartmentJurisdictionCode;
   readonly northAngleDeg: number;
@@ -582,7 +582,7 @@ export function createDynamicApartmentManifest(
   input: Partial<DynamicApartmentManifest> & {
     plotWidthMm: number;
     plotDepthMm: number;
-    flatsPerFloor: 2 | 3 | 4;
+    flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   },
 ): DynamicApartmentManifest {
   const flatsCount = input.flatsPerFloor;

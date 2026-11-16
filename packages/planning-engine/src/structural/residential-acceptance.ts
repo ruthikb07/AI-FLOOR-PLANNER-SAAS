@@ -1,3 +1,4 @@
+import { inspectArchitecturalGeometry } from '@ai-floor-planner/geometry-engine';
 import { validateBuildingSchema, type Building } from "@ai-floor-planner/core";
 import {
   validateRawPlanarConservation,
@@ -40,5 +41,6 @@ export function residentialAcceptanceErrors(candidate: Building) {
       ]),
     ),
   );
+  errors.push(...inspectArchitecturalGeometry(candidate).issues.filter(i => i.severity === 'ERROR').map(i => infeasible(i.code, [i.elementId], i.floorId)));
   return errors;
 }

@@ -59,6 +59,23 @@ export type {
   RefinementCandidate,
   TargetedRegenerationInput,
 } from './refinement/targeted-regeneration';
+export {
+  optimizeRoomArea,
+  expandFlatIntoSetbackMargin,
+  regenerateWithPreservedRatios,
+  createRoomAreaRegenerationCommand,
+  ENGINEERING_MIN_ROOM_AREAS,
+  ENGINEERING_MIN_ROOM_WIDTH,
+  STATUTORY_MIN_ROOM_AREAS,
+  STATUTORY_MIN_ROOM_WIDTH,
+  type RoomAreaRegenerationOptions,
+  type SetbackExpansionOptions,
+  type PreservedRatioRegenerationOptions,
+  type PreservedRatioRegenerationResult,
+  type RoomAreaCandidate,
+  type RoomAreaOptimizationResult,
+  type ModifiedRoomDetail,
+} from './refinement/room-area-optimizer';
 export { coordinateStairAccess, stairModelIssues } from './generator/stair-coordination';
 export { evaluateDesign, type DesignEvaluationOptions } from './diagnostics/design-evaluator';
 export { diagnosticsToValidation, type ValidationSummary } from './repair/engine';
@@ -209,6 +226,7 @@ export * from './compliance/rules/entitlements';
 
 export * from './compliance/residential-udcpr-evaluator';
 export * from './compliance/apartment-vastu-evaluator';
+export * from './compliance/architectural-compliance-score';
 
 export * from './structural/solver-result';
 export * from './structural/column-grid-generator';
@@ -220,3 +238,13 @@ export * from './layout/apartment-unit-packer';
 export * from './layout/opening-integrity-solver';
 
 export * from './pipeline/multi-story-residential-synthesizer';
+export { generateApartmentOutcome } from './apartment/generation-outcome';
+export {
+  synthesizeMepEngineering,
+  withMepEngineering,
+  PLUMB_SHAFT_MIN,
+  COVE_INSET_MM,
+  CEILING_GRID_MM,
+  SPRINKLER_SPACING_MM,
+  SWITCH_OFFSET_FROM_FRAME_MM,
+} from './mep/mep-synthesizer';

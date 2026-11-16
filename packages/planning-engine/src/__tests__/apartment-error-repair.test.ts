@@ -63,7 +63,7 @@ function createMockExtractedPlan(flatsCount: 2 | 3 | 4, mix: ApartmentBhkType[])
       aspectMismatchRatio: 0,
       orientationDegrees: 0,
       roadFacing: 'north',
-      extractionSource: 'cloudflare_flux_gemini_vision',
+      extractionSource: 'deterministic_schematic',
       confidence: 'confirmed',
       normalizedAt: new Date().toISOString(),
     },
@@ -108,36 +108,60 @@ describe('Closed-Loop Hard & Soft Error Auto-Repair Engine (Phase 1D)', () => {
     const baseBuilding = getBaseBuilding();
     const floor = baseBuilding.floors[0]!;
 
-    // In flat_01, bed3 is the 3rd bedroom at the bottom of the bedroom band.
-    // Intentionally drop bed3 and bath2, and expand bed2 down to fill their space (simulating Gemini vision missing partition).
-    const initialBedrooms = floor.rooms.filter(r => r.unitId === 'flat_01' && r.type === RoomType.Bedroom);
-    expect(initialBedrooms.length).toBeGreaterThanOrEqual(3);
-
-    const bed3 = initialBedrooms[initialBedrooms.length - 1]!;
+    // Merge two contiguous rooms cleanly (without overlap) to simulate missing partitions:
+    // absorb bed3 (and any inset balcony carved out of it) horizontally into adjacent masterBed,
+    // and absorb bath2 into adjacent commonBath.
+    const masterBed = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('master_bed'))!;
+    const commonBath = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('common_bath'))!;
+    const bed3 = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('bed_3') && r.type === RoomType.Bedroom)!;
+    const bed3Balcony = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('bed_3') && r.type === RoomType.Balcony);
     const bath2 = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('bath_2'));
-    const bed2 = floor.rooms.find(r => r.unitId === 'flat_01' && r.id.includes('bed_2'))!;
 
-    // Expand bed2 height down to include bath2 and bed3 height without overlapping
-    const addedHeight = (bath2 ? bath2.height : 0) + bed3.height;
-    const combinedBed2 = {
-      ...bed2,
-      height: bed2.height + addedHeight,
-      area: bed2.width * (bed2.height + addedHeight),
+    const minX = Math.min(masterBed.x, bed3.x, bed3Balcony ? bed3Balcony.x : masterBed.x);
+    const maxX = Math.max(
+      masterBed.x + masterBed.width,
+      bed3.x + bed3.width,
+      bed3Balcony ? bed3Balcony.x + bed3Balcony.width : masterBed.x + masterBed.width,
+    );
+    const mergedW = maxX - minX;
+    const combinedMasterBed = {
+      ...masterBed,
+      x: minX,
+      width: mergedW,
+      area: mergedW * masterBed.height,
       boundary: {
         points: [
-          bed2.boundary.points[0]!,
-          bed2.boundary.points[1]!,
-          { x: bed2.boundary.points[2]!.x, y: bed3.boundary.points[2]!.y },
-          { x: bed2.boundary.points[3]!.x, y: bed3.boundary.points[3]!.y },
+          { x: minX, y: masterBed.y },
+          { x: maxX, y: masterBed.y },
+          { x: maxX, y: masterBed.y + masterBed.height },
+          { x: minX, y: masterBed.y + masterBed.height },
+        ],
+      },
+    };
+    const mergedBathH = commonBath.height + (bath2 ? bath2.height : 0);
+    const combinedCommonBath = {
+      ...commonBath,
+      y: Math.min(commonBath.y, bath2 ? bath2.y : commonBath.y),
+      height: mergedBathH,
+      area: commonBath.width * mergedBathH,
+      boundary: {
+        points: [
+          { x: commonBath.x, y: Math.min(commonBath.y, bath2 ? bath2.y : commonBath.y) },
+          { x: commonBath.x + commonBath.width, y: Math.min(commonBath.y, bath2 ? bath2.y : commonBath.y) },
+          { x: commonBath.x + commonBath.width, y: Math.min(commonBath.y, bath2 ? bath2.y : commonBath.y) + mergedBathH },
+          { x: commonBath.x, y: Math.min(commonBath.y, bath2 ? bath2.y : commonBath.y) + mergedBathH },
         ],
       },
     };
 
+    const removedIds = new Set([bed3.id, ...(bed3Balcony ? [bed3Balcony.id] : []), ...(bath2 ? [bath2.id] : [])]);
     const defectiveFloor = {
       ...floor,
-      rooms: floor.rooms.filter(r => r.id !== bed3.id && (!bath2 || r.id !== bath2.id)).map(r => (r.id === bed2.id ? combinedBed2 : r)),
-      doors: floor.doors.filter(d => !d.connectsRooms.includes(bed3.id) && (!bath2 || !d.connectsRooms.includes(bath2.id))),
-      windows: floor.windows.filter(w => w.roomId !== bed3.id && (!bath2 || w.roomId !== bath2.id)),
+      rooms: floor.rooms
+        .filter(r => !removedIds.has(r.id))
+        .map(r => (r.id === masterBed.id ? combinedMasterBed : r.id === commonBath.id ? combinedCommonBath : r)),
+      doors: floor.doors.filter(d => !d.connectsRooms.some(id => removedIds.has(id))),
+      windows: floor.windows.filter(w => !removedIds.has(w.roomId)),
     };
     const defectiveBuilding = { ...baseBuilding, floors: [defectiveFloor] };
 

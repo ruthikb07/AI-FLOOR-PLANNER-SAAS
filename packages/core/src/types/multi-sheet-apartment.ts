@@ -1,3 +1,4 @@
+import type { ArchitecturalGenerationOptions } from './architectural-elements';
 import type { RegulatoryContextInput } from './udcpr';
 /**
  * Multi-Sheet Apartment Project Domain & Configuration Contracts (§1C).
@@ -27,6 +28,33 @@ import type { GeometryValidationReport } from './geometry-validation';
 
 export type VerticalStackType = 'G_PLUS_N' | 'STILT_PLUS_N' | 'BASEMENT_STILT_PLUS_N';
 export type ParkingMode = 'STILT_AND_SURFACE' | 'STILT_ONLY' | 'MECHANICAL_STACK';
+export type AreaTargetScope = 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
+export type BuildingMassingShape =
+  | 'COMPACT_DOUBLE_LOADED'
+  | 'H_SHAPE_WING'
+  | 'U_SHAPE_COURTYARD'
+  | 'L_SHAPE_CORNER'
+  | 'CRUCIFORM_PLUS'
+  | 'PINWHEEL_CLUSTER'
+  | 'STEPPED_OFFSET_BLOCK';
+
+export interface AreaTargetDiagnostic {
+  readonly scope: AreaTargetScope;
+  readonly requestedAreaSqFt: number;
+  readonly requestedAreaM2: number;
+  readonly achievedAreaSqFt: number;
+  readonly achievedAreaM2: number;
+  readonly minFeasibleGrossAreaM2?: number;
+  readonly minFeasibleGrossAreaSqFt?: number;
+  /** Compatibility aliases for callers checking Phase 0 shortened names. */
+  readonly requestedSqFt?: number;
+  readonly requestedM2?: number;
+  readonly achievedSqFt?: number;
+  readonly achievedM2?: number;
+  readonly minimumFeasibleGrossM2?: number;
+  readonly status: 'ACHIEVED' | 'CLAMPED_TO_ENVELOPE_MAX' | 'INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE';
+  readonly explanation: string;
+}
 
 /** Selectable Site Amenities (Ground & Marginal Setbacks). */
 export interface SiteAmenitiesConfig {
@@ -63,10 +91,31 @@ export interface TerraceAmenitiesConfig {
 
 /** Comprehensive configuration for a multi-sheet residential apartment project. */
 export interface MultiSheetApartmentConfig {
+  readonly architectureOptions?: ArchitecturalGenerationOptions;
+  /** Defaults to DEFERRED. Provisional member sizes require an explicit structural workflow. */
+  readonly structuralLayoutMode?: 'DEFERRED' | 'PROVISIONAL_EXISTING_PROFILE';
   readonly regulatoryContext?: RegulatoryContextInput;
   readonly projectId?: string;
   readonly projectName?: string;
   readonly aiPrompt?: string;
+  /**
+   * Deterministic generation seed. The same plot, brief, seed and engine
+   * version produce byte-identical geometry; a different seed explores the
+   * viable organizations in a different order. The seed never decides whether
+   * a constraint is satisfied. Defaults to 1.
+   */
+  readonly generationSeed?: number;
+  readonly rejectedTopologyHashes?: readonly string[];
+  readonly preferredArchetype?: string;
+  readonly buildingMassingShape?: BuildingMassingShape;
+  readonly aiProposal?: Record<string, unknown>;
+  readonly aiTelemetryOverride?: {
+    readonly geminiInvoked: boolean;
+    readonly provider: string;
+    readonly modelUsed?: string;
+    readonly fallbackReason?: string;
+    readonly referenceImageUsedForGeometry: boolean;
+  };
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
   readonly plotWidthMm: number;
@@ -80,13 +129,25 @@ export interface MultiSheetApartmentConfig {
   readonly floorToFloorHeightMm?: number;
   readonly stiltHeightMm?: number;
   readonly basementHeightMm?: number;
-  readonly flatsPerFloor: 2 | 3 | 4;
+  readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly units?: readonly DynamicApartmentUnitSpec[];
   readonly siteAmenities: SiteAmenitiesConfig;
   readonly stiltAmenities: StiltAmenitiesConfig;
   readonly terraceAmenities: TerraceAmenitiesConfig;
   readonly parkingMode: ParkingMode;
   readonly visitorParkingPercent?: number;
+  /** Explicit area target in sq. ft. (when specified at floor or unit level). */
+  readonly targetAreaSqFt?: number;
+  /** Explicit interpretation scope for targetAreaSqFt. */
+  readonly areaTargetScope?: AreaTargetScope;
+  /** Center the building footprint inside the permissible setback envelope when smaller than the envelope. */
+  readonly centerBuildingInEnvelope?: boolean;
+  /** Render 600 mm concrete window sunshade chajjas in 2D dashed A-CHAJJA, DXF, and 3D (default true). */
+  readonly includeWindowChajjas?: boolean;
+  /** Alternate cantilever balcony bays across Odd vs Even upper floors while locking vertical structure/MEP cores. */
+  readonly staggeredBalconies?: boolean;
+  /** Internal tag set during multi-floor coordination when generating Odd vs Even typical floor variants. */
+  readonly floorVariant?: 'ODD' | 'EVEN';
 }
 
 /** Default Indian apartment project amenities configuration. */
@@ -175,6 +236,7 @@ export interface ApartmentProjectSchedule {
   readonly parking: ParkingSchedule;
   readonly sheetAudits: readonly SheetLedgerAudit[];
   readonly overallDeltaMm2: number;
+  readonly areaTargetDiagnostic?: AreaTargetDiagnostic;
 }
 
 export type ApartmentSheetType =
@@ -198,7 +260,38 @@ export interface CoordinatedApartmentSheet {
 }
 
 /** Complete multi-sheet apartment engine solution result. */
+export interface ApartmentGenerationViolation {
+  readonly code: string;
+  readonly severity: 'CRITICAL' | 'WARNING';
+  readonly source: 'TOPOLOGY' | 'GEOMETRY' | 'CLOSURE' | 'OPENING' | 'GENERATION';
+  readonly description: string;
+  readonly floorId?: string;
+  readonly elementIds: readonly string[];
+  readonly rank: number;
+}
+
+/** Generation evidence, independent of statutory compliance and export approval. */
+export interface ApartmentGenerationReport {
+  readonly status: 'BEST_EFFORT' | 'INTERNAL_CHECKS_PASSED';
+  readonly strategy: 'VALIDATED_TOPOLOGY' | 'BEST_EFFORT_TOPOLOGY' | 'LEGACY_FALLBACK';
+  readonly professionalReviewRequired: true;
+  readonly selectedFamily?: string;
+  readonly selectedVariant?: string;
+  readonly rejectedCandidates: readonly { readonly familyId: string; readonly variantId: string; readonly stage: string; readonly reasons: readonly string[] }[];
+  readonly violations: readonly ApartmentGenerationViolation[];
+}
+
+export type ApartmentGenerationOutcome =
+  | { readonly status: 'PLAN'; readonly result: MultiSheetApartmentResult }
+  | { readonly status: 'INVALID_INPUT' | 'INFEASIBLE' | 'SEARCH_EXHAUSTED'; readonly reason: string;
+      /** Nearest successfully generated alternative in the bounded search, not certified feasible. */
+      readonly alternative?: MultiSheetApartmentResult;
+      readonly alternativeChanges: readonly string[];
+      readonly alternativeSearch: 'NOT_RUN' | 'BOUNDED';
+      readonly professionalReviewRequired: true };
+
 export interface MultiSheetApartmentResult {
+  readonly generationReport?: ApartmentGenerationReport;
   readonly config: MultiSheetApartmentConfig;
   readonly building: Building;
   readonly sheets: readonly CoordinatedApartmentSheet[];

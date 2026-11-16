@@ -2,6 +2,7 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
+> **Phase 2.5 Independent Review:** NOT READY — see [independent review](PHASE2_CODEX_INDEPENDENT_REVIEW.md)
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Audited By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
@@ -14,7 +15,7 @@ The project targets high-quality, editable residential architectural 2D generati
 
 ### Core Architectural Axioms
 1. **Canonical Model Primacy:** The canonical `Building` contract from `@ai-floor-planner/core` is the sole source of authoritative state. SVG, Three.js, React components, and exported CAD files are pure projections.
-2. **Deterministic Solvers First:** AI interprets user intent and generates schematic proposals. All geometry creation, wall sizing, room allocation, column/beam grids, and statutory compliance checks are owned by deterministic computational geometry solvers.
+2. **Deterministic Solvers Only:** AI interprets the user's brief into structured intent, and nothing more. All geometry creation, wall sizing, room allocation, column/beam grids, and statutory compliance checks are owned by deterministic computational geometry solvers. No image model participates in deciding layout, counts or geometry, and geometry is never read back out of an image; the former Cloudflare FLUX generation, image-to-plan vision interpretation and visual preflight paths have been removed.
 3. **Honest Gate Reporting:** If an external service, solver, or environment requirement is missing or unverified, the system must report `NOT_RUN`, `BLOCKED`, or `PROFESSIONAL_REVIEW_REQUIRED`. Never fabricate a passing score or structural safety approval.
 
 ---
@@ -62,7 +63,24 @@ The project targets high-quality, editable residential architectural 2D generati
 
 ---
 
-### Phase 2 — Multi-Floor Cadastral & Site Coordination (Next Phase)
+### Phase 2.5 — Independent room regeneration review (NOT READY)
+- [x] Reproduce target-unit reset, corrupt door identity, and stale direct-command acceptance before repairing them.
+- [x] Preserve target area in mm², use actual preview constraints, reject partial alternatives, and revalidate at command execution.
+- [x] Preserve wall/opening identities; reject ambiguous topology, fixed-room edits, and locked host changes.
+- [x] Remove the arbitrary 85% envelope cap and misleading universal statutory-minimum claims.
+- [x] Add cancellable solver workers and stale-result protection.
+- [x] Exercise undo/redo, local storage, real PDF/SVG output, DWG read-back, DXF area labels and canonical 3D wall coordinates on fixtures.
+- [ ] Establish one explicit canonical opening-position contract and migrate legacy renderer/projection/export consumers; then enable physical-floor regeneration.
+- [ ] Extend conservative wall reconstruction to complete closed apartments, including split partitions and verified circulation/clearance continuity.
+- [ ] Complete browser/WebGL acceptance scenarios; current browser service is unavailable.
+- [ ] Resolve integration failures: live provider AUTH_FAILED/403 and nondeterministic furniture IDs in the existing generation pipeline.
+- [ ] Rerun all release gates and obtain professional architectural review before marking the phase complete.
+
+Evidence and exact limitations: [PHASE2_CODEX_INDEPENDENT_REVIEW.md](PHASE2_CODEX_INDEPENDENT_REVIEW.md).
+
+---
+
+### Phase 3 — Multi-Floor Cadastral & Site Coordination (Next Phase)
 - [ ] **Task 2.1 — Site Boundary Snapping & Setback Offsets:**
   - Enforce site boundary polygon vertex snapping in 2D and 3D overlays.
   - Calculate dynamic statutory marginal distances ($H/5$ front, $H/4$ rear/side) directly on site polygon offsets.
@@ -93,5 +111,5 @@ The project targets high-quality, editable residential architectural 2D generati
 
 1. Before starting a phase: verify clean working tree and run `pnpm test:unit`.
 2. Commit message format: `feat(scope): ...` or `fix(scope): ...`.
-3. Push to `origin/main` upon phase completion.
+3. Keep work on the feature/review branch. Do not merge or push to main without explicit authorization.
 4. Maintain `AGENTS.md` and feature matrices with verified realities only.

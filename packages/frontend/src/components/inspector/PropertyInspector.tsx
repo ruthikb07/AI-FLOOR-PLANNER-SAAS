@@ -1,9 +1,9 @@
+import { optimizeRoomArea, createRoomAreaRegenerationCommand } from '@ai-floor-planner/planning-engine';
 import React, { useEffect, useState } from 'react';
 import { RotateCcw, RotateCw } from 'lucide-react';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
   UpdateRoomPropertiesCommand,
-  UpdateRoomGeometryCommand,
   UpdateDoorPropertiesCommand,
   UpdateWindowPropertiesCommand,
   RoomType,
@@ -13,8 +13,9 @@ import {
   WallType,
   Direction,
 } from '@ai-floor-planner/core';
-import { containsPolygon, mmToFeet, polygonIntersectionArea, sqMmToSqFt } from '@ai-floor-planner/geometry-engine';
+import { mmToFeet, sqMmToSqFt } from '@ai-floor-planner/geometry-engine';
 import { RefinementPanel } from '../refinement/RefinementPanel';
+import { RoomAreaCustomizerPanel } from '../argon/RoomAreaCustomizerPanel';
 
 interface PropertyInspectorProps {
   editor: EditorContextValue;
@@ -63,15 +64,18 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
     ? activeFloor.stairs.find(stair => stair.id === selection.entityId) : null;
   const commitRoomGeometry = (width: number, height: number): boolean => {
     if (!selectedRoom) return false;
-    const boundary = { points: [
-      { x: selectedRoom.x, y: selectedRoom.y }, { x: selectedRoom.x + width, y: selectedRoom.y },
-      { x: selectedRoom.x + width, y: selectedRoom.y + height }, { x: selectedRoom.x, y: selectedRoom.y + height },
-    ] };
-    const valid = containsPolygon(activeFloor.boundary, boundary)
-      && (!selectedRoom.minArea || width * height >= selectedRoom.minArea)
-      && activeFloor.rooms.every(room => room.id === selectedRoom.id || polygonIntersectionArea(boundary, room.boundary) <= 2);
-    if (valid) executeCommand(new UpdateRoomGeometryCommand(selectedRoom.id, { x: selectedRoom.x, y: selectedRoom.y, width, height }, selectedRoom.name));
-    return valid;
+    const control = editor.getGenerationControl?.() ?? editor.generationControl;
+    const options = { targetAreaMm2: width * height, control, preserveStructural: true };
+    const result = optimizeRoomArea(building, selectedRoom.id, options);
+    const candidate = result.candidates.find(c => {
+      const room = c.building.floors.flatMap(f => f.rooms).find(r => r.id === selectedRoom.id);
+      return room && Math.abs(room.width - width) < 0.001 && Math.abs(room.height - height) < 0.001;
+    });
+    if (!candidate) return false;
+    try {
+      executeCommand(createRoomAreaRegenerationCommand(building, candidate, options, () => editor.getGenerationControl?.() ?? editor.generationControl));
+      return true;
+    } catch { return false; }
   };
 
   return (
@@ -98,6 +102,10 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({ editor, em
         {/* ROOM PROPERTIES */}
         {selectedRoom && (
           <>
+            <div className="inspector-section" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+              <RoomAreaCustomizerPanel editor={editor} room={selectedRoom} />
+            </div>
+
             <div className="inspector-section">
               <span className="inspector-section-title">Identity</span>
               <div className="form-group">

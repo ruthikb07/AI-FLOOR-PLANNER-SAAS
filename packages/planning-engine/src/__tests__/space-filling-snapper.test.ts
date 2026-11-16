@@ -88,7 +88,7 @@ function createMockExtractedPlan(flatsCount: 2 | 3 | 4, mix: ApartmentBhkType[])
       aspectMismatchRatio: 0,
       orientationDegrees: 0,
       roadFacing: 'north',
-      extractionSource: 'cloudflare_flux_gemini_vision',
+      extractionSource: 'deterministic_schematic',
       confidence: 'confirmed',
       normalizedAt: new Date().toISOString(),
     },
@@ -247,7 +247,8 @@ describe('Phase 1B — Orthogonal Space-Filling Elastic Snapper & Exact Metric S
       const bedDoors = doors.filter(d => {
         const r1 = floor.rooms.find(r => r.id === d.connectsRooms[0]);
         const r2 = floor.rooms.find(r => r.id === d.connectsRooms[1]);
-        return (r1?.type === 'bedroom' && r2?.type === 'living') || (r2?.type === 'bedroom' && r1?.type === 'living');
+        return (r1?.type === 'bedroom' && (r2?.type === 'living' || r2?.type === 'corridor'))
+          || (r2?.type === 'bedroom' && (r1?.type === 'living' || r1?.type === 'corridor'));
       });
       expect(bedDoors.length).toBeGreaterThan(0);
       expect(bedDoors.every(d => d.width >= 800)).toBe(true);

@@ -1,4 +1,5 @@
 import type { Building, Room, DynamicApartmentManifest, ApartmentBhkType } from '@ai-floor-planner/core';
+import { architecturalSpaceRole } from '@ai-floor-planner/core';
 import { containsPolygon, polygonIntersectionArea, measureApartmentAreaLedger, openingFitsApartmentWall } from '@ai-floor-planner/geometry-engine';
 
 function sharesBoundarySegment(
@@ -99,7 +100,7 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
           add('UNIT_OVERLAP', `${u.id}/${units[j]!.id}`);
         }
       }
-      for (const r of rooms.filter(r => !r.unitId)) {
+      for (const r of rooms.filter(r => !r.unitId && !r.tags?.includes('shaft:interflat'))) {
         if (polygonIntersectionArea(u.boundary, r.boundary) > 1) {
           add('UNIT_CORE_CONFLICT', `${u.id}/${r.id}`);
         }
@@ -135,7 +136,7 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
       graph.get(b.id)!.add(a.id);
       if (a.unitId && b.unitId && a.unitId !== b.unitId) add('UNIT_ACCESS_CROSSES_OWNERSHIP', door.id);
       const inside = a.unitId ? a : b.unitId ? b : null;
-      if (inside && a.unitId !== b.unitId && !['foyer', 'living'].includes(inside.type)) add('PRIMARY_ENTRANCE_PRIVATE_ROOM', door.id);
+      if (inside && a.unitId !== b.unitId && !['foyer', 'living', 'dining'].includes(inside.type)) add('PRIMARY_ENTRANCE_PRIVATE_ROOM', door.id);
 
       // Entrance door dimensions (>= 1000 mm, target 1050 mm)
       const isEntrance = (a.spaceUse === 'COMMON' || a.spaceUse === 'CORE' || !a.unitId) && b.unitId ||
@@ -224,11 +225,12 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
       const match = String(bhkType).match(/^([1234])BHK$/i);
       const defaultBeds = match ? parseInt(match[1]!, 10) : 3;
       const expectedBeds = typeof unitSpec?.bedrooms === 'number' ? unitSpec.bedrooms : defaultBeds;
+      const defaultBaths = bhkType === '1BHK' ? 1 : bhkType === '2BHK' ? 2 : bhkType === '3BHK' ? 2 : 3;
       const expectedBaths = typeof unitSpec?.bathrooms === 'number'
         ? unitSpec.bathrooms
         : unitSpec?.attachedBathCount !== undefined
         ? unitSpec.attachedBathCount + 1
-        : expectedBeds;
+        : defaultBaths;
 
       const livingCount = unitRooms.filter(r => r.type === 'living' || r.tags.includes('role:living')).length;
       if (livingCount === 0) add('UNIT_ROOM_MANIFEST_INCOMPLETE', `${u.id}: missing living room for ${bhkType}`);
@@ -259,9 +261,13 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
         if ([...graph.get(r.id) ?? []].some(id => id !== owner?.id)) add('ATTACHED_BATHROOM_NOT_PRIVATE', r.id);
       }
       const hasBalconyOrUtilityVentilation = (
-        (r.type === 'living' && [...(graph.get(r.id) ?? [])].some(adjId => {
+        ((r.type === 'living' || r.type === 'bedroom') && [...(graph.get(r.id) ?? [])].some(adjId => {
           const adj = rooms.find(o => o.id === adjId);
-          return adj?.type === 'balcony' || adj?.spaceUse === 'OUTDOOR' || adj?.name.toLowerCase().includes('balcony');
+          return adj?.type === 'balcony' || adj?.spaceUse === 'OUTDOOR' || adj?.name.toLowerCase().includes('balcony') ||
+            (adj?.type === 'dining' && [...(graph.get(adj.id) ?? [])].some(dAdjId => {
+              const dAdj = rooms.find(o => o.id === dAdjId);
+              return dAdj?.type === 'balcony' || dAdj?.spaceUse === 'OUTDOOR' || dAdj?.name.toLowerCase().includes('balcony');
+            }));
         })) ||
         (r.type === 'kitchen' && [...(graph.get(r.id) ?? [])].some(adjId => {
           const adj = rooms.find(o => o.id === adjId);
@@ -277,17 +283,30 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
     if (ledger.unassigned >= 0.001) add('AREA_UNASSIGNED', `${floor.id}: ${ledger.unassigned} mm2`);
     for (const balcony of ledger.balconies) {
       if (!balcony.unitId || !balcony.accessDoorIds.some(id => validDoors.has(id))) add('BALCONY_ACCESS_MISSING', balcony.id);
-      if (!floor.walls.some(w => w.roomIds.length === 1 && w.roomIds.includes(balcony.id))) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);
+      const hasExteriorOrOtsEdge = floor.walls.some(
+        w =>
+          w.roomIds.includes(balcony.id) &&
+          (w.roomIds.length === 1 ||
+            w.wallUse === 'SHAFT' ||
+            w.roomIds.some(id => {
+              if (id === balcony.id) return false;
+              const other = rooms.find(rm => rm.id === id);
+              return other ? architecturalSpaceRole(other) === 'OPEN_TO_SKY_VOID' : false;
+            })),
+      );
+      if (!hasExteriorOrOtsEdge) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);
       if (balcony.usableDepth < 1200) add('BALCONY_CLEAR_DEPTH_SUBSTANDARD', `${balcony.id}: clear depth ${balcony.usableDepth} mm < 1200 mm`);
-      if (balcony.usableDepth < 1500 || balcony.usableWidth < 2800) add('BALCONY_TOO_SMALL', balcony.id, 'warning');
+      const r = rooms.find(room => room.id === balcony.id);
+      const isBedBalcony = balcony.id.toLowerCase().includes('bed') || r?.name?.toLowerCase().includes('bedroom');
+      if (!isBedBalcony && (balcony.usableDepth < 1500 || balcony.usableWidth < 2800)) add('BALCONY_TOO_SMALL', balcony.id, 'warning');
     }
     for (const u of units) {
-      // Exclude utility balconies from fragmentation check (§2.2)
+      // Exclude utility balconies and planned bedroom balconies from fragmentation check (§2.2)
       const nonUtilityBalconies = ledger.balconies.filter(b => {
         if (b.unitId !== u.id) return false;
         const r = rooms.find(room => room.id === b.id);
-        const isUtil = b.id.toLowerCase().includes('utility') || r?.type === 'utility' || r?.name.toLowerCase().includes('utility');
-        return !isUtil;
+        const isUtilOrBed = b.id.toLowerCase().includes('utility') || b.id.toLowerCase().includes('bed') || r?.name.toLowerCase().includes('utility') || r?.name.toLowerCase().includes('bedroom');
+        return !isUtilOrBed;
       });
       if (nonUtilityBalconies.length > 1) add('BALCONY_FRAGMENTATION_HIGH', u.id, 'warning');
     }

@@ -1,0 +1,48 @@
+{
+  "perFlatSqm": {
+    "flat_01": 95.04,
+    "flat_02": 95.04,
+    "flat_03": 95.04,
+    "flat_04": 95.04,
+    "COMMON": 1064.84
+  },
+  "sheetAudits": [
+    {
+      "sheetId": "sheet_01_site_plan",
+      "sheetName": "Sheet 01: Site Layout & Landscape Plan",
+      "grossAreaMm2": 2000000000,
+      "accountedAreaMm2": 2000000000,
+      "deltaMm2": 0,
+      "unassignedMm2": 0,
+      "isPlanarConserved": true
+    },
+    {
+      "sheetId": "sheet_02_stilt_plan",
+      "sheetName": "Sheet 02: Stilt Floor Parking & Amenities Plan",
+      "grossAreaMm2": 1445000000,
+      "accountedAreaMm2": 1445000000,
+      "deltaMm2": 0,
+      "unassignedMm2": 0,
+      "isPlanarConserved": true
+    },
+    {
+      "sheetId": "sheet_03_level_0_plan",
+      "sheetName": "Sheet 03: 0th Residential Floor Plan",
+      "grossAreaMm2": 1445000000,
+      "accountedAreaMm2": 1445000000,
+      "deltaMm2": 0,
+      "unassignedMm2": 0,
+      "isPlanarConserved": true
+    },
+    {
+      "sheetId": "sheet_05_terrace_plan",
+      "sheetName": "Sheet 05: Rooftop Services & Terrace Plan",
+      "grossAreaMm2": 1445000000,
+      "accountedAreaMm2": 1445000000,
+      "deltaMm2": 0,
+      "unassignedMm2": 0,
+      "isPlanarConserved": true
+    }
+  ],
+  "overallDeltaMm2": 0
+}

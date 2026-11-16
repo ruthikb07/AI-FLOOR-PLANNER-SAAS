@@ -6,7 +6,7 @@
  * - Exact counts: flats, unit mix, bedrooms, bathrooms, living, dining, kitchens, utilities, balconies.
  * - Comprehensive Room Inventory across the entire floor plate.
  * - Exact Floor Area Breakdown: Site, Buildable Envelope, Floor Plate, Core, Circulation, Services, Net Residential (sq ft & sq m).
- * - Pre-generation validation: Deterministic Schematic MUST match Manifest before invoking FLUX.
+ * - Pre-generation validation: the deterministic schematic MUST match the manifest.
  */
 
 import type { ApartmentBriefConfig } from '../types/apartment';
@@ -355,7 +355,7 @@ export function buildApartmentGenerationManifest(
 }
 
 /**
- * Formats the structured manifest into a clear textual section for the FLUX prompt (§5, §6, §7).
+ * Formats the structured manifest into a clear textual section for reporting (§5, §6, §7).
  */
 export function renderApartmentManifestText(manifest: ApartmentGenerationManifest): string {
   const lines: string[] = [
@@ -436,7 +436,7 @@ export function renderApartmentManifestText(manifest: ApartmentGenerationManifes
 }
 
 /**
- * Validates that the Deterministic Schematic strictly matches the Manifest before invoking FLUX (§8).
+ * Validates that the deterministic schematic strictly matches the manifest (§8).
  * If the schematic and manifest disagree on flat count, unit mix, or core elements: STOP.
  */
 export function validateSchematicMatchesManifest(
@@ -498,7 +498,7 @@ export function validateSchematicMatchesManifest(
     }
   }
 
-  // 6. Area balance + apartment logic (spatial relationship graph) must hold before FLUX.
+  // 6. Area balance + apartment logic (spatial relationship graph) must hold.
   const feasibilityFail = schematic.layoutFits === false;
   if (feasibilityFail) {
     discrepancies.push(schematic.areaReport?.floor.message ?? `FEASIBILITY FAIL: ${schematic.layoutIssues.join('; ')}`);

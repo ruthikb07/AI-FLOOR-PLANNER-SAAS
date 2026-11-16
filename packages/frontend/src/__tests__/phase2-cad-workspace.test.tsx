@@ -86,23 +86,36 @@ it('filters real canvas layers independently, selects properties, uses actual fl
     const canvas = () => host.querySelector('.floor-plan')!;
     expect(host.querySelectorAll('[aria-label="Model floors"] button')).toHaveLength(2);
     const controls = host.querySelector('[aria-label="CAD layers"]')!;
-    for (const [label, selector] of [
-      ['Walls', '.layer-walls'],
-      ['Columns', '.layer-columns'],
-      ['Beams', '.layer-beams'],
-      ['Doors/Windows', '.layer-openings'],
-      ['Furniture', '.layer-furniture'],
-      ['Staircases', '.layer-stairs'],
-      ['Dimensions', '.layer-annotations'],
-    ]) {
-      expect(canvas().querySelector(selector!)).not.toBeNull();
-      const button = Array.from(controls.querySelectorAll('button')).find(
-        (b) => b.textContent === label,
-      )!;
-      await act(async () => button.click());
-      expect(canvas().querySelector(selector!)).toBeNull();
-      await act(async () => button.click());
-      expect(canvas().querySelector(selector!)).not.toBeNull();
+    for (const [label, selector, defaultVisible] of [
+      ['Walls', '.layer-walls', true],
+      ['Columns', '.layer-columns', false],
+      ['Beams', '.layer-beams', false],
+      ['Doors/Windows', '.layer-openings', true],
+      ['Furniture', '.layer-furniture', true],
+      ['Staircases', '.layer-stairs', true],
+      ['Dimensions', '.layer-annotations', true],
+    ] as const) {
+      if (defaultVisible) {
+        expect(canvas().querySelector(selector)).not.toBeNull();
+        const button = Array.from(controls.querySelectorAll('button')).find(
+          (b) => b.textContent === label,
+        )!;
+        await act(async () => button.click());
+        expect(canvas().querySelector(selector)).toBeNull();
+        await act(async () => button.click());
+        expect(canvas().querySelector(selector)).not.toBeNull();
+      } else {
+        expect(canvas().querySelector(selector)).toBeNull();
+        const button = Array.from(controls.querySelectorAll('button')).find(
+          (b) => b.textContent === label,
+        )!;
+        await act(async () => button.click());
+        expect(canvas().querySelector(selector)).not.toBeNull();
+        if (label !== 'Columns') {
+          await act(async () => button.click());
+          expect(canvas().querySelector(selector)).toBeNull();
+        }
+      }
     }
     await act(async () =>
       canvas()

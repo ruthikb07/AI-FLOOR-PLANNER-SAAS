@@ -1,0 +1,72 @@
+{
+  "familyId": "DUAL_WING",
+  "variantId": "dualwing:lifts=east",
+  "label": "Dual wing with cross circulation",
+  "rationale": "Circulation runs east-west across the plot in a 7800 mm band, splitting the dwellings into a north wing and a south wing. Flats are entered from their long side, so the living and sleeping bands run across the plot rather than down it and each flat presents a full-width exterior facade.",
+  "rankingExplanation": "Ranked first on the priorities this brief emphasized; see the objective scores for the measurements behind it.",
+  "emphasizedObjectives": [
+    "FACADE_ALLOCATION",
+    "ENVELOPE_UTILIZATION",
+    "DAYLIGHT_EXPOSURE",
+    "PRIVACY_SEPARATION"
+  ],
+  "weightedTotal": 0.6427,
+  "objectives": [
+    {
+      "id": "ENVELOPE_UTILIZATION",
+      "score": 0,
+      "explanation": "43.3% of the buildable envelope is dwelling area (380.2 m2 of 877.2 m2)"
+    },
+    {
+      "id": "CIRCULATION_EFFICIENCY",
+      "score": 0,
+      "explanation": "common corridors and lobbies take 19.4% of the envelope (170.4 m2)"
+    },
+    {
+      "id": "DAYLIGHT_EXPOSURE",
+      "score": 0,
+      "explanation": "8 of 20 habitable rooms touch the external facade (40%)"
+    },
+    {
+      "id": "VENTILATION_QUALITY",
+      "score": 1,
+      "explanation": "8 of 8 bathrooms vent directly to the facade; 799.6 m2 of open-to-sky void supports the rest"
+    },
+    {
+      "id": "PRIVACY_SEPARATION",
+      "score": 0.8125146120768361,
+      "explanation": "bedrooms average 12.1 m from common circulation; 0 of 8 share a wall with it"
+    },
+    {
+      "id": "KITCHEN_USABILITY",
+      "score": 0.31146833333333335,
+      "explanation": "kitchens average 7.1 m2; 4 of 4 adjoin a utility balcony"
+    },
+    {
+      "id": "BEDROOM_BALCONY_ACCESS",
+      "score": 0.5,
+      "explanation": "4 of 8 bedrooms have an attached balcony on the external facade"
+    },
+    {
+      "id": "FACADE_ALLOCATION",
+      "score": 1,
+      "explanation": "4 of 4 flats front the plot boundary, taking 78.2 m of the 119.6 m perimeter"
+    },
+    {
+      "id": "CORE_EFFICIENCY",
+      "score": 1,
+      "explanation": "stairs and lifts occupy 4.6% of the envelope (40.2 m2)"
+    },
+    {
+      "id": "ROOM_PROPORTION",
+      "score": 1,
+      "explanation": "0 of 20 habitable rooms exceed a 2.2:1 proportion"
+    },
+    {
+      "id": "PREFERENCE_SATISFACTION",
+      "score": 1,
+      "explanation": "1 of 1 stated preferences are honoured by this geometry"
+    }
+  ],
+  "disclaimer": "Scores describe internal software measurements only. They do not establish statutory compliance, structural adequacy or professional approval."
+}

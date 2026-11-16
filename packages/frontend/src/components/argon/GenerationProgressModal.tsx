@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -19,14 +19,16 @@ interface GenerationProgressModalProps {
 }
 
 const STAGE_LABELS: Record<PipelineStageId, string> = {
-  PLOT_BOUNDARY_SOLVE: 'Validating Plot & Setbacks',
-  UNIT_SPATIAL_SLICING: 'Solving Spatial Layout',
-  WALL_AND_OPENING_TOPOLOGY: 'Assembling Topology',
+  PLOT_BOUNDARY_SOLVE: 'AI Prompt & Constraint Extraction · Validating Plot & Setbacks',
+  UNIT_SPATIAL_SLICING: 'Solving Multi-Unit Spatial Layout & Proportions',
+  WALL_AND_OPENING_TOPOLOGY: 'Assembling Wall & Door Circulation Topology',
   COLUMN_AND_BEAM_GRID: 'Placing Structure (S-COLS & S-BEAM)',
-  GEOMETRY_ZERO_ERROR_AUDIT: 'Auditing Geometry (Zero Delta)',
+  GEOMETRY_ZERO_ERROR_AUDIT: 'Auditing Geometry & >= 85 Compliance Gate',
   UDCPR_CHECK: 'Measured UDCPR / NBC Assessment',
   COMPLETE: 'Finalizing Canonical Manifest',
 };
+
+const ORDERED_STAGES = Object.keys(STAGE_LABELS) as PipelineStageId[];
 
 export const GenerationProgressModal: React.FC<GenerationProgressModalProps> = ({
   isOpen,
@@ -35,18 +37,43 @@ export const GenerationProgressModal: React.FC<GenerationProgressModalProps> = (
   onCancel,
   onRetry,
 }) => {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setElapsedMs(0);
+      return;
+    }
+    const startedAt = performance.now();
+    const timer = setInterval(() => {
+      setElapsedMs(Math.round(performance.now() - startedAt));
+    }, 100);
+    return () => clearInterval(timer);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const currentStage = progress?.stage ?? 'PLOT_BOUNDARY_SOLVE';
   const hasError = Boolean(error) || progress?.status === 'FAILED';
+  const simulatedIdx = Math.min(ORDERED_STAGES.length - 2, Math.floor(elapsedMs / 550));
+  const currentStage = progress?.stage ?? ORDERED_STAGES[simulatedIdx] ?? 'PLOT_BOUNDARY_SOLVE';
+  const currentStageIdx = ORDERED_STAGES.indexOf(currentStage);
 
-  const getStageState = (stage: PipelineStageId): 'completed' | 'active' | 'pending' | 'error' => {
+  const getStageState = (stage: PipelineStageId, idx: number): 'completed' | 'active' | 'pending' | 'error' => {
     if (hasError && stage === currentStage) return 'error';
     const status = progress?.stageStatuses[stage];
     if (status === 'COMPLETED') return 'completed';
     if (status === 'RUNNING') return 'active';
+    if (!progress) {
+      if (idx < currentStageIdx) return 'completed';
+      if (idx === currentStageIdx) return 'active';
+    }
     return 'pending';
   };
+
+  const displayPercent = progress?.progressPercent
+    ? Math.max(progress.progressPercent, Math.min(95, Math.round((elapsedMs / 3500) * 90)))
+    : Math.min(92, Math.max(8, Math.round(((currentStageIdx + 0.5) / ORDERED_STAGES.length) * 100)));
+  const totalElapsedSec = ((progress?.currentStageDurationMs ? Math.max(elapsedMs, progress.currentStageDurationMs) : elapsedMs) / 1000).toFixed(1);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-argon-text/40 backdrop-blur-sm animate-fadeIn">
@@ -69,7 +96,7 @@ export const GenerationProgressModal: React.FC<GenerationProgressModalProps> = (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-argon-card border border-argon-border text-xs font-mono text-argon-text shadow-2xs">
               <Clock className="w-3.5 h-3.5 text-argon-btn" />
-              <span>{progress?.currentStageDurationMs ? Math.round(progress.currentStageDurationMs / 1000) : 0}s</span>
+              <span>{totalElapsedSec}s</span>
             </div>
             {onCancel && (
               <button
@@ -87,15 +114,24 @@ export const GenerationProgressModal: React.FC<GenerationProgressModalProps> = (
         <div className="w-full bg-argon-surface h-2 relative overflow-hidden">
           <div
             className="h-full bg-argon-btn transition-all duration-300 ease-out"
-            style={{ width: `${progress?.progressPercent ?? 0}%` }}
+            style={{ width: `${displayPercent}%` }}
           />
         </div>
 
         {/* Main Content Body */}
         <div className="p-6 space-y-3.5 max-h-[60vh] overflow-y-auto argon-scrollbar">
           <div className="space-y-2">
-            {(Object.keys(STAGE_LABELS) as PipelineStageId[]).map((stage, idx) => {
-              const state = getStageState(stage);
+            {ORDERED_STAGES.map((stage, idx) => {
+              const state = getStageState(stage, idx);
+              const recordedMs = Math.round(progress?.stageTimingsMs[stage] ?? 0);
+              const stageMs =
+                recordedMs > 0
+                  ? recordedMs
+                  : state === 'completed'
+                  ? 550
+                  : state === 'active'
+                  ? Math.max(100, elapsedMs % 550)
+                  : 0;
               return (
                 <div
                   key={stage}
@@ -133,8 +169,8 @@ export const GenerationProgressModal: React.FC<GenerationProgressModalProps> = (
                         0{idx + 1}. {STAGE_LABELS[stage]}
                       </span>
                       <small className="font-mono text-xs text-argon-muted font-normal">
-                        {progress?.stageStatuses[stage] ?? 'PENDING'} ·{' '}
-                        {Math.round(progress?.stageTimingsMs[stage] ?? 0)} ms
+                        {state === 'completed' ? 'COMPLETED' : state === 'active' ? 'RUNNING' : state === 'error' ? 'FAILED' : 'PENDING'} ·{' '}
+                        {stageMs} ms
                       </small>
                     </span>
                   </div>

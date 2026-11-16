@@ -8,8 +8,6 @@ import {
   generateDeterministicApartmentSchematic,
 } from '../apartment/schematic';
 import { getApartmentRulesProfile } from '../apartment/jurisdiction';
-import { compileApartmentFloorPlanImagePrompt } from '../orchestration/image-prompt-compiler';
-import { evaluateApartmentPreflight } from '../orchestration/apartment-preflight';
 import type { ApartmentBriefConfig } from '../types/apartment';
 import { Direction, createBuilding, type Site } from '@ai-floor-planner/core';
 
@@ -275,7 +273,7 @@ describe('Structured Generation Manifest Architecture (§1 - §26)', () => {
       expect(check.discrepancies).toHaveLength(0);
     });
 
-    it('stops before FLUX if schematic flat count disagrees with manifest (§8)', () => {
+    it('rejects a schematic whose flat count disagrees with the manifest (§8)', () => {
       const rulesProfile = getApartmentRulesProfile('mumbai_mcgm', {
         floorCount: 5,
         tenementsPerFloor: 2,
@@ -303,148 +301,6 @@ describe('Structured Generation Manifest Architecture (§1 - §26)', () => {
       const check = validateSchematicMatchesManifest(schematic, manifest);
       expect(check.matches).toBe(false);
       expect(check.discrepancies.some(d => d.includes('flat count'))).toBe(true);
-    });
-  });
-
-  describe('3. Image Prompt Compiler with Manifest (§17, §18)', () => {
-    it('compiles prompt containing all 18 sections in order', () => {
-      const manifest = buildApartmentGenerationManifest({
-        site: {
-          plotWidthMm: standardSite.plotWidth,
-          plotDepthMm: standardSite.plotDepth,
-          setbacksMm: standardSite.setbacks,
-        },
-        apartmentConfig: standardBrief,
-      });
-
-      const req = compileApartmentFloorPlanImagePrompt({
-        site: standardSite,
-        apartmentConfig: standardBrief,
-        manifest,
-        seed: 42,
-      });
-
-      // Phase 2 compact directive clauses
-      expect(req.prompt).toContain('CREATE ONE PROFESSIONAL 2D INDIAN APARTMENT FLOOR PLAN.');
-      expect(req.prompt).toContain('CURRENT FLOOR:');
-      expect(req.prompt).toContain('JURISDICTION:');
-      expect(req.prompt).toContain('EXACTLY 2 separate residential flats');
-      expect(req.prompt).toContain('Total bedrooms across floor: 5');
-      expect(req.prompt).toContain('EXACTLY 2 separate elevator shaft(s)');
-      expect(req.prompt).toContain('EXACTLY 2 staircase(s)');
-      expect(req.prompt).toContain('HARD REQUIREMENTS:');
-      expect(req.prompt).toContain('1. Generate EXACTLY 2 separate residential flats');
-      expect(req.prompt).toContain('REFERENCE PRIORITY:');
-      expect(req.prompt).toContain('1. USER/MANIFEST REQUIREMENTS');
-      expect(req.prompt).toContain('2. DETERMINISTIC SCHEMATIC');
-      expect(req.prompt).toContain('3. REFERENCE IMAGE VISUAL STYLE');
-      expect(req.prompt.toLowerCase()).toContain('cyrillic');
-    });
-  });
-
-  describe('4. Visual Preflight Gate Matching (§21, §22, §23)', () => {
-    const expectedBrief = {
-      flatsPerFloor: 2,
-      unitMix: standardBrief.unitMix,
-      liftCount: 2,
-      stairCount: 2,
-      commonCoreRequired: true,
-    };
-
-    it('passes when Gemini detects exact 2 flats, 2BHK+3BHK, 2 lifts, 2 stairs and English labels', () => {
-      const detected = {
-        flatCount: 2,
-        unitMix: ['2BHK', '3BHK'],
-        liftCount: 2,
-        stairCount: 2,
-        commonCore: true,
-        unitSeparation: true,
-        majorRooms: ['living', 'dining', 'kitchen', 'master_bed', 'bed_2', 'bed_3'],
-        balconies: true,
-        utilities: true,
-        parking: false,
-        labelLanguage: 'English',
-        isApartmentLayout: true,
-        visualQuality: 9,
-        confidence: 0.95,
-        observations: 'High quality 2-flat layout with central lobby, 2 lifts and 2 stairs.',
-      };
-
-      const result = evaluateApartmentPreflight(detected, expectedBrief);
-      expect(result.pass).toBe(true);
-      expect(result.failureReasons).toHaveLength(0);
-    });
-
-    it('fails when flat count is 3 instead of 2 (§22)', () => {
-      const detected = {
-        flatCount: 3, // MISMATCH
-        unitMix: ['2BHK', '2BHK', '2BHK'],
-        liftCount: 2,
-        stairCount: 2,
-        commonCore: true,
-        unitSeparation: true,
-        majorRooms: ['living'],
-        balconies: true,
-        utilities: true,
-        parking: false,
-        labelLanguage: 'English',
-        isApartmentLayout: true,
-        visualQuality: 8,
-        confidence: 0.9,
-        observations: '',
-      };
-
-      const result = evaluateApartmentPreflight(detected, expectedBrief);
-      expect(result.pass).toBe(false);
-      expect(result.failureReasons.some(r => r.includes('Flat count mismatch'))).toBe(true);
-    });
-
-    it('fails when lift count is 1 instead of 2 (§22)', () => {
-      const detected = {
-        flatCount: 2,
-        unitMix: ['2BHK', '3BHK'],
-        liftCount: 1, // MISMATCH
-        stairCount: 2,
-        commonCore: true,
-        unitSeparation: true,
-        majorRooms: ['living'],
-        balconies: true,
-        utilities: true,
-        parking: false,
-        labelLanguage: 'English',
-        isApartmentLayout: true,
-        visualQuality: 8,
-        confidence: 0.9,
-        observations: '',
-      };
-
-      const result = evaluateApartmentPreflight(detected, expectedBrief);
-      expect(result.pass).toBe(false);
-      expect(result.failureReasons.some(r => r.includes('Lift count insufficient'))).toBe(true);
-    });
-
-    it('fails when unit mix is 2x2BHK instead of 1x2BHK + 1x3BHK (§22)', () => {
-      const detected = {
-        flatCount: 2,
-        unitMix: ['2BHK', '2BHK'], // MISMATCH
-        liftCount: 2,
-        stairCount: 2,
-        commonCore: true,
-        unitSeparation: true,
-        majorRooms: ['living'],
-        balconies: true,
-        utilities: true,
-        parking: false,
-        labelLanguage: 'English',
-        isApartmentLayout: true,
-        visualQuality: 8,
-        confidence: 0.9,
-        observations: '',
-      };
-
-      const result = evaluateApartmentPreflight(detected, expectedBrief);
-      expect(result.pass).toBe(false);
-      expect(result.failureReasons.some(r => r.includes('Unit mix mismatch'))).toBe(true);
     });
   });
 });

@@ -1,0 +1,72 @@
+{
+  "familyId": "SIDE_CORE",
+  "variantId": "side:east",
+  "label": "Side core to the east",
+  "rationale": "Stairs and lifts are gathered into a 5400 mm band along the east edge, served by a single-loaded corridor running its full length. All 4 flats enter through their east wall, which leaves the opposite side of the plot entirely for habitable rooms and puts the stair and lobby on an exterior wall where they can be daylit directly.",
+  "rankingExplanation": "Ranked higher because, on the priorities this brief emphasized, it is envelope utilization worse by 70 points (62.5% of the buildable envelope is dwelling area (382.5 m2 of 612.0 m2)); privacy separation worse by 13 points (bedrooms average 13.9 m from common circulation; 0 of 8 share a wall with it).",
+  "emphasizedObjectives": [
+    "FACADE_ALLOCATION",
+    "ENVELOPE_UTILIZATION",
+    "DAYLIGHT_EXPOSURE",
+    "PRIVACY_SEPARATION"
+  ],
+  "weightedTotal": 0.5593,
+  "objectives": [
+    {
+      "id": "ENVELOPE_UTILIZATION",
+      "score": 0.7,
+      "explanation": "62.5% of the buildable envelope is dwelling area (382.5 m2 of 612.0 m2)"
+    },
+    {
+      "id": "CIRCULATION_EFFICIENCY",
+      "score": 0,
+      "explanation": "common corridors and lobbies take 16.7% of the envelope (102.0 m2)"
+    },
+    {
+      "id": "DAYLIGHT_EXPOSURE",
+      "score": 0,
+      "explanation": "10 of 24 habitable rooms touch the external facade (42%)"
+    },
+    {
+      "id": "VENTILATION_QUALITY",
+      "score": 1,
+      "explanation": "8 of 8 bathrooms vent directly to the facade; 833.0 m2 of open-to-sky void supports the rest"
+    },
+    {
+      "id": "PRIVACY_SEPARATION",
+      "score": 0.885622523972225,
+      "explanation": "bedrooms average 13.9 m from common circulation; 0 of 8 share a wall with it"
+    },
+    {
+      "id": "KITCHEN_USABILITY",
+      "score": 0.31146833333333335,
+      "explanation": "kitchens average 7.1 m2; 4 of 4 adjoin a utility balcony"
+    },
+    {
+      "id": "BEDROOM_BALCONY_ACCESS",
+      "score": 0,
+      "explanation": "0 of 8 bedrooms have an attached balcony on the external facade"
+    },
+    {
+      "id": "FACADE_ALLOCATION",
+      "score": 1,
+      "explanation": "4 of 4 flats front the plot boundary, taking 60.5 m of the 113.8 m perimeter"
+    },
+    {
+      "id": "CORE_EFFICIENCY",
+      "score": 0.9289215686274511,
+      "explanation": "stairs and lifts occupy 6.6% of the envelope (40.2 m2)"
+    },
+    {
+      "id": "ROOM_PROPORTION",
+      "score": 1,
+      "explanation": "0 of 24 habitable rooms exceed a 2.2:1 proportion"
+    },
+    {
+      "id": "PREFERENCE_SATISFACTION",
+      "score": 0,
+      "explanation": "0 of 1 stated preferences are honoured by this geometry (unmet: bedroom balconies)"
+    }
+  ],
+  "disclaimer": "Scores describe internal software measurements only. They do not establish statutory compliance, structural adequacy or professional approval."
+}

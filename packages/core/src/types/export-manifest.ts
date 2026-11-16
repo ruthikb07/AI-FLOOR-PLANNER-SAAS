@@ -14,7 +14,7 @@ export interface ArtifactVerification {
 }
 export type ExportDiscipline = 'ARCHITECTURAL' | 'STRUCTURAL' | 'MEP' | 'STATUTORY' | 'COORDINATION';
 
-export type VerifiedArtifactFormat='dwg'|'dxf'|'pdf'|'svg'|'geometry-json'|'geometry-pdf'|'udcpr-json'|'udcpr-pdf';
+export type VerifiedArtifactFormat='dwg'|'dxf'|'pdf'|'svg'|'geometry-json'|'geometry-pdf'|'udcpr-json'|'udcpr-pdf'|'structural-drawings-pdf'|'structural-report-pdf'|'structural-report-json';
 export interface VerifiedArtifactOptions {
   readonly cadStandard?: import('./residential-cad-export').ResidentialCadStandard;
   readonly nativeCadAudit?: boolean;

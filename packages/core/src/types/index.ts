@@ -236,3 +236,15 @@ export * from './etabs';
 export * from './export-manifest';
 
 export * from './residential-cad-export';
+
+export * from './architectural-elements';
+
+export type * as StructuralAnalysis from './structural-analysis';
+export type { StructuralProject, StructuralLevel, StructuralNode, StructuralColumn, StructuralSlab, StructuralMaterial, StructuralLoadCase, StructuralLoadCombination } from './structural-analysis';
+export * from './etabs-connector';
+export * from './etabs-structural-export';
+export * from './structural-drawings';
+export * from './indian-codes';
+
+export * from './structural-review';
+export * from './etabs-native-evidence';

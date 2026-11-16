@@ -1,3 +1,4 @@
+import { canonicalOpeningGeometry } from './opening-geometry';
 /**
  * Door Geometry and Placement Validation.
  * Handles door position along host walls, swing arcs, clearance zones, and opening boundaries.
@@ -29,6 +30,10 @@ export function validateDoorPlacement(
   hostWall: Wall,
   minEdgeDistance: number = 100, // 100mm standard clearance from wall corners
 ): { valid: boolean; reason?: string } {
+  if (door.openingGeometryVersion === 1) {
+    try { const g = canonicalOpeningGeometry(door, hostWall); return { valid: g.start >= minEdgeDistance && g.end <= g.length - minEdgeDistance, reason: 'Opening interval must retain configured edge clearance' }; }
+    catch (error) { return { valid: false, reason: String(error) }; }
+  }
   const wallSeg: LineSegment = { start: hostWall.startPoint, end: hostWall.endPoint };
   const wallLen = segmentLength(wallSeg);
 
@@ -82,6 +87,7 @@ export function assertDoorPlacement(door: Door, hostWall: Wall, minEdgeDistance:
 
 /** Compute the line segment representing the door opening along the host wall. */
 export function computeDoorOpeningSegment(door: Door, hostWall: Wall): LineSegment {
+  if (door.openingGeometryVersion === 1) { const g = canonicalOpeningGeometry(door, hostWall); return { start: g.startPoint, end: g.endPoint }; }
   const wallSeg: LineSegment = { start: hostWall.startPoint, end: hostWall.endPoint };
   const wallLen = segmentLength(wallSeg);
   const dx = (hostWall.endPoint.x - hostWall.startPoint.x) / wallLen;

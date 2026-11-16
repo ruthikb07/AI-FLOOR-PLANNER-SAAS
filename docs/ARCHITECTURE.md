@@ -10,13 +10,13 @@ Audit anchor: e968720. Source and current verification override this documentati
 
 ## 2. Canonical authority and flow
 
-Requirements/site/reviewed Program → AI interpretation or deterministic fallback → structured intent → deterministic architectural planner → canonical Building Model with deterministic geometry → architectural validation/evidence/ranking → 2D renderer/editor → reviewed/finalized canonical revision → professional exports and Blender adapter → reproducible architectural 3D/elevations.
+Requirements/site/reviewed Program → AI brief interpretation (optional) or rule-based interpretation → validated structured intent → deterministic architectural planner → canonical Building Model with deterministic geometry → architectural validation/evidence/ranking → 2D renderer/editor → reviewed/finalized canonical revision → professional exports and Blender adapter → reproducible architectural 3D/elevations.
 
 The finalization and Blender portions are PLANNED_V1 completion work, not a claim of an implemented end-to-end flow.
 
 The Building Model is the sole authoritative geometry. Requirements/Program metadata describe intent; desired adjacency and ownership do not prove physical doors. AI may interpret, propose and explain, but must not directly author authoritative geometry, bypass validation or invent engineering inputs.
 
-SVG, React state, Three.js projection, Blender meshes and AI imagery cannot become competing building models. Editing changes canonical data. Dependent evidence, exports and 3D must be invalidated/regenerated for that revision. Full Building-plus-reviewed-Program freshness remains incomplete.
+SVG, React state, Three.js projection and Blender meshes cannot become competing building models. There is no AI image-generation path: no image model participates in deciding layout, counts or geometry, and no geometry is read back out of an image. Editing changes canonical data. Dependent evidence, exports and 3D must be invalidated/regenerated for that revision. Full Building-plus-reviewed-Program freshness remains incomplete.
 
 ## 3. Current implementation versus targets
 
@@ -28,7 +28,7 @@ IMPLEMENTED denotes code foundations, not professional/product acceptance. PARTI
 | geometry-engine | IMPLEMENTED | Deterministic geometry and placement checks; not architectural or engineering approval. |
 | constraint-engine | IMPLEMENTED | Configured hard checks, soft heuristics, statuses and explanations. Regulatory provider returns no jurisdiction rules; structural-named rules are not engineering analysis. |
 | planning-engine | PARTIALLY_IMPLEMENTED | Strategies/ranking, multi-floor planning, repair/targeted regeneration and evidence exist. Layout quality, diversity and complete acceptance remain active work. |
-| ai-orchestration | IMPLEMENTED | Provider abstraction, Gemini/OpenAI adapters, normalized interpretation/edit-intent foundations and rule-based fallback. No implemented Claude adapter found in the provider directory. |
+| ai-orchestration | IMPLEMENTED | Provider abstraction, Gemini/OpenAI adapters, normalized brief-interpretation/edit-intent foundations and rule-based interpretation. Image generation, image-to-plan vision interpretation and visual preflight were removed; the package no longer contains an image provider. No implemented Claude adapter found in the provider directory. |
 | renderer | IMPLEMENTED | Canonical SVG rendering/export foundation; professional semantic/sheet completeness still needs acceptance. |
 | frontend | PARTIALLY_IMPLEMENTED | React/Vite site, Program, footprint, generation, editor, validation, export and model workspaces; local persistence. Not a completed professional workflow. |
 | projection-3d | IMPLEMENTED | Canonical browser projection with source IDs, units, levels, floor plates, walls/openings and schematic elements. Not detailed Blender delivery. |
@@ -48,7 +48,7 @@ Fastify, PostgreSQL, Redis, ORM/database services, object storage, authenticatio
 
 ## 5. Generation, editing and evidence
 
-The frontend collects site, Program and footprint inputs. AI can interpret requirements with normalization and safe fallback. Deterministic generation creates candidate Buildings, checks geometry/hard requirements and soft preferences, applies existing repair/optimization and returns ranked candidates. Architectural evidence records observations; it neither replaces legacy ranking nor completes final acceptance.
+The frontend collects site, Program and footprint inputs. AI can interpret requirements into structured intent, with normalization and a rule-based alternative; that intent is validated deterministically before it reaches geometry. Deterministic generation creates candidate Buildings, checks geometry/hard requirements and soft preferences, applies existing repair/optimization and returns ranked candidates. Architectural evidence records observations; it neither replaces legacy ranking nor completes final acceptance.
 
 Phase 1 evidence covers required floor intent, explicit bath ownership, physical direct/reviewed private-indirect access, shared/unresolved/not-evaluated states, wet geometric coverage and outdoor/residual observations. ArchitecturalEvidencePanel handles versioned evidence and stale Building revisions. Reviewed-Program freshness, broader acceptance and review/finalization status remain incomplete.
 

@@ -35,18 +35,24 @@ describe('ArchitecturalCanvas (6-Sheet 2D CAD Studio & Conservation Ledger)', ()
     expect(html).toContain('6. Statutory Area Schedule');
   });
 
-  it('renders FLUX.2 AI concept underlay toggle and slider on Typical Floor tab', () => {
+  /**
+   * The canvas used to overlay an AI-generated concept image beneath the
+   * authoritative drawing. That is gone: an image model must not influence what
+   * the user reads as the plan, and the canonical Building model is the only
+   * source of the geometry shown. This asserts the underlay cannot come back.
+   */
+  it('renders no AI concept image underlay on the Typical Floor tab', () => {
     const html = renderToStaticMarkup(
       createElement(ArchitecturalCanvas, {
         building: mockBuilding,
         activeSheetTab: 2,
         onSelectSheetTab: vi.fn(),
-        conceptImageBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
       })
     );
 
-    expect(html).toContain('FLUX.2 AI Underlay');
-    expect(html).toContain('type="range"');
+    expect(html).not.toContain('FLUX');
+    expect(html).not.toContain('Underlay');
+    expect(html).not.toContain('Concept');
   });
 
   it('renders persistent 100% Planar Conservation Ledger bar at the bottom with Delta = 0.000 mm²', () => {

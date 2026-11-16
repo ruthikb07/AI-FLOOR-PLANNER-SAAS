@@ -1,3 +1,4 @@
+import { architecturalBoundaryRole } from '@ai-floor-planner/core';
 /**
  * Wall generation and geometry operations.
  * Walls are real geometric elements with centerlines, thickness, and boundary polygons.
@@ -110,7 +111,7 @@ export function generateWalls(
   const externalWalls = generateExternalWalls(floorBoundary, floorId, config.externalThickness, rooms);
   walls.push(...externalWalls);
 
-  return walls;
+  return walls.map(w => { const role = architecturalBoundaryRole(rooms.filter(r => w.roomIds.includes(r.id)), w.type === WallType.External); return { ...w, boundaryRole: role, heightMm: role === 'OPEN_BOUNDARY' ? 0 : role === 'PARAPET' ? 1100 : undefined }; });
 }
 
 /** Generate external walls from floor boundary polygon. */

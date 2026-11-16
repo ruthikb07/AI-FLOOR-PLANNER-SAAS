@@ -24,10 +24,10 @@ export function verifyCadArtifact(
 ): ArtifactVerification & { document?: acad.CadDocument } {
   const errors: string[] = [];
   const checks: Record<string, unknown> = {};
-  const nativeValid=format==='dwg'&&nativeEvidence?.status==='VERIFIED'&&nativeEvidence.auditErrorsFound===0&&nativeEvidence.auditErrorsFixed===0&&nativeEvidence.insUnits===4&&nativeEvidence.tileMode===1&&nativeEvidence.sha256===createHash('sha256').update(data).digest('hex');
-  const nativeReaderWarnings:string[]=[];
-  if(nativeEvidence&&!nativeValid)errors.push('Native audit provenance or byte checksum is invalid');
-  if(nativeValid){checks.nativeAudit=nativeEvidence;checks.nativeReaderWarnings=nativeReaderWarnings;}
+  const nativeValid = format === 'dwg' && nativeEvidence?.status === 'VERIFIED' && nativeEvidence.auditErrorsFound === 0 && nativeEvidence.auditErrorsFixed === 0 && nativeEvidence.insUnits === 4 && nativeEvidence.tileMode === 1 && nativeEvidence.sha256 === createHash('sha256').update(data).digest('hex');
+  const nativeReaderWarnings: string[] = [];
+  if (nativeEvidence && !nativeValid) errors.push('Native audit provenance or byte checksum is invalid');
+  if (nativeValid) { checks.nativeAudit = nativeEvidence; checks.nativeReaderWarnings = nativeReaderWarnings; }
   try {
     if (!data.length) throw new Error("Empty CAD artifact");
     if (
@@ -57,9 +57,9 @@ export function verifyCadArtifact(
       // Native AutoCAD adds standard non-graphical view-style dictionaries unsupported
       // by acad-ts. Preserve those reader limitations explicitly after native zero-audit
       // verification; all graphic/unknown failures remain fatal.
-      const viewMetadata=/^DWG VisualStyle payload is only partially mapped;/.test(event.message)||/^Unlisted object with DXF name ACDB(?:DETAIL|SECTION)VIEWSTYLE has been read as an UnknownNonGraphicalObject$/.test(event.message)||/^Entry not found Metric50\|\d+ for dictionary ACAD_(?:DETAIL|SECTION)VIEWSTYLE\|\d+$/.test(event.message);
-      if(nativeValid&&!event.exception&&viewMetadata)nativeReaderWarnings.push(event.message);
-      else if (event.exception || event.notificationType !== 0)errors.push(event.message);
+      const viewMetadata = /^DWG VisualStyle payload is only partially mapped;/.test(event.message) || /^Unlisted object with DXF name ACDB(?:DETAIL|SECTION)VIEWSTYLE has been read as an UnknownNonGraphicalObject$/.test(event.message) || /^Entry not found Metric50\|\d+ for dictionary ACAD_(?:DETAIL|SECTION)VIEWSTYLE\|\d+$/.test(event.message);
+      if (nativeValid && !event.exception && viewMetadata) nativeReaderWarnings.push(event.message);
+      else if (event.exception || event.notificationType !== 0) errors.push(event.message);
     };
     const document = reader.read();
     if (!document.header || !document.entities)
@@ -89,16 +89,16 @@ export function verifyCadArtifact(
         const h = entity.height;
         // DXF TEXT groups 72/73 make group 11 authoritative. AutoCAD recomputes
         // group 10 after applying font metrics; inequality is valid, not corruption.
-        const justified=entity.horizontalAlignment!==0||entity.verticalAlignment!==0;
-        const anchor=justified?entity.alignmentPoint:entity.insertPoint;
-        if(![anchor.x,anchor.y,h,entity.widthFactor].every(Number.isFinite)||h<=0||entity.widthFactor<=0){errors.push('Invalid text alignment/size');continue;}
-        const width=entity.value.length*h*.7*entity.widthFactor;
+        const justified = entity.horizontalAlignment !== 0 || entity.verticalAlignment !== 0;
+        const anchor = justified ? entity.alignmentPoint : entity.insertPoint;
+        if (![anchor.x, anchor.y, h, entity.widthFactor].every(Number.isFinite) || h <= 0 || entity.widthFactor <= 0) { errors.push('Invalid text alignment/size'); continue; }
+        const width = entity.value.length * h * .7 * entity.widthFactor;
         box = {
-          x:anchor.x+(entity.horizontalAlignment===1?0:entity.horizontalAlignment===2?-width/2:width/2),
-          y:anchor.y+(entity.verticalAlignment===2?0:entity.verticalAlignment===3?-h/2:h/2),
+          x: anchor.x + (entity.horizontalAlignment === 1 ? 0 : entity.horizontalAlignment === 2 ? -width / 2 : width / 2),
+          y: anchor.y + (entity.verticalAlignment === 2 ? 0 : entity.verticalAlignment === 3 ? -h / 2 : h / 2),
           width,
-          height:h*1.2,
-          text:entity.value,
+          height: h * 1.2,
+          text: entity.value,
         };
       } else if (entity instanceof acad.DimensionAligned) {
         if (!entity.block?.name || ![...entity.block.entities].length)
@@ -137,7 +137,7 @@ export function verifyCadArtifact(
     if (canonicalFloors) {
       const outlines = entities.filter(
         (e): e is acad.LwPolyline =>
-          e instanceof acad.LwPolyline && e.layer.name === "A-WALL-EXT",
+          e instanceof acad.LwPolyline && (e.layer.name === "A-WALL-EXT" || (canonicalFloors.some(f => f.architecture) && e.layer.name === "A-SLAB")),
       );
       if (outlines.length !== canonicalFloors.length)
         errors.push("Canonical floor outline count mismatch");
@@ -202,15 +202,15 @@ export function verifyCadArtifact(
       const expectedLayers: Record<string, number> = {};
       source.forEach(
         (e) =>
-          (expectedLayers[e.layer.name] =
-            (expectedLayers[e.layer.name] ?? 0) + 1),
+        (expectedLayers[e.layer.name] =
+          (expectedLayers[e.layer.name] ?? 0) + 1),
       );
       for (const [layer, count] of Object.entries(expectedLayers))
         if (layers[layer] !== count)
           errors.push(
             `Layer ${layer}: expected ${count}, read ${layers[layer] ?? 0}`,
           );
-      if(!nativeValid)for (const key of ["modelSpaceExtMin", "modelSpaceExtMax"] as const)
+      if (!nativeValid) for (const key of ["modelSpaceExtMin", "modelSpaceExtMax"] as const)
         for (const axis of ["x", "y"] as const)
           if (
             Math.abs(document.header[key][axis] - expected.header[key][axis]) >
@@ -241,15 +241,15 @@ export function verifyCadArtifact(
           "textMiddlePoint",
           "text",
         ]) {
-          if(nativeValid&&key==='insertPoint'&&e instanceof acad.TextEntity&&(e.horizontalAlignment!==0||e.verticalAlignment!==0))continue;
+          if (nativeValid && key === 'insertPoint' && e instanceof acad.TextEntity && (e.horizontalAlignment !== 0 || e.verticalAlignment !== 0)) continue;
           const v = value[key];
           if (v !== undefined)
             result[key] =
               v && typeof v === "object" && "x" in v
                 ? {
-                    x: (v as { x: number }).x,
-                    y: (v as unknown as { y: number }).y,
-                  }
+                  x: (v as { x: number }).x,
+                  y: (v as unknown as { y: number }).y,
+                }
                 : v;
         }
         if ("vertices" in value)
@@ -406,9 +406,9 @@ export async function verifyComplianceArtifact(
       )
         ? "VIOLATION"
         : r.rulesChecked.some(
-              (c: { status: string }) =>
-                c.status === "NOT_VERIFIED" || c.status === "WARNING",
-            )
+          (c: { status: string }) =>
+            c.status === "NOT_VERIFIED" || c.status === "WARNING",
+        )
           ? "NOT_VERIFIED"
           : "PASS";
       if (r.status !== derived || r.overallCompliant !== (derived === "PASS"))
@@ -513,4 +513,9 @@ export async function verifyComplianceArtifact(
     errors.push(e instanceof Error ? e.message : String(e));
   }
   return { isValid: errors.length === 0, errors, checks };
+}
+
+export async function verifyStructuralArtifact(data: Uint8Array, format: 'pdf' | 'json'): Promise<ArtifactVerification> {
+  return { isValid: false, errors: ['NATIVE_ANALYSIS_REQUIRED: readable legacy structural reports are not verified engineering evidence.'],
+    checks: { format, sizeBytes: data.length, nativeProvenanceVerified: false } };
 }

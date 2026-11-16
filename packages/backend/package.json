@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Server-side AI boundary: image generation (Cloudflare FLUX), Gemini vision/evaluation proxies and immutable image artifact storage. All provider credentials live here, never in the frontend.",
+  "description": "Server-side AI boundary: Gemini architectural generation, vision/evaluation proxies, and deterministic CAD/PDF/3D/ETABS export services. All provider credentials live here, never in the frontend.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {

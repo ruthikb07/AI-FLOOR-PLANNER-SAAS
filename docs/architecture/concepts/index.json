@@ -1,0 +1,228 @@
+{
+  "reference": {
+    "plotMm": {
+      "widthMm": 40000,
+      "depthMm": 50000
+    },
+    "setbacksMm": {
+      "front": 4500,
+      "rear": 3000,
+      "left": 3000,
+      "right": 3000
+    },
+    "envelopeMm": {
+      "x": 3000,
+      "y": 3000,
+      "w": 34000,
+      "h": 42500
+    },
+    "brief": "Design a G+4 residential apartment with four 2BHK flats per typical floor, bedroom balconies, functional bathroom ventilation and living-first entrances.",
+    "seed": 1
+  },
+  "engineVersion": "1.0.0",
+  "interpretedProgram": {
+    "mandatory": {
+      "flatsPerFloor": 4,
+      "unitTypes": [
+        "2BHK",
+        "2BHK",
+        "2BHK",
+        "2BHK"
+      ],
+      "everyBathroomVentilated": true,
+      "everyFlatAccessibleFromCommonCore": true,
+      "stairCount": 2,
+      "withinBuildingEnvelope": true
+    },
+    "preferences": {
+      "corePreference": "UNSPECIFIED",
+      "ventilationStrategy": "UNSPECIFIED",
+      "priority": "UNSPECIFIED",
+      "bedroomsAwayFromLobby": false,
+      "bedroomBalconies": "ALL_BEDROOMS",
+      "kitchenSize": "STANDARD",
+      "kitchenStyle": "UNSPECIFIED",
+      "sitoutSize": "STANDARD",
+      "livingFirstEntrance": true,
+      "minimizeCorridor": false,
+      "coreCompactness": "STANDARD",
+      "livingOrientation": "UNSPECIFIED"
+    },
+    "clauses": [],
+    "intentDigest": "44ba0304",
+    "sourcePrompt": "Design a G+4 residential apartment with four 2BHK flats per typical floor, bedroom balconies, functional bathroom ventilation and living-first entrances."
+  },
+  "conceptCount": 3,
+  "shortfallExplanation": null,
+  "diagnostics": {
+    "engineVersion": "1.0.0",
+    "seed": 1178748963,
+    "topologyVariantsTried": 16,
+    "assembledCandidates": 10,
+    "feasibleCandidates": 10,
+    "elapsedMs": 24,
+    "timedOut": false
+  },
+  "rejected": [
+    {
+      "familyId": "SIDE_CORE",
+      "variantId": "side:north",
+      "reasons": [
+        "flat 1 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 2 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 3 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 4 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "SIDE_CORE",
+      "variantId": "side:south",
+      "reasons": [
+        "flat 1 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 2 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 3 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 4 run 8500 mm is below the 9000 mm needed to stack service, living and sleeping bands"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "SPLIT_CORE",
+      "variantId": "split:ns",
+      "reasons": [
+        "flat 1 run 7925 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 2 run 7925 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 3 run 7925 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 4 run 7925 mm is below the 9000 mm needed to stack service, living and sleeping bands"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "SPLIT_CORE",
+      "variantId": "split:ew",
+      "reasons": [
+        "flat 1 run 5800 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 2 run 5800 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 3 run 5800 mm is below the 9000 mm needed to stack service, living and sleeping bands",
+        "flat 4 run 5800 mm is below the 9000 mm needed to stack service, living and sleeping bands"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "PERIMETER_HABITABLE",
+      "variantId": "perimeter:nw",
+      "reasons": [
+        "flat 4 run 31700 mm is far beyond the 16000 mm a dwelling of this type can use; its rooms would be stretched rather than more numerous"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "PERIMETER_HABITABLE",
+      "variantId": "perimeter:ne",
+      "reasons": [
+        "flat 4 run 31700 mm is far beyond the 16000 mm a dwelling of this type can use; its rooms would be stretched rather than more numerous"
+      ],
+      "stage": "TOPOLOGY"
+    },
+    {
+      "familyId": "DUAL_WING",
+      "variantId": "dualwing:lifts=west",
+      "reasons": [
+        "These layouts are identical up to mirroring or rotation, so they are one design, not two."
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "CENTRAL_COURTYARD",
+      "variantId": "courtyard:lifts=inner",
+      "reasons": [
+        "These layouts are identical up to mirroring or rotation, so they are one design, not two."
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "LINEAR_SINGLE_LOADED",
+      "variantId": "linear:ns:corridor=west",
+      "reasons": [
+        "beyond the requested number of concepts"
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "SIDE_CORE",
+      "variantId": "side:west",
+      "reasons": [
+        "beyond the requested number of concepts"
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "LINEAR_SINGLE_LOADED",
+      "variantId": "linear:ns:corridor=east",
+      "reasons": [
+        "beyond the requested number of concepts"
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "CENTRAL_CORE_SPINE",
+      "variantId": "central:lifts=west",
+      "reasons": [
+        "beyond the requested number of concepts"
+      ],
+      "stage": "DIVERSITY"
+    },
+    {
+      "familyId": "CENTRAL_CORE_SPINE",
+      "variantId": "central:lifts=east",
+      "reasons": [
+        "beyond the requested number of concepts"
+      ],
+      "stage": "DIVERSITY"
+    }
+  ],
+  "concepts": [
+    {
+      "conceptId": "concept_01",
+      "familyId": "DUAL_WING",
+      "variantId": "dualwing:lifts=east",
+      "label": "Dual wing with cross circulation",
+      "canonicalDigest": "e21d74a4",
+      "adjacencyDigest": "75eb485c",
+      "circulationDigest": "7629cb29",
+      "zoningDigest": "d295c02f",
+      "weightedTotal": 0.6427,
+      "roomCount": 56,
+      "geometryValid": true,
+      "bedroomBalconies": 32
+    },
+    {
+      "conceptId": "concept_02",
+      "familyId": "CENTRAL_COURTYARD",
+      "variantId": "courtyard:lifts=outer",
+      "label": "Central open-to-sky courtyard",
+      "canonicalDigest": "a27313b1",
+      "adjacencyDigest": "d7a07425",
+      "circulationDigest": "2b355a85",
+      "zoningDigest": "7b7dd40f",
+      "weightedTotal": 0.6381,
+      "roomCount": 56,
+      "geometryValid": true,
+      "bedroomBalconies": 32
+    },
+    {
+      "conceptId": "concept_03",
+      "familyId": "SIDE_CORE",
+      "variantId": "side:east",
+      "label": "Side core to the east",
+      "canonicalDigest": "99f13ead",
+      "adjacencyDigest": "7e8e4bf2",
+      "circulationDigest": "2f3cd3c9",
+      "zoningDigest": "7387abe6",
+      "weightedTotal": 0.5593,
+      "roomCount": 56,
+      "geometryValid": true,
+      "bedroomBalconies": 32
+    }
+  ]
+}

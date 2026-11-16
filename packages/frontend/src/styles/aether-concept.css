@@ -1,0 +1,49 @@
+/* Premium Cinematic Aesthetic - Matches North Star Concept */
+:root {
+  --argon-bg: #0a0a0a;
+  --argon-surface: #141414;
+  --argon-card: #1a1a1a;
+  --argon-border: #333333;
+  --argon-text: #e5e5e5;
+  --argon-muted: #737373;
+  --argon-btn: #a67c52; /* Bronze */
+  --argon-accent: #22d3ee; /* Cyan particles */
+}
+
+/* UI Panel Polish: Matching the "Aether CAD" concept look */
+.program-workspace, .model-workspace, .argon-shell {
+  background: var(--argon-bg) !important;
+}
+
+.argon-card, .catalog-panel, .my-program-panel, .model-context-card, .model-toolbar, .model-popover {
+  background: var(--argon-card) !important;
+  border: 1px solid var(--argon-border) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Sidebar "Project Browser" style */
+.catalog-panel, .my-program-panel {
+  border-right: 1px solid var(--argon-border) !important;
+  background: var(--argon-surface) !important;
+}
+
+/* Range Input Styling */
+input[type="range"] {
+  accent-color: var(--argon-btn);
+}
+
+/* Typography adjustment for that sleek "CAD" feel */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--argon-btn);
+}

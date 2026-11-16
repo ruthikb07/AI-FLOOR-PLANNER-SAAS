@@ -74,6 +74,7 @@ export {
   serializeBuilding,
   deserializeBuilding,
   cloneBuilding,
+  importOpeningGeometryProject,
 } from './serialization';
 
 // Validation
@@ -153,3 +154,4 @@ export {
   updateGenerationControl,
   validateGenerationControl,
 } from './generation-control';
+export { parseStructuralProjectForExport, structuralProjectReviewJson, StructuralExportValidationError } from './structural-export-validation';

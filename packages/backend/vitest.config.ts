@@ -17,6 +17,14 @@ export default defineConfig({
     name: '@ai-floor-planner/backend',
     globals: true,
     environment: 'node',
+    fileParallelism: false,
+    maxConcurrency: 1,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     exclude: ['src/__tests__/real-provider-smoke.test.ts', 'node_modules/**'],
   },

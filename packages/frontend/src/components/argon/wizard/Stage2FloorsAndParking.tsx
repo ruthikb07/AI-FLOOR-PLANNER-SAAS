@@ -171,6 +171,48 @@ export const Stage2FloorsAndParking: React.FC = () => {
         </ArgonCard>
       </div>
 
+      {/* Facade Projections: Window Chajjas & Multi-Floor Staggered Balconies */}
+      <ArgonCard className="space-y-3">
+        <div className="flex items-center justify-between pb-2.5 border-b border-argon-border/70">
+          <h3 className="text-sm font-bold text-argon-text">
+            Weathering Chajjas &amp; Multi-Floor Staggered Balconies
+          </h3>
+          <ArgonBadge variant="neutral" size="sm">
+            Elevation Logic
+          </ArgonBadge>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer hover:bg-argon-surface/70">
+            <input
+              type="checkbox"
+              checked={wizard.includeWindowChajjas ?? true}
+              onChange={(e) => updateWizard({ includeWindowChajjas: e.target.checked })}
+              className="mt-1 accent-amber-500"
+            />
+            <span className="text-xs">
+              <strong className="block text-argon-text">600 mm Window Chajjas (Sunshades)</strong>
+              <span className="text-argon-muted">
+                Cast concrete lintel weathering projections on exterior openings (A-CHAJJA in 2D/DXF &amp; 3D).
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer hover:bg-argon-surface/70">
+            <input
+              type="checkbox"
+              checked={wizard.staggeredBalconies ?? false}
+              onChange={(e) => updateWizard({ staggeredBalconies: e.target.checked })}
+              className="mt-1 accent-amber-500"
+            />
+            <span className="text-xs">
+              <strong className="block text-argon-text">Staggered Balconies (Odd vs Even Floors)</strong>
+              <span className="text-argon-muted">
+                Alternate double-height balcony bays between Odd and Even upper floors while locking columns &amp; wet shafts.
+              </span>
+            </span>
+          </label>
+        </div>
+      </ArgonCard>
+
       {/* Program Summary Summary Bar */}
       <ArgonCard variant="surface" className="p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">

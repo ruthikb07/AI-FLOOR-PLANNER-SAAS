@@ -4,6 +4,12 @@
  */
 
 import type { Building } from '@ai-floor-planner/core';
+import {
+  exportBuildingToGlb,
+  generateBlenderScript,
+  projectBuildingScene,
+} from '@ai-floor-planner/projection-3d';
+import { handleETABSExportRoute } from './etabs-export-routes.js';
 import { BlenderExportService } from '../services/blender-export-service.js';
 import {
   CadExportService,
@@ -58,6 +64,7 @@ export async function handleExportRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   cors: Record<string, string>,
 ): Promise<boolean> {
+  if (await handleETABSExportRoute(request, response, url, readBody)) return true;
   const match = url.pathname.match(/^\/api(?:\/v1)?\/export\/(.*)$/);
   if (!match) return false;
   try {
@@ -106,6 +113,69 @@ export async function handleExportRoute(
     }
     if (!body?.building)
       throw new ExportError('INVALID_REQUEST', 'building object is required', 400);
+    if (match[1] === 'glb') {
+      const glbBytes = exportBuildingToGlb(body.building);
+      const safeName = (body.building.name || body.building.id || 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
+      response.writeHead(200, {
+        'Content-Type': 'model/gltf-binary',
+        'Content-Length': String(glbBytes.length),
+        'Content-Disposition': `attachment; filename="${safeName}.glb"`,
+        'X-CAD-Format': 'GLB',
+        ...cors,
+      });
+      response.end(Buffer.from(glbBytes));
+      return true;
+    }
+    if (match[1] === 'blender-script') {
+      const scene = projectBuildingScene(body.building);
+      const script = generateBlenderScript(scene, './blender_output');
+      const buf = Buffer.from(script, 'utf-8');
+      const safeName = (body.building.name || body.building.id || 'scene').replace(/[^a-zA-Z0-9_-]/g, '_');
+      response.writeHead(200, {
+        'Content-Type': 'text/x-python; charset=utf-8',
+        'Content-Length': String(buf.length),
+        'Content-Disposition': `attachment; filename="${safeName}.py"`,
+        'X-CAD-Format': 'BLENDER_SCRIPT',
+        ...cors,
+      });
+      response.end(buf);
+      return true;
+    }
+    if (match[1] === 'blender') {
+      try {
+        sendJson(response, 200, await blenderService.exportBuilding(body.building));
+        return true;
+      } catch (err) {
+        if (err instanceof ExportError && err.code === 'BLENDER_BINARY_NOT_FOUND') {
+          const glbBytes = exportBuildingToGlb(body.building);
+          const safeName = (body.building.name || body.building.id || 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
+          response.writeHead(200, {
+            'Content-Type': 'model/gltf-binary',
+            'Content-Length': String(glbBytes.length),
+            'Content-Disposition': `attachment; filename="${safeName}.glb"`,
+            'X-CAD-Format': 'GLB',
+            'X-Blender-Fallback': 'pure-ts-glb',
+            ...cors,
+          });
+          response.end(Buffer.from(glbBytes));
+          return true;
+        }
+        throw err;
+      }
+    }
+    if (match[1] === 'multi-sheet-pdf') {
+      const pdfResult = new PdfExportService().exportMultiSheetPdf(body.building, body.options ?? {});
+      response.writeHead(200, {
+        'Content-Type': pdfResult.mimeType,
+        'Content-Length': String(pdfResult.data.length),
+        'Content-Disposition': `attachment; filename="${pdfResult.filename}"`,
+        'X-CAD-Format': 'PDF',
+        'X-CAD-Pages': String(pdfResult.pageCount),
+        ...cors,
+      });
+      response.end(Buffer.from(pdfResult.data));
+      return true;
+    }
     if(match[1]==='blender-package') {
       const options=body.options as {expectedRevision?:number}|undefined;
       if(options!==undefined&&(!options||typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(k=>k!=='expectedRevision')))
@@ -117,8 +187,26 @@ export async function handleExportRoute(
       const result=await registry.generateResidentialPackage(body.building,body.options??{});
       sendJson(response,200,result);return true;
     }
+    if(match[1]==='structural-package') {
+      const drawings = await registry.generate(body.building, 'structural-drawings-pdf', body.options ?? {});
+      const reportPdf = await registry.generate(body.building, 'structural-report-pdf', body.options ?? {});
+      const reportJson = await registry.generate(body.building, 'structural-report-json', body.options ?? {});
+      sendJson(response, 200, {
+        buildingId: body.building.id,
+        revision: body.building.version,
+        files: [drawings.descriptor, reportPdf.descriptor, reportJson.descriptor],
+        overallStatus: 'SUCCESS',
+      });
+      return true;
+    }
     const requestedFormat = match[1] === 'artifacts' ? body.format : match[1];
-    const aliases: Record<string, ArtifactFormat> = { UDCPR_COMPLIANCE_REPORT_PDF: 'udcpr-pdf', UDCPR_COMPLIANCE_REPORT_JSON: 'udcpr-json' };
+    const aliases: Record<string, ArtifactFormat> = {
+      UDCPR_COMPLIANCE_REPORT_PDF: 'udcpr-pdf',
+      UDCPR_COMPLIANCE_REPORT_JSON: 'udcpr-json',
+      'structural-drawings': 'structural-drawings-pdf',
+      'structural-report': 'structural-report-pdf',
+      'structural-data': 'structural-report-json',
+    };
     const format = (aliases[requestedFormat ?? ''] ?? requestedFormat) as ArtifactFormat;
     const artifact = await registry.generate(body.building, format, body.options ?? {});
     if (match[1] === 'artifacts') {

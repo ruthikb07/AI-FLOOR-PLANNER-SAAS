@@ -1,0 +1,210 @@
+import { describe, it, expect } from 'vitest';
+import { PDFDocument } from 'pdf-lib';
+import { Direction, RoomType, ColumnShape, createBuilding, createRoom } from '@ai-floor-planner/core';
+import { StructuralAnalysisEngine } from '../services/structural-analysis-engine.js';
+import { generateETABSAnalysisPdfReport } from '../services/etabs-report-pdf.js';
+import { StructuralDrawingsService } from '../services/structural-drawings-service.js';
+import { ArtifactRegistry } from '../services/artifact-registry.js';
+
+function createMultiFloorTestBuilding() {
+  const boundary = {
+    points: [
+      { x: 2000, y: 2000 },
+      { x: 16000, y: 2000 },
+      { x: 16000, y: 22000 },
+      { x: 2000, y: 22000 },
+    ],
+  };
+
+  const makeColumns = (floorId: string) => [
+    { id: `c1_${floorId}`, floorId, position: { x: 3000, y: 3000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c2_${floorId}`, floorId, position: { x: 9000, y: 3000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c3_${floorId}`, floorId, position: { x: 15000, y: 3000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c4_${floorId}`, floorId, position: { x: 3000, y: 12000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c5_${floorId}`, floorId, position: { x: 9000, y: 12000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c6_${floorId}`, floorId, position: { x: 15000, y: 12000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c7_${floorId}`, floorId, position: { x: 3000, y: 21000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c8_${floorId}`, floorId, position: { x: 9000, y: 21000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+    { id: `c9_${floorId}`, floorId, position: { x: 15000, y: 21000 }, width: 300, depth: 450, shape: ColumnShape.Rectangular, isStructural: true },
+  ];
+
+  const makeRooms = (floorId: string) => [
+    createRoom({ floorId, name: 'Living Room', type: RoomType.Living, x: 3000, y: 3000, width: 6000, height: 9000 }),
+    createRoom({ floorId, name: 'Master Bed', type: RoomType.Bedroom, x: 9000, y: 3000, width: 6000, height: 9000 }),
+  ];
+
+  const building = createBuilding({
+    projectId: 'proj-structural-test',
+    name: 'RH Skyrise Heights Test Residency',
+    site: {
+      plotWidth: 18_000,
+      plotDepth: 25_000,
+      roadFacing: Direction.North,
+      plannedFloorCount: 3,
+      setbacks: { front: 3_000, rear: 2_000, left: 2_000, right: 2_000 },
+    },
+    floors: [
+      { buildingId: 'proj-structural-test', level: 0, floorHeight: 3_050, name: 'Stilt / Foundation', boundary },
+      { buildingId: 'proj-structural-test', level: 1, floorHeight: 3_050, name: 'First Floor Plan', boundary },
+      { buildingId: 'proj-structural-test', level: 2, floorHeight: 3_050, name: 'Second Floor Plan', boundary },
+    ],
+  });
+
+  return {
+    ...building,
+    floors: building.floors.map((fl) => ({
+      ...fl,
+      columns: makeColumns(fl.id),
+      rooms: makeRooms(fl.id),
+      walls: [],
+    })),
+  };
+}
+
+describe('P3.3 Structural Analysis Engine, CAD Drawings & ETABS Report Pipeline', () => {
+  it('generates a comprehensive structural model with grids, footings, framing, drifts and reactions', () => {
+    const building = createMultiFloorTestBuilding();
+    const engine = new StructuralAnalysisEngine();
+    const model = engine.generateComprehensiveModel(building);
+
+    expect(model.buildingId).toBe(building.id);
+    expect(model.gridLines.length).toBeGreaterThanOrEqual(4);
+    
+    // Check grid lines X and Y
+    const xGrids = model.gridLines.filter(g => g.axis === 'X');
+    const yGrids = model.gridLines.filter(g => g.axis === 'Y');
+    expect(xGrids.length).toBe(3); // 3000, 9000, 15000
+    expect(yGrids.length).toBe(3); // 3000, 12000, 21000
+    expect(xGrids.map(g => g.tag)).toEqual(['A', 'B', 'C']);
+    expect(yGrids.map(g => g.tag)).toEqual(['1', '2', '3']);
+
+    // Check columns
+    expect(model.columns.length).toBe(27); // 9 cols * 3 storeys
+    for (const col of model.columns) {
+      expect(col.concreteGrade).toBe('M30');
+      expect(col.steelGrade).toBe('Fe500');
+      expect(col.utilizationRatio).toBeGreaterThan(0);
+      expect(col.utilizationRatio).toBeLessThanOrEqual(1.0);
+      expect(col.status).toBe('SAFE');
+    }
+
+    // Check footings and reactions at base
+    expect(model.footings.length).toBe(9);
+    for (const ftg of model.footings) {
+      expect(ftg.soilBearingCapacityKpa).toBe(200);
+      expect(ftg.widthMm).toBeGreaterThanOrEqual(1500);
+      expect(ftg.thicknessMm).toBe(450);
+    }
+    expect(model.reactions.length).toBe(9);
+    for (const r of model.reactions) {
+      expect(r.fzKn).toBeGreaterThan(0);
+      expect(r.mxKnm).toBeGreaterThan(0);
+    }
+
+    // Check beams
+    expect(model.beams.length).toBeGreaterThan(0);
+    for (const bm of model.beams) {
+      expect(bm.concreteGrade).toBe('M25');
+      expect(bm.sizeMm.width).toBe(230);
+      expect(bm.spanMm).toBeGreaterThan(0);
+    }
+
+    // Check slabs
+    expect(model.slabs.length).toBeGreaterThanOrEqual(3);
+    for (const sl of model.slabs) {
+      expect(sl.thicknessMm).toBeGreaterThanOrEqual(125);
+    }
+
+    // Check Storey Drift per IS 1893:2016
+    expect(model.drifts.length).toBe(3);
+    for (const d of model.drifts) {
+      expect(d.allowableDrift).toBe(0.004);
+      expect(d.compliant).toBe(true);
+    }
+
+    // Check Summary
+    expect(model.summary.etabsVersion).toContain('ETABS');
+    expect(model.summary.codeEditions.length).toBeGreaterThanOrEqual(4);
+    expect(model.summary.overallStatus).toBe('PASS');
+    expect(model.summary.engineeringApproval).toBe('PENDING_ENGINEER_REVIEW');
+    expect(model.summary.disclaimer).toContain('PRELIMINARY STRUCTURAL REPORT');
+  });
+
+  it('generates a 4-page ETABS Structural Analysis & IS Code Compliance PDF report', async () => {
+    const building = createMultiFloorTestBuilding();
+    const engine = new StructuralAnalysisEngine();
+    const model = engine.generateComprehensiveModel(building);
+
+    const pdfBytes = await generateETABSAnalysisPdfReport(model);
+    expect(pdfBytes).toBeInstanceOf(Uint8Array);
+    expect(pdfBytes.length).toBeGreaterThan(1000);
+
+    // Verify PDF structure with pdf-lib
+    const pdfDoc = await PDFDocument.load(pdfBytes, { throwOnInvalidObject: true });
+    expect(pdfDoc.getPageCount()).toBe(4);
+
+    // Verify page dimensions (A4 portrait: 595.28 x 841.89)
+    for (let i = 0; i < 4; i++) {
+      const page = pdfDoc.getPage(i);
+      expect(page.getWidth()).toBeCloseTo(595.28, 0);
+      expect(page.getHeight()).toBeCloseTo(841.89, 0);
+    }
+  });
+
+  it('generates a 4-sheet ISO A3 Landscape Structural Drawing set (S-101 to S-104)', async () => {
+    const building = createMultiFloorTestBuilding();
+    const service = new StructuralDrawingsService();
+
+    const result = await service.generateStructuralDrawingPackage(building);
+    expect(result.filename).toContain('Structural_Drawings_S101_S104.pdf');
+    expect(result.mimeType).toBe('application/pdf');
+    expect(result.pageCount).toBe(4);
+    expect(result.data.length).toBeGreaterThan(5000);
+
+    // Verify PDF structure with pdf-lib
+    const pdfDoc = await PDFDocument.load(result.data, { throwOnInvalidObject: true });
+    expect(pdfDoc.getPageCount()).toBe(4);
+
+    // Verify ISO A3 Landscape dimensions (1190.55 x 841.89)
+    for (let i = 0; i < 4; i++) {
+      const page = pdfDoc.getPage(i);
+      expect(page.getWidth()).toBeCloseTo(1190.55, 0);
+      expect(page.getHeight()).toBeCloseTo(841.89, 0);
+    }
+  });
+
+  it('generates verified structural artifacts via ArtifactRegistry', async () => {
+    const building = createMultiFloorTestBuilding();
+    const registry = new ArtifactRegistry();
+
+    // 1. Structural Drawings PDF
+    const drawingsArtifact = await registry.generate(building, 'structural-drawings-pdf', {
+      drawingKind: 'STRUCTURAL',
+    });
+    expect(drawingsArtifact.descriptor.fileType).toBe('PDF');
+    expect(drawingsArtifact.descriptor.discipline).toBe('STRUCTURAL');
+    expect(drawingsArtifact.descriptor.title).toContain('Structural CAD Drawing Set');
+    expect(drawingsArtifact.descriptor.verification?.isValid).toBe(true);
+    expect(drawingsArtifact.data.length).toBeGreaterThan(5000);
+
+    // 2. Structural Report PDF
+    const reportArtifact = await registry.generate(building, 'structural-report-pdf', {
+      drawingKind: 'STRUCTURAL',
+    });
+    expect(reportArtifact.descriptor.fileType).toBe('PDF');
+    expect(reportArtifact.descriptor.discipline).toBe('STRUCTURAL');
+    expect(reportArtifact.descriptor.title).toContain('ETABS Multi-Page Structural Analysis');
+    expect(reportArtifact.descriptor.verification?.isValid).toBe(true);
+
+    // 3. Structural Report JSON
+    const jsonArtifact = await registry.generate(building, 'structural-report-json', {
+      drawingKind: 'STRUCTURAL',
+    });
+    expect(jsonArtifact.descriptor.fileType).toBe('JSON');
+    expect(jsonArtifact.descriptor.discipline).toBe('STRUCTURAL');
+    const parsed = JSON.parse(Buffer.from(jsonArtifact.data).toString('utf8'));
+    expect(parsed.gridLines).toBeDefined();
+    expect(parsed.columns).toBeDefined();
+    expect(parsed.summary.overallStatus).toBe('PASS');
+  });
+});

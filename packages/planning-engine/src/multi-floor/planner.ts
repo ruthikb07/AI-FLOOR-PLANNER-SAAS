@@ -324,7 +324,7 @@ export class FloorProgramPlanner {
 }
 
 function roomProgramId(room: Room): string | undefined {
-  const tag = room.tags.find(value => value.startsWith('program:'));
+  const tag = room.tags?.find(value => value.startsWith('program:'));
   return tag ? sourceProgramItemId(tag.slice('program:'.length)) : undefined;
 }
 

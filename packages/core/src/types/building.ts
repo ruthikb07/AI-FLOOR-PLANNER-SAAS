@@ -1,3 +1,4 @@
+import type { ArchitecturalSpaceRole, ArchitecturalBoundaryRole, ArchitecturalFloorModel } from './architectural-elements';
 import type { RegulatoryContextInput } from './udcpr';
 import type { CanonicalMepSystems } from '../mep/mep-contracts';
 /**
@@ -116,6 +117,7 @@ export interface AdjacencyRequirement {
 
 /** A room within a floor. */
 export interface Room {
+  readonly architecturalRole?: ArchitecturalSpaceRole;
   readonly wetRoomType?: 'BATH_ONLY' | 'WC_ONLY' | 'COMBINED';
   readonly clearHeightMm?: number;
   readonly openToSky?: boolean;
@@ -150,6 +152,8 @@ export interface Room {
 
 /** A wall segment on a floor. */
 export interface Wall {
+  readonly boundaryRole?: ArchitecturalBoundaryRole;
+  readonly heightMm?: number;
   readonly wallUse?: 'EXTERNAL' | 'INTERNAL_PARTITION' | 'UNIT_SEPARATION' | 'COMMON_CORRIDOR' | 'CORE' | 'SHAFT' | 'BALCONY' | 'PARAPET';
   readonly leftRoomId?: string;
   readonly rightRoomId?: string;
@@ -170,7 +174,10 @@ export interface Wall {
 // ─── Door ───────────────────────────────────────────────────────────────────
 
 /** A door placed on a wall. */
+/** V1 positions are world-space centers; direction is host start -> end. */
 export interface Door {
+  readonly openingGeometryVersion?: 1;
+  readonly positionReference?: 'CENTER';
   readonly id: string;
   readonly floorId: string;
   readonly wallId: string;
@@ -191,6 +198,8 @@ export interface Door {
 
 /** A window placed on a wall. */
 export interface Window {
+  readonly openingGeometryVersion?: 1;
+  readonly positionReference?: 'CENTER';
   readonly id: string;
   readonly floorId: string;
   readonly wallId: string;
@@ -248,10 +257,17 @@ export interface Column {
 
 /** A single floor/level in the building. */
 export interface Floor {
+  readonly architecture?: ArchitecturalFloorModel;
   readonly parkingClearHeightMm?: number;
   readonly elevationMm?: number;
   readonly floorUse?: 'RESIDENTIAL' | 'STILT_PARKING' | 'ROOF';
   readonly slabThicknessMm?: number;
+  /** Column dimensions (mm) — used for P-M interaction checks in ETABS */
+  readonly columnWidthMm?: number;
+  readonly columnDepthMm?: number;
+  /** Beam dimensions (mm) — used for flexural & shear design in ETABS */
+  readonly beamWidthMm?: number;
+  readonly beamDepthMm?: number;
   readonly voidBoundaries?: readonly Polygon[];
   readonly apartmentUnits?: readonly { id: string; boundary: Polygon; unitType: string }[];
   readonly id: string;
@@ -276,13 +292,34 @@ export interface Floor {
 
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
+  readonly generationReport?: import('./multi-sheet-apartment').ApartmentGenerationReport;
+  readonly bedroomBalconySchedule?: readonly {
+    flatId: string | null; floorId: string; bedroomId: string; balconyId: string | null;
+    accessDoorId: string | null; dimensionsMm: { width: number; depth: number } | null; areaM2: number | null;
+    externalExposure: 'NOT_VERIFIED'; udcprStatus: 'NOT_VERIFIED'; geometryStatus: 'NOT_VERIFIED' | 'FAILED';
+    feasibilityReason: string; alternatives: string[];
+  }[];
   readonly projectId: string;
   readonly clientName?: string;
   readonly generationBrief?: {
-    readonly source: 'DETERMINISTIC';
+    readonly source: 'DETERMINISTIC' | 'HYBRID' | 'AI_ASSISTED';
     readonly aiPrompt?: string;
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+    readonly generationSeed?: number;
+    readonly topologyHash?: string;
+    readonly archetype?: string;
+    readonly buildingMassingShape?: string;
+    readonly includeWindowChajjas?: boolean;
+    readonly staggeredBalconies?: boolean;
+    readonly aiProposal?: Record<string, unknown>;
+    readonly aiTelemetry?: {
+      readonly geminiInvoked: boolean;
+      readonly provider: string;
+      readonly modelUsed?: string;
+      readonly fallbackReason?: string;
+      readonly referenceImageUsedForGeometry: boolean;
+    };
   };
   readonly description?: string;
   readonly tags?: readonly string[];
@@ -291,6 +328,15 @@ export interface BuildingMetadata {
 /** The root building entity — source of truth for all plan data. */
 export interface Building {
   readonly mep?: CanonicalMepSystems;
+  /** Phase 3 coordinated electrical / plumbing / ceiling / fire / cantilever plan. */
+  readonly mepEngineering?: import('../mep/mep-engineering-plan').CoordinatedMepEngineeringPlan;
+  readonly complianceRating?: {
+    readonly score: number;
+    readonly passed: boolean;
+    readonly redConflictCount: number;
+    readonly hardRejected?: boolean;
+    readonly attemptCount?: number;
+  };
   readonly regulatoryContext?: RegulatoryContextInput;
   readonly id: string;
   readonly projectId: string;
@@ -318,10 +364,24 @@ export interface Project {
   readonly description?: string;
   readonly clientName?: string;
   readonly generationBrief?: {
-    readonly source: 'DETERMINISTIC';
+    readonly source: 'DETERMINISTIC' | 'HYBRID' | 'AI_ASSISTED';
     readonly aiPrompt?: string;
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
+    readonly generationSeed?: number;
+    readonly topologyHash?: string;
+    readonly archetype?: string;
+    readonly buildingMassingShape?: string;
+    readonly includeWindowChajjas?: boolean;
+    readonly staggeredBalconies?: boolean;
+    readonly aiProposal?: Record<string, unknown>;
+    readonly aiTelemetry?: {
+      readonly geminiInvoked: boolean;
+      readonly provider: string;
+      readonly modelUsed?: string;
+      readonly fallbackReason?: string;
+      readonly referenceImageUsedForGeometry: boolean;
+    };
   };
   readonly status: ProjectStatus;
   readonly buildings: readonly Building[];

@@ -6,7 +6,7 @@ The canonical Building Model is the sole authoritative building state. Requireme
 
 ## AI and engineering safety
 
-AI may interpret, propose and explain. It must not invent or certify soil properties, structural safety, loads, reinforcement, foundations, seismic adequacy, code compliance or professional approval. Safety-critical engineering requires required inputs, validated deterministic calculations/solvers and professional review. Missing safety-critical input must produce explicit uncertainty or blocking, never fabricated assumptions.
+AI may interpret, propose and explain. It must not invent or certify soil properties, structural safety, loads, reinforcement, foundations, seismic adequacy, code compliance or professional approval. AI's role in generation is limited to turning a user's brief into structured intent, which is validated deterministically before it can influence geometry. No image-generation model may decide layout, room counts or geometry, and geometry is never derived by reading an image back in: plan generation depends only on the deterministic engines. Safety-critical engineering requires required inputs, validated deterministic calculations/solvers and professional review. Missing safety-critical input must produce explicit uncertainty or blocking, never fabricated assumptions.
 
 ## Professional status
 

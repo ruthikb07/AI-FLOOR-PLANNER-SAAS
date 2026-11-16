@@ -1,4 +1,6 @@
 import {
+  architecturalBoundaryRole,
+  architecturalSpaceRole,
   createBuilding,
   createFloor,
   createRoom,
@@ -190,8 +192,10 @@ export function buildResidentialLayout(config: ResidentialSynthesisConfig) {
             : "COMMON",
         clearHeightMm: f0.floorHeight - 250,
       };
-      rooms.push(r);
-      return r;
+      const role = roof && type === RoomType.Staircase ? 'STAIR_MUMTY' : name === 'Common lift lobby' ? 'LIFT_LOBBY' : ground && name === 'Common entrance' ? 'VEHICLE_AISLE' : architecturalSpaceRole(r);
+      const semanticRoom = { ...r, architecturalRole: role as Room['architecturalRole'] };
+      rooms.push(semanticRoom);
+      return semanticRoom;
     };
     const commonFront = room(
       "Common entrance",
@@ -240,15 +244,16 @@ export function buildResidentialLayout(config: ResidentialSynthesisConfig) {
     const backHeight = y + depth - liftY - liftSize;
     if (backHeight <= 1300)
       throw infeasible(`CORE_ANCHOR: no back lobby at (${x + bay}, ${liftY}).`);
+    const machineRoomRequired = roof && config.architectureOptions?.liftSystem === "MACHINE_ROOM_REQUIRED";
     const back = room(
-      roof ? "Lift machine room" : "Common rear lobby",
-      roof ? RoomType.Custom : RoomType.Corridor,
+      machineRoomRequired ? "Lift equipment room" : roof ? "Open roof access" : "Common rear lobby",
+      machineRoomRequired ? RoomType.Custom : roof ? RoomType.Terrace : RoomType.Corridor,
       x + bay,
       liftY + liftSize,
       bay,
       backHeight,
       undefined,
-      roof ? ["LIFT_MACHINE_ROOM"] : [],
+      machineRoomRequired ? ["LIFT_MACHINE_ROOM"] : [],
     );
     const accessPoint = { x: x + bay + stairWidth / 2, y: stairY };
     links.push(
@@ -268,7 +273,7 @@ export function buildResidentialLayout(config: ResidentialSynthesisConfig) {
       const ux = x + side * 2 * bay,
         inner = side === 0 ? ux + bay : ux;
       if (ground) {
-        const serviceX = side === 0 ? ux : ux + bay - 2000;
+        const serviceX = side === 0 ? ux + 230 : ux + bay - 2000 - 230;
         const service = room(
           side === 0 ? "Security cabin" : "Electrical meter room",
           RoomType.Custom,
@@ -494,7 +499,7 @@ export function buildResidentialLayout(config: ResidentialSynthesisConfig) {
           ],
         };
       }
-    const walls = buildWalls(floorId, rooms, ground, roof, links);
+    const walls = buildWalls(floorId, rooms, ground, roof, links, config.architectureOptions?.guardHeightMm);
     const doors: Door[] = links.map((link, i) => {
       const wall = walls.find(
         (w) => w.roomIds.includes(link.a.id) && w.roomIds.includes(link.b.id),
@@ -714,6 +719,7 @@ function buildWalls(
   ground: boolean,
   roof: boolean,
   links: Link[],
+  guardHeightMm = 1100,
 ): Wall[] {
   const lines = new Map<string, { a: Point; b: Point; rooms: Room[] }>();
   for (const r of rooms)
@@ -793,6 +799,7 @@ function buildWalls(
       use = "COMMON_CORRIDOR";
       thickness = 150;
     }
+    const boundaryRole = architecturalBoundaryRole(owners, owners.length === 1);
     walls.push({
       ...createWall({
         floorId,
@@ -803,7 +810,9 @@ function buildWalls(
         roomIds: owners.map((r) => r.id),
       }),
       id: `${floorId}:wall:${walls.length}`,
-      wallUse: use,
+      wallUse: boundaryRole === "PARAPET" ? "PARAPET" : use,
+      boundaryRole,
+      heightMm: boundaryRole === "OPEN_BOUNDARY" ? 0 : boundaryRole === "PARAPET" ? guardHeightMm : undefined,
       unitIds: [
         ...new Set(owners.flatMap((r) => (r.unitId ? [r.unitId] : []))),
       ],

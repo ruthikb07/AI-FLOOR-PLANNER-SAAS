@@ -1,13 +1,44 @@
 import React, { useMemo, useState } from 'react';
-import { GeometryValidator } from '@ai-floor-planner/planning-engine';
+import type { EngineeringOverlay } from '@ai-floor-planner/core';
+import {
+  GeometryValidator,
+  evaluateArchitecturalComplianceScore,
+} from '@ai-floor-planner/planning-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { ArchitecturalCanvas } from '../canvas/ArchitecturalCanvas';
 import { PropertyInspector } from '../inspector/PropertyInspector';
 import { requestVerifiedExport, downloadVerifiedExport } from '../../services/export-client';
 import type { WorkspaceLayer } from '../workspace/BuildingNavigator';
 
-export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
-  const [entityLayers, setEntityLayers] = useState({ columns: true, beams: true, furniture: true });
+export interface ArchitecturalCADWorkspaceProps {
+  editor: EditorContextValue;
+  onRegeneratePlan?: () => void;
+  onOpenEditPlan?: () => void;
+  generationSeed?: number;
+  isGenerating?: boolean;
+  canRegenerate?: boolean;
+}
+
+export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps> = ({
+  editor,
+  onRegeneratePlan,
+  onOpenEditPlan,
+  generationSeed = 1,
+  isGenerating = false,
+  canRegenerate = true,
+}) => {
+  const aiTelemetry = editor.building.metadata.generationBrief?.aiTelemetry;
+  const activeArchetype = editor.building.metadata.generationBrief?.archetype;
+  const activeMassingShape = editor.building.metadata.generationBrief?.buildingMassingShape;
+  const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
+  const [disciplines, setDisciplines] = useState<Record<EngineeringOverlay, boolean>>({
+    ARCHITECTURAL: true,
+    STRUCTURAL: false,
+    ELECTRICAL: false,
+    PLUMBING: false,
+    FALSE_CEILING: false,
+    FIRE_SAFETY: false,
+  });
   const [exportStatus, setExportStatus] = useState('');
   const controller = React.useRef(new AbortController());
   React.useEffect(() => {
@@ -43,12 +74,18 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
     openings: true,
     stairs: true,
     dimensions: true,
-    grid: true,
+    grid: false,
     validation: true,
     siteZones: true,
   });
   const report = useMemo(
     () => new GeometryValidator({ autoCorrect: false }).audit(editor.building, false).report,
+    [editor.building],
+  );
+  const complianceReport = useMemo(
+    () =>
+      (editor.building.metadata as { complianceReport?: ReturnType<typeof evaluateArchitecturalComplianceScore> })
+        ?.complianceReport ?? evaluateArchitecturalComplianceScore(editor.building),
     [editor.building],
   );
   return (
@@ -58,6 +95,58 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
     >
       <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 p-3">
         <strong>2D CAD Studio</strong>
+        {onRegeneratePlan && (
+          <button
+            type="button"
+            disabled={isGenerating || !canRegenerate}
+            onClick={onRegeneratePlan}
+            className="rounded bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+          >
+            {isGenerating ? 'Regenerating...' : `Regenerate Variant (Seed #${generationSeed})`}
+          </button>
+        )}
+        {onOpenEditPlan && (
+          <button
+            type="button"
+            onClick={onOpenEditPlan}
+            className="rounded bg-indigo-500 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-400"
+          >
+            Edit Plan
+          </button>
+        )}
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+            aiTelemetry?.geminiInvoked
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+              : 'border-slate-600 bg-slate-800 text-slate-300'
+          }`}
+          title={
+            aiTelemetry?.geminiInvoked
+              ? `Gemini proposal active (${aiTelemetry.modelUsed ?? 'gemini'})${aiTelemetry.referenceImageUsedForGeometry ? ' + Vision Spatial Graph' : ''}${activeMassingShape ? ` · ${activeMassingShape}` : ''}${activeArchetype ? ` · ${activeArchetype}` : ''}`
+              : aiTelemetry?.fallbackReason ?? `Deterministic solver engine${activeMassingShape ? ` · ${activeMassingShape}` : ''}`
+          }
+        >
+          {aiTelemetry?.geminiInvoked
+            ? `Gemini AI (${aiTelemetry.modelUsed ?? 'gemini'})`
+            : 'Deterministic Engine'}
+          {activeMassingShape ? ` · ${activeMassingShape.replace(/_/g, ' ')}` : ''}
+        </span>
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            complianceReport.score >= 85 && complianceReport.redConflictCount === 0
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+              : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
+          }`}
+          title={
+            (complianceReport?.violations?.length ?? 0) > 0
+              ? complianceReport.violations
+                  .map((v) => (typeof v === 'string' ? v : v.message))
+                  .join(' | ')
+              : 'All 6 architectural & code compliance checks passed (>= 85 / 100).'
+          }
+        >
+          Compliance Score: {complianceReport.score} / 100
+        </span>
         {(['dwg', 'dxf', 'pdf'] as const).map((format) => (
           <button
             key={format}
@@ -71,25 +160,67 @@ export const ArchitecturalCADWorkspace: React.FC<{ editor: EditorContextValue }>
           {exportStatus}
         </span>
       </div>
-      <div
-        className="flex shrink-0 gap-2 overflow-x-auto border-b border-slate-700 bg-slate-900 p-3"
-        aria-label="Model floors"
-      >
-        {editor.building.floors.map((floor) => (
-          <button
-            key={floor.id}
-            onClick={() => editor.switchFloor(floor.id)}
-            className={`shrink-0 rounded px-3 py-2 text-xs ${floor.id === editor.activeFloor.id ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-200'}`}
-          >
-            {floor.name}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-slate-900 p-3">
+        <div
+          className="flex shrink-0 gap-2 overflow-x-auto"
+          aria-label="Model floors"
+        >
+          {editor.building.floors.map((floor) => (
+            <button
+              key={floor.id}
+              onClick={() => editor.switchFloor(floor.id)}
+              className={`shrink-0 rounded px-3 py-2 text-xs ${floor.id === editor.activeFloor.id ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-200'}`}
+            >
+              {floor.name}
+            </button>
+          ))}
+        </div>
+        <div
+          className="argon-tool-strip argon-discipline-toolbar flex flex-wrap items-center gap-1.5"
+          role="toolbar"
+          aria-label="Engineering discipline overlay switcher"
+        >
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Discipline Plans:
+          </span>
+          {(
+            [
+              ['ARCHITECTURAL', 'Architectural Plan'],
+              ['STRUCTURAL', 'Structural + Chajja Plan'],
+              ['ELECTRICAL', 'Electrical Plan (M-ELEC)'],
+              ['PLUMBING', 'Plumbing & OTS Duct Plan (M-PLUMB)'],
+              ['FIRE_SAFETY', 'Fire Safety Plan (F-FIRE)'],
+              ['FALSE_CEILING', 'False Ceiling Plan (A-CEIL)'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={disciplines[key]}
+              onClick={() => {
+                const nextVal = !disciplines[key];
+                setDisciplines((p) => ({ ...p, [key]: nextVal }));
+                if (key === 'STRUCTURAL') {
+                  setEntityLayers((p) => ({ ...p, columns: nextVal, beams: nextVal }));
+                }
+              }}
+              className={`shrink-0 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                disciplines[key]
+                  ? 'bg-cyan-500 text-slate-950 font-semibold'
+                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="relative min-h-[320px] min-w-0 flex-1">
           <ArchitecturalCanvas
             modelOnly
             entityLayers={entityLayers}
+            disciplines={disciplines}
             editor={editor}
             snapEnabled
             layers={layers}

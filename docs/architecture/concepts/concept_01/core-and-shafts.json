@@ -1,0 +1,178 @@
+[
+  {
+    "id": "floor_level_00::apt-room:flat_01__internal_passage",
+    "type": "corridor",
+    "name": "Flat 1 Internal Passage",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 7080,
+    "yMm": 14280,
+    "widthMm": 3000,
+    "heightMm": 1570
+  },
+  {
+    "id": "floor_level_00::apt-room:flat_02__internal_passage",
+    "type": "corridor",
+    "name": "Flat 2 Internal Passage",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 30520,
+    "yMm": 14280,
+    "widthMm": 3000,
+    "heightMm": 1570
+  },
+  {
+    "id": "floor_level_00::apt-room:flat_03__internal_passage",
+    "type": "corridor",
+    "name": "Flat 3 Internal Passage",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 7080,
+    "yMm": 32650,
+    "widthMm": 3000,
+    "heightMm": 1570
+  },
+  {
+    "id": "floor_level_00::apt-room:flat_04__internal_passage",
+    "type": "corridor",
+    "name": "Flat 4 Internal Passage",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 30520,
+    "yMm": 32650,
+    "widthMm": 3000,
+    "heightMm": 1570
+  },
+  {
+    "id": "floor_level_00::apt-room:core_lift_1",
+    "type": "lift",
+    "name": "Passenger Lift 01",
+    "role": "LIFT_SHAFT",
+    "openToSky": false,
+    "xMm": 7500,
+    "yMm": 22750,
+    "widthMm": 2200,
+    "heightMm": 3000
+  },
+  {
+    "id": "floor_level_00::apt-room:core_lift_2",
+    "type": "lift",
+    "name": "Passenger Lift 02",
+    "role": "LIFT_SHAFT",
+    "openToSky": false,
+    "xMm": 9700,
+    "yMm": 22750,
+    "widthMm": 2200,
+    "heightMm": 3000
+  },
+  {
+    "id": "floor_level_00::apt-room:core_stair_1",
+    "type": "staircase",
+    "name": "Main Fire Staircase",
+    "role": "STAIR_ENCLOSURE",
+    "openToSky": false,
+    "xMm": 3000,
+    "yMm": 22750,
+    "widthMm": 4500,
+    "heightMm": 3000
+  },
+  {
+    "id": "floor_level_00::apt-room:core_stair_2",
+    "type": "staircase",
+    "name": "Fire Staircase 02",
+    "role": "STAIR_ENCLOSURE",
+    "openToSky": false,
+    "xMm": 11900,
+    "yMm": 22750,
+    "widthMm": 4500,
+    "heightMm": 3000
+  },
+  {
+    "id": "floor_level_00::apt-room:corridor_1",
+    "type": "corridor",
+    "name": "Common Circulation 01",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 3000,
+    "yMm": 20350,
+    "widthMm": 31600,
+    "heightMm": 2400
+  },
+  {
+    "id": "floor_level_00::apt-room:corridor_2",
+    "type": "corridor",
+    "name": "Common Circulation 02",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 3000,
+    "yMm": 25750,
+    "widthMm": 31600,
+    "heightMm": 2400
+  },
+  {
+    "id": "floor_level_00::apt-room:corridor_3",
+    "type": "corridor",
+    "name": "Common Circulation 03",
+    "role": "OPEN_CIRCULATION",
+    "openToSky": false,
+    "xMm": 34600,
+    "yMm": 20350,
+    "widthMm": 2400,
+    "heightMm": 7800
+  },
+  {
+    "id": "floor_level_00::apt-room:core_shaft_1",
+    "type": "service_shaft",
+    "name": "MEP / Plumbing Duct 01",
+    "role": "SERVICE_SHAFT",
+    "openToSky": false,
+    "xMm": 16400,
+    "yMm": 22750,
+    "widthMm": 18200,
+    "heightMm": 3000
+  },
+  {
+    "id": "floor_level_00::apt-room:core_shaft_2",
+    "type": "service_shaft",
+    "name": "Open-to-Sky Court / Light and Air Void",
+    "role": "OPEN_TO_SKY_VOID",
+    "openToSky": true,
+    "xMm": 3000,
+    "yMm": 3000,
+    "widthMm": 34000,
+    "heightMm": 8350
+  },
+  {
+    "id": "floor_level_00::apt-room:core_shaft_3",
+    "type": "service_shaft",
+    "name": "Open-to-Sky Court / Light and Air Void",
+    "role": "OPEN_TO_SKY_VOID",
+    "openToSky": true,
+    "xMm": 13560,
+    "yMm": 11350,
+    "widthMm": 12880,
+    "heightMm": 9000
+  },
+  {
+    "id": "floor_level_00::apt-room:core_shaft_4",
+    "type": "service_shaft",
+    "name": "Open-to-Sky Court / Light and Air Void",
+    "role": "OPEN_TO_SKY_VOID",
+    "openToSky": true,
+    "xMm": 3000,
+    "yMm": 37150,
+    "widthMm": 34000,
+    "heightMm": 8350
+  },
+  {
+    "id": "floor_level_00::apt-room:core_shaft_5",
+    "type": "service_shaft",
+    "name": "Open-to-Sky Court / Light and Air Void",
+    "role": "OPEN_TO_SKY_VOID",
+    "openToSky": true,
+    "xMm": 13560,
+    "yMm": 28150,
+    "widthMm": 12880,
+    "heightMm": 9000
+  }
+]

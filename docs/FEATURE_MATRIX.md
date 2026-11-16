@@ -2,11 +2,27 @@
 
 > **Baseline Audit Date:** 2026-11-10  
 > **Phase 1 Verification:** Complete  
+> **Phase 2.5 Independent Review:** NOT READY — see [independent review](PHASE2_CODEX_INDEPENDENT_REVIEW.md)
 > **Repository:** [https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS)  
 > **Verified By:** Lead Software Architect, AI-FLOOR-PLANNER-SAAS  
 > **Governance:** `AGENTS.md` (Sole Authority of Canonical Model, Evidence Freshness, Zero Fabricated Assumptions)
 
 ---
+
+## Phase 2.5 verified scope (supersedes earlier Phase 2 claims)
+
+| Capability | Current evidence / limit |
+| :--- | :--- |
+| Edited area retained across unit switches | Regression-tested using actual React input events; canonical target retained in mm². |
+| Command acceptance | Full building/control fingerprints and deterministic replay; partial, stale, forged and validator-free proposals rejected. |
+| Wall/opening identity | Preserved without cloning doors; ambiguous endpoint/topology reconstruction rejected. |
+| Minima | Project-configured areas plus conservative engineering defaults, not universal statutory rules. |
+| Undo/redo, persistence, exports | Fixture-level execution, reload, PDF/SVG bytes, DWG read-back, DXF area text and 3D wall coordinate tests. |
+| Actual synthesized physical floors | BLOCKED: center/start opening-position contracts are inconsistent across consumers. |
+| Browser / WebGL acceptance | NOT VERIFIED: browser service timed out; component/worker tests are not browser evidence. |
+| Complete phase readiness | NOT READY. Integration authentication and furniture identity failures remain; see report for exact gate results. |
+
+The historical package counts and unrelated capability rows below were not independently recertified by this focused audit. Passing software tests does not certify statutory or structural compliance.
 
 ## 1. System-Level Architecture & Package Matrix
 
@@ -16,7 +32,7 @@
 | **Geometry Computation Engine** | `@ai-floor-planner/geometry-engine` | `VERIFIED_WORKING` | 51 files / 498 tests | Polygon clipping (Greiner-Hormann), spatial indexing (R-Tree), offset buffers, zero-error planar area calculation, staircase tread/riser solids. |
 | **Spatial Planning & Synthesis** | `@ai-floor-planner/planning-engine` | `VERIFIED_WORKING` | 52 files / 447 tests | Multi-story residential synthesis (`multi-story-residential-synthesizer.ts`), corridor topology, BHK unit slicing, column-beam grid generation, stairs alignment. |
 | **Maharashtra UDCPR 2020** | `@ai-floor-planner/constraint-engine` | `VERIFIED_WORKING` | 18 files / 158 tests | Statutory rules evaluator (`residential-udcpr-evaluator.ts`): FSI ledger, marginal distances, parking standards, 10% recreational open space. |
-| **AI Intent & LLM Orchestration** | `@ai-floor-planner/ai-orchestration` | `VERIFIED_WORKING` | 13 files / 69 tests | Gemini 2.5 Flash High / Anthropic / OpenAI fallback chain, prompt engineering, structured JSON extraction with schema repair. |
+| **AI Brief Interpretation** | `@ai-floor-planner/ai-orchestration` | `VERIFIED_WORKING` | 141 tests | Gemini / OpenAI / rule-based chain for turning a brief into structured intent, with schema repair. Output is validated deterministically before it reaches geometry. Image generation, image-to-plan vision interpretation and visual preflight were removed; no image model participates in layout. |
 | **SVG 2D Architectural Renderer** | `@ai-floor-planner/renderer` | `VERIFIED_WORKING` | 12 files / 54 tests | High-precision vector floor plans, Indian standard layer mapping (`A-WALL`, `A-DOOR`, `A-WIND`, `S-COLS`, `S-BEAM`), dimension annotations. |
 | **3D Three.js & Blender Projections** | `@ai-floor-planner/projection-3d` | `VERIFIED_WORKING` | 3 files / 28 tests | Three.js scene projection of canonical building, procedural Blender 5.2 Python script generator (`blender-script-generator.ts`), MEP cable/pipe routing. |
 | **CAD Export & accoreconsole Engine** | `@ai-floor-planner/backend` | `VERIFIED_WORKING` | 21 files / 173 tests | True AutoCAD `.dwg` generation via `accoreconsole.exe`, fallback `.dxf` generator, `pdf-lib` multi-sheet PDF generator with `FIT_TO_PAGE` protection. |
@@ -42,6 +58,7 @@
 | | `ArchitecturalCADWorkspace` | Layer Toggles (7 layers) | Real | Canvas render | Dynamically shows/hides rooms, walls, openings, stairs, dimensions, grid. |
 | | `ArchitecturalCADWorkspace` | Entity Layer Toggles (3 layers) | Real | Canvas render | Toggles columns (`S-COLS`), beams (`S-BEAM`), furniture (`A-FURN`). |
 | | `ArchitecturalCADWorkspace` | Property Inspector Inputs | Real | Editor commands | Mutates selected entity dimensions, names, and room categories. |
+| | `PropertyInspector` | `RoomAreaCustomizerPanel` | Real | `optimizeRoomArea` / `ApplyRoomAreaRegenerationCommand` | Configures target room area ($m^2$ / sq ft), sliders, locks, and regeneration preferences. Generates Candidates A/B/C, interactive SVG preview modal, and applies reversible canonical command. |
 | | `ArchitecturalCADWorkspace` | Geometry Audit Display | Real | `GeometryValidator` | Live audit of active building with measured delta in $\text{mm}^2$. |
 | **03 Floor Editor** | `FloorIsometricEditor` | Floor Selector Buttons | Real | `editor.switchFloor` | Reads actual floors dynamically from `editor.building.floors`; switches active floor in canonical editor store. |
 | | `FloorIsometricEditor` | Viewport Canvas | Real | `ThreeBuildingScene` | Genuine orthographic/isometric Three.js presentation in isolated floor mode (`floorMode="isolate"`), with preserved 2D drafting plan mode toggle. |

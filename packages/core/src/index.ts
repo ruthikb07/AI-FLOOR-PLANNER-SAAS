@@ -20,3 +20,9 @@ export * from './compliance/udcpr-residential-types';
 export * from './compliance/vastu-advisory-types';
 export * from './mep/mep-contracts';
 export * from './mep/mep-validation';
+export * from './mep/mep-engineering-plan';
+export * from './models/mixed-unit-program';
+
+export * from './models/opening-migration';
+
+export * from './models/architectural-semantics';

@@ -163,14 +163,7 @@ export class ColumnGridGenerator {
             if (
               f.rooms.some(
                 (r) =>
-                  [
-                    "balcony",
-                    "utility",
-                    "ots",
-                    "service_shaft",
-                    "lift",
-                    "staircase",
-                  ].includes(r.type) &&
+                  ["balcony", "utility", "ots", "service_shaft", "lift", "staircase"].includes(r.type) &&
                   this.restrictedOverlap(p, r, f, structuralEnvelope) >= 0.001,
               )
             )

@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-10",
+  "branch": "feature/phase2-room-area-regeneration",
+  "commit": "a20a44b0a7b277c615bdb672916932fbfb08f78a",
+  "status": "NOT_READY",
+  "unit": {
+    "passed": 1469,
+    "skipped": 7
+  },
+  "full": {
+    "passed": 1657,
+    "skipped": 7
+  },
+  "build": {
+    "status": "PASS",
+    "tasks": 9
+  },
+  "typecheck": {
+    "status": "PASS",
+    "tasks": 16
+  },
+  "lint": {
+    "status": "PASS",
+    "tasks": 16
+  },
+  "frontend_after_latest_change": {
+    "build": "PASS",
+    "typecheck": "PASS",
+    "lint": "PASS"
+  },
+  "integration": {
+    "passed": 22,
+    "failed": 5,
+    "live_provider_failures": 4,
+    "furniture_identity_failures": 1
+  },
+  "native_cad": {
+    "audits": 12,
+    "zero_error_audits": 12
+  },
+  "browser": {
+    "status": "BLOCKED",
+    "reason": "Timed out waiting for Statsig values"
+  },
+  "initial_red_tests": {
+    "ui": {
+      "passed": 5,
+      "failed": 1
+    },
+    "optimizer": {
+      "passed": 16,
+      "failed": 2
+    }
+  },
+  "new_tests": 21,
+  "physical_floor_regeneration": "OPENING_POSITION_PROFILE_UNSUPPORTED"
+}

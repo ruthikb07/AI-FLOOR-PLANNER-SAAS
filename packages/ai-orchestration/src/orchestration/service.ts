@@ -10,6 +10,11 @@ import { RuleBasedEditParser, type LocalEditParseOptions } from '../editing/pars
 import { AI_EDIT_RESPONSE_SCHEMA, AI_EDIT_SYSTEM_PROMPT } from '../editing/schema';
 import type { AIEditDiagnostic, AIEditParseResult } from '../editing/types';
 import { validateAIEditPayload } from '../editing/validation';
+import {
+  generateArchitecturalProposal,
+  type ArchitecturalProposalResult,
+  type GenerateArchitecturalProposalOptions,
+} from './architectural-proposal';
 
 export type RequirementParseSource = 'provider' | 'rule_based' | 'rule_based_fallback';
 
@@ -190,6 +195,12 @@ export class AIOrchestrationService {
       });
       return this.localEditResult(safeCommand, building, options, 'rule_based_fallback', diagnostics, startedAt, providerName, model);
     }
+  }
+
+  async proposeArchitecture(
+    input: GenerateArchitecturalProposalOptions,
+  ): Promise<ArchitecturalProposalResult> {
+    return generateArchitecturalProposal(this.provider, input);
   }
 
   private localResult(

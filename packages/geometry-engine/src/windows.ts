@@ -1,3 +1,4 @@
+import { canonicalOpeningGeometry } from './opening-geometry';
 /**
  * Window Geometry and Placement Validation.
  * Handles window placement along host walls, glazing segments, and architectural clearances.
@@ -28,6 +29,10 @@ export function validateWindowPlacement(
   minEdgeDistance: number = 200, // 200mm minimum from wall corner for structural lintel
   allowInternal: boolean = false,
 ): { valid: boolean; reason?: string } {
+  if (window.openingGeometryVersion === 1) {
+    try { const g = canonicalOpeningGeometry(window, hostWall); return { valid: g.start >= minEdgeDistance && g.end <= g.length - minEdgeDistance, reason: 'Opening interval must retain configured edge clearance' }; }
+    catch (error) { return { valid: false, reason: String(error) }; }
+  }
   const wallSeg: LineSegment = { start: hostWall.startPoint, end: hostWall.endPoint };
   const wallLen = segmentLength(wallSeg);
 
@@ -91,6 +96,7 @@ export function assertWindowPlacement(
 
 /** Compute the line segment representing the window opening on the host wall. */
 export function computeWindowOpeningSegment(window: Window, hostWall: Wall): LineSegment {
+  if (window.openingGeometryVersion === 1) { const g = canonicalOpeningGeometry(window, hostWall); return { start: g.startPoint, end: g.endPoint }; }
   const wallSeg: LineSegment = { start: hostWall.startPoint, end: hostWall.endPoint };
   const wallLen = segmentLength(wallSeg);
   const dx = (hostWall.endPoint.x - hostWall.startPoint.x) / wallLen;

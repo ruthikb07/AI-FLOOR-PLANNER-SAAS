@@ -19,6 +19,11 @@ export {
 } from './room-commands';
 
 export {
+  ApplyRoomAreaRegenerationCommand,
+  type RoomAreaRegenerationMetadata,
+} from './room-area-command';
+
+export {
   AddDoorCommand,
   MoveDoorCommand,
   UpdateDoorPropertiesCommand,

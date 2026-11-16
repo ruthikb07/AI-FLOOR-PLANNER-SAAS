@@ -31,6 +31,8 @@ export interface StaircaseAccessEdge {
 
 /** Canonical multi-flight staircase entity with geometric flights and access edge. */
 export interface CanonicalStaircase {
+  /** Landing at the registered floor elevation, distinct from the half-rise landing. */
+  readonly floorLanding?: Polygon;
   readonly flightRiserCounts?: readonly [number, number];
   readonly headroomMm?: number;
   readonly id: string;

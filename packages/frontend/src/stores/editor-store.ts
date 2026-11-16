@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Building, Floor, GenerationControlState, RoomType } from '@ai-floor-planner/core';
 import {
   EditorEngine,
+  ApplyRoomAreaRegenerationCommand,
   SelectEntityCommand,
   ClearSelectionCommand,
   SwitchFloorCommand,
@@ -24,7 +25,7 @@ import {
   validateGenerationControl,
   type DesignDiagnostics,
 } from '@ai-floor-planner/core';
-import { evaluateDesign, diagnosticsToValidation, type ValidationSummary } from '@ai-floor-planner/planning-engine';
+import { buildingRefinementRevision, evaluateDesign, diagnosticsToValidation, type ValidationSummary } from '@ai-floor-planner/planning-engine';
 import {
   CURRENT_PROJECT_SCHEMA_VERSION,
   projectStorage,
@@ -32,7 +33,9 @@ import {
   BuildingCategory,
   ProjectLifecycleStatus,
   createCanonical30x50_2BHK,
+  type SaveOutcome,
 } from '../services/storage';
+import type { PersistenceState } from '../services/durable-project-store';
 
 export interface EditorContextValue {
   engine: EditorEngine;
@@ -41,6 +44,7 @@ export interface EditorContextValue {
   selection: EditorSelection | null;
   selections: readonly EditorSelection[];
   generationControl: GenerationControlState;
+  getGenerationControl?: () => GenerationControlState;
   activeTool: EditorTool;
   canUndo: boolean;
   canRedo: boolean;
@@ -72,11 +76,24 @@ export interface EditorContextValue {
     name?: string,
     requiredRoomCounts?: Partial<Record<RoomType, number>>,
     category?: BuildingCategory,
-  ) => void;
+  ) => SaveOutcome;
+  /**
+   * Durability of the last save. `SAVED` means the write reached durable
+   * storage; anything else means the project is open and complete in this
+   * session but NOT yet safely stored, which the UI must be able to say.
+   */
+  persistence: PersistenceStatus;
   updateSite: (params: UpdateSiteParams) => void;
   setRequiredRoomCounts: (counts: Partial<Record<RoomType, number>>) => void;
   addFloor: (name?: string, floorHeight?: number) => void;
   removeFloor: (floorId: string) => void;
+}
+
+/** Durability of the most recent project save, for honest UI reporting. */
+export interface PersistenceStatus {
+  readonly state: PersistenceState;
+  readonly reason?: string;
+  readonly projectId?: string;
 }
 
 export function useEditorStore() {
@@ -137,6 +154,12 @@ export function useEditorStore() {
     initialEnvelope.building,
   ).state;
   const [generationControl, setGenerationControlState] = useState<GenerationControlState>(initialControl);
+  // Durability of the most recent save. Starts SAVED because the project was
+  // just hydrated from durable storage (or freshly created and written).
+  const [persistence, setPersistence] = useState<PersistenceStatus>({
+    state: 'SAVED',
+    projectId: initialEnvelope.projectId,
+  });
   const generationControlRef = useRef(initialControl);
   const requiredRoomCountsRef = useRef<Partial<Record<RoomType, number>>>(
     initialEnvelope.requiredRoomCounts ?? {},
@@ -169,9 +192,12 @@ export function useEditorStore() {
         setDiagnostics(diag);
         setValidationSummary(report);
 
-        // Auto-save to LocalStorage on mutations
+        // Autosave on mutation. A failure here is reported through
+        // `persistence` rather than logged and forgotten: the user needs to
+        // know their edits are not durably stored, and the edits themselves
+        // are never discarded because of it.
         try {
-          projectStorage.save({
+          const outcome = projectStorage.save({
             schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
             projectId: projectIdentityRef.current.id,
             name: projectIdentityRef.current.name,
@@ -183,8 +209,22 @@ export function useEditorStore() {
             status: projectIdentityRef.current.status,
             generationControl: validateGenerationControl(generationControlRef.current, b).state,
           });
+          void outcome.durable.then(result => {
+            setPersistence({
+              state: result.state,
+              reason: result.reason,
+              projectId: projectIdentityRef.current.id,
+            });
+          });
         } catch (e) {
-          console.warn('Autosave warning:', e);
+          // Only a genuine serialization defect reaches here; capacity
+          // problems are reported through the outcome above.
+          console.error('Autosave failed to serialize the project:', e);
+          setPersistence({
+            state: 'FAILED',
+            reason: e instanceof Error ? e.message : String(e),
+            projectId: projectIdentityRef.current.id,
+          });
         }
       }
     });
@@ -198,6 +238,7 @@ export function useEditorStore() {
   }, [building, editorState.activeFloorId]);
 
   const executeCommand = useCallback((cmd: IEditorCommand) => {
+    if (cmd instanceof ApplyRoomAreaRegenerationCommand && cmd.metadata.baseRevision !== buildingRefinementRevision(engine.getBuilding(), generationControlRef.current)) throw new Error('Stale building or constraint revision');
     engine.execute(cmd);
   }, [engine]);
 
@@ -344,7 +385,17 @@ export function useEditorStore() {
     const nextControl = createGenerationControlState();
     generationControlRef.current = nextControl;
     setGenerationControlState(nextControl);
-    projectStorage.save({
+
+    // The completed, validated geometry is handed to the editor FIRST.
+    //
+    // This used to run after the save, so a storage failure threw and the
+    // generated building never reached the editor — the user lost a plan that
+    // had already passed every geometric and regulatory check. Generation
+    // success and persistence success are different facts: the plan exists
+    // either way, and the save reports its own durability separately.
+    engine.setBuilding(newBuilding);
+
+    const outcome = projectStorage.save({
       schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
       projectId: newBuilding.projectId,
       name: resolvedName,
@@ -356,7 +407,24 @@ export function useEditorStore() {
       status: 'CONCEPT',
       generationControl: nextControl,
     });
-    engine.setBuilding(newBuilding);
+
+    // Surface the real durability once the write settles, without blocking the
+    // UI on it. A failure is reported, never swallowed and never relabelled as
+    // a success.
+    void outcome.durable.then(result => {
+      setPersistence({
+        state: result.state,
+        reason: result.reason,
+        projectId: newBuilding.projectId,
+      });
+      if (result.state !== 'SAVED') {
+        console.error(
+          `Project ${newBuilding.projectId} is open and complete but NOT durably saved: ${result.reason ?? result.state}`,
+        );
+      }
+    });
+
+    return outcome;
   }, [engine]);
 
   const updateSite = useCallback((params: UpdateSiteParams) => {
@@ -392,9 +460,11 @@ export function useEditorStore() {
     engine,
     building,
     activeFloor,
+    persistence,
     selection: editorState.selection,
     selections: editorState.selections ?? (editorState.selection ? [editorState.selection] : []),
     generationControl,
+    getGenerationControl: () => generationControlRef.current,
     activeTool: editorState.activeTool,
     canUndo: editorState.historySummary.canUndo,
     canRedo: editorState.historySummary.canRedo,

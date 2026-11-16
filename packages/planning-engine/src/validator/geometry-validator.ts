@@ -564,6 +564,16 @@ export class GeometryValidator {
         const isExternalWall = wall?.type === WallType.External || wall?.wallUse === 'EXTERNAL';
 
         if (isExternalWall) {
+          const isStiltLobbyMainEntrance =
+            floor.floorUse === 'STILT_PARKING'
+            || door.id.includes('grand_lobby_main_entrance')
+            || (floor.level === 0 && door.connectsRooms.includes('EXTERIOR') && floor.rooms.some(room =>
+              door.connectsRooms.includes(room.id) && (room.type === RoomType.Corridor || room.type === RoomType.Foyer || /lobby|entrance/i.test(room.name))));
+
+          if (isStiltLobbyMainEntrance) {
+            continue;
+          }
+
           // Check if outside has an adjacent balcony or terrace
           const hasOutdoorTarget = floor.rooms.some(room =>
             (outdoorRoomTypes.has(room.type) || room.type === RoomType.Utility)

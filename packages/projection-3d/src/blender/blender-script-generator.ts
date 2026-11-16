@@ -66,10 +66,16 @@ def material(name, color, roughness=0.7, metallic=0.0, transmission=0.0):
     mat.use_nodes = True
     p = mat.node_tree.nodes.get('Principled BSDF')
     p.inputs['Base Color'].default_value = (*color, 1.0)
-    p.inputs['Roughness'].default_value = roughness
-    p.inputs['Metallic'].default_value = metallic
-    p.inputs['Transmission Weight'].default_value = transmission
-    p.inputs['IOR'].default_value = 1.52
+    if 'Roughness' in p.inputs:
+        p.inputs['Roughness'].default_value = roughness
+    if 'Metallic' in p.inputs:
+        p.inputs['Metallic'].default_value = metallic
+    if 'Transmission Weight' in p.inputs:
+        p.inputs['Transmission Weight'].default_value = transmission
+    elif 'Transmission' in p.inputs:
+        p.inputs['Transmission'].default_value = transmission
+    if 'IOR' in p.inputs:
+        p.inputs['IOR'].default_value = 1.52
     return mat
 
 materials = {
@@ -200,7 +206,7 @@ def camera(name, orthographic):
     cam.location = center + Vector((size, -size, size if orthographic else size*0.65))
     cam.rotation_euler = (center-cam.location).to_track_quat('-Z', 'Y').to_euler()
     cam_data.clip_start = 10
-    cam_data.clip_end = size*30
+    cam_data.clip_end = max(10000, size*30)
     if orthographic:
         cam_data.type = 'ORTHO'
         cam_data.ortho_scale = size*1.7

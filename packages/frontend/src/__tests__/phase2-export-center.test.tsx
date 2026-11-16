@@ -83,7 +83,7 @@ describe('Phase 2 live export controls', () => {
   it('every active Preview and Independent Download button invokes its actual artifact action', async () => {
     await mount();
     const buttons = Array.from(host.querySelectorAll<HTMLButtonElement>('button[aria-label]'));
-    expect(buttons.length).toBe(44); // site + 3 floors + structural + complete, 3 formats each; reports 2 formats; two actions
+    expect(buttons.length).toBe(50); // site + 3 floors + structural + complete, 3 formats each; reports 2 formats; structural drawings & report; two actions
     for (const button of buttons) {
       await act(async () => button.click());
       expect(requestVerifiedExport).toHaveBeenLastCalledWith(
@@ -111,9 +111,8 @@ describe('Phase 2 live export controls', () => {
       'VERIFIED · 12345 bytes · SHA-256 aaaaaaaaaaaaaaaa · revision 4',
     );
     expect(host.textContent).toContain('UDCPR 2020 Statutory Compliance Report');
-    expect(host.textContent).toContain('UNAVAILABLE (PENDING PHASE 5)');
-    expect(host.textContent).toContain('UNAVAILABLE (PENDING PHASE 6)');
-    expect(host.querySelectorAll('button:disabled')).toHaveLength(4);
+    expect(host.textContent).toContain('Blender 5.2 Native (.blend / .glb)');
+    expect(host.textContent).toContain('ETABS v23.3.2 Structural Analysis & CAD Set');
   });
   it('invalidates generated artifacts and rejects an in-flight old revision', async () => {
     await mount();
