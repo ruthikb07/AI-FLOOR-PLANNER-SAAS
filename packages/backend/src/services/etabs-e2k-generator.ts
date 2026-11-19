@@ -227,6 +227,44 @@ function buildFloorFrames(building: Building): {
       }
     }
 
+    const boundaryPts = floor.boundary?.points ?? [];
+    if (boundaryPts.length > 4) {
+      // Discretize curved / polygonal perimeter into chord frame beams snapped onto ETABS POINT nodes
+      const polyNodeIds: string[] = [];
+      for (const pt of boundaryPts) {
+        const pid = ensurePoint(toMeters(pt.x), toMeters(pt.y));
+        if (polyNodeIds[polyNodeIds.length - 1] !== pid) {
+          polyNodeIds.push(pid);
+        }
+      }
+      if (polyNodeIds.length > 1 && polyNodeIds[0] === polyNodeIds[polyNodeIds.length - 1]) {
+        polyNodeIds.pop();
+      }
+      for (let i = 0; i < polyNodeIds.length; i++) {
+        const p1 = polyNodeIds[i]!;
+        const p2 = polyNodeIds[(i + 1) % polyNodeIds.length]!;
+        if (p1 === p2) continue;
+        const beamId = ensureBeamId(p1, p2, 'BEAM230X450');
+        if (!seenStoryBeams.has(beamId)) {
+          seenStoryBeams.add(beamId);
+          beams.push({ id: beamId, p1, p2, section: 'BEAM230X450' });
+        }
+      }
+      if (polyNodeIds.length >= 3) {
+        const slabId = ensureSlabId(polyNodeIds);
+        frames.push({
+          storyName,
+          elevationM: runningElevM,
+          heightM,
+          columns,
+          beams,
+          slabId,
+          slabBoundaryPointIds: polyNodeIds,
+        });
+        continue;
+      }
+    }
+
     const s1 = ensurePoint(bounds.minX, bounds.minY);
     const s2 = ensurePoint(bounds.maxX, bounds.minY);
     const s3 = ensurePoint(bounds.maxX, bounds.maxY);

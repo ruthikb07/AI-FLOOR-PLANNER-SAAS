@@ -9,6 +9,8 @@ import type { Building, Floor } from '@ai-floor-planner/core';
 import { AnnotationLayout, roomAnnotation, polygonCentroid, getFloorContentBounds } from '@ai-floor-planner/geometry-engine';
 import { selectExportFloors, resolveExportScope, ExportError } from './export-selection.js';
 import { verifyPdfArtifact } from './artifact-verifier.js';
+import { evaluateStudioLayoutScore } from '@ai-floor-planner/planning-engine';
+import { complianceReport, complianceReportPdf } from './compliance-report-service.js';
 
 export interface PdfExportOptions {
   readonly drawingKind?:'ARCHITECTURAL'|'STRUCTURAL';
@@ -80,6 +82,34 @@ function pdfColorForRoom(type: string): [number, number, number] {
 }
 
 export class PdfExportService {
+  public exportComplianceActionPlan(building: Building): Uint8Array {
+    const regulatory = complianceReport(building);
+    const layout = evaluateStudioLayoutScore(building, regulatory);
+    const findings = [
+      ...regulatory.rulesChecked.filter(rule => rule.status !== 'PASS').map(rule => ({
+        heading: `${rule.status} | ${rule.id} | ${rule.description} | ${rule.clause}`,
+        elementIds: rule.elementIds, actual: `${rule.actual ?? 'Unverified'} ${rule.unit ?? ''}`,
+        required: `${rule.required ?? 'Verify applicability'} ${rule.unit ?? ''}`, action: rule.remediation,
+      })),
+      ...layout.criteria.flatMap(criterion => criterion.findings.map(finding => ({ ...finding, heading: `LAYOUT | ${finding.id}` }))),
+    ];
+    return complianceReportPdf(regulatory, [
+      'COMPLIANCE AUDIT AND FIX PLAN',
+      `Building ${building.id} | Revision ${building.version} | Layout score ${layout.score}/100`,
+      `Canonical SHA-256: ${regulatory.canonicalHash}`,
+      `Regulatory status ${regulatory.status}`,
+      regulatory.disclaimer, '',
+      ...layout.criteria.map(row => `${row.label}: ${row.earned}/${row.points}${row.unresolved ? ' (unverified inputs)' : ''}`), '',
+      ...(findings.length ? findings.flatMap((finding, index) => [
+        `${index + 1}. ${finding.heading}`, `Elements: ${finding.elementIds.join(', ') || 'See measured detail below'}`,
+        `Current: ${finding.actual} | Required: ${finding.required}`,
+        `Step 1. Locate the listed entities and review the measured values.`,
+        `Step 2. ${finding.action}`,
+        'Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.', '',
+      ]) : ['No failed or unresolved checks in this revision.']),
+    ]);
+  }
+
   public exportPdf(
     building: Building,
     options: PdfExportOptions = {},

@@ -24,6 +24,7 @@ import {
   type Room,
   type SiteZone,
 } from '@ai-floor-planner/core';
+import { buildFurniturePolygonContainmentGuard } from '../catalog/shape-geometry-synthesizer';
 
 interface DoorClearanceBox {
   minX: number;
@@ -694,7 +695,16 @@ export function populateCanonicalFurniture(
     const newItems: CanonicalFurnitureItem[] = [];
 
     for (const room of floor.rooms) {
-      const roomItems = furnishRoom(room, floor, manifest);
+      const roomItems = furnishRoom(room, floor, manifest).filter(item =>
+        buildFurniturePolygonContainmentGuard(
+          room,
+          item.xMm,
+          item.yMm,
+          item.widthMm,
+          item.depthMm,
+          item.rotationDeg ?? 0,
+        ),
+      );
       newItems.push(...roomItems);
     }
 

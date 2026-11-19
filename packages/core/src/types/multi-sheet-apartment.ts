@@ -29,14 +29,51 @@ import type { GeometryValidationReport } from './geometry-validation';
 export type VerticalStackType = 'G_PLUS_N' | 'STILT_PLUS_N' | 'BASEMENT_STILT_PLUS_N';
 export type ParkingMode = 'STILT_AND_SURFACE' | 'STILT_ONLY' | 'MECHANICAL_STACK';
 export type AreaTargetScope = 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
-export type BuildingMassingShape =
+
+export type PlanCategory =
+  | 'HIGH_RISE_APARTMENT'
+  | 'LUXURY_VILLA_BUNGALOW'
+  | 'DUPLEX_TRIPLEX_SKY_VILLA'
+  | 'ROW_HOUSE_TOWNHOUSE'
+  | 'COURTYARD_CLUSTER_HOUSING'
+  | 'IRREGULAR_PLOT_CUSTOM';
+
+export type NamedBuildingMassingShape =
+  // Curved & Radial
+  | 'CURVED_CRESCENT'
+  | 'WAVE_SERPENTINE'
+  | 'ROTUNDA_COURTYARD'
+  | 'ELLIPTICAL_TOWER'
+  | 'LOTUS_PETAL_RADIAL'
+  | 'BOWFRONT_CHAMFERED'
+  // Polygonal & Angled Wing
+  | 'TRIANGULAR_ATRIUM'
+  | 'Y_SHAPE_TRISKELE'
+  | 'BUTTERFLY_V_WING'
+  | 'HEXAGONAL_HONEYCOMB'
+  | 'TRAPEZOIDAL_TAPERED'
+  | 'DIAGONAL_ZIGZAG'
+  // Classic & Articulated Orthogonal
   | 'COMPACT_DOUBLE_LOADED'
   | 'H_SHAPE_WING'
   | 'U_SHAPE_COURTYARD'
   | 'L_SHAPE_CORNER'
   | 'CRUCIFORM_PLUS'
   | 'PINWHEEL_CLUSTER'
-  | 'STEPPED_OFFSET_BLOCK';
+  | 'STEPPED_OFFSET_BLOCK'
+  | 'T_SHAPE_SPINE'
+  | 'O_SHAPE_PERIMETER_COURT';
+
+export type BuildingMassingShape = NamedBuildingMassingShape | `PARAM_${string}`;
+
+export interface ParametricShapeParams {
+  readonly wings?: number;
+  readonly angleDeg?: number;
+  readonly curvatureRadiusMm?: number;
+  readonly arcSweepDeg?: number;
+  readonly setbackStepRatio?: number;
+  readonly rotationSeed?: number;
+}
 
 export interface AreaTargetDiagnostic {
   readonly scope: AreaTargetScope;
@@ -108,6 +145,11 @@ export interface MultiSheetApartmentConfig {
   readonly rejectedTopologyHashes?: readonly string[];
   readonly preferredArchetype?: string;
   readonly buildingMassingShape?: BuildingMassingShape;
+  readonly planCategory?: PlanCategory;
+  readonly shapeParams?: ParametricShapeParams;
+  readonly rejectedShapeIds?: readonly BuildingMassingShape[];
+  readonly rejectedArchetypeIds?: readonly string[];
+  readonly autoExploreNovelShape?: boolean;
   readonly aiProposal?: Record<string, unknown>;
   readonly aiTelemetryOverride?: {
     readonly geminiInvoked: boolean;
@@ -146,6 +188,8 @@ export interface MultiSheetApartmentConfig {
   readonly includeWindowChajjas?: boolean;
   /** Alternate cantilever balcony bays across Odd vs Even upper floors while locking vertical structure/MEP cores. */
   readonly staggeredBalconies?: boolean;
+  /** Include a dedicated Dining Hall (RoomType.Dining) connected to Living & Kitchen (default true). */
+  readonly includeDiningHall?: boolean;
   /** Internal tag set during multi-floor coordination when generating Odd vs Even typical floor variants. */
   readonly floorVariant?: 'ODD' | 'EVEN';
 }
@@ -277,6 +321,8 @@ export interface ApartmentGenerationReport {
   readonly professionalReviewRequired: true;
   readonly selectedFamily?: string;
   readonly selectedVariant?: string;
+  readonly selectedShapeId?: BuildingMassingShape;
+  readonly selectedPlanCategory?: PlanCategory;
   readonly rejectedCandidates: readonly { readonly familyId: string; readonly variantId: string; readonly stage: string; readonly reasons: readonly string[] }[];
   readonly violations: readonly ApartmentGenerationViolation[];
 }

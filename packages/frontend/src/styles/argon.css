@@ -3,22 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --argon-bg: #F5F0E8;
-  --argon-surface: #EAE0D2;
-  --argon-card: #FFF9F0;
-  --argon-border: #D8CAB8;
-  --argon-text: #302820;
-  --argon-muted: #6F6257;
-  --argon-btn: #80644D;
-  --argon-btn-hover: #654B38;
-  --argon-accent: #B99270;
-  --argon-pass: #4A6B53;
-  --argon-warn: #C48A3F;
-  --argon-error: #9E4738;
+  --argon-bg: #080A0F;
+  --argon-surface: #0D1119;
+  --argon-card: #121722;
+  --argon-border: rgba(255, 255, 255, 0.09);
+  --argon-text: #F8FAFC;
+  --argon-muted: #94A3B8;
+  --argon-btn: #F59E0B;
+  --argon-btn-hover: #FFB84D;
+  --argon-accent: #38BDF8;
+  --argon-pass: #34D399;
+  --argon-warn: #FFB84D;
+  --argon-error: #FB7185;
 }
 
 .argon-shell {
-  color-scheme: light;
+  color-scheme: dark;
   background-color: var(--argon-bg);
   color: var(--argon-text);
 }

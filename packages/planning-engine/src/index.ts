@@ -167,6 +167,7 @@ export {
 // Multi-Sheet Coordinated Apartment Project Engine (§1C)
 export {
   solveMultiSheetApartmentProject,
+  synthesizeStructuralFraming,
   computeBuildingStackParameters,
   solveSitePlanSheet,
   solveStiltParkingSheet,
@@ -239,6 +240,24 @@ export * from './layout/opening-integrity-solver';
 
 export * from './pipeline/multi-story-residential-synthesizer';
 export { generateApartmentOutcome } from './apartment/generation-outcome';
+export {
+  BUILDING_SHAPE_CATALOG,
+  PLAN_CATEGORY_CATALOG,
+  ALL_NAMED_SHAPE_IDS,
+  getShapeCatalogEntry,
+  getPlanCategoryEntry,
+  synthesizeParametricShape,
+  pickNextNonRepeatingShape,
+  inferPlanCategoryFromPrompt,
+  inferShapeIdFromPrompt,
+  type ShapeFamilyKind,
+  type BuildingShapeCatalogEntry,
+  type PlanCategoryCatalogEntry,
+} from './catalog/shape-catalog';
+export {
+  applyParametricShapeToFloor,
+  buildFurniturePolygonContainmentGuard,
+} from './catalog/shape-geometry-synthesizer';
 export {
   synthesizeMepEngineering,
   withMepEngineering,

@@ -25,7 +25,7 @@ import {
   validateGenerationControl,
   type DesignDiagnostics,
 } from '@ai-floor-planner/core';
-import { buildingRefinementRevision, evaluateDesign, diagnosticsToValidation, type ValidationSummary } from '@ai-floor-planner/planning-engine';
+import { buildingRefinementRevision, evaluateDesign, diagnosticsToValidation, synthesizeStructuralFraming, type ValidationSummary } from '@ai-floor-planner/planning-engine';
 import {
   CURRENT_PROJECT_SCHEMA_VERSION,
   projectStorage,
@@ -143,7 +143,13 @@ export function useEditorStore() {
 
   // Single EditorEngine instance
   const engine = useMemo(() => {
-    return new EditorEngine(initialEnvelope.building);
+    return new EditorEngine(initialEnvelope.building, {
+      coordinateRevision: (next, previous) => next.metadata.tags?.includes('STRUCTURAL_FRAMING_PRELIMINARY') &&
+        (next.floors.length !== previous.floors.length || next.floors.some((floor, index) => {
+          const before = previous.floors[index];
+          return floor.walls !== before?.walls || floor.rooms !== before?.rooms || floor.boundary !== before?.boundary;
+        })) ? synthesizeStructuralFraming(next) : next,
+    });
   }, [initialEnvelope.building]);
 
   // Reactive state synced with EditorEngine
@@ -347,6 +353,7 @@ export function useEditorStore() {
   const loadProject = useCallback((newProjectId: string) => {
     const loaded = projectStorage.load(newProjectId);
     if (!loaded) return;
+    projectStorage.setActiveProjectId(loaded.projectId);
     setProjectId(loaded.projectId);
     setProjectName(loaded.name);
     setProjectCategory(loaded.category ?? 'residential');

@@ -132,6 +132,7 @@ export const RefinementPanel: React.FC<Props> = ({ editor }) => {
           <option value="balanced">Balanced</option><option value="better_circulation">Better circulation</option>
           <option value="better_privacy">Better privacy</option><option value="better_adjacency">Better adjacency</option>
           <option value="better_space_utilization">Better space utilization</option>
+          <option value="carve_interflat_ots">Carve 5′–6′ Inter-Flat OTS Ventilation Duct</option>
         </select>
       </label>
       <button className="regenerate-selected" disabled={isGenerating || floorLocked || selectedRoomIds.some(id => lockedIds.has(id))} onClick={run}>

@@ -4,6 +4,10 @@ import './styles/editor.css';
 import './styles/studio.css';
 import './styles/argon.css';
 import './styles/aether-concept.css';
+import './styles/rh-cinematic.css';
+import './styles/rh-atelier.css';
+import './styles/rh-obsidian-neon.css';
+import './styles/rh-survey.css';
 
 interface ErrorBoundaryState {
   error: Error | null;
@@ -25,23 +29,23 @@ class StudioErrorBoundary extends React.Component<{ children: React.ReactNode },
       return (
         <div
           role="alert"
-          className="flex h-screen w-screen flex-col items-center justify-center bg-slate-950 p-6 text-slate-100"
+          className="flex h-screen w-screen flex-col items-center justify-center bg-[#080A0F] p-6 text-[#F8FAFC]"
         >
-          <div className="max-w-lg rounded-xl border border-rose-500/40 bg-slate-900 p-6 shadow-xl">
-            <h1 className="text-base font-bold text-rose-300">Workspace Rendering Error</h1>
-            <p className="mt-2 text-xs text-slate-300">{this.state.error.message}</p>
+          <div className="max-w-lg rounded-xl border border-white/10 bg-[#0D1119] p-6 shadow-2xl">
+            <h1 className="font-display text-3xl font-semibold text-amber-400">Workspace Rendering Error</h1>
+            <p className="mt-2 text-sm text-slate-400">{this.state.error.message}</p>
             <div className="mt-4 flex gap-3">
               <button
                 type="button"
                 onClick={() => this.setState({ error: null })}
-                className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-400"
+                className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950"
               >
                 Retry Render
               </button>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-slate-200"
               >
                 Reload Studio
               </button>

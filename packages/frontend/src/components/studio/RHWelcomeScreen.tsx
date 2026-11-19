@@ -1,214 +1,375 @@
-/**
- * RH Planner - Cinematic Brand & Welcome Overlay
- */
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight, FolderOpen, Compass, Volume2, VolumeX, Building2 } from 'lucide-react';
-import { CinematicWelcomeScene } from './CinematicWelcomeScene';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import {
+  ArrowDown,
+  ArrowRight,
+  Box,
+  Building2,
+  FileUp,
+  FolderOpen,
+  Layers,
+  Moon,
+  Sun,
+  Sunset,
+} from 'lucide-react';
+import { architecturePhotos, photoUrl } from './architecture-photos';
+import type { ShowcaseLightingMode } from './ResidenceShowcase';
+
+const ResidenceShowcase = lazy(() => import('./ResidenceShowcase'));
 
 interface RHWelcomeScreenProps {
-  onStartNewProject: () => void;
+  onStartNewProject: (projectType: 'new_construction' | 'redevelopment') => void;
+  onImportReference?: () => void;
   onOpenExisting: () => void;
-  onExplore: () => void;
+  lightingMode: ShowcaseLightingMode;
+  onToggleLightingMode: (mode: ShowcaseLightingMode) => void;
 }
 
-export const RHWelcomeScreen: React.FC<RHWelcomeScreenProps> = ({
+const chapters = [
+  {
+    label: 'Aerial Overview',
+    title: 'Precision Residential Architecture',
+    text: 'Parametric massing, coordinated 2D CAD drawings, structural framing, and real-time PBR visualization.',
+  },
+  {
+    label: 'Arrival Court',
+    title: 'Arrival Court & Reflective Water',
+    text: 'Landscaped podium arrival court with reflective water basins, warm 2700K pathway bollards, and shaded canopy.',
+  },
+  {
+    label: 'Podium & Street',
+    title: 'Podium & Urban Streetscape',
+    text: 'Multi-level stilt and podium massing integrated with setback envelopes, driveways, and landscaped terraces.',
+  },
+  {
+    label: 'Facade & Chajjas',
+    title: 'Facade Glazing & 600 mm Chajjas',
+    text: 'Low-E reflective vision glazing, brushed bronze mullions, laminated glass balustrades, and cast concrete sunshades.',
+  },
+  {
+    label: 'Lobby Interior',
+    title: 'Entrance Lobby & 2700K Illumination',
+    text: 'Double-height arrival lobby illuminated with warm 2700K architectural lighting for twilight and night studies.',
+  },
+] as const;
+
+const LIGHTING_PRESETS: ReadonlyArray<{
+  id: ShowcaseLightingMode;
+  label: string;
+  shortLabel: string;
+  icon: typeof Sun;
+}> = [
+  { id: 'day', label: 'Morning Daylight', shortLabel: 'Day', icon: Sun },
+  { id: 'golden', label: 'Golden Sunset', shortLabel: 'Sunset', icon: Sunset },
+  { id: 'night', label: 'Night Illumination', shortLabel: 'Night', icon: Moon },
+];
+
+export function RHWelcomeScreen({
   onStartNewProject,
+  onImportReference,
   onOpenExisting,
-  onExplore,
-}) => {
-  const [introFinished, setIntroFinished] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  lightingMode,
+  onToggleLightingMode,
+}: RHWelcomeScreenProps) {
+  const host = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLElement>(null);
+  const selection = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(0);
+  const [orbit, setOrbit] = useState(false);
+  const chapter = Math.min(chapters.length - 1, Math.round(progress * (chapters.length - 1)));
 
   useEffect(() => {
-    // Timer for the sparkling wave intro sequence
-    const timer = setTimeout(() => {
-      setIntroFinished(true);
-    }, 4000);
-    return () => clearTimeout(timer);
+    const scroller = host.current;
+    const region = track.current;
+    if (!scroller || !region) return;
+    let frame = 0;
+    const schedule = () => {
+      if (!frame) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          const extent = Math.max(1, region.offsetHeight - scroller.clientHeight);
+          setProgress(Math.max(0, Math.min(1, (scroller.scrollTop - region.offsetTop) / extent)));
+        });
+      }
+    };
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
+    observer?.observe(scroller);
+    observer?.observe(region);
+    scroller.addEventListener('scroll', schedule, { passive: true });
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      scroller.removeEventListener('scroll', schedule);
+    };
   }, []);
 
-  const toggleSound = () => {
-    setSoundEnabled(!soundEnabled);
-    if (!soundEnabled && audioRef.current) {
-      audioRef.current.play().catch(() => {});
-    }
-  };
+  function jump(fraction: number) {
+    const scroller = host.current;
+    const region = track.current;
+    if (!scroller || !region) return;
+    setOrbit(false);
+    setProgress(fraction);
+    scroller.scrollTo({
+      top: region.offsetTop + fraction * (region.offsetHeight - scroller.clientHeight),
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
+  }
+
+  function openProjectSelection() {
+    setOrbit(false);
+    selection.current?.scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
+  }
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-between bg-[#0a0a0a] text-[#FAF8F4] overflow-hidden font-sans select-none">
-      {/* 3D Building Assembly Background */}
-      <CinematicWelcomeScene
-        onStartProject={onStartNewProject}
-        onExplore={() => {
-          // Scroll to explorer section
-          const scrollContainer = document.querySelector('.overflow-y-auto');
-          if (scrollContainer) {
-            scrollContainer.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-          }
-        }}
-      />
-
-      {/* Intro Sparkling Wave & Logo Reveal Overlay */}
-      {!introFinished && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0a] transition-opacity duration-1500 ease-in-out">
-          <div className="relative flex flex-col items-center space-y-8 scale-110">
-            {/* Luminous Wave & RH Monogram */}
-            <div className="relative w-32 h-32 rounded-3xl bg-gradient-to-br from-[#A67C52] via-[#E8DCCB] to-[#252723] p-[1.5px] shadow-2xl shadow-[#A67C52]/40">
-              <div className="w-full h-full bg-[#0d0d0d] rounded-[22px] flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E8DCCB]/30 to-transparent -translate-x-full animate-shimmer" />
-                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none" />
-
-                {/* SVG Light Streak */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-50" viewBox="0 0 100 100">
-                  <defs>
-                    <linearGradient id="streak" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="transparent" />
-                      <stop offset="50%" stopColor="#E8DCCB" />
-                      <stop offset="100%" stopColor="transparent" />
-                    </linearGradient>
-                  </defs>
-                  <rect width="200" height="2" fill="url(#streak)" transform="rotate(-45 50 50)">
-                    <animateTransform attributeName="transform" type="translate" from="-150 -150" to="150 150" dur="3s" repeatCount="indefinite" />
-                  </rect>
-                </svg>
-
-                <span className="text-5xl font-black tracking-tighter text-[#E8DCCB] font-serif drop-shadow-2xl">RH</span>
-              </div>
-
-              {/* Particle Sparkle Emitted from corners (CSS approximation) */}
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#FFD700] rounded-full blur-[2px] animate-pulse" />
-              <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#FFD700] rounded-full blur-[2px] animate-pulse delay-700" />
-            </div>
-
-            <div className="text-center space-y-3">
-              <h1 className="text-4xl font-serif tracking-[0.2em] text-[#FAF8F4] uppercase font-bold tracking-tighter opacity-0 animate-fadeInUp">
-                RH Planner
-              </h1>
-              <p className="text-[10px] font-mono tracking-[0.5em] text-[#A67C52] uppercase opacity-0 animate-fadeInUp delay-500">
-                Architectural AI Visualization
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIntroFinished(true)}
-            className="absolute bottom-12 text-[10px] font-mono tracking-widest text-[#555] hover:text-[#A67C52] transition-all uppercase cursor-pointer"
-          >
-            Skip Intro — Step Inside
+    <div ref={host} className="rh-atelier-welcome rh-obsidian-welcome" data-testid="welcome-scroll-container">
+      <header className="rh-atelier-top rh-obsidian-top">
+        <button className="rh-atelier-brand rh-obsidian-brand" type="button" onClick={() => jump(0)}>
+          <span className="rh-monogram-mark" aria-hidden="true">RH</span>{' '}
+          <span className="rh-monogram-word">PLANNER</span>
+        </button>
+        <nav aria-label="Studio Navigation">
+          <button type="button" className="rh-quiet-action" onClick={onOpenExisting}>
+            <FolderOpen size={15} /> Recent Projects
           </button>
-        </div>
-      )}
-
-      {/* Top Header Bar */}
-      <header className="w-full max-w-7xl mx-auto p-6 flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#A67C52] text-[#0a0a0a] flex items-center justify-center font-bold font-serif text-lg shadow-lg">
-            RH
-          </div>
-          <span className="text-xl font-bold tracking-wider font-serif text-[#FAF8F4]">
-            RH PLANNER
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleSound}
-            className="p-2.5 rounded-xl bg-[#141414]/80 border border-[#333] text-[#B8A58F] hover:text-[#FAF8F4] transition-all backdrop-blur-md"
-            title={soundEnabled ? 'Mute Sound' : 'Enable Ambient Sound'}
-          >
-            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          <button type="button" className="rh-solid-action" onClick={openProjectSelection}>
+            Launch Studio <ArrowRight size={15} />
           </button>
-          <button
-            onClick={() => setIntroFinished(true)}
-            className="px-4 py-2 rounded-xl bg-[#141414]/80 border border-[#333] text-xs font-mono font-bold text-[#E8DCCB] hover:bg-[#252723] transition-all backdrop-blur-md"
-          >
-            SKIP INTRO
-          </button>
-        </div>
+        </nav>
       </header>
 
-      {/* Main Welcome Hero Content */}
-      <main className="w-full max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row items-center justify-between gap-12 z-10 my-auto">
-        <div className="max-w-2xl space-y-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#A67C52]/10 border border-[#A67C52]/30 text-[#E8DCCB] text-xs font-mono uppercase tracking-widest">
-            <Sparkles size={13} className="text-[#A67C52]" />
-            <span>Next-Gen AI Architectural Workspace</span>
+      <main>
+        <section ref={track} className="rh-atelier-track" aria-label="Architectural 3D Viewport">
+          <div
+            className="rh-atelier-viewport"
+            data-orbit={orbit}
+            data-lighting={lightingMode}
+            data-view={chapters[chapter]!.label.toLowerCase()}
+          >
+            <img
+              className="rh-atelier-fallback"
+              src={photoUrl(architecturePhotos.residence)}
+              srcSet={`${import.meta.env.BASE_URL}architecture/residence-small.webp 720w, ${photoUrl(architecturePhotos.residence)} 1600w`}
+              sizes="100vw"
+              alt=""
+            />
+            <Suspense fallback={null}>
+              <ResidenceShowcase progress={progress} orbit={orbit} lightingMode={lightingMode} />
+            </Suspense>
+            <div className="rh-atelier-scrim" aria-hidden="true" />
+
+            <div className="rh-atelier-story" aria-live="off">
+              {chapter === 0 ? (
+                <>
+                  <p className="rh-atelier-kicker">ARCHITECTURAL BIM &amp; REAL-TIME VISUALIZATION STUDIO</p>
+                  <h1>
+                    Architectural precision.<br />
+                    <i>Photorealistic clarity.</i>
+                  </h1>
+                  <p>
+                    Author residential massing studies, coordinated 2D CAD drawings, structural framing, and
+                    interactive PBR building models in one unified studio.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="rh-atelier-kicker">CAMERA PRESET · 0{chapter + 1} / 0{chapters.length}</p>
+                  <h2>{chapters[chapter]!.title}</h2>
+                  <p>{chapters[chapter]!.text}</p>
+                </>
+              )}
+              {chapter === 0 && (
+                <div className="rh-hero-cta-row">
+                  <button
+                    type="button"
+                    className="rh-solid-action"
+                    onClick={openProjectSelection}
+                  >
+                    New Architectural Project <ArrowRight size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="rh-quiet-action"
+                    data-testid="cta-explore-scroll"
+                    onClick={() => jump(0.25)}
+                  >
+                    <ArrowDown size={15} /> Explore Arrival Court
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <nav className="rh-atelier-chapters" aria-label="Camera Presets">
+              {chapters.map((item, index) => (
+                <button
+                  key={item.label}
+                  aria-pressed={chapter === index}
+                  type="button"
+                  onClick={() => jump(index / (chapters.length - 1))}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+
+            <div className="rh-atelier-controls">
+              <div className="rh-lighting-segmented" role="group" aria-label="Lighting Atmosphere">
+                {LIGHTING_PRESETS.map(preset => {
+                  const Icon = preset.icon;
+                  const active = lightingMode === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      data-testid={preset.id === 'night' ? 'welcome-theme-toggle' : `welcome-light-${preset.id}`}
+                      aria-pressed={active}
+                      title={preset.label}
+                      onClick={() => onToggleLightingMode(preset.id)}
+                    >
+                      <Icon size={14} />
+                      <span>{preset.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div>
+                <button
+                  type="button"
+                  aria-pressed={orbit}
+                  onClick={() => setOrbit(current => !current)}
+                  className="rh-quiet-action"
+                >
+                  <Box size={15} /> {orbit ? 'Resume Camera Tour' : 'Free Orbit 3D'}
+                </button>
+              </div>
+            </div>
+
+            <div className="rh-atelier-context-fallback">Architectural Preview · Hardware WebGL Unavailable</div>
           </div>
+        </section>
 
-          <div className="space-y-4">
-            <h1 className="text-5xl sm:text-6xl font-serif font-bold tracking-tight text-[#FAF8F4] leading-[1.1]">
-              Design Your Vision. <br />
-              <span className="bg-gradient-to-r from-[#E8DCCB] via-[#B8A58F] to-[#A67C52] bg-clip-text text-transparent">
-                Explore It in 3D.
-              </span>
-            </h1>
-            <p className="text-base text-[#B8A58F] leading-relaxed max-w-xl font-light">
-              An AI-assisted architectural design workspace for turning your requirements into editable floor plans, intelligent layouts, interactive 3D buildings and professional project deliverables.
-            </p>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-4 pt-4">
+        <section ref={selection} className="rh-atelier-entry rh-obsidian-launcher" aria-labelledby="rh-atelier-entry-title">
+          <div className="rh-atelier-section-title">
+            <div>
+              <p className="rh-atelier-kicker">PROJECT INITIALIZATION</p>
+              <h2 id="rh-atelier-entry-title">Architectural Studio Launcher</h2>
+            </div>
             <button
-              onClick={onStartNewProject}
-              className="px-7 py-4 rounded-xl bg-[#A67C52] hover:bg-[#b8895c] text-[#0a0a0a] font-bold text-sm tracking-wider uppercase flex items-center gap-3 shadow-xl shadow-[#A67C52]/20 transition-all transform hover:-translate-y-0.5 cursor-pointer"
-            >
-              <Building2 size={18} />
-              <span>Create New Project</span>
-              <ArrowRight size={16} />
-            </button>
-
-            <button
+              type="button"
+              data-testid="cta-open-existing"
               onClick={onOpenExisting}
-              className="px-6 py-4 rounded-xl bg-[#141414]/90 hover:bg-[#1a1a1a] border border-[#333] text-[#FAF8F4] font-bold text-sm tracking-wider uppercase flex items-center gap-3 backdrop-blur-md transition-all cursor-pointer"
+              className="rh-outline-action"
             >
-              <FolderOpen size={18} className="text-[#B8A58F]" />
-              <span>Open Existing Project</span>
+              <FolderOpen size={15} /> Browse Project Library
+            </button>
+          </div>
+
+          <div className="rh-launcher-grid">
+            <button
+              type="button"
+              className="rh-launcher-card rh-launcher-card--primary"
+              data-testid="cta-new-construction"
+              onClick={() => onStartNewProject('new_construction')}
+            >
+              <div className="rh-launcher-card-media">
+                <img src={photoUrl(architecturePhotos.residence)} alt="" loading="lazy" />
+                <span className="rh-launcher-badge">01 · GREENFIELD</span>
+              </div>
+              <div className="rh-launcher-card-body">
+                <div className="rh-launcher-card-head">
+                  <Building2 size={18} />
+                  <strong>New Architectural Project</strong>
+                </div>
+                <small>
+                  Define site parcel, setbacks, tower height, massing geometry, and 1BHK–4BHK apartment mix.
+                </small>
+                <span className="rh-launcher-link">
+                  Configure Project Brief <ArrowRight size={15} />
+                </span>
+              </div>
             </button>
 
             <button
-              onClick={onExplore}
-              className="px-6 py-4 rounded-xl bg-transparent hover:bg-[#141414]/50 border border-[#333] text-[#B8A58F] hover:text-[#FAF8F4] font-bold text-sm tracking-wider uppercase flex items-center gap-2 transition-all cursor-pointer"
+              type="button"
+              className="rh-launcher-card"
+              data-testid="cta-redevelopment"
+              onClick={() => onStartNewProject('redevelopment')}
             >
-              <Compass size={18} />
-              <span>Explore Capabilities</span>
+              <div className="rh-launcher-card-media">
+                <img src={photoUrl(architecturePhotos.construction)} alt="" loading="lazy" />
+                <span className="rh-launcher-badge">02 · REDEVELOPMENT</span>
+              </div>
+              <div className="rh-launcher-card-body">
+                <div className="rh-launcher-card-head">
+                  <Layers size={18} />
+                  <strong>Redevelopment (Duplex / Triplex)</strong>
+                </div>
+                <small>
+                  Document existing structure, retained/demolished zones, linked multi-level duplexes, and member area briefs.
+                </small>
+                <span className="rh-launcher-link">
+                  Open Redevelopment Brief <ArrowRight size={15} />
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="rh-launcher-card"
+              data-testid="cta-import-cad"
+              onClick={() => {
+                if (onImportReference) {
+                  onImportReference();
+                } else {
+                  onStartNewProject('new_construction');
+                }
+              }}
+            >
+              <div className="rh-launcher-card-icon-stage">
+                <FileUp size={34} />
+                <span className="rh-launcher-badge">03 · REFERENCE IMPORT</span>
+              </div>
+              <div className="rh-launcher-card-body">
+                <div className="rh-launcher-card-head">
+                  <FileUp size={18} />
+                  <strong>Import Existing PDF / CAD</strong>
+                </div>
+                <small>
+                  Upload architectural PDF sheets, DXF surveys, or reference plans for scale calibration and 2D/3D modeling.
+                </small>
+                <span className="rh-launcher-link">
+                  Upload &amp; Calibrate Drawing <ArrowRight size={15} />
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="rh-launcher-card"
+              data-testid="cta-recent-projects"
+              onClick={onOpenExisting}
+            >
+              <div className="rh-launcher-card-icon-stage">
+                <FolderOpen size={34} />
+                <span className="rh-launcher-badge">04 · ARCHIVE</span>
+              </div>
+              <div className="rh-launcher-card-body">
+                <div className="rh-launcher-card-head">
+                  <FolderOpen size={18} />
+                  <strong>Recent Projects</strong>
+                </div>
+                <small>
+                  Resume saved residential towers, compare massing revisions, inspect compliance audits, and export BIM deliverables.
+                </small>
+                <span className="rh-launcher-link">
+                  Open Recent Projects <ArrowRight size={15} />
+                </span>
+              </div>
             </button>
           </div>
-
-          {/* Capability Highlights */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-[#222]">
-            <div>
-              <div className="text-sm font-bold text-[#FAF8F4] font-serif">AI-Assisted</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">Automated Slicing</div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-[#FAF8F4] font-serif">2D / 3D</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">Synced Projections</div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-[#FAF8F4] font-serif">Customizable</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">Room Area Solver</div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-[#FAF8F4] font-serif">Professional</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">DWG, DXF & PDF</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right side spacer for 3D building background interaction */}
-        <div className="hidden lg:block w-96 h-96 pointer-events-none" />
+        </section>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full max-w-7xl mx-auto p-6 flex items-center justify-between text-xs font-mono text-[#737373] z-10 border-t border-[#1a1a1a]">
-        <div>© 2026 RH Planner Inc. All rights reserved.</div>
-        <div className="flex items-center gap-6">
-          <span>UDCPR 2020 Compliance Engine</span>
-          <span>Three.js WebGL Core</span>
-        </div>
-      </footer>
     </div>
   );
-};
+}

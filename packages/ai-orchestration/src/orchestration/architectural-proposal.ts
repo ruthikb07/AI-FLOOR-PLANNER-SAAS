@@ -3,6 +3,7 @@ import {
   type AIProvider,
   type BuildingMassingShape,
   type MultiSheetApartmentConfig,
+  type PlanCategory,
   AITaskType,
   mixedUnitSpecs,
   parseMixedUnitProgram,
@@ -10,6 +11,18 @@ import {
 import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES } from '../providers/gemini';
 
 export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
+  'CURVED_CRESCENT',
+  'WAVE_SERPENTINE',
+  'ROTUNDA_COURTYARD',
+  'ELLIPTICAL_TOWER',
+  'LOTUS_PETAL_RADIAL',
+  'BOWFRONT_CHAMFERED',
+  'TRIANGULAR_ATRIUM',
+  'Y_SHAPE_TRISKELE',
+  'BUTTERFLY_V_WING',
+  'HEXAGONAL_HONEYCOMB',
+  'TRAPEZOIDAL_TAPERED',
+  'DIAGONAL_ZIGZAG',
   'COMPACT_DOUBLE_LOADED',
   'H_SHAPE_WING',
   'U_SHAPE_COURTYARD',
@@ -17,6 +30,17 @@ export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
   'CRUCIFORM_PLUS',
   'PINWHEEL_CLUSTER',
   'STEPPED_OFFSET_BLOCK',
+  'T_SHAPE_SPINE',
+  'O_SHAPE_PERIMETER_COURT',
+];
+
+export const PLAN_CATEGORIES: readonly PlanCategory[] = [
+  'HIGH_RISE_APARTMENT',
+  'LUXURY_VILLA_BUNGALOW',
+  'DUPLEX_TRIPLEX_SKY_VILLA',
+  'ROW_HOUSE_TOWNHOUSE',
+  'COURTYARD_CLUSTER_HOUSING',
+  'IRREGULAR_PLOT_CUSTOM',
 ];
 
 function normalizeBriefSpelling(raw?: string): string {
@@ -71,6 +95,7 @@ export interface ArchitecturalProposal {
   readonly preferredTopologyFamily: ProposalTopologyFamilyId;
   readonly preferredArchetype: RoomSlicingArchetypeId;
   readonly buildingMassingShape: BuildingMassingShape;
+  readonly planCategory?: PlanCategory;
   readonly maxOtsRatio?: number;
   readonly corePlacement: 'CENTRAL' | 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'SPLIT';
   readonly ventilationStrategy: 'PERIMETER_ONLY' | 'SIDE_SHAFTS' | 'CENTRAL_COURTYARD';
@@ -238,26 +263,52 @@ function defaultProposalForConfig(
   const ventilatedOtsShafts = !explicitlyNoOts && /\bventilated\s+(?:central\s+)?ots\s+shafts?\b|\bots\s+shafts?\b|\bcentral\s+ots\b/.test(prompt);
   const requestsDifferentShape = /\bdifferent\s+(?:building\s+)?(?:shape|shapes|massing|footprint)|\bunique\s+shape|\bnon[- ]?rectang|\bvaried\s+massing\b/.test(prompt);
   const explicitShape: BuildingMassingShape | undefined =
-    /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
+    /\bcurved\s+crescent|\bcrescent|\bc[- ]?arc\b/.test(prompt) ? 'CURVED_CRESCENT'
+    : /\bserpentine|\bs[- ]?curve|\bundulating\b/.test(prompt) ? 'WAVE_SERPENTINE'
+    : /\brotunda|\bcircular\s+courtyard\b/.test(prompt) ? 'ROTUNDA_COURTYARD'
+    : /\belliptical|\boval\s+tower\b/.test(prompt) ? 'ELLIPTICAL_TOWER'
+    : /\blotus\s+petal|\bradial\s+petal\b/.test(prompt) ? 'LOTUS_PETAL_RADIAL'
+    : /\bbow[- ]?front|\bchamfered\b/.test(prompt) ? 'BOWFRONT_CHAMFERED'
+    : /\btriangular\s+atrium|\btriangular\b/.test(prompt) ? 'TRIANGULAR_ATRIUM'
+    : /\by[- ]?shape|\btriskele\b/.test(prompt) ? 'Y_SHAPE_TRISKELE'
+    : /\bbutterfly|\bv[- ]?wing\b/.test(prompt) ? 'BUTTERFLY_V_WING'
+    : /\bhexagonal|\bhoneycomb\b/.test(prompt) ? 'HEXAGONAL_HONEYCOMB'
+    : /\btrapezoid(?:al)?|\btapered\b/.test(prompt) ? 'TRAPEZOIDAL_TAPERED'
+    : /\bzigzag|\bsawtooth|\bchevron\b/.test(prompt) ? 'DIAGONAL_ZIGZAG'
+    : /\bt[- ]?shape|\bt[- ]?wing\b/.test(prompt) ? 'T_SHAPE_SPINE'
+    : /\bo[- ]?shape|\bperimeter\s+court\b/.test(prompt) ? 'O_SHAPE_PERIMETER_COURT'
+    : /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
     : /\bu[- ]?shape\b|\bu[- ]?courtyard\b/.test(prompt) ? 'U_SHAPE_COURTYARD'
     : /\bl[- ]?shape\b|\bl[- ]?wing\b/.test(prompt) ? 'L_SHAPE_CORNER'
     : /\bcruciform\b|\bplus[- ]?shape\b/.test(prompt) ? 'CRUCIFORM_PLUS'
     : /\bpinwheel\b/.test(prompt) ? 'PINWHEEL_CLUSTER'
     : /\bstepped\b|\boffset\s+block\b/.test(prompt) ? 'STEPPED_OFFSET_BLOCK'
     : undefined;
+  const inferredCategory: PlanCategory | undefined =
+    config.planCategory
+    ?? (/\bluxury\s+villa|\bbungalow|\bindependent\s+villa\b/.test(prompt) ? 'LUXURY_VILLA_BUNGALOW'
+    : /\bduplex|\btriplex|\bsky\s+villa\b/.test(prompt) ? 'DUPLEX_TRIPLEX_SKY_VILLA'
+    : /\brow[- ]?house|\btown[- ]?house\b/.test(prompt) ? 'ROW_HOUSE_TOWNHOUSE'
+    : /\bcourtyard\s+cluster|\bcluster\s+housing\b/.test(prompt) ? 'COURTYARD_CLUSTER_HOUSING'
+    : /\birregular\s+plot|\btrapezoid(?:al)?\s+plot\b/.test(prompt) ? 'IRREGULAR_PLOT_CUSTOM'
+    : /\bhigh[- ]?rise|\bapartment\s+tower\b/.test(prompt) ? 'HIGH_RISE_APARTMENT'
+    : undefined);
   const centerBuilding = Boolean(
     config.centerBuildingInEnvelope || /\bcenter(?:ed)?\s+(?:the\s+)?building\b|\bcenter\b/.test(prompt),
   );
   const archetypeIndex = Math.max(0, seed - 1) % ROOM_SLICING_ARCHETYPES.length;
   const preferredArchetype = (config.preferredArchetype as RoomSlicingArchetypeId | undefined)
     ?? ROOM_SLICING_ARCHETYPES[archetypeIndex]!;
+  const rejectedShapeSet = new Set<string>(config.rejectedShapeIds ?? []);
+  const unrejectedPool = BUILDING_MASSING_SHAPES.filter(s => !rejectedShapeSet.has(s));
+  const shapePool = unrejectedPool.length > 0 ? unrejectedPool : BUILDING_MASSING_SHAPES;
   const buildingMassingShape: BuildingMassingShape =
     config.buildingMassingShape
     ?? explicitShape
-    ?? (requestsDifferentShape
-      ? BUILDING_MASSING_SHAPES[seed % BUILDING_MASSING_SHAPES.length]!
+    ?? ((requestsDifferentShape || config.autoExploreNovelShape || rejectedShapeSet.size > 0)
+      ? shapePool[(seed - 1) % shapePool.length]!
       : seed > 1
-        ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
+        ? shapePool[(seed - 1) % shapePool.length]!
         : 'COMPACT_DOUBLE_LOADED');
   const preferredTopologyFamily: ProposalTopologyFamilyId = explicitlyOts && !ventilatedOtsShafts && !properSpaceUtilization
     ? 'CENTRAL_COURTYARD'
@@ -269,6 +320,7 @@ function defaultProposalForConfig(
     preferredTopologyFamily,
     preferredArchetype,
     buildingMassingShape,
+    ...(inferredCategory ? { planCategory: inferredCategory } : {}),
     maxOtsRatio: explicitlyNoOts ? 0 : (properSpaceUtilization || ventilatedOtsShafts) ? 0.12 : undefined,
     corePlacement: 'CENTRAL',
     ventilationStrategy: explicitlyOts ? 'CENTRAL_COURTYARD' : 'PERIMETER_ONLY',
@@ -318,9 +370,14 @@ function sanitizeProposalWithPromptGuardrails(
     : base.preferredArchetype;
 
   const buildingMassingShape = typeof raw.buildingMassingShape === 'string'
-    && BUILDING_MASSING_SHAPES.includes(raw.buildingMassingShape as BuildingMassingShape)
+    && (BUILDING_MASSING_SHAPES.includes(raw.buildingMassingShape as BuildingMassingShape) || raw.buildingMassingShape.startsWith('PARAM_'))
     ? (raw.buildingMassingShape as BuildingMassingShape)
     : base.buildingMassingShape;
+
+  const planCategory = typeof raw.planCategory === 'string'
+    && PLAN_CATEGORIES.includes(raw.planCategory as PlanCategory)
+    ? (raw.planCategory as PlanCategory)
+    : base.planCategory;
 
   const maxOtsRatio = typeof raw.maxOtsRatio === 'number' && Number.isFinite(raw.maxOtsRatio) && raw.maxOtsRatio >= 0 && raw.maxOtsRatio <= 0.35
     ? raw.maxOtsRatio
@@ -385,6 +442,7 @@ function sanitizeProposalWithPromptGuardrails(
     preferredTopologyFamily: noOts && family === 'CENTRAL_COURTYARD' ? 'CENTRAL_CORE_SPINE' : family,
     preferredArchetype: archetype,
     buildingMassingShape,
+    ...(planCategory ? { planCategory } : {}),
     ...(maxOtsRatio !== undefined ? { maxOtsRatio } : {}),
     corePlacement,
     ventilationStrategy,

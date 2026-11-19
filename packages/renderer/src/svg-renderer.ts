@@ -440,19 +440,77 @@ function renderRooms(
   return `<g class="layer-rooms" data-layer="${RenderLayer.Rooms}">\n${elements.join('\n')}\n</g>`;
 }
 
+function arcSweepFlagInScreen(start: Point, end: Point, center: Point): 0 | 1 {
+  const cross = (start.x - center.x) * (end.y - center.y) - (start.y - center.y) * (end.x - center.x);
+  return cross >= 0 ? 1 : 0;
+}
+
+function renderCurvedArcWallSvg(wall: Wall, transform: ViewTransform, solidSpans: readonly [number, number][], fill: string): string {
+  const arc = wall.arc!;
+  const cSc = worldToScreen(arc.center, transform);
+  const frame = wallFrame(wall);
+  if (!frame || arc.radiusMm <= 0) return '';
+  const startSc = worldToScreen(wall.startPoint, transform);
+  const endSc = worldToScreen(wall.endPoint, transform);
+  const sweep = arcSweepFlagInScreen(startSc, endSc, cSc);
+  const revSweep = sweep === 1 ? 0 : 1;
+
+  if (wall.boundaryRole === 'PARAPET' || wall.boundaryRole === 'GUARDRAIL') {
+    const rPx = scaleToScreen(arc.radiusMm, transform);
+    return `<path class="balcony-arc-railing" data-entity-type="wall" data-entity-id="${wall.id}" data-boundary-role="${wall.boundaryRole}" data-height-mm="${wall.heightMm ?? 1100}" d="M ${startSc.x.toFixed(2)} ${startSc.y.toFixed(2)} A ${rPx.toFixed(2)} ${rPx.toFixed(2)} 0 0 ${sweep} ${endSc.x.toFixed(2)} ${endSc.y.toFixed(2)}" fill="none" stroke="#80644D" stroke-width="1.6"/>`;
+  }
+
+  const paths = solidSpans.map(([low, high]) => {
+    const t0 = low / frame.length;
+    const t1 = high / frame.length;
+    const dAng = arc.endAngleRad - arc.startAngleRad;
+    const a0 = arc.startAngleRad + dAng * t0;
+    const a1 = arc.startAngleRad + dAng * t1;
+    const rOut = arc.radiusMm + wall.thickness / 2;
+    const rIn = Math.max(50, arc.radiusMm - wall.thickness / 2);
+    const ox0 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a0), y: arc.center.y + rOut * Math.sin(a0) }, transform);
+    const ox1 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a1), y: arc.center.y + rOut * Math.sin(a1) }, transform);
+    const ix1 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a1), y: arc.center.y + rIn * Math.sin(a1) }, transform);
+    const ix0 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a0), y: arc.center.y + rIn * Math.sin(a0) }, transform);
+    const rOutPx = scaleToScreen(rOut, transform);
+    const rInPx = scaleToScreen(rIn, transform);
+    return `<path class="wall-solid wall-arc" data-start-mm="${low.toFixed(3)}" data-end-mm="${high.toFixed(3)}" d="M ${ox0.x.toFixed(2)} ${ox0.y.toFixed(2)} A ${rOutPx.toFixed(2)} ${rOutPx.toFixed(2)} 0 0 ${sweep} ${ox1.x.toFixed(2)} ${ox1.y.toFixed(2)} L ${ix1.x.toFixed(2)} ${ix1.y.toFixed(2)} A ${rInPx.toFixed(2)} ${rInPx.toFixed(2)} 0 0 ${revSweep} ${ix0.x.toFixed(2)} ${ix0.y.toFixed(2)} Z" fill="${fill}" stroke="#30251a" stroke-width="0.45" pointer-events="none"/>`;
+  }).join('\n');
+
+  return `<g data-entity-type="wall" data-entity-id="${wall.id}" data-thickness-mm="${wall.thickness}" data-curved="true">\n  <path d="M ${startSc.x.toFixed(2)} ${startSc.y.toFixed(2)} A ${scaleToScreen(arc.radiusMm, transform).toFixed(2)} ${scaleToScreen(arc.radiusMm, transform).toFixed(2)} 0 0 ${sweep} ${endSc.x.toFixed(2)} ${endSc.y.toFixed(2)}" fill="none" stroke="transparent" stroke-width="14" pointer-events="stroke"/>\n  ${paths}\n</g>`;
+}
+
 function renderWalls(floor: Floor, transform: ViewTransform): string {
   const elements: string[] = [];
 
   for (const wall of floor.walls.filter(isPhysicalBoundary)) {
     const start = worldToScreen(wall.startPoint, transform);
+    const frame = wallFrame(wall);
+    const style = WALL_STYLES[wall.type] ?? WALL_STYLES[WallType.Internal]!;
+
+    if (wall.arc && wall.arc.radiusMm > 0 && frame) {
+      const openings = [...floor.doors, ...floor.windows].filter(opening => opening.wallId === wall.id)
+        .flatMap(opening => {
+          const interval = openingInterval(wall, opening.position, opening.width);
+          return interval ? [interval] : [];
+        }).sort((a, b) => a[0] - b[0]);
+      const solids: [number, number][] = [];
+      let cursor = 0;
+      for (const [low, high] of openings) {
+        if (low > cursor) solids.push([cursor, low]);
+        cursor = Math.max(cursor, high);
+      }
+      if (cursor < frame.length) solids.push([cursor, frame.length]);
+      elements.push(renderCurvedArcWallSvg(wall, transform, solids, style.fill));
+      continue;
+    }
+
     if (wall.boundaryRole === 'PARAPET' || wall.boundaryRole === 'GUARDRAIL') {
       const end = worldToScreen(wall.endPoint, transform);
       elements.push(`<line data-entity-type="wall" data-entity-id="${wall.id}" data-boundary-role="${wall.boundaryRole}" data-height-mm="${wall.heightMm ?? 1100}" x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="#80644D" stroke-width="1.5" />`);
       continue;
     }
     const end = worldToScreen(wall.endPoint, transform);
-    const style = WALL_STYLES[wall.type] ?? WALL_STYLES[WallType.Internal]!;
-    const frame = wallFrame(wall);
     if (!frame || !Number.isFinite(wall.thickness) || wall.thickness <= 0) continue;
     const openings = [...floor.doors, ...floor.windows].filter(opening => opening.wallId === wall.id)
       .flatMap(opening => {
@@ -702,9 +760,32 @@ function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = 
             { x: wall.startPoint.x + frame.ux * t0 + outN.x * outerOff, y: wall.startPoint.y + frame.uy * t0 + outN.y * outerOff },
           ],
         };
-        elements.push(
-          `<polygon class="window-chajja" data-cad-layer="A-CHAJJA" data-entity-id="${win.id}-chajja" points="${polygonToSvgPoints(chajjaWorld, transform)}" fill="#94a3b8" fill-opacity="0.12" stroke="#475569" stroke-width="0.7" stroke-dasharray="4,2"/>`,
-        );
+        if (wall.arc && wall.arc.radiusMm > 0) {
+          const arc = wall.arc;
+          const rCenter = Math.hypot(cx - arc.center.x, cy - arc.center.y) || arc.radiusMm;
+          const midAng = Math.atan2(cy - arc.center.y, cx - arc.center.x);
+          const halfAng = Math.min(0.45, (win.width / 2 + 150) / Math.max(500, rCenter));
+          const a0 = midAng - halfAng;
+          const a1 = midAng + halfAng;
+          const outSign = (cx + outN.x * outerOff - arc.center.x) ** 2 + (cy + outN.y * outerOff - arc.center.y) ** 2 >= arc.radiusMm ** 2 ? 1 : -1;
+          const rIn = Math.max(100, arc.radiusMm + outSign * innerOff);
+          const rOut = Math.max(150, arc.radiusMm + outSign * outerOff);
+          const p0 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a0), y: arc.center.y + rIn * Math.sin(a0) }, transform);
+          const p1 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a1), y: arc.center.y + rIn * Math.sin(a1) }, transform);
+          const q1 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a1), y: arc.center.y + rOut * Math.sin(a1) }, transform);
+          const q0 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a0), y: arc.center.y + rOut * Math.sin(a0) }, transform);
+          const cSc = worldToScreen(arc.center, transform);
+          const sw = arcSweepFlagInScreen(p0, p1, cSc);
+          const rInPx = scaleToScreen(rIn, transform);
+          const rOutPx = scaleToScreen(rOut, transform);
+          elements.push(
+            `<path class="window-chajja window-chajja-arc" data-cad-layer="A-CHAJJA" data-entity-id="${win.id}-chajja" d="M ${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A ${rInPx.toFixed(2)} ${rInPx.toFixed(2)} 0 0 ${sw} ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} L ${q1.x.toFixed(2)} ${q1.y.toFixed(2)} A ${rOutPx.toFixed(2)} ${rOutPx.toFixed(2)} 0 0 ${sw === 1 ? 0 : 1} ${q0.x.toFixed(2)} ${q0.y.toFixed(2)} Z" fill="#94a3b8" fill-opacity="0.14" stroke="#475569" stroke-width="0.7" stroke-dasharray="4,2"/>`,
+          );
+        } else {
+          elements.push(
+            `<polygon class="window-chajja" data-cad-layer="A-CHAJJA" data-entity-id="${win.id}-chajja" points="${polygonToSvgPoints(chajjaWorld, transform)}" fill="#94a3b8" fill-opacity="0.12" stroke="#475569" stroke-width="0.7" stroke-dasharray="4,2"/>`,
+          );
+        }
       }
     }
 

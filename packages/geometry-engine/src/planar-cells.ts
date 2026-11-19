@@ -19,57 +19,79 @@ export function partitionPlanarCells(polygons: readonly Polygon[]): {
   )
     return { supported: false, cells: [] };
   const edges = polygons.flatMap((p) =>
-      p.points.map((a, i) => ({ a, b: p.points[(i + 1) % p.points.length]! })),
+      p.points.map((a, i) => {
+        const b = p.points[(i + 1) % p.points.length]!;
+        return {
+          a,
+          b,
+          minX: Math.min(a.x, b.x),
+          maxX: Math.max(a.x, b.x),
+          minY: Math.min(a.y, b.y),
+          maxY: Math.max(a.y, b.y),
+          dx: b.x - a.x,
+          dy: b.y - a.y,
+        };
+      }),
     ),
     events = new Set(edges.flatMap((e) => [e.a.x, e.b.x]));
-  if (edges.length > 1500) return { supported: false, cells: [] }; // bounded exact arrangement work
-  for (let i = 0; i < edges.length; i++)
+  if (edges.length > 4000) return { supported: false, cells: [] }; // bounded exact arrangement work
+  edges.sort((u, v) => u.minX - v.minX);
+  for (let i = 0; i < edges.length; i++) {
+    const a = edges[i]!;
     for (let j = i + 1; j < edges.length; j++) {
-      const a = edges[i]!,
-        b = edges[j]!,
-        dx = a.b.x - a.a.x,
-        dy = a.b.y - a.a.y,
-        ex = b.b.x - b.a.x,
-        ey = b.b.y - b.a.y,
-        den = dx * ey - dy * ex;
+      const b = edges[j]!;
+      if (b.minX >= a.maxX) break;
+      if (a.maxY <= b.minY || b.maxY <= a.minY) continue;
+      const den = a.dx * b.dy - a.dy * b.dx;
       if (!den) continue;
       const qx = b.a.x - a.a.x,
         qy = b.a.y - a.a.y,
-        t = (qx * ey - qy * ex) / den,
-        u = (qx * dy - qy * dx) / den;
+        t = (qx * b.dy - qy * b.dx) / den,
+        u = (qx * a.dy - qy * a.dx) / den;
       if (t > 0 && t < 1 && u > 0 && u < 1) {
-        events.add(a.a.x + t * dx);
+        events.add(a.a.x + t * a.dx);
         if (events.size > 20000) return { supported: false, cells: [] };
       }
     }
+  }
   const xs = [...events].sort((a, b) => a - b),
     cells: PlanarCell[] = [];
+  const nonVertical = edges.filter((e) => e.dx !== 0);
+  let startIdx = 0;
+  const active: typeof nonVertical = [];
   for (let i = 1; i < xs.length; i++) {
     const left = xs[i - 1]!,
       right = xs[i]!,
       mid = (left + right) / 2;
-    const crossing = edges
-      .filter(
-        (e) => Math.min(e.a.x, e.b.x) < mid && Math.max(e.a.x, e.b.x) > mid,
-      )
-      .map((e) => ({
-        y: (x: number) =>
-          e.a.y + ((x - e.a.x) * (e.b.y - e.a.y)) / (e.b.x - e.a.x),
-      }))
-      .sort((a, b) => a.y(mid) - b.y(mid));
+    while (startIdx < nonVertical.length && nonVertical[startIdx]!.minX < mid) {
+      if (nonVertical[startIdx]!.maxX > mid) active.push(nonVertical[startIdx]!);
+      startIdx++;
+    }
+    for (let k = active.length - 1; k >= 0; k--) {
+      if (active[k]!.maxX <= mid) active.splice(k, 1);
+    }
+    const crossing = active
+      .map((e) => {
+        const slope = e.dy / e.dx;
+        return {
+          yLeft: e.a.y + (left - e.a.x) * slope,
+          yMid: e.a.y + (mid - e.a.x) * slope,
+          yRight: e.a.y + (right - e.a.x) * slope,
+        };
+      })
+      .sort((a, b) => a.yMid - b.yMid);
+    const dxSlab = right - left;
     for (let j = 1; j < crossing.length; j++) {
       const low = crossing[j - 1]!,
         high = crossing[j]!,
-        height = high.y(mid) - low.y(mid);
+        height = high.yMid - low.yMid;
       if (height <= 0) continue;
       const area =
-        ((right - left) *
-          (high.y(left) - low.y(left) + (high.y(right) - low.y(right)))) /
-        2;
+        (dxSlab * (high.yLeft - low.yLeft + (high.yRight - low.yRight))) / 2;
       if (cells.length > 200000) return { supported: false, cells: [] };
       if (area > 0)
         cells.push({
-          point: { x: mid, y: (low.y(mid) + high.y(mid)) / 2 },
+          point: { x: mid, y: (low.yMid + high.yMid) / 2 },
           area,
         });
     }

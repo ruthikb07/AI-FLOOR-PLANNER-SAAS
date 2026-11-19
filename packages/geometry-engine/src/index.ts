@@ -137,6 +137,9 @@ export {
   arcLength,
   arcEndpoints,
   arcToPolygon,
+  sampleArcChordPoints,
+  solveOuterRadiusForAnnularChordArea,
+  matchEdgeToArcSpec,
 } from './curves';
 export type { Circle, Arc } from './curves';
 
@@ -307,6 +310,7 @@ export * from './planar-cells';
 export * from './hardening-geometry';
 
 export * from './residential-envelope';
+export * from './survey-boundary';
 export * from './mep';
 
 export { roomRegenerationIntegrityIssues } from './room-regeneration-integrity';

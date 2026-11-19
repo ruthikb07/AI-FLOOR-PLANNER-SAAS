@@ -52,6 +52,7 @@ export class ExportController {
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ArtifactRegistry, type ArtifactFormat } from '../services/artifact-registry.js';
 import { ExportError } from '../services/export-selection.js';
+import { serializeSurveyDxf } from '../cad/survey-dxf.js';
 const registry = new ArtifactRegistry();
 const blenderService = new BlenderExportService();
 
@@ -110,6 +111,17 @@ export async function handleExportRoute(
       body = JSON.parse(await readBody(request));
     } catch {
       throw new ExportError('INVALID_JSON', 'Request body must be valid JSON', 400);
+    }
+    if (match[1] === 'survey-boundary') {
+      const dxf = serializeSurveyDxf(body);
+      response.writeHead(200, {
+        'Content-Type': 'application/dxf',
+        'Content-Length': String(dxf.length),
+        'Content-Disposition': 'attachment; filename="survey-boundary.dxf"',
+        ...cors,
+      });
+      response.end(dxf);
+      return true;
     }
     if (!body?.building)
       throw new ExportError('INVALID_REQUEST', 'building object is required', 400);

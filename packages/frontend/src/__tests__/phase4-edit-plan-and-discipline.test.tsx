@@ -133,7 +133,7 @@ describe('RH Planner Phase 4 — Edit Plan Studio, Top Discipline Bar & ETABS Im
     }
 
     const editPlanBtn = Array.from(host.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Edit Plan',
+      (b) => b.textContent?.trim() === 'Wall & Room Editor',
     );
     expect(editPlanBtn).toBeDefined();
     await act(async () => editPlanBtn!.click());
@@ -150,7 +150,7 @@ describe('RH Planner Phase 4 — Edit Plan Studio, Top Discipline Bar & ETABS Im
       <InteractivePlanEditorPage editor={editor} onBackToCad={onBackToCad} />,
     );
 
-    expect(host.textContent).toContain('03 · Interactive Plan Editor Studio');
+    expect(host.textContent).toContain('Room dimensions');
     expect(host.textContent).toContain('Expand External Boundary into Setback');
 
     const applyRoomSizeBtn = Array.from(host.querySelectorAll('button')).find((b) =>

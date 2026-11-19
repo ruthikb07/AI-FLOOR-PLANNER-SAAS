@@ -49,6 +49,7 @@ export const RESIDENTIAL_CAD_LAYERS = {
   "A-WIND": 2,
   "A-CHAJJA": 8,
   "A-FLOR-BALC": 3,
+  "A-BALC": 3,
   "A-ANNO-TEXT": 1,
   "A-ANNO-DIMS": 7,
   "A-PARK-STAL": 6,
@@ -349,8 +350,36 @@ export class ResidentialCadSerializer {
         text(s, { x: (left + right) / 2, y: bottom - 5500 - i * 500 }, 120),
       );
       if (options.standard === "A") {
+        const arcCenterByGroup = (w: Floor["walls"][number]) => {
+          if (!w.arc || !(w.arc.radiusMm > 0)) return undefined;
+          const cadCenter = cad(w.arc.center);
+          const cadStart = cad(w.startPoint);
+          const cadEnd = cad(w.endPoint);
+          if (![cadCenter.x, cadCenter.y, cadStart.x, cadStart.y, cadEnd.x, cadEnd.y].every(Number.isFinite)) return undefined;
+          const a0 = Math.atan2(cadStart.y - cadCenter.y, cadStart.x - cadCenter.x);
+          const a1 = Math.atan2(cadEnd.y - cadCenter.y, cadEnd.x - cadCenter.x);
+          let startRad = a0;
+          let endRad = a1;
+          if ((endRad - startRad + 2 * Math.PI) % (2 * Math.PI) > Math.PI) {
+            startRad = a1;
+            endRad = a0;
+          }
+          return { center: cadCenter, radius: w.arc.radiusMm, startRad, endRad };
+        };
         for (const wall of floor.walls.filter(isPhysicalBoundary)) {
-          if (wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL") { line(cad(wall.startPoint), cad(wall.endPoint), "A-GUARD"); continue; }
+          const wallArc = arcCenterByGroup(wall);
+          const isBalconyWall = wall.wallUse === "BALCONY" || wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL";
+          if (wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL") {
+            if (wallArc) {
+              add(new acad.Arc(new acad.XYZ(wallArc.center.x, wallArc.center.y, 0), wallArc.radius, wallArc.startRad, wallArc.endRad), "A-BALC");
+            }
+            line(cad(wall.startPoint), cad(wall.endPoint), "A-GUARD");
+            continue;
+          }
+          if (wallArc) {
+            const arcLayer = isBalconyWall ? "A-BALC" : "A-WALL-EXTR";
+            add(new acad.Arc(new acad.XYZ(wallArc.center.x, wallArc.center.y, 0), wallArc.radius, wallArc.startRad, wallArc.endRad), arcLayer);
+          }
           const q = projectOnSegment(
             wall.startPoint,
             wall.startPoint,
@@ -395,8 +424,12 @@ export class ResidentialCadSerializer {
               );
         }
         for (const r of floor.rooms) {
-          if (["balcony", "utility"].includes(r.type))
+          if (["balcony", "utility"].includes(r.type)) {
             poly(r.boundary.points.map(cad), "A-FLOR-BALC");
+            if (r.curvedEdges?.length) {
+              poly(r.boundary.points.map(cad), "A-BALC");
+            }
+          }
           const stall = r.type === "parking" && /^C[- ]?\d+/i.test(r.name);
           if (stall) {
             poly(r.boundary.points.map(cad), "A-PARK-STAL");

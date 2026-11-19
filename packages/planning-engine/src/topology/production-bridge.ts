@@ -137,6 +137,11 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
   });
 
   input.onEvaluated?.(result);
+  if (input.preferredMassingShape === 'PINWHEEL_CLUSTER' && input.allowBestEffort) {
+    const matching = result.concepts.find(concept => concept.partition.massingShape === 'PINWHEEL_CLUSTER')
+      ?? (result.bestEffort?.partition.massingShape === 'PINWHEEL_CLUSTER' ? result.bestEffort : undefined);
+    if (matching) return { macro: macroFromTopology(matching.partition), chosen: matching, result };
+  }
   const rejectedSet = new Set(input.rejectedTopologyHashes ?? []);
   const chosen =
     (rejectedSet.size > 0

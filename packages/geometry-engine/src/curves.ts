@@ -4,7 +4,7 @@
  * All measurements in millimeters. All functions are pure.
  */
 
-import type { Point, BoundingBox, Polygon } from '@ai-floor-planner/core';
+import type { Point, BoundingBox, Polygon, WallArcSpec } from '@ai-floor-planner/core';
 import { TOLERANCES } from '@ai-floor-planner/core';
 import { distance } from './point';
 import { DegenerateGeometryError } from './errors';
@@ -105,4 +105,82 @@ export function arcToPolygon(arc: Arc, segments: number = 16): Polygon {
   }
 
   return { points };
+}
+
+/**
+ * Sample high-resolution chord vertices along a `WallArcSpec`.
+ * Returns `segments + 1` points from `startAngleRad` to `endAngleRad`.
+ */
+export function sampleArcChordPoints(spec: WallArcSpec): Point[] {
+  const segs = Math.max(4, Math.min(64, Math.round(spec.segments || 16)));
+  const sweep = spec.endAngleRad - spec.startAngleRad;
+  const pts: Point[] = [];
+  for (let i = 0; i <= segs; i++) {
+    const theta = spec.startAngleRad + (sweep * i) / segs;
+    pts.push({
+      x: Math.round((spec.center.x + spec.radiusMm * Math.cos(theta)) * 1000) / 1000,
+      y: Math.round((spec.center.y + spec.radiusMm * Math.sin(theta)) * 1000) / 1000,
+    });
+  }
+  return pts;
+}
+
+/**
+ * Compute annular sector chord radius `R_outer` for an inner radius `innerRadiusMm`
+ * so the chorded annular sector has exact target area `targetAreaMm2`.
+ */
+export function solveOuterRadiusForAnnularChordArea(
+  innerRadiusMm: number,
+  sweepRad: number,
+  segments: number,
+  targetAreaMm2: number,
+): number {
+  const segs = Math.max(4, Math.round(segments));
+  const dTheta = Math.abs(sweepRad) / segs;
+  const sinDTheta = Math.sin(dTheta);
+  if (sinDTheta <= 1e-9 || targetAreaMm2 <= 0) return Math.max(innerRadiusMm + 1000, innerRadiusMm);
+  const coeff = 0.5 * segs * sinDTheta;
+  const r2 = innerRadiusMm * innerRadiusMm + targetAreaMm2 / coeff;
+  return Math.sqrt(Math.max(innerRadiusMm * innerRadiusMm + 100, r2));
+}
+
+/**
+ * Check whether an edge `(a -> b)` lies on a curved arc spec and return a segment-level `WallArcSpec`.
+ */
+export function matchEdgeToArcSpec(
+  a: Point,
+  b: Point,
+  candidates: readonly WallArcSpec[] | undefined,
+  toleranceMm = 12,
+): WallArcSpec | undefined {
+  if (!candidates?.length) return undefined;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const chordLen = Math.hypot(b.x - a.x, b.y - a.y);
+  if (chordLen < 1) return undefined;
+  for (const spec of candidates) {
+    const da = Math.hypot(a.x - spec.center.x, a.y - spec.center.y);
+    const db = Math.hypot(b.x - spec.center.x, b.y - spec.center.y);
+    if (Math.abs(da - spec.radiusMm) > toleranceMm || Math.abs(db - spec.radiusMm) > toleranceMm) {
+      continue;
+    }
+    const dm = Math.hypot(mid.x - spec.center.x, mid.y - spec.center.y);
+    // Chord midpoint sits slightly inward of radius by sagitta `R * (1 - cos(dTheta/2))`
+    const expectedMid = Math.sqrt(Math.max(0, spec.radiusMm * spec.radiusMm - (chordLen * chordLen) / 4));
+    if (Math.abs(dm - expectedMid) <= toleranceMm * 2) {
+      const startAngleRad = Math.atan2(a.y - spec.center.y, a.x - spec.center.x);
+      let endAngleRad = Math.atan2(b.y - spec.center.y, b.x - spec.center.x);
+      while (endAngleRad - startAngleRad > Math.PI) endAngleRad -= Math.PI * 2;
+      while (endAngleRad - startAngleRad < -Math.PI) endAngleRad += Math.PI * 2;
+      return {
+        center: spec.center,
+        radiusMm: spec.radiusMm,
+        startAngleRad,
+        endAngleRad,
+        segments: Math.max(1, Math.round(spec.segments || 16)),
+        anticlockwise: endAngleRad < startAngleRad,
+        ...(spec.arcGroupId ? { arcGroupId: spec.arcGroupId } : {}),
+      };
+    }
+  }
+  return undefined;
 }

@@ -1,0 +1,287 @@
+{
+  "buildingId": "synthesis:p1-elements",
+  "projectId": "p1-elements",
+  "revision": 2,
+  "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+  "generatedAt": "2026-11-18T19:16:31.665Z",
+  "overallStatus": "SUCCESS",
+  "jobId": "7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5",
+  "files": [
+    {
+      "fileId": "47d0241d-cd18-499e-a34b-9008d8a48809",
+      "fileName": "building_full_assembly.blend",
+      "fileType": "BLEND",
+      "discipline": "ARCHITECTURAL",
+      "title": "Complete building assembly",
+      "mimeType": "application/x-blender",
+      "sizeBytes": 12202047,
+      "sha256": "38f6adce29dd9913a0194f6ddb6962b6ddd03f994ec2d8358394e97e008915ed",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "complete_project",
+      "metadata": {
+        "units": "mm"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/building_full_assembly.blend"
+    },
+    {
+      "fileId": "1c40e55c-bb03-4fb9-a1be-16c5ecfbc418",
+      "fileName": "building_full_assembly.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Complete building assembly",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 2727180,
+      "sha256": "0bd9ab0bc3d494eaf4173094f38b894b9cc6e580e01e17ccb5c847d9f99824a5",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "complete_project",
+      "metadata": {
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/building_full_assembly.glb"
+    },
+    {
+      "fileId": "e92c83ec-8bec-4ed2-bbae-5f9259164e17",
+      "fileName": "floor_0_stilt.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Stilt",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 267592,
+      "sha256": "01d0e7df6939b3c1b9ce28ab5af5ffdb4ab62e6b6fbe30ecbe160302809187cd",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "current_floor",
+      "metadata": {
+        "floorId": "synthesis:p1-elements:floor:0",
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/floor_0_stilt.glb"
+    },
+    {
+      "fileId": "83686544-70b1-4598-baae-b3dfc198d326",
+      "fileName": "floor_1_residential.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Residential 1",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 812348,
+      "sha256": "169d27244c0f4b298c2f16f5f3c5f95ebc6d0a0aa6304b2e7c6b8c0690a72108",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "current_floor",
+      "metadata": {
+        "floorId": "synthesis:p1-elements:floor:1",
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/floor_1_residential.glb"
+    },
+    {
+      "fileId": "51d3be9b-4a23-42a3-b8ec-dbfc6e32b552",
+      "fileName": "floor_2_residential.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Residential 2",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 812372,
+      "sha256": "23b3939d007a3289d5edbf4f14416377785f6a88959a0c36dea05d9ada5d7cb1",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "current_floor",
+      "metadata": {
+        "floorId": "synthesis:p1-elements:floor:2",
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/floor_2_residential.glb"
+    },
+    {
+      "fileId": "b99323d6-1c8e-486f-ad4c-503f574c9fdd",
+      "fileName": "floor_3_residential.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Residential 3",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 813604,
+      "sha256": "a2ec63aea8d23a176fffedf7a1cc89d6ae6d59fa9a34e4afb9e33e7fee0a6b9f",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "current_floor",
+      "metadata": {
+        "floorId": "synthesis:p1-elements:floor:3",
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/floor_3_residential.glb"
+    },
+    {
+      "fileId": "157fa8ee-8f00-4126-9352-dc3315a5cb96",
+      "fileName": "floor_4_terrace.glb",
+      "fileType": "GLTF",
+      "discipline": "ARCHITECTURAL",
+      "title": "Terrace",
+      "mimeType": "model/gltf-binary",
+      "sizeBytes": 67072,
+      "sha256": "667adfab70106d8a4a1b728d7c0ee9c22c259262c95e7bbe1e50ef78823b9e43",
+      "buildingId": "synthesis:p1-elements",
+      "revision": 2,
+      "revisionHash": "b8ec2012347c1264f950966fac01c7b109c396f5d8f651aaa542689b65b25a03",
+      "scope": "current_floor",
+      "metadata": {
+        "floorId": "synthesis:p1-elements:floor:4",
+        "units": "m"
+      },
+      "verification": {
+        "isValid": true,
+        "errors": [],
+        "checks": {
+          "magic": true,
+          "actualBlenderExecution": true,
+          "structuralAdequacy": "NOT_VERIFIED"
+        }
+      },
+      "downloadUrl": "/api/v1/export/blender/download/7a52d07d-c845-42ae-ba1c-8ec8d3c43cc5/floor_4_terrace.glb"
+    }
+  ],
+  "units": "mm",
+  "glbUnits": "m",
+  "warnings": [
+    "Architectural projection only; structural adequacy NOT_VERIFIED. Presentation frames, chajjas, finishes and 1000 mm railings are derived defaults requiring professional review."
+  ],
+  "disclaimer": "Automated checks provide engineering design assistance and require verification by a licensed Architect/Engineer before municipal submission.",
+  "execution": {
+    "buildingId": "synthesis:p1-elements",
+    "canonicalRevision": 2,
+    "blenderVersion": "5.2.1 LTS",
+    "engine": "CYCLES",
+    "units": "mm",
+    "glbUnits": "m",
+    "objectCount": 1482,
+    "booleanCount": 327,
+    "boundsMm": [
+      [
+        900,
+        3000,
+        -150
+      ],
+      [
+        17100,
+        23500,
+        15300
+      ]
+    ],
+    "maxBooleanRelativeVolumeError": 3.1032520468648163e-7,
+    "materials": [
+      "MAT_Wall_Exterior",
+      "MAT_Wall_Interior",
+      "MAT_Concrete_Structural",
+      "MAT_Glass_Aperture",
+      "MAT_Metal_Railing",
+      "MAT_Floor_Tile",
+      "MAT_Floor_Wet",
+      "MAT_Door",
+      "MAT_Fire_Red",
+      "MAT_Pipe_Soil",
+      "MAT_Pipe_Waste",
+      "MAT_Pipe_Vent",
+      "MAT_Pipe_Rain",
+      "MAT_Electrical_Plate",
+      "MAT_Chrome_Sprinkler",
+      "MAT_Copper_Terminal",
+      "MAT_Black_Nozzle"
+    ],
+    "floors": [
+      {
+        "id": "synthesis:p1-elements:floor:0",
+        "name": "Stilt",
+        "elevationMm": 0,
+        "fileName": "floor_0_stilt.glb"
+      },
+      {
+        "id": "synthesis:p1-elements:floor:1",
+        "name": "Residential 1",
+        "elevationMm": 3300,
+        "fileName": "floor_1_residential.glb"
+      },
+      {
+        "id": "synthesis:p1-elements:floor:2",
+        "name": "Residential 2",
+        "elevationMm": 6300,
+        "fileName": "floor_2_residential.glb"
+      },
+      {
+        "id": "synthesis:p1-elements:floor:3",
+        "name": "Residential 3",
+        "elevationMm": 9300,
+        "fileName": "floor_3_residential.glb"
+      },
+      {
+        "id": "synthesis:p1-elements:floor:4",
+        "name": "Terrace",
+        "elevationMm": 12300,
+        "fileName": "floor_4_terrace.glb"
+      }
+    ],
+    "executable": "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe",
+    "exitCode": 0
+  }
+}

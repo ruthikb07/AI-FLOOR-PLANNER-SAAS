@@ -26,6 +26,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function includesSurveyGeometry(value: unknown): boolean {
+  return isRecord(value) && (value.siteGeometryMode === 'survey' ||
+    value.surveyDraft != null || value.surveyBoundary != null ||
+    value.plotBoundary != null || value.buildableEnvelope != null);
+}
+
 function parseGenerationRequest(body: unknown): {
   config: MultiSheetApartmentConfig;
   seed: number;
@@ -65,6 +71,12 @@ export async function handleProjectGeneration(
   body: unknown,
   deps: GenerationRouteDeps,
 ): Promise<RouteResponse> {
+  if (includesSurveyGeometry(body) || (isRecord(body) && includesSurveyGeometry(body.config))) {
+    return {
+      status: 422,
+      json: { error: { code: 'SURVEY_GENERATION_UNSUPPORTED', message: 'This route requires a planner that accepts the exact surveyed boundary and buildable envelope.' } },
+    };
+  }
   const parsed = parseGenerationRequest(body);
   if (!parsed) {
     return {
@@ -93,13 +105,19 @@ export async function handleProjectGeneration(
     // If compliance < 85 after deterministic solver loop, escalate up to 3 corrective re-proposals
     for (let retryIdx = 1; !complianceReport.passed && retryIdx <= 3; retryIdx++) {
       const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+      const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
       const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
         ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
         : [...parsed.rejectedTopologyHashes];
+      const updatedRejectedShapes =
+        !parsed.config.buildingMassingShape && priorShape
+          ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
+          : parsed.config.rejectedShapeIds;
       const correctiveHint = complianceReport.violations.slice(0, 3).join(' ');
       const retryProposal = await generateArchitecturalProposal(deps.gemini, {
         config: {
           ...parsed.config,
+          ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
           aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
         },
         seed: parsed.seed + retryIdx * 12,
@@ -120,10 +138,23 @@ export async function handleProjectGeneration(
       }
     }
 
+    const enrichedBuilding = {
+      ...pipelineResult.building,
+      metadata: {
+        ...pipelineResult.building.metadata,
+        complianceReport,
+        generationBrief: {
+          ...pipelineResult.building.metadata.generationBrief,
+          aiTelemetry: proposalResult.telemetry,
+        },
+      },
+    };
+
     return {
       status: 200,
       json: {
         ...pipelineResult,
+        building: enrichedBuilding,
         complianceReport,
         proposal: proposalResult.proposal,
         telemetry: proposalResult.telemetry,

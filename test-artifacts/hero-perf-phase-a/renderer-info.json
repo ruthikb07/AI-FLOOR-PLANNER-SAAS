@@ -1,0 +1,3705 @@
+{
+  "scene": {
+    "meshes": 143,
+    "instancedMeshes": 142,
+    "instances": 3458,
+    "uncullableMeshes": 1,
+    "transparentMeshes": 9
+  },
+  "textures": {
+    "allocatedBytes": 52429856,
+    "levels": [
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1536,
+        "height": 1536,
+        "depth": 1,
+        "format": 32856,
+        "type": 5121,
+        "name": "RGBA8",
+        "bytes": 9437184
+      },
+      {
+        "width": 1536,
+        "height": 1536,
+        "depth": 1,
+        "format": 33190,
+        "name": "DEPTH_COMPONENT24",
+        "bytes": 9437184
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 33327,
+        "name": "RG16F",
+        "bytes": 1024
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4194304
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 1048576
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 262144
+      },
+      {
+        "width": 128,
+        "height": 128,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 65536
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 16384
+      },
+      {
+        "width": 32,
+        "height": 32,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4096
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 1024
+      },
+      {
+        "width": 8,
+        "height": 8,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 256
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 64
+      },
+      {
+        "width": 2,
+        "height": 2,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 16
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4194304
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1048576
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 262144
+      },
+      {
+        "width": 128,
+        "height": 128,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 65536
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16384
+      },
+      {
+        "width": 32,
+        "height": 32,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4096
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1024
+      },
+      {
+        "width": 8,
+        "height": 8,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 256
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 64
+      },
+      {
+        "width": 2,
+        "height": 2,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4194304
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1048576
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 262144
+      },
+      {
+        "width": 128,
+        "height": 128,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 65536
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16384
+      },
+      {
+        "width": 32,
+        "height": 32,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4096
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1024
+      },
+      {
+        "width": 8,
+        "height": 8,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 256
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 64
+      },
+      {
+        "width": 2,
+        "height": 2,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "depth": 1,
+        "format": 34842,
+        "type": 5131,
+        "name": "RGBA16F",
+        "bytes": 6291456
+      },
+      {
+        "width": 1024,
+        "height": 512,
+        "depth": 1,
+        "format": 34842,
+        "name": "RGBA16F",
+        "bytes": 4194304
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "depth": 1,
+        "format": 34842,
+        "type": 5131,
+        "name": "RGBA16F",
+        "bytes": 6291456
+      }
+    ],
+    "allocationSignatures": [
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 6408,
+        "type": 5121,
+        "name": "6408",
+        "bytes": 4
+      },
+      {
+        "width": 1536,
+        "height": 1536,
+        "depth": 1,
+        "format": 32856,
+        "type": 5121,
+        "name": "RGBA8",
+        "bytes": 9437184
+      },
+      {
+        "width": 1536,
+        "height": 1536,
+        "depth": 1,
+        "format": 33190,
+        "name": "DEPTH_COMPONENT24",
+        "bytes": 9437184
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 33327,
+        "name": "RG16F",
+        "bytes": 1024
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4194304
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 1048576
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 262144
+      },
+      {
+        "width": 128,
+        "height": 128,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 65536
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 16384
+      },
+      {
+        "width": 32,
+        "height": 32,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4096
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 1024
+      },
+      {
+        "width": 8,
+        "height": 8,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 256
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 64
+      },
+      {
+        "width": 2,
+        "height": 2,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 16
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 35907,
+        "name": "SRGB8_ALPHA8",
+        "bytes": 4
+      },
+      {
+        "width": 1024,
+        "height": 1024,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4194304
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1048576
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 262144
+      },
+      {
+        "width": 128,
+        "height": 128,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 65536
+      },
+      {
+        "width": 64,
+        "height": 64,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16384
+      },
+      {
+        "width": 32,
+        "height": 32,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4096
+      },
+      {
+        "width": 16,
+        "height": 16,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 1024
+      },
+      {
+        "width": 8,
+        "height": 8,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 256
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 64
+      },
+      {
+        "width": 2,
+        "height": 2,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 16
+      },
+      {
+        "width": 1,
+        "height": 1,
+        "depth": 1,
+        "format": 32856,
+        "name": "RGBA8",
+        "bytes": 4
+      },
+      {
+        "width": 768,
+        "height": 1024,
+        "depth": 1,
+        "format": 34842,
+        "type": 5131,
+        "name": "RGBA16F",
+        "bytes": 6291456
+      },
+      {
+        "width": 1024,
+        "height": 512,
+        "depth": 1,
+        "format": 34842,
+        "name": "RGBA16F",
+        "bytes": 4194304
+      }
+    ],
+    "unclassifiedLevels": 0
+  },
+  "steady": [
+    {
+      "name": "Exterior",
+      "progress": 0,
+      "frames": [
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    },
+    {
+      "name": "Site",
+      "progress": 0.25,
+      "frames": [
+        {
+          "progress": 0.25,
+          "beforeWrite": true,
+          "section": "Site",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.25,
+          "beforeWrite": true,
+          "section": "Site",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.25,
+          "beforeWrite": true,
+          "section": "Site",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    },
+    {
+      "name": "Section",
+      "progress": 0.5,
+      "frames": [
+        {
+          "progress": 0.5,
+          "beforeWrite": true,
+          "section": "Section",
+          "dirtiedShadow": false,
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.5,
+          "beforeWrite": true,
+          "section": "Section",
+          "dirtiedShadow": false,
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.5,
+          "beforeWrite": true,
+          "section": "Section",
+          "dirtiedShadow": false,
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    },
+    {
+      "name": "Plan",
+      "progress": 0.75,
+      "frames": [
+        {
+          "progress": 0.75,
+          "beforeWrite": true,
+          "section": "Plan",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.75,
+          "beforeWrite": true,
+          "section": "Plan",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0.75,
+          "beforeWrite": true,
+          "section": "Plan",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    },
+    {
+      "name": "Landscape",
+      "progress": 1,
+      "frames": [
+        {
+          "progress": 1,
+          "beforeWrite": true,
+          "section": "Landscape",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 1,
+          "beforeWrite": true,
+          "section": "Landscape",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 1,
+          "beforeWrite": true,
+          "section": "Landscape",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    },
+    {
+      "name": "Exterior evening",
+      "progress": 0,
+      "frames": [
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        },
+        {
+          "progress": 0,
+          "beforeWrite": true,
+          "section": "Exterior",
+          "dirtiedShadow": false,
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "allocatedBytes": 52429856
+        }
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "progress": null,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 3,
+      "geometries": 6,
+      "allocatedBytes": 18875428
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 3,
+      "geometries": 6,
+      "allocatedBytes": 18875428
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 3,
+      "geometries": 6,
+      "allocatedBytes": 18875428
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 6,
+      "geometries": 6,
+      "allocatedBytes": 35652640
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69396,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.001,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.002,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.002,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.003,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.004,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.005,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.008,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.011,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.017,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.029,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.042,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.056,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.07,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.086,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.108,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.126,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.142,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.155,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.167,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.178,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.188,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.197,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.205,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.212,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.218,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.223,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.228,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.232,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.235,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.238,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.241,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.242,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.244,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.245,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.246,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.247,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.248,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.248,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.248,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.249,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.249,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.249,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.25,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.25,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.25,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.25,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.251,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.252,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.252,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.253,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.254,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.255,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.258,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.261,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.267,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.286,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.307,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.331,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.353,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.374,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.397,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.415,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.43,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.443,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 172,
+      "triangles": 115308,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.453,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.462,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.47,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.476,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.481,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.484,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.488,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.49,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.492,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.494,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.495,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.496,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.497,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.497,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.498,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.498,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.499,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.499,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.499,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.5,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": false,
+      "drawCalls": 87,
+      "triangles": 57888,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.5,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": false,
+      "drawCalls": 87,
+      "triangles": 57888,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.5,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": false,
+      "drawCalls": 87,
+      "triangles": 57888,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.5,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.501,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.502,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.502,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.503,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.504,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.505,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.508,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.518,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.54,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 88,
+      "triangles": 57900,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.564,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 89,
+      "triangles": 58080,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.588,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 90,
+      "triangles": 58092,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.61,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 90,
+      "triangles": 58092,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.631,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.649,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.665,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.679,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.69,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.7,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.709,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.716,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.722,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.727,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.732,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.735,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.738,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.741,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.743,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.744,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.745,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.746,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.747,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.748,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.748,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.748,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.749,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.749,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.75,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.75,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.75,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.75,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.751,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.752,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.752,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.753,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.754,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.755,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.759,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.769,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.787,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.81,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.834,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.856,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.876,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.895,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.911,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.926,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.939,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.95,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.959,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.966,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.973,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.978,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.983,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.986,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.989,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.991,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.993,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.994,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.995,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.996,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.997,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.998,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.998,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.999,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.999,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.999,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 1,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 1,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 1,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 1,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.999,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.998,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.997,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.997,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.996,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.995,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.994,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.992,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.988,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.981,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.971,
+      "beforeWrite": true,
+      "section": "Landscape",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.958,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.937,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.909,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.874,
+      "beforeWrite": true,
+      "section": "Plan",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.831,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.782,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.73,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.677,
+      "beforeWrite": true,
+      "section": "Section",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.625,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 89,
+      "triangles": 58080,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.575,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.524,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": true,
+      "drawCalls": 171,
+      "triangles": 115296,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.475,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": true,
+      "drawCalls": 174,
+      "triangles": 115500,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.428,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.38,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": true,
+      "drawCalls": 272,
+      "triangles": 136620,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.339,
+      "beforeWrite": true,
+      "section": "Site",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.3,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.265,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.232,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.202,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.175,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.151,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.131,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.113,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.098,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.085,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.074,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.064,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.055,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.048,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.041,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.035,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.03,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.026,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.022,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.018,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.015,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.012,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.01,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.008,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.006,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.005,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.004,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.003,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.003,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.002,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.002,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.001,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.001,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0.001,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    },
+    {
+      "progress": 0,
+      "beforeWrite": true,
+      "section": "Exterior",
+      "dirtiedShadow": false,
+      "drawCalls": 152,
+      "triangles": 69912,
+      "textures": 9,
+      "geometries": 17,
+      "allocatedBytes": 52429856
+    }
+  ]
+}

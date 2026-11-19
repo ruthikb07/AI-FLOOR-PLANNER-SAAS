@@ -5,6 +5,7 @@ import { bedroomBalconySchedule } from './bedroom-balcony-audit.js';
 import { createGenerationReport } from './generation-report';
 import type { GenerateConceptsResult } from '../topology/generative-topology-engine';
 import { architecturalSpaceRole, withArchitecturalElements, parseMixedUnitProgram, mixedUnitSpecs } from '@ai-floor-planner/core';
+import type { BuildingMassingShape } from '@ai-floor-planner/core';
 /**
  * Multi-Sheet Apartment Project Engine (Phase 1C).
  *
@@ -42,6 +43,7 @@ import {
   type Site,
   type SiteZone,
   type Polygon,
+  type Point,
   type ApartmentBhkType,
   RoomType,
   DoorType,
@@ -60,6 +62,8 @@ import { populateCanonicalFurniture } from '../plancraft/auto-furnish-apartment.
 import {
   generateApartmentWalls,
   openingFitsApartmentWall,
+  fitFloorOpeningsInsideWalls,
+  polygonBoundingBox,
   measureApartmentAreaLedger,
   polygonArea,
   columnFootprint,
@@ -85,6 +89,13 @@ import {
   evaluateArchitecturalComplianceScore,
   type ArchitecturalComplianceReport,
 } from '../compliance/architectural-compliance-score';
+import {
+  getPlanCategoryEntry,
+  inferPlanCategoryFromPrompt,
+  inferShapeIdFromPrompt,
+  pickNextNonRepeatingShape,
+} from '../catalog/shape-catalog';
+import { applyParametricShapeToFloor } from '../catalog/shape-geometry-synthesizer';
 
 // ─── Stack Parameters & Height Solver ────────────────────────────────────────
 
@@ -158,11 +169,139 @@ export function computeBuildingStackParameters(config: MultiSheetApartmentConfig
 
 // ─── Helper: Create Canonical Room from Rectangular Box ──────────────────────
 
+function unionOrthogonalBoxes(a: Box2D, b: Box2D): Point[] | null {
+  const eps = 2;
+  // Same vertical alignment (share horizontal edge at b bottom == a top, or a bottom == b top)
+  if (Math.abs((b.y + b.h) - a.y) <= eps && b.x >= a.x - eps && b.x + b.w <= a.x + a.w + eps) {
+    if (Math.abs(b.x - a.x) <= eps && Math.abs((b.x + b.w) - (a.x + a.w)) <= eps) {
+      return [
+        { x: a.x, y: b.y },
+        { x: a.x + a.w, y: b.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+    if (Math.abs(b.x - a.x) <= eps) {
+      return [
+        { x: b.x, y: b.y },
+        { x: b.x + b.w, y: b.y },
+        { x: b.x + b.w, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+    if (Math.abs((b.x + b.w) - (a.x + a.w)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: b.x, y: a.y },
+        { x: b.x, y: b.y },
+        { x: b.x + b.w, y: b.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+  }
+  if (Math.abs((a.y + a.h) - b.y) <= eps && b.x >= a.x - eps && b.x + b.w <= a.x + a.w + eps) {
+    if (Math.abs(b.x - a.x) <= eps && Math.abs((b.x + b.w) - (a.x + a.w)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: b.y + b.h },
+        { x: a.x, y: b.y + b.h },
+      ];
+    }
+    if (Math.abs(b.x - a.x) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: b.x + b.w, y: a.y + a.h },
+        { x: b.x + b.w, y: b.y + b.h },
+        { x: a.x, y: b.y + b.h },
+      ];
+    }
+    if (Math.abs((b.x + b.w) - (a.x + a.w)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: b.y + b.h },
+        { x: b.x, y: b.y + b.h },
+        { x: b.x, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+  }
+  // Rotated 90 deg (share vertical edge)
+  if (Math.abs((b.x + b.w) - a.x) <= eps && b.y >= a.y - eps && b.y + b.h <= a.y + a.h + eps) {
+    if (Math.abs(b.y - a.y) <= eps && Math.abs((b.y + b.h) - (a.y + a.h)) <= eps) {
+      return [
+        { x: b.x, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: b.x, y: a.y + a.h },
+      ];
+    }
+    if (Math.abs(b.y - a.y) <= eps) {
+      return [
+        { x: b.x, y: b.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+        { x: a.x, y: b.y + b.h },
+        { x: b.x, y: b.y + b.h },
+      ];
+    }
+    if (Math.abs((b.y + b.h) - (a.y + a.h)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: a.x + a.w, y: a.y },
+        { x: a.x + a.w, y: a.y + a.h },
+        { x: b.x, y: b.y + b.h },
+        { x: b.x, y: b.y },
+        { x: a.x, y: b.y },
+      ];
+    }
+  }
+  if (Math.abs((a.x + a.w) - b.x) <= eps && b.y >= a.y - eps && b.y + b.h <= a.y + a.h + eps) {
+    if (Math.abs(b.y - a.y) <= eps && Math.abs((b.y + b.h) - (a.y + a.h)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: b.x + b.w, y: a.y },
+        { x: b.x + b.w, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+    if (Math.abs(b.y - a.y) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: b.x + b.w, y: b.y },
+        { x: b.x + b.w, y: b.y + b.h },
+        { x: b.x, y: b.y + b.h },
+        { x: b.x, y: a.y + a.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+    if (Math.abs((b.y + b.h) - (a.y + a.h)) <= eps) {
+      return [
+        { x: a.x, y: a.y },
+        { x: b.x, y: a.y },
+        { x: b.x, y: b.y },
+        { x: b.x + b.w, y: b.y },
+        { x: b.x + b.w, y: b.y + b.h },
+        { x: a.x, y: a.y + a.h },
+      ];
+    }
+  }
+  return null;
+}
+
 function createBoxRoom(params: {
   id: string;
   name: string;
   type: RoomType;
   box: Box2D;
+  polygonPoints?: readonly Point[];
   floorId: string;
   spaceUse?: 'UNIT' | 'COMMON' | 'CORE' | 'SERVICE' | 'OUTDOOR' | 'VOID';
   planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR';
@@ -171,13 +310,27 @@ function createBoxRoom(params: {
   architecturalRole?: Room['architecturalRole'];
 }): Room {
   const boundary: Polygon = {
-    points: [
-      { x: params.box.x, y: params.box.y },
-      { x: params.box.x + params.box.w, y: params.box.y },
-      { x: params.box.x + params.box.w, y: params.box.y + params.box.h },
-      { x: params.box.x, y: params.box.y + params.box.h },
-    ],
+    points: params.polygonPoints && params.polygonPoints.length >= 4
+      ? [...params.polygonPoints]
+      : [
+        { x: params.box.x, y: params.box.y },
+        { x: params.box.x + params.box.w, y: params.box.y },
+        { x: params.box.x + params.box.w, y: params.box.y + params.box.h },
+        { x: params.box.x, y: params.box.y + params.box.h },
+      ],
   };
+
+  const pts = boundary.points;
+  const minX = Math.min(...pts.map(p => p.x));
+  const maxX = Math.max(...pts.map(p => p.x));
+  const minY = Math.min(...pts.map(p => p.y));
+  const maxY = Math.max(...pts.map(p => p.y));
+  let shoelaceArea = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p1 = pts[i]!;
+    const p2 = pts[(i + 1) % pts.length]!;
+    shoelaceArea += p1.x * p2.y - p2.x * p1.y;
+  }
 
   const result: Room = {
     id: params.id,
@@ -185,12 +338,12 @@ function createBoxRoom(params: {
     type: params.type,
     floorId: params.floorId,
     boundary,
-    x: params.box.x,
-    y: params.box.y,
-    width: params.box.w,
-    height: params.box.h,
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
     rotation: 0,
-    area: params.box.w * params.box.h,
+    area: params.polygonPoints ? Math.abs(shoelaceArea) / 2 : params.box.w * params.box.h,
     priority: 1,
     tags: params.tags ?? [],
     adjacencyRequirements: [],
@@ -648,11 +801,11 @@ export function deriveCleanStructuralColumns(
   const roomToBox = (r: Room) =>
     r.boundary?.points?.length
       ? {
-          x: Math.min(...r.boundary.points.map(pt => pt.x)),
-          y: Math.min(...r.boundary.points.map(pt => pt.y)),
-          w: Math.max(...r.boundary.points.map(pt => pt.x)) - Math.min(...r.boundary.points.map(pt => pt.x)),
-          h: Math.max(...r.boundary.points.map(pt => pt.y)) - Math.min(...r.boundary.points.map(pt => pt.y)),
-        }
+        x: Math.min(...r.boundary.points.map(pt => pt.x)),
+        y: Math.min(...r.boundary.points.map(pt => pt.y)),
+        w: Math.max(...r.boundary.points.map(pt => pt.x)) - Math.min(...r.boundary.points.map(pt => pt.x)),
+        h: Math.max(...r.boundary.points.map(pt => pt.y)) - Math.min(...r.boundary.points.map(pt => pt.y)),
+      }
       : { x: r.x, y: r.y, w: r.width, h: r.height };
   const voidBoxes = floor.rooms
     .filter(r => r.architecturalRole === 'OPEN_TO_SKY_VOID' && r.tags?.includes('recess:perimeter'))
@@ -1231,15 +1384,15 @@ export function solveStiltParkingSheet(
 
   // Main Ground / Stilt Entrance Door on Grand Entrance Lobby exterior facade
   const lobbyExtWalls = walls
-    .filter(w => w.roomIds.length === 1 && w.roomIds.includes(grandLobby.id) && w.boundaryRole === 'FULL_HEIGHT_WALL')
+    .filter(w => w.wallUse === 'EXTERNAL' && w.roomIds.length === 1 && w.roomIds.includes(grandLobby.id) && w.boundaryRole === 'FULL_HEIGHT_WALL')
     .sort((a, b) => Math.hypot(b.endPoint.x - b.startPoint.x, b.endPoint.y - b.startPoint.y) - Math.hypot(a.endPoint.x - a.startPoint.x, a.endPoint.y - a.startPoint.y));
   const mainEntryWall = lobbyExtWalls[0];
   if (mainEntryWall) {
     const wallLen = Math.hypot(mainEntryWall.endPoint.x - mainEntryWall.startPoint.x, mainEntryWall.endPoint.y - mainEntryWall.startPoint.y);
-    const entryDoorW = wallLen >= 1800 ? 1500 : wallLen >= 1300 ? 1050 : 0;
+    const entryDoorW = wallLen >= 1700 ? 1500 : wallLen >= 1250 ? 1050 : 0;
     const entryPos = {
-      x: snap10((mainEntryWall.startPoint.x + mainEntryWall.endPoint.x) / 2),
-      y: snap10((mainEntryWall.startPoint.y + mainEntryWall.endPoint.y) / 2),
+      x: (mainEntryWall.startPoint.x + mainEntryWall.endPoint.x) / 2,
+      y: (mainEntryWall.startPoint.y + mainEntryWall.endPoint.y) / 2,
     };
     if (entryDoorW > 0 && openingFitsApartmentWall(mainEntryWall, entryPos, entryDoorW)) {
       doors.push({
@@ -1251,7 +1404,7 @@ export function solveStiltParkingSheet(
         height: 2100,
         type: entryDoorW >= 1500 ? DoorType.Double : DoorType.Single,
         swingDirection: SwingDirection.Inward,
-        connectsRooms: [grandLobby.id, 'EXTERIOR'],
+        connectsRooms: [grandLobby.id, '__outside__'],
       });
       (mainEntryWall as { hasOpening: boolean }).hasOpening = true;
     }
@@ -1350,6 +1503,7 @@ export interface TypicalFloorSheetResult {
   readonly floor: Floor;
   readonly structure: ApartmentPlanStructure;
   readonly audit: SheetLedgerAudit;
+  readonly shapeId?: BuildingMassingShape;
 }
 
 export function solveTypicalFloorSheet(
@@ -1368,8 +1522,8 @@ export function solveTypicalFloorSheet(
   const floorId = floorLevel === 1 ? 'floor_typical_01' : `floor_level_${String(floorLevel).padStart(2, '0')}`;
   const floorName = floorLevel === 0 ? 'GROUND_FLOOR_PLAN' : floorLevel === 1 ? '1ST_FLOOR_PLAN'
     : floorLevel === 2 ? '2ND_FLOOR_PLAN'
-    : floorLevel === 3 ? '3RD_FLOOR_PLAN'
-    : `${floorLevel}TH_FLOOR_PLAN`;
+      : floorLevel === 3 ? '3RD_FLOOR_PLAN'
+        : `${floorLevel}TH_FLOOR_PLAN`;
 
   const manifest = createDynamicApartmentManifest({
     plotWidthMm: config.plotWidthMm,
@@ -1385,36 +1539,38 @@ export function solveTypicalFloorSheet(
   // a brief the previous engine could build does not start failing.
   const structure = topology
     ? assembleStructureFromPartition({
-        partition: topology.chosen.partition,
-        program: topology.result.program,
-        manifest,
-        unitTypes: (config.units ?? []).map(u => u.bhkType),
-        archetype: topology.result.archetype ?? (config.preferredArchetype as RoomSlicingArchetypeId | undefined),
-        staggeredBalconies: config.staggeredBalconies,
-        floorVariant: options?.floorVariant,
-      }).structure
+      partition: topology.chosen.partition,
+      program: topology.result.program,
+      manifest,
+      unitTypes: (config.units ?? []).map(u => u.bhkType),
+      archetype: topology.result.archetype ?? (config.preferredArchetype as RoomSlicingArchetypeId | undefined),
+      staggeredBalconies: config.staggeredBalconies,
+      floorVariant: options?.floorVariant,
+    }).structure
     : solveOrthogonalSpaceFillingApartment({
-        aiPrompt: config.aiPrompt,
-        plan: { flats: [], rooms: [] } as never,
-        site: {
-          plotWidth: config.plotWidthMm,
-          plotDepth: config.plotDepthMm,
-          lotAllotmentMode: config.lotAllotmentMode,
-          setbacks: {
-            front: config.plotDepthMm - (envelope.y + envelope.h),
-            rear: envelope.y,
-            left: envelope.x,
-            right: config.plotWidthMm - (envelope.x + envelope.w),
-          },
-        },
-        frame: { width: 1000, height: 1000 },
-        manifest,
+      aiPrompt: config.aiPrompt,
+      plan: { flats: [], rooms: [] } as never,
+      site: {
+        plotWidth: config.plotWidthMm,
+        plotDepth: config.plotDepthMm,
         lotAllotmentMode: config.lotAllotmentMode,
-      });
+        setbacks: {
+          front: config.plotDepthMm - (envelope.y + envelope.h),
+          rear: envelope.y,
+          left: envelope.x,
+          right: config.plotWidthMm - (envelope.x + envelope.w),
+        },
+      },
+      frame: { width: 1000, height: 1000 },
+      manifest,
+      lotAllotmentMode: config.lotAllotmentMode,
+    });
 
+  const includeDiningHall = config.includeDiningHall ?? true;
+  const diningToLivingRedirect = new Map<string, string>();
   const rooms: Room[] = [];
   const addRoom = (
-    r: { id: string; name: string; architecturalRole?: Room['architecturalRole']; type?: string; rect: { x: number; y: number; width: number; height: number }; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string; tags?: readonly string[] },
+    r: { id: string; name: string; architecturalRole?: Room['architecturalRole']; type?: string; rect: { x: number; y: number; width: number; height: number }; polygonPoints?: readonly Point[]; planningZone?: 'PUBLIC' | 'PRIVATE' | 'SERVICE' | 'OUTDOOR'; bathroomOwnerRoomId?: string; tags?: readonly string[] },
     defaultType: RoomType,
     unitId?: string,
   ) => {
@@ -1428,6 +1584,7 @@ export function solveTypicalFloorSheet(
         spaceUse: rType === RoomType.Balcony ? 'OUTDOOR' : unitId ? 'UNIT' : rType === RoomType.ServiceShaft ? 'SERVICE' : (rType === RoomType.Lift || rType === RoomType.Staircase) ? 'CORE' : 'COMMON',
         planningZone: r.planningZone,
         box: { x: r.rect.x, y: r.rect.y, w: r.rect.width, h: r.rect.height },
+        ...(r.polygonPoints ? { polygonPoints: r.polygonPoints } : {}),
         floorId,
         unitId,
         tags: [`apt-room:${r.id}`, ...(r.tags ?? [])],
@@ -1438,12 +1595,33 @@ export function solveTypicalFloorSheet(
   for (let fIdx = 0; fIdx < structure.flats.length; fIdx++) {
     const flat = structure.flats[fIdx]!;
     const flatNum = floorLevel * 100 + (fIdx + 1);
-    for (const r of flat.rooms) {
-      const renamed = {
-        ...r,
-        name: r.name.replace(/Flat\s*0?(\d+)/i, `Flat ${flatNum}`),
-      };
-      addRoom(renamed, RoomType.Custom, flat.id);
+    const flatRenamed = flat.rooms.map(r => ({
+      ...r,
+      name: r.name.replace(/Flat\s*0?(\d+)/i, `Flat ${flatNum}`),
+    }));
+
+    let diningSkippedId: string | null = null;
+    if (!includeDiningHall) {
+      const diningR = flatRenamed.find(r => r.type === 'dining');
+      const livingR = flatRenamed.find(r => r.type === 'living');
+      if (diningR && livingR) {
+        const lPts = unionOrthogonalBoxes(
+          { x: livingR.rect.x, y: livingR.rect.y, w: livingR.rect.width, h: livingR.rect.height },
+          { x: diningR.rect.x, y: diningR.rect.y, w: diningR.rect.width, h: diningR.rect.height },
+        );
+        if (lPts) {
+          diningSkippedId = diningR.id;
+          diningToLivingRedirect.set(diningR.id, livingR.id);
+          addRoom({ ...livingR, polygonPoints: lPts }, RoomType.Living, flat.id);
+        }
+      }
+    }
+
+    for (const r of flatRenamed) {
+      if (diningSkippedId && (r.id === diningSkippedId || r.id === diningToLivingRedirect.get(diningSkippedId))) {
+        continue;
+      }
+      addRoom(r, RoomType.Custom, flat.id);
     }
   }
   for (const el of structure.lifts) addRoom(el, RoomType.Lift);
@@ -1458,8 +1636,9 @@ export function solveTypicalFloorSheet(
   const windows: Window[] = [];
 
   for (const op of structure.openings) {
+    const redirectedConnects = op.connects?.map(id => diningToLivingRedirect.get(id) ?? id);
     const hostWall = walls.find(w =>
-      (!op.connects || op.connects.every(id => w.roomIds.includes(`apt-room:${id}`))) && openingFitsApartmentWall(
+      (!redirectedConnects || redirectedConnects.every(id => w.roomIds.includes(`apt-room:${id}`))) && openingFitsApartmentWall(
         w,
         { x: op.rect.x + op.rect.width / 2, y: op.rect.y + op.rect.height / 2 },
         Math.max(op.rect.width, op.rect.height),
@@ -1481,7 +1660,7 @@ export function solveTypicalFloorSheet(
     }
   }
 
-  // Windows along exterior envelope walls and shafts (strictly no door overlap)
+  // Windows along exterior envelope walls, outdoor balconies, and OTS shafts
   for (const r of rooms) {
     if (r.spaceUse === 'OUTDOOR' || r.type === RoomType.ServiceShaft) continue;
     const isBath = r.type === RoomType.Bathroom;
@@ -1491,20 +1670,75 @@ export function solveTypicalFloorSheet(
         const owner = rooms.find(room => room.id === id);
         return owner?.architecturalRole === 'OPEN_TO_SKY_VOID';
       });
+    const hasOutdoorBalconyWall = (w: Wall) =>
+      w.wallUse !== 'UNIT_SEPARATION' &&
+      w.roomIds.some(id => {
+        if (id === r.id) return false;
+        const owner = rooms.find(room => room.id === id);
+        if (!owner) return false;
+        if (r.unitId && owner.unitId && owner.unitId !== r.unitId) return false;
+        return (w.wallUse === 'BALCONY' && owner.spaceUse === 'OUTDOOR') ||
+          (w.wallUse === 'INTERNAL_PARTITION' && r.type === RoomType.Kitchen && owner.type === RoomType.Utility);
+      });
     const extWalls = walls.filter(w =>
-      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT') || hasOtsShaftWall(w)) &&
+      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT') || hasOtsShaftWall(w) || (!isBath && r.spaceUse === 'UNIT' && hasOutdoorBalconyWall(w))) &&
       w.boundaryRole !== 'OPEN_BOUNDARY' &&
       w.boundaryRole !== 'PARAPET' &&
       w.roomIds.includes(r.id),
     );
     for (const hw of extWalls) {
       // Check if wall segment already has a door opening (e.g. balcony door)
-      const hasDoor = doors.some(d => d.wallId === hw.id);
-      if (hasDoor) {
-        // Balcony or exterior door already exists on this wall; never overlap door and window!
+      const doorIdx = doors.findIndex(d => d.wallId === hw.id);
+      const len = Math.hypot(hw.endPoint.x - hw.startPoint.x, hw.endPoint.y - hw.startPoint.y);
+      if (doorIdx >= 0) {
+        const doorOnWall = doors[doorIdx]!;
+        const alreadyHasWindow = windows.some(win => win.roomId === r.id);
+        const effectiveDoorW =
+          doorOnWall.width > 900 && len - doorOnWall.width < 680
+            ? Math.max(900, Math.floor((len - 680) / 20) * 20)
+            : doorOnWall.width;
+        if (!alreadyHasWindow && !isBath && len >= effectiveDoorW + 680) {
+          const ux = (hw.endPoint.x - hw.startPoint.x) / len;
+          const uy = (hw.endPoint.y - hw.startPoint.y) / len;
+          const sideWinW = Math.min(900, Math.max(400, Math.floor((len - effectiveDoorW - 280) / 20) * 20));
+          // Respect 100 mm opening corner clearance so downstream repair retains both door and side window
+          const shiftedDoorAlong = Math.ceil((100 + effectiveDoorW / 2) / 10) * 10;
+          const winAlong = Math.floor((len - 100 - sideWinW / 2) / 10) * 10;
+          const doorPos = {
+            x: snap10(hw.startPoint.x + ux * shiftedDoorAlong),
+            y: snap10(hw.startPoint.y + uy * shiftedDoorAlong),
+          };
+          const winPos = {
+            x: snap10(hw.startPoint.x + ux * winAlong),
+            y: snap10(hw.startPoint.y + uy * winAlong),
+          };
+          if (
+            winAlong - sideWinW / 2 >= shiftedDoorAlong + effectiveDoorW / 2 + 80 &&
+            openingFitsApartmentWall(hw, doorPos, effectiveDoorW) &&
+            openingFitsApartmentWall(hw, winPos, sideWinW)
+          ) {
+            doors[doorIdx] = {
+              ...doorOnWall,
+              width: effectiveDoorW,
+              type: effectiveDoorW < 1050 && doorOnWall.type === DoorType.Sliding ? DoorType.Single : doorOnWall.type,
+              position: doorPos,
+            };
+            windows.push({
+              id: `win_${r.id}_${hw.id}_side`,
+              floorId,
+              wallId: hw.id,
+              position: winPos,
+              width: sideWinW,
+              height: 1200,
+              sillHeight: 900,
+              type: WindowType.Sliding,
+              roomId: r.id,
+            });
+            (hw as { hasOpening: boolean }).hasOpening = true;
+          }
+        }
         continue;
       }
-      const len = Math.hypot(hw.endPoint.x - hw.startPoint.x, hw.endPoint.y - hw.startPoint.y);
       const winW = isBath ? (len >= 800 ? 600 : Math.max(350, Math.round(len - 200))) : (len >= 1400 ? 1200 : Math.max(600, Math.round(len - 200)));
       const winH = isBath ? 650 : 1200;
       const sillH = isBath ? 1500 : 900;
@@ -1570,20 +1804,31 @@ export function solveTypicalFloorSheet(
   const flOrdinal = floorLevel === 1 ? '1st' : floorLevel === 2 ? '2nd' : floorLevel === 3 ? '3rd' : `${floorLevel}th`;
   const repairManifest = topology
     ? createDynamicApartmentManifest({
-        plotWidthMm: config.plotWidthMm,
-        plotDepthMm: config.plotDepthMm,
-        flatsPerFloor: config.flatsPerFloor,
-        units: structure.flats.map((f, idx) => ({
-          ...(config.units?.[idx] ?? { hasUtilityBalcony: true }),
-          unitIndex: idx + 1,
-          bhkType: f.unitType as ApartmentBhkType,
-        })),
-        jurisdiction: config.jurisdiction,
-        lotAllotmentMode: config.lotAllotmentMode,
-      })
+      plotWidthMm: config.plotWidthMm,
+      plotDepthMm: config.plotDepthMm,
+      flatsPerFloor: config.flatsPerFloor,
+      units: structure.flats.map((f, idx) => ({
+        ...(config.units?.[idx] ?? { hasUtilityBalcony: true }),
+        unitIndex: idx + 1,
+        bhkType: f.unitType as ApartmentBhkType,
+      })),
+      jurisdiction: config.jurisdiction,
+      lotAllotmentMode: config.lotAllotmentMode,
+    })
     : manifest;
   const baseRepairedFloor = repairApartmentPlan({ id: 'typical', projectId: 'typical', name: floorName, site: { plotWidth: config.plotWidthMm, plotDepth: config.plotDepthMm } as Site, floors: [floor], metadata: { projectId: 'typical' }, version: 1, createdAt: '', updatedAt: '' }, repairManifest).building.floors[0]!;
-  const repairedFloor = healFloorGeometryForCompliance(baseRepairedFloor).floor;
+  const orthogonalHealedFloor = healFloorGeometryForCompliance(baseRepairedFloor).floor;
+  const activeShapeId = config.buildingMassingShape;
+  const morphed = activeShapeId
+    ? applyParametricShapeToFloor({
+      floor: orthogonalHealedFloor,
+      shapeId: activeShapeId,
+      envelope,
+      shapeParams: config.shapeParams,
+      planCategory: config.planCategory,
+    })
+    : { floor: orthogonalHealedFloor, appliedShapeId: undefined };
+  const repairedFloor = morphed.floor;
   const ledger = measureApartmentAreaLedger(repairedFloor);
   const audit: SheetLedgerAudit = {
     sheetId: floorLevel === 1 ? 'sheet_03_typical_plan' : `sheet_03_level_${floorLevel}_plan`,
@@ -1595,7 +1840,10 @@ export function solveTypicalFloorSheet(
     isPlanarConserved: Math.abs(ledger.delta) < 0.001 && ledger.unassigned === 0,
   };
 
-  return { floor: repairedFloor, structure, audit };
+  const shapeId = morphed.floor !== orthogonalHealedFloor
+    ? morphed.appliedShapeId
+    : topology?.chosen.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED';
+  return { floor: repairedFloor, structure, audit, shapeId };
 }
 
 // ─── Sheet 4 Solver: COLUMN_SCHEDULE_PLAN (Structural Grid & Schedule) ───────
@@ -1676,13 +1924,13 @@ export function solveRefugeFloorSheet(
     Math.abs(targetBalcony.y - origDining.y) <= 1 &&
     Math.abs(targetBalcony.height - origDining.height) <= 1 &&
     (Math.abs(targetBalcony.x + targetBalcony.width - origDining.x) <= 1 ||
-     Math.abs(origDining.x + origDining.width - targetBalcony.x) <= 1));
+      Math.abs(origDining.x + origDining.width - targetBalcony.x) <= 1));
 
   const adjacentY = Boolean(targetBalcony && origDining &&
     Math.abs(targetBalcony.x - origDining.x) <= 1 &&
     Math.abs(targetBalcony.width - origDining.width) <= 1 &&
     (Math.abs(targetBalcony.y + targetBalcony.height - origDining.y) <= 1 ||
-     Math.abs(origDining.y + origDining.height - targetBalcony.y) <= 1));
+      Math.abs(origDining.y + origDining.height - targetBalcony.y) <= 1));
 
   const shouldMergeDining = adjacentX || adjacentY;
   const refBox = adjacentX ? {
@@ -1975,9 +2223,11 @@ export function solveTerraceSheet(
     const host = hosts.find(w => openingFitsApartmentWall(w, { x: (w.startPoint.x + w.endPoint.x) / 2, y: (w.startPoint.y + w.endPoint.y) / 2 }, 1050));
     if (!host) throw new Error(`ROOF_STAIR_ACCESS_UNAVAILABLE: ${mumty.id}`);
     const other = host.roomIds.find(id => id !== mumty.id)!;
-    doors.push({ id: `${mumty.id}:roof-access`, floorId, wallId: host.id,
+    doors.push({
+      id: `${mumty.id}:roof-access`, floorId, wallId: host.id,
       position: { x: (host.startPoint.x + host.endPoint.x) / 2, y: (host.startPoint.y + host.endPoint.y) / 2 },
-      width: 1050, height: 2100, type: DoorType.Single, swingDirection: SwingDirection.Outward, connectsRooms: [mumty.id, other] });
+      width: 1050, height: 2100, type: DoorType.Single, swingDirection: SwingDirection.Outward, connectsRooms: [mumty.id, other]
+    });
   }
 
   const floor: Floor = {
@@ -2039,9 +2289,9 @@ export function generateApartmentProjectSchedule(params: {
   const roadW = config.roadWidthMm;
   const permissibleFsi =
     roadW >= 24000 ? 3.0 :
-    roadW >= 18000 ? 2.5 :
-    roadW >= 12000 ? 2.0 :
-    roadW >= 9000 ? 1.5 : 1.2;
+      roadW >= 18000 ? 2.5 :
+        roadW >= 12000 ? 2.0 :
+          roadW >= 9000 ? 1.5 : 1.2;
 
   const floorBuiltUpM2 = groundCoverageM2;
   const totalBuiltUpAreaM2 = floorBuiltUpM2 * config.numTypicalFloors;
@@ -2217,11 +2467,116 @@ export function generateApartmentProjectSchedule(params: {
   };
 }
 
+/** Derive a coordinated preliminary framing profile for a residential revision. */
+export function synthesizeStructuralFraming(building: Building): Building {
+  let placedStructure = building;
+  // Phase 3 structural continuity: derive one deduplicated column grid from typical
+  // residential walls, exclude stilt VEHICLE_AISLE drive lanes & bay entries as well as
+  // cantilevered balcony corners, and project it identically down through Stilt + Typicals.
+  const refRes = placedStructure.floors.find(f => f.floorUse === 'RESIDENTIAL');
+  const stiltFl = placedStructure.floors.find(f => f.floorUse === 'STILT_PARKING');
+  const aisleBoxes = (stiltFl?.rooms ?? [])
+    .filter(r => r.architecturalRole === 'VEHICLE_AISLE')
+    .map(r => r.boundary?.points?.length
+      ? {
+        x: Math.min(...r.boundary.points.map(p => p.x)),
+        y: Math.min(...r.boundary.points.map(p => p.y)),
+        w: Math.max(...r.boundary.points.map(p => p.x)) - Math.min(...r.boundary.points.map(p => p.x)),
+        h: Math.max(...r.boundary.points.map(p => p.y)) - Math.min(...r.boundary.points.map(p => p.y)),
+      }
+      : { x: r.x, y: r.y, w: r.width, h: r.height });
+  const blocksAisle = (pt: { x: number; y: number }) =>
+    aisleBoxes.some(b => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)
+    || aisleBoxes.some(b =>
+      ((Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150)
+      || ((Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150));
+  if (refRes) {
+    const bounds = polygonBoundingBox(refRes.boundary);
+    const refWallPolys = refRes.walls.map(wallToPolygon);
+    const refOutdoorRooms = refRes.rooms.filter(r => ['balcony', 'utility'].includes(r.type));
+    const continuous: Column[] = [];
+    for (const col of deriveCleanStructuralColumns(refRes, { x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height })) {
+      if (blocksAisle(col.position)) continue;
+      if (continuous.some(d => Math.hypot(d.position.x - col.position.x, d.position.y - col.position.y) < 500)) continue;
+      let resolvedCol = col;
+      const intrudes = (c: Column) =>
+        refOutdoorRooms.some(r => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, refWallPolys) >= 0.001);
+      if (intrudes(resolvedCol)) {
+        const flushCol: Column = { ...col, width: 200, depth: 200 };
+        if (intrudes(flushCol)) continue;
+        resolvedCol = flushCol;
+      }
+      const footingOverlaps = continuous.some(
+        d =>
+          Math.abs(d.position.x - resolvedCol.position.x) < (d.width + resolvedCol.width) * 1.5 + 10
+          && Math.abs(d.position.y - resolvedCol.position.y) < (d.depth + resolvedCol.depth) * 1.5 + 10,
+      );
+      if (footingOverlaps) continue;
+      continuous.push(resolvedCol);
+    }
+    placedStructure = {
+      ...placedStructure,
+      floors: placedStructure.floors.map(f => ({
+        ...f,
+        columns: continuous.map((c, idx) => ({
+          ...c,
+          id: `${f.id}::col_${idx + 1}`,
+          floorId: f.id,
+          gridReference: `C${idx + 1}`,
+        })),
+      })),
+    };
+  }
+  const framedFloors = placedStructure.floors.map(floor => ({ ...floor, slabThicknessMm: floor.slabThicknessMm ?? 150 }));
+  const coordinated = new GeometryValidator().auditAndFixColumnAndBeamGrid({ ...placedStructure, floors: framedFloors }, true).building;
+  const gridKey = (column: Column) => `${column.position.x}:${column.position.y}:${column.width}:${column.depth}`;
+  const gridByFloor = coordinated.floors.map(floor => new Set(floor.columns.map(gridKey)));
+  const floors = coordinated.floors.map(floor => {
+    const columns = floor.columns.filter(column => gridByFloor.every(grid => grid.has(gridKey(column))));
+    const ids = new Set(columns.map(column => column.id));
+    const beams = (floor.beams ?? []).filter(beam =>
+      (!beam.startColumnId || ids.has(beam.startColumnId)) && (!beam.endColumnId || ids.has(beam.endColumnId))).map((beam, index) => ({
+      ...beam, id: `${floor.id}::preliminary-beam_${index + 1}`,
+    }));
+    return { ...floor, columns, beams };
+  });
+  return {
+    ...coordinated,
+    floors,
+    beams: floors.flatMap(floor => floor.beams ?? []),
+    metadata: { ...coordinated.metadata, tags: [
+      ...(coordinated.metadata.tags ?? []).filter(tag => tag !== 'STRUCTURAL_DESIGN_DEFERRED' && tag !== 'STRUCTURAL_FRAMING_PRELIMINARY'),
+      'STRUCTURAL_FRAMING_PRELIMINARY',
+    ] },
+  };
+}
+
 /** Global entity identity is floor-scoped; all local references move together. */
 function namespaceFloorEntities(floor: Floor): Floor {
+  const ducts = new Set(floor.rooms.filter(room => room.tags.includes('shaft:interflat') && architecturalSpaceRole(room) === 'OPEN_TO_SKY_VOID').map(room => room.id));
+  if (floor.apartmentUnits?.length && ducts.size) {
+    const rooms = new Map(floor.rooms.map(room => [room.id, room]));
+    const occupiedWalls = new Set([...floor.doors, ...floor.windows].map(opening => opening.wallId));
+    const windows = [...floor.windows];
+    for (const wall of floor.walls) {
+      if (wall.wallUse !== 'SHAFT' || !wall.roomIds.some(roomId => ducts.has(roomId)) || occupiedWalls.has(wall.id)) continue;
+      const room = wall.roomIds.map(roomId => rooms.get(roomId)).find(room => room?.unitId &&
+        [RoomType.Living, RoomType.Dining, RoomType.Kitchen, RoomType.Bedroom].includes(room.type));
+      if (!room) continue;
+      const length = Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y);
+      if (length < 650) continue;
+      windows.push({ id: `ots-window:${room.id}:${wall.id}`, floorId: floor.id, wallId: wall.id, roomId: room.id,
+        position: { x: (wall.startPoint.x + wall.endPoint.x) / 2, y: (wall.startPoint.y + wall.endPoint.y) / 2 },
+        width: Math.min(length - 200, 1200), height: 1200, sillHeight: 900, type: WindowType.Sliding,
+        openingGeometryVersion: 1, positionReference: 'CENTER' });
+    }
+    floor = { ...floor, windows };
+  }
+  floor = fitFloorOpeningsInsideWalls(floor);
   const id = (value: string): string => value.startsWith(`${floor.id}::`) ? value : `${floor.id}::${value}`;
   const reference = (value: string | undefined): string | undefined => value ? id(value) : undefined;
-  return { ...floor,
+  return {
+    ...floor,
     rooms: floor.rooms.map(room => ({ ...room, id: id(room.id), floorId: floor.id, bathroomOwnerRoomId: reference(room.bathroomOwnerRoomId) })),
     walls: floor.walls.map(wall => ({ ...wall, id: id(wall.id), floorId: floor.id, roomIds: wall.roomIds.map(id), leftRoomId: reference(wall.leftRoomId), rightRoomId: reference(wall.rightRoomId) })),
     doors: floor.doors.map(door => ({ ...door, id: id(door.id), floorId: floor.id, wallId: id(door.wallId), connectsRooms: [id(door.connectsRooms[0]), door.connectsRooms[1].startsWith('__') ? door.connectsRooms[1] : id(door.connectsRooms[1])] as const })),
@@ -2245,14 +2600,33 @@ export function solveMultiSheetApartmentProject(
     readonly complianceAttempt?: number;
   },
 ): MultiSheetApartmentResult {
+  const resolvedCategory = rawConfig.planCategory ?? inferPlanCategoryFromPrompt(rawConfig.aiPrompt);
+  const explicitPromptShape = inferShapeIdFromPrompt(rawConfig.aiPrompt);
+  const explicitOrAutoShape =
+    rawConfig.autoExploreNovelShape || (rawConfig.rejectedShapeIds && rawConfig.rejectedShapeIds.length > 0 && !rawConfig.buildingMassingShape)
+      ? pickNextNonRepeatingShape({
+        requestedShape: rawConfig.buildingMassingShape ?? explicitPromptShape,
+        usedShapeIds: rawConfig.rejectedShapeIds,
+        planCategory: resolvedCategory,
+        seed: rawConfig.generationSeed,
+        autoExplore: Boolean(rawConfig.autoExploreNovelShape || (rawConfig.rejectedShapeIds?.length && !rawConfig.buildingMassingShape)),
+        shapeParams: rawConfig.shapeParams,
+      }).id
+      : (rawConfig.buildingMassingShape ??
+        explicitPromptShape ??
+        (resolvedCategory && resolvedCategory !== 'HIGH_RISE_APARTMENT'
+          ? getPlanCategoryEntry(resolvedCategory).defaultShapeId
+          : undefined));
+
   const plotWidthMm = rawConfig.plotWidthMm ?? (rawConfig as any).siteWidthMm ?? 50000;
   const plotDepthMm = rawConfig.plotDepthMm ?? (rawConfig as any).siteDepthMm ?? 50000;
-  const numTypicalFloors = rawConfig.numTypicalFloors ?? (rawConfig as any).floorCount ?? 4;
+  const isVillaCategory = resolvedCategory === 'LUXURY_VILLA_BUNGALOW';
+  const numTypicalFloors = rawConfig.numTypicalFloors ?? (rawConfig as any).floorCount ?? (isVillaCategory ? 2 : 4);
   const roadWidthMm = rawConfig.roadWidthMm ?? 12000;
   const roadAccessSides = rawConfig.roadAccessSides ?? [(rawConfig as any).roadFacing ?? Direction.South];
   const lotAllotmentMode = rawConfig.lotAllotmentMode ?? 'STATUTORY_SETBACK_100_PERCENT';
   const jurisdiction = rawConfig.jurisdiction ?? 'pune_pmc';
-  const verticalStackType = rawConfig.verticalStackType ?? 'STILT_PLUS_N';
+  const verticalStackType = rawConfig.verticalStackType ?? (isVillaCategory ? 'G_PLUS_N' : 'STILT_PLUS_N');
   const parsedMixed = parseMixedUnitProgram(rawConfig.aiPrompt);
   const existingTypes = (rawConfig.units ?? []).map(u => u.bhkType);
   const applyMixed = Boolean(
@@ -2261,8 +2635,12 @@ export function solveMultiSheetApartmentProject(
     parsedMixed.length <= 6 &&
     (existingTypes.length !== parsedMixed.length || new Set(existingTypes).size <= 1),
   );
-  const flatsPerFloor = (applyMixed ? parsedMixed!.length : rawConfig.flatsPerFloor ?? 4) as 1 | 2 | 3 | 4 | 5 | 6;
-  const resolvedUnits = applyMixed ? mixedUnitSpecs(parsedMixed!) : rawConfig.units;
+  const flatsPerFloor = (applyMixed
+    ? parsedMixed!.length
+    : rawConfig.flatsPerFloor ?? (isVillaCategory ? 1 : 4)) as 1 | 2 | 3 | 4 | 5 | 6;
+  const resolvedUnits = applyMixed
+    ? mixedUnitSpecs(parsedMixed!)
+    : rawConfig.units ?? (flatsPerFloor === 1 ? [{ unitIndex: 1, bhkType: '4BHK' as const, hasUtilityBalcony: true }] : undefined);
   const siteAmenities = rawConfig.siteAmenities ?? DEFAULT_SITE_AMENITIES;
   const stiltAmenities = rawConfig.stiltAmenities ?? DEFAULT_STILT_AMENITIES;
   const terraceAmenities = rawConfig.terraceAmenities ?? DEFAULT_TERRACE_AMENITIES;
@@ -2270,6 +2648,8 @@ export function solveMultiSheetApartmentProject(
 
   const config: MultiSheetApartmentConfig = {
     ...rawConfig,
+    ...(resolvedCategory ? { planCategory: resolvedCategory } : {}),
+    ...(explicitOrAutoShape ? { buildingMassingShape: explicitOrAutoShape } : {}),
     plotWidthMm,
     plotDepthMm,
     numTypicalFloors,
@@ -2284,6 +2664,9 @@ export function solveMultiSheetApartmentProject(
     stiltAmenities,
     terraceAmenities,
     parkingMode,
+    includeDiningHall:
+      rawConfig.includeDiningHall ??
+      (/\b(?:no\s+dining|without\s+dining|open\s+living[\s-]only)\b/i.test(rawConfig.aiPrompt ?? '') ? false : true),
   };
 
   const stackParams = computeBuildingStackParameters(config);
@@ -2299,11 +2682,12 @@ export function solveMultiSheetApartmentProject(
     };
   } else {
     const { left, rear, right, front } = config.setbacksMm ?? { left: 3000, rear: 3000, right: 3000, front: 4500 };
+    const exteriorWallNib = 115;
     permissibleEnvelope = {
-      x: left,
-      y: rear,
-      w: config.plotWidthMm - left - right,
-      h: config.plotDepthMm - rear - front,
+      x: left + exteriorWallNib,
+      y: rear + exteriorWallNib,
+      w: config.plotWidthMm - left - right - 2 * exteriorWallNib,
+      h: config.plotDepthMm - rear - front - 2 * exteriorWallNib,
     };
   }
 
@@ -2534,14 +2918,14 @@ export function solveMultiSheetApartmentProject(
     },
     ...(refugeSheet
       ? [
-          {
-            sheetType: 'REFUGE_FLOOR_PLAN' as const,
-            sheetNumber: `A-${nextSheetNum + 1}`,
-            title: `Fire Refuge Floor Plan (Level ${stackParams.refugeFloorLevels[0]})`,
-            floor: refugeSheet.floor,
-            audit: refugeSheet.audit,
-          },
-        ]
+        {
+          sheetType: 'REFUGE_FLOOR_PLAN' as const,
+          sheetNumber: `A-${nextSheetNum + 1}`,
+          title: `Fire Refuge Floor Plan (Level ${stackParams.refugeFloorLevels[0]})`,
+          floor: refugeSheet.floor,
+          audit: refugeSheet.audit,
+        },
+      ]
       : []),
     {
       sheetType: 'TERRACE_PLAN',
@@ -2580,10 +2964,12 @@ export function solveMultiSheetApartmentProject(
     projectId: config.projectId ?? 'apartment_project',
     name: config.projectName ?? 'Coordinated Multi-Sheet Indian Residential Apartment',
     site: { ...siteSheet.site, roadFacing: config.roadAccessSides[0] ?? Direction.North, roadWidth: config.roadWidthMm },
-    floors: buildingFloors.map(floor => ({ ...floor,
+    floors: buildingFloors.map(floor => ({
+      ...floor,
       floorUse: floor.id === terraceSheet.floor.id ? 'ROOF' as const : floor.id === stiltSheet.floor.id ? 'STILT_PARKING' as const : 'RESIDENTIAL' as const,
       elevationMm: floor.id === stiltSheet.floor.id ? 0 : buildingFloors.filter(other => other.level < floor.level && other.id !== terraceSheet.floor.id).reduce((sum, other) => sum + other.floorHeight, 0),
-      buildingId: config.projectId ? `building:${config.projectId}` : 'multi_sheet_apartment_building' })),
+      buildingId: config.projectId ? `building:${config.projectId}` : 'multi_sheet_apartment_building'
+    })),
     metadata: {
       projectId: config.projectId ?? 'apartment_project',
       generationBrief: {
@@ -2600,9 +2986,13 @@ export function solveMultiSheetApartmentProject(
           : config.preferredArchetype
             ? { archetype: config.preferredArchetype }
             : {}),
-        ...((topology?.chosen.partition.massingShape ?? topology?.result.massingShape ?? config.buildingMassingShape)
-          ? { buildingMassingShape: topology?.chosen.partition.massingShape ?? topology?.result.massingShape ?? config.buildingMassingShape }
-          : {}),
+        buildingMassingShape: typicalSheet.shapeId,
+        requestedMassingShape: rawConfig.buildingMassingShape ?? explicitPromptShape,
+        ...(config.planCategory ? { planCategory: config.planCategory } : {}),
+        usedShapeIds: [
+          ...(config.rejectedShapeIds ?? []),
+          ...(typicalSheet.shapeId ? [typicalSheet.shapeId] : []),
+        ].filter((v, idx, arr) => arr.indexOf(v) === idx),
         ...(config.aiProposal ? { aiProposal: config.aiProposal } : {}),
         aiTelemetry: config.aiTelemetryOverride ?? {
           geminiInvoked: false,
@@ -2620,72 +3010,14 @@ export function solveMultiSheetApartmentProject(
 
   const buildingWithFurniture = populateCanonicalFurniture(rawBuilding);
 
-  // Architectural generation defers structure. Only an explicit provisional structural
-  // workflow may place the existing column/beam profile; neither profile is certified.
-  const deferredStructure = config.structuralLayoutMode !== 'PROVISIONAL_EXISTING_PROFILE';
+  // Use the coordinated preliminary framing profile unless the caller explicitly defers structure.
+  const deferredStructure = config.structuralLayoutMode === 'DEFERRED';
   const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...(buildingWithFurniture.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : buildingWithFurniture;
-  let placedStructure = deferredStructure ? architecturalBuilding : new GeometryValidator().auditAndFixColumnAndBeamGrid(architecturalBuilding, true).building;
-  if (!deferredStructure) {
-    // Phase 3 structural continuity: derive one deduplicated column grid from typical
-    // residential walls, exclude stilt VEHICLE_AISLE drive lanes & bay entries as well as
-    // cantilevered balcony corners, and project it identically down through Stilt + Typicals.
-    const refRes = placedStructure.floors.find(f => f.floorUse === 'RESIDENTIAL');
-    const stiltFl = placedStructure.floors.find(f => f.floorUse === 'STILT_PARKING');
-    const aisleBoxes = (stiltFl?.rooms ?? [])
-      .filter(r => r.architecturalRole === 'VEHICLE_AISLE')
-      .map(r => r.boundary?.points?.length
-        ? {
-            x: Math.min(...r.boundary.points.map(p => p.x)),
-            y: Math.min(...r.boundary.points.map(p => p.y)),
-            w: Math.max(...r.boundary.points.map(p => p.x)) - Math.min(...r.boundary.points.map(p => p.x)),
-            h: Math.max(...r.boundary.points.map(p => p.y)) - Math.min(...r.boundary.points.map(p => p.y)),
-          }
-        : { x: r.x, y: r.y, w: r.width, h: r.height });
-    const blocksAisle = (pt: { x: number; y: number }) =>
-      aisleBoxes.some(b => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)
-      || aisleBoxes.some(b =>
-        ((Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150)
-        || ((Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150));
-    if (refRes) {
-      const refWallPolys = refRes.walls.map(wallToPolygon);
-      const refOutdoorRooms = refRes.rooms.filter(r => ['balcony', 'utility'].includes(r.type));
-      const continuous: Column[] = [];
-      for (const col of refRes.columns) {
-        if (blocksAisle(col.position)) continue;
-        if (continuous.some(d => Math.hypot(d.position.x - col.position.x, d.position.y - col.position.y) < 500)) continue;
-        let resolvedCol = col;
-        const intrudes = (c: Column) =>
-          refOutdoorRooms.some(r => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, refWallPolys) >= 0.001);
-        if (intrudes(resolvedCol)) {
-          const flushCol: Column = { ...col, width: 200, depth: 200 };
-          if (intrudes(flushCol)) continue;
-          resolvedCol = flushCol;
-        }
-        const footingOverlaps = continuous.some(
-          d =>
-            Math.abs(d.position.x - resolvedCol.position.x) < (d.width + resolvedCol.width) * 1.5 + 10
-            && Math.abs(d.position.y - resolvedCol.position.y) < (d.depth + resolvedCol.depth) * 1.5 + 10,
-        );
-        if (footingOverlaps) continue;
-        continuous.push(resolvedCol);
-      }
-      placedStructure = {
-        ...placedStructure,
-        floors: placedStructure.floors.map(f => ({
-          ...f,
-          columns: continuous.map((c, idx) => ({
-            ...c,
-            id: `col_${idx + 1}`,
-            floorId: f.id,
-            gridReference: `C${idx + 1}`,
-          })),
-        })),
-      };
-    }
-  }
+  const placedStructure = deferredStructure ? architecturalBuilding : synthesizeStructuralFraming(architecturalBuilding);
   const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
   const finalFloors = audit.building.floors.map(namespaceFloorEntities);
-  const rawValidatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({ ...audit.building, floors: finalFloors,
+  const rawValidatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({
+    ...audit.building, floors: finalFloors,
     furniture: [...finalFloors.flatMap(floor => floor.furniture ?? []), ...(audit.building.furniture ?? []).filter(item => item.siteZoneId)],
   }));
   const filterFloorBeams = (fl: Floor, beams: Floor['beams']): NonNullable<Floor['beams']> => {
@@ -2716,17 +3048,20 @@ export function solveMultiSheetApartmentProject(
     floors: filteredFloors,
     ...(rawValidatedBuilding.beams?.length
       ? {
-          beams: rawValidatedBuilding.beams.filter(bm => {
-            const fl = filteredFloorMap.get(bm.floorId);
-            return !fl || filterFloorBeams(fl, [bm]).length > 0;
-          }),
-        }
+        beams: rawValidatedBuilding.beams.filter(bm => {
+          const fl = filteredFloorMap.get(bm.floorId);
+          return !fl || filterFloorBeams(fl, [bm]).length > 0;
+        }),
+      }
       : {}),
   };
   const finalAudit = validateAndRepairBuildingGeometry(validatedBuilding, { autoCorrect: false });
-  const validationReport = { ...finalAudit.report, errors: finalAudit.report.errors.map(error => ({ ...error,
-    elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
-  })) };
+  const validationReport = {
+    ...finalAudit.report, errors: finalAudit.report.errors.map(error => ({
+      ...error,
+      elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
+    }))
+  };
   const validatedFloorsById = new Map(validatedBuilding.floors.map(f => [f.id, f]));
   const updatedSheets = sheets.map(s => {
     if (s.floor) {
@@ -2740,11 +3075,15 @@ export function solveMultiSheetApartmentProject(
     strategy: !topology ? 'LEGACY_FALLBACK' : topology.chosen.score.feasible ? 'VALIDATED_TOPOLOGY' : 'BEST_EFFORT_TOPOLOGY',
     selectedFamily: topology?.chosen.familyId,
     selectedVariant: topology?.chosen.variantId,
+    selectedShapeId: typicalSheet.shapeId,
+    selectedPlanCategory: config.planCategory,
     rejectedCandidates: topologyEvidence?.rejected ?? [],
-  }, !topology ? [{ code: 'LEGACY_FALLBACK_USED', severity: 'WARNING', source: 'GENERATION', elementIds: [],
+  }, !topology ? [{
+    code: 'LEGACY_FALLBACK_USED', severity: 'WARNING', source: 'GENERATION', elementIds: [],
     description: recovery?.legacyOnly
       ? 'The legacy partition was evaluated as a bounded recovery option and requires review.'
-      : 'No assembled topology candidate was available. The legacy partition was used and requires review.' }]
+      : 'No assembled topology candidate was available. The legacy partition was used and requires review.'
+  }]
     : topology.chosen.score.hardConstraints.filter(c => !c.satisfied).map(c => ({
       code: c.id, severity: 'WARNING' as const, source: 'TOPOLOGY' as const, elementIds: [],
       description: `Pre-repair candidate finding: ${c.detail}. Final geometry and closure findings are reported separately.`,
@@ -2752,9 +3091,13 @@ export function solveMultiSheetApartmentProject(
   const result: MultiSheetApartmentResult = {
     generationReport,
     config,
-    building: { ...validatedBuilding, metadata: { ...validatedBuilding.metadata,
-      generationReport,
-      bedroomBalconySchedule: bedroomBalconySchedule(validatedBuilding) } },
+    building: {
+      ...validatedBuilding, metadata: {
+        ...validatedBuilding.metadata,
+        generationReport,
+        bedroomBalconySchedule: bedroomBalconySchedule(validatedBuilding)
+      }
+    },
     sheets: updatedSheets,
     schedule,
     validationReport,
@@ -2818,6 +3161,7 @@ export function solveMultiSheetApartmentProject(
     }
 
     const lockedMassingShape =
+      config.buildingMassingShape ??
       rawConfig.buildingMassingShape ??
       (!promptIntent?.preferences.requestsDifferentShape ? 'COMPACT_DOUBLE_LOADED' : undefined);
     const archetypeRotation: readonly (RoomSlicingArchetypeId | undefined)[] = [
@@ -2836,6 +3180,8 @@ export function solveMultiSheetApartmentProject(
             ...rawConfig,
             generationSeed: baseSeed + attempt,
             ...(lockedMassingShape ? { buildingMassingShape: lockedMassingShape } : {}),
+            ...(resolvedCategory ? { planCategory: resolvedCategory } : {}),
+            autoExploreNovelShape: false,
             ...(altArchetype ? { preferredArchetype: altArchetype } : {}),
             rejectedTopologyHashes: [...rejectedHashes],
           },
@@ -2880,7 +3226,8 @@ export function solveMultiSheetApartmentProject(
     }
   }
 
-  if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly) {
+  if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly &&
+      finalResult.building.metadata.generationBrief?.buildingMassingShape !== 'PINWHEEL_CLUSTER') {
     // One bounded comparison after repair. Never replace a previously conserved
     // solution with an unassigned/overlapping candidate solely to avoid fallback.
     try {
@@ -2902,11 +3249,13 @@ export function solveMultiSheetApartmentProject(
         legacyCompliance.redConflictCount <= finalCompliance.redConflictCount;
       if (legacyMeetsComplianceFloor && (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!))) {
         const report = legacy.generationReport!;
-        const updated = { ...report, violations: [...report.violations, {
-          code: 'REPAIRED_CANDIDATE_OUTRANKED', severity: 'WARNING' as const, source: 'GENERATION' as const,
-          description: `Repaired ${topology.chosen.familyId}/${topology.chosen.variantId} scored ${candidateQuality.join('/')} versus legacy ${legacyQuality.join('/')} (failed sheet ledgers / critical findings / final findings); requested balcony area regression=${balconyRegression}. Legacy retained.`,
-          elementIds: [], rank: report.violations.length + 1,
-        }] };
+        const updated = {
+          ...report, violations: [...report.violations, {
+            code: 'REPAIRED_CANDIDATE_OUTRANKED', severity: 'WARNING' as const, source: 'GENERATION' as const,
+            description: `Repaired ${topology.chosen.familyId}/${topology.chosen.variantId} scored ${candidateQuality.join('/')} versus legacy ${legacyQuality.join('/')} (failed sheet ledgers / critical findings / final findings); requested balcony area regression=${balconyRegression}. Legacy retained.`,
+            elementIds: [], rank: report.violations.length + 1,
+          }]
+        };
         const { result: legacyWithCompliance } = attachCompliance(
           { ...legacy, generationReport: updated, building: { ...legacy.building, metadata: { ...legacy.building.metadata, generationReport: updated } } },
           finalCompliance.attemptCount ?? 1,

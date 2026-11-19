@@ -1,0 +1,701 @@
+{
+  "cameraDrawIntervalsMs": {
+    "samples": 186,
+    "mean": 15.593736559139778,
+    "median": 14.908999999999999,
+    "p95": 27.3025,
+    "worst": 49.992,
+    "over20": 39,
+    "total": 2900.4349999999986
+  },
+  "traceLoss": false,
+  "summaries": [
+    {
+      "label": "exterior-to-site",
+      "elapsedMs": 488.617,
+      "firstDrawAfterMarkMs": 31.535,
+      "lastDrawBeforeEndMarkMs": 1.917,
+      "drawIntervalsMs": {
+        "samples": 33,
+        "mean": 13.79287878787879,
+        "median": 14.606,
+        "p95": 18.1164,
+        "worst": 19.598,
+        "over20": 0,
+        "total": 455.1650000000001
+      },
+      "rAFCallbackMs": {
+        "samples": 96,
+        "mean": 0.9289062499999999,
+        "median": 0.11,
+        "p95": 3.718,
+        "worst": 4.437,
+        "over20": 0,
+        "total": 89.175
+      },
+      "heroCallbackMs": {
+        "samples": 32,
+        "mean": 2.5274062499999994,
+        "median": 2.253,
+        "p95": 4.2013,
+        "worst": 4.414,
+        "over20": 0,
+        "total": 80.87699999999998
+      },
+      "layoutMs": {
+        "samples": 1,
+        "mean": 0.918,
+        "median": 0.918,
+        "p95": 0.918,
+        "worst": 0.918,
+        "over20": 0,
+        "total": 0.918
+      },
+      "styleMs": {
+        "samples": 4,
+        "mean": 0.14150000000000001,
+        "median": 0.11249999999999999,
+        "p95": 0.28729999999999994,
+        "worst": 0.311,
+        "over20": 0,
+        "total": 0.5660000000000001
+      }
+    },
+    {
+      "label": "site-to-section",
+      "elapsedMs": 612.641,
+      "firstDrawAfterMarkMs": 25.516,
+      "lastDrawBeforeEndMarkMs": 2.666,
+      "drawIntervalsMs": {
+        "samples": 39,
+        "mean": 14.986128205128203,
+        "median": 13.585,
+        "p95": 30.61640000000001,
+        "worst": 49.992,
+        "over20": 9,
+        "total": 584.459
+      },
+      "rAFCallbackMs": {
+        "samples": 88,
+        "mean": 2.074556818181818,
+        "median": 0.121,
+        "p95": 4.374799999999999,
+        "worst": 112.827,
+        "over20": 1,
+        "total": 182.56099999999998
+      },
+      "heroCallbackMs": {
+        "samples": 31,
+        "mean": 5.6619032258064514,
+        "median": 1.413,
+        "p95": 4.702500000000001,
+        "worst": 112.807,
+        "over20": 1,
+        "total": 175.519
+      },
+      "layoutMs": {
+        "samples": 1,
+        "mean": 0.558,
+        "median": 0.558,
+        "p95": 0.558,
+        "worst": 0.558,
+        "over20": 0,
+        "total": 0.558
+      },
+      "styleMs": {
+        "samples": 5,
+        "mean": 0.053200000000000004,
+        "median": 0.051,
+        "p95": 0.0856,
+        "worst": 0.088,
+        "over20": 0,
+        "total": 0.266
+      }
+    },
+    {
+      "label": "section-to-plan",
+      "elapsedMs": 576.275,
+      "firstDrawAfterMarkMs": 5.439,
+      "lastDrawBeforeEndMarkMs": 2.557,
+      "drawIntervalsMs": {
+        "samples": 28,
+        "mean": 20.29567857142857,
+        "median": 19.6815,
+        "p95": 29.799049999999994,
+        "worst": 47.31,
+        "over20": 12,
+        "total": 568.279
+      },
+      "rAFCallbackMs": {
+        "samples": 77,
+        "mean": 0.6975714285714285,
+        "median": 0.105,
+        "p95": 3.138200000000001,
+        "worst": 5.411,
+        "over20": 0,
+        "total": 53.712999999999994
+      },
+      "heroCallbackMs": {
+        "samples": 27,
+        "mean": 1.8083333333333333,
+        "median": 1.335,
+        "p95": 3.6598,
+        "worst": 5.387,
+        "over20": 0,
+        "total": 48.825
+      },
+      "layoutMs": {
+        "samples": 3,
+        "mean": 0.37200000000000005,
+        "median": 0.179,
+        "p95": 0.7243999999999999,
+        "worst": 0.785,
+        "over20": 0,
+        "total": 1.116
+      },
+      "styleMs": {
+        "samples": 5,
+        "mean": 0.09319999999999999,
+        "median": 0.081,
+        "p95": 0.1606,
+        "worst": 0.171,
+        "over20": 0,
+        "total": 0.46599999999999997
+      }
+    },
+    {
+      "label": "plan-to-landscape",
+      "elapsedMs": 487.772,
+      "firstDrawAfterMarkMs": 33.459,
+      "lastDrawBeforeEndMarkMs": 1.626,
+      "drawIntervalsMs": {
+        "samples": 32,
+        "mean": 14.146468750000002,
+        "median": 13.565,
+        "p95": 21.661199999999997,
+        "worst": 33.949,
+        "over20": 5,
+        "total": 452.68700000000007
+      },
+      "rAFCallbackMs": {
+        "samples": 93,
+        "mean": 0.49933333333333335,
+        "median": 0.085,
+        "p95": 1.6353999999999997,
+        "worst": 2.33,
+        "over20": 0,
+        "total": 46.438
+      },
+      "heroCallbackMs": {
+        "samples": 31,
+        "mean": 1.292548387096774,
+        "median": 1.274,
+        "p95": 1.7570000000000001,
+        "worst": 2.299,
+        "over20": 0,
+        "total": 40.068999999999996
+      },
+      "layoutMs": {
+        "samples": 1,
+        "mean": 0.93,
+        "median": 0.93,
+        "p95": 0.93,
+        "worst": 0.93,
+        "over20": 0,
+        "total": 0.93
+      },
+      "styleMs": {
+        "samples": 5,
+        "mean": 0.0434,
+        "median": 0.023,
+        "p95": 0.087,
+        "worst": 0.089,
+        "over20": 0,
+        "total": 0.217
+      }
+    },
+    {
+      "label": "landscape-to-exterior",
+      "elapsedMs": 865.126,
+      "firstDrawAfterMarkMs": 24.11,
+      "lastDrawBeforeEndMarkMs": 1.171,
+      "drawIntervalsMs": {
+        "samples": 54,
+        "mean": 15.55268518518519,
+        "median": 15.410499999999999,
+        "p95": 24.674699999999998,
+        "worst": 27.371,
+        "over20": 13,
+        "total": 839.8450000000003
+      },
+      "rAFCallbackMs": {
+        "samples": 160,
+        "mean": 0.5602312500000003,
+        "median": 0.1,
+        "p95": 2.1592499999999997,
+        "worst": 4.238,
+        "over20": 0,
+        "total": 89.63700000000004
+      },
+      "heroCallbackMs": {
+        "samples": 53,
+        "mean": 1.4686226415094337,
+        "median": 1.123,
+        "p95": 3.2561999999999998,
+        "worst": 4.207,
+        "over20": 0,
+        "total": 77.83699999999999
+      },
+      "layoutMs": {
+        "samples": 4,
+        "mean": 0.28125,
+        "median": 0.263,
+        "p95": 0.384,
+        "worst": 0.396,
+        "over20": 0,
+        "total": 1.125
+      },
+      "styleMs": {
+        "samples": 8,
+        "mean": 0.12275,
+        "median": 0.064,
+        "p95": 0.4445999999999997,
+        "worst": 0.628,
+        "over20": 0,
+        "total": 0.982
+      }
+    },
+    {
+      "label": "evening",
+      "elapsedMs": 2062.104,
+      "firstDrawAfterMarkMs": 1678.849,
+      "lastDrawBeforeEndMarkMs": 2.763,
+      "drawIntervalsMs": {
+        "samples": 18,
+        "mean": 21.138444444444442,
+        "median": 23.186,
+        "p95": 34.348099999999995,
+        "worst": 35.941,
+        "over20": 14,
+        "total": 380.49199999999996
+      },
+      "rAFCallbackMs": {
+        "samples": 40,
+        "mean": 42.33435,
+        "median": 0.643,
+        "p95": 2.625449999999997,
+        "worst": 1659.763,
+        "over20": 1,
+        "total": 1693.374
+      },
+      "heroCallbackMs": {
+        "samples": 20,
+        "mean": 84.562,
+        "median": 1.63,
+        "p95": 86.20360000000117,
+        "worst": 1659.738,
+        "over20": 1,
+        "total": 1691.24
+      },
+      "layoutMs": {
+        "samples": 1,
+        "mean": 0.101,
+        "median": 0.101,
+        "p95": 0.101,
+        "worst": 0.101,
+        "over20": 0,
+        "total": 0.101
+      },
+      "styleMs": {
+        "samples": 13,
+        "mean": 0.09207692307692308,
+        "median": 0.079,
+        "p95": 0.19579999999999986,
+        "worst": 0.254,
+        "over20": 0,
+        "total": 1.197
+      }
+    }
+  ],
+  "aggregate": {
+    "drawIntervalsMs": {
+      "samples": 204,
+      "mean": 16.082975490196073,
+      "median": 15.259,
+      "p95": 27.728150000000003,
+      "worst": 49.992,
+      "over20": 53,
+      "total": 3280.926999999999
+    },
+    "rAFCallbackMs": {
+      "samples": 554,
+      "mean": 3.8897075812274364,
+      "median": 0.106,
+      "p95": 3.0827500000000017,
+      "worst": 1659.763,
+      "over20": 2,
+      "total": 2154.8979999999997
+    },
+    "heroCallbackMs": {
+      "samples": 194,
+      "mean": 10.898798969072166,
+      "median": 1.4575,
+      "p95": 4.21085,
+      "worst": 1659.738,
+      "over20": 2,
+      "total": 2114.367
+    },
+    "layoutMs": {
+      "samples": 11,
+      "mean": 0.43163636363636365,
+      "median": 0.316,
+      "p95": 0.924,
+      "worst": 0.93,
+      "over20": 0,
+      "total": 4.748
+    },
+    "styleMs": {
+      "samples": 40,
+      "mean": 0.09235,
+      "median": 0.074,
+      "p95": 0.25684999999999986,
+      "worst": 0.628,
+      "over20": 0,
+      "total": 3.694
+    }
+  },
+  "cold": {
+    "drawIntervalsMs": {
+      "samples": 29,
+      "mean": 54.88979310344828,
+      "median": 7.199,
+      "p95": 300.41799999999927,
+      "worst": 758.986,
+      "over20": 6,
+      "total": 1591.804
+    },
+    "rAFCallbackMs": {
+      "samples": 6,
+      "mean": 295.027,
+      "median": 2.1885,
+      "p95": 1273.85225,
+      "worst": 1665.009,
+      "over20": 2,
+      "total": 1770.162
+    },
+    "heroCallbackMs": {
+      "samples": 5,
+      "mean": 353.9494,
+      "median": 2.184,
+      "p95": 1352.0443999999998,
+      "worst": 1664.97,
+      "over20": 2,
+      "total": 1769.747
+    },
+    "longMainTasks": [
+      {
+        "offsetMs": 304.915,
+        "durationMs": 54.29
+      },
+      {
+        "offsetMs": 367.008,
+        "durationMs": 777.908
+      },
+      {
+        "offsetMs": 1213.383,
+        "durationMs": 122.162
+      },
+      {
+        "offsetMs": 1389.507,
+        "durationMs": 1666.165
+      }
+    ]
+  },
+  "first": {
+    "progress": null,
+    "beforeWrite": true,
+    "section": "Exterior",
+    "dirtiedShadow": true,
+    "drawCalls": 272,
+    "triangles": 136620,
+    "textures": 3,
+    "geometries": 6,
+    "allocatedBytes": 18875428
+  },
+  "warmTable": [
+    {
+      "name": "Exterior",
+      "progress": 0,
+      "frames": [
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    },
+    {
+      "name": "Site",
+      "progress": 0.25,
+      "frames": [
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    },
+    {
+      "name": "Section",
+      "progress": 0.5,
+      "frames": [
+        {
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 87,
+          "triangles": 57888,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    },
+    {
+      "name": "Plan",
+      "progress": 0.75,
+      "frames": [
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    },
+    {
+      "name": "Landscape",
+      "progress": 1,
+      "frames": [
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    },
+    {
+      "name": "Exterior evening",
+      "progress": 0,
+      "frames": [
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        },
+        {
+          "drawCalls": 152,
+          "triangles": 69912,
+          "textures": 9,
+          "geometries": 17,
+          "peakObservedBytes": 52429856,
+          "dirtiedShadow": false
+        }
+      ]
+    }
+  ],
+  "shadowGroups": {
+    "cachedShadow": {
+      "frames": 176,
+      "calls": {
+        "samples": 176,
+        "mean": 149.10795454545453,
+        "median": 152,
+        "p95": 152,
+        "worst": 152,
+        "over20": 176,
+        "total": 26243
+      },
+      "triangles": {
+        "samples": 176,
+        "mean": 69367.09090909091,
+        "median": 69912,
+        "p95": 69912,
+        "worst": 69912,
+        "over20": 176,
+        "total": 12208608
+      },
+      "textureCount": {
+        "samples": 176,
+        "mean": 8.914772727272727,
+        "median": 9,
+        "p95": 9,
+        "worst": 9,
+        "over20": 0,
+        "total": 1569
+      }
+    },
+    "shadowUpdate": {
+      "frames": 79,
+      "calls": {
+        "samples": 79,
+        "mean": 213.77215189873417,
+        "median": 174,
+        "p95": 272,
+        "worst": 272,
+        "over20": 79,
+        "total": 16888
+      },
+      "triangles": {
+        "samples": 79,
+        "mean": 124242.37974683545,
+        "median": 115500,
+        "p95": 136620,
+        "worst": 136620,
+        "over20": 79,
+        "total": 9815148
+      },
+      "textureCount": {
+        "samples": 79,
+        "mean": 8.924050632911392,
+        "median": 9,
+        "p95": 9,
+        "worst": 9,
+        "over20": 0,
+        "total": 705
+      }
+    }
+  },
+  "peakTextureBytes": 52429856,
+  "peakBytesByFormat": {
+    "6408": 36,
+    "RGBA8": 20621992,
+    "DEPTH_COMPONENT24": 9437184,
+    "RG16F": 1024,
+    "SRGB8_ALPHA8": 5592404,
+    "RGBA16F": 16777216
+  },
+  "scene": {
+    "meshes": 143,
+    "instancedMeshes": 142,
+    "instances": 3458,
+    "uncullableMeshes": 1,
+    "transparentMeshes": 9
+  }
+}
