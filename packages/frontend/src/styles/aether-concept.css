@@ -1,49 +1,262 @@
-/* Premium Cinematic Aesthetic - Matches North Star Concept */
+/* RH Planner — Bright Architectural Daylight Default + Optional Cinematic Night Mode */
+
 :root {
-  --argon-bg: #0a0a0a;
-  --argon-surface: #141414;
-  --argon-card: #1a1a1a;
-  --argon-border: #333333;
-  --argon-text: #e5e5e5;
-  --argon-muted: #737373;
-  --argon-btn: #a67c52; /* Bronze */
-  --argon-accent: #22d3ee; /* Cyan particles */
+  --rh-champagne: #c8a25a;
+  --rh-champagne-light: #efe2c4;
+  --rh-champagne-deep: #8d6b34;
+  --rh-ivory: #fcfaf6;
+  --rh-stone: #e6dfd3;
+  --rh-ink: #1e1a16;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
 }
 
-/* UI Panel Polish: Matching the "Aether CAD" concept look */
-.program-workspace, .model-workspace, .argon-shell {
-  background: var(--argon-bg) !important;
+.font-display {
+  font-family: var(--font-display);
 }
 
-.argon-card, .catalog-panel, .my-program-panel, .model-context-card, .model-toolbar, .model-popover {
-  background: var(--argon-card) !important;
-  border: 1px solid var(--argon-border) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+/* Warm Architectural Daylight Palette by default — removes forced dark background */
+.argon-shell {
+  --argon-bg: #F5F0E8;
+  --argon-surface: #EAE0D2;
+  --argon-card: #FFFDF9;
+  --argon-border: #D8CAB8;
+  --argon-text: #2B241D;
+  --argon-muted: #6A5D52;
+  --argon-btn: #8B6843;
+  --argon-btn-hover: #6E4F2F;
+  --argon-accent: #C8A25A;
+  background-color: var(--argon-bg);
+  color: var(--argon-text);
 }
 
-/* Sidebar "Project Browser" style */
-.catalog-panel, .my-program-panel {
-  border-right: 1px solid var(--argon-border) !important;
-  background: var(--argon-surface) !important;
+/* Optional Cinematic Night Mode (user-selectable) */
+.argon-shell[data-theme='night'],
+.argon-shell.rh-theme-night {
+  --argon-bg: #0d1119;
+  --argon-surface: #141b27;
+  --argon-card: #1a2333;
+  --argon-border: #2b374b;
+  --argon-text: #edf2f7;
+  --argon-muted: #94a3b8;
+  --argon-btn: #c8a25a;
+  --argon-btn-hover: #dfc07f;
+  --argon-accent: #38bdf8;
+  color-scheme: dark;
+  background-color: var(--argon-bg);
+  color: var(--argon-text);
 }
 
-/* Range Input Styling */
-input[type="range"] {
-  accent-color: var(--argon-btn);
+/* Daylight styling for 3D Model Workspace & HUD controls (Bright Realistic Presentation) */
+.model-workspace:not(.model-workspace-night) {
+  background: linear-gradient(180deg, #e7f0fa 0%, #f5f2eb 100%);
 }
 
-/* Typography adjustment for that sleek "CAD" feel */
+.model-workspace:not(.model-workspace-night) .model-context-card,
+.model-workspace:not(.model-workspace-night) .model-control-group,
+.model-workspace:not(.model-workspace-night) .model-segmented-control,
+.model-workspace:not(.model-workspace-night) .model-level-picker,
+.model-workspace:not(.model-workspace-night) .model-popover,
+.model-workspace:not(.model-workspace-night) .model-datum {
+  background: rgba(255, 253, 248, 0.9);
+  border-color: rgba(180, 162, 134, 0.45);
+  color: #26201a;
+  box-shadow: 0 10px 28px rgba(45, 36, 24, 0.12);
+}
+
+.model-workspace:not(.model-workspace-night) .model-context-card span {
+  color: #8d6b34;
+}
+
+.model-workspace:not(.model-workspace-night) .model-context-card strong,
+.model-workspace:not(.model-workspace-night) .model-popover header strong,
+.model-workspace:not(.model-workspace-night) .model-datum strong {
+  color: #1f1b16;
+}
+
+.model-workspace:not(.model-workspace-night) .model-context-card small,
+.model-workspace:not(.model-workspace-night) .model-popover header small,
+.model-workspace:not(.model-workspace-night) .model-datum,
+.model-workspace:not(.model-workspace-night) .model-level-picker small {
+  color: #6b5e51;
+}
+
+.model-workspace:not(.model-workspace-night) .model-control-group button,
+.model-workspace:not(.model-workspace-night) .model-segmented-control button,
+.model-workspace:not(.model-workspace-night) .model-level-picker button {
+  color: #4f443a;
+}
+
+.model-workspace:not(.model-workspace-night) .model-control-group button:hover,
+.model-workspace:not(.model-workspace-night) .model-segmented-control button:hover,
+.model-workspace:not(.model-workspace-night) .model-level-picker button:hover {
+  background: rgba(200, 162, 90, 0.14);
+  color: #1f1b16;
+}
+
+.model-workspace:not(.model-workspace-night) .model-control-group button.active,
+.model-workspace:not(.model-workspace-night) .model-segmented-control button.active,
+.model-workspace:not(.model-workspace-night) .model-level-picker button.active {
+  background: #8b6843;
+  color: #fffdf9;
+}
+
+.model-workspace:not(.model-workspace-night) .model-navigation-help {
+  color: #42382e;
+  background: rgba(255, 253, 248, 0.85);
+  border-color: rgba(180, 162, 134, 0.45);
+}
+
+.model-workspace:not(.model-workspace-night) .model-north-indicator {
+  color: #8b6843;
+}
+
+.model-workspace:not(.model-workspace-night) .model-north-indicator i,
+.model-workspace:not(.model-workspace-night) .model-north-indicator i:before {
+  border-color: #8b6843;
+  background-color: #8b6843;
+}
+
+.model-workspace:not(.model-workspace-night) .model-layers-panel label,
+.model-workspace:not(.model-workspace-night) .model-height-panel > label {
+  border-bottom-color: rgba(200, 185, 165, 0.45);
+  color: #3d342b;
+}
+
+.model-workspace:not(.model-workspace-night) .model-height-panel input {
+  color: #1f1b16;
+}
+
+.model-workspace:not(.model-workspace-night) .model-height-panel label > div {
+  background: #f5efe4;
+  border-color: #d4c5b0;
+}
+
+.model-workspace:not(.model-workspace-night) .model-empty-state {
+  background: radial-gradient(circle at center, #fdfbf7, #ece4d5 75%);
+  color: #5c5044;
+}
+
+.model-workspace:not(.model-workspace-night) .model-empty-state strong {
+  color: #241e18;
+}
+
+/* Champagne Gold Shimmer & Sparkle Animations */
+@keyframes rhShimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+@keyframes rhFadeInUp {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-shimmer {
+  animation: rhShimmer 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.animate-fadeInUp {
+  animation: rhFadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rh-champagne-deep);
+  font-weight: 700;
+}
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   letter-spacing: -0.01em;
 }
 
-.eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--argon-btn);
+input[type='range'] {
+  accent-color: #8b6843;
+}
+
+/* Strict 70/30 Split Grid for 05 · 3D Building Workspace */
+.rh-3d-split-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  height: calc(100vh - 64px);
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.rh-3d-split-canvas-col {
+  min-width: 0;
+  min-height: 520px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.rh-3d-split-sidebar-col {
+  width: 380px;
+  min-width: 380px;
+  max-width: 380px;
+  height: 100%;
+  overflow-y: auto;
+  border-left: 1px solid #E2D9C8;
+}
+
+@media (max-width: 899px) {
+  .rh-3d-split-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(440px, 1fr) auto;
+    height: auto;
+    min-height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+  .rh-3d-split-sidebar-col {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    border-left: 0;
+    border-top: 1px solid #E2D9C8;
+  }
+}
+
+/* Responsive safeguards so 3D toolbars never collide on narrow viewports */
+@media (max-width: 900px) {
+  .model-context-card {
+    display: none;
+  }
+  .model-toolbar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .model-floor-controls {
+    flex-wrap: wrap;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+  .model-level-picker {
+    max-width: 100%;
+  }
+  .model-navigation-help,
+  .model-datum {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-fadeInUp,
+  .animate-bounce,
+  .animate-pulse {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

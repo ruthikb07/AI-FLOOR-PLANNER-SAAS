@@ -9,6 +9,19 @@ export interface Point {
   readonly y: number;
 }
 
+export type Point2D = Point;
+
+/** Circular / elliptical arc descriptor attached to curved wall segments or room edges. */
+export interface WallArcSpec {
+  readonly center: Point2D;
+  readonly radiusMm: number;
+  readonly startAngleRad: number;
+  readonly endAngleRad: number;
+  readonly segments: number;
+  readonly anticlockwise?: boolean;
+  readonly arcGroupId?: string;
+}
+
 /** A line segment defined by two endpoints. */
 export interface LineSegment {
   readonly start: Point;

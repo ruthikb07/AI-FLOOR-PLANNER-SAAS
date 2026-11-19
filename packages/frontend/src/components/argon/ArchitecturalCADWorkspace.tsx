@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import type { EngineeringOverlay } from '@ai-floor-planner/core';
+import type { BuildingMassingShape, EngineeringOverlay, PlanCategory } from '@ai-floor-planner/core';
+import { apartmentFloorOutline } from '@ai-floor-planner/geometry-engine';
 import {
+  BUILDING_SHAPE_CATALOG,
+  PLAN_CATEGORY_CATALOG,
   GeometryValidator,
-  evaluateArchitecturalComplianceScore,
+  evaluateStudioLayoutScore,
 } from '@ai-floor-planner/planning-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { ArchitecturalCanvas } from '../canvas/ArchitecturalCanvas';
@@ -13,23 +16,42 @@ import type { WorkspaceLayer } from '../workspace/BuildingNavigator';
 export interface ArchitecturalCADWorkspaceProps {
   editor: EditorContextValue;
   onRegeneratePlan?: () => void;
+  onSelectMassingVariant?: (shape: BuildingMassingShape) => void;
+  onSelectPlanCategory?: (category: PlanCategory) => void;
+  onToggleAutoExplore?: (enabled: boolean) => void;
+  autoExploreEnabled?: boolean;
   onOpenEditPlan?: () => void;
   generationSeed?: number;
   isGenerating?: boolean;
   canRegenerate?: boolean;
 }
 
+const VARIANT_MASSING_CHOICES: ReadonlyArray<{ id: BuildingMassingShape; label: string }> = [
+  { id: 'CURVED_CRESCENT', label: 'Curved Crescent' },
+  { id: 'Y_SHAPE_TRISKELE', label: 'Y-Triskele' },
+  { id: 'TRIANGULAR_ATRIUM', label: 'Triangular' },
+  { id: 'ROTUNDA_COURTYARD', label: 'Rotunda' },
+  { id: 'H_SHAPE_WING', label: 'H-Shape' },
+  { id: 'COMPACT_DOUBLE_LOADED', label: 'Compact' },
+];
+
 export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps> = ({
   editor,
   onRegeneratePlan,
+  onSelectMassingVariant,
+  onSelectPlanCategory,
+  onToggleAutoExplore,
+  autoExploreEnabled = false,
   onOpenEditPlan,
   generationSeed = 1,
   isGenerating = false,
   canRegenerate = true,
 }) => {
-  const aiTelemetry = editor.building.metadata.generationBrief?.aiTelemetry;
   const activeArchetype = editor.building.metadata.generationBrief?.archetype;
   const activeMassingShape = editor.building.metadata.generationBrief?.buildingMassingShape;
+  const activePlanCategory = editor.building.metadata.generationBrief?.planCategory as PlanCategory | undefined;
+  const [shapeDrawerOpen, setShapeDrawerOpen] = useState(false);
+  const [scoreDrawerOpen, setScoreDrawerOpen] = useState(false);
   const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [disciplines, setDisciplines] = useState<Record<EngineeringOverlay, boolean>>({
     ARCHITECTURAL: true,
@@ -83,18 +105,25 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
     [editor.building],
   );
   const complianceReport = useMemo(
-    () =>
-      (editor.building.metadata as { complianceReport?: ReturnType<typeof evaluateArchitecturalComplianceScore> })
-        ?.complianceReport ?? evaluateArchitecturalComplianceScore(editor.building),
+    () => evaluateStudioLayoutScore(editor.building),
     [editor.building],
   );
+  const outlineVertexCount = useMemo(() => {
+    try {
+      const outline = apartmentFloorOutline(editor.activeFloor.walls);
+      if (outline.points.length >= 4) return outline.points.length;
+    } catch {
+      // Fallback to activeFloor boundary polygon if walls do not form a closed ring
+    }
+    return editor.activeFloor.boundary.points.length;
+  }, [editor.activeFloor.walls, editor.activeFloor.boundary.points.length]);
   return (
     <section
       className="flex h-full min-h-0 flex-col bg-slate-950 text-slate-100"
       aria-label="Architectural CAD workspace"
     >
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 p-3">
-        <strong>2D CAD Studio</strong>
+      <div className="rh-cad-actions flex flex-wrap items-center gap-3 border-b border-argon-border p-3">
+        <h1 className="rh-workspace-title">2D Architectural CAD</h1>
         {onRegeneratePlan && (
           <button
             type="button"
@@ -102,51 +131,32 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             onClick={onRegeneratePlan}
             className="rounded bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 disabled:opacity-50"
           >
-            {isGenerating ? 'Regenerating...' : `Regenerate Variant (Seed #${generationSeed})`}
+            {isGenerating ? 'Synthesizing...' : `Generate Massing Variant (Rev #${generationSeed})`}
           </button>
         )}
         {onOpenEditPlan && (
           <button
             type="button"
             onClick={onOpenEditPlan}
-            className="rounded bg-indigo-500 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-400"
+            className="rounded bg-argon-btn px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-argon-btnHover"
           >
-            Edit Plan
+            Wall &amp; Room Editor
           </button>
         )}
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
-            aiTelemetry?.geminiInvoked
-              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-              : 'border-slate-600 bg-slate-800 text-slate-300'
-          }`}
-          title={
-            aiTelemetry?.geminiInvoked
-              ? `Gemini proposal active (${aiTelemetry.modelUsed ?? 'gemini'})${aiTelemetry.referenceImageUsedForGeometry ? ' + Vision Spatial Graph' : ''}${activeMassingShape ? ` · ${activeMassingShape}` : ''}${activeArchetype ? ` · ${activeArchetype}` : ''}`
-              : aiTelemetry?.fallbackReason ?? `Deterministic solver engine${activeMassingShape ? ` · ${activeMassingShape}` : ''}`
-          }
+          className="rounded-full border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 font-mono text-xs font-medium text-sky-300"
+          title={`${activeMassingShape ? activeMassingShape.replace(/_/g, ' ') : 'Architectural Massing'}${activeArchetype ? ` · ${activeArchetype.replace(/_/g, ' ')}` : ''}`}
         >
-          {aiTelemetry?.geminiInvoked
-            ? `Gemini AI (${aiTelemetry.modelUsed ?? 'gemini'})`
-            : 'Deterministic Engine'}
-          {activeMassingShape ? ` · ${activeMassingShape.replace(/_/g, ' ')}` : ''}
+          {activeMassingShape ? activeMassingShape.replace(/_/g, ' ') : 'Architectural Massing'}
         </span>
-        <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-            complianceReport.score >= 85 && complianceReport.redConflictCount === 0
-              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
-              : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
-          }`}
-          title={
-            (complianceReport?.violations?.length ?? 0) > 0
-              ? complianceReport.violations
-                  .map((v) => (typeof v === 'string' ? v : v.message))
-                  .join(' | ')
-              : 'All 6 architectural & code compliance checks passed (>= 85 / 100).'
-          }
+        <button type="button" aria-expanded={scoreDrawerOpen} aria-controls="layout-score-breakdown" onClick={() => setScoreDrawerOpen(open => !open)}
+          className={`rounded-full border px-2.5 py-1 font-mono text-xs font-semibold tabular-nums ${complianceReport.passed
+            ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+            : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
+            }`}
         >
-          Compliance Score: {complianceReport.score} / 100
-        </span>
+          Layout score {complianceReport.score} / 100
+        </button>
         {(['dwg', 'dxf', 'pdf'] as const).map((format) => (
           <button
             key={format}
@@ -159,6 +169,150 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
         <span role="status" className="text-xs text-amber-200">
           {exportStatus}
         </span>
+      </div>
+      {scoreDrawerOpen && <aside id="layout-score-breakdown" aria-label="Score Breakdown" className="absolute right-0 top-16 z-40 max-h-[75vh] w-full max-w-md overflow-auto border border-argon-border bg-slate-900 p-4 shadow-xl">
+        <header className="flex items-center justify-between gap-4"><h2 className="text-lg font-semibold">Score Breakdown</h2>
+          <button type="button" onClick={() => setScoreDrawerOpen(false)}>Close</button></header>
+        <p className="mt-2 text-xs">Revision {editor.building.version} · {complianceReport.basePoints} base points</p>
+        <ul className="mt-2 divide-y divide-slate-700">{complianceReport.criteria.map(row => <li key={row.label} className="py-2 text-sm">
+          <div className="flex justify-between gap-4"><strong>{row.label}</strong><span>{row.earned}/{row.points} · {row.unresolved ? 'unverified' : `−${row.points - row.earned}`}</span></div>
+          {row.findings.length > 0 && <details><summary>{row.findings.length} findings</summary><ul className="break-words text-xs">{row.findings.map((finding, index) =>
+            <li key={`${finding.id}-${index}`} className="mt-2"><strong>{finding.id}</strong> · {finding.elementIds.join(', ')}<p>{finding.actual} · Required {finding.required}</p></li>)}</ul></details>}
+        </li>)}</ul>
+      </aside>}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 bg-slate-900/95 px-3 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
+            Footprint Geometry:
+          </span>
+          <span
+            data-testid="footprint-vertex-classification"
+            className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${outlineVertexCount > 4
+              ? 'border-cyan-500/40 bg-cyan-500/15 text-cyan-200'
+              : 'border-slate-600 bg-slate-800 text-slate-300'
+              }`}
+          >
+            {outlineVertexCount > 4
+              ? `Polygonal (${outlineVertexCount} vertices)`
+              : `Rectangular (${outlineVertexCount} vertices)`}
+          </span>
+        </div>
+        {onSelectMassingVariant && (
+          <div className="relative flex flex-wrap items-center gap-1.5" role="group" aria-label="N-Shape & Category Alternatives">
+            <span className="font-mono text-[11px] text-slate-400 mr-1">Shapes:</span>
+            {VARIANT_MASSING_CHOICES.map((choice) => {
+              const isSelected = activeMassingShape === choice.id;
+              return (
+                <button
+                  key={choice.id}
+                  type="button"
+                  data-testid={`cad-variant-${choice.id}`}
+                  disabled={isGenerating || !canRegenerate}
+                  onClick={() => onSelectMassingVariant(choice.id)}
+                  className={`rounded px-2.5 py-1 text-[11px] font-mono transition-colors disabled:opacity-45 ${isSelected
+                    ? 'bg-amber-500 text-slate-950 font-bold'
+                    : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                    }`}
+                >
+                  {choice.label}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              data-testid="switch-shape-category-btn"
+              onClick={() => setShapeDrawerOpen(v => !v)}
+              className="rounded border border-cyan-500/40 bg-cyan-500/15 px-2.5 py-1 text-[11px] font-mono font-semibold text-cyan-200 hover:bg-cyan-500/25"
+            >
+              Switch Shape / Category ({BUILDING_SHAPE_CATALOG.length})
+            </button>
+            {shapeDrawerOpen && (
+              <div
+                data-testid="cad-shape-category-drawer"
+                className="absolute right-0 top-9 z-40 w-[560px] max-w-[92vw] max-h-[70vh] overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 shadow-2xl backdrop-blur"
+              >
+                <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+                  <span className="text-xs font-bold text-amber-300">
+                    Shape &amp; Residential Category Catalog ({BUILDING_SHAPE_CATALOG.length}+)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {onToggleAutoExplore && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleAutoExplore(!autoExploreEnabled)}
+                        className={`rounded px-2 py-0.5 text-[10px] font-mono border ${autoExploreEnabled
+                          ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
+                          : 'bg-slate-800 text-slate-300 border-slate-600'
+                          }`}
+                      >
+                        Auto-Explore Novel Shape: {autoExploreEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShapeDrawerOpen(false)}
+                      className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                {onSelectPlanCategory && (
+                  <div className="mb-3">
+                    <div className="text-[10px] font-mono uppercase text-slate-400 mb-1.5">Plan Categories</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PLAN_CATEGORY_CATALOG.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            onSelectPlanCategory(cat.id);
+                            setShapeDrawerOpen(false);
+                          }}
+                          className={`rounded border p-1.5 text-left flex items-center gap-2 ${activePlanCategory === cat.id
+                            ? 'border-amber-400 bg-amber-500/20 text-amber-200'
+                            : 'border-slate-700 bg-slate-800/70 text-slate-200 hover:bg-slate-800'
+                            }`}
+                        >
+                          <svg viewBox="0 0 80 60" className="w-8 h-6 shrink-0">
+                            <path d={cat.svgPath} fill="none" stroke="currentColor" strokeWidth="3" />
+                          </svg>
+                          <span className="text-[10px] font-semibold leading-tight">{cat.shortLabel}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="text-[10px] font-mono uppercase text-slate-400 mb-1.5">All Massing Geometries</div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {BUILDING_SHAPE_CATALOG.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      data-testid={`drawer-shape-${entry.id}`}
+                      onClick={() => {
+                        onSelectMassingVariant(entry.id);
+                        setShapeDrawerOpen(false);
+                      }}
+                      className={`rounded border p-1.5 text-left flex items-center gap-2 ${activeMassingShape === entry.id
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-200'
+                        : 'border-slate-700 bg-slate-800/70 text-slate-200 hover:bg-slate-800'
+                        }`}
+                    >
+                      <svg viewBox="0 0 80 60" className="w-9 h-7 shrink-0">
+                        <path d={entry.svgPath} fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2.5" />
+                      </svg>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-semibold truncate">{entry.label}</div>
+                        <div className="text-[9px] text-slate-400">{entry.supportsCurves ? 'Curved Arc' : entry.supportsNonOrthogonal ? 'Polygonal' : 'Orthogonal'}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-slate-900 p-3">
         <div
@@ -204,11 +358,10 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
                   setEntityLayers((p) => ({ ...p, columns: nextVal, beams: nextVal }));
                 }
               }}
-              className={`shrink-0 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                disciplines[key]
-                  ? 'bg-cyan-500 text-slate-950 font-semibold'
-                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-              }`}
+              className={`shrink-0 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${disciplines[key]
+                ? 'bg-cyan-500 text-slate-950 font-semibold'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+                }`}
             >
               {label}
             </button>

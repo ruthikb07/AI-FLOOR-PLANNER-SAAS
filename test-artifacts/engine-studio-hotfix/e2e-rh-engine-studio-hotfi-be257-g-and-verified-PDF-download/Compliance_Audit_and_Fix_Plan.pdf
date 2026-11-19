@@ -1,0 +1,2026 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R 22 0 R 24 0 R 26 0 R 28 0 R 30 0 R 32 0 R 34 0 R 36 0 R 38 0 R 40 0 R 42 0 R 44 0 R 46 0 R 48 0 R 50 0 R 52 0 R 54 0 R 56 0 R 58 0 R 60 0 R 62 0 R 64 0 R 66 0 R 68 0 R] /Count 33 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 4159 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 1 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (COMPLIANCE AUDIT AND FIX PLAN) Tj ET
+BT /F1 8 Tf 32 785 Td (Building building:rh-hotfix-pinwheel | Revision 2 | Layout score 40/100) Tj ET
+BT /F1 8 Tf 32 770 Td (Canonical SHA-256: 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907) Tj ET
+BT /F1 8 Tf 32 755 Td (Regulatory status VIOLATION) Tj ET
+BT /F1 8 Tf 32 740 Td (Automated checks provide engineering design assistance and require verification by a licensed) Tj ET
+BT /F1 8 Tf 32 725 Td (Architect/Engineer before municipal submission.) Tj ET
+BT /F1 8 Tf 32 710 Td () Tj ET
+BT /F1 8 Tf 32 695 Td (Canonical geometry and openings: 0/25) Tj ET
+BT /F1 8 Tf 32 680 Td (Inter-flat OTS and operable windows: 0/20) Tj ET
+BT /F1 8 Tf 32 665 Td (Setbacks, stairs and door clearance: 0/15 \(unverified inputs\)) Tj ET
+BT /F1 8 Tf 32 650 Td (Requested massing: 15/15) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (1. NOT_VERIFIED | input.authorityType | Required regulatory input: authorityType | UDCPR 6.1.1 Table 6-A;) Tj ET
+BT /F1 8 Tf 32 605 Td (6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: Unverified  | Required: Explicit valid input ) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 2. Provide authorityType; no passing default is used.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 515 Td () Tj ET
+BT /F1 8 Tf 32 500 Td (2. NOT_VERIFIED | input.congestionZone | Required regulatory input: congestionZone | UDCPR 6.1.1 Table 6-A;) Tj ET
+BT /F1 8 Tf 32 485 Td (6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 470 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 455 Td (Current: Unverified  | Required: Explicit valid input ) Tj ET
+BT /F1 8 Tf 32 440 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 2. Provide congestionZone; no passing default is used.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 395 Td () Tj ET
+BT /F1 8 Tf 32 380 Td (3. NOT_VERIFIED | input.stiltParkingEnabled | Required regulatory input: stiltParkingEnabled | UDCPR 6.1.1) Tj ET
+BT /F1 8 Tf 32 365 Td (Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 350 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 335 Td (Current: Unverified  | Required: Explicit valid input ) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 305 Td (Step 2. Provide stiltParkingEnabled; no passing default is used.) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 275 Td () Tj ET
+BT /F1 8 Tf 32 260 Td (4. NOT_VERIFIED | input.buildingUsage | Required regulatory input: buildingUsage | UDCPR 6.1.1 Table 6-A;) Tj ET
+BT /F1 8 Tf 32 245 Td (6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: Unverified  | Required: Explicit valid input ) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Provide buildingUsage; no passing default is used.) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 155 Td () Tj ET
+BT /F1 8 Tf 32 140 Td (5. NOT_VERIFIED | source.applicability | Jurisdiction, scheme and post-2025 amendments reviewed | UDCPR) Tj ET
+BT /F1 8 Tf 32 125 Td (6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 110 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 95 Td (Current: false  | Required: true ) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 4432 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 2 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 2. Confirm the standard greenfield scheme and current local/amendment applicability. Source snapshot is) Tj ET
+BT /F1 8 Tf 32 770 Td (pinned to 2025-01-30.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (6. NOT_VERIFIED | source.nbc | NBC Part 3 and Part 4 clause verification | NBC 2016 Part 3 and Part 4) Tj ET
+BT /F1 8 Tf 32 710 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 695 Td (Current: Unverified  | Required: Original applicable NBC clauses reviewed ) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 665 Td (Step 2. Verify original NBC 2016 clauses and local adoption. UDCPR measurements do not establish NBC) Tj ET
+BT /F1 8 Tf 32 650 Td (compliance.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 620 Td () Tj ET
+BT /F1 8 Tf 32 605 Td (7. NOT_VERIFIED | stilt.floor_stilt_00.enclosures | Stilt has no flats or habitable enclosures | UDCPR 8.1.1) Tj ET
+BT /F1 8 Tf 32 590 Td (Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 575 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 560 Td (Current: 0  | Required: 0 ) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 2. Remove habitable enclosures from the designated parking-only floor; exemption eligibility requires) Tj ET
+BT /F1 8 Tf 32 515 Td (separate review.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 485 Td () Tj ET
+BT /F1 8 Tf 32 470 Td (8. NOT_VERIFIED | stilt.floor_stilt_00.clearance | Explicit stilt clearance below beams | UDCPR 8.1.1 Table) Tj ET
+BT /F1 8 Tf 32 455 Td (8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: floor_stilt_00) Tj ET
+BT /F1 8 Tf 32 425 Td (Current: Unverified mm | Required: 2400 mm) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 2. Provide measured below-beam clearance; floor-to-floor height does not establish parking clearance.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (9. NOT_VERIFIED | geometry.stilt | Explicit stilt flag agrees with physical floor roles | UDCPR 6.1.1 Table) Tj ET
+BT /F1 8 Tf 32 335 Td (6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_stilt_00, floor_typical_01) Tj ET
+BT /F1 8 Tf 32 305 Td (Current: true  | Required: Verify applicability ) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 2. Reconcile stilt parking inputs with physical floor roles.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 245 Td () Tj ET
+BT /F1 8 Tf 32 230 Td (10. NOT_VERIFIED | fsi.roof | Covered roof structures and roof FSI applicability reviewed | UDCPR 6.1.1) Tj ET
+BT /F1 8 Tf 32 215 Td (Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 200 Td (Elements: floor_terrace_02) Tj ET
+BT /F1 8 Tf 32 185 Td (Current: false  | Required: true ) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 2. Review roof structure sections; a roof drawing is not automatically an exempt floor.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 125 Td () Tj ET
+BT /F1 8 Tf 32 110 Td (11. NOT_VERIFIED | fsi.entitlements | Basic / premium / TDR / ancillary potential \(not purchased rights\) |) Tj ET
+BT /F1 8 Tf 32 95 Td (UDCPR 6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 4944 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 3 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 785 Td (Current: Unverified  | Required: Source road/authority/zone table ) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 2. Review this clause with a licensed Architect/Engineer.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (12. NOT_VERIFIED | fsi.approvals | Premium, TDR, ancillary approvals and net plot deductions | UDCPR 6.1.1) Tj ET
+BT /F1 8 Tf 32 695 Td (Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: Unverified  | Required: Explicit approved rights within source caps ) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Supply netPlotAreaSqm and separately reviewed approvedPremiumFsi, approvedTdrFsi and) Tj ET
+BT /F1 8 Tf 32 620 Td (approvedAncillaryFsi \(explicit zero permitted\).) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (13. NOT_VERIFIED | fsi.exemptions | Reviewed exempt areas; measured core/stilt are only candidates | UDCPR) Tj ET
+BT /F1 8 Tf 32 560 Td (6.1.1 Table 6-A; 6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_stilt_00, floor_typical_01) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: Unverified mm2 | Required: Explicit floor areas and exemption clauses mm2) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Review FSI exemptions, including explicit none; never auto-exempt an entire core/stilt by name.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 470 Td () Tj ET
+BT /F1 8 Tf 32 455 Td (14. NOT_VERIFIED | fsi.consumed | Net FSI consumed without a 1% overrun allowance | UDCPR 6.1.1 Table 6-A;) Tj ET
+BT /F1 8 Tf 32 440 Td (6.3 Table 6-G and notes) Tj ET
+BT /F1 8 Tf 32 425 Td (Elements: floor_stilt_00, floor_typical_01) Tj ET
+BT /F1 8 Tf 32 410 Td (Current: Unverified ratio | Required: Verify applicability ratio) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 2. Reduce reckonable area or provide reviewed entitlements/exemptions; exact unrounded ratio is) Tj ET
+BT /F1 8 Tf 32 365 Td (compared.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 335 Td () Tj ET
+BT /F1 8 Tf 32 320 Td (15. NOT_VERIFIED | setback.front | Measured front outer wall / plinth clearance | UDCPR 6.1.1 Tables) Tj ET
+BT /F1 8 Tf 32 305 Td (6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 290 Td (Elements: floor_stilt_00, floor_stilt_00::apt-wall:x:10900:6500:9000,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:x:10900:9000:9800, floor_stilt_00::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_stilt_00::apt-wall:x:2000:6500:9800, floor_stilt_00::apt-wall:x:2000:9800:16520,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:x:2000:16520:20720, floor_stilt_00::apt-wall:x:2000:20720:26600,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_stilt_00::apt-wall:x:2000:26600:28200, floor_stilt_00::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::apt-wall:x:2000:35500:40000, floor_stilt_00::apt-wall:x:22100:32200:33200,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::apt-wall:x:22100:33200:35500, floor_stilt_00::apt-wall:x:27700:6500:9000,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::apt-wall:x:27700:9000:11500, floor_stilt_00::apt-wall:x:27700:11500:13800,) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_stilt_00::apt-wall:x:31000:2000:6500, floor_stilt_00::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::apt-wall:x:31000:13800:15400, floor_stilt_00::apt-wall:x:31000:15400:20400,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:x:31000:20400:27200, floor_stilt_00::apt-wall:x:31000:27200:32200,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:x:31000:32200:35500, floor_stilt_00::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:x:5300:28200:30700, floor_stilt_00::apt-wall:x:5300:30700:33200,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::apt-wall:x:5300:33200:35500, floor_stilt_00::apt-wall:y:15400:27700:28700,) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 6081 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 4 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:y:15400:28700:31000, floor_stilt_00::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::apt-wall:y:26600:2000:4150, floor_stilt_00::apt-wall:y:26600:4150:5070,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::apt-wall:y:26600:5070:5300, floor_stilt_00::apt-wall:y:32200:23700:26200,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_stilt_00::apt-wall:y:32200:26200:28700, floor_stilt_00::apt-wall:y:32200:28700:31000,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::apt-wall:y:35500:5300:10300, floor_stilt_00::apt-wall:y:35500:10300:17100,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::apt-wall:y:35500:17100:22100, floor_stilt_00::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::apt-wall:y:6500:10900:15900, floor_stilt_00::apt-wall:y:6500:15900:22700,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:y:6500:22700:27700, floor_stilt_00::apt-wall:y:9800:2000:5070,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::apt-wall:y:9800:5070:7570, floor_stilt_00::apt-wall:y:9800:7570:9300, floor_typical_01,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_typical_01::apt-wall:x:10900:6500:9800, floor_typical_01::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_typical_01::apt-wall:x:2000:6500:9800, floor_typical_01::apt-wall:x:2000:9800:11300,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::apt-wall:x:2000:11300:17050, floor_typical_01::apt-wall:x:2000:17050:18550,) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_typical_01::apt-wall:x:2000:18550:20050, floor_typical_01::apt-wall:x:2000:20050:26600,) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::apt-wall:x:2000:26600:28200, floor_typical_01::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_typical_01::apt-wall:x:2000:35500:40000, floor_typical_01::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::apt-wall:x:27700:6500:10200, floor_typical_01::apt-wall:x:27700:10200:13800,) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_typical_01::apt-wall:x:31000:2000:6500, floor_typical_01::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_typical_01::apt-wall:x:31000:13800:15400, floor_typical_01::apt-wall:x:31000:15400:16900,) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::apt-wall:x:31000:16900:22650, floor_typical_01::apt-wall:x:31000:22650:24150,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::apt-wall:x:31000:24150:25650, floor_typical_01::apt-wall:x:31000:25650:32200,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-wall:x:31000:32200:35500, floor_typical_01::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::apt-wall:x:5300:28200:30180, floor_typical_01::apt-wall:x:5300:30180:31800,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_typical_01::apt-wall:x:5300:31800:35500, floor_typical_01::apt-wall:y:15400:27700:31000,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_typical_01::apt-wall:y:2000:2000:31000, floor_typical_01::apt-wall:y:26600:2000:5300,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_typical_01::apt-wall:y:32200:23700:27300, floor_typical_01::apt-wall:y:32200:27300:31000,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::apt-wall:y:35500:5300:12550, floor_typical_01::apt-wall:y:35500:12550:14050,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_typical_01::apt-wall:y:35500:14050:15550, floor_typical_01::apt-wall:y:35500:15550:22100,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::apt-wall:y:40000:2000:31000, floor_typical_01::apt-wall:y:6500:10900:18150,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-wall:y:6500:18150:19650, floor_typical_01::apt-wall:y:6500:19650:21150,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-wall:y:6500:21150:27700, floor_typical_01::apt-wall:y:9800:2000:5700,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-wall:y:9800:5700:7320, floor_typical_01::apt-wall:y:9800:7320:9300, floor_terrace_02,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_terrace_02::apt-wall:x:10900:6500:9800, floor_terrace_02::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_terrace_02::apt-wall:x:2000:6500:9800, floor_terrace_02::apt-wall:x:2000:9800:26600,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_terrace_02::apt-wall:x:2000:26600:28200, floor_terrace_02::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_terrace_02::apt-wall:x:2000:35500:40000, floor_terrace_02::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_terrace_02::apt-wall:x:27700:6500:13800, floor_terrace_02::apt-wall:x:31000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_terrace_02::apt-wall:x:31000:6500:13800, floor_terrace_02::apt-wall:x:31000:13800:15400,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_terrace_02::apt-wall:x:31000:15400:32200, floor_terrace_02::apt-wall:x:31000:32200:35500,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_terrace_02::apt-wall:x:31000:35500:40000, floor_terrace_02::apt-wall:x:5300:28200:35500,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_terrace_02::apt-wall:y:15400:27700:31000, floor_terrace_02::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_terrace_02::apt-wall:y:26600:2000:5300, floor_terrace_02::apt-wall:y:32200:23700:26990,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_terrace_02::apt-wall:y:32200:26990:31000, floor_terrace_02::apt-wall:y:35500:5300:12860,) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_terrace_02::apt-wall:y:35500:12860:22100, floor_terrace_02::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_terrace_02::apt-wall:y:6500:10900:18460, floor_terrace_02::apt-wall:y:6500:18460:27700,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_terrace_02::apt-wall:y:9800:2000:9300) Tj ET
+BT /F1 8 Tf 32 125 Td (Current: 2885 mm | Required: Verify applicability mm) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 2. Provide authority, zone, road width and height. Rectangular single-road plots only; supply edge) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 5893 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 5 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 770 Td () Tj ET
+BT /F1 8 Tf 32 755 Td (16. NOT_VERIFIED | setback.rear | Measured rear outer wall / plinth clearance | UDCPR 6.1.1 Tables 6-B/6-C;) Tj ET
+BT /F1 8 Tf 32 740 Td (6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 725 Td (Elements: floor_stilt_00, floor_stilt_00::apt-wall:x:10900:6500:9000,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::apt-wall:x:10900:9000:9800, floor_stilt_00::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:x:2000:6500:9800, floor_stilt_00::apt-wall:x:2000:9800:16520,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::apt-wall:x:2000:16520:20720, floor_stilt_00::apt-wall:x:2000:20720:26600,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::apt-wall:x:2000:26600:28200, floor_stilt_00::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_stilt_00::apt-wall:x:2000:35500:40000, floor_stilt_00::apt-wall:x:22100:32200:33200,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_stilt_00::apt-wall:x:22100:33200:35500, floor_stilt_00::apt-wall:x:27700:6500:9000,) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_stilt_00::apt-wall:x:27700:9000:11500, floor_stilt_00::apt-wall:x:27700:11500:13800,) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_stilt_00::apt-wall:x:31000:2000:6500, floor_stilt_00::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_stilt_00::apt-wall:x:31000:13800:15400, floor_stilt_00::apt-wall:x:31000:15400:20400,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_stilt_00::apt-wall:x:31000:20400:27200, floor_stilt_00::apt-wall:x:31000:27200:32200,) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_stilt_00::apt-wall:x:31000:32200:35500, floor_stilt_00::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_stilt_00::apt-wall:x:5300:28200:30700, floor_stilt_00::apt-wall:x:5300:30700:33200,) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_stilt_00::apt-wall:x:5300:33200:35500, floor_stilt_00::apt-wall:y:15400:27700:28700,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_stilt_00::apt-wall:y:15400:28700:31000, floor_stilt_00::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_stilt_00::apt-wall:y:26600:2000:4150, floor_stilt_00::apt-wall:y:26600:4150:5070,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_stilt_00::apt-wall:y:26600:5070:5300, floor_stilt_00::apt-wall:y:32200:23700:26200,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_stilt_00::apt-wall:y:32200:26200:28700, floor_stilt_00::apt-wall:y:32200:28700:31000,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_stilt_00::apt-wall:y:35500:5300:10300, floor_stilt_00::apt-wall:y:35500:10300:17100,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_stilt_00::apt-wall:y:35500:17100:22100, floor_stilt_00::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::apt-wall:y:6500:10900:15900, floor_stilt_00::apt-wall:y:6500:15900:22700,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_stilt_00::apt-wall:y:6500:22700:27700, floor_stilt_00::apt-wall:y:9800:2000:5070,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:y:9800:5070:7570, floor_stilt_00::apt-wall:y:9800:7570:9300, floor_typical_01,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-wall:x:10900:6500:9800, floor_typical_01::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-wall:x:2000:6500:9800, floor_typical_01::apt-wall:x:2000:9800:11300,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-wall:x:2000:11300:17050, floor_typical_01::apt-wall:x:2000:17050:18550,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-wall:x:2000:18550:20050, floor_typical_01::apt-wall:x:2000:20050:26600,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_typical_01::apt-wall:x:2000:26600:28200, floor_typical_01::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::apt-wall:x:2000:35500:40000, floor_typical_01::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-wall:x:27700:6500:10200, floor_typical_01::apt-wall:x:27700:10200:13800,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-wall:x:31000:2000:6500, floor_typical_01::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-wall:x:31000:13800:15400, floor_typical_01::apt-wall:x:31000:15400:16900,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::apt-wall:x:31000:16900:22650, floor_typical_01::apt-wall:x:31000:22650:24150,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-wall:x:31000:24150:25650, floor_typical_01::apt-wall:x:31000:25650:32200,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::apt-wall:x:31000:32200:35500, floor_typical_01::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_typical_01::apt-wall:x:5300:28200:30180, floor_typical_01::apt-wall:x:5300:30180:31800,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_typical_01::apt-wall:x:5300:31800:35500, floor_typical_01::apt-wall:y:15400:27700:31000,) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_typical_01::apt-wall:y:2000:2000:31000, floor_typical_01::apt-wall:y:26600:2000:5300,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::apt-wall:y:32200:23700:27300, floor_typical_01::apt-wall:y:32200:27300:31000,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_typical_01::apt-wall:y:35500:5300:12550, floor_typical_01::apt-wall:y:35500:12550:14050,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::apt-wall:y:35500:14050:15550, floor_typical_01::apt-wall:y:35500:15550:22100,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_typical_01::apt-wall:y:40000:2000:31000, floor_typical_01::apt-wall:y:6500:10900:18150,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::apt-wall:y:6500:18150:19650, floor_typical_01::apt-wall:y:6500:19650:21150,) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 5787 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 6 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_typical_01::apt-wall:y:6500:21150:27700, floor_typical_01::apt-wall:y:9800:2000:5700,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_typical_01::apt-wall:y:9800:5700:7320, floor_typical_01::apt-wall:y:9800:7320:9300, floor_terrace_02,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_terrace_02::apt-wall:x:10900:6500:9800, floor_terrace_02::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_terrace_02::apt-wall:x:2000:6500:9800, floor_terrace_02::apt-wall:x:2000:9800:26600,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_terrace_02::apt-wall:x:2000:26600:28200, floor_terrace_02::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_terrace_02::apt-wall:x:2000:35500:40000, floor_terrace_02::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_terrace_02::apt-wall:x:27700:6500:13800, floor_terrace_02::apt-wall:x:31000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_terrace_02::apt-wall:x:31000:6500:13800, floor_terrace_02::apt-wall:x:31000:13800:15400,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_terrace_02::apt-wall:x:31000:15400:32200, floor_terrace_02::apt-wall:x:31000:32200:35500,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_terrace_02::apt-wall:x:31000:35500:40000, floor_terrace_02::apt-wall:x:5300:28200:35500,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_terrace_02::apt-wall:y:15400:27700:31000, floor_terrace_02::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_terrace_02::apt-wall:y:26600:2000:5300, floor_terrace_02::apt-wall:y:32200:23700:26990,) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_terrace_02::apt-wall:y:32200:26990:31000, floor_terrace_02::apt-wall:y:35500:5300:12860,) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_terrace_02::apt-wall:y:35500:12860:22100, floor_terrace_02::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_terrace_02::apt-wall:y:6500:10900:18460, floor_terrace_02::apt-wall:y:6500:18460:27700,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_terrace_02::apt-wall:y:9800:2000:9300) Tj ET
+BT /F1 8 Tf 32 560 Td (Current: 1885 mm | Required: Verify applicability mm) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 2. Provide authority, zone, road width and height. Rectangular single-road plots only; supply edge) Tj ET
+BT /F1 8 Tf 32 515 Td (roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 485 Td () Tj ET
+BT /F1 8 Tf 32 470 Td (17. NOT_VERIFIED | setback.left | Measured left outer wall / plinth clearance | UDCPR 6.1.1 Tables 6-B/6-C;) Tj ET
+BT /F1 8 Tf 32 455 Td (6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: floor_stilt_00, floor_stilt_00::apt-wall:x:10900:6500:9000,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::apt-wall:x:10900:9000:9800, floor_stilt_00::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_stilt_00::apt-wall:x:2000:6500:9800, floor_stilt_00::apt-wall:x:2000:9800:16520,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_stilt_00::apt-wall:x:2000:16520:20720, floor_stilt_00::apt-wall:x:2000:20720:26600,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_stilt_00::apt-wall:x:2000:26600:28200, floor_stilt_00::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_stilt_00::apt-wall:x:2000:35500:40000, floor_stilt_00::apt-wall:x:22100:32200:33200,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_stilt_00::apt-wall:x:22100:33200:35500, floor_stilt_00::apt-wall:x:27700:6500:9000,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_stilt_00::apt-wall:x:27700:9000:11500, floor_stilt_00::apt-wall:x:27700:11500:13800,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_stilt_00::apt-wall:x:31000:2000:6500, floor_stilt_00::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_stilt_00::apt-wall:x:31000:13800:15400, floor_stilt_00::apt-wall:x:31000:15400:20400,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_stilt_00::apt-wall:x:31000:20400:27200, floor_stilt_00::apt-wall:x:31000:27200:32200,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::apt-wall:x:31000:32200:35500, floor_stilt_00::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_stilt_00::apt-wall:x:5300:28200:30700, floor_stilt_00::apt-wall:x:5300:30700:33200,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::apt-wall:x:5300:33200:35500, floor_stilt_00::apt-wall:y:15400:27700:28700,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_stilt_00::apt-wall:y:15400:28700:31000, floor_stilt_00::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::apt-wall:y:26600:2000:4150, floor_stilt_00::apt-wall:y:26600:4150:5070,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::apt-wall:y:26600:5070:5300, floor_stilt_00::apt-wall:y:32200:23700:26200,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::apt-wall:y:32200:26200:28700, floor_stilt_00::apt-wall:y:32200:28700:31000,) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_stilt_00::apt-wall:y:35500:5300:10300, floor_stilt_00::apt-wall:y:35500:10300:17100,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::apt-wall:y:35500:17100:22100, floor_stilt_00::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:y:6500:10900:15900, floor_stilt_00::apt-wall:y:6500:15900:22700,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:y:6500:22700:27700, floor_stilt_00::apt-wall:y:9800:2000:5070,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:y:9800:5070:7570, floor_stilt_00::apt-wall:y:9800:7570:9300, floor_typical_01,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::apt-wall:x:10900:6500:9800, floor_typical_01::apt-wall:x:2000:2000:6500,) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 5852 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 7 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_typical_01::apt-wall:x:2000:6500:9800, floor_typical_01::apt-wall:x:2000:9800:11300,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_typical_01::apt-wall:x:2000:11300:17050, floor_typical_01::apt-wall:x:2000:17050:18550,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_typical_01::apt-wall:x:2000:18550:20050, floor_typical_01::apt-wall:x:2000:20050:26600,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_typical_01::apt-wall:x:2000:26600:28200, floor_typical_01::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_typical_01::apt-wall:x:2000:35500:40000, floor_typical_01::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::apt-wall:x:27700:6500:10200, floor_typical_01::apt-wall:x:27700:10200:13800,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_typical_01::apt-wall:x:31000:2000:6500, floor_typical_01::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_typical_01::apt-wall:x:31000:13800:15400, floor_typical_01::apt-wall:x:31000:15400:16900,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_typical_01::apt-wall:x:31000:16900:22650, floor_typical_01::apt-wall:x:31000:22650:24150,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_typical_01::apt-wall:x:31000:24150:25650, floor_typical_01::apt-wall:x:31000:25650:32200,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_typical_01::apt-wall:x:31000:32200:35500, floor_typical_01::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::apt-wall:x:5300:28200:30180, floor_typical_01::apt-wall:x:5300:30180:31800,) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_typical_01::apt-wall:x:5300:31800:35500, floor_typical_01::apt-wall:y:15400:27700:31000,) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_typical_01::apt-wall:y:2000:2000:31000, floor_typical_01::apt-wall:y:26600:2000:5300,) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_typical_01::apt-wall:y:32200:23700:27300, floor_typical_01::apt-wall:y:32200:27300:31000,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::apt-wall:y:35500:5300:12550, floor_typical_01::apt-wall:y:35500:12550:14050,) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_typical_01::apt-wall:y:35500:14050:15550, floor_typical_01::apt-wall:y:35500:15550:22100,) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_typical_01::apt-wall:y:40000:2000:31000, floor_typical_01::apt-wall:y:6500:10900:18150,) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::apt-wall:y:6500:18150:19650, floor_typical_01::apt-wall:y:6500:19650:21150,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::apt-wall:y:6500:21150:27700, floor_typical_01::apt-wall:y:9800:2000:5700,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-wall:y:9800:5700:7320, floor_typical_01::apt-wall:y:9800:7320:9300, floor_terrace_02,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_terrace_02::apt-wall:x:10900:6500:9800, floor_terrace_02::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_terrace_02::apt-wall:x:2000:6500:9800, floor_terrace_02::apt-wall:x:2000:9800:26600,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_terrace_02::apt-wall:x:2000:26600:28200, floor_terrace_02::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_terrace_02::apt-wall:x:2000:35500:40000, floor_terrace_02::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_terrace_02::apt-wall:x:27700:6500:13800, floor_terrace_02::apt-wall:x:31000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_terrace_02::apt-wall:x:31000:6500:13800, floor_terrace_02::apt-wall:x:31000:13800:15400,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_terrace_02::apt-wall:x:31000:15400:32200, floor_terrace_02::apt-wall:x:31000:32200:35500,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_terrace_02::apt-wall:x:31000:35500:40000, floor_terrace_02::apt-wall:x:5300:28200:35500,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_terrace_02::apt-wall:y:15400:27700:31000, floor_terrace_02::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_terrace_02::apt-wall:y:26600:2000:5300, floor_terrace_02::apt-wall:y:32200:23700:26990,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_terrace_02::apt-wall:y:32200:26990:31000, floor_terrace_02::apt-wall:y:35500:5300:12860,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_terrace_02::apt-wall:y:35500:12860:22100, floor_terrace_02::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_terrace_02::apt-wall:y:6500:10900:18460, floor_terrace_02::apt-wall:y:6500:18460:27700,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_terrace_02::apt-wall:y:9800:2000:9300) Tj ET
+BT /F1 8 Tf 32 275 Td (Current: 1885 mm | Required: Verify applicability mm) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 2. Provide authority, zone, road width and height. Rectangular single-road plots only; supply edge) Tj ET
+BT /F1 8 Tf 32 230 Td (roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 200 Td () Tj ET
+BT /F1 8 Tf 32 185 Td (18. NOT_VERIFIED | setback.right | Measured right outer wall / plinth clearance | UDCPR 6.1.1 Tables) Tj ET
+BT /F1 8 Tf 32 170 Td (6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 155 Td (Elements: floor_stilt_00, floor_stilt_00::apt-wall:x:10900:6500:9000,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::apt-wall:x:10900:9000:9800, floor_stilt_00::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::apt-wall:x:2000:6500:9800, floor_stilt_00::apt-wall:x:2000:9800:16520,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::apt-wall:x:2000:16520:20720, floor_stilt_00::apt-wall:x:2000:20720:26600,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::apt-wall:x:2000:26600:28200, floor_stilt_00::apt-wall:x:2000:28200:35500,) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 6159 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 8 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::apt-wall:x:2000:35500:40000, floor_stilt_00::apt-wall:x:22100:32200:33200,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::apt-wall:x:22100:33200:35500, floor_stilt_00::apt-wall:x:27700:6500:9000,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_stilt_00::apt-wall:x:27700:9000:11500, floor_stilt_00::apt-wall:x:27700:11500:13800,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_stilt_00::apt-wall:x:31000:2000:6500, floor_stilt_00::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::apt-wall:x:31000:13800:15400, floor_stilt_00::apt-wall:x:31000:15400:20400,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::apt-wall:x:31000:20400:27200, floor_stilt_00::apt-wall:x:31000:27200:32200,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::apt-wall:x:31000:32200:35500, floor_stilt_00::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::apt-wall:x:5300:28200:30700, floor_stilt_00::apt-wall:x:5300:30700:33200,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::apt-wall:x:5300:33200:35500, floor_stilt_00::apt-wall:y:15400:27700:28700,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::apt-wall:y:15400:28700:31000, floor_stilt_00::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_stilt_00::apt-wall:y:26600:2000:4150, floor_stilt_00::apt-wall:y:26600:4150:5070,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_stilt_00::apt-wall:y:26600:5070:5300, floor_stilt_00::apt-wall:y:32200:23700:26200,) Tj ET
+BT /F1 8 Tf 32 620 Td (floor_stilt_00::apt-wall:y:32200:26200:28700, floor_stilt_00::apt-wall:y:32200:28700:31000,) Tj ET
+BT /F1 8 Tf 32 605 Td (floor_stilt_00::apt-wall:y:35500:5300:10300, floor_stilt_00::apt-wall:y:35500:10300:17100,) Tj ET
+BT /F1 8 Tf 32 590 Td (floor_stilt_00::apt-wall:y:35500:17100:22100, floor_stilt_00::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_stilt_00::apt-wall:y:6500:10900:15900, floor_stilt_00::apt-wall:y:6500:15900:22700,) Tj ET
+BT /F1 8 Tf 32 560 Td (floor_stilt_00::apt-wall:y:6500:22700:27700, floor_stilt_00::apt-wall:y:9800:2000:5070,) Tj ET
+BT /F1 8 Tf 32 545 Td (floor_stilt_00::apt-wall:y:9800:5070:7570, floor_stilt_00::apt-wall:y:9800:7570:9300, floor_typical_01,) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::apt-wall:x:10900:6500:9800, floor_typical_01::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::apt-wall:x:2000:6500:9800, floor_typical_01::apt-wall:x:2000:9800:11300,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-wall:x:2000:11300:17050, floor_typical_01::apt-wall:x:2000:17050:18550,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::apt-wall:x:2000:18550:20050, floor_typical_01::apt-wall:x:2000:20050:26600,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_typical_01::apt-wall:x:2000:26600:28200, floor_typical_01::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_typical_01::apt-wall:x:2000:35500:40000, floor_typical_01::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_typical_01::apt-wall:x:27700:6500:10200, floor_typical_01::apt-wall:x:27700:10200:13800,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::apt-wall:x:31000:2000:6500, floor_typical_01::apt-wall:x:31000:6500:13800,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_typical_01::apt-wall:x:31000:13800:15400, floor_typical_01::apt-wall:x:31000:15400:16900,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::apt-wall:x:31000:16900:22650, floor_typical_01::apt-wall:x:31000:22650:24150,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-wall:x:31000:24150:25650, floor_typical_01::apt-wall:x:31000:25650:32200,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-wall:x:31000:32200:35500, floor_typical_01::apt-wall:x:31000:35500:40000,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-wall:x:5300:28200:30180, floor_typical_01::apt-wall:x:5300:30180:31800,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-wall:x:5300:31800:35500, floor_typical_01::apt-wall:y:15400:27700:31000,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_typical_01::apt-wall:y:2000:2000:31000, floor_typical_01::apt-wall:y:26600:2000:5300,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::apt-wall:y:32200:23700:27300, floor_typical_01::apt-wall:y:32200:27300:31000,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-wall:y:35500:5300:12550, floor_typical_01::apt-wall:y:35500:12550:14050,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-wall:y:35500:14050:15550, floor_typical_01::apt-wall:y:35500:15550:22100,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-wall:y:40000:2000:31000, floor_typical_01::apt-wall:y:6500:10900:18150,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::apt-wall:y:6500:18150:19650, floor_typical_01::apt-wall:y:6500:19650:21150,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-wall:y:6500:21150:27700, floor_typical_01::apt-wall:y:9800:2000:5700,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::apt-wall:y:9800:5700:7320, floor_typical_01::apt-wall:y:9800:7320:9300, floor_terrace_02,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_terrace_02::apt-wall:x:10900:6500:9800, floor_terrace_02::apt-wall:x:2000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_terrace_02::apt-wall:x:2000:6500:9800, floor_terrace_02::apt-wall:x:2000:9800:26600,) Tj ET
+BT /F1 8 Tf 32 170 Td (floor_terrace_02::apt-wall:x:2000:26600:28200, floor_terrace_02::apt-wall:x:2000:28200:35500,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_terrace_02::apt-wall:x:2000:35500:40000, floor_terrace_02::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_terrace_02::apt-wall:x:27700:6500:13800, floor_terrace_02::apt-wall:x:31000:2000:6500,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_terrace_02::apt-wall:x:31000:6500:13800, floor_terrace_02::apt-wall:x:31000:13800:15400,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_terrace_02::apt-wall:x:31000:15400:32200, floor_terrace_02::apt-wall:x:31000:32200:35500,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_terrace_02::apt-wall:x:31000:35500:40000, floor_terrace_02::apt-wall:x:5300:28200:35500,) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 21 0 R >>
+endobj
+21 0 obj
+<< /Length 4798 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 9 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_terrace_02::apt-wall:y:15400:27700:31000, floor_terrace_02::apt-wall:y:2000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_terrace_02::apt-wall:y:26600:2000:5300, floor_terrace_02::apt-wall:y:32200:23700:26990,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_terrace_02::apt-wall:y:32200:26990:31000, floor_terrace_02::apt-wall:y:35500:5300:12860,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_terrace_02::apt-wall:y:35500:12860:22100, floor_terrace_02::apt-wall:y:40000:2000:31000,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_terrace_02::apt-wall:y:6500:10900:18460, floor_terrace_02::apt-wall:y:6500:18460:27700,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_terrace_02::apt-wall:y:9800:2000:9300) Tj ET
+BT /F1 8 Tf 32 710 Td (Current: 1885 mm | Required: Verify applicability mm) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 2. Provide authority, zone, road width and height. Rectangular single-road plots only; supply edge) Tj ET
+BT /F1 8 Tf 32 665 Td (roles/street centreline for unsupported sites.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (19. NOT_VERIFIED | setback.projections | Cantilevered balcony/utility projection assessment | UDCPR 6.1.1) Tj ET
+BT /F1 8 Tf 32 605 Td (Tables 6-B/6-C; 6.2.1 Table 6-D; 6.2.3) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_01__master_bed__balcony,) Tj ET
+BT /F1 8 Tf 32 575 Td (floor_typical_01::apt-room:flat_03__master_bed__balcony) Tj ET
+BT /F1 8 Tf 32 560 Td (Current: [{"id":"floor_typical_01::apt-room:flat_01__master_bed__balcony","areaMm2":5550000},{"id":"floor_ty) Tj ET
+BT /F1 8 Tf 32 545 Td (pical_01::apt-room:flat_03__master_bed__balcony","areaMm2":5550000}]  | Required: Verified projection limits) Tj ET
+BT /F1 8 Tf 32 530 Td (and section ) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Verify clause 9.14 projections, margin/access restrictions and section geometry. Measured area is) Tj ET
+BT /F1 8 Tf 32 485 Td (not permission.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (20. NOT_VERIFIED | coverage.measured | Plinth ground coverage \(independent of ROS\) | UDCPR 3.4.1, 3.4.6 and) Tj ET
+BT /F1 8 Tf 32 425 Td (3.4.8) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_stilt_00) Tj ET
+BT /F1 8 Tf 32 395 Td (Current: 77.17086834733894 % | Required: Authority/scheme-specific coverage limit %) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 2. Confirm applicable ground-coverage restrictions; residual plot area is never counted as ROS.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 335 Td () Tj ET
+BT /F1 8 Tf 32 320 Td (21. NOT_VERIFIED | ros.area | Dedicated non-overlapping ROS with 10m minimum dimension and aspect limits and) Tj ET
+BT /F1 8 Tf 32 305 Td (access | UDCPR 3.4.1, 3.4.6 and 3.4.8) Tj ET
+BT /F1 8 Tf 32 290 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 275 Td (Current: 0 % | Required: Verify applicability %) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 2. Designate reviewed ROS polygons, verify independent/common access, original holding and DP/RP) Tj ET
+BT /F1 8 Tf 32 230 Td (deductions. A generic garden or residual driveway is not certified ROS.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 200 Td () Tj ET
+BT /F1 8 Tf 32 185 Td (22. VIOLATION | parking.missing | No marked car or two-wheeler stalls exist | UDCPR 8.1.1 Table 8-A; 8.2) Tj ET
+BT /F1 8 Tf 32 170 Td (Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 155 Td (Elements: floor_stilt_00, floor_typical_01) Tj ET
+BT /F1 8 Tf 32 140 Td (Current: 0  | Required: Actual marked parking provision ) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 2. Provide actual marked stalls and a verified parking schedule.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 23 0 R >>
+endobj
+23 0 obj
+<< /Length 5785 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 10 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td () Tj ET
+BT /F1 8 Tf 32 785 Td (23. NOT_VERIFIED | parking.cars | Valid non-overlapping 2500 x 5000mm car bays | UDCPR 8.1.1 Table 8-A; 8.2) Tj ET
+BT /F1 8 Tf 32 770 Td (Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 755 Td (Elements: floor_stilt_00::stilt__car_bay_p01, floor_stilt_00::stilt__bike_bay_b02,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_stilt_00::stilt__car_bay_p02, floor_stilt_00::stilt__bike_bay_b04, floor_stilt_00::stilt__car_bay_p03,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_stilt_00::stilt__car_bay_p04, floor_stilt_00::stilt__bike_bay_b06, floor_stilt_00::stilt__car_bay_p05,) Tj ET
+BT /F1 8 Tf 32 710 Td (floor_stilt_00::stilt__car_bay_p06, floor_stilt_00::stilt__bike_bay_b08, floor_stilt_00::stilt__car_bay_p07,) Tj ET
+BT /F1 8 Tf 32 695 Td (floor_stilt_00::stilt__car_bay_p08, floor_stilt_00::stilt__bike_bay_b10, floor_stilt_00::stilt__car_bay_p09,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_stilt_00::stilt__car_bay_p10, floor_stilt_00::stilt__bike_bay_b12, floor_stilt_00::stilt__car_bay_p11,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_stilt_00::stilt__car_bay_p12, floor_stilt_00::stilt__bike_bay_b14, floor_stilt_00::stilt__car_bay_p13,) Tj ET
+BT /F1 8 Tf 32 650 Td (floor_stilt_00::stilt__car_bay_p14, floor_stilt_00::stilt__bike_bay_b16) Tj ET
+BT /F1 8 Tf 32 635 Td (Current: 0 bays | Required: Verify applicability bays) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 2. Provide marked accessible car stalls, reviewed unit carpet areas and the correct Table 8-C) Tj ET
+BT /F1 8 Tf 32 590 Td (city/class factor.) Tj ET
+BT /F1 8 Tf 32 575 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 560 Td () Tj ET
+BT /F1 8 Tf 32 545 Td (24. NOT_VERIFIED | parking.bikes | Valid non-overlapping 1000 x 2000mm two-wheeler bays | UDCPR 8.1.1 Table) Tj ET
+BT /F1 8 Tf 32 530 Td (8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 515 Td (Elements: floor_stilt_00::stilt__car_bay_p01, floor_stilt_00::stilt__bike_bay_b02,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_stilt_00::stilt__car_bay_p02, floor_stilt_00::stilt__bike_bay_b04, floor_stilt_00::stilt__car_bay_p03,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_stilt_00::stilt__car_bay_p04, floor_stilt_00::stilt__bike_bay_b06, floor_stilt_00::stilt__car_bay_p05,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_stilt_00::stilt__car_bay_p06, floor_stilt_00::stilt__bike_bay_b08, floor_stilt_00::stilt__car_bay_p07,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_stilt_00::stilt__car_bay_p08, floor_stilt_00::stilt__bike_bay_b10, floor_stilt_00::stilt__car_bay_p09,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_stilt_00::stilt__car_bay_p10, floor_stilt_00::stilt__bike_bay_b12, floor_stilt_00::stilt__car_bay_p11,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_stilt_00::stilt__car_bay_p12, floor_stilt_00::stilt__bike_bay_b14, floor_stilt_00::stilt__car_bay_p13,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_stilt_00::stilt__car_bay_p14, floor_stilt_00::stilt__bike_bay_b16) Tj ET
+BT /F1 8 Tf 32 395 Td (Current: 0 bays | Required: Verify applicability bays) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 2. Provide actual marked two-wheeler stalls; the software does not invent provided counts.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 335 Td () Tj ET
+BT /F1 8 Tf 32 320 Td (25. VIOLATION | parking.invalid | Undersized / overlapping / obstructed / unclassified stalls | UDCPR 8.1.1) Tj ET
+BT /F1 8 Tf 32 305 Td (Table 8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 290 Td (Elements: floor_stilt_00::stilt__car_bay_p01, floor_stilt_00::stilt__bike_bay_b02,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_stilt_00::stilt__car_bay_p02, floor_stilt_00::stilt__bike_bay_b04, floor_stilt_00::stilt__car_bay_p03,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_stilt_00::stilt__car_bay_p04, floor_stilt_00::stilt__bike_bay_b06, floor_stilt_00::stilt__car_bay_p05,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_stilt_00::stilt__car_bay_p06, floor_stilt_00::stilt__bike_bay_b08, floor_stilt_00::stilt__car_bay_p07,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_stilt_00::stilt__car_bay_p08, floor_stilt_00::stilt__bike_bay_b10, floor_stilt_00::stilt__car_bay_p09,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_stilt_00::stilt__car_bay_p10, floor_stilt_00::stilt__bike_bay_b12, floor_stilt_00::stilt__car_bay_p11,) Tj ET
+BT /F1 8 Tf 32 200 Td (floor_stilt_00::stilt__car_bay_p12, floor_stilt_00::stilt__bike_bay_b14, floor_stilt_00::stilt__car_bay_p13,) Tj ET
+BT /F1 8 Tf 32 185 Td (floor_stilt_00::stilt__car_bay_p14, floor_stilt_00::stilt__bike_bay_b16) Tj ET
+BT /F1 8 Tf 32 170 Td (Current: floor_stilt_00::stilt__car_bay_p01, floor_stilt_00::stilt__bike_bay_b02,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_stilt_00::stilt__car_bay_p02, floor_stilt_00::stilt__bike_bay_b04, floor_stilt_00::stilt__car_bay_p03,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_stilt_00::stilt__car_bay_p04, floor_stilt_00::stilt__bike_bay_b06, floor_stilt_00::stilt__car_bay_p05,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_stilt_00::stilt__car_bay_p06, floor_stilt_00::stilt__bike_bay_b08, floor_stilt_00::stilt__car_bay_p07,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_stilt_00::stilt__car_bay_p08, floor_stilt_00::stilt__bike_bay_b10, floor_stilt_00::stilt__car_bay_p09,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_stilt_00::stilt__car_bay_p10, floor_stilt_00::stilt__bike_bay_b12, floor_stilt_00::stilt__car_bay_p11,) Tj ET
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 25 0 R >>
+endobj
+25 0 obj
+<< /Length 4616 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 11 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (floor_stilt_00::stilt__car_bay_p12, floor_stilt_00::stilt__bike_bay_b14, floor_stilt_00::stilt__car_bay_p13,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_stilt_00::stilt__car_bay_p14, floor_stilt_00::stilt__bike_bay_b16  | Required: 0 ) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 2. Resolve stall geometry, walls, columns and duplicate bay overlaps.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (26. NOT_VERIFIED | parking.driveway | Measured driveway width against requested project policy | PROJECT) Tj ET
+BT /F1 8 Tf 32 695 Td (BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: Unverified mm | Required: Verify applicability mm) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Tag dedicated driveway polygons and specify traffic flow. Verify manoeuvring, connectivity and) Tj ET
+BT /F1 8 Tf 32 620 Td (source 8.1.1\(iv\) separately; source minimum car drive is 3m.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (27. NOT_VERIFIED | parking.access | Street access / turning and stilt beam clearance | UDCPR 8.1.1 Table) Tj ET
+BT /F1 8 Tf 32 560 Td (8-A; 8.2 Table 8-B; 8.2.2 Table 8-C) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: Unverified  | Required: Verified access geometry and 2.4m below beams ) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Verify connected street access, swept paths and section headroom; width alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 470 Td () Tj ET
+BT /F1 8 Tf 32 455 Td (28. VIOLATION | stairs.floor_stilt_00::stilt__stair_1:stair.brief | Requested apartment stair clear width) Tj ET
+BT /F1 8 Tf 32 440 Td (policy | PROJECT BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 425 Td (Elements: floor_stilt_00::stilt__stair_1:stair) Tj ET
+BT /F1 8 Tf 32 410 Td (Current: 1425 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 350 Td () Tj ET
+BT /F1 8 Tf 32 335 Td (29. VIOLATION | stairs.floor_stilt_00::stilt__stair_1:stair.tread | Canonical stair tread | UDCPR 9.27.1;) Tj ET
+BT /F1 8 Tf 32 320 Td (9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 305 Td (Elements: floor_stilt_00::stilt__stair_1:stair) Tj ET
+BT /F1 8 Tf 32 290 Td (Current: 192.5 mm | Required: 250 mm) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 2. Provide minimum 250mm tread.) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 230 Td () Tj ET
+BT /F1 8 Tf 32 215 Td (30. VIOLATION | stairs.floor_stilt_00::stilt__stair_1:stair.landing | Clear mid-landing depth relative to) Tj ET
+BT /F1 8 Tf 32 200 Td (flight width | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 185 Td (Elements: floor_stilt_00::stilt__stair_1:stair) Tj ET
+BT /F1 8 Tf 32 170 Td (Current: 655 mm | Required: 1425 mm) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 2. Provide clear landing depth at least the flight width.) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 110 Td () Tj ET
+BT /F1 8 Tf 32 95 Td (31. NOT_VERIFIED | stairs.floor_stilt_00::stilt__stair_1:stair.headroom | Clear headroom below actual slab /) Tj ET
+endstream
+endobj
+26 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 27 0 R >>
+endobj
+27 0 obj
+<< /Length 4622 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 12 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (beam | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 785 Td (Elements: floor_stilt_00::stilt__stair_1:stair) Tj ET
+BT /F1 8 Tf 32 770 Td (Current: Unverified mm | Required: 2200 mm) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 2. Supply measured section headroom; floor-to-floor height does not establish headroom.) Tj ET
+BT /F1 8 Tf 32 725 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 710 Td () Tj ET
+BT /F1 8 Tf 32 695 Td (32. VIOLATION | stairs.floor_stilt_00::stilt__stair_2:stair.brief | Requested apartment stair clear width) Tj ET
+BT /F1 8 Tf 32 680 Td (policy | PROJECT BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 665 Td (Elements: floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 650 Td (Current: 1325 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (33. VIOLATION | stairs.floor_stilt_00::stilt__stair_2:stair.tread | Canonical stair tread | UDCPR 9.27.1;) Tj ET
+BT /F1 8 Tf 32 560 Td (9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: 206 mm | Required: 250 mm) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Provide minimum 250mm tread.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 470 Td () Tj ET
+BT /F1 8 Tf 32 455 Td (34. VIOLATION | stairs.floor_stilt_00::stilt__stair_2:stair.landing | Clear mid-landing depth relative to) Tj ET
+BT /F1 8 Tf 32 440 Td (flight width | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 425 Td (Elements: floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 410 Td (Current: 701 mm | Required: 1325 mm) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 2. Provide clear landing depth at least the flight width.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 350 Td () Tj ET
+BT /F1 8 Tf 32 335 Td (35. NOT_VERIFIED | stairs.floor_stilt_00::stilt__stair_2:stair.headroom | Clear headroom below actual slab /) Tj ET
+BT /F1 8 Tf 32 320 Td (beam | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 305 Td (Elements: floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 290 Td (Current: Unverified mm | Required: 2200 mm) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 2. Supply measured section headroom; floor-to-floor height does not establish headroom.) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 230 Td () Tj ET
+BT /F1 8 Tf 32 215 Td (36. NOT_VERIFIED | travel.floor_stilt_00 | Constrained room/door/corridor route: Clear interior is) Tj ET
+BT /F1 8 Tf 32 200 Td (unsupported or contains column/furniture obstacles; constrained navigation must be reviewed. | UDCPR 9.27.1;) Tj ET
+BT /F1 8 Tf 32 185 Td (9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 170 Td (Elements: floor_stilt_00::stilt__stair_1:stair, floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 155 Td (Current: Unverified mm | Required: 22500 mm) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 2. Provide complete door topology and unobstructed common circulation to OPEN_PASSAGE. Residential) Tj ET
+BT /F1 8 Tf 32 110 Td (limit is 22.5m; no assumed 18m or 30m.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+endstream
+endobj
+28 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 29 0 R >>
+endobj
+29 0 obj
+<< /Length 4513 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 13 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td () Tj ET
+BT /F1 8 Tf 32 785 Td (37. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_1:stair.brief | Requested apartment stair clear) Tj ET
+BT /F1 8 Tf 32 770 Td (width policy | PROJECT BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 755 Td (Elements: floor_typical_01::apt-room:core_stair_1:stair) Tj ET
+BT /F1 8 Tf 32 740 Td (Current: 1425 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 725 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 710 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 680 Td () Tj ET
+BT /F1 8 Tf 32 665 Td (38. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_1:stair.tread | Canonical stair tread | UDCPR) Tj ET
+BT /F1 8 Tf 32 650 Td (9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 635 Td (Elements: floor_typical_01::apt-room:core_stair_1:stair) Tj ET
+BT /F1 8 Tf 32 620 Td (Current: 192.5 mm | Required: 250 mm) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 2. Provide minimum 250mm tread.) Tj ET
+BT /F1 8 Tf 32 575 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 560 Td () Tj ET
+BT /F1 8 Tf 32 545 Td (39. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_1:stair.landing | Clear mid-landing depth) Tj ET
+BT /F1 8 Tf 32 530 Td (relative to flight width | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 515 Td (Elements: floor_typical_01::apt-room:core_stair_1:stair) Tj ET
+BT /F1 8 Tf 32 500 Td (Current: 655 mm | Required: 1425 mm) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 2. Provide clear landing depth at least the flight width.) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 440 Td () Tj ET
+BT /F1 8 Tf 32 425 Td (40. NOT_VERIFIED | stairs.floor_typical_01::apt-room:core_stair_1:stair.headroom | Clear headroom below) Tj ET
+BT /F1 8 Tf 32 410 Td (actual slab / beam | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 395 Td (Elements: floor_typical_01::apt-room:core_stair_1:stair) Tj ET
+BT /F1 8 Tf 32 380 Td (Current: Unverified mm | Required: 2200 mm) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 2. Supply measured section headroom; floor-to-floor height does not establish headroom.) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 320 Td () Tj ET
+BT /F1 8 Tf 32 305 Td (41. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_2:stair.brief | Requested apartment stair clear) Tj ET
+BT /F1 8 Tf 32 290 Td (width policy | PROJECT BRIEF - engineering design policy) Tj ET
+BT /F1 8 Tf 32 275 Td (Elements: floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 260 Td (Current: 1325 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 200 Td () Tj ET
+BT /F1 8 Tf 32 185 Td (42. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_2:stair.tread | Canonical stair tread | UDCPR) Tj ET
+BT /F1 8 Tf 32 170 Td (9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 155 Td (Elements: floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 140 Td (Current: 206 mm | Required: 250 mm) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 2. Provide minimum 250mm tread.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+endstream
+endobj
+30 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 31 0 R >>
+endobj
+31 0 obj
+<< /Length 5352 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 14 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td () Tj ET
+BT /F1 8 Tf 32 785 Td (43. VIOLATION | stairs.floor_typical_01::apt-room:core_stair_2:stair.landing | Clear mid-landing depth) Tj ET
+BT /F1 8 Tf 32 770 Td (relative to flight width | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 755 Td (Elements: floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 740 Td (Current: 701 mm | Required: 1325 mm) Tj ET
+BT /F1 8 Tf 32 725 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 710 Td (Step 2. Provide clear landing depth at least the flight width.) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 680 Td () Tj ET
+BT /F1 8 Tf 32 665 Td (44. NOT_VERIFIED | stairs.floor_typical_01::apt-room:core_stair_2:stair.headroom | Clear headroom below) Tj ET
+BT /F1 8 Tf 32 650 Td (actual slab / beam | UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 635 Td (Elements: floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 620 Td (Current: Unverified mm | Required: 2200 mm) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 2. Supply measured section headroom; floor-to-floor height does not establish headroom.) Tj ET
+BT /F1 8 Tf 32 575 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 560 Td () Tj ET
+BT /F1 8 Tf 32 545 Td (45. NOT_VERIFIED | travel.floor_typical_01 | Constrained room/door/corridor route: Clear interior is) Tj ET
+BT /F1 8 Tf 32 530 Td (unsupported or contains column/furniture obstacles; constrained navigation must be reviewed. | UDCPR 9.27.1;) Tj ET
+BT /F1 8 Tf 32 515 Td (9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 500 Td (Elements: floor_typical_01::apt-room:flat_01__kitchen, floor_typical_01::apt-room:flat_01__dining,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::apt-room:flat_01__living, floor_typical_01::apt-room:flat_01__master_bed,) Tj ET
+BT /F1 8 Tf 32 470 Td (floor_typical_01::apt-room:flat_01__master_bath, floor_typical_01::apt-room:flat_01__common_bath,) Tj ET
+BT /F1 8 Tf 32 455 Td (floor_typical_01::apt-room:flat_01__internal_passage, floor_typical_01::apt-room:flat_01__bed_2,) Tj ET
+BT /F1 8 Tf 32 440 Td (floor_typical_01::apt-room:flat_01__master_bed__balcony, floor_typical_01::apt-room:flat_01__balcony,) Tj ET
+BT /F1 8 Tf 32 425 Td (floor_typical_01::apt-room:flat_02__kitchen, floor_typical_01::apt-room:flat_02__dining,) Tj ET
+BT /F1 8 Tf 32 410 Td (floor_typical_01::apt-room:flat_02__living, floor_typical_01::apt-room:flat_02__master_bed,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::apt-room:flat_02__master_bath, floor_typical_01::apt-room:flat_02__common_bath,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-room:flat_02__internal_passage, floor_typical_01::apt-room:flat_02__bed_2,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-room:flat_02__balcony, floor_typical_01::apt-room:flat_03__kitchen,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::apt-room:flat_03__dining, floor_typical_01::apt-room:flat_03__living,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-room:flat_03__master_bed, floor_typical_01::apt-room:flat_03__master_bath,) Tj ET
+BT /F1 8 Tf 32 320 Td (floor_typical_01::apt-room:flat_03__common_bath, floor_typical_01::apt-room:flat_03__internal_passage,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::apt-room:flat_03__bed_2, floor_typical_01::apt-room:flat_03__master_bed__balcony,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-room:flat_03__balcony, floor_typical_01::apt-room:flat_04__kitchen,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-room:flat_04__dining, floor_typical_01::apt-room:flat_04__living,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::apt-room:flat_04__master_bed, floor_typical_01::apt-room:flat_04__master_bath,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::apt-room:flat_04__common_bath, floor_typical_01::apt-room:flat_04__internal_passage,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-room:flat_04__bed_2, floor_typical_01::apt-room:flat_04__balcony,) Tj ET
+BT /F1 8 Tf 32 215 Td (floor_typical_01::apt-room:core_stair_1:stair, floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 200 Td (Current: Unverified mm | Required: 22500 mm) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 2. Provide complete door topology and unobstructed common circulation to OPEN_PASSAGE. Residential) Tj ET
+BT /F1 8 Tf 32 155 Td (limit is 22.5m; no assumed 18m or 30m.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 125 Td () Tj ET
+BT /F1 8 Tf 32 110 Td (46. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__kitchen.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 95 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+endstream
+endobj
+32 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 33 0 R >>
+endobj
+33 0 obj
+<< /Length 4807 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 15 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Elements: floor_typical_01::apt-room:flat_01__kitchen) Tj ET
+BT /F1 8 Tf 32 785 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (47. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__kitchen.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 695 Td (101 Kitchen | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: floor_typical_01::apt-room:flat_01__kitchen) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: {"areaSqm":13.5111375,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 650 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 605 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 575 Td () Tj ET
+BT /F1 8 Tf 32 560 Td (48. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__kitchen.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 545 Td (exterior/balcony/shaft window openings: Flat 101 Kitchen | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 530 Td (Elements: floor_typical_01::apt-room:flat_01__kitchen,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::win_apt-room:flat_01__kitchen_floor_typical_01::apt-wall:x:5700:9800:11300,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::win_apt-room:flat_01__kitchen_floor_typical_01::apt-wall:y:9800:5700:7320,) Tj ET
+BT /F1 8 Tf 32 485 Td (floor_typical_01::apt-room:core_shaft_9) Tj ET
+BT /F1 8 Tf 32 470 Td (Current: 2.88 m2 | Required: 1.3511137500000001 m2) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 440 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 425 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 395 Td () Tj ET
+BT /F1 8 Tf 32 380 Td (49. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__dining.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 365 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 350 Td (Elements: floor_typical_01::apt-room:flat_01__dining) Tj ET
+BT /F1 8 Tf 32 335 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 305 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 275 Td () Tj ET
+BT /F1 8 Tf 32 260 Td (50. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__dining.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 245 Td (101 Dining & Family Hall | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: floor_typical_01::apt-room:flat_01__dining) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: {"areaSqm":11.173225,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 200 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 155 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 125 Td () Tj ET
+BT /F1 8 Tf 32 110 Td (51. VIOLATION | room.floor_typical_01::apt-room:flat_01__dining.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 95 Td (window openings: Flat 101 Dining & Family Hall | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+endstream
+endobj
+34 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 35 0 R >>
+endobj
+35 0 obj
+<< /Length 4698 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 16 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Elements: floor_typical_01::apt-room:flat_01__dining,) Tj ET
+BT /F1 8 Tf 32 785 Td (floor_typical_01::ots-window:apt-room:flat_01__dining:floor_typical_01::apt-wall:x:9300:12800:13800,) Tj ET
+BT /F1 8 Tf 32 770 Td (floor_typical_01::apt-room:core_shaft_8) Tj ET
+BT /F1 8 Tf 32 755 Td (Current: 0.96 m2 | Required: 1.1173225 m2) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 725 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 710 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 680 Td () Tj ET
+BT /F1 8 Tf 32 665 Td (52. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__living.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 650 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 635 Td (Elements: floor_typical_01::apt-room:flat_01__living) Tj ET
+BT /F1 8 Tf 32 620 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 575 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 560 Td () Tj ET
+BT /F1 8 Tf 32 545 Td (53. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__living.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 530 Td (101 Living Room | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 515 Td (Elements: floor_typical_01::apt-room:flat_01__living) Tj ET
+BT /F1 8 Tf 32 500 Td (Current: {"areaSqm":26.15361875,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 485 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 440 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 410 Td () Tj ET
+BT /F1 8 Tf 32 395 Td (54. VIOLATION | room.floor_typical_01::apt-room:flat_01__living.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 380 Td (window openings: Flat 101 Living Room | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 365 Td (Elements: floor_typical_01::apt-room:flat_01__living,) Tj ET
+BT /F1 8 Tf 32 350 Td (floor_typical_01::win_apt-room:flat_01__living_floor_typical_01::apt-wall:y:26600:5700:9300,) Tj ET
+BT /F1 8 Tf 32 335 Td (floor_typical_01::apt-room:core_shaft_5) Tj ET
+BT /F1 8 Tf 32 320 Td (Current: 1.44 m2 | Required: 2.615361875 m2) Tj ET
+BT /F1 8 Tf 32 305 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 275 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 245 Td () Tj ET
+BT /F1 8 Tf 32 230 Td (55. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__master_bed.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 215 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 200 Td (Elements: floor_typical_01::apt-room:flat_01__master_bed) Tj ET
+BT /F1 8 Tf 32 185 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 125 Td () Tj ET
+BT /F1 8 Tf 32 110 Td (56. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__master_bed.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 95 Td (Flat 101 Master Bedroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+endstream
+endobj
+36 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 37 0 R >>
+endobj
+37 0 obj
+<< /Length 4811 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 17 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Elements: floor_typical_01::apt-room:flat_01__master_bed) Tj ET
+BT /F1 8 Tf 32 785 Td (Current: {"areaSqm":19.8774625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 770 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 725 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 710 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 695 Td () Tj ET
+BT /F1 8 Tf 32 680 Td (57. VIOLATION | room.floor_typical_01::apt-room:flat_01__master_bed.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 665 Td (exterior/balcony/shaft window openings: Flat 101 Master Bedroom | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 650 Td (Elements: floor_typical_01::apt-room:flat_01__master_bed,) Tj ET
+BT /F1 8 Tf 32 635 Td (floor_typical_01::win_apt-room:flat_01__master_bed_floor_typical_01::apt-wall:x:2000:11300:17050) Tj ET
+BT /F1 8 Tf 32 620 Td (Current: 1.44 m2 | Required: 1.98774625 m2) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 575 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 545 Td () Tj ET
+BT /F1 8 Tf 32 530 Td (58. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__master_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 515 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 500 Td (Elements: floor_typical_01::apt-room:flat_01__master_bath) Tj ET
+BT /F1 8 Tf 32 485 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 440 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 425 Td () Tj ET
+BT /F1 8 Tf 32 410 Td (59. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__master_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 395 Td (Flat 101 Master Toilet | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 380 Td (Elements: floor_typical_01::apt-room:flat_01__master_bath) Tj ET
+BT /F1 8 Tf 32 365 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 350 Td (required ) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 305 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 275 Td () Tj ET
+BT /F1 8 Tf 32 260 Td (60. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__common_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 245 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: floor_typical_01::apt-room:flat_01__common_bath) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 155 Td () Tj ET
+BT /F1 8 Tf 32 140 Td (61. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__common_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 125 Td (Flat 101 Common Bathroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 110 Td (Elements: floor_typical_01::apt-room:flat_01__common_bath) Tj ET
+BT /F1 8 Tf 32 95 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+endstream
+endobj
+38 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 39 0 R >>
+endobj
+39 0 obj
+<< /Length 4720 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 18 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (required ) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 755 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (62. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__bed_2.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 695 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: floor_typical_01::apt-room:flat_01__bed_2) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 605 Td () Tj ET
+BT /F1 8 Tf 32 590 Td (63. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__bed_2.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 575 Td (101 Bedroom 02 | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 560 Td (Elements: floor_typical_01::apt-room:flat_01__bed_2) Tj ET
+BT /F1 8 Tf 32 545 Td (Current: {"areaSqm":22.51889375,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 530 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 485 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (64. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__bed_2.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 425 Td (exterior/balcony/shaft window openings: Flat 101 Bedroom 02 | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_typical_01::apt-room:flat_01__bed_2,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::win_apt-room:flat_01__bed_2_floor_typical_01::apt-wall:x:2000:20050:26600,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::win_apt-room:flat_01__bed_2_floor_typical_01::apt-wall:y:26600:2000:5300,) Tj ET
+BT /F1 8 Tf 32 365 Td (floor_typical_01::apt-room:core_shaft_13) Tj ET
+BT /F1 8 Tf 32 350 Td (Current: 2.88 m2 | Required: 2.251889375 m2) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 305 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 275 Td () Tj ET
+BT /F1 8 Tf 32 260 Td (65. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__balcony.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 245 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 230 Td (Elements: floor_typical_01::apt-room:flat_01__balcony) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 170 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 155 Td () Tj ET
+BT /F1 8 Tf 32 140 Td (66. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_01__balcony.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 125 Td (101 Family Sit-out | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 110 Td (Elements: floor_typical_01::apt-room:flat_01__balcony) Tj ET
+BT /F1 8 Tf 32 95 Td (Current: {"areaSqm":5.29449375,"widthM":1.8725,"aspectRatio":1.5100133511348464}  | Required: UDCPR 9.2.1 /) Tj ET
+endstream
+endobj
+40 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 41 0 R >>
+endobj
+41 0 obj
+<< /Length 4709 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 19 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (9.3.1 owner requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 755 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (67. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__kitchen.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 695 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: floor_typical_01::apt-room:flat_02__kitchen) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 605 Td () Tj ET
+BT /F1 8 Tf 32 590 Td (68. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__kitchen.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 575 Td (102 Kitchen | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 560 Td (Elements: floor_typical_01::apt-room:flat_02__kitchen) Tj ET
+BT /F1 8 Tf 32 545 Td (Current: {"areaSqm":13.5111375,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 530 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 485 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (69. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__kitchen.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 425 Td (exterior/balcony/shaft window openings: Flat 102 Kitchen | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_typical_01::apt-room:flat_02__kitchen,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::win_apt-room:flat_02__kitchen_floor_typical_01::apt-wall:x:5300:30180:31800,) Tj ET
+BT /F1 8 Tf 32 380 Td (floor_typical_01::apt-room:core_shaft_10) Tj ET
+BT /F1 8 Tf 32 365 Td (Current: 1.44 m2 | Required: 1.3511137500000001 m2) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 320 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 305 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 290 Td () Tj ET
+BT /F1 8 Tf 32 275 Td (70. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__dining.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 260 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 245 Td (Elements: floor_typical_01::apt-room:flat_02__dining) Tj ET
+BT /F1 8 Tf 32 230 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 170 Td () Tj ET
+BT /F1 8 Tf 32 155 Td (71. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__dining.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 140 Td (102 Dining & Family Hall | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 125 Td (Elements: floor_typical_01::apt-room:flat_02__dining) Tj ET
+BT /F1 8 Tf 32 110 Td (Current: {"areaSqm":11.173225,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 95 Td (requirements; NBC review pending ) Tj ET
+endstream
+endobj
+42 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 43 0 R >>
+endobj
+43 0 obj
+<< /Length 4745 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 20 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 770 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (72. VIOLATION | room.floor_typical_01::apt-room:flat_02__dining.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 710 Td (window openings: Flat 102 Dining & Family Hall | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 695 Td (Elements: floor_typical_01::apt-room:flat_02__dining,) Tj ET
+BT /F1 8 Tf 32 680 Td (floor_typical_01::ots-window:apt-room:flat_02__dining:floor_typical_01::apt-wall:y:28200:8300:9300,) Tj ET
+BT /F1 8 Tf 32 665 Td (floor_typical_01::apt-room:core_shaft_5) Tj ET
+BT /F1 8 Tf 32 650 Td (Current: 0.96 m2 | Required: 1.1173225 m2) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 605 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 575 Td () Tj ET
+BT /F1 8 Tf 32 560 Td (73. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__living.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 545 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 530 Td (Elements: floor_typical_01::apt-room:flat_02__living) Tj ET
+BT /F1 8 Tf 32 515 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (74. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__living.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 425 Td (102 Living Room | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_typical_01::apt-room:flat_02__living) Tj ET
+BT /F1 8 Tf 32 395 Td (Current: {"areaSqm":26.15361875,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 380 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 335 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 305 Td () Tj ET
+BT /F1 8 Tf 32 290 Td (75. VIOLATION | room.floor_typical_01::apt-room:flat_02__living.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 275 Td (window openings: Flat 102 Living Room | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 260 Td (Elements: floor_typical_01::apt-room:flat_02__living,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::win_apt-room:flat_02__living_floor_typical_01::apt-wall:x:22100:28200:31800,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-room:core_shaft_6) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: 1.44 m2 | Required: 2.615361875 m2) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 170 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 140 Td () Tj ET
+BT /F1 8 Tf 32 125 Td (76. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__master_bed.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 110 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 95 Td (Elements: floor_typical_01::apt-room:flat_02__master_bed) Tj ET
+endstream
+endobj
+44 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 45 0 R >>
+endobj
+45 0 obj
+<< /Length 4836 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 21 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (77. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__master_bed.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 710 Td (Flat 102 Master Bedroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 695 Td (Elements: floor_typical_01::apt-room:flat_02__master_bed) Tj ET
+BT /F1 8 Tf 32 680 Td (Current: {"areaSqm":24.96588125,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 665 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 620 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (78. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__master_bed.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 560 Td (exterior/balcony/shaft window openings: Flat 102 Master Bedroom | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_typical_01::apt-room:flat_02__master_bed,) Tj ET
+BT /F1 8 Tf 32 530 Td (floor_typical_01::win_apt-room:flat_02__master_bed_floor_typical_01::apt-wall:x:5300:31800:35500,) Tj ET
+BT /F1 8 Tf 32 515 Td (floor_typical_01::win_apt-room:flat_02__master_bed_floor_typical_01::apt-wall:y:35500:5300:12550,) Tj ET
+BT /F1 8 Tf 32 500 Td (floor_typical_01::apt-room:core_shaft_10, floor_typical_01::apt-room:core_shaft_18) Tj ET
+BT /F1 8 Tf 32 485 Td (Current: 2.88 m2 | Required: 2.4965881249999997 m2) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 440 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 410 Td () Tj ET
+BT /F1 8 Tf 32 395 Td (79. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__master_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 380 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 365 Td (Elements: floor_typical_01::apt-room:flat_02__master_bath) Tj ET
+BT /F1 8 Tf 32 350 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 305 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 290 Td () Tj ET
+BT /F1 8 Tf 32 275 Td (80. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__master_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 260 Td (Flat 102 Master Toilet | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 245 Td (Elements: floor_typical_01::apt-room:flat_02__master_bath) Tj ET
+BT /F1 8 Tf 32 230 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 215 Td (required ) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 170 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 140 Td () Tj ET
+BT /F1 8 Tf 32 125 Td (81. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__common_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 110 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 95 Td (Elements: floor_typical_01::apt-room:flat_02__common_bath) Tj ET
+endstream
+endobj
+46 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 47 0 R >>
+endobj
+47 0 obj
+<< /Length 4775 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 22 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (82. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__common_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 710 Td (Flat 102 Common Bathroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 695 Td (Elements: floor_typical_01::apt-room:flat_02__common_bath) Tj ET
+BT /F1 8 Tf 32 680 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 665 Td (required ) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 620 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (83. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__bed_2.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 560 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_typical_01::apt-room:flat_02__bed_2) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 470 Td () Tj ET
+BT /F1 8 Tf 32 455 Td (84. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__bed_2.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 440 Td (102 Bedroom 02 | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 425 Td (Elements: floor_typical_01::apt-room:flat_02__bed_2) Tj ET
+BT /F1 8 Tf 32 410 Td (Current: {"areaSqm":22.51889375,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 395 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 350 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 320 Td () Tj ET
+BT /F1 8 Tf 32 305 Td (85. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__bed_2.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 290 Td (exterior/balcony/shaft window openings: Flat 102 Bedroom 02 | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 275 Td (Elements: floor_typical_01::apt-room:flat_02__bed_2,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:x:22100:32200:35500,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::win_apt-room:flat_02__bed_2_floor_typical_01::apt-wall:y:35500:15550:22100,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-room:core_shaft_14, floor_typical_01::apt-room:core_shaft_18) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: 2.88 m2 | Required: 2.251889375 m2) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 170 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 140 Td () Tj ET
+BT /F1 8 Tf 32 125 Td (86. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__balcony.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 110 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 95 Td (Elements: floor_typical_01::apt-room:flat_02__balcony) Tj ET
+endstream
+endobj
+48 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 49 0 R >>
+endobj
+49 0 obj
+<< /Length 4772 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 23 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (87. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_02__balcony.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 710 Td (102 Family Sit-out | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 695 Td (Elements: floor_typical_01::apt-room:flat_02__balcony) Tj ET
+BT /F1 8 Tf 32 680 Td (Current: {"areaSqm":5.29449375,"widthM":1.8725,"aspectRatio":1.5100133511348464}  | Required: UDCPR 9.2.1 /) Tj ET
+BT /F1 8 Tf 32 665 Td (9.3.1 owner requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 620 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (88. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__kitchen.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 560 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_typical_01::apt-room:flat_03__kitchen) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 485 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 470 Td () Tj ET
+BT /F1 8 Tf 32 455 Td (89. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__kitchen.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 440 Td (103 Kitchen | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 425 Td (Elements: floor_typical_01::apt-room:flat_03__kitchen) Tj ET
+BT /F1 8 Tf 32 410 Td (Current: {"areaSqm":13.6089625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 395 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 350 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 320 Td () Tj ET
+BT /F1 8 Tf 32 305 Td (90. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__kitchen.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 290 Td (exterior/balcony/shaft window openings: Flat 103 Kitchen | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 275 Td (Elements: floor_typical_01::apt-room:flat_03__kitchen,) Tj ET
+BT /F1 8 Tf 32 260 Td (floor_typical_01::win_apt-room:flat_03__kitchen_floor_typical_01::apt-wall:x:27300:15400:16900,) Tj ET
+BT /F1 8 Tf 32 245 Td (floor_typical_01::win_apt-room:flat_03__kitchen_floor_typical_01::apt-wall:y:15400:25680:27300,) Tj ET
+BT /F1 8 Tf 32 230 Td (floor_typical_01::apt-room:core_shaft_7) Tj ET
+BT /F1 8 Tf 32 215 Td (Current: 2.88 m2 | Required: 1.3608962500000001 m2) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 185 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 170 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 140 Td () Tj ET
+BT /F1 8 Tf 32 125 Td (91. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__dining.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 110 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 95 Td (Elements: floor_typical_01::apt-room:flat_03__dining) Tj ET
+endstream
+endobj
+50 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 51 0 R >>
+endobj
+51 0 obj
+<< /Length 4861 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 24 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 740 Td () Tj ET
+BT /F1 8 Tf 32 725 Td (92. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__dining.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 710 Td (103 Dining & Family Hall | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 695 Td (Elements: floor_typical_01::apt-room:flat_03__dining) Tj ET
+BT /F1 8 Tf 32 680 Td (Current: {"areaSqm":11.1496625,"widthM":1.8475,"aspectRatio":3.266576454668471}  | Required: UDCPR 9.2.1 /) Tj ET
+BT /F1 8 Tf 32 665 Td (9.3.1 owner requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 620 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 605 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 590 Td () Tj ET
+BT /F1 8 Tf 32 575 Td (93. VIOLATION | room.floor_typical_01::apt-room:flat_03__dining.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 560 Td (window openings: Flat 103 Dining & Family Hall | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 545 Td (Elements: floor_typical_01::apt-room:flat_03__dining) Tj ET
+BT /F1 8 Tf 32 530 Td (Current: 0 m2 | Required: 1.11496625 m2) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 485 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (94. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__living.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 425 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_typical_01::apt-room:flat_03__living) Tj ET
+BT /F1 8 Tf 32 395 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 335 Td () Tj ET
+BT /F1 8 Tf 32 320 Td (95. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__living.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 305 Td (103 Living Room | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 290 Td (Elements: floor_typical_01::apt-room:flat_03__living) Tj ET
+BT /F1 8 Tf 32 275 Td (Current: {"areaSqm":26.02535625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 260 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 215 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 185 Td () Tj ET
+BT /F1 8 Tf 32 170 Td (96. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__living.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 155 Td (exterior/balcony/shaft window openings: Flat 103 Living Room | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 140 Td (Elements: floor_typical_01::apt-room:flat_03__living,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::win_apt-room:flat_03__living_floor_typical_01::apt-wall:x:23700:28200:32200,) Tj ET
+BT /F1 8 Tf 32 110 Td (floor_typical_01::win_apt-room:flat_03__living_floor_typical_01::apt-wall:y:32200:23700:27300,) Tj ET
+BT /F1 8 Tf 32 95 Td (floor_typical_01::apt-room:core_shaft_6, floor_typical_01::apt-room:core_shaft_11) Tj ET
+endstream
+endobj
+52 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 53 0 R >>
+endobj
+53 0 obj
+<< /Length 4753 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 25 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Current: 2.88 m2 | Required: 2.6025356250000002 m2) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 755 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 725 Td () Tj ET
+BT /F1 8 Tf 32 710 Td (97. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__master_bed.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 695 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 680 Td (Elements: floor_typical_01::apt-room:flat_03__master_bed) Tj ET
+BT /F1 8 Tf 32 665 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 635 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 620 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 605 Td () Tj ET
+BT /F1 8 Tf 32 590 Td (98. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__master_bed.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 575 Td (Flat 103 Master Bedroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 560 Td (Elements: floor_typical_01::apt-room:flat_03__master_bed) Tj ET
+BT /F1 8 Tf 32 545 Td (Current: {"areaSqm":19.8774625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 530 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 485 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 455 Td () Tj ET
+BT /F1 8 Tf 32 440 Td (99. VIOLATION | room.floor_typical_01::apt-room:flat_03__master_bed.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 425 Td (exterior/balcony/shaft window openings: Flat 103 Master Bedroom | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 410 Td (Elements: floor_typical_01::apt-room:flat_03__master_bed,) Tj ET
+BT /F1 8 Tf 32 395 Td (floor_typical_01::win_apt-room:flat_03__master_bed_floor_typical_01::apt-wall:x:31000:16900:22650) Tj ET
+BT /F1 8 Tf 32 380 Td (Current: 1.44 m2 | Required: 1.98774625 m2) Tj ET
+BT /F1 8 Tf 32 365 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 335 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 305 Td () Tj ET
+BT /F1 8 Tf 32 290 Td (100. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__master_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 275 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 260 Td (Elements: floor_typical_01::apt-room:flat_03__master_bath) Tj ET
+BT /F1 8 Tf 32 245 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 185 Td () Tj ET
+BT /F1 8 Tf 32 170 Td (101. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__master_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 155 Td (Flat 103 Master Toilet | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 140 Td (Elements: floor_typical_01::apt-room:flat_03__master_bath) Tj ET
+BT /F1 8 Tf 32 125 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 110 Td (required ) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+endstream
+endobj
+54 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 55 0 R >>
+endobj
+55 0 obj
+<< /Length 4754 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 26 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 785 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 755 Td () Tj ET
+BT /F1 8 Tf 32 740 Td (102. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__common_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 725 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 710 Td (Elements: floor_typical_01::apt-room:flat_03__common_bath) Tj ET
+BT /F1 8 Tf 32 695 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 665 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (103. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__common_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 605 Td (Flat 103 Common Bathroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_03__common_bath) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 560 Td (required ) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 515 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 485 Td () Tj ET
+BT /F1 8 Tf 32 470 Td (104. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__bed_2.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 455 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: floor_typical_01::apt-room:flat_03__bed_2) Tj ET
+BT /F1 8 Tf 32 425 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (105. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__bed_2.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 335 Td (103 Bedroom 02 | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_03__bed_2) Tj ET
+BT /F1 8 Tf 32 305 Td (Current: {"areaSqm":22.49663125,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 290 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 245 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 215 Td () Tj ET
+BT /F1 8 Tf 32 200 Td (106. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__bed_2.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 185 Td (exterior/balcony/shaft window openings: Flat 103 Bedroom 02 | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 170 Td (Elements: floor_typical_01::apt-room:flat_03__bed_2,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::win_apt-room:flat_03__bed_2_floor_typical_01::apt-wall:x:31000:25650:32200,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_typical_01::win_apt-room:flat_03__bed_2_floor_typical_01::apt-wall:y:32200:27300:31000,) Tj ET
+BT /F1 8 Tf 32 125 Td (floor_typical_01::apt-room:core_shaft_11) Tj ET
+BT /F1 8 Tf 32 110 Td (Current: 2.88 m2 | Required: 2.249663125 m2) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+endstream
+endobj
+56 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 57 0 R >>
+endobj
+57 0 obj
+<< /Length 4790 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 27 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 785 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 770 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 755 Td () Tj ET
+BT /F1 8 Tf 32 740 Td (107. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__balcony.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 725 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 710 Td (Elements: floor_typical_01::apt-room:flat_03__balcony) Tj ET
+BT /F1 8 Tf 32 695 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 665 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (108. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_03__balcony.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 605 Td (Flat 103 Family Sit-out | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_03__balcony) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: {"areaSqm":5.34389375,"widthM":1.8475,"aspectRatio":1.5656292286874154}  | Required: UDCPR 9.2.1 /) Tj ET
+BT /F1 8 Tf 32 560 Td (9.3.1 owner requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 515 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 500 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 485 Td () Tj ET
+BT /F1 8 Tf 32 470 Td (109. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__kitchen.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 455 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 440 Td (Elements: floor_typical_01::apt-room:flat_04__kitchen) Tj ET
+BT /F1 8 Tf 32 425 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 395 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (110. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__kitchen.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 335 Td (Flat 104 Kitchen | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_04__kitchen) Tj ET
+BT /F1 8 Tf 32 305 Td (Current: {"areaSqm":13.6089625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 290 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 245 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 215 Td () Tj ET
+BT /F1 8 Tf 32 200 Td (111. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__kitchen.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 185 Td (exterior/balcony/shaft window openings: Flat 104 Kitchen | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 170 Td (Elements: floor_typical_01::apt-room:flat_04__kitchen,) Tj ET
+BT /F1 8 Tf 32 155 Td (floor_typical_01::win_apt-room:flat_04__kitchen_floor_typical_01::apt-wall:x:10900:10200:11820,) Tj ET
+BT /F1 8 Tf 32 140 Td (floor_typical_01::apt-room:core_shaft_8) Tj ET
+BT /F1 8 Tf 32 125 Td (Current: 1.44 m2 | Required: 1.3608962500000001 m2) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+endstream
+endobj
+58 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 59 0 R >>
+endobj
+59 0 obj
+<< /Length 4646 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 28 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 785 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 770 Td () Tj ET
+BT /F1 8 Tf 32 755 Td (112. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__dining.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 740 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 725 Td (Elements: floor_typical_01::apt-room:flat_04__dining) Tj ET
+BT /F1 8 Tf 32 710 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 665 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 650 Td () Tj ET
+BT /F1 8 Tf 32 635 Td (113. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__dining.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 620 Td (104 Dining & Family Hall | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 605 Td (Elements: floor_typical_01::apt-room:flat_04__dining) Tj ET
+BT /F1 8 Tf 32 590 Td (Current: {"areaSqm":11.273225,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 575 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 530 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 515 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 500 Td () Tj ET
+BT /F1 8 Tf 32 485 Td (114. VIOLATION | room.floor_typical_01::apt-room:flat_04__dining.ventilation | Actual exterior/balcony/shaft) Tj ET
+BT /F1 8 Tf 32 470 Td (window openings: Flat 104 Dining & Family Hall | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 455 Td (Elements: floor_typical_01::apt-room:flat_04__dining) Tj ET
+BT /F1 8 Tf 32 440 Td (Current: 0 m2 | Required: 1.1273225 m2) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 395 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (115. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__living.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 335 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_04__living) Tj ET
+BT /F1 8 Tf 32 305 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 245 Td () Tj ET
+BT /F1 8 Tf 32 230 Td (116. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__living.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 215 Td (104 Living Room | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 200 Td (Elements: floor_typical_01::apt-room:flat_04__living) Tj ET
+BT /F1 8 Tf 32 185 Td (Current: {"areaSqm":26.02535625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 170 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 125 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 95 Td () Tj ET
+endstream
+endobj
+60 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 61 0 R >>
+endobj
+61 0 obj
+<< /Length 4977 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 29 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (117. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__living.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 785 Td (exterior/balcony/shaft window openings: Flat 104 Living Room | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 770 Td (Elements: floor_typical_01::apt-room:flat_04__living,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_typical_01::win_apt-room:flat_04__living_floor_typical_01::apt-wall:x:27700:10200:13800,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_typical_01::win_apt-room:flat_04__living_floor_typical_01::apt-wall:y:13800:23700:27700,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::apt-room:core_shaft_12, floor_typical_01::apt-room:core_shaft_7) Tj ET
+BT /F1 8 Tf 32 710 Td (Current: 2.88 m2 | Required: 2.6025356250000002 m2) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 665 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (118. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__master_bed.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 605 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_04__master_bed) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 515 Td () Tj ET
+BT /F1 8 Tf 32 500 Td (119. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__master_bed.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 485 Td (Flat 104 Master Bedroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 470 Td (Elements: floor_typical_01::apt-room:flat_04__master_bed) Tj ET
+BT /F1 8 Tf 32 455 Td (Current: {"areaSqm":24.98814375,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 440 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 395 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (120. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__master_bed.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 335 Td (exterior/balcony/shaft window openings: Flat 104 Master Bedroom | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_04__master_bed,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::win_apt-room:flat_04__master_bed_floor_typical_01::apt-wall:x:10900:6500:9800,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::win_apt-room:flat_04__master_bed_floor_typical_01::apt-wall:y:6500:10900:18150,) Tj ET
+BT /F1 8 Tf 32 275 Td (floor_typical_01::apt-room:core_shaft_16, floor_typical_01::apt-room:core_shaft_17) Tj ET
+BT /F1 8 Tf 32 260 Td (Current: 2.88 m2 | Required: 2.498814375 m2) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 215 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 200 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 185 Td () Tj ET
+BT /F1 8 Tf 32 170 Td (121. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__master_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 155 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 140 Td (Elements: floor_typical_01::apt-room:flat_04__master_bath) Tj ET
+BT /F1 8 Tf 32 125 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 95 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+endstream
+endobj
+62 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 63 0 R >>
+endobj
+63 0 obj
+<< /Length 4653 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 30 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 785 Td () Tj ET
+BT /F1 8 Tf 32 770 Td (122. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__master_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 755 Td (Flat 104 Master Toilet | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 740 Td (Elements: floor_typical_01::apt-room:flat_04__master_bath) Tj ET
+BT /F1 8 Tf 32 725 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 710 Td (required ) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 665 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (123. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__common_bath.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 605 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_04__common_bath) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: Unverified mm | Required: 2100 mm) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 515 Td () Tj ET
+BT /F1 8 Tf 32 500 Td (124. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__common_bath.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 485 Td (Flat 104 Common Bathroom | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 470 Td (Elements: floor_typical_01::apt-room:flat_04__common_bath) Tj ET
+BT /F1 8 Tf 32 455 Td (Current: {"areaSqm":3.3620875,"widthM":1.385,"aspectRatio":1.7527075812274369}  | Required: Wet-room subtype) Tj ET
+BT /F1 8 Tf 32 440 Td (required ) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 395 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (125. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__bed_2.height | Explicit clear room height below) Tj ET
+BT /F1 8 Tf 32 335 Td (slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_04__bed_2) Tj ET
+BT /F1 8 Tf 32 305 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 290 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 275 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 245 Td () Tj ET
+BT /F1 8 Tf 32 230 Td (126. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__bed_2.size | Clear area / width / aspect: Flat) Tj ET
+BT /F1 8 Tf 32 215 Td (104 Bedroom 02 | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 200 Td (Elements: floor_typical_01::apt-room:flat_04__bed_2) Tj ET
+BT /F1 8 Tf 32 185 Td (Current: {"areaSqm":22.49663125,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 170 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 155 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 125 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 95 Td () Tj ET
+endstream
+endobj
+64 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 65 0 R >>
+endobj
+65 0 obj
+<< /Length 4902 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 31 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (127. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__bed_2.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 785 Td (exterior/balcony/shaft window openings: Flat 104 Bedroom 02 | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 770 Td (Elements: floor_typical_01::apt-room:flat_04__bed_2,) Tj ET
+BT /F1 8 Tf 32 755 Td (floor_typical_01::win_apt-room:flat_04__bed_2_floor_typical_01::apt-wall:x:27700:6500:10200,) Tj ET
+BT /F1 8 Tf 32 740 Td (floor_typical_01::win_apt-room:flat_04__bed_2_floor_typical_01::apt-wall:y:6500:21150:27700,) Tj ET
+BT /F1 8 Tf 32 725 Td (floor_typical_01::apt-room:core_shaft_12, floor_typical_01::apt-room:core_shaft_17) Tj ET
+BT /F1 8 Tf 32 710 Td (Current: 2.88 m2 | Required: 2.249663125 m2) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 680 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 665 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 650 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 635 Td () Tj ET
+BT /F1 8 Tf 32 620 Td (128. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__balcony.height | Explicit clear room height) Tj ET
+BT /F1 8 Tf 32 605 Td (below slab/beam | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 590 Td (Elements: floor_typical_01::apt-room:flat_04__balcony) Tj ET
+BT /F1 8 Tf 32 575 Td (Current: Unverified mm | Required: 2750 mm) Tj ET
+BT /F1 8 Tf 32 560 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 2. Supply measured section clear height; floor-to-floor height alone does not establish clearance.) Tj ET
+BT /F1 8 Tf 32 530 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 515 Td () Tj ET
+BT /F1 8 Tf 32 500 Td (129. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__balcony.size | Clear area / width / aspect:) Tj ET
+BT /F1 8 Tf 32 485 Td (Flat 104 Family Sit-out | UDCPR 9.2, 9.3, 9.4) Tj ET
+BT /F1 8 Tf 32 470 Td (Elements: floor_typical_01::apt-room:flat_04__balcony) Tj ET
+BT /F1 8 Tf 32 455 Td (Current: {"areaSqm":5.36745625,"widthM":null,"aspectRatio":null}  | Required: UDCPR 9.2.1 / 9.3.1 owner) Tj ET
+BT /F1 8 Tf 32 440 Td (requirements; NBC review pending ) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 410 Td (Step 2. Record wet-room subtype for bath/WC minima; verify NBC room sizes. Do not misquote owner-convenience) Tj ET
+BT /F1 8 Tf 32 395 Td (provisions as numerical statutory minima.) Tj ET
+BT /F1 8 Tf 32 380 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 365 Td () Tj ET
+BT /F1 8 Tf 32 350 Td (130. NOT_VERIFIED | room.floor_typical_01::apt-room:flat_04__balcony.ventilation | Actual) Tj ET
+BT /F1 8 Tf 32 335 Td (exterior/balcony/shaft window openings: Flat 104 Family Sit-out | UDCPR 9.20.1, 9.20.2 Table 9-C; 9.4.3) Tj ET
+BT /F1 8 Tf 32 320 Td (Elements: floor_typical_01::apt-room:flat_04__balcony,) Tj ET
+BT /F1 8 Tf 32 305 Td (floor_typical_01::win_apt-room:flat_04__balcony_floor_typical_01::apt-wall:x:10900:11820:13800,) Tj ET
+BT /F1 8 Tf 32 290 Td (floor_typical_01::apt-room:core_shaft_8) Tj ET
+BT /F1 8 Tf 32 275 Td (Current: 1.44 m2 | Required: 0.536745625 m2) Tj ET
+BT /F1 8 Tf 32 260 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 2. Provide hosted window width/height, outdoor adjacency, adequate shafts and depth/light assessment;) Tj ET
+BT /F1 8 Tf 32 230 Td (opening area alone is insufficient.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 200 Td () Tj ET
+BT /F1 8 Tf 32 185 Td (131. NOT_VERIFIED | fire.review | Special-building classification, exit capacity, enclosure and fire systems) Tj ET
+BT /F1 8 Tf 32 170 Td (| UDCPR 9.27.1; 9.28.4 Table 9-D; 9.28.7; 9.28.8 Table 9-G; 9.29.3) Tj ET
+BT /F1 8 Tf 32 155 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 140 Td (Current: Unverified  | Required: Verified fire strategy and section data ) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 2. Obtain professional fire/accessibility review; planar egress measurements do not verify enclosure,) Tj ET
+BT /F1 8 Tf 32 95 Td (smoke protection, exit capacity or required second exits.) Tj ET
+endstream
+endobj
+66 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 67 0 R >>
+endobj
+67 0 obj
+<< /Length 4144 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 32 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 785 Td () Tj ET
+BT /F1 8 Tf 32 770 Td (132. LAYOUT | OPENING_HOST_INVALID) Tj ET
+BT /F1 8 Tf 32 755 Td (Elements: See measured detail below) Tj ET
+BT /F1 8 Tf 32 740 Td (Current: floor_stilt_00::door_stilt_grand_lobby_main_entrance | Required: Valid, conserved canonical) Tj ET
+BT /F1 8 Tf 32 725 Td (geometry) Tj ET
+BT /F1 8 Tf 32 710 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 695 Td (Step 2. Locate the referenced entities in CAD, correct their boundaries or openings, and rerun the geometry) Tj ET
+BT /F1 8 Tf 32 680 Td (audit.) Tj ET
+BT /F1 8 Tf 32 665 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 650 Td () Tj ET
+BT /F1 8 Tf 32 635 Td (133. LAYOUT | HABITABLE_WINDOW) Tj ET
+BT /F1 8 Tf 32 620 Td (Elements: floor_typical_01::apt-room:flat_03__dining) Tj ET
+BT /F1 8 Tf 32 605 Td (Current: 0 operable hosted windows | Required: At least one operable window) Tj ET
+BT /F1 8 Tf 32 590 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 575 Td (Step 2. Place the room against an exterior wall or qualifying OTS duct. Add a hosted operable window and) Tj ET
+BT /F1 8 Tf 32 560 Td (recheck ventilation area.) Tj ET
+BT /F1 8 Tf 32 545 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 530 Td () Tj ET
+BT /F1 8 Tf 32 515 Td (134. LAYOUT | HABITABLE_WINDOW) Tj ET
+BT /F1 8 Tf 32 500 Td (Elements: floor_typical_01::apt-room:flat_04__dining) Tj ET
+BT /F1 8 Tf 32 485 Td (Current: 0 operable hosted windows | Required: At least one operable window) Tj ET
+BT /F1 8 Tf 32 470 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 455 Td (Step 2. Place the room against an exterior wall or qualifying OTS duct. Add a hosted operable window and) Tj ET
+BT /F1 8 Tf 32 440 Td (recheck ventilation area.) Tj ET
+BT /F1 8 Tf 32 425 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 410 Td () Tj ET
+BT /F1 8 Tf 32 395 Td (135. LAYOUT | stairs.floor_stilt_00::stilt__stair_1:stair.brief) Tj ET
+BT /F1 8 Tf 32 380 Td (Elements: floor_stilt_00::stilt__stair_1:stair) Tj ET
+BT /F1 8 Tf 32 365 Td (Current: 1425 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 350 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 335 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 320 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 305 Td () Tj ET
+BT /F1 8 Tf 32 290 Td (136. LAYOUT | stairs.floor_stilt_00::stilt__stair_2:stair.brief) Tj ET
+BT /F1 8 Tf 32 275 Td (Elements: floor_stilt_00::stilt__stair_2:stair) Tj ET
+BT /F1 8 Tf 32 260 Td (Current: 1325 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 245 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 230 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 215 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 200 Td () Tj ET
+BT /F1 8 Tf 32 185 Td (137. LAYOUT | stairs.floor_typical_01::apt-room:core_stair_1:stair.brief) Tj ET
+BT /F1 8 Tf 32 170 Td (Elements: floor_typical_01::apt-room:core_stair_1:stair) Tj ET
+BT /F1 8 Tf 32 155 Td (Current: 1425 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 140 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 125 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 110 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 95 Td () Tj ET
+endstream
+endobj
+68 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 69 0 R >>
+endobj
+69 0 obj
+<< /Length 816 >>
+stream
+% SCALE_MODE REPORT_NOT_TO_SCALE
+% REPORT_TYPE UDCPR_COMPLIANCE_REPORT
+% CANONICAL_HASH 24d88046b2314353279533cad3328751f3127111220438208d7e69f68b1c8907
+BT /F1 8 Tf 32 824 Td (Compliance audit and fix plan - revision 2 - page 33 of 33) Tj ET
+BT /F1 8 Tf 32 800 Td (138. LAYOUT | stairs.floor_typical_01::apt-room:core_stair_2:stair.brief) Tj ET
+BT /F1 8 Tf 32 785 Td (Elements: floor_typical_01::apt-room:core_stair_2:stair) Tj ET
+BT /F1 8 Tf 32 770 Td (Current: 1325 mm | Required: 1500 mm) Tj ET
+BT /F1 8 Tf 32 755 Td (Step 1. Locate the listed entities and review the measured values.) Tj ET
+BT /F1 8 Tf 32 740 Td (Step 2. Meet the explicit 1500mm project policy.) Tj ET
+BT /F1 8 Tf 32 725 Td (Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.) Tj ET
+BT /F1 8 Tf 32 710 Td () Tj ET
+endstream
+endobj
+xref
+0 70
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000338 00000 n 
+0000000406 00000 n 
+0000000532 00000 n 
+0000004742 00000 n 
+0000004868 00000 n 
+0000009351 00000 n 
+0000009477 00000 n 
+0000014472 00000 n 
+0000014600 00000 n 
+0000020733 00000 n 
+0000020861 00000 n 
+0000026806 00000 n 
+0000026934 00000 n 
+0000032773 00000 n 
+0000032901 00000 n 
+0000038805 00000 n 
+0000038933 00000 n 
+0000045144 00000 n 
+0000045272 00000 n 
+0000050122 00000 n 
+0000050250 00000 n 
+0000056087 00000 n 
+0000056215 00000 n 
+0000060883 00000 n 
+0000061011 00000 n 
+0000065685 00000 n 
+0000065813 00000 n 
+0000070378 00000 n 
+0000070506 00000 n 
+0000075910 00000 n 
+0000076038 00000 n 
+0000080897 00000 n 
+0000081025 00000 n 
+0000085775 00000 n 
+0000085903 00000 n 
+0000090766 00000 n 
+0000090894 00000 n 
+0000095666 00000 n 
+0000095794 00000 n 
+0000100555 00000 n 
+0000100683 00000 n 
+0000105480 00000 n 
+0000105608 00000 n 
+0000110496 00000 n 
+0000110624 00000 n 
+0000115451 00000 n 
+0000115579 00000 n 
+0000120403 00000 n 
+0000120531 00000 n 
+0000125444 00000 n 
+0000125572 00000 n 
+0000130377 00000 n 
+0000130505 00000 n 
+0000135311 00000 n 
+0000135439 00000 n 
+0000140281 00000 n 
+0000140409 00000 n 
+0000145107 00000 n 
+0000145235 00000 n 
+0000150264 00000 n 
+0000150392 00000 n 
+0000155097 00000 n 
+0000155225 00000 n 
+0000160179 00000 n 
+0000160307 00000 n 
+0000164503 00000 n 
+0000164631 00000 n 
+trailer
+<< /Size 70 /Root 1 0 R >>
+startxref
+165498
+%%EOF

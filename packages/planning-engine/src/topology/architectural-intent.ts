@@ -22,7 +22,8 @@
  * This module makes no claim of statutory compliance.
  */
 
-import type { ApartmentBhkType, BuildingMassingShape } from '@ai-floor-planner/core';
+import type { ApartmentBhkType, BuildingMassingShape, PlanCategory } from '@ai-floor-planner/core';
+import { inferPlanCategoryFromPrompt, inferShapeIdFromPrompt } from '../catalog/shape-catalog';
 
 /** Where the user wants vertical circulation to sit. */
 export type CorePreference =
@@ -100,6 +101,8 @@ export interface SoftPreferences {
   readonly ventilatedCentralOtsShafts?: boolean;
   readonly requestsDifferentShape?: boolean;
   readonly preferredMassingShape?: BuildingMassingShape;
+  readonly planCategory?: PlanCategory;
+  readonly includeDiningHall?: boolean;
 }
 
 export interface ArchitecturalProgram {
@@ -205,7 +208,6 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   let properSpaceUtilization = false;
   let ventilatedCentralOtsShafts = false;
   let requestsDifferentShape = false;
-  let preferredMassingShape: BuildingMassingShape | undefined;
 
   const fullLower = normalizeBriefSpelling(prompt);
   if (/\b(?:building\s+center(?:ed)?|center(?:ed)?\s+(?:the\s+)?building|center(?:ed)?\s+inside\s+(?:the\s+)?permissible)\b/.test(fullLower)) {
@@ -221,16 +223,18 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   if (!negOtsGlobal && /\b(?:ventilated?\s+(?:central\s+)?ots|central\s+ots\s+shafts?|ots\s+shafts?|ventilation\s+shafts?|light\s+wells?)\b/.test(fullLower)) {
     ventilatedCentralOtsShafts = true;
   }
-  if (/\b(?:differ(?:e|a)?nt\s+(?:building\s+|footprint\s+|layout\s+)?shape|non[\s-]standard\s+(?:building\s+)?shape|unique\s+(?:building\s+)?shape|varied\s+(?:building\s+)?shape|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|cruciform|plus[\s-]?shape|pinwheel|stepped)\b/.test(fullLower)) {
+  if (/\b(?:differ(?:e|a)?nt\s+(?:building\s+|footprint\s+|layout\s+)?shape|non[\s-]standard\s+(?:building\s+)?shape|unique\s+(?:building\s+)?shape|varied\s+(?:building\s+)?shape|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|t[\s-]?shape|o[\s-]?shape|y[\s-]?shape|cruciform|plus[\s-]?shape|pinwheel|stepped|crescent|serpentine|rotunda|elliptical|lotus|bowfront|triangular|triskele|butterfly|hexagonal|trapezoid|zigzag|curved\s+(?:facade|wall|building))\b/.test(fullLower)) {
     requestsDifferentShape = true;
   }
-  if (/\bh[\s-]?shape|h[\s-]?wing\b/.test(fullLower)) preferredMassingShape = 'H_SHAPE_WING';
-  else if (/\bu[\s-]?shape\b/.test(fullLower)) preferredMassingShape = 'U_SHAPE_COURTYARD';
-  else if (/\bl[\s-]?shape|corner[\s-]?wing\b/.test(fullLower)) preferredMassingShape = 'L_SHAPE_CORNER';
-  else if (/\bcruciform|plus[\s-]?shape\b/.test(fullLower)) preferredMassingShape = 'CRUCIFORM_PLUS';
-  else if (/\bpinwheel\b/.test(fullLower)) preferredMassingShape = 'PINWHEEL_CLUSTER';
-  else if (/\bstepped(?:\s+offset)?\b/.test(fullLower)) preferredMassingShape = 'STEPPED_OFFSET_BLOCK';
-  else if (/\bcompact\s+(?:double[\s-]loaded\s+)?block\b/.test(fullLower)) preferredMassingShape = 'COMPACT_DOUBLE_LOADED';
+  const preferredMassingShape = inferShapeIdFromPrompt(fullLower);
+  const inferredPlanCategory = inferPlanCategoryFromPrompt(fullLower);
+
+  let includeDiningHall: boolean | undefined;
+  if (/\b(?:no\s+dining(?:\s+hall)?|without\s+dining(?:\s+hall)?|open\s+living[\s-]only)\b/.test(fullLower)) {
+    includeDiningHall = false;
+  } else if (/\b(?:with\s+dining(?:\s+hall)?|separate\s+dining(?:\s+hall)?|dedicated\s+dining(?:\s+hall)?)\b/.test(fullLower)) {
+    includeDiningHall = true;
+  }
   const areaMatch = fullLower.match(/\b(\d[\d,]*(?:\.\d+)?)\s*(?:sq\.?\s*ft\.?|sqft|square\s+feet)\b/);
   if (areaMatch) {
     const parsedArea = Number(areaMatch[1]!.replace(/,/g, ''));
@@ -426,6 +430,8 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
     ...(ventilatedCentralOtsShafts ? { ventilatedCentralOtsShafts: true } : {}),
     ...(requestsDifferentShape ? { requestsDifferentShape: true } : {}),
     ...(preferredMassingShape ? { preferredMassingShape } : {}),
+    ...(inferredPlanCategory ? { planCategory: inferredPlanCategory } : {}),
+    ...(includeDiningHall !== undefined ? { includeDiningHall } : {}),
   };
 
   const mandatory: MandatoryRequirements = {

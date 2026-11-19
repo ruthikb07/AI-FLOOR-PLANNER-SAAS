@@ -1,13 +1,23 @@
-import React from 'react';
-import type { AuthorityType, CongestionZone } from '@ai-floor-planner/core';
+import React, { useState } from 'react';
+import type {
+  AuthorityType,
+  BuildingMassingShape,
+  CongestionZone,
+  ParametricShapeParams,
+  PlanCategory,
+} from '@ai-floor-planner/core';
 import {
-  Building2,
   Sparkles,
   ArrowRight,
   ArrowLeft,
   X,
 } from 'lucide-react';
 import { useStudioStore } from '../../stores/useStudioStore';
+import type {
+  ProjectDevelopmentType,
+  RedevelopmentProgramConfig,
+} from '../../services/redevelopment-feasibility';
+import type { ReferenceWorkflowState } from '../../services/reference-workflow';
 import {
   ArgonButton,
   ArgonStepper,
@@ -17,13 +27,19 @@ import { Stage1PlotAndSetbacks } from './wizard/Stage1PlotAndSetbacks';
 import { Stage2FloorsAndParking } from './wizard/Stage2FloorsAndParking';
 import { Stage3FlatsAndBhkMix } from './wizard/Stage3FlatsAndBhkMix';
 import { Stage4PromptAndUpload } from './wizard/Stage4PromptAndUpload';
+import { SurveyDrawing } from './wizard/SurveyDrawing';
+import { useSurveyEditor } from './wizard/useSurveyEditor';
+import { surveyGenerationBlock } from '../../services/survey-draft';
+import { ParcelStudy } from './ParcelStudy';
 
 export interface ProjectSetupWizardData {
+  projectType?: ProjectDevelopmentType;
   authorityType?: AuthorityType;
   congestionZone?: CongestionZone;
   projectName: string;
   plotWidthM: number;
   plotDepthM: number;
+  siteGeometryMode?: 'survey' | 'rectangle';
   roadWidthM: number;
   roadFacing: 'North' | 'East' | 'South' | 'West';
   frontSetbackM: number;
@@ -31,89 +47,112 @@ export interface ProjectSetupWizardData {
   sideSetbackM: number;
   floorsCount: number;
   hasStiltParking: boolean;
+  duplexCount?: number;
+  triplexCount?: number;
   flatsPerFloor: number;
   bhkMix: Array<{
     unitType: '1BHK' | '2BHK' | '3BHK' | '4BHK';
     carpetAreaSqFt: number;
     count: number;
   }>;
+  buildingMassingShape?: BuildingMassingShape | 'AUTO';
+  planCategory?: PlanCategory;
+  autoExploreNovelShape?: boolean;
+  shapeParams?: ParametricShapeParams;
+  usedShapeIds?: readonly string[];
+  usedArchetypeIds?: readonly string[];
   includeWindowChajjas?: boolean;
   staggeredBalconies?: boolean;
+  includeDiningHall?: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
+  referenceWorkflow?: ReferenceWorkflowState;
+  redevelopment?: RedevelopmentProgramConfig;
 }
 
 interface ProjectSetupWizardProps {
   onGenerate: (data: ProjectSetupWizardData) => void;
   onCancel?: () => void;
+  onBackToWelcome?: () => void;
 }
 
 export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   onGenerate,
   onCancel,
+  onBackToWelcome,
 }) => {
   const {
     currentStep,
     setStep,
     nextStep,
     prevStep,
+    wizard,
+    updateWizard,
     getProjectSetupWizardData,
     isBhkMixValid,
   } = useStudioStore();
+  const [existing, setExisting] = useState(false);
+  const [readingReference, setReadingReference] = useState(false);
+  const survey = useSurveyEditor(wizard, updateWizard);
+  const surveyBlock = surveyGenerationBlock(survey.active);
+  const redevelopment = wizard.projectType === 'redevelopment';
+  const titles = ['Project type and site', 'Floors and parking', 'Massing and apartment mix', 'Project brief and references'];
 
   const steps: ArgonStepItem[] = [
-    { id: 1, label: 'Plot & Road', sublabel: 'Statutory Setbacks' },
-    { id: 2, label: 'Floors & Stilt', sublabel: 'Plinth Parking' },
-    { id: 3, label: 'Flats & BHK Mix', sublabel: 'Typology Split' },
-    { id: 4, label: 'AI Intent', sublabel: 'Reference Upload' },
+    { id: 1, label: 'Plot & Type', sublabel: wizard.projectType === 'redevelopment' ? 'Redevelopment' : 'New Build' },
+    { id: 2, label: 'Floors & Stilt', sublabel: 'Stacking & Duplex' },
+    { id: 3, label: 'Flats & Mix', sublabel: 'BHK & Massing' },
+    { id: 4, label: 'Ref & Intent', sublabel: '5-Stage Upload' },
   ];
 
   const handleFinish = () => {
+    if (surveyBlock) return;
     const data = getProjectSetupWizardData();
     onGenerate(data);
   };
 
   return (
-    <div className="argon-setup w-full h-full min-h-0 bg-argon-bg text-argon-text flex flex-col items-center justify-start p-4 sm:p-6 argon-scrollbar">
-      <div className="w-full max-w-4xl bg-argon-card border border-argon-border rounded-2xl shadow-md overflow-hidden flex flex-col my-auto">
-        {/* Wizard Header Bar */}
-        <div className="bg-argon-surface/90 border-b border-argon-border px-6 py-4.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-argon-btn text-argon-card flex items-center justify-center shadow-xs">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-argon-muted">
-                Stage 0{currentStep} of 04 • Architectural Intake
-              </span>
-              <h2 className="text-lg font-bold text-argon-text mt-0.5 tracking-tight">
-                {currentStep === 1 && 'Step 1: Plot Dimensions, Road & Setbacks'}
-                {currentStep === 2 && 'Step 2: Floors & Ground Stilt Parking'}
-                {currentStep === 3 && 'Step 3: Flats Per Floor Strategy & BHK Mix'}
-                {currentStep === 4 && 'Step 4: AI Design Guidance & Reference'}
-              </h2>
-            </div>
+    <section className="rh-program-workspace argon-setup bg-argon-bg" aria-label="Project setup">
+      <aside className="rh-program-drawing">
+        <header>
+          <p className="rh-atelier-kicker">{redevelopment ? 'Redevelopment brief' : 'New construction brief'}</p>
+          <h2>{wizard.projectName || 'Untitled project'}</h2>
+        </header>
+        {redevelopment && !survey.active && <div className="rh-program-toggle" aria-label="Redevelopment massing">
+          <button type="button" aria-pressed={existing} onClick={() => setExisting(true)}>Existing</button>
+          <button type="button" aria-pressed={!existing} onClick={() => setExisting(false)}>Proposed</button>
+        </div>}
+        {survey.active
+          ? <SurveyDrawing survey={survey} interactive={currentStep === 1} roadWidthM={wizard.roadWidthM} />
+          : <ParcelStudy draft={wizard} mode={redevelopment ? (existing ? 'existing' : 'massing') : currentStep === 1 ? 'site' : 'massing'} />}
+        <dl>
+          {!survey.active && <div><dt>Site area</dt><dd>{(wizard.plotWidthM * wizard.plotDepthM).toLocaleString()} m²</dd></div>}
+          <div><dt>Residential floors</dt><dd>{wizard.floorsCount}</dd></div>
+          <div><dt>Flats per floor</dt><dd>{wizard.flatsPerFloor}</dd></div>
+        </dl>
+      </aside>
+      <div className="rh-program-sheet">
+        <header>
+          <div className="rh-program-heading">
+            <div><p className="rh-atelier-kicker">Step {currentStep} of 4</p><h2>{titles[currentStep - 1]}</h2></div>
+            {onBackToWelcome && <button type="button" className="rh-outline-action" onClick={onBackToWelcome}>Welcome</button>}
           </div>
-
-          {/* Stepper Navigation */}
           <ArgonStepper
             steps={steps}
             currentStep={currentStep}
             onStepClick={(id) => setStep(id as 1 | 2 | 3 | 4)}
           />
-        </div>
-
-        {/* Step Body Content */}
-        <div className="p-6 sm:p-8 flex-1 overflow-y-auto">
-          {currentStep === 1 && <Stage1PlotAndSetbacks />}
+          {currentStep !== 4 && <button type="button" onClick={() => setStep(4)} className="rh-program-reference-link">Reference Upload</button>}
+        </header>
+        <div key={currentStep} className="rh-program-fields">
+          {currentStep === 1 && <Stage1PlotAndSetbacks survey={survey} />}
           {currentStep === 2 && <Stage2FloorsAndParking />}
           {currentStep === 3 && <Stage3FlatsAndBhkMix />}
-          {currentStep === 4 && <Stage4PromptAndUpload />}
+          {currentStep === 4 && <Stage4PromptAndUpload onReadingChange={setReadingReference} />}
         </div>
-
-        {/* Wizard Footer Controls */}
-        <div className="bg-argon-surface/90 border-t border-argon-border px-6 py-4 flex items-center justify-between">
+        {currentStep === 4 && surveyBlock && <p className="rh-survey-message" data-testid="survey-generation-block">{surveyBlock}</p>}
+        <footer>
           <ArgonButton
             variant="secondary"
             size="md"
@@ -142,15 +181,15 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
                 variant="primary"
                 size="md"
                 leftIcon={<Sparkles className="w-4 h-4" />}
-                disabled={!isBhkMixValid}
+                disabled={!isBhkMixValid || readingReference || Boolean(surveyBlock)}
                 onClick={handleFinish}
               >
                 Generate Architectural Project
               </ArgonButton>
             )}
           </div>
-        </div>
+        </footer>
       </div>
-    </div>
+    </section>
   );
 };

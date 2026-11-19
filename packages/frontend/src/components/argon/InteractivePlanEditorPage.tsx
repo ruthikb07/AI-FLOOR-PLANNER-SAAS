@@ -34,20 +34,66 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
     [floor.rooms],
   );
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>(() => editableRooms[0]?.id ?? floor.rooms[0]?.id ?? '');
+  const getRoomBounds = (room: Room) => {
+    if (room.boundary?.points?.length >= 3) {
+      const box = polygonBoundingBox(room.boundary);
+      if (box.width > 0 && box.height > 0) {
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      }
+    }
+    return { x: room.x, y: room.y, width: room.width, height: room.height };
+  };
+
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(() => (editor.selection?.entityType === 'room' ? editor.selection.entityId : undefined) ?? editableRooms[0]?.id ?? floor.rooms[0]?.id ?? '');
+  const [historyPast, setHistoryPast] = useState<typeof editor.building[]>([]);
+  const [historyFuture, setHistoryFuture] = useState<typeof editor.building[]>([]);
+
   const selectedRoom: Room | undefined = useMemo(
     () => floor.rooms.find((r) => r.id === selectedRoomId) ?? editableRooms[0] ?? floor.rooms[0],
     [floor.rooms, editableRooms, selectedRoomId],
   );
 
+  const selectedRoomDims = useMemo(() => {
+    if (!selectedRoom) return { x: 0, y: 0, width: 3600, height: 3600 };
+    return getRoomBounds(selectedRoom);
+  }, [selectedRoom]);
+
+  const applyBuildingWithHistory = (nextBuilding: typeof editor.building, description: string) => {
+    setHistoryPast((prev) => [...prev.slice(-19), editor.building]);
+    setHistoryFuture([]);
+    editor.applyRefinement(nextBuilding, description);
+  };
+
+  const handleUndo = () => {
+    if (historyPast.length > 0) {
+      const previous = historyPast[historyPast.length - 1]!;
+      setHistoryPast((prev) => prev.slice(0, -1));
+      setHistoryFuture((fut) => [editor.building, ...fut]);
+      editor.applyRefinement(previous, 'Undo room edit');
+      return;
+    }
+    editor.undo();
+  };
+
+  const handleRedo = () => {
+    if (historyFuture.length > 0) {
+      const next = historyFuture[0]!;
+      setHistoryFuture((fut) => fut.slice(1));
+      setHistoryPast((prev) => [...prev, editor.building]);
+      editor.applyRefinement(next, 'Redo room edit');
+      return;
+    }
+    editor.redo();
+  };
+
   const [targetRoomSqFtInput, setTargetRoomSqFtInput] = useState<string>(() =>
     selectedRoom ? Math.round(selectedRoom.area * MM2_TO_SQFT).toString() : '160',
   );
   const [widthMmInput, setWidthMmInput] = useState<string>(() =>
-    selectedRoom ? Math.round(selectedRoom.width).toString() : '3600',
+    selectedRoom ? Math.round(getRoomBounds(selectedRoom).width).toString() : '3600',
   );
   const [lengthMmInput, setLengthMmInput] = useState<string>(() =>
-    selectedRoom ? Math.round(selectedRoom.height).toString() : '4200',
+    selectedRoom ? Math.round(getRoomBounds(selectedRoom).height).toString() : '4200',
   );
   const [expandIntoSetback, setExpandIntoSetback] = useState<boolean>(true);
   const [minSetbackMm, setMinSetbackMm] = useState<number>(2000);
@@ -100,25 +146,28 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
   }, [floor, editor.building, transform]);
 
   const selectRoom = (room: Room) => {
+    const b = getRoomBounds(room);
     setSelectedRoomId(room.id);
+    editor.selectEntity('room', room.id, floor.id);
     setTargetRoomSqFtInput((room.area * MM2_TO_SQFT).toFixed(1));
-    setWidthMmInput(Math.round(room.width).toString());
-    setLengthMmInput(Math.round(room.height).toString());
+    setWidthMmInput(Math.round(b.width).toString());
+    setLengthMmInput(Math.round(b.height).toString());
     setCandidates([]);
     setErrorMessage('');
   };
 
   const applyCandidate = (cand: RoomAreaCandidate, label?: string) => {
-    editor.applyRefinement(cand.building, label ?? cand.name);
+    applyBuildingWithHistory(cand.building, label ?? cand.name);
     setCandidates([]);
     setErrorMessage('');
     const updated = cand.building.floors
       .find((f) => f.id === floor.id)
       ?.rooms.find((r) => r.id === cand.targetRoomId);
     if (updated) {
+      const b = getRoomBounds(updated);
       setTargetRoomSqFtInput((updated.area * MM2_TO_SQFT).toFixed(1));
-      setWidthMmInput(Math.round(updated.width).toString());
-      setLengthMmInput(Math.round(updated.height).toString());
+      setWidthMmInput(Math.round(b.width).toString());
+      setLengthMmInput(Math.round(b.height).toString());
     }
     setStatusMessage(
       `Applied ${cand.name}: achieved ${(cand.achievedAreaMm2 * MM2_TO_SQFT).toFixed(1)} sq.ft. (${(cand.achievedAreaMm2 / 1_000_000).toFixed(2)} m²).`,
@@ -195,8 +244,8 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
       targetFlatSqFt: Number.isFinite(parsedSqFt) && parsedSqFt > 0 ? parsedSqFt : undefined,
       targetRoomAreaMm2:
         (!parsedSqFt || Math.abs(parsedSqFt - currentUnitAreaSqFt) < 1) &&
-        Number.isFinite(editedSqFt) &&
-        editedSqFt > 0
+          Number.isFinite(editedSqFt) &&
+          editedSqFt > 0
           ? editedSqFt * SQFT_TO_MM2
           : undefined,
       minSetbackMm,
@@ -205,7 +254,7 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
       setErrorMessage(result.error ?? 'Proportional ratio scaling exceeded plot envelope.');
       return;
     }
-    editor.applyRefinement(result.building, 'Mode B: Regenerate Similar (Keep Edited Ratios)');
+    applyBuildingWithHistory(result.building, 'Mode B: Regenerate Similar (Keep Edited Ratios)');
     if (result.achievedUnitSqFt) {
       setTargetFlatSqFtInput(Math.round(result.achievedUnitSqFt).toString());
     }
@@ -259,9 +308,10 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
     setDragDeltaMm(0);
     if (Math.abs(delta) < 50) return;
     const isX = side === 'east' || side === 'west';
+    const b = getRoomBounds(origRoom);
     const nextAreaMm2 = Math.max(
       1_800_000,
-      isX ? (origRoom.width + delta) * origRoom.height : origRoom.width * (origRoom.height + delta),
+      isX ? (b.width + delta) * b.height : b.width * (b.height + delta),
     );
     setTargetRoomSqFtInput((nextAreaMm2 * MM2_TO_SQFT).toFixed(1));
     void handleApplyRoomTarget(nextAreaMm2);
@@ -269,29 +319,28 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
 
   const selectedBox = selectedRoom
     ? {
-        tl: worldToScreen({ x: selectedRoom.x, y: selectedRoom.y }, transform),
-        br: worldToScreen({ x: selectedRoom.x + selectedRoom.width, y: selectedRoom.y + selectedRoom.height }, transform),
-      }
+      tl: worldToScreen({ x: selectedRoomDims.x, y: selectedRoomDims.y }, transform),
+      br: worldToScreen({ x: selectedRoomDims.x + selectedRoomDims.width, y: selectedRoomDims.y + selectedRoomDims.height }, transform),
+    }
     : null;
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col bg-slate-950 text-slate-100"
+      className="flex h-full min-h-0 flex-col rh-workspace bg-argon-bg text-argon-text"
       aria-label="Interactive Plan Editor Studio"
     >
       {/* Top Action Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-slate-900 px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-argon-border bg-argon-card px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <strong className="text-sm font-bold text-amber-400">03 · Interactive Plan Editor Studio</strong>
-          <div className="flex gap-1.5" aria-label="Edit Plan Floors">
+          <strong className="text-sm font-bold text-argon-text">Room dimensions</strong>
+          <div className="flex flex-wrap gap-1.5" aria-label="Edit Plan Floors">
             {editor.building.floors.map((fl) => (
               <button
                 key={fl.id}
                 type="button"
                 onClick={() => editor.switchFloor(fl.id)}
-                className={`rounded px-2.5 py-1 text-xs font-medium ${
-                  fl.id === floor.id ? 'bg-amber-500 text-slate-950 font-semibold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
+                className={`rounded px-2.5 py-1 text-xs font-medium ${fl.id === floor.id ? 'bg-argon-btn text-argon-card font-semibold' : 'bg-argon-surface text-argon-muted hover:bg-argon-border'
+                  }`}
               >
                 {fl.name}
               </button>
@@ -301,15 +350,19 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => editor.undo()}
-            className="rounded border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700"
+            data-testid="edit-plan-undo"
+            disabled={historyPast.length === 0 && !editor.canUndo}
+            onClick={handleUndo}
+            className="rounded border border-argon-border bg-argon-surface px-2.5 py-1 text-xs text-argon-text hover:bg-argon-border disabled:opacity-45"
           >
             Undo
           </button>
           <button
             type="button"
-            onClick={() => editor.redo()}
-            className="rounded border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700"
+            data-testid="edit-plan-redo"
+            disabled={historyFuture.length === 0 && !editor.canRedo}
+            onClick={handleRedo}
+            className="rounded border border-argon-border bg-argon-surface px-2.5 py-1 text-xs text-argon-text hover:bg-argon-border disabled:opacity-45"
           >
             Redo
           </button>
@@ -326,12 +379,12 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
       </div>
 
       {/* Main Workspace Split */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="rh-workspace-body flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Interactive Canvas */}
-        <div className="relative min-h-[360px] flex-1 overflow-hidden bg-slate-950 p-3">
+        <div className="relative min-h-[360px] flex-1 overflow-hidden bg-argon-bg p-3">
           <svg
             viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-            className="h-full w-full rounded-lg border border-slate-800 bg-white select-none"
+            className="h-full w-full rounded-lg border border-argon-border bg-white select-none"
             onPointerMove={handleSvgPointerMove}
             onPointerUp={handleSvgPointerUp}
           >
@@ -417,19 +470,19 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
             )}
           </svg>
           {dragRef.current && (
-            <div className="pointer-events-none absolute left-6 top-6 rounded bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-amber-300 shadow">
+            <div className="pointer-events-none absolute left-6 top-6 rounded bg-argon-card/90 px-3 py-1.5 text-xs font-semibold text-argon-text shadow">
               Dragging {dragRef.current.side} wall: {dragDeltaMm >= 0 ? `+${dragDeltaMm}` : dragDeltaMm} mm
             </div>
           )}
         </div>
 
         {/* Right Parametric Edit Panel */}
-        <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-l border-slate-700 bg-slate-900 p-4 lg:w-96">
+        <aside className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-l border-argon-border bg-argon-card p-4 lg:w-96">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="font-display text-xl font-semibold text-argon-text">
               Mode A · Parametric Room & Boundary Resize
             </h3>
-            <label className="mt-2 block text-xs text-slate-300">
+            <label className="mt-2 block text-xs text-argon-muted">
               Selected Room
               <select
                 value={selectedRoom?.id ?? ''}
@@ -437,7 +490,7 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                   const next = floor.rooms.find((r) => r.id === e.target.value);
                   if (next) selectRoom(next);
                 }}
-                className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100"
+                className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2.5 py-1.5 text-xs text-argon-text"
               >
                 {editableRooms.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -448,15 +501,15 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
             </label>
 
             {selectedRoom && (
-              <div className="mt-3 space-y-2.5 rounded-lg border border-slate-700 bg-slate-950/60 p-3">
-                <div className="flex items-center justify-between text-xs text-slate-300">
+              <div className="mt-3 space-y-2.5 rounded-lg border border-argon-border bg-argon-bg/60 p-3">
+                <div className="flex items-center justify-between text-xs text-argon-muted">
                   <span>Current Size</span>
-                  <span className="font-mono font-semibold text-amber-300">
-                    {(selectedRoom.width / 304.8).toFixed(1)}&apos; x {(selectedRoom.height / 304.8).toFixed(1)}&apos; ({(selectedRoom.area * MM2_TO_SQFT).toFixed(0)} sq.ft.)
+                  <span className="font-mono font-semibold text-argon-text">
+                    {(selectedRoomDims.width / 304.8).toFixed(1)}&apos; x {(selectedRoomDims.height / 304.8).toFixed(1)}&apos; ({Math.round(selectedRoomDims.width)} × {Math.round(selectedRoomDims.height)} mm) ({(selectedRoom.area * MM2_TO_SQFT).toFixed(0)} sq.ft.)
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="text-[11px] text-slate-400">
+                  <label className="text-[11px] text-argon-muted">
                     Width (mm)
                     <input
                       type="number"
@@ -467,10 +520,10 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                         const l = Number(lengthMmInput);
                         if (w > 0 && l > 0) setTargetRoomSqFtInput((w * l * MM2_TO_SQFT).toFixed(1));
                       }}
-                      className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-100"
+                      className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2 py-1 text-xs text-argon-text"
                     />
                   </label>
-                  <label className="text-[11px] text-slate-400">
+                  <label className="text-[11px] text-argon-muted">
                     Length (mm)
                     <input
                       type="number"
@@ -481,31 +534,31 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                         const l = Number(e.target.value);
                         if (w > 0 && l > 0) setTargetRoomSqFtInput((w * l * MM2_TO_SQFT).toFixed(1));
                       }}
-                      className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-100"
+                      className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2 py-1 text-xs text-argon-text"
                     />
                   </label>
                 </div>
-                <label className="block text-[11px] text-slate-400">
+                <label className="block text-[11px] text-argon-muted">
                   Target Room Area (sq.ft.)
                   <input
                     type="number"
                     value={targetRoomSqFtInput}
                     onChange={(e) => setTargetRoomSqFtInput(e.target.value)}
-                    className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100"
+                    className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2.5 py-1.5 text-xs text-argon-text"
                   />
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-slate-200">
+                <label className="flex items-center gap-2 text-xs text-argon-text">
                   <input
                     type="checkbox"
                     checked={expandIntoSetback}
                     onChange={(e) => setExpandIntoSetback(e.target.checked)}
-                    className="rounded border-slate-600 bg-slate-800 text-amber-500"
+                    className="rounded border-argon-border bg-argon-surface text-amber-500"
                   />
                   Expand External Boundary into Setback
                 </label>
 
-                <label className="block text-[11px] text-slate-400">
+                <label className="block text-[11px] text-argon-muted">
                   Minimum Preserved Setback (mm)
                   <input
                     type="number"
@@ -513,7 +566,7 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                     min={0}
                     step={100}
                     onChange={(e) => setMinSetbackMm(Math.max(0, Number(e.target.value) || 0))}
-                    className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-100"
+                    className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2 py-1 text-xs text-argon-text"
                   />
                 </label>
 
@@ -522,14 +575,14 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                     type="button"
                     disabled={isSolving}
                     onClick={() => void handleApplyRoomTarget()}
-                    className="flex-1 rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+                    className="flex-1 rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-argon-btnHover disabled:opacity-50"
                   >
                     {isSolving ? 'Solving...' : 'Apply Room Size'}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleModeAExpandEdge(300)}
-                    className="rounded border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/25"
+                    className="rounded border border-amber-500/40 bg-amber-500/15 px-2.5 py-1.5 text-xs font-medium text-argon-text hover:bg-amber-500/25"
                     title="Expand exterior boundary 300 mm outward into free setback margin"
                   >
                     +300mm Out
@@ -539,17 +592,17 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
             )}
           </div>
 
-          <hr className="border-slate-700" />
+          <hr className="border-argon-border" />
 
           {/* Mode B Section */}
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-argon-muted">
               Mode B · Proportional Ratio-Preserving Scaling
             </h3>
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-[11px] text-argon-muted">
               Scales flats proportionally while keeping your edited room area ratios, lift core, staircase, and plot setbacks intact.
             </p>
-            <label className="mt-2 block text-[11px] text-slate-300">
+            <label className="mt-2 block text-[11px] text-argon-muted">
               Target Area Per Flat (sq.ft.)
               <input
                 type="number"
@@ -558,25 +611,25 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                 min={350}
                 step={25}
                 onChange={(e) => setTargetFlatSqFtInput(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100"
+                className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2.5 py-1.5 text-xs text-argon-text"
               />
             </label>
             <button
               type="button"
               onClick={handleModeBRegenerateSimilar}
-              className="mt-2.5 w-full rounded bg-indigo-500 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-400"
+              className="mt-2.5 w-full rounded bg-argon-btn px-3 py-2 text-xs font-semibold text-white hover:bg-argon-btnHover"
             >
               Regenerate Similar (Keep Edited Ratios)
             </button>
 
-            <div className="mt-3 max-h-40 overflow-y-auto rounded border border-slate-800 bg-slate-950/60 p-2 text-[11px]">
-              <div className="mb-1 font-semibold text-slate-300">
+            <div className="mt-3 max-h-40 overflow-y-auto rounded border border-argon-border bg-argon-bg/60 p-2 text-[11px]">
+              <div className="mb-1 font-semibold text-argon-muted">
                 Active Flat Proportions ({currentUnitAreaSqFt} sq.ft.)
               </div>
               {ratioBreakdown.map((item) => (
-                <div key={item.id} className="flex justify-between py-0.5 text-slate-400">
+                <div key={item.id} className="flex justify-between py-0.5 text-argon-muted">
                   <span className="truncate pr-2">{item.name}</span>
-                  <span className="font-mono text-slate-300">
+                  <span className="font-mono text-argon-muted">
                     {item.sqFt} sq.ft. ({item.pct}%)
                   </span>
                 </div>
@@ -586,28 +639,28 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
 
           {candidates.length > 1 && (
             <div className="space-y-1.5">
-              <div className="text-[11px] font-semibold text-slate-300">Alternative Candidates</div>
+              <div className="text-[11px] font-semibold text-argon-muted">Alternative Candidates</div>
               {candidates.map((cand) => (
                 <button
                   key={cand.id}
                   type="button"
                   onClick={() => applyCandidate(cand)}
-                  className="block w-full rounded border border-slate-700 bg-slate-800 p-2 text-left text-[11px] hover:border-amber-500"
+                  className="block w-full rounded border border-argon-border bg-argon-surface p-2 text-left text-[11px] hover:border-amber-500"
                 >
-                  <div className="font-semibold text-amber-300">{cand.name}</div>
-                  <div className="text-slate-400">{cand.tradeOffs}</div>
+                  <div className="font-semibold text-argon-text">{cand.name}</div>
+                  <div className="text-argon-muted">{cand.tradeOffs}</div>
                 </button>
               ))}
             </div>
           )}
 
           {statusMessage && (
-            <div className="rounded border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs text-emerald-300">
+            <div className="rounded border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs text-argon-pass">
               {statusMessage}
             </div>
           )}
           {errorMessage && (
-            <div className="rounded border border-rose-500/40 bg-rose-500/10 p-2.5 text-xs text-rose-300">
+            <div role="alert" className="rounded border border-rose-500/40 bg-rose-500/10 p-2.5 text-xs text-argon-error">
               {errorMessage}
             </div>
           )}

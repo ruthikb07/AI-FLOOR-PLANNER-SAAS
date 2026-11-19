@@ -41,6 +41,7 @@ import {
   type TopologyPartition,
   type TopologyRejection,
 } from './topology-families';
+import { getShapeCatalogEntry } from '../catalog/shape-catalog';
 import { assembleStructureFromPartition } from './plan-assembler';
 import {
   ROOM_SLICING_ARCHETYPES,
@@ -173,7 +174,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     (input.seed && input.seed > 1
       ? ROOM_SLICING_ARCHETYPES[(input.seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
       : 'CENTRAL_LIVING_SPLIT_BEDROOMS');
-  const effectiveMassingShape: BuildingMassingShape | undefined =
+  const requestedShapeId: BuildingMassingShape | undefined =
     input.preferredMassingShape ??
     program.preferences.preferredMassingShape ??
     (program.preferences.requestsDifferentShape
@@ -181,6 +182,9 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       : input.seed && input.seed > 1
         ? BUILDING_MASSING_SHAPES[(input.seed - 1) % BUILDING_MASSING_SHAPES.length]
         : undefined);
+  const effectiveMassingShape: BuildingMassingShape | undefined = requestedShapeId
+    ? getShapeCatalogEntry(requestedShapeId).baseTopologyShape
+    : undefined;
 
   const { candidates: topologies, rejections } = generateTopologyCandidates({
     envelope: input.envelope,
@@ -355,7 +359,9 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
 
   // Failed candidates remain failed. Choose the fewest hard violations first,
   // then measured utility, with a stable identity tie-break for review/repair.
-  const leastBad = [...failed].sort((a, b) =>
+  const preferredFailed = requestedShapeId === 'PINWHEEL_CLUSTER'
+    ? failed.filter(candidate => candidate.partition.massingShape === requestedShapeId) : [];
+  const leastBad = [...(preferredFailed.length ? preferredFailed : failed)].sort((a, b) =>
     a.score.hardConstraints.filter(c => !c.satisfied).length - b.score.hardConstraints.filter(c => !c.satisfied).length
     || b.score.weightedTotal - a.score.weightedTotal
     || a.topology.variantId.localeCompare(b.topology.variantId))[0];
@@ -372,7 +378,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     concepts,
     rejected,
     archetype: effectiveArchetype,
-    massingShape: concepts[0]?.partition.massingShape ?? effectiveMassingShape,
+    massingShape: concepts[0]?.partition.massingShape ?? bestEffort?.partition.massingShape,
     shortfallExplanation,
     diagnostics: {
       engineVersion: TOPOLOGY_ENGINE_VERSION,

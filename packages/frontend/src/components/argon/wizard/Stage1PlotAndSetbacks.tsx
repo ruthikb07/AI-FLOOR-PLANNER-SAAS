@@ -1,7 +1,10 @@
 import React from 'react';
-import { Ruler, Compass, Layers, ShieldCheck } from 'lucide-react';
+import { Ruler, Compass, Layers, ShieldCheck, Building2, RefreshCw } from 'lucide-react';
 import type { AuthorityType, CongestionZone } from '@ai-floor-planner/core';
 import { useStudioStore } from '../../../stores/useStudioStore';
+import { RedevelopmentProgramPanel } from './RedevelopmentProgramPanel';
+import { SurveyControls, SurveyModeChoice } from './SurveyControls';
+import type { SurveyEditor } from './useSurveyEditor';
 import {
   ArgonCard,
   ArgonInput,
@@ -9,10 +12,11 @@ import {
   ArgonBadge,
 } from '../ui';
 
-export const Stage1PlotAndSetbacks: React.FC = () => {
+export const Stage1PlotAndSetbacks: React.FC<{ survey?: SurveyEditor }> = ({ survey }) => {
   const {
     wizard,
     updateWizard,
+    setProjectType,
     plotAreaM2,
     plotAreaSqFt,
     buildableWidthM,
@@ -29,8 +33,89 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
     'West',
   ];
 
+  const activeType = wizard.projectType ?? 'new_construction';
+
   return (
     <div className="space-y-6 animate-fadeIn">
+      {survey && <SurveyModeChoice survey={survey} />}
+      {survey?.active && <SurveyControls survey={survey} roadWidthM={wizard.roadWidthM}
+        onRoadWidthChange={roadWidthM => updateWizard({ roadWidthM })} />}
+      {/* Project Type Choice: New Construction vs Redevelopment */}
+      <ArgonCard variant="surface" className="p-4 sm:p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-argon-muted">
+              Step 01 • Project Development Type
+            </span>
+            <h3 className="text-sm font-bold text-argon-text mt-0.5">
+              Choose New Construction or Society / Building Redevelopment
+            </h3>
+          </div>
+          <ArgonBadge variant={activeType === 'redevelopment' ? 'leather' : 'pass'} size="sm">
+            {activeType === 'redevelopment' ? 'Redevelopment Active' : 'New Construction Active'}
+          </ArgonBadge>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <button
+            type="button"
+            data-testid="project-type-new-construction"
+            onClick={() => setProjectType('new_construction')}
+            className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3 ${
+              activeType === 'new_construction'
+                ? 'bg-argon-card border-argon-btn ring-1 ring-argon-btn/35 shadow-sm'
+                : 'bg-argon-card/60 border-argon-border hover:bg-argon-card'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                activeType === 'new_construction'
+                  ? 'bg-argon-btn text-argon-card'
+                  : 'bg-argon-surface text-argon-muted'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-argon-text">New Construction</div>
+              <p className="text-xs text-argon-muted mt-0.5">
+                Greenfield or cleared parcel development with full statutory setbacks, stilt parking, and custom BHK massing.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            data-testid="project-type-redevelopment"
+            onClick={() => setProjectType('redevelopment')}
+            className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3 ${
+              activeType === 'redevelopment'
+                ? 'bg-argon-card border-argon-btn ring-1 ring-argon-btn/35 shadow-sm'
+                : 'bg-argon-card/60 border-argon-border hover:bg-argon-card'
+            }`}
+          >
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                activeType === 'redevelopment'
+                  ? 'bg-argon-btn text-argon-card'
+                  : 'bg-argon-surface text-argon-muted'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-argon-text">Redevelopment</div>
+              <p className="text-xs text-argon-muted mt-0.5">
+                Replace or extend an existing building with retained/demolished zones, duplex/triplex quotas &amp; owner room briefs.
+              </p>
+            </div>
+          </button>
+        </div>
+      </ArgonCard>
+
+      {/* Redevelopment Program Details when active */}
+      {activeType === 'redevelopment' && <RedevelopmentProgramPanel />}
+
       {/* Project Identity & Planning Jurisdiction */}
       <ArgonCard variant="surface" className="p-4 sm:p-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -75,6 +160,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
         </div>
       </ArgonCard>
 
+      {!survey?.active && <>
       {/* Plot Dimensions & Road Access */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Plot Dimensions */}
@@ -244,6 +330,7 @@ export const Stage1PlotAndSetbacks: React.FC = () => {
           </div>
         </div>
       </ArgonCard>
+      </>}
     </div>
   );
 };

@@ -2611,80 +2611,108 @@ const cruciformPlus: FamilyBuilder = ctx => {
   }];
 };
 
-/**
- * PINWHEEL_CLUSTER — diagonally staggered wing blades with north-west and south-east open corner cutouts.
- */
-const pinwheelCluster: FamilyBuilder = ctx => {
-  const { envelope: env, flatsPerFloor, program } = ctx;
+/** Reserve a rectangular OTS duct where two unit footprints share a party wall. */
+function reserveInterflatDucts(initial: TopologyPartition, program: ArchitecturalProgram): TopologyPartition {
+  let partition = initial;
+  for (const [left, original] of initial.flatBoxes.entries()) {
+    for (let right = left + 1; right < initial.flatBoxes.length; right++) {
+      if (sharedEdgeLength(original, initial.flatBoxes[right]!) <= 0.001) continue;
+      const a = partition.flatBoxes[left]!, b = partition.flatBoxes[right]!;
+      if (partition.shaftBoxes.some((box, index) => partition.shaftTags?.[index]?.includes('shaft:interflat') &&
+        sharedEdgeLength(box, a) >= 650 && sharedEdgeLength(box, b) >= 650)) continue;
+      for (const [donor, other] of [[left, right], [right, left]] as const) {
+        const from = partition.flatBoxes[donor]!, to = partition.flatBoxes[other]!;
+        if (sharedEdgeLength(from, to) < 3000) continue;
+        const vertical = Math.abs(from.x + from.w - to.x) <= 0.001 || Math.abs(to.x + to.w - from.x) <= 0.001;
+        const high = vertical ? from.x < to.x : from.y < to.y;
+        const width = 1600;
+        if ((vertical ? from.w : from.h) <= width) continue;
+        const slices = vertical ? splitX(from, [high ? from.w - width : width, 0]) : splitY(from, [high ? from.h - width : width, 0]);
+        const remaining = slices[high ? 0 : 1]!, strip = slices[high ? 1 : 0]!;
+        const stripStart = vertical ? strip.y : strip.x;
+        const stripSpan = vertical ? strip.h : strip.w;
+        const targetStart = vertical ? to.y : to.x;
+        const targetEnd = targetStart + (vertical ? to.h : to.w);
+        const overlapStart = Math.max(stripStart, targetStart);
+        const overlapEnd = Math.min(stripStart + stripSpan, targetEnd);
+        const depth = Math.min(3600, overlapEnd - overlapStart);
+        const leading = overlapStart - stripStart;
+        const pieces = [leading, depth, stripSpan - leading - depth];
+        const voids = (vertical ? splitY(strip, pieces) : splitX(strip, pieces))
+          .map((box, index) => ({ box, isDuct: index === 1 })).filter(({ box }) => box.w > 0.001 && box.h > 0.001);
+        const candidate: TopologyPartition = { ...partition,
+          flatBoxes: partition.flatBoxes.map((box, index) => index === donor ? remaining : box),
+          shaftBoxes: [...partition.shaftBoxes, ...voids.map(({ box }) => box)],
+          shaftRoles: [...partition.shaftRoles, ...voids.map(() => 'OPEN_TO_SKY_VOID' as const)],
+          shaftTags: [...partition.shaftBoxes.map((_, index) => partition.shaftTags?.[index] ?? []),
+            ...voids.map(({ isDuct }) => isDuct ? ['shaft:ots', 'shaft:interflat'] : ['shaft:ots'])],
+        };
+        if (!partitionDefects(candidate, program).length) { partition = candidate; break; }
+      }
+    }
+  }
+  return partition;
+}
+
+/** Four congruent blades rotated about a square circulation core. */
+const pinwheelCluster: FamilyBuilder = ({ envelope: env, flatsPerFloor, program }) => {
   const variantId = 'massing:pinwheel';
-  const label = 'Pinwheel diagonally staggered wing massing';
-  if (flatsPerFloor < 2) {
-    return [{ variantId, label, rationale: '', reasons: ['Pinwheel massing requires at least 2 flats per floor'] }];
-  }
-  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const label = 'Four-wing rotational pinwheel';
+  const reject = (reason: string): BuildAttempt[] => [{ variantId, label, rationale: '', reasons: [reason] }];
+  if (flatsPerFloor !== 4) return reject('A rotational pinwheel requires four flats, one per wing.');
+
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
-  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
-  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
-  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
-  const corridorSides: CorridorSides = 'BOTH';
-  const coreW = requiredCoreBandWidth({ compact, corridorSides });
-  const leftW = snap10((env.w - coreW) / 2);
-  if (leftW < FLAT_BOUNDS.minSpanMm) {
-    return [{ variantId, label, rationale: '', reasons: [`Pinwheel wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
-  }
+  const liftCount = program.mandatory.singleLift ? 1 : 2;
+  const corridor = CORE_BOUNDS.corridorCompact;
+  const coreSide = requiredCoreBandLength({ compact: true, stairCount, liftCount }) + 2 * corridor;
+  const depth = Math.min(10_000, Math.floor((Math.min(env.w, env.h) - coreSide) / 20) * 10);
+  if (depth < FLAT_BOUNDS.minSpanMm) return reject('The envelope cannot fit four usable wings around the square stair and lift core.');
+  const side = 2 * depth + coreSide;
+  const x = env.x + (env.w - side) / 2;
+  const y = env.y + (env.h - side) / 2;
+  const ductDepth = 4000;
+  const ductWidth = 1600;
+  const coreEnd = depth + coreSide;
+  const rotate = (box: Box2D): Box2D => ({ x: side - box.y - box.h, y: box.x, w: box.h, h: box.w });
+  const world = (box: Box2D): Box2D => ({ ...box, x: x + box.x, y: y + box.y });
+  const four = (box: Box2D): Box2D[] => {
+    const quarter = rotate(box);
+    const half = rotate(quarter);
+    return [box, quarter, half, rotate(half)].map(world);
+  };
 
-  const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
-  const eastCount = flatsPerFloor - westCount;
-  const maxRecessW = env.h - westCount * FLAT_BOUNDS.minRunMm;
-  const maxRecessE = env.h - eastCount * FLAT_BOUNDS.minRunMm;
-  const recessH = snap10(Math.min(Math.max(3000, env.h * 0.18), 4800, maxRecessW, maxRecessE));
-  if (recessH < 2400) {
-    return [{ variantId, label, rationale: '', reasons: ['envelope height too tight for pinwheel diagonal setbacks'] }];
-  }
+  const flatBoxes = four({ x: depth - ductDepth, y: 0, w: coreSide + ductDepth - ductWidth, h: depth });
+  const ducts = four({ x: coreEnd - ductWidth, y: depth - ductDepth, w: ductWidth, h: ductDepth });
+  const recesses = [
+    ...four({ x: 0, y: 0, w: depth - ductDepth, h: depth }),
+    ...four({ x: coreEnd - ductWidth, y: 0, w: ductWidth, h: depth - ductDepth }),
+    { x: env.x, y: env.y, w: env.w, h: y - env.y },
+    { x: env.x, y: y + side, w: env.w, h: env.y + env.h - y - side },
+    { x: env.x, y, w: x - env.x, h: side },
+    { x: x + side, y, w: env.x + env.w - x - side, h: side },
+  ].filter(box => box.w > 0.001 && box.h > 0.001);
 
-  const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
-  const band = dissectCoreBand(core, {
-    stairCount,
-    compact,
-    liftsAtLowSide: false,
-    preferOts,
-    noOts,
-    liftCountOverride,
-    corridorSides,
+  const core = world({ x: depth, y: depth, w: coreSide, h: coreSide });
+  const [north, middle, south] = splitY(core, [corridor, coreSide - 2 * corridor, 0]);
+  const [stack, east] = splitX(middle!, [coreSide - corridor, 0]);
+  const band = dissectCoreBand(stack!, {
+    compact: true, stairCount, liftCountOverride: liftCount, corridorSides: 'LOW',
+    liftsAtLowSide: false, preferOts: false, noOts: true,
   });
-  if (band.reasons.length) {
-    return [{ variantId, label, rationale: '', reasons: band.reasons }];
-  }
-
-  const [nwRecess, leftBuilt] = splitY(left, [recessH, 0]) as [Box2D, Box2D];
-  const [rightBuilt, seRecess] = splitY(right, [env.h - recessH, 0]) as [Box2D, Box2D];
-  const westRow = sliceFlatRow(leftBuilt, westCount, Math.ceil(leftBuilt.h / westCount), true, leftBuilt.w, false);
-  const eastRow = sliceFlatRow(rightBuilt, eastCount, Math.ceil(rightBuilt.h / eastCount), true, rightBuilt.w, true);
-  const flatBoxes: Box2D[] = [];
-  const edges: AccessEdge[] = [];
-  for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
-  for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+  if (band.reasons.length) return reject(band.reasons.join('. '));
 
   return [{
-    variantId,
-    label,
-    rationale: `Diagonally offset pinwheel wings with recessed north-west and south-east exterior terraces (${Math.round(leftW)} x ${Math.round(recessH)} mm) optimizing oblique daylight and solar exposure.`,
+    variantId, label,
+    rationale: 'Four rotated wings share a square circulation core and four inter-flat open-to-sky ducts.',
     partition: {
-      familyId: 'CENTRAL_CORE_SPINE',
-      variantId,
-      massingShape: 'PINWHEEL_CLUSTER',
-      envelope: env,
-      builtOutline: env,
-      flatBoxes,
-      accessEdgeForFlat: edges,
-      corridorBoxes: band.corridorBoxes,
-      lobbyBoxes: band.lobbyBoxes,
-      liftBoxes: band.liftBoxes,
-      stairBoxes: band.stairBoxes,
-      shaftBoxes: [...band.shaftBoxes, nwRecess, seRecess],
-      shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
-      shaftTags: [...band.shaftTags, ['recess:perimeter'], ['recess:perimeter']],
-      coreBoxes: [core],
+      familyId: 'CENTRAL_CORE_SPINE', variantId, massingShape: 'PINWHEEL_CLUSTER', envelope: env,
+      builtOutline: { x, y, w: side, h: side }, flatBoxes,
+      accessEdgeForFlat: ['SOUTH', 'WEST', 'NORTH', 'EAST'],
+      coreBoxes: [core], stairBoxes: band.stairBoxes, liftBoxes: band.liftBoxes, lobbyBoxes: band.lobbyBoxes,
+      corridorBoxes: [north!, south!, east!, ...band.corridorBoxes],
+      shaftBoxes: [...band.shaftBoxes, ...ducts, ...recesses],
+      shaftRoles: [...band.shaftRoles, ...[...ducts, ...recesses].map(() => 'OPEN_TO_SKY_VOID' as const)],
+      shaftTags: [...band.shaftTags, ...ducts.map(() => ['shaft:ots', 'shaft:interflat']), ...recesses.map(() => ['recess:perimeter'])],
     },
   }];
 };
@@ -2879,9 +2907,10 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       // its BHK weight (2BHK : 3BHK : 4BHK = 1.0 : 1.35 : 1.70). The rebalanced
       // dissection is only kept when it passes every partition defect check.
       const unweighted = withTightBuiltOutline(partition);
-      const weightedPartition = rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes);
+      const weightedPartition = partition.massingShape === 'PINWHEEL_CLUSTER' ? partition : rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes);
       const weighted = weightedPartition !== partition ? withTightBuiltOutline(weightedPartition) : undefined;
-      const tightened = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
+      const balanced = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
+      const tightened = withTightBuiltOutline(reserveInterflatDucts(balanced, ctx.program));
       const defects = partitionDefects(tightened, ctx.program);
       if (defects.length) {
         rejections.push({ familyId: family.id, variantId: attempt.variantId, reasons: defects });

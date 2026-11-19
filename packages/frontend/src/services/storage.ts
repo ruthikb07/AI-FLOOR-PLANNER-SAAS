@@ -32,6 +32,20 @@ import {
   refreshBudgetApproval,
 } from '@ai-floor-planner/core';
 
+interface SavedRevision {
+  readonly version: number;
+  readonly savedAt: string;
+}
+
+function normalizeRevisionHistory(value: unknown): readonly SavedRevision[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is SavedRevision =>
+    typeof entry === 'object' && entry !== null &&
+    Number.isInteger(entry.version) && entry.version >= 0 &&
+    typeof entry.savedAt === 'string' && Number.isFinite(Date.parse(entry.savedAt)),
+  ).slice(0, 20);
+}
+
 export interface ProjectEnvelope {
   readonly schemaVersion: number;
   readonly projectId: string;
@@ -39,6 +53,7 @@ export interface ProjectEnvelope {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly building: Building;
+  readonly revisionHistory?: readonly SavedRevision[];
   readonly requiredRoomCounts?: Partial<Record<RoomType, number>>;
   readonly category?: BuildingCategory;
   readonly status?: ProjectLifecycleStatus;
@@ -268,9 +283,20 @@ export class LocalStorageProjectStorage {
       { building: envelope.building, program: spaceProgram, footprint: footprintIntent, generationControl },
     );
 
+    const history = normalizeRevisionHistory(previous?.revisionHistory ?? envelope.revisionHistory);
+    const previousRevision = normalizeRevisionHistory([{
+      version: previous?.building?.version,
+      savedAt: previous?.updatedAt,
+    }]);
+    const revisionHistory = [
+      { version: envelope.building.version, savedAt: envelope.updatedAt },
+      ...(history.length ? history : previousRevision)
+        .filter(revision => revision.version !== envelope.building.version),
+    ].slice(0, 20);
     const serialized = JSON.stringify({
       ...envelope,
       schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+      revisionHistory,
       category,
       spaceProgram,
       buildingBudget,
@@ -324,6 +350,9 @@ export class LocalStorageProjectStorage {
         ...parsed,
         schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
         building,
+        revisionHistory: normalizeRevisionHistory(parsed.revisionHistory ?? [{
+          version: building.version, savedAt: parsed.updatedAt,
+        }]),
         requiredRoomCounts: normalizeRequiredRoomCounts(parsed.requiredRoomCounts),
         buildingBudget: normalizeBudget(parsed.buildingBudget, { building, program, footprint, generationControl: control }),
         category,

@@ -76,23 +76,23 @@ export function ETABSExportPanel({ building }: { building: Building }) {
     }
   }
 
-  return <section aria-label="Native ETABS export" className="my-6 rounded border border-slate-700 p-4">
+  return <section aria-label="Native ETABS export" className="rh-export-card my-6 p-4">
     <h3 className="font-semibold">Export to ETABS (.edb / .e2k)</h3>
-    <p className="my-2 text-sm text-slate-400">Download a ready-to-import CSI ETABS text model (.e2k) directly, or upload an engineer-reviewed StructuralProject for local native .edb creation. Export transfers supported inputs; it does not run analysis or certify design safety.</p>
+    <p className="my-2 text-sm text-argon-muted">Download a ready-to-import CSI ETABS text model (.e2k) directly, or upload an engineer-reviewed StructuralProject for local native .edb creation. Export transfers supported inputs; it does not run analysis or certify design safety.</p>
     <label className="block">Reviewed StructuralProject JSON<input aria-label="Reviewed StructuralProject JSON" type="file" accept=".json,application/json" disabled={busy} onChange={async e => {
       const file = e.target.files?.[0]; if (!file) return;
       const requestedBuilding = building;
       if (file.size > 1048576) { setError('StructuralProject exceeds 1 MiB'); return; }
       const value = await file.text(); if (current.current === requestedBuilding) changeSource(value);
     }} /></label>
-    <label className="my-3 block">Local export token<input aria-label="Local export token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} className="ml-3 bg-slate-800 p-2" /></label>
+    <label className="my-3 block">Local export token<input aria-label="Local export token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} className="ml-3 border p-2" /></label>
     <div className="flex flex-wrap gap-2">
-      <button disabled={busy || !source || token.length < 32} onClick={() => void exportModel()} className="rounded bg-indigo-700 p-2 disabled:opacity-40">{busy ? 'Working with native ETABS…' : 'Export to ETABS (.edb)'}</button>
+      <button disabled={busy || !source || token.length < 32} onClick={() => void exportModel()} className="rh-button">{busy ? 'Working with native ETABS…' : 'Export to ETABS (.edb)'}</button>
       <button
         type="button"
         disabled={busy}
         onClick={() => void downloadE2k()}
-        className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40"
+        className="rh-button rh-button-primary"
       >
         Download CSI ETABS (.e2k)
       </button>
@@ -100,7 +100,7 @@ export function ETABSExportPanel({ building }: { building: Building }) {
         type="button"
         onClick={() => setShowImportGuide((v) => !v)}
         title="View step-by-step instructions to open .e2k in CSI ETABS"
-        className="rounded border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700"
+        className="rh-button"
       >
         {showImportGuide ? 'Hide ETABS Import Guide' : 'How to Import .e2k in ETABS'}
       </button>
@@ -109,12 +109,12 @@ export function ETABSExportPanel({ building }: { building: Building }) {
       <div
         role="region"
         aria-label="CSI ETABS .e2k Import Guide"
-        className="mt-3 rounded border border-emerald-500/40 bg-slate-900/80 p-3 text-xs text-slate-200"
+        className="mt-3 border border-argon-border bg-argon-bg p-3 text-xs text-argon-text"
       >
-        <p className="mb-1.5 font-semibold text-emerald-300">
+        <p className="mb-1.5 font-semibold text-argon-text">
           CSI ETABS 3-Step Import Guide (.e2k Text Model — Units: kN, m, C)
         </p>
-        <ol className="list-decimal space-y-1 pl-4 text-slate-300">
+        <ol className="list-decimal space-y-1 pl-4 text-argon-muted">
           <li>
             Launch <strong>CSI ETABS</strong> (v18–v22) and open{' '}
             <code>File → Import → ETABS .e2k Text File...</code> (do not use double-click).
@@ -124,19 +124,19 @@ export function ETABSExportPanel({ building }: { building: Building }) {
             <strong>KN / M / C</strong> and Story Definitions match from Top to <code>BASE</code>.
           </li>
           <li>
-            Run <code>Analyze → Check Model</code> (0 overlapping joint warnings), review IS 456 load combos{' '}
+            Run <code>Analyze → Check Model</code>, investigate warnings and review the applicable load combinations{' '}
             (<code>IS456_1.5(DL+LL)</code>, <code>EQX</code>, <code>EQY</code>), then save natively as{' '}
             <code>.edb</code>.
           </li>
         </ol>
       </div>
     )}
-    {error && <p role="alert" className="mt-3 text-red-300">{error}</p>}
+    {error && <p role="alert" className="mt-3 text-argon-error">{error}</p>}
     {artifact && <div className="mt-3">
       <p>{artifact.exportMode === 'ANALYSIS_READY' ? 'Analysis-ready model' : 'Model-only'} · NOT ANALYZED · Design NOT VERIFIED</p>
       <p className="break-all text-xs">Native reopen verified · {artifact.byteLength} bytes · SHA-256 {artifact.sha256}</p>
-      <button disabled={busy} onClick={() => void download()} className="mr-3 mt-2 rounded bg-slate-700 p-2">Download verified .edb</button>
-      <button onClick={() => save(new Blob([JSON.stringify(artifact, null, 2)], { type: 'application/json' }), artifact.fileName + '.manifest.json')} className="rounded bg-slate-700 p-2">Download manifest</button>
+      <button disabled={busy} onClick={() => void download()} className="rh-button mr-3 mt-2">Download verified .edb</button>
+      <button onClick={() => save(new Blob([JSON.stringify(artifact, null, 2)], { type: 'application/json' }), artifact.fileName + '.manifest.json')} className="rh-button">Download manifest</button>
     </div>}
   </section>;
 }

@@ -240,7 +240,7 @@ describe('RH Planner Phase 3: MEP Engineering, Stilt Safety & Mixed-BHK Precisio
 
     expect(result.schedule.overallDeltaMm2).toBe(0);
     const score = evaluateArchitecturalComplianceScore(building);
-    expect(score.score).toBeGreaterThanOrEqual(85);
+    expect(score.score, `Violations: ${JSON.stringify(score.violations)}`).toBeGreaterThanOrEqual(85);
     expect(score.redConflictCount).toBe(0);
   });
 });

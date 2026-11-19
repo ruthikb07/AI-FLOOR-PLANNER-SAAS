@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PlanThumbnail } from './ProjectPortfolio';
 import { ETABSExportPanel } from './ETABSExportPanel';
-import type { ExportFileDescriptor } from '@ai-floor-planner/core';
+import type { BlenderExportManifest, ExportFileDescriptor } from '@ai-floor-planner/core';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
   requestVerifiedExport,
@@ -9,6 +10,15 @@ import {
   type VerifiedExportFormat,
   type VerifiedExportOptions,
 } from '../../services/export-client';
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
   const { building } = editor;
@@ -24,8 +34,9 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
     text?: string;
   } | null>(null);
   const [blenderStatus, setBlenderStatus] = useState<'IDLE' | 'GENERATING' | 'VERIFIED' | 'FAILED'>('IDLE');
-  const [blenderManifest, setBlenderManifest] = useState<{ jobId: string; files: any[] } | null>(null);
+  const [blenderManifest, setBlenderManifest] = useState<BlenderExportManifest | null>(null);
   const [blenderError, setBlenderError] = useState<string>('');
+  const [modelStatus, setModelStatus] = useState('');
   const controller = useRef(new AbortController());
   const current = useRef(building);
   current.current = building;
@@ -39,6 +50,7 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
     setBlenderStatus('IDLE');
     setBlenderManifest(null);
     setBlenderError('');
+    setModelStatus('');
     return () => controller.current.abort();
   }, [building, paperSize, scale]);
   useEffect(
@@ -130,12 +142,12 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
           blob = await response.blob();
         } else blob = await fetchVerifiedBytes(artifact, signal);
         if (current.current === snapshot && !signal.aborted)
-          setPreview({
-            url: URL.createObjectURL(blob),
-            type: blob.type,
-            title,
-            text: format.endsWith('-json') ? await blob.text() : undefined,
-          });
+          {
+            const content = format.endsWith('-json') ? await blob.text() : undefined;
+            if (current.current === snapshot && !signal.aborted) setPreview({
+              url: URL.createObjectURL(blob), type: blob.type, title, text: content,
+            });
+          }
       }
     } catch (e) {
       if (!signal.aborted) setError(e instanceof Error ? e.message : String(e));
@@ -144,56 +156,109 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
     }
   };
 
-  const generateBlenderPackage = async () => {
+  async function downloadBuildingModel() {
+    const signal = controller.current.signal;
+    setBusy('building-model');
+    setModelStatus('Preparing building geometry…');
+    try {
+      const response = await fetch('/api/v1/export/glb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ building }),
+        signal,
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error?.message ?? `GLB export failed (${response.status}).`);
+      const bytes = await response.arrayBuffer();
+      if (signal.aborted || current.current !== building) return;
+      const header = new DataView(bytes);
+      if (bytes.byteLength < 20 || header.getUint32(0, true) !== 0x46546c67
+        || header.getUint32(4, true) !== 2 || header.getUint32(8, true) !== bytes.byteLength) {
+        throw new Error('The exported file has an invalid GLB header or length.');
+      }
+      const name = (building.name || building.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+      downloadBlob(new Blob([bytes], { type: 'model/gltf-binary' }), `${name}.glb`);
+      setModelStatus(`Download started · ${bytes.byteLength.toLocaleString()} bytes · revision ${building.version}`);
+    } catch (cause) {
+      if (!signal.aborted) setModelStatus(cause instanceof Error ? cause.message : 'GLB export failed.');
+    } finally {
+      if (!signal.aborted) setBusy(null);
+    }
+  }
+
+  async function generateBlenderPackage() {
+    const signal = controller.current.signal;
     setBlenderStatus('GENERATING');
+    setBlenderManifest(null);
     setBlenderError('');
     try {
       const res = await fetch('/api/v1/export/blender-package', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ building, options: { expectedRevision: building.version } }),
-        signal: controller.current.signal,
+        signal,
       });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => null);
-        throw new Error(errJson?.message || `Blender export failed HTTP ${res.status}`);
-      }
       const data = await res.json();
-      setBlenderManifest(data);
+      if (!res.ok) throw new Error(data.error?.message ?? data.message ?? `Blender export failed (${res.status}).`);
+      if (signal.aborted || current.current !== building) return;
+      const manifest = data as BlenderExportManifest;
+      if (manifest.buildingId !== building.id || manifest.revision !== building.version
+        || !manifest.files?.length || manifest.files.some(file => !file.verification?.isValid || !file.sha256 || !file.downloadUrl)) {
+        throw new Error('Blender returned an unverified or stale package.');
+      }
+      setBlenderManifest(manifest);
       setBlenderStatus('VERIFIED');
-    } catch (e) {
+    } catch (cause) {
+      if (signal.aborted) return;
       setBlenderStatus('FAILED');
-      setBlenderError(e instanceof Error ? e.message : String(e));
+      setBlenderError(cause instanceof Error ? cause.message : 'Blender export failed.');
     }
-  };
+  }
 
-  const downloadBlenderFile = (jobId: string, fileName: string) => {
-    const url = `/api/v1/export/blender/download/${encodeURIComponent(jobId)}/${encodeURIComponent(fileName)}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
+  async function downloadBlenderFile(file: ExportFileDescriptor) {
+    const signal = controller.current.signal;
+    setBusy(file.fileId);
+    setBlenderError('');
+    try {
+      await downloadVerifiedExport(file, signal);
+    } catch (cause) {
+      if (!signal.aborted) setBlenderError(cause instanceof Error ? cause.message : 'Download failed.');
+    } finally {
+      if (!signal.aborted) setBusy(null);
+    }
+  }
+
   return (
     <section
-      className="h-full overflow-auto bg-slate-950 p-6 text-slate-100"
+      className="rh-exports h-full overflow-auto p-4 sm:p-6"
       aria-label="Independent export center"
     >
-      <h2 className="text-xl font-bold">Independent Export Center</h2>
-      <ETABSExportPanel building={building} />
-      <p className="mt-2 text-slate-400">
-        {building.name} · revision {building.version}
-      </p>
-      <div className="my-4 flex flex-wrap gap-4">
+      <header className="rh-export-header rh-delivery-cover">
+        <div>
+          <p className="rh-kicker">{building.name} · revision {building.version}</p>
+          <h2>Export Center</h2>
+        </div>
+        <dl className="rh-delivery-register">
+          <div><dt>Drawing sheets</dt><dd>{rows.length}</dd></div>
+          <div><dt>Verified drawing files</dt><dd>{Object.keys(artifacts).length}</dd></div>
+        </dl>
+        <PlanThumbnail building={building} />
+      </header>
+      <nav className="rh-delivery-nav" aria-label="Export sections">
+        <a href="#delivery-sheets">Drawing sheets</a>
+        <a href="#delivery-models">Model files</a>
+        <a href="#delivery-etabs">ETABS</a>
+      </nav>
+      <div className="rh-delivery-desk" id="delivery-sheets">
+      <aside className="rh-delivery-settings" aria-label="Drawing issue settings">
+      <h3>Drawing issue</h3>
+      <div className="rh-sheet-settings my-4 flex flex-wrap gap-4">
         <label>
           Paper{' '}
           <select
             aria-label="Export paper"
             value={paperSize}
             onChange={(e) => setPaper(e.target.value as typeof paperSize)}
-            className="bg-slate-800 p-2"
+            className="bg-argon-surface p-2"
           >
             {['A3', 'A2', 'A1'].map((p) => (
               <option key={p}>{p}</option>
@@ -206,7 +271,7 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
             aria-label="Export scale"
             value={scale}
             onChange={(e) => setScale(e.target.value)}
-            className="bg-slate-800 p-2"
+            className="bg-argon-surface p-2"
           >
             {['FIT_TO_PAGE', '1:50', '1:100', '1:200'].map((s) => (
               <option key={s}>{s}</option>
@@ -214,32 +279,34 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
           </select>
         </label>
       </div>
-      <p className="mb-4 text-xs text-amber-200">
+      <p className="mb-4 text-xs text-argon-muted">
         Exact scales fall back to fit-to-page when needed. Automated checks provide engineering
         design assistance and require verification by a licensed Architect/Engineer before municipal
         submission.
       </p>
+      </aside>
+      <div className="rh-delivery-content">
       {error && (
-        <p role="alert" className="my-3 text-red-300">
+        <p role="alert" className="my-3 text-argon-error">
           {error}
         </p>
       )}
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="rh-delivery-sheets grid gap-4 xl:grid-cols-2">
         {rows.map((row) => (
-          <article key={row.id} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+          <article key={row.id} className="rh-export-card p-4">
             <h3 className="font-medium">{row.title}</h3>
             {row.formats.map((f) => {
               const format = f as VerifiedExportFormat,
                 key = `${row.id}-${format}`,
                 artifact = artifacts[key];
               return (
-                <div key={format} className="my-3 border-t border-slate-700 pt-3">
+                <div key={format} className="my-3 border-t border-argon-border pt-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <strong className="mr-auto text-xs">{format.toUpperCase()}</strong>
                     <button
                       disabled={busy !== null}
                       onClick={() => void run(row.id, row.title, format, row.options, 'preview')}
-                      className="rounded bg-slate-700 px-3 py-2 text-xs"
+                      className="rh-button"
                       aria-label={`Preview ${row.title} ${format}`}
                     >
                       Preview
@@ -247,18 +314,18 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
                     <button
                       disabled={busy !== null}
                       onClick={() => void run(row.id, row.title, format, row.options, 'download')}
-                      className="rounded bg-amber-500 px-3 py-2 text-xs text-slate-950"
+                      className="rh-button rh-button-primary"
                       aria-label={`Download ${row.title} ${format}`}
                     >
-                      Independent Download
+                      Download
                     </button>
                   </div>
-                  <p className="mt-2 break-all text-xs text-slate-400">
+                  <p className="mt-2 break-words text-xs text-argon-muted" role="status">
                     {busy === key
                       ? 'GENERATING / VERIFYING'
                       : artifact
                         ? `VERIFIED · ${artifact.sizeBytes} bytes · SHA-256 ${artifact.sha256?.slice(0, 16)} · revision ${artifact.revision}`
-                        : 'NOT_RUN'}
+                        : 'Ready to request'}
                   </p>
                 </div>
               );
@@ -266,107 +333,49 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
           </article>
         ))}
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <article className="rounded border border-slate-700 bg-slate-900/60 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-slate-100">Blender 5.2 Native (.blend / .glb)</h3>
-            <span
-              className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                blenderStatus === 'VERIFIED'
-                  ? 'border border-emerald-700 bg-emerald-950 text-emerald-400'
-                  : blenderStatus === 'GENERATING'
-                  ? 'border border-amber-700 bg-amber-950 text-amber-400'
-                  : blenderStatus === 'FAILED'
-                  ? 'border border-rose-700 bg-rose-950 text-rose-400'
-                  : 'bg-slate-800 text-slate-400'
-              }`}
-            >
-              {blenderStatus}
-            </span>
-          </div>
-          <p className="my-2 text-xs text-slate-400">
-            Procedural 3D scene generated via local Blender 5.2 LTS binary (C:\Program Files\Blender Foundation\Blender 5.2\blender.exe).
-          </p>
-          {blenderError && (
-            <p className="my-2 text-xs text-rose-400">{blenderError}</p>
-          )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={generateBlenderPackage}
-              disabled={blenderStatus === 'GENERATING'}
-              className="rounded bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
-            >
-              {blenderStatus === 'GENERATING' ? 'Generating 3D Package...' : 'Generate 3D Package'}
-            </button>
-            {blenderManifest && (
-              <>
-                <button
-                  onClick={() => downloadBlenderFile(blenderManifest.jobId, 'building_full_assembly.blend')}
-                  className="rounded bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
-                >
-                  Download .blend
-                </button>
-                <button
-                  onClick={() => downloadBlenderFile(blenderManifest.jobId, 'building_full_assembly.glb')}
-                  className="rounded bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600"
-                >
-                  Download .glb
-                </button>
-              </>
-            )}
-          </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2" id="delivery-models">
+        <article className="rh-export-card p-4">
+          <h3 className="font-semibold">Building model</h3>
+          <p className="my-2 text-sm text-argon-muted">Whole-building GLB from the active architectural model.</p>
+          <button type="button" className="rh-button rh-button-primary" disabled={busy !== null}
+            onClick={() => void downloadBuildingModel()}>Download building GLB</button>
+          {modelStatus && <p role="status" className="mt-2 text-sm">{modelStatus}</p>}
         </article>
-
-        <article className="rounded border border-slate-700 bg-slate-900/60 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-slate-100">ETABS v23.3.2 Structural Analysis & CAD Set</h3>
-            <span className="rounded border border-emerald-700 bg-emerald-950 px-2 py-0.5 text-xs font-semibold text-emerald-400">
-              VERIFIED
-            </span>
-          </div>
-          <p className="my-2 text-xs text-slate-400">
-            Automated finite-element framing analysis, IS 1893:2016 drift checks, and ISO A3 structural drawings (S-101 to S-104).
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => void run('structural_analysis_report', 'ETABS Structural Analysis Report', 'structural-report-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'preview')}
-              disabled={busy !== null}
-              className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-            >
-              Preview Report
-            </button>
-            <button
-              onClick={() => void run('structural_analysis_report', 'ETABS Structural Analysis Report', 'structural-report-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'download')}
-              disabled={busy !== null}
-              className="rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-amber-500 disabled:opacity-50"
-            >
-              Download Report
-            </button>
-            <button
-              onClick={() => void run('structural_drawings', 'Structural CAD Drawing Set', 'structural-drawings-pdf', { drawingKind: 'STRUCTURAL', exportScope: 'all_floors' }, 'download')}
-              disabled={busy !== null}
-              className="rounded bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600 disabled:opacity-50"
-            >
-              Drawings (A3 PDF)
-            </button>
-          </div>
+        <article className="rh-export-card p-4">
+          <h3 className="font-semibold">Native Blender package</h3>
+          <p className="my-2 text-sm text-argon-muted">Generate .blend and .glb files using the server’s Blender installation.</p>
+          <button type="button" className="rh-button" disabled={blenderStatus === 'GENERATING'}
+            onClick={() => void generateBlenderPackage()}>
+            {blenderStatus === 'GENERATING' ? 'Preparing package…' : 'Generate 3D Package'}
+          </button>
+          {blenderError && <p role="alert" className="mt-2 text-sm">{blenderError}</p>}
+          {blenderManifest && <ul className="mt-3 space-y-2">
+            {blenderManifest.files.map((file) => <li key={file.fileId}>
+              <button type="button" className="rh-button" disabled={busy !== null} onClick={() => void downloadBlenderFile(file)}>
+                Download {file.fileName}
+              </button>
+            </li>)}
+          </ul>}
         </article>
+      </div>
+      <div id="delivery-etabs"><ETABSExportPanel building={building} /></div>
+      </div>
       </div>
       {preview && (
         <div
           role="dialog"
           aria-label="Verified artifact preview"
-          className="fixed inset-6 z-50 flex flex-col rounded-xl border border-slate-600 bg-slate-900 p-4"
+          className="rh-export-card fixed inset-2 sm:inset-6 z-[60] flex flex-col p-4"
         >
           <div className="mb-3 flex justify-between">
             <h3>
               {preview.title} · verified revision {building.version}
             </h3>
-            <button onClick={() => setPreview(null)}>Close preview</button>
+            <button type="button" className="rh-button" onClick={() => setPreview(null)}>Close preview</button>
           </div>
           <>
             {preview.text ? (
-              <pre className="min-h-0 flex-1 overflow-auto bg-slate-950 p-4 text-xs">
+              <pre className="min-h-0 flex-1 overflow-auto bg-argon-surface p-4 text-xs">
                 {preview.text}
               </pre>
             ) : (

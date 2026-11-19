@@ -61,9 +61,16 @@ export function createGeminiProvider(config: ServiceConfig): GeminiProvider | nu
     apiKey: config.geminiApiKey,
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
-    fallbackModels: ['gemini-3.7-flash', config.geminiFallbackModel],
+    fallbackModels: [config.geminiFallbackModel, 'gemini-3-flash-preview', 'gemini-flash-lite-latest'],
     maxRetriesOn503: 1,
-    timeoutMs: config.providerTimeoutMs,
+    retryPolicy: {
+      maxRetries: 1,
+      initialDelayMs: 350,
+      maxDelayMs: 900,
+      backoffFactor: 2,
+      jitterRatio: 0.15,
+    },
+    timeoutMs: Math.min(config.providerTimeoutMs, 12_000),
   });
 }
 

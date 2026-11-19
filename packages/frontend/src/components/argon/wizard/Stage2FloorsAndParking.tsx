@@ -171,6 +171,80 @@ export const Stage2FloorsAndParking: React.FC = () => {
         </ArgonCard>
       </div>
 
+      {/* Linked Multi-Storey Units (Duplex & Triplex Program) */}
+      <ArgonCard className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-argon-border/70">
+          <div>
+            <h3 className="text-sm font-bold text-argon-text">
+              Linked Multi-Storey Residences (Duplex &amp; Triplex)
+            </h3>
+            <p className="text-xs text-argon-muted mt-0.5">
+              Declare duplex (2-storey) or triplex (3-storey) stacks to highlight vertically aligned floors and canonical internal stair linkages in 3D review.
+            </p>
+          </div>
+          <ArgonBadge variant="leather" size="sm">
+            Multi-Level Linking
+          </ArgonBadge>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="text-xs">
+              <strong className="block text-argon-text">Duplex Stacks (2-Storey)</strong>
+              <span className="text-argon-muted">Links upper floors N &amp; N+1 cleanly</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Decrease duplex count"
+                onClick={() => updateWizard({ duplexCount: Math.max(0, (wizard.duplexCount ?? 0) - 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                -
+              </button>
+              <span className="w-6 text-center font-mono text-sm font-bold" data-testid="duplex-count-value">
+                {wizard.duplexCount ?? 0}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase duplex count"
+                onClick={() => updateWizard({ duplexCount: Math.min(8, (wizard.duplexCount ?? 0) + 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="text-xs">
+              <strong className="block text-argon-text">Triplex Stacks (3-Storey)</strong>
+              <span className="text-argon-muted">Links 3 consecutive upper floors via vertical core</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Decrease triplex count"
+                onClick={() => updateWizard({ triplexCount: Math.max(0, (wizard.triplexCount ?? 0) - 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                -
+              </button>
+              <span className="w-6 text-center font-mono text-sm font-bold" data-testid="triplex-count-value">
+                {wizard.triplexCount ?? 0}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase triplex count"
+                onClick={() => updateWizard({ triplexCount: Math.min(4, (wizard.triplexCount ?? 0) + 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </ArgonCard>
+
       {/* Facade Projections: Window Chajjas & Multi-Floor Staggered Balconies */}
       <ArgonCard className="space-y-3">
         <div className="flex items-center justify-between pb-2.5 border-b border-argon-border/70">

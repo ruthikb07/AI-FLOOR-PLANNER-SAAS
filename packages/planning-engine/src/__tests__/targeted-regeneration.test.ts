@@ -10,7 +10,7 @@ import {
   getSpaceProgramPresets,
   updateGenerationControl,
 } from '@ai-floor-planner/core';
-import { containsPolygon } from '@ai-floor-planner/geometry-engine';
+import { containsPolygon, generateApartmentWalls } from '@ai-floor-planner/geometry-engine';
 import { runGenerationWorkflow } from '../generation/workflow';
 import {
   RefinementError,
@@ -55,6 +55,30 @@ async function generated(shape: 'rectangle' | 'l_shape' | 'u_shape' = 'rectangle
 }
 
 describe('constraint-based targeted regeneration', () => {
+  it('carves an open-to-sky strip along a selected party wall and gives both flats operable windows', () => {
+    const initial = createBuilding({ projectId: 'interflat-ots', name: 'Inter-flat duct',
+      site: { plotWidth: 10_000, plotDepth: 3800 }, floors: [{ buildingId: '', level: 0 }] });
+    const floorId = initial.floors[0]!.id;
+    const left = addRoom(initial, floorId, { floorId, name: 'Living A', type: RoomType.Living,
+      x: 0, y: 0, width: 5000, height: 3800 });
+    const source = addRoom(left, floorId, { floorId, name: 'Living B', type: RoomType.Living,
+      x: 5000, y: 0, width: 5000, height: 3800 });
+    const floor = source.floors[0]!;
+    const rooms = floor.rooms.map((room, index) => ({ ...room, unitId: `flat-${index + 1}` }));
+    const building = { ...source, floors: [{ ...floor, rooms, walls: generateApartmentWalls(rooms, floorId, floor.boundary, true) }] };
+    const [candidate] = generateTargetedRefinements({ building, control: createGenerationControlState(),
+      selectedRoomIds: rooms.map(room => room.id), intent: 'carve_interflat_ots' });
+    const result = candidate!.building.floors[0]!;
+    const duct = result.rooms.find(room => room.tags.includes('shaft:interflat'));
+    expect(duct).toMatchObject({ width: 1600, height: 3800, openToSky: true });
+    expect(result.rooms.reduce((area, room) => area + room.area, 0)).toBe(10_000 * 3800);
+    expect(result.windows).toHaveLength(2);
+    for (const window of result.windows) {
+      expect(window.type).toBe('sliding');
+      expect(result.walls.find(wall => wall.id === window.wallId)?.roomIds).toContain(duct!.id);
+    }
+  });
+
   it('produces multiple meaningful candidates while preserving room IDs and every protected room exactly', async () => {
     const source = await generated(); const pair = editablePair(source.building);
     const candidates = generateTargetedRefinements({ building: source.building, control: createGenerationControlState(), selectedRoomIds: pair.map(room => room.id), requiredRoomCounts: source.requiredRoomCounts as Record<string, number> });

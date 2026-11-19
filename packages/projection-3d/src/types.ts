@@ -1,4 +1,4 @@
-import type { Direction, DoorType, Point, Polygon, Stair } from '@ai-floor-planner/core';
+import type { Direction, DoorType, Point, Polygon, Stair, WallArcSpec } from '@ai-floor-planner/core';
 
 export type ProjectionSourceEntityType =
   | 'site'
@@ -73,6 +73,7 @@ export interface Wall3D extends ProjectionSource {
   readonly length: number;
   readonly thickness: number;
   readonly height: number;
+  readonly arc?: WallArcSpec;
   readonly solidSegments: readonly WallSolidSegment3D[];
 }
 

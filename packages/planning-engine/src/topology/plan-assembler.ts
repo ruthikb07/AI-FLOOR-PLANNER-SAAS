@@ -157,6 +157,10 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     // So the local envelope is extended past whichever local end is NOT
     // exterior in world terms. That makes the slicer see the flat as sitting
     // against the exterior end, and the band goes where the facade is.
+    const localExteriorFaces = {
+      lowY: onEnvelopeEdge(frame.toWorld({ x: 0, y: 0, w: frame.localW, h: 10 }), builtFace),
+      highY: onEnvelopeEdge(frame.toWorld({ x: 0, y: frame.localH - 10, w: frame.localW, h: 10 }), builtFace),
+    };
     const localEnvelope = serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
 
     const sliced = sliceFlatRooms({
@@ -170,6 +174,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       envelope: asSnapper(localEnvelope),
       placement,
       archetype: input.archetype,
+      localExteriorFaces,
     });
 
     // Carry rooms back into world coordinates.
@@ -552,24 +557,41 @@ function carveInterflatOtsForDroppedSitout(
 
   const bandLen = horiz ? bandBox.w : bandBox.h;
   const bandDep = horiz ? bandBox.h : bandBox.w;
-  if (bandLen < 4100 || bandDep < 1500) {
+  if (bandLen < 3350 || bandDep < 1500) {
     return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
   }
 
-  const otsLen = Math.min(1800, Math.max(1550, Math.min(1600, bandLen - 2550)));
+  const minOtsLen = bandLen >= 4100 ? 1800 : 1520;
+  const otsLen = Math.min(2400, Math.max(minOtsLen, bandLen - 2550));
   const uLen = utilAdjacent && uBox ? (horiz ? uBox.w : uBox.h) : 0;
   const utilRemLen = utilAdjacent && uLen >= otsLen + 100 ? uLen - otsLen : 0;
   const sitoutLen = bandLen - utilRemLen - otsLen;
-  if (sitoutLen < 2500) {
+  if (sitoutLen < 1800) {
     return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
   }
+
+  const touchesBandEnd = (room: ApartmentPlanRoom, atLow: boolean): boolean => {
+    const rb = rectToBox(room.rect);
+    if (horiz) {
+      const targetX = atLow ? bandBox.x : bandBox.x + bandBox.w;
+      const touchesX = atLow ? Math.abs(rb.x + rb.w - targetX) <= 10 : Math.abs(rb.x - targetX) <= 10;
+      const overlapY = Math.min(rb.y + rb.h, bandBox.y + bandBox.h) - Math.max(rb.y, bandBox.y);
+      return touchesX && overlapY >= 600;
+    }
+    const targetY = atLow ? bandBox.y : bandBox.y + bandBox.h;
+    const touchesY = atLow ? Math.abs(rb.y + rb.h - targetY) <= 10 : Math.abs(rb.y - targetY) <= 10;
+    const overlapX = Math.min(rb.x + rb.w, bandBox.x + bandBox.w) - Math.max(rb.x, bandBox.x);
+    return touchesY && overlapX >= 600;
+  };
+  const bedTouchesLow = keptRooms.some(r => r.type === 'bedroom' && touchesBandEnd(r, true));
+  const bedTouchesHigh = keptRooms.some(r => r.type === 'bedroom' && touchesBandEnd(r, false));
 
   const utilAtLowSide =
     utilAdjacent && uBox
       ? horiz
         ? uBox.x < sBox.x
         : uBox.y < sBox.y
-      : true;
+      : !(bedTouchesHigh && !bedTouchesLow);
   const bandStart = horiz ? bandBox.x : bandBox.y;
   const makeSpanBox = (offset: number, span: number): Box2D =>
     horiz

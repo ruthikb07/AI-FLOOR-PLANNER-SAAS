@@ -24,14 +24,14 @@ export function complianceReportJson(
   return Buffer.from(JSON.stringify(report, null, 2));
 }
 /** Paginated text tables; serialized content is independently reopened and measured. */
-export function complianceReportPdf(report: UDCPRComplianceReport): Uint8Array {
+export function complianceReportPdf(report: UDCPRComplianceReport, actionPlan?: readonly string[]): Uint8Array {
   const value = (v: unknown) =>
     v === null || v === undefined
       ? "NOT VERIFIED"
       : typeof v === "object"
         ? JSON.stringify(v)
         : String(v);
-  const lines = [
+  const reportLines = actionPlan ?? [
     "UDCPR 2020 / NBC 2016 - ENGINEERING ASSISTANCE REPORT",
     "PROFESSIONAL REVIEW REQUIRED - NOT A MUNICIPAL COMPLIANCE CERTIFICATE",
     report.disclaimer,
@@ -82,7 +82,8 @@ export function complianceReportPdf(report: UDCPRComplianceReport): Uint8Array {
       s.url,
     ]),
     report.disclaimer,
-  ].flatMap((line) => {
+  ];
+  const lines = reportLines.flatMap((line) => {
     const out: string[] = [];
     let rest = line.replace(/[^\x20-\x7e]/g, "?");
     while (rest.length > 108) {
@@ -107,7 +108,7 @@ export function complianceReportPdf(report: UDCPRComplianceReport): Uint8Array {
     refs.push(`${page} 0 R`);
     const stream =
       `% SCALE_MODE REPORT_NOT_TO_SCALE\n% REPORT_TYPE UDCPR_COMPLIANCE_REPORT\n% CANONICAL_HASH ${report.canonicalHash}\n` +
-      `BT /F1 8 Tf 32 824 Td (UDCPR engineering report - revision ${report.buildingVersion} - page ${Math.floor(start / 48) + 1} of ${count}) Tj ET\n` +
+      `BT /F1 8 Tf 32 824 Td (${actionPlan ? 'Compliance audit and fix plan' : 'UDCPR engineering report'} - revision ${report.buildingVersion} - page ${Math.floor(start / 48) + 1} of ${count}) Tj ET\n` +
       lines
         .slice(start, start + 48)
         .map((s, i) => `BT /F1 8 Tf 32 ${800 - i * 15} Td (${escape(s)}) Tj ET`)

@@ -58,7 +58,7 @@ export const DEFAULT_ADVANCED_EXPORT_SETTINGS: AdvancedExportSettings = {
   orientation: 'landscape',
   floorId: undefined,
   scale: '1:100',
-  drawnBy: 'FORMA AI Planner',
+  drawnBy: 'RH Planner Architectural Studio',
   projectNumber: 'FP-001',
   revision: '01',
   includeGrid: false,
@@ -266,7 +266,7 @@ function makePdf(building: Building, settings: AdvancedExportSettings): string {
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
       '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
       `<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`,
-      `<< /Title (${ascii(building.name)}) /Author (${ascii(settings.drawnBy)}) /Subject (Concept schematic floor plan - NOT FOR CONSTRUCTION) /Creator (FORMA AI Planner) /BuildingId (${ascii(building.id)}) /BuildingRevision (${building.version}) /ProgramRevision (${ascii(settings.programRevision ?? 'NOT_PROVIDED')}) /ValidationRevision (${settings.validationRevision ?? building.version}) /FloorId (${ascii(floor.id)}) /ScaleMode (${fit ? 'FIT_TO_PAGE_NOT_TO_SCALE' : 'EXACT_SCALE'}) /Scale (${ascii(scaleLabel)}) /Sheet (${settings.paperSize}) >>`,
+      `<< /Title (${ascii(building.name)}) /Author (${ascii(settings.drawnBy)}) /Subject (Architectural floor plan sheet) /Creator (RH Planner Architectural Studio) /BuildingId (${ascii(building.id)}) /BuildingRevision (${building.version}) /ProgramRevision (${ascii(settings.programRevision ?? 'NOT_PROVIDED')}) /ValidationRevision (${settings.validationRevision ?? building.version}) /FloorId (${ascii(floor.id)}) /ScaleMode (${fit ? 'FIT_TO_PAGE_NOT_TO_SCALE' : 'EXACT_SCALE'}) /Scale (${ascii(scaleLabel)}) /Sheet (${settings.paperSize}) >>`,
     ];
     let pdf = '%PDF-1.4\n%FORMA\n';
     const offsets = [0];
@@ -406,7 +406,7 @@ function makeJson(building: Building, settings: AdvancedExportSettings): string 
     exportManifest: {
       schemaVersion: 1,
       exportedAt: new Date().toISOString(),
-      generator: 'FORMA AI Planner',
+      generator: 'RH Planner Architectural Studio',
       documentStatus: 'CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION',
       floorId: settings.floorId,
       projectNumber: settings.projectNumber,

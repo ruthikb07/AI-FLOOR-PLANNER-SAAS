@@ -1,7 +1,7 @@
 import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from '@ai-floor-planner/geometry-engine';
 import { isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
-import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
-import type { Building, Floor, Point, Polygon, Wall } from '@ai-floor-planner/core';
+import { canonicalOpeningGeometry, fitOpeningInsideWall } from '@ai-floor-planner/geometry-engine';
+import type { Building, Door, Floor, Point, Polygon, Wall, Window } from '@ai-floor-planner/core';
 import { rectToPolygon, RoomType } from '@ai-floor-planner/core';
 import { resolveProjectionSettings } from './settings';
 import type {
@@ -19,13 +19,22 @@ function length(start: Point, end: Point): number {
   return Math.hypot(end.x - start.x, end.y - start.y);
 }
 
-function distanceAlongWall(point: Point, wall: Wall): number {
+function projectionOpeningInterval(opening: Door | Window, wall: Wall, allowNarrowing: boolean) {
+  if (opening.openingGeometryVersion === 1) {
+    const fitted = fitOpeningInsideWall(opening, wall, allowNarrowing);
+    if (!fitted) return undefined;
+    const geometry = canonicalOpeningGeometry(fitted, wall);
+    return { position: geometry.startPoint, alongWall: geometry.start, width: fitted.width };
+  }
   const wallLength = length(wall.startPoint, wall.endPoint);
-  if (wallLength <= EPSILON) return 0;
+  if (wallLength < 650 || opening.width <= 0 || ![wallLength, opening.width, opening.position.x, opening.position.y].every(Number.isFinite) ||
+      (!allowNarrowing && opening.width > wallLength - 200)) return undefined;
   const ux = (wall.endPoint.x - wall.startPoint.x) / wallLength;
   const uy = (wall.endPoint.y - wall.startPoint.y) / wallLength;
-  const projected = (point.x - wall.startPoint.x) * ux + (point.y - wall.startPoint.y) * uy;
-  return Math.max(0, Math.min(wallLength, projected));
+  const projected = (opening.position.x - wall.startPoint.x) * ux + (opening.position.y - wall.startPoint.y) * uy;
+  const width = Math.min(opening.width, wallLength - 200);
+  const alongWall = Math.max(100, Math.min(wallLength - 100 - width, projected));
+  return { position: alongWall === projected ? opening.position : { x: wall.startPoint.x + alongWall * ux, y: wall.startPoint.y + alongWall * uy }, alongWall, width };
 }
 
 function formatDatum(elevation: number): string {
@@ -112,15 +121,15 @@ function projectOpenings(floor: Floor, elevation: number, settings: Building3DPr
   const doors: Opening3D[] = floor.doors.flatMap(door => {
     const wall = wallById.get(door.wallId);
     if (!wall || !isPhysicalBoundary(wall)) return [];
+    const interval = projectionOpeningInterval(door, wall, false);
+    if (!interval) return [];
     return [{
       sourceEntityId: door.id,
       sourceEntityType: 'door',
       doorType: door.type,
       floorId: floor.id,
       hostWallId: wall.id,
-      position: door.openingGeometryVersion === 1 ? canonicalOpeningGeometry(door, wall).startPoint : door.position,
-      alongWall: door.openingGeometryVersion === 1 ? canonicalOpeningGeometry(door, wall).start : distanceAlongWall(door.position, wall),
-      width: door.width,
+      ...interval,
       bottom: 0,
       height: door.height || settings.defaultDoorHeight.value,
       elevation,
@@ -129,14 +138,14 @@ function projectOpenings(floor: Floor, elevation: number, settings: Building3DPr
   const windows: Opening3D[] = floor.windows.flatMap(window => {
     const wall = wallById.get(window.wallId);
     if (!wall || !isPhysicalBoundary(wall)) return [];
+    const interval = projectionOpeningInterval(window, wall, true);
+    if (!interval) return [];
     return [{
       sourceEntityId: window.id,
       sourceEntityType: 'window',
       floorId: floor.id,
       hostWallId: wall.id,
-      position: window.openingGeometryVersion === 1 ? canonicalOpeningGeometry(window, wall).startPoint : window.position,
-      alongWall: window.openingGeometryVersion === 1 ? canonicalOpeningGeometry(window, wall).start : distanceAlongWall(window.position, wall),
-      width: window.width,
+      ...interval,
       bottom: window.sillHeight ?? settings.defaultWindowSillHeight.value,
       height: window.height || settings.defaultWindowHeight.value,
       elevation,
@@ -212,6 +221,7 @@ export function projectBuildingTo3D(
           length: wallLength,
           thickness: wall.thickness,
           height: physicalHeight,
+          ...(wall.arc ? { arc: wall.arc } : {}),
           solidSegments: wallSolidSegments(wallLength, physicalHeight, openingsByWall.get(wall.id) ?? []),
         };
       });

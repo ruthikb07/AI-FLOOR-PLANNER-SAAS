@@ -7,7 +7,7 @@ import type { CanonicalMepSystems } from '../mep/mep-contracts';
  * Every entity has a stable UUID. The rendered SVG is a projection of this model.
  */
 
-import type { Point, Polygon } from './geometry';
+import type { Point, Polygon, WallArcSpec } from './geometry';
 import type {
   AdjacencyStrength,
   ChangeSource,
@@ -146,6 +146,7 @@ export interface Room {
   readonly privacyRequirement: PrivacyLevel;
   readonly ventilationRequired: boolean;
   readonly isFixed: boolean;
+  readonly curvedEdges?: readonly WallArcSpec[];
 }
 
 // ─── Wall ───────────────────────────────────────────────────────────────────
@@ -159,6 +160,8 @@ export interface Wall {
   readonly rightRoomId?: string;
   readonly unitIds?: readonly string[];
   readonly provenance?: 'PROVISIONAL_HEURISTIC' | 'USER_PROVIDED';
+  readonly arc?: WallArcSpec;
+  readonly arcGroupId?: string;
   readonly id: string;
   readonly floorId: string;
   readonly startPoint: Point;
@@ -310,6 +313,10 @@ export interface BuildingMetadata {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly requestedMassingShape?: string;
+    readonly planCategory?: string;
+    readonly usedShapeIds?: readonly string[];
+    readonly usedArchetypeIds?: readonly string[];
     readonly includeWindowChajjas?: boolean;
     readonly staggeredBalconies?: boolean;
     readonly aiProposal?: Record<string, unknown>;
@@ -372,6 +379,9 @@ export interface Project {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly planCategory?: string;
+    readonly usedShapeIds?: readonly string[];
+    readonly usedArchetypeIds?: readonly string[];
     readonly includeWindowChajjas?: boolean;
     readonly staggeredBalconies?: boolean;
     readonly aiProposal?: Record<string, unknown>;

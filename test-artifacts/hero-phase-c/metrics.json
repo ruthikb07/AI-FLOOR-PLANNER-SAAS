@@ -1,0 +1,72 @@
+{
+  "chrome": "158.0.8127.36",
+  "viewport": "1280 × 800 DPR 1",
+  "glbBytes": 13093492,
+  "referenceAvailable": false,
+  "firstLoadJs": [
+    {
+      "path": "/assets/index-BEiX9gt0.js",
+      "rawBytes": 592105,
+      "gzipBytes": 184393
+    },
+    {
+      "path": "/assets/HDRLoader-3fM9r4iR.js",
+      "rawBytes": 3400,
+      "gzipBytes": 1633
+    },
+    {
+      "path": "/assets/ResidenceShowcase-T4g2AVTJ.js",
+      "rawBytes": 84908,
+      "gzipBytes": 26105
+    },
+    {
+      "path": "/assets/three.core-ComJrFKG.js",
+      "rawBytes": 261193,
+      "gzipBytes": 72309
+    },
+    {
+      "path": "/assets/OrbitControls-BVsnz3Qy.js",
+      "rawBytes": 369665,
+      "gzipBytes": 90436
+    }
+  ],
+  "firstLoadGzipBytes": 374876,
+  "measured": [
+    {
+      "view": "exterior",
+      "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "drawCalls": 36,
+      "triangles": 283372,
+      "components": 615
+    },
+    {
+      "view": "street",
+      "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "drawCalls": 36,
+      "triangles": 283372,
+      "components": 615
+    },
+    {
+      "view": "elevated",
+      "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "drawCalls": 36,
+      "triangles": 283372,
+      "components": 615
+    },
+    {
+      "view": "facade",
+      "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "drawCalls": 34,
+      "triangles": 283104,
+      "components": 615
+    },
+    {
+      "view": "arrival",
+      "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "drawCalls": 36,
+      "triangles": 283372,
+      "components": 615
+    }
+  ],
+  "errors": []
+}

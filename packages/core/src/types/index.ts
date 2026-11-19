@@ -5,6 +5,8 @@
 // Geometric primitives
 export type {
   Point,
+  Point2D,
+  WallArcSpec,
   LineSegment,
   Polygon,
   BoundingBox,

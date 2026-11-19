@@ -4,6 +4,7 @@ import { MEP_MATERIALS } from "@ai-floor-planner/core";
 import { appendMepScene } from './mep-scene-projector';
 import type {
   Building,
+  Point,
   Polygon,
   Floor,
   Room,
@@ -447,18 +448,36 @@ export function projectBuildingScene(building: Building): BuildingScene {
         }
       }
       // Subtract in wall-local (along, height) plane, then map the triangulated prism into world coordinates.
-      const local = prism(
-        rect(0, 0, length, wallHeight),
-        -wall.thickness / 2,
-        wall.thickness / 2,
-        cuts,
-      );
-      local.vertices = local.vertices.map(([along, up, normal]) => {
-        const p = point(along!, normal!);
-        return [p.x, p.y, z + up!];
-      });
-      // (along, up, normal) -> world is orientation reversing.
-      local.faces = local.faces.map((face) => [...face].reverse());
+      const geometry = (() => {
+        if (wall.arc && wall.arc.radiusMm > 0 && cuts.length === 0) {
+          const arc = wall.arc;
+          const halfT = wall.thickness / 2;
+          const steps = 6;
+          const outP: Point[] = [];
+          const inP: Point[] = [];
+          for (let k = 0; k <= steps; k++) {
+            const th = arc.startAngleRad + ((arc.endAngleRad - arc.startAngleRad) * k) / steps;
+            const cosT = Math.cos(th);
+            const sinT = Math.sin(th);
+            outP.push({ x: arc.center.x + (arc.radiusMm + halfT) * cosT, y: arc.center.y + (arc.radiusMm + halfT) * sinT });
+            inP.unshift({ x: arc.center.x + Math.max(50, arc.radiusMm - halfT) * cosT, y: arc.center.y + Math.max(50, arc.radiusMm - halfT) * sinT });
+          }
+          return prism({ points: [...outP, ...inP] }, z, z + wallHeight);
+        }
+        const local = prism(
+          rect(0, 0, length, wallHeight),
+          -wall.thickness / 2,
+          wall.thickness / 2,
+          cuts,
+        );
+        local.vertices = local.vertices.map(([along, up, normal]) => {
+          const p = point(along!, normal!);
+          return [p.x, p.y, z + up!];
+        });
+        // (along, up, normal) -> world is orientation reversing.
+        local.faces = local.faces.map((face) => [...face].reverse());
+        return local;
+      })();
       const m: SceneMesh = {
         id: wall.id,
         sourceEntityId: wall.id,
@@ -467,7 +486,7 @@ export function projectBuildingScene(building: Building): BuildingScene {
         canonicalRevision: building.version,
         kind: "wall",
         material,
-        geometry: local,
+        geometry,
         provenance: "CANONICAL",
       };
       if (cutters.length)

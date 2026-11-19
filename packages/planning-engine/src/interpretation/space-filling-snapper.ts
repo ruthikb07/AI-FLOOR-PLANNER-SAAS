@@ -853,6 +853,7 @@ export function sliceFlatRooms(params: {
   envelope: Box2D;
   placement?: ArchitecturalPlacement;
   archetype?: RoomSlicingArchetypeId;
+  localExteriorFaces?: { lowY?: boolean; highY?: boolean };
 }): SliceFlatResult {
   const { flatId, flatLabel, unitType, box, corridorIsEast, corridorBox, envelope, rawRooms = [], placement, archetype } = params;
   const arch = resolveArchetypeSlicingParams(archetype);
@@ -1208,13 +1209,13 @@ export function sliceFlatRooms(params: {
   } else if (unitType === '2BHK') {
     // 2BHK: Strictly 2 Bedrooms (Master Bedroom, Bedroom 02) and 2 Bathrooms (Master Toilet, Common Bathroom)
     // Parameter-driven proportional allocation: aspect ratios strictly clamped <= 1.85, eliminating fake 10.3m rooms.
-    const bathH = box.h >= 8200 && box.h < 9000
+    let bathH = box.h >= 8200 && box.h < 9000
       ? snap10(Math.min(1800, Math.max(1200, (box.h - 6000) * 0.58)))
       : snap10(Math.min(2200, Math.max(1800, box.h * 0.09)));
     const passH = box.h >= 8200 && box.h < 9000
       ? snap10(Math.max(950, box.h - 6000 - bathH))
       : snap10(Math.min(1500, Math.max(1200, box.h * 0.06)));
-    const availBedH = box.h - bathH - passH;
+    let availBedH = box.h - bathH - passH;
 
     let masterBedH: number;
     let bed2H: number;
@@ -1224,6 +1225,7 @@ export function sliceFlatRooms(params: {
     const hasStudyRequested = rawRooms.some(r => r.type === 'study' || r.type === 'office' || r.name.toLowerCase().includes('study'));
     const hasPoojaRequested = rawRooms.some(r => r.type === 'pooja' || r.name.toLowerCase().includes('pooja') || r.name.toLowerCase().includes('mandir'));
 
+    const maxBandAspectH = snap10(Math.max(3000, bedZoneW * 2.12));
     if (hasStudyRequested && hasPoojaRequested && availBedH >= 7600) {
       masterBedH = snap10(Math.min(4800, Math.max(3600, availBedH * 0.28)));
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.25)));
@@ -1239,23 +1241,32 @@ export function sliceFlatRooms(params: {
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.34)));
       poojaH = availBedH - (masterBedH + bed2H);
     } else {
-      masterBedH = snap10(availBedH * arch.masterBedRatio);
-      bed2H = availBedH - masterBedH;
-      const minRequiredBedH = availBedH >= 6000 ? 3000 : 2700;
-      if (availBedH >= 5400 && bed2H < minRequiredBedH) {
-        bed2H = minRequiredBedH;
-        masterBedH = availBedH - bed2H;
+      if (availBedH > maxBandAspectH * 2 + 1200) {
+        studyH = snap10(availBedH - maxBandAspectH * 2);
+      } else if (availBedH > maxBandAspectH * 2) {
+        const extraToBath = snap10(Math.min(800, availBedH - maxBandAspectH * 2));
+        bathH += extraToBath;
+        availBedH -= extraToBath;
       }
-      if (availBedH >= 5400 && masterBedH < minRequiredBedH) {
+      const bedBudgetH = availBedH - studyH;
+      masterBedH = snap10(bedBudgetH * arch.masterBedRatio);
+      bed2H = bedBudgetH - masterBedH;
+      const minRequiredBedH = bedBudgetH >= 6000 ? 3000 : 2700;
+      if (bedBudgetH >= 5400 && bed2H < minRequiredBedH) {
+        bed2H = minRequiredBedH;
+        masterBedH = bedBudgetH - bed2H;
+      }
+      if (bedBudgetH >= 5400 && masterBedH < minRequiredBedH) {
         masterBedH = minRequiredBedH;
-        bed2H = availBedH - masterBedH;
+        bed2H = bedBudgetH - masterBedH;
       }
     }
 
     // Facade adjacency alone does not establish ventilation: canonical openings
     // must be checked after wall and window generation.
     const bathBlockH = bathH + passH;
-    if (!hasStudyRequested && !hasPoojaRequested && availBedH >= 6000) {
+    const bedBudgetAfterExtras = availBedH - studyH - poojaH;
+    if (!hasStudyRequested && !hasPoojaRequested && bedBudgetAfterExtras >= 6000) {
       const livStart = livingRoom.rect.y;
       const livEnd = livStart + livingRoom.rect.height;
       const topBedInitialH = arch.invertBedroomOrder ? bed2H : masterBedH;
@@ -1263,18 +1274,33 @@ export function sliceFlatRooms(params: {
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100) {
-        const minBedRun = Math.min(3000, snap10(availBedH / 2));
-        const maxBedRun = availBedH - minBedRun;
+        const floorMin = Math.min(3000, snap10(bedBudgetAfterExtras / 2));
+        const minBedRun = Math.max(floorMin, bedBudgetAfterExtras - maxBandAspectH);
+        const maxBedRun = Math.min(bedBudgetAfterExtras - floorMin, maxBandAspectH);
         const targetTopH = isSouth
           ? snap10(livEnd - 1100 - box.y)
           : snap10(livStart + 1100 - bathBlockH - box.y);
-        const clampedTopH = Math.max(minBedRun, Math.min(maxBedRun, targetTopH));
+        const clampedTopH =
+          minBedRun <= maxBedRun
+            ? Math.max(minBedRun, Math.min(maxBedRun, targetTopH))
+            : Math.max(floorMin, Math.min(bedBudgetAfterExtras - floorMin, targetTopH));
         if (arch.invertBedroomOrder) {
           bed2H = clampedTopH;
-          masterBedH = availBedH - bed2H;
+          masterBedH = bedBudgetAfterExtras - bed2H;
         } else {
           masterBedH = clampedTopH;
-          bed2H = availBedH - masterBedH;
+          bed2H = bedBudgetAfterExtras - masterBedH;
+        }
+      }
+      // If a single bedroom STILL exceeds 2.12:1, siphon excess into a Study / Dressing alcove cleanly
+      if (studyH === 0 && (masterBedH > maxBandAspectH || bed2H > maxBandAspectH)) {
+        const overflow = Math.max(0, masterBedH - maxBandAspectH) + Math.max(0, bed2H - maxBandAspectH);
+        if (overflow >= 1200) {
+          studyH = snap10(overflow);
+          if (masterBedH > maxBandAspectH) masterBedH -= snap10(masterBedH - maxBandAspectH);
+          if (bed2H > maxBandAspectH) bed2H -= snap10(bed2H - maxBandAspectH);
+          const diff = bedBudgetAfterExtras - (masterBedH + bed2H + studyH);
+          studyH += diff;
         }
       }
     }
@@ -1470,29 +1496,57 @@ export function sliceFlatRooms(params: {
       const xInt = corridorIsEast ? bedZoneX + colExtW : bedZoneX;
 
       const minBothBedsH = Math.min(6000, snap10(box.h * 0.72));
-      const bathBlockH = snap10(Math.min(4800, Math.max(2200, Math.min(box.h - minBothBedsH, box.h * 0.24))));
-      const availBedH = box.h - bathBlockH;
+      let bathBlockH = snap10(Math.min(4800, Math.max(2200, Math.min(box.h - minBothBedsH, box.h * 0.24))));
+      let availBedH = box.h - bathBlockH;
 
+      const maxBandAspectH = snap10(Math.min(colExtW, colIntW) * 2.12);
       const maxTwoBandH = snap10(Math.min(colExtW, colIntW) * 3.6);
       const extraBandH = availBedH > maxTwoBandH && availBedH - maxTwoBandH >= 2000 ? availBedH - maxTwoBandH : 0;
-      const remBedH = availBedH - extraBandH;
+      let remBedH = availBedH - extraBandH;
 
       let topBandH = snap10(Math.max(3000, Math.min(remBedH - 3000, remBedH * (arch.invertBedroomOrder ? 0.48 : 0.52))));
       let botBandH = remBedH - topBandH;
 
+      const placeBed3AtTop = !isSouth;
+      const extraAtTop = isSouth && extraBandH > 0;
+      const bedStartY = box.y + (extraAtTop ? extraBandH : 0);
+
       const livStart = livingRoom.rect.y;
       const livEnd = livStart + livingRoom.rect.height;
-      const passStart = box.y + topBandH;
+      const passStart = bedStartY + topBandH;
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100 && remBedH >= 6000) {
-        const minRun = 3000;
-        const maxRun = remBedH - 3000;
+        const minRun = Math.max(3000, remBedH - maxBandAspectH);
+        const maxRun = Math.min(remBedH - 3000, maxBandAspectH);
         const targetTopH = isSouth
-          ? snap10(livEnd - 1100 - box.y)
-          : snap10(livStart + 1100 - bathBlockH - box.y);
-        topBandH = Math.max(minRun, Math.min(maxRun, targetTopH));
+          ? snap10(livEnd - 1100 - bedStartY)
+          : snap10(livStart + 1100 - bathBlockH - bedStartY);
+        topBandH =
+          minRun <= maxRun
+            ? Math.max(minRun, Math.min(maxRun, targetTopH))
+            : Math.max(3000, Math.min(remBedH - 3000, targetTopH));
         botBandH = remBedH - topBandH;
+      }
+
+      // Enforce target <= 2.12:1 bedroom aspect ratio by absorbing excess bed depth into the central bath/passage band
+      if (botBandH > maxBandAspectH && topBandH + bathBlockH + botBandH <= box.h) {
+        const absorbBot = snap10(botBandH - maxBandAspectH);
+        if (absorbBot > 0 && botBandH - absorbBot >= 3000 && bathBlockH + absorbBot <= 6000) {
+          bathBlockH += absorbBot;
+          availBedH -= absorbBot;
+          remBedH -= absorbBot;
+          botBandH -= absorbBot;
+        }
+      }
+      if (topBandH > maxBandAspectH) {
+        const absorbTop = snap10(topBandH - maxBandAspectH);
+        if (absorbTop > 0 && topBandH - absorbTop >= 3000 && bathBlockH + absorbTop <= 6000) {
+          topBandH -= absorbTop;
+          bathBlockH += absorbTop;
+          availBedH -= absorbTop;
+          remBedH -= absorbTop;
+        }
       }
 
       const bathW = snap10(Math.max(1800, Math.min(2600, colExtW - 1100)));
@@ -1505,7 +1559,6 @@ export function sliceFlatRooms(params: {
       const bath2H = useTwoBaths ? bathBlockH - bath1H : snap10(bathBlockH / 3);
       const bath3H = useTwoBaths ? 0 : bathBlockH - bath1H - bath2H;
 
-      const placeBed3AtTop = !isSouth || extraBandH > 0;
       const splitBottomBand = !placeBed3AtTop || bedZoneW > botBandH * 1.9 || hasStudyRequested || hasPoojaRequested;
       const splitTopBand = placeBed3AtTop || bedZoneW > topBandH * 1.9 || hasStudyRequested || hasPoojaRequested;
 
@@ -1515,12 +1568,12 @@ export function sliceFlatRooms(params: {
         type: 'bedroom',
         planningZone: 'PRIVATE',
         rect: splitTopBand
-          ? { x: xExt, y: box.y, width: colExtW, height: topBandH }
-          : { x: bedZoneX, y: box.y, width: bedZoneW, height: topBandH },
+          ? { x: xExt, y: bedStartY, width: colExtW, height: topBandH }
+          : { x: bedZoneX, y: bedStartY, width: bedZoneW, height: topBandH },
       };
       rooms.push(masterBed);
 
-      const midY = box.y + topBandH;
+      const midY = bedStartY + topBandH;
       const masterBath: ApartmentPlanRoom = {
         id: `${flatId}__master_bath`,
         name: `${flatLabel} Master Toilet`,
@@ -1580,7 +1633,7 @@ export function sliceFlatRooms(params: {
         type: 'bedroom',
         planningZone: 'PRIVATE',
         rect: placeBed3AtTop
-          ? { x: xInt, y: box.y, width: colIntW, height: topBandH }
+          ? { x: xInt, y: bedStartY, width: colIntW, height: topBandH }
           : { x: xInt, y: botY, width: colIntW, height: botBandH },
       };
       rooms.push(bed3);
@@ -1607,7 +1660,7 @@ export function sliceFlatRooms(params: {
           name: usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Study & Home Office`,
           type: usePoojaCell ? 'pooja' : 'study',
           planningZone: 'PRIVATE',
-          rect: { x: xInt, y: box.y, width: colIntW, height: topBandH },
+          rect: { x: xInt, y: bedStartY, width: colIntW, height: topBandH },
         };
         rooms.push(cellRoom);
         if (usePoojaCell) pooja = cellRoom;
@@ -1615,7 +1668,7 @@ export function sliceFlatRooms(params: {
       }
 
       if (extraBandH > 0) {
-        const extraY = botY + botBandH;
+        const extraY = extraAtTop ? box.y : botY + botBandH;
         const extraRoom: ApartmentPlanRoom = {
           id: pooja ? `${flatId}__study` : `${flatId}__pooja`,
           name: pooja ? `${flatLabel} Study & Home Office` : `${flatLabel} Pooja & Family Lounge`,
@@ -1798,8 +1851,8 @@ export function sliceFlatRooms(params: {
       const colIntW = bedZoneW - colExtW;
       const xExt = corridorIsEast ? bedZoneX : bedZoneX + colIntW;
       const xInt = corridorIsEast ? bedZoneX + colExtW : bedZoneX;
-      const northIsExterior = Math.abs(box.y - envelope.y) <= 10;
-      const southIsExterior = Math.abs((box.y + box.h) - (envelope.y + envelope.h)) <= 10;
+      const northIsExterior = params.localExteriorFaces?.lowY ?? Math.abs(box.y - envelope.y) <= 10;
+      const southIsExterior = params.localExteriorFaces?.highY ?? Math.abs((box.y + box.h) - (envelope.y + envelope.h)) <= 10;
       const isHalfDepthQuadrant = northIsExterior !== southIsExterior;
 
       if (isHalfDepthQuadrant) {
@@ -2355,7 +2408,7 @@ export function sliceFlatRooms(params: {
     );
 
     const candidates: Array<{ trimmed: ApartmentPlanRoom; balcony: ApartmentPlanRoom }> = [];
-    if ((west || east) && r.width - depthX >= minRemW && r.height >= minRemH) {
+    if ((west || east) && r.width - depthX >= minRemW && r.height >= minRemH && r.height / (r.width - depthX) <= 2.18) {
       candidates.push({
         trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
         balcony: {
@@ -2367,7 +2420,7 @@ export function sliceFlatRooms(params: {
         },
       });
     }
-    if ((placement?.bedroomBalconies === 'ALL_BEDROOMS' || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minRemH && r.width >= minRemW) {
+    if ((placement?.bedroomBalconies === 'ALL_BEDROOMS' || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minRemH && r.width >= minRemW && r.width / (r.height - depthY) <= 2.18) {
       candidates.push({
         trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
         balcony: {

@@ -393,6 +393,23 @@ function edgesOverlap(a: LineSegment, b: LineSegment, tolerance: number): boolea
     return aMinY < bMaxY - tolerance && bMinY < aMaxY - tolerance;
   }
 
+  // General collinear segment overlap (angled walls & curved chord edges)
+  const dx = a.end.x - a.start.x;
+  const dy = a.end.y - a.start.y;
+  const len = Math.hypot(dx, dy);
+  if (len > tolerance) {
+    const ux = dx / len, uy = dy / len;
+    const d1 = Math.abs((b.start.x - a.start.x) * uy - (b.start.y - a.start.y) * ux);
+    const d2 = Math.abs((b.end.x - a.start.x) * uy - (b.end.y - a.start.y) * ux);
+    if (d1 <= tolerance && d2 <= tolerance) {
+      const p1 = (b.start.x - a.start.x) * ux + (b.start.y - a.start.y) * uy;
+      const p2 = (b.end.x - a.start.x) * ux + (b.end.y - a.start.y) * uy;
+      const bMin = Math.min(p1, p2);
+      const bMax = Math.max(p1, p2);
+      return Math.min(len, bMax) - Math.max(0, bMin) > tolerance;
+    }
+  }
+
   return (
     (pointsEqual(a.start, b.start, tolerance) && pointsEqual(a.end, b.end, tolerance)) ||
     (pointsEqual(a.start, b.end, tolerance) && pointsEqual(a.end, b.start, tolerance))

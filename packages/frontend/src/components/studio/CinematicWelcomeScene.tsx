@@ -1,822 +1,609 @@
-/**
- * Cinematic Welcome Scene & 3D Building Assembly
- * Features a realistic multi-story architectural building with balconies, glass, materials, and GSAP animations.
- */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-gsap.registerPlugin(ScrollTrigger);
-import { Sparkles, ArrowRight, Building2, Layers, ShieldCheck, Compass, ChevronDown, Volume2, VolumeX } from 'lucide-react';
 
-export const CinematicWelcomeScene: React.FC<{ onExplore?: () => void; onStartProject?: () => void }> = ({ onExplore, onStartProject }) => {
+export interface CinematicWelcomeSceneProps {
+  lightingMode: 'day' | 'night';
+  targetProgress: number;
+  onWebGLUnavailable?: (reason: string) => void;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function phaseProgress(progress: number, start: number, end: number): number {
+  if (end <= start) return progress >= end ? 1 : 0;
+  return clamp01((progress - start) / (end - start));
+}
+
+function smoothstep(t: number): number {
+  return t * t * (3 - 2 * t);
+}
+
+export const CinematicWelcomeScene: React.FC<CinematicWelcomeSceneProps> = ({
+  lightingMode,
+  targetProgress,
+  onWebGLUnavailable,
+}) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const buildingGroupRef = useRef<THREE.Group | null>(null);
-  const floorGroupsRef = useRef<THREE.Group[]>([]);
-  const particleSystemRef = useRef<THREE.Points | null>(null);
-  const particleMatchesRef = useRef<Array<{
-    start: THREE.Vector3;
-    logo: THREE.Vector3;
-    target: THREE.Vector3;
-    progress: number;
-    phase: number;
-    freq: number;
-    amp: number;
-  }>>([]);
-  const [audioMuted, setAudioMuted] = useState<boolean>(true); // Initially muted for respectful UX
-  const [exploded, setExploded] = useState<boolean>(false);
-  const [soloStilt, setSoloStilt] = useState<boolean>(false);
+  const lightingRef = useRef<'day' | 'night'>(lightingMode);
+  const progressRef = useRef(targetProgress);
+  lightingRef.current = lightingMode;
+  progressRef.current = targetProgress;
 
-  // Web Audio API state refs
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const masterGainRef = useRef<GainNode | null>(null);
-  const droneOscillatorsRef = useRef<OscillatorNode[]>([]);
-  const windChimesGainRef = useRef<GainNode | null>(null);
-  const windChimesSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const sceneRefs = useRef<{
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+    camera: THREE.PerspectiveCamera;
+    hemi: THREE.HemisphereLight;
+    sun: THREE.DirectionalLight;
+    fill: THREE.DirectionalLight;
+    windowMat: THREE.MeshStandardMaterial;
+    glowLamps: THREE.PointLight[];
+    renderOnce: () => void;
+    scrubTo: (progress: number) => void;
+  } | null>(null);
 
-  const startDrone = (): void => {
-    if (!audioContextRef.current || audioMuted || !masterGainRef.current) return;
+  useEffect(() => {
+    sceneRefs.current?.scrubTo(targetProgress);
+  }, [targetProgress]);
 
-    const ctx = audioContextRef.current;
-    const droneGain = ctx.createGain();
-    droneGain.gain.value = 0.08; // ~20dB for ambient feel
-    droneGain.connect(masterGainRef.current);
-
-    // Create warm harmonic drone with multiple oscillators
-    const baseFreq = 55; // A1
-    const harmonics = [1, 2, 3, 4, 5, 7, 9]; // Integer ratios for harmonic series
-    const oscillators: OscillatorNode[] = [];
-
-    harmonics.forEach((harmonic, index) => {
-      const osc = ctx.createOscillator();
-      osc.type = index === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = baseFreq * harmonic;
-
-      const oscGain = ctx.createGain();
-      oscGain.gain.value = 0.3 / Math.sqrt(harmonic + 1);
-      osc.connect(oscGain);
-      oscGain.connect(droneGain);
-
-      osc.start();
-      oscillators.push(osc);
-    });
-
-    droneOscillatorsRef.current = oscillators;
-  };
-
-  const startWindChimes = (): void => {
-    if (!audioContextRef.current || audioMuted) return;
-
-    const ctx = audioContextRef.current;
-
-    // Create noise buffer for wind chimes
-    const bufferSize = 2 * ctx.sampleRate;
-    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
-
-    // Filtered noise for wind chimes
-    const windChimesNoise = ctx.createBufferSource();
-    windChimesNoise.buffer = noiseBuffer;
-    windChimesNoise.loop = true;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 2000;
-    filter.Q.value = 1;
-
-    windChimesGainRef.current = ctx.createGain();
-    windChimesGainRef.current.gain.value = 0.15;
-    windChimesGainRef.current.connect(filter);
-
-    filter.connect(windChimesGainRef.current);
-    windChimesGainRef.current.connect(masterGainRef.current!);
-
-    windChimesSourceRef.current = windChimesNoise;
-    windChimesNoise.start();
-  };
-
-  const playAllAmbientSounds = (): void => {
-    startDrone();
-    startWindChimes();
-  };
-
-  const toggleMute = (): void => {
-    if (!audioContextRef.current) {
-      // Initialize if not already done
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
-
-      const masterGain = audioContextRef.current.createGain();
-      masterGain.connect(audioContextRef.current.destination);
-      masterGainRef.current = masterGain;
-
-      playAllAmbientSounds();
-    }
-
-    if (!masterGainRef.current) return;
-
-    if (audioMuted) {
-      // Unmute
-      masterGainRef.current.gain.setTargetAtTime(0.15, audioContextRef.current!.currentTime, 0.5);
-      setAudioMuted(false);
+  // Sync lighting transitions smoothly
+  useEffect(() => {
+    const refs = sceneRefs.current;
+    if (!refs) return;
+    if (lightingMode === 'night') {
+      refs.scene.background = new THREE.Color(0x171b1d);
+      refs.scene.fog = new THREE.FogExp2(0x171b1d, 0.011);
+      refs.hemi.color.setHex(0x3b4d7a);
+      refs.hemi.groundColor.setHex(0x0f172a);
+      refs.hemi.intensity = 1.05;
+      refs.sun.color.setHex(0xa5b4fc);
+      refs.sun.intensity = 1.15;
+      refs.fill.color.setHex(0xfbbf24);
+      refs.fill.intensity = 0.75;
+      refs.windowMat.emissive.setHex(0xf59e0b);
+      refs.windowMat.emissiveIntensity = 0.55;
+      refs.glowLamps.forEach(l => { l.intensity = 1.4; });
     } else {
-      // Mute
-      masterGainRef.current.gain.setTargetAtTime(0, audioContextRef.current!.currentTime, 0.5);
-      setAudioMuted(true);
+      refs.scene.background = new THREE.Color(0xe9e5dc);
+      refs.scene.fog = new THREE.FogExp2(0xe9e5dc, 0.0075);
+      refs.hemi.color.setHex(0xffffff);
+      refs.hemi.groundColor.setHex(0xd6cbb8);
+      refs.hemi.intensity = 1.45;
+      refs.sun.color.setHex(0xfff8ec);
+      refs.sun.intensity = 2.6;
+      refs.fill.color.setHex(0xcbe2fa);
+      refs.fill.intensity = 0.65;
+      refs.windowMat.emissive.setHex(0x38bdf8);
+      refs.windowMat.emissiveIntensity = 0.06;
+      refs.glowLamps.forEach(l => { l.intensity = 0; });
     }
-  };
-
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      audioContextRef.current = null;
-    };
-  }, []);
+    refs.renderOnce();
+  }, [lightingMode]);
 
   useEffect(() => {
-    if (floorGroupsRef.current.length === 0) return;
+    const host = mountRef.current;
+    if (!host) return;
 
-    const floorHeight = 1.6;
-    floorGroupsRef.current.forEach((fg, idx) => {
-      let targetY = idx * floorHeight;
-      let targetOpacity = 1;
-      let targetScale = 1;
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
 
-      if (exploded) {
-        targetY = idx * (floorHeight + 2);
-      }
-
-      if (soloStilt) {
-        if (idx !== 0) {
-          targetOpacity = 0.1;
-          targetScale = 0.8;
-        }
-      }
-
-      gsap.to(fg.position, { y: targetY, duration: 1, ease: 'power2.out' });
-      fg.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          const mat = child.material as THREE.MeshStandardMaterial;
-          gsap.to(mat, { opacity: targetOpacity * (mat.transparent ? 0.6 : 1), duration: 1 });
-        }
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: 'default',
       });
-      gsap.to(fg.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 1 });
-    });
-  }, [exploded, soloStilt]);
+    } catch (error) {
+      onWebGLUnavailable?.(error instanceof Error ? error.message : 'WebGL initialization unavailable');
+      return;
+    }
 
-  useEffect(() => {
-    if (!mountRef.current) return;
+    const width = Math.max(1, host.clientWidth || window.innerWidth);
+    const height = Math.max(1, host.clientHeight || window.innerHeight);
 
-    // 1. Scene, Camera, Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
-    scene.fog = new THREE.FogExp2(0x0a0a0a, 0.015);
-    sceneRef.current = scene;
+    scene.background = new THREE.Color(lightingRef.current === 'night' ? 0x171b1d : 0xe9e5dc);
+    scene.fog = new THREE.FogExp2(lightingRef.current === 'night' ? 0x171b1d : 0xe9e5dc, 0.0075);
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 12, 28);
-    camera.lookAt(0, 4, 0);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 220);
+    camera.position.set(16, 12, 26);
+    camera.lookAt(0, 5.5, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, width < 700 ? 1.25 : 1.5));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    mountRef.current.appendChild(renderer.domElement);
-
-    // 2. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.5);
-    sunLight.position.set(15, 25, 15);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
-    scene.add(sunLight);
-
-    const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.5);
-    fillLight.position.set(-15, 10, -15);
-    scene.add(fillLight);
-
-    // 3. Reduced Motion Check
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // 4. Create Procedural Golden Texture for Particles
-    const createGoldenTexture = (): THREE.Texture => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 32;
-      canvas.height = 32;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Failed to create 2D context for particle texture');
-
-      const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      gradient.addColorStop(0, '#ffffff');
-      gradient.addColorStop(0.3, '#ffd700');
-      gradient.addColorStop(0.7, '#ffd700');
-      gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 32, 32);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      return texture;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    host.appendChild(renderer.domElement);
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      onWebGLUnavailable?.('WebGL context lost');
     };
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost);
 
-    // 5. Particle System Initialization
-    const particleGeometry = new THREE.BufferGeometry();
-    const PARTICLE_COUNT = 150;
-    const positions = new Float32Array(PARTICLE_COUNT * 3);
-    const particleTracks: Array<{
-      start: THREE.Vector3;
-      logo: THREE.Vector3;
-      target: THREE.Vector3;
-      progress: number;
-      phase: number;
-      freq: number;
-      amp: number;
-    }> = [];
+    // Architectural Daylight Lighting
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xd6cbb8, lightingRef.current === 'night' ? 1.05 : 1.45);
+    scene.add(hemi);
 
-    // Define trajectory points
-    const startPos = new THREE.Vector3(-5, -5, 5);
-    const logoPos = new THREE.Vector3(-2, 0, 0);
-    const targetPos = new THREE.Vector3(0, 0, 0);
+    const sun = new THREE.DirectionalLight(0xfff8ec, lightingRef.current === 'night' ? 1.15 : 2.6);
+    sun.position.set(22, 32, 18);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 2;
+    sun.shadow.camera.far = 90;
+    sun.shadow.camera.left = -22;
+    sun.shadow.camera.right = 22;
+    sun.shadow.camera.top = 22;
+    sun.shadow.camera.bottom = -22;
+    sun.shadow.bias = -0.0005;
+    scene.add(sun);
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const t = i / PARTICLE_COUNT;
-      const arcT = t * t * (3 - 2 * t);
-      const x = (1 - arcT) * (1 - arcT) * startPos.x + 2 * (1 - arcT) * arcT * logoPos.x + arcT * arcT * targetPos.x;
-      const y = (1 - arcT) * (1 - arcT) * startPos.y + 2 * (1 - arcT) * arcT * logoPos.y + arcT * arcT * targetPos.y;
-      const z = (1 - arcT) * (1 - arcT) * startPos.z + 2 * (1 - arcT) * arcT * logoPos.z + arcT * arcT * targetPos.z;
+    const fill = new THREE.DirectionalLight(0xcbe2fa, 0.65);
+    fill.position.set(-18, 12, -16);
+    scene.add(fill);
 
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = z;
-
-      particleTracks.push({
-        start: startPos.clone(),
-        logo: logoPos.clone(),
-        target: targetPos.clone(),
-        progress: 0,
-        phase: t * Math.PI * 4,
-        freq: 2 + Math.random(),
-        amp: 0.3 + Math.random() * 0.3
-      });
-    }
-
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    const particleMaterial = new THREE.PointsMaterial({
-      map: createGoldenTexture(),
+    // Architectural PBR Materials
+    const lawnMat = new THREE.MeshStandardMaterial({ color: 0xb6c7a8, roughness: 0.92, metalness: 0.02 });
+    const plazaMat = new THREE.MeshStandardMaterial({ color: 0xe9e1d3, roughness: 0.78, metalness: 0.04 });
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.85, metalness: 0.05 });
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0xcfc6b8, roughness: 0.75 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0xd9d2c7, roughness: 0.65, metalness: 0.08 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xf7f2ea, roughness: 0.68, metalness: 0.04 });
+    const coreMat = new THREE.MeshStandardMaterial({ color: 0xbdb5a8, roughness: 0.72, metalness: 0.06 });
+    const champagneMat = new THREE.MeshStandardMaterial({ color: 0xc8a25a, roughness: 0.3, metalness: 0.82 });
+    const mullionMat = new THREE.MeshStandardMaterial({ color: 0x3b332b, roughness: 0.38, metalness: 0.55 });
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x67b5e3,
+      roughness: 0.1,
+      metalness: 0.1,
       transparent: true,
-      opacity: prefersReducedMotion ? 0 : 1,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      size: 3,
-      color: 0xffd700
+      opacity: 0.66,
+      emissive: new THREE.Color(lightingRef.current === 'night' ? 0xf59e0b : 0x38bdf8),
+      emissiveIntensity: lightingRef.current === 'night' ? 0.55 : 0.06,
     });
+    const solarMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.25, metalness: 0.7 });
+    const treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x688f5e, roughness: 0.82 });
+    const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x6d4c3d, roughness: 0.9 });
 
-    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-    scene.add(particleSystem);
-    particleSystemRef.current = particleSystem;
+    const assemblyRoot = new THREE.Group();
+    scene.add(assemblyRoot);
 
-    const animateParticleTrail = (
-      particleGeometry: THREE.BufferGeometry,
-      track: { start: THREE.Vector3; logo: THREE.Vector3; target: THREE.Vector3; progress: number; phase: number; freq: number; amp: number },
-      idx: number
-    ) => {
-      const animate = () => {
-        const posAttr = particleGeometry.attributes.position;
-        if (!posAttr || track.progress >= 1) return;
-        const positions = posAttr.array as any;
+    // 1. SITE GROUP
+    const siteGroup = new THREE.Group();
+    const ground = new THREE.Mesh(new THREE.BoxGeometry(28, 0.3, 24), lawnMat);
+    ground.position.y = -0.16;
+    ground.receiveShadow = true;
+    siteGroup.add(ground);
 
-        const t = track.progress;
-        const alpha = (1 - t) * (1 - t) * (2 - t) + (1 - t) * (1 - t) * t;
-        const beta = (1 - alpha) * (1 - alpha) * track.start.x + 2 * (1 - alpha) * alpha * track.logo.x + alpha * alpha * track.target.x;
-        const gamma = (1 - alpha) * (1 - alpha) * track.start.y + 2 * (1 - alpha) * alpha * track.logo.y + alpha * alpha * track.target.y;
-        const delta = (1 - alpha) * (1 - alpha) * track.start.z + 2 * (1 - alpha) * alpha * track.logo.z + alpha * alpha * track.target.z;
+    const plaza = new THREE.Mesh(new THREE.BoxGeometry(15.5, 0.16, 13.5), plazaMat);
+    plaza.position.y = -0.02;
+    plaza.receiveShadow = true;
+    siteGroup.add(plaza);
 
-        positions[idx * 3] = beta;
-        positions[idx * 3 + 1] = gamma;
-        positions[idx * 3 + 2] = delta;
+    const road = new THREE.Mesh(new THREE.BoxGeometry(28, 0.12, 4.2), roadMat);
+    road.position.set(0, -0.06, 9.6);
+    road.receiveShadow = true;
+    siteGroup.add(road);
 
-        if (track.progress > 0.9) {
-          const hoverT = (track.progress - 0.9) * 10;
-          const hoverPhase = Date.now() * 0.002 + track.phase;
-          positions[idx * 3 + 1] += Math.sin(hoverPhase) * track.amp * hoverT;
-        }
-
-        posAttr.needsUpdate = true;
-        requestAnimationFrame(animate);
-      };
-      animate();
-    };
-
-    // 7. Mount particle system
-    if (!prefersReducedMotion && particleSystemRef.current && particleTracks.length > 0) {
-      const ps = particleSystemRef.current!;
-      scene.add(ps);
-      particleMatchesRef.current = particleTracks;
-
-      // Start GSAP animation for particle birth
-      const particleTl = gsap.timeline();
-
-      particleTracks.forEach((track, idx) => {
-        particleTl.to(track, {
-          progress: 1,
-          duration: 1.5,
-          ease: 'power2.out',
-          delay: idx * 0.05
-        });
-        animateParticleTrail(particleGeometry, track, idx);
-      });
+    for (let sx = -10; sx <= 10; sx += 4) {
+      const dash = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.02, 0.14), plazaMat);
+      dash.position.set(sx, 0.01, 9.6);
+      siteGroup.add(dash);
     }
 
-    // Golden Pulse Glow Layer (parallel to text, requires WebGL canvas shared)
-    const glowGroup = new THREE.Group();
-    glowGroup.position.set(-2, 1.5, 0);
-    scene.add(glowGroup);
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.1, 14.2), curbMat);
+    curb.position.y = -0.04;
+    siteGroup.add(curb);
+    assemblyRoot.add(siteGroup);
 
-    // Create glow rings using translucent cylinders
-    const glowRingGeo = new THREE.CylinderGeometry(1.5, 1.5, 3, 64, 1, true);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffd700,
-      transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
+    const surveyGrid = new THREE.GridHelper(24, 24, 0x997951, 0xbbac93);
+    surveyGrid.position.y = 0.075;
+    assemblyRoot.add(surveyGrid);
 
-    const glowRing1 = new THREE.Mesh(glowRingGeo, glowMaterial.clone());
-    glowRing1.rotation.x = Math.PI / 2;
-    glowGroup.add(glowRing1);
-
-    const glowRing2 = new THREE.Mesh(glowRingGeo, glowMaterial.clone());
-    glowRing2.rotation.x = Math.PI / 2;
-    glowRing2.scale.set(1.3, 1.3, 1.3);
-    glowGroup.add(glowRing2);
-
-    // Store glow refs for animation
-    if (!prefersReducedMotion) {
-      glowGroup.visible = true;
-      const glowTl = gsap.timeline();
-
-      // Phase 1: Golden outline fade in (0-1s)
-      glowTl.to(glowMaterial, {
-        opacity: 0.8,
-        duration: 1,
-        ease: 'power2.out'
-      }, 0);
-
-      // Phase 2: Solid golden fill (1s-2s)
-      glowTl.to(glowMaterial, {
-        opacity: 0.4,
-        backgroundColor: '#ffd700',
-        duration: 0.8,
-        ease: 'power2.out'
-      }, 1);
-
-      // Phase 3: Ripple expansion toward building (building assembly coordinate is 0,4,0)
-      glowTl.to(glowMaterial, {
-        opacity: 0.2,
-        duration: 0.5,
-        ease: 'power2.in'
-      }, 1.8);
-
-      glowTl.to(glowRing1.scale, {
-        x: 0.6,
-        y: 0.6,
-        z: 0.6,
-        duration: 1.2,
-        ease: 'power2.in'
-      }, 1.8);
-
-      glowTl.to(glowRing2.scale, {
-        x: 1.8,
-        y: 1.8,
-        z: 1.8,
-        duration: 1.2,
-        ease: 'power1.out'
-      }, 1.8);
-    }
-
-    // 8. Ground / Plot Formation
-    const plotGeometry = new THREE.BoxGeometry(18, 0.4, 18);
-    const plotMaterial = new THREE.MeshStandardMaterial({ color: 0x171717, roughness: 0.9, metalness: 0.1 });
-    const plotMesh = new THREE.Mesh(plotGeometry, plotMaterial);
-    plotMesh.position.y = -0.2;
-    plotMesh.receiveShadow = true;
-    scene.add(plotMesh);
-
-    // Grid helper on plot
-    const gridHelper = new THREE.GridHelper(18, 18, 0xa67c52, 0x262626);
-    gridHelper.position.y = 0.01;
-    scene.add(gridHelper);
-
-    // 9. Constructing Realistic 3D Building Hierarchy
-    const buildingGroup = new THREE.Group();
-    buildingGroup.position.y = 0;
-    scene.add(buildingGroup);
-    buildingGroupRef.current = buildingGroup;
-
-    // Materials
-    const concreteMat = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.7 });
-    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.6, transmission: 0.6 });
-    const bronzeMat = new THREE.MeshStandardMaterial({ color: 0xa67c52, roughness: 0.4, metalness: 0.8 });
-    const windowFrameMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2 });
-
-    // Floors creation (Stilt + 5 Residential Floors + Terrace)
-    const totalFloors = 6;
-    const floorHeight = 1.6;
-    const floorWidth = 8;
-    const floorDepth = 6;
-
-    const floorGroups: THREE.Group[] = [];
-
-    for (let i = 0; i < totalFloors; i++) {
-      const floorGroup = new THREE.Group();
-      floorGroup.position.y = i * floorHeight;
-      floorGroup.position.y += (i + 1) * 5;
-      floorGroup.scale.set(0.1, 0.1, 0.1);
-      floorGroup.userData = { targetY: i * floorHeight } as Record<string, any>;
-
-      // Floor Slab
-      const slabGeo = new THREE.BoxGeometry(floorWidth + 0.6, 0.15, floorDepth + 0.6);
-      const slab = new THREE.Mesh(slabGeo, concreteMat);
-      slab.castShadow = true;
-      slab.receiveShadow = true;
-      floorGroup.add(slab);
-
-      if (i === 0) {
-        // Lobby Entrance
-        const entranceFrame = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 0.2), bronzeMat);
-        entranceFrame.position.set(0, 1.25, floorDepth / 2 + 0.3);
-        floorGroup.add(entranceFrame);
-      } else if (i < totalFloors - 1) {
-        // Main residential volume
-        const wallsGeo = new THREE.BoxGeometry(floorWidth - 0.2, floorHeight - 0.15, floorDepth - 0.2);
-        const walls = new THREE.Mesh(wallsGeo, concreteMat);
-        walls.position.y = floorHeight / 2;
-        floorGroup.add(walls);
-
-        // Residential Articulation: Window Frames, Mullions, Balcony Glass
-        const balconyDepth = 1.4;
-        const balGeo = new THREE.BoxGeometry(floorWidth, 0.05, balconyDepth);
-        const balcony = new THREE.Mesh(balGeo, concreteMat);
-        balcony.position.set(0, 0, floorDepth / 2 + balconyDepth / 2);
-        floorGroup.add(balcony);
-
-        // Balcony Railing (Glass)
-        const railingGeo = new THREE.BoxGeometry(floorWidth, 0.8, 0.05);
-        const railing = new THREE.Mesh(railingGeo, glassMat);
-        railing.position.set(0, 0.4, floorDepth / 2 + balconyDepth - 0.05);
-        floorGroup.add(railing);
-
-        // Windows with mullions
-        const winWidth = 1.4;
-        const winHeight = 1.2;
-        for (let w = -2.8; w <= 2.8; w += 2) {
-          const winFrame = new THREE.Mesh(new THREE.BoxGeometry(winWidth + 0.1, winHeight + 0.1, 0.1), windowFrameMat);
-          winFrame.position.set(w, 0.6, floorDepth / 2 - 0.1);
-          floorGroup.add(winFrame);
-
-          const winGlass = new THREE.Mesh(new THREE.BoxGeometry(winWidth - 0.1, winHeight - 0.1, 0.05), glassMat);
-          winGlass.position.set(w, 0.6, floorDepth / 2 - 0.05);
-          floorGroup.add(winGlass);
-
-          // Mullion
-          const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.05, winHeight - 0.1, 0.05), windowFrameMat);
-          mullion.position.set(w, 0.6, floorDepth / 2 - 0.02);
-          floorGroup.add(mullion);
-        }
-      }
-
-      buildingGroup.add(floorGroup);
-      floorGroups.push(floorGroup);
-    }
-    floorGroupsRef.current = floorGroups;
-
-    // Landscaping (Trees around plot)
-    const treeGroup = new THREE.Group();
-    const treeGeo = new THREE.ConeGeometry(0.8, 2.5, 8);
-    const treeMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 });
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
-
-    const treePositions: Array<[number, number, number]> = [
-      [-8, 0, -8], [8, 0, -8], [-8, 0, 8], [8, 0, 8], [-9, 0, 0], [9, 0, 0]
+    const planSegments = [
+      [-5.3, -3.7, 5.3, -3.7], [5.3, -3.7, 5.3, 3.7],
+      [5.3, 3.7, -5.3, 3.7], [-5.3, 3.7, -5.3, -3.7],
+      [-1.4, -3.7, -1.4, 3.7], [1.4, -3.7, 1.4, 3.7],
+      [-5.3, -.9, -1.4, -.9], [1.4, -.9, 5.3, -.9],
+      [-1.4, -2.1, 1.4, -2.1], [-1.4, .5, 1.4, .5],
+      [-5.3, 4.55, 5.3, 4.55], [-6.15, -3.7, -6.15, 3.7],
     ];
+    const planGeometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(
+      planSegments.flatMap(([x1, z1, x2, z2]) => [x1!, .12, z1!, x2!, .12, z2!]), 3,
+    ));
+    const planLines = new THREE.LineSegments(planGeometry, new THREE.LineBasicMaterial({ color: 0x795538 }));
+    assemblyRoot.add(planLines);
 
-    treePositions.forEach(([x, y, z]) => {
+
+    // 2. STILT GROUP
+    const stiltGroup = new THREE.Group();
+    const stiltHeight = 2.1;
+    const wingW = 10.6;
+    const wingD = 7.4;
+
+    const lobbyBox = new THREE.Mesh(new THREE.BoxGeometry(3.4, stiltHeight, 3.6), coreMat);
+    lobbyBox.position.set(0, stiltHeight / 2, -0.5);
+    lobbyBox.castShadow = true;
+    lobbyBox.receiveShadow = true;
+    stiltGroup.add(lobbyBox);
+
+    const portalArch = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.0, 0.25), champagneMat);
+    portalArch.position.set(0, 1.0, wingD / 2 - 0.1);
+    portalArch.castShadow = true;
+    stiltGroup.add(portalArch);
+    assemblyRoot.add(stiltGroup);
+
+    // Building Vertical Dimensions
+    const floorCount = 5;
+    const floorH = 1.9;
+
+    // 3. COLUMNS & SHEAR CORE GROUP
+    const columnsGroup = new THREE.Group();
+    const totalColH = stiltHeight + floorCount * floorH;
+    const colXs = [-wingW / 2 + 0.35, -1.8, 1.8, wingW / 2 - 0.35];
+    const colZs = [-wingD / 2 + 0.35, 0, wingD / 2 - 0.35];
+    colXs.forEach((x) => {
+      colZs.forEach((z) => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.28, totalColH, 0.28), concreteMat);
+        col.position.set(x, totalColH / 2, z);
+        col.castShadow = true;
+        col.receiveShadow = true;
+        columnsGroup.add(col);
+      });
+    });
+    const stairLiftCore = new THREE.Mesh(new THREE.BoxGeometry(2.8, totalColH + 0.4, 2.6), coreMat);
+    stairLiftCore.position.set(0, (totalColH + 0.4) / 2, -0.8);
+    stairLiftCore.castShadow = true;
+    columnsGroup.add(stairLiftCore);
+    assemblyRoot.add(columnsGroup);
+
+    // Per-Floor Collections for Sequential Animation
+    const slabMeshes: Array<{ mesh: THREE.Object3D; targetY: number }> = [];
+    const wallMeshes: Array<{ mesh: THREE.Object3D; floorIdx: number }> = [];
+    const glazingMeshes: Array<{ mesh: THREE.Object3D; floorIdx: number }> = [];
+    const balconyMeshes: Array<{ mesh: THREE.Object3D; floorIdx: number }> = [];
+
+    const floorsGroup = new THREE.Group();
+    const wallsGroup = new THREE.Group();
+    const glazingGroup = new THREE.Group();
+    const balconiesGroup = new THREE.Group();
+
+    for (let f = 0; f <= floorCount; f++) {
+      const elevY = stiltHeight + f * floorH;
+
+      // Slab plate (L-shaped notched architectural silhouette + terrace)
+      const slabGroup = new THREE.Group();
+      const slabMain = new THREE.Mesh(new THREE.BoxGeometry(wingW, 0.18, wingD), concreteMat);
+      slabMain.castShadow = true;
+      slabMain.receiveShadow = true;
+      slabGroup.add(slabMain);
+
+      const slabBand = new THREE.Mesh(new THREE.BoxGeometry(wingW + 0.08, 0.08, wingD + 0.08), champagneMat);
+      slabBand.position.y = -0.05;
+      slabGroup.add(slabBand);
+
+      slabGroup.position.y = elevY;
+      floorsGroup.add(slabGroup);
+      slabMeshes.push({ mesh: slabGroup, targetY: elevY });
+
+      if (f < floorCount) {
+        // Exterior & wing walls (leaving recessed facade articulation)
+        const floorWallGroup = new THREE.Group();
+        floorWallGroup.position.y = elevY + floorH / 2;
+
+        const westWingWall = new THREE.Mesh(new THREE.BoxGeometry(3.4, floorH - 0.2, wingD - 0.4), wallMat);
+        westWingWall.position.set(-3.3, 0, 0);
+        westWingWall.castShadow = true;
+        westWingWall.receiveShadow = true;
+        floorWallGroup.add(westWingWall);
+
+        const eastWingWall = new THREE.Mesh(new THREE.BoxGeometry(3.4, floorH - 0.2, wingD - 0.4), wallMat);
+        eastWingWall.position.set(3.3, 0, 0);
+        eastWingWall.castShadow = true;
+        eastWingWall.receiveShadow = true;
+        floorWallGroup.add(eastWingWall);
+
+        const northBridgeWall = new THREE.Mesh(new THREE.BoxGeometry(3.4, floorH - 0.2, 2.2), wallMat);
+        northBridgeWall.position.set(0, 0, -2.0);
+        northBridgeWall.castShadow = true;
+        floorWallGroup.add(northBridgeWall);
+
+        wallsGroup.add(floorWallGroup);
+        wallMeshes.push({ mesh: floorWallGroup, floorIdx: f });
+
+        // Glazing & champagne mullions
+        const floorGlazeGroup = new THREE.Group();
+        floorGlazeGroup.position.y = elevY + floorH / 2;
+
+        [-3.3, 0, 3.3].forEach((gx) => {
+          const glassPane = new THREE.Mesh(new THREE.BoxGeometry(2.5, floorH - 0.45, 0.08), windowMat);
+          glassPane.position.set(gx, 0, wingD / 2 - 0.14);
+          floorGlazeGroup.add(glassPane);
+
+          const topFrame = new THREE.Mesh(new THREE.BoxGeometry(2.62, 0.08, 0.14), mullionMat);
+          topFrame.position.set(gx, (floorH - 0.45) / 2, wingD / 2 - 0.14);
+          floorGlazeGroup.add(topFrame);
+
+          const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.06, floorH - 0.45, 0.12), champagneMat);
+          mullion.position.set(gx, 0, wingD / 2 - 0.12);
+          floorGlazeGroup.add(mullion);
+        });
+
+        // Side elevation vertical glass strips
+        [-wingW / 2 + 0.15, wingW / 2 - 0.15].forEach((sx) => {
+          const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.08, floorH - 0.5, 4.4), windowMat);
+          sideGlass.position.set(sx, 0, 0);
+          floorGlazeGroup.add(sideGlass);
+        });
+
+        glazingGroup.add(floorGlazeGroup);
+        glazingMeshes.push({ mesh: floorGlazeGroup, floorIdx: f });
+
+        // Staggered Cantilevered Balconies & Chajjas (Odd vs Even offset!)
+        const floorBalGroup = new THREE.Group();
+        floorBalGroup.position.y = elevY;
+
+        const balPositions = f % 2 === 0 ? [-3.3, 3.3] : [-1.8, 1.8];
+        balPositions.forEach((bx) => {
+          const deck = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.14, 1.25), concreteMat);
+          deck.position.set(bx, 0, wingD / 2 + 0.62);
+          deck.castShadow = true;
+          deck.receiveShadow = true;
+          floorBalGroup.add(deck);
+
+          const railGlass = new THREE.Mesh(new THREE.BoxGeometry(2.74, 0.68, 0.05), windowMat);
+          railGlass.position.set(bx, 0.4, wingD / 2 + 1.2);
+          floorBalGroup.add(railGlass);
+
+          const handrail = new THREE.Mesh(new THREE.BoxGeometry(2.82, 0.06, 0.09), champagneMat);
+          handrail.position.set(bx, 0.76, wingD / 2 + 1.2);
+          floorBalGroup.add(handrail);
+        });
+
+        // 600mm Window Chajjas above glazed openings
+        [-3.3, 0, 3.3].forEach((cx) => {
+          const chajja = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.08, 0.55), wallMat);
+          chajja.position.set(cx, floorH - 0.22, wingD / 2 + 0.18);
+          chajja.castShadow = true;
+          floorBalGroup.add(chajja);
+        });
+
+        balconiesGroup.add(floorBalGroup);
+        balconyMeshes.push({ mesh: floorBalGroup, floorIdx: f });
+      }
+    }
+
+    assemblyRoot.add(floorsGroup);
+    assemblyRoot.add(wallsGroup);
+    assemblyRoot.add(glazingGroup);
+    assemblyRoot.add(balconiesGroup);
+
+    // 7. ROOF / TERRACE PENTHOUSE & SOLAR PV GROUP
+    const roofGroup = new THREE.Group();
+    const terraceY = stiltHeight + floorCount * floorH;
+    const parapetH = 0.65;
+
+    const parapetF = new THREE.Mesh(new THREE.BoxGeometry(wingW, parapetH, 0.16), wallMat);
+    parapetF.position.set(0, terraceY + parapetH / 2, wingD / 2 - 0.08);
+    roofGroup.add(parapetF);
+    const parapetB = new THREE.Mesh(new THREE.BoxGeometry(wingW, parapetH, 0.16), wallMat);
+    parapetB.position.set(0, terraceY + parapetH / 2, -wingD / 2 + 0.08);
+    roofGroup.add(parapetB);
+    const parapetL = new THREE.Mesh(new THREE.BoxGeometry(0.16, parapetH, wingD), wallMat);
+    parapetL.position.set(-wingW / 2 + 0.08, terraceY + parapetH / 2, 0);
+    roofGroup.add(parapetL);
+    const parapetR = new THREE.Mesh(new THREE.BoxGeometry(0.16, parapetH, wingD), wallMat);
+    parapetR.position.set(wingW / 2 - 0.08, terraceY + parapetH / 2, 0);
+    roofGroup.add(parapetR);
+
+    const mumty = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.8, 2.8), coreMat);
+    mumty.position.set(0, terraceY + 0.9, -0.8);
+    mumty.castShadow = true;
+    roofGroup.add(mumty);
+
+    // Champagne Pergola Louvers
+    for (let px = -3.8; px <= 3.8; px += 0.65) {
+      const louver = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 2.2), champagneMat);
+      louver.position.set(px, terraceY + 1.2, 2.1);
+      roofGroup.add(louver);
+    }
+
+    // Tilted Solar PV Panels
+    [-3.3, 3.3].forEach((sx) => {
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 1.8), solarMat);
+      panel.position.set(sx, terraceY + 0.45, -1.6);
+      panel.rotation.x = 0.28;
+      panel.castShadow = true;
+      roofGroup.add(panel);
+    });
+    assemblyRoot.add(roofGroup);
+
+    // 8. LANDSCAPE GROUP
+    const landscapeGroup = new THREE.Group();
+    const glowLamps: THREE.PointLight[] = [];
+    const treeCoords: Array<[number, number, number]> = [
+      [-6.8, -5.2, 1.15],
+      [6.8, -5.2, 1.0],
+      [-7.2, 4.8, 1.05],
+      [7.2, 4.8, 1.2],
+      [-9.5, 0.5, 0.9],
+      [9.5, -0.5, 0.95],
+    ];
+    treeCoords.forEach(([tx, tz, sc]) => {
       const tGroup = new THREE.Group();
-      tGroup.position.set(x, y, z);
+      tGroup.position.set(tx, 0, tz);
+      tGroup.scale.setScalar(sc);
 
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1, 8), trunkMat);
-      trunk.position.y = 0.5;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 1.4, 8), treeTrunkMat);
+      trunk.position.y = 0.7;
+      trunk.castShadow = true;
       tGroup.add(trunk);
 
-      const leaves = new THREE.Mesh(treeGeo, treeMat);
-      leaves.position.y = 2;
-      tGroup.add(leaves);
+      const canopy1 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.95, 1), treeLeafMat);
+      canopy1.position.y = 2.0;
+      canopy1.castShadow = true;
+      tGroup.add(canopy1);
 
-      treeGroup.add(tGroup);
-    });
-    scene.add(treeGroup);
+      const canopy2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.7, 1), treeLeafMat);
+      canopy2.position.set(0.35, 2.55, 0.2);
+      tGroup.add(canopy2);
 
-    // 10. Cinematic Entry & Scroll-Driven Construction Timeline
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: mountRef.current,
-        start: "top top",
-        end: "+=3000",
-        scrub: 1.5,
-        markers: false
-      }
+      landscapeGroup.add(tGroup);
     });
 
-    floorGroups.forEach((fg, idx) => {
-      tl.to(fg.position, {
-        y: idx * floorHeight,
-        duration: 0.8,
-        ease: 'power3.out'
-      }, idx * 0.15);
-
-      tl.to(fg.scale, {
-        x: 1, y: 1, z: 1,
-        duration: 0.8,
-        ease: 'back.out(1.2)'
-      }, idx * 0.15);
+    // Subtle bollard pathway lights
+    [-3.5, 3.5].forEach((lx) => {
+      const lamp = new THREE.PointLight(0xfbbf24, lightingRef.current === 'night' ? 1.4 : 0, 12);
+      lamp.position.set(lx, 1.2, 6.2);
+      landscapeGroup.add(lamp);
+      glowLamps.push(lamp);
     });
+    assemblyRoot.add(landscapeGroup);
 
-    tl.to(camera.position, {
-      x: 14,
-      y: 9,
-      z: 22,
-      duration: 3,
-      ease: 'power2.inOut'
-    }, 0);
+    // CHAMPAGNE GOLD SPARKLE PARTICLES (subtle refined shimmer)
+    const stateObj = { progress: progressRef.current };
 
-    // 11. Animation Loop & Mouse Parallax
-    let mouseX = 0;
-    let mouseY = 0;
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    const applyConstructionProgress = (progress: number) => {
+      const clamped = clamp01(progress);
+      surveyGrid.visible = clamped < 0.29;
+      planLines.visible = clamped < 0.39;
+      planGeometry.setDrawRange(0, 2 * Math.floor(planSegments.length * phaseProgress(clamped, 0.015, 0.135)));
+
+      // 0: Site
+      const tSite = smoothstep(phaseProgress(clamped, 0.0, 0.11));
+      siteGroup.visible = tSite > 0.005 || clamped === 0;
+      siteGroup.scale.set(0.75 + 0.25 * Math.max(0.2, tSite), 1, 0.75 + 0.25 * Math.max(0.2, tSite));
+
+      // 1: Stilt
+      const tStilt = smoothstep(phaseProgress(clamped, 0.11, 0.22));
+      stiltGroup.visible = tStilt > 0.01;
+      stiltGroup.scale.set(1, Math.max(0.01, tStilt), 1);
+
+      // 2: Columns & Core
+      const tCols = smoothstep(phaseProgress(clamped, 0.22, 0.36));
+      columnsGroup.visible = tCols > 0.01;
+      columnsGroup.scale.set(1, Math.max(0.01, tCols), 1);
+
+      // 3: Successive Slabs / Floors
+      slabMeshes.forEach((item, idx) => {
+        const start = 0.32 + idx * 0.028;
+        const end = start + 0.06;
+        const tSlab = smoothstep(phaseProgress(clamped, start, end));
+        item.mesh.visible = tSlab > 0.01;
+        item.mesh.position.y = item.targetY + (1 - tSlab) * 2.2;
+        item.mesh.scale.setScalar(0.85 + 0.15 * tSlab);
+      });
+
+      // 4: Walls
+      wallMeshes.forEach((item) => {
+        const start = 0.5 + item.floorIdx * 0.025;
+        const end = start + 0.06;
+        const tWall = smoothstep(phaseProgress(clamped, start, end));
+        item.mesh.visible = tWall > 0.01;
+        item.mesh.scale.set(1, Math.max(0.01, tWall), 1);
+      });
+
+      // 5: Glazing
+      glazingMeshes.forEach((item) => {
+        const start = 0.64 + item.floorIdx * 0.02;
+        const end = start + 0.05;
+        const tGlaze = smoothstep(phaseProgress(clamped, start, end));
+        item.mesh.visible = tGlaze > 0.01;
+        item.mesh.scale.set(tGlaze, 1, 1);
+      });
+
+      // 6: Balconies & Chajjas
+      balconyMeshes.forEach((item) => {
+        const start = 0.75 + item.floorIdx * 0.018;
+        const end = start + 0.05;
+        const tBal = smoothstep(phaseProgress(clamped, start, end));
+        item.mesh.visible = tBal > 0.01;
+        item.mesh.scale.set(1, 1, Math.max(0.01, tBal));
+      });
+
+      // 7: Roof & Solar
+      const tRoof = smoothstep(phaseProgress(clamped, 0.85, 0.93));
+      roofGroup.visible = tRoof > 0.01;
+      roofGroup.position.y = (1 - tRoof) * 1.8;
+
+      // 8: Landscape
+      const tLand = smoothstep(phaseProgress(clamped, 0.93, 1.0));
+      landscapeGroup.visible = tLand > 0.01;
+      landscapeGroup.scale.set(1, Math.max(0.01, tLand), 1);
+
+      const orbit = -0.55 + clamped * 1.42;
+      const framing = Math.max(1, 0.92 / camera.aspect);
+      const distance = (29 - Math.sin(clamped * Math.PI) * 8) * framing;
+      const targetY = THREE.MathUtils.lerp(0.5, 6, smoothstep(phaseProgress(clamped, 0.1, 0.88)));
+      const elevation = THREE.MathUtils.lerp(12, 6.8, smoothstep(phaseProgress(clamped, 0, 0.32)))
+        + 7 * smoothstep(phaseProgress(clamped, 0.43, 1));
+      camera.position.set(Math.sin(orbit) * distance, elevation * framing, Math.cos(orbit) * distance);
+      camera.lookAt(0, targetY, 0);
     };
-    window.addEventListener('mousemove', handleMouseMove);
 
-    let animationFrameId: number;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-
-      if (buildingGroupRef.current) {
-        buildingGroupRef.current.rotation.y += 0.002;
-      }
-
-      camera.position.x += (mouseX * 4 - camera.position.x) * 0.05;
-      camera.position.y += (mouseY * 2 + 9 - camera.position.y) * 0.05;
-      camera.lookAt(0, 4, 0);
-
-      renderer.render(scene, camera);
+    const renderOnce = () => renderer.render(scene, camera);
+    const update = () => {
+      applyConstructionProgress(stateObj.progress);
+      renderOnce();
+      host.dataset.renderedProgress = stateObj.progress.toFixed(2);
     };
-    animate();
+    const scrub = gsap.quickTo(stateObj, 'progress', { duration: 0.28, ease: 'power2.out', onUpdate: update });
+    update();
 
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+    const resizeObserver = new ResizeObserver(() => {
+      if (!host.clientWidth || !host.clientHeight) return;
+      camera.aspect = host.clientWidth / host.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(host.clientWidth, host.clientHeight);
+      update();
+    });
+    resizeObserver.observe(host);
+
+    sceneRefs.current = {
+      scene, renderer, camera, hemi, sun, fill, windowMat, glowLamps, renderOnce,
+      scrubTo: (target) => {
+        if (motion.matches) {
+          scrub.tween.pause();
+          stateObj.progress = target;
+          update();
+        } else {
+          scrub(target);
+        }
+      },
     };
-    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-      mountRef.current?.removeChild(renderer.domElement);
+      scrub.tween.kill();
+      resizeObserver.disconnect();
+      renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
+      sun.shadow.dispose();
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        mesh.geometry?.dispose();
+        const mat = mesh.material;
+        if (Array.isArray(mat)) mat.forEach(m => m.dispose());
+        else mat?.dispose();
+      });
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove();
+      sceneRefs.current = null;
     };
-  }, []);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    Math.floor(scrollTop / window.innerHeight);
-  };
+  }, [onWebGLUnavailable]);
 
   return (
     <div
-      onScroll={handleScroll}
-      className="absolute inset-0 z-50 overflow-y-auto custom-scrollbar bg-[#0a0a0a] text-[#FAF8F4] selection:bg-[#A67C52] selection:text-[#0a0a0a]"
-    >
-      <div ref={mountRef} className="fixed inset-0 z-0 pointer-events-none" />
-
-      <header className="sticky top-0 z-50 w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between backdrop-blur-md bg-[#0a0a0a]/80 border-b border-[#222]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#A67C52] to-[#252723] text-[#FAF8F4] flex items-center justify-center font-bold font-serif text-lg shadow-lg">
-            RH
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-wider font-serif text-[#FAF8F4]">RH PLANNER</span>
-            <span className="block text-[10px] font-mono text-[#A67C52] uppercase tracking-widest">Architectural 3D & AI Studio</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleMute}
-            className="p-2.5 rounded-xl bg-[#141414]/90 hover:bg-[#1a1a1a] border border-[#333] text-[#FAF8F4] transition-all shadow-lg hover:shadow-[#A67C52]/10 cursor-pointer"
-            title={audioMuted ? "Enable ambient sounds" : "Mute ambient sounds"}
-          >
-            {audioMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
-          <button
-            onClick={onStartProject}
-            className="px-5 py-2.5 rounded-xl bg-[#A67C52] hover:bg-[#b8895c] text-[#0a0a0a] font-bold text-xs tracking-wider uppercase transition-all shadow-lg shadow-[#A67C52]/20 cursor-pointer flex items-center gap-2"
-          >
-            <Building2 size={15} />
-            <span>Start Designing</span>
-          </button>
-        </div>
-      </header>
-
-      <section className="relative min-h-screen flex flex-col justify-between max-w-7xl mx-auto px-6 py-16 z-10 pointer-events-auto">
-        <div className="max-w-2xl space-y-8 mt-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#A67C52]/10 border border-[#A67C52]/30 text-[#E8DCCB] text-xs font-mono uppercase tracking-widest">
-            <Sparkles size={13} className="text-[#A67C52]" />
-            <span>Next-Gen AI Architectural Workspace</span>
-          </div>
-
-          <div className="space-y-4">
-            <h1 className="text-5xl sm:text-7xl font-serif font-bold tracking-tight text-[#FAF8F4] leading-[1.08]">
-              Design Your Vision. <br />
-              <span className="bg-gradient-to-r from-[#E8DCCB] via-[#B8A58F] to-[#A67C52] bg-clip-text text-transparent">
-                Explore in Real 3D.
-              </span>
-            </h1>
-            <p className="text-base sm:text-lg text-[#B8A58F] leading-relaxed max-w-xl font-light">
-              Transform architectural requirements into intelligent floor plans, Maharashtra UDCPR 2020 compliant layouts, and photorealistic 3D building assemblies instantly.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 pt-4">
-            <button
-              onClick={onStartProject}
-              className="px-7 py-4 rounded-xl bg-[#A67C52] hover:bg-[#b8895c] text-[#0a0a0a] font-bold text-sm tracking-wider uppercase flex items-center gap-3 shadow-xl shadow-[#A67C52]/20 transition-all transform hover:-translate-y-0.5 cursor-pointer"
-            >
-              <Building2 size={18} />
-              <span>Launch Studio</span>
-              <ArrowRight size={16} />
-            </button>
-
-            <button
-              onClick={onExplore}
-              className="px-6 py-4 rounded-xl bg-[#141414]/90 hover:bg-[#1a1a1a] border border-[#333] text-[#FAF8F4] font-bold text-sm tracking-wider uppercase flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer"
-            >
-              <Compass size={18} className="text-[#A67C52]" />
-              <span>Explore 3D Model</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-[#222]">
-            <div>
-              <div className="text-2xl font-bold text-[#FAF8F4] font-serif">UDCPR</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">2020 Compliant</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-[#FAF8F4] font-serif">0.000</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">MM² Area Precision</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-[#FAF8F4] font-serif">Three.js</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">Realtime WebGL 3D</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-[#FAF8F4] font-serif">ETABS</div>
-              <div className="text-xs text-[#737373] font-mono mt-0.5">Structural Bridge</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-center pb-8 animate-bounce">
-          <ChevronDown className="w-6 h-6 text-[#A67C52]" />
-        </div>
-      </section>
-
-      <section className="relative min-h-screen flex items-center max-w-7xl mx-auto px-6 py-24 z-10 pointer-events-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
-          <div className="space-y-6 bg-[#141414]/90 p-8 sm:p-12 rounded-3xl border border-[#333] backdrop-blur-xl shadow-2xl">
-            <span className="eyebrow text-[#A67C52]">01 • CAPABILITIES</span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-[#FAF8F4]">
-              Intelligent Architecture & Code Compliance.
-            </h2>
-            <p className="text-[#B8A58F] leading-relaxed font-light">
-              RH Planner combines rigorous mathematical geometry solvers with AI space planning. Generate staircases, elevators, parking stilts, and multi-unit apartment floors with absolute structural integrity.
-            </p>
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="p-4 rounded-2xl bg-[#0a0a0a] border border-[#222]">
-                <Layers className="w-6 h-6 text-[#A67C52] mb-2" />
-                <h4 className="font-bold text-sm text-[#FAF8F4]">Multi-Floor Solver</h4>
-                <p className="text-xs text-[#737373] mt-1">Automatic vertical stacking and core alignment.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-[#0a0a0a] border border-[#222]">
-                <ShieldCheck className="w-6 h-6 text-[#A67C52] mb-2" />
-                <h4 className="font-bold text-sm text-[#FAF8F4]">Statutory Audits</h4>
-                <p className="text-xs text-[#737373] mt-1">Setbacks, FSI, and ventilation checks.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative min-h-screen flex items-center max-w-7xl mx-auto px-6 py-24 z-10 pointer-events-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
-          <div className="lg:col-start-2 space-y-6 bg-[#141414]/90 p-8 sm:p-12 rounded-3xl border border-[#333] backdrop-blur-xl shadow-2xl">
-            <span className="eyebrow text-[#A67C52]">02 • EXPLORER</span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-[#FAF8F4]">
-              Interactive Building Discovery.
-            </h2>
-            <p className="text-[#B8A58F] leading-relaxed font-light">
-              Inspect every architectural detail with the interactive explorer. Explode floor plates, orbit core components, and visualize the structural assembly before construction begins.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <button
-                onClick={() => setExploded(!exploded)}
-                className="px-6 py-3 rounded-xl bg-[#0a0a0a] border border-[#333] text-xs font-mono text-[#E8DCCB] hover:bg-[#252723] transition-all"
-              >
-                {exploded ? 'REASSEMBLE FLOORS' : 'EXPLODE FLOORS'}
-              </button>
-              <button
-                onClick={() => setSoloStilt(!soloStilt)}
-                className="px-6 py-3 rounded-xl bg-[#0a0a0a] border border-[#333] text-xs font-mono text-[#E8DCCB] hover:bg-[#252723] transition-all"
-              >
-                {soloStilt ? 'SHOW ALL FLOORS' : 'SOLO STILT FLOOR'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="relative min-h-screen flex items-center max-w-7xl mx-auto px-6 py-24 z-10 pointer-events-auto section-workflow"
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
-          <div className="lg:col-start-2 space-y-6 bg-[#141414]/90 p-8 sm:p-12 rounded-3xl border border-[#333] backdrop-blur-xl shadow-2xl">
-            <span className="eyebrow text-[#A67C52]">02 • WORKFLOW</span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-[#FAF8F4]">
-              From Plot Brief to Professional DXF & PDF.
-            </h2>
-            <p className="text-[#B8A58F] leading-relaxed font-light">
-              Configure plot boundaries, road widths, and room schedules in the wizard. Watch the planning engine assemble your building, then inspect it in the 2D CAD studio or 3D isometric viewer.
-            </p>
-            <ul className="space-y-3 font-mono text-xs text-[#E8DCCB]">
-              <li className="flex items-center gap-3 p-3 rounded-xl bg-[#0a0a0a] border border-[#222]">
-                <span className="w-6 h-6 rounded-lg bg-[#A67C52] text-[#0a0a0a] font-bold flex items-center justify-center">1</span>
-                <span>Enter plot dimensions & UDCPR parameters</span>
-              </li>
-              <li className="flex items-center gap-3 p-3 rounded-xl bg-[#0a0a0a] border border-[#222]">
-                <span className="w-6 h-6 rounded-lg bg-[#A67C52] text-[#0a0a0a] font-bold flex items-center justify-center">2</span>
-                <span>Run audited AI space planning pipeline</span>
-              </li>
-              <li className="flex items-center gap-3 p-3 rounded-xl bg-[#0a0a0a] border border-[#222]">
-                <span className="w-6 h-6 rounded-lg bg-[#A67C52] text-[#0a0a0a] font-bold flex items-center justify-center">3</span>
-                <span>Export CAD drawings (.dxf/.dwg) & engineering reports</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center max-w-4xl mx-auto px-6 py-24 z-10 pointer-events-auto">
-        <div className="bg-[#141414]/95 p-12 sm:p-16 rounded-3xl border border-[#333] backdrop-blur-2xl shadow-2xl space-y-8 w-full">
-          <div className="w-16 h-16 rounded-2xl bg-[#A67C52] text-[#0a0a0a] flex items-center justify-center mx-auto shadow-xl">
-            <Building2 size={32} />
-          </div>
-          <div className="space-y-4">
-            <h2 className="text-4xl sm:text-6xl font-serif font-bold text-[#FAF8F4]">
-              Ready to Design Your Building?
-            </h2>
-            <p className="text-[#B8A58F] max-w-xl mx-auto font-light">
-              Launch the studio now to create your first project with live 3D visualization and automated Maharashtra UDCPR compliance.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <button
-              onClick={onStartProject}
-              className="px-8 py-4 rounded-xl bg-[#A67C52] hover:bg-[#b8895c] text-[#0a0a0a] font-bold text-sm tracking-wider uppercase flex items-center gap-3 shadow-2xl shadow-[#A67C52]/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
-            >
-              <Building2 size={18} />
-              <span>Create New Project Now</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
+      ref={mountRef}
+      data-testid="cinematic-welcome-canvas-host"
+      className="absolute inset-0 pointer-events-none"
+      aria-hidden="true"
+    />
   );
 };
+
+export default CinematicWelcomeScene;
