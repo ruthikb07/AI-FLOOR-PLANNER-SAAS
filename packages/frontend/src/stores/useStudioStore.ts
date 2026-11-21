@@ -35,6 +35,8 @@ export interface WizardState {
   projectType?: ProjectDevelopmentType;
   authorityType?: AuthorityType | '';
   congestionZone?: CongestionZone | '';
+  clearRoomHeightMm?: number;
+  stiltClearHeightBelowBeamMm?: number;
   projectName: string;
   plotWidthM: number;
   plotDepthM: number;
@@ -457,6 +459,8 @@ export const studioStoreActions = {
         projectType: wizard.projectType ?? 'new_construction',
         authorityType: wizard.authorityType || undefined,
         congestionZone: wizard.congestionZone || undefined,
+        clearRoomHeightMm: wizard.clearRoomHeightMm,
+        stiltClearHeightBelowBeamMm: wizard.hasStiltParking ? wizard.stiltClearHeightBelowBeamMm : undefined,
         projectName: wizard.projectName,
         plotWidthM: wizard.plotWidthM,
         plotDepthM: wizard.plotDepthM,

@@ -372,6 +372,7 @@ export function validateRegulatoryContextSchema(input:unknown):ValidationError[]
  if(!isObject(input)){fail('',input);return errors;}
  const enums:Record<string,readonly unknown[]>={authorityType:['MUNICIPAL_CORPORATION','MUNICIPAL_COUNCIL','REGIONAL_PLAN'],congestionZone:['NON_CONGESTED','CONGESTED'],buildingUsage:['RESIDENTIAL_APARTMENT'],corporationClass:['A','B','C','D'],parkingFactorCategory:['PUNE_PCMC_THANE','NAGPUR_NASHIK','OTHER_MMR','OTHER_CORPORATION','D_CORPORATION','A_COUNCIL','BC_COUNCIL'],rosApplicability:['REQUIRED','EXEMPT_APPROVED_LAYOUT'],drivewayFlow:['ONE_WAY','TWO_WAY']};
  for(const [k,values] of Object.entries(enums))if(input[k]!==undefined&&!values.includes(input[k]))fail(k,input[k]);
+ for(const k of ['clearRoomHeightMm','stiltClearHeightBelowBeamMm'])if(input[k]!==undefined&&(!isFiniteNumber(input[k])||(input[k] as number)<=0))fail(k,input[k]);
  for(const k of ['parkingFloorHeightM','plotAreaSqm','roadWidthM','buildingHeightM','numFloors','originalHoldingAreaSqm','netPlotAreaSqm','approvedPremiumFsi','approvedTdrFsi','approvedAncillaryFsi'])if(input[k]!==undefined&&(!isFiniteNumber(input[k])||(input[k] as number)<0))fail(k,input[k]);
  for(const k of ['roofFsiReviewed','stiltParkingEnabled','standardGreenfieldSchemeConfirmed','amendmentApplicabilityReviewed','fsiExemptionsReviewed'])if(input[k]!==undefined&&typeof input[k]!=='boolean')fail(k,input[k]);
  if(input['numFloors']!==undefined&&!Number.isInteger(input['numFloors']))fail('numFloors',input['numFloors']);

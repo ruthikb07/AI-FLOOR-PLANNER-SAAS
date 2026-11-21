@@ -85,28 +85,70 @@ export class PdfExportService {
   public exportComplianceActionPlan(building: Building): Uint8Array {
     const regulatory = complianceReport(building);
     const layout = evaluateStudioLayoutScore(building, regulatory);
-    const findings = [
-      ...regulatory.rulesChecked.filter(rule => rule.status !== 'PASS').map(rule => ({
-        heading: `${rule.status} | ${rule.id} | ${rule.description} | ${rule.clause}`,
-        elementIds: rule.elementIds, actual: `${rule.actual ?? 'Unverified'} ${rule.unit ?? ''}`,
-        required: `${rule.required ?? 'Verify applicability'} ${rule.unit ?? ''}`, action: rule.remediation,
-      })),
-      ...layout.criteria.flatMap(criterion => criterion.findings.map(finding => ({ ...finding, heading: `LAYOUT | ${finding.id}` }))),
+    const entityNames = new Map(building.floors.flatMap(floor => [
+      [floor.id, floor.name] as const,
+      ...floor.rooms.flatMap(room => {
+        const name = `${floor.name} / ${room.name}`;
+        return room.type === 'staircase'
+          ? [[room.id, name] as const, [`${room.id}:stair`, name] as const]
+          : [[room.id, name] as const];
+      }),
+    ]));
+    const affected = (ids: readonly string[]): string => {
+      const names = [...new Set(ids.map(id => entityNames.get(id)).filter(Boolean))];
+      const unnamed = ids.filter(id => !entityNames.has(id)).length;
+      if (unnamed) names.push(`${unnamed} additional ${unnamed === 1 ? 'element' : 'elements'}`);
+      return names.join(', ') || 'Project';
+    };
+    const regulatoryFindings = regulatory.rulesChecked.filter(rule => rule.status !== 'PASS');
+    const ruleFinding = (rule: typeof regulatoryFindings[number]) => {
+      const unit = rule.unit ? ` ${rule.unit}` : '';
+      const actual = rule.elementIds.length && rule.actual === rule.elementIds.join(', ')
+        ? rule.elementIds.length
+        : rule.actual;
+      return {
+        heading: `${rule.status} | ${rule.id} | ${rule.description}`,
+        elementIds: rule.elementIds,
+        actual: actual == null ? 'Unverified' : `${actual}${unit}`,
+        required: rule.required == null ? 'Verify applicability' : `${rule.required}${unit}`,
+        action: rule.remediation,
+      };
+    };
+    const layoutFindings = layout.criteria.flatMap(criterion =>
+      criterion.findings.map(finding => ({ ...finding, heading: `LAYOUT | ${finding.id}` })),
+    );
+    const critical = regulatoryFindings.filter(rule => rule.status === 'VIOLATION').map(ruleFinding);
+    const advisory = regulatoryFindings.filter(rule => rule.status !== 'VIOLATION');
+    const actionable = [...critical, ...layoutFindings];
+    const details = (finding: typeof actionable[number]): string[] => [
+      `${finding.heading} | ${affected(finding.elementIds)}`,
+      `Current: ${finding.actual} | Required: ${finding.required}`,
+      `Action: ${finding.action}`,
     ];
+    const checklist = new Map<string, number>();
+    for (const rule of regulatory.rulesChecked) {
+      if (rule.status === 'VIOLATION') continue;
+      const summary = rule.status === 'PASS'
+        ? `PASS | ${rule.description}`
+        : `${rule.status} | ${rule.description} | ${rule.remediation}`;
+      checklist.set(summary, (checklist.get(summary) ?? 0) + 1);
+    }
     return complianceReportPdf(regulatory, [
       'COMPLIANCE AUDIT AND FIX PLAN',
       `Building ${building.id} | Revision ${building.version} | Layout score ${layout.score}/100`,
-      `Canonical SHA-256: ${regulatory.canonicalHash}`,
+      `Critical violations: ${critical.length} | Layout findings: ${layoutFindings.length} | Advisory / pending inputs: ${advisory.length}`,
       `Regulatory status ${regulatory.status}`,
       regulatory.disclaimer, '',
+      'SCORE BREAKDOWN',
       ...layout.criteria.map(row => `${row.label}: ${row.earned}/${row.points}${row.unresolved ? ' (unverified inputs)' : ''}`), '',
-      ...(findings.length ? findings.flatMap((finding, index) => [
-        `${index + 1}. ${finding.heading}`, `Elements: ${finding.elementIds.join(', ') || 'See measured detail below'}`,
-        `Current: ${finding.actual} | Required: ${finding.required}`,
-        `Step 1. Locate the listed entities and review the measured values.`,
-        `Step 2. ${finding.action}`,
-        'Step 3. Regenerate or apply the edit, then rerun the checks on the new revision.', '',
-      ]) : ['No failed or unresolved checks in this revision.']),
+      'ACTIONABLE VIOLATIONS',
+      ...(actionable.length ? actionable.flatMap(details) : ['No failed regulatory or layout checks in this revision.']), '',
+      'VERIFICATION CHECKLIST',
+      ...Object.entries(regulatory.setbacks).map(([side, margin]) =>
+        `${side} setback: ${margin.providedMm ?? 'Unverified'} mm measured | ${margin.requiredMm ?? 'Unverified'} mm required`,
+      ),
+      ...[...checklist].map(([summary, count]) => `${count} checked | ${summary}`),
+      `Canonical SHA-256: ${regulatory.canonicalHash}`,
     ]);
   }
 

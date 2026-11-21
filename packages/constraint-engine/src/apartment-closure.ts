@@ -131,6 +131,15 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
         });
         if (!onEdge(wall.startPoint) || !onEdge(wall.endPoint)) add('WALL_ROOM_BOUNDARY_MISMATCH', `${wall.id}/${id}`);
       }
+      if (wall.boundaryRole === 'OPEN_BOUNDARY' && wall.roomIds.length === 2) {
+        const ra = rooms.find(r => r.id === wall.roomIds[0]);
+        const rb = rooms.find(r => r.id === wall.roomIds[1]);
+        if (ra?.spaceUse === 'COMMON' && rb?.spaceUse === 'COMMON' &&
+            Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 800) {
+          graph.get(ra.id)?.add(rb.id);
+          graph.get(rb.id)?.add(ra.id);
+        }
+      }
     }
     const validDoors = new Set<string>();
     for (const door of floor.doors) {

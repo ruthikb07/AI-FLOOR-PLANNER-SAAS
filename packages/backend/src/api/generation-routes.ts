@@ -10,7 +10,7 @@ import {
   generateArchitecturalProposal,
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
-import type { MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { validateRegulatoryContextSchema, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
 import {
   evaluateArchitecturalComplianceScore,
   executeAuditedPlanningPipeline,
@@ -88,6 +88,16 @@ export async function handleProjectGeneration(
         },
       },
     };
+  }
+
+  if (parsed.config.regulatoryContext !== undefined) {
+    const errors = validateRegulatoryContextSchema(parsed.config.regulatoryContext);
+    if (errors.length) {
+      return {
+        status: 400,
+        json: { error: { code: 'INVALID_REGULATORY_CONTEXT', message: errors.map(error => error.path).join(', ') } },
+      };
+    }
   }
 
   let proposalResult = await generateArchitecturalProposal(deps.gemini, {

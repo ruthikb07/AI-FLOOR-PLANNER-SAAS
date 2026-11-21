@@ -369,6 +369,8 @@ export type CorridorSides = 'NONE' | 'LOW' | 'HIGH' | 'BOTH';
 interface CoreBandOptions {
   readonly stairCount: 1 | 2;
   readonly compact: boolean;
+  /** Stair room dimensions, including the allowance for both wall faces. */
+  readonly stairBay?: { alongMm: number; acrossMm: number };
   /** Put the lift cars at the low-coordinate side of the stack. */
   readonly liftsAtLowSide: boolean;
   /** Prefer leftover band area to read as an open-to-sky void. */
@@ -428,8 +430,9 @@ export function requiredCoreBandLength(opts: {
   stairCount: 1 | 2;
   corridorSides?: CorridorSides;
   liftCount?: 1 | 2;
+  stairBay?: { alongMm: number };
 }): number {
-  const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
+  const stairRun = opts.stairBay?.alongMm ?? (opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard);
   const crossLink = opts.corridorSides === 'BOTH' ? corridorWidth(opts.compact) : 0;
   const liftCount = opts.liftCount ?? CORE_BOUNDS.liftCount;
   return stairRun * opts.stairCount + CORE_BOUNDS.liftDepth * liftCount + crossLink;
@@ -464,10 +467,11 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const corridorCount = sides === 'BOTH' ? 2 : sides === 'NONE' ? 0 : 1;
 
   const stackW = band.w - corridorCount * corrW;
-  if (stackW < CORE_BOUNDS.stairWidthMin) {
+  const minStackWidth = opts.stairBay?.acrossMm ?? CORE_BOUNDS.stairWidthMin;
+  if (stackW < minStackWidth) {
     reasons.push(
       `core band is ${Math.round(band.w)} mm across; after ${corridorCount} corridor(s) of ${corrW} mm the ` +
-      `stair stack would be ${Math.round(stackW)} mm, below the ${CORE_BOUNDS.stairWidthMin} mm minimum`,
+      `stair stack would be ${Math.round(stackW)} mm, below the ${minStackWidth} mm minimum`,
     );
   }
 
@@ -477,6 +481,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     stairCount: opts.stairCount,
     corridorSides: sides,
     liftCount,
+    stairBay: opts.stairBay,
   });
   if (band.h < requiredLength) {
     reasons.push(
@@ -523,7 +528,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   // The cross-link spans the full band width, so it meets both side runs.
   if (crossLink) corridorBoxes.push(out(crossLink));
 
-  const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
+  const stairRun = opts.stairBay?.alongMm ?? (opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard);
   const liftBankRun = CORE_BOUNDS.liftDepth * liftCount;
 
   const stairBoxes: Box2D[] = [];
@@ -577,8 +582,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     tailSeg = segments[segments.length - 1]!;
   }
 
-  // Primary stair: bounded to catalogue maximum (3000 mm) to prevent oversized 5.8m stairrooms
-  const stairW = Math.min(stack.w, CORE_BOUNDS.stairWidthMax);
+  const stairW = Math.min(stack.w, opts.stairBay?.acrossMm ?? CORE_BOUNDS.stairWidthMax);
   const stairSurplusW = stack.w - stairW;
   if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
     const [stairCol, shaftCol] = opts.liftsAtLowSide
@@ -2314,7 +2318,7 @@ const uShapeCourtyard: FamilyBuilder = ctx => {
             shaftBoxes: [...band.shaftBoxes, northCourt],
             shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID'],
             shaftTags: [...band.shaftTags, ['recess:perimeter']],
-            coreBoxes: [linkCorr, coreCol],
+            coreBoxes: [coreCol],
           },
         });
       }
@@ -2662,10 +2666,27 @@ const pinwheelCluster: FamilyBuilder = ({ envelope: env, flatsPerFloor, program 
   if (flatsPerFloor !== 4) return reject('A rotational pinwheel requires four flats, one per wing.');
 
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
-  const liftCount = program.mandatory.singleLift ? 1 : 2;
-  const corridor = CORE_BOUNDS.corridorCompact;
-  const coreSide = requiredCoreBandLength({ compact: true, stairCount, liftCount }) + 2 * corridor;
-  const depth = Math.min(10_000, Math.floor((Math.min(env.w, env.h) - coreSide) / 20) * 10);
+  let liftCount: 1 | 2 = program.mandatory.singleLift ? 1 : 2;
+  let corridor: number = CORE_BOUNDS.corridorCompact;
+  let stairBay = { alongMm: 3200 + 230, acrossMm: 5600 + 230 };
+  const computeCoreAndDepth = () => {
+    const cs = requiredCoreBandLength({ compact: true, stairCount, liftCount, stairBay }) + 2 * corridor;
+    const d = Math.min(10_000, Math.floor((Math.min(env.w, env.h) - cs) / 20) * 10);
+    return { coreSide: cs, depth: d };
+  };
+  let { coreSide, depth } = computeCoreAndDepth();
+  if (depth < FLAT_BOUNDS.minSpanMm) {
+    corridor = 1500;
+    ({ coreSide, depth } = computeCoreAndDepth());
+  }
+  if (depth < FLAT_BOUNDS.minSpanMm && liftCount === 2) {
+    liftCount = 1;
+    ({ coreSide, depth } = computeCoreAndDepth());
+  }
+  if (depth < FLAT_BOUNDS.minSpanMm) {
+    stairBay = { alongMm: 2800 + 230, acrossMm: 4800 + 230 };
+    ({ coreSide, depth } = computeCoreAndDepth());
+  }
   if (depth < FLAT_BOUNDS.minSpanMm) return reject('The envelope cannot fit four usable wings around the square stair and lift core.');
   const side = 2 * depth + coreSide;
   const x = env.x + (env.w - side) / 2;
@@ -2696,7 +2717,7 @@ const pinwheelCluster: FamilyBuilder = ({ envelope: env, flatsPerFloor, program 
   const [north, middle, south] = splitY(core, [corridor, coreSide - 2 * corridor, 0]);
   const [stack, east] = splitX(middle!, [coreSide - corridor, 0]);
   const band = dissectCoreBand(stack!, {
-    compact: true, stairCount, liftCountOverride: liftCount, corridorSides: 'LOW',
+    compact: true, stairCount, stairBay, liftCountOverride: liftCount, corridorSides: 'LOW',
     liftsAtLowSide: false, preferOts: false, noOts: true,
   });
   if (band.reasons.length) return reject(band.reasons.join('. '));

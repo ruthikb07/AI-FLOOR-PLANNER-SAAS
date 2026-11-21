@@ -45,7 +45,14 @@ export function createArgonRequest(data: ProjectSetupWizardData): MultiSheetApar
   return {
     structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
     architectureOptions: { liftSystem: 'UNSPECIFIED' },
-    regulatoryContext: { authorityType: data.authorityType, congestionZone: data.congestionZone, roadWidthM: data.roadWidthM, plotAreaSqm: data.plotWidthM * data.plotDepthM, numFloors: data.floorsCount + (data.hasStiltParking ? 1 : 0), stiltParkingEnabled: data.hasStiltParking, buildingUsage: 'RESIDENTIAL_APARTMENT' },
+    regulatoryContext: {
+      authorityType: data.authorityType, congestionZone: data.congestionZone,
+      roadWidthM: data.roadWidthM, plotAreaSqm: data.plotWidthM * data.plotDepthM,
+      numFloors: data.floorsCount + (data.hasStiltParking ? 1 : 0),
+      stiltParkingEnabled: data.hasStiltParking, buildingUsage: 'RESIDENTIAL_APARTMENT',
+      clearRoomHeightMm: data.clearRoomHeightMm,
+      stiltClearHeightBelowBeamMm: data.hasStiltParking ? data.stiltClearHeightBelowBeamMm : undefined,
+    },
     projectId: crypto.randomUUID(), projectName: data.projectName.trim(), aiPrompt: promptAnnotations.join(' ').trim(), referenceImage: data.referenceImage,
     plotWidthMm: mm(data.plotWidthM), plotDepthMm: mm(data.plotDepthM), roadWidthMm: mm(data.roadWidthM),
     roadAccessSides: [facing[data.roadFacing]],

@@ -557,7 +557,7 @@ export function evaluateArchitecturalComplianceScore(
         (r.id.endsWith('stilt__grand_lobby') ||
           r.tags?.includes('core:lobby') ||
           (r.type === RoomType.Foyer &&
-            !/open\s*parking|remainder/i.test(r.name) &&
+            !/parking|remainder|clearance|driveway|ramp|aisle/i.test(r.name) &&
             !r.id.includes('open_remainder'))) &&
         r.architecturalRole !== 'VEHICLE_AISLE' &&
         r.architecturalRole !== 'PARKING_BAY' &&

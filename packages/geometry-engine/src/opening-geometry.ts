@@ -52,3 +52,23 @@ export function canonicalOpeningGeometry(opening: Door | Window, wall: Wall) {
   const pointAt = (along: number): Point => ({ x: wall.startPoint.x + ux * along, y: wall.startPoint.y + uy * along });
   return { start, end, center, length, ux, uy, startPoint: pointAt(start), endPoint: pointAt(end), centerPoint: pointAt(center), pointAt };
 }
+
+/**
+ * Defensive variant used by renderers / 3D projection: clamps the opening interval into
+ * [100 mm, wallLength - 100 mm] (narrowing windows, dropping openings on walls < 650 mm)
+ * and never throws. Returns undefined when the opening cannot be hosted safely.
+ */
+export function safeCanonicalOpeningGeometry(opening: Door | Window, wall: Wall | undefined, allowNarrowing = true) {
+  if (!wall || !opening) return undefined;
+  try {
+    return canonicalOpeningGeometry(opening, wall);
+  } catch {
+    try {
+      const fitted = fitOpeningInsideWall(opening, wall, allowNarrowing);
+      if (!fitted) return undefined;
+      return { ...canonicalOpeningGeometry(fitted, wall), width: fitted.width };
+    } catch {
+      return undefined;
+    }
+  }
+}

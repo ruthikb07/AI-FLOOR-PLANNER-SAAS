@@ -15,6 +15,30 @@ export const Stage2FloorsAndParking: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <ArgonCard className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-2 text-sm text-argon-text">
+          Clear habitable room height below slab or beam (mm, optional)
+          <input className="rounded-lg border border-argon-border bg-argon-surface px-3 py-2"
+            type="number" min={1} step={1} value={wizard.clearRoomHeightMm ?? ''}
+            onChange={event => {
+              const height = event.currentTarget.valueAsNumber;
+              updateWizard({ clearRoomHeightMm: height > 0 ? height : undefined });
+            }}
+          />
+        </label>
+        {wizard.hasStiltParking && (
+          <label className="flex flex-col gap-2 text-sm text-argon-text">
+            Clear stilt height below beam (mm, optional)
+            <input className="rounded-lg border border-argon-border bg-argon-surface px-3 py-2"
+              type="number" min={1} step={1} value={wizard.stiltClearHeightBelowBeamMm ?? ''}
+              onChange={event => {
+                const height = event.currentTarget.valueAsNumber;
+                updateWizard({ stiltClearHeightBelowBeamMm: height > 0 ? height : undefined });
+              }}
+            />
+          </label>
+        )}
+      </ArgonCard>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Residential Floors Count */}
         <ArgonCard className="space-y-4">

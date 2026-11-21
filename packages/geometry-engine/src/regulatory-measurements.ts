@@ -125,9 +125,11 @@ export function measureMarkedParking(building: Building) {
             id: r.id,
             name: r.name,
             boundary: r.boundary,
-            kind: /^C[- ]?\d+/i.test(r.name)
+            kind: r.tags.some(tag => /^parking:P-\d+$/i.test(tag)) ||
+              /^(?:C[- ]?\d+|Covered Car Parking Bay P-\d+\b)/i.test(r.name)
               ? "CAR_STALL"
-              : /^B[- ]?\d+/i.test(r.name)
+              : r.tags.some(tag => /^parking:B-\d+$/i.test(tag)) ||
+                /^(?:B[- ]?\d+|Two-Wheeler Parking Bay B-\d+\b)/i.test(r.name)
                 ? "BIKE_STALL"
                 : "UNKNOWN",
             floorId: f.id,
@@ -172,6 +174,7 @@ export function measureMarkedParking(building: Building) {
     const physicalFloor = building.floors.find((f) => f.id === b.floorId);
     const obstructed =
       physicalFloor?.walls.some((w) => {
+        if (w.boundaryRole === "OPEN_BOUNDARY") return false;
         const solid = wallToPolygon(w);
         const clip =
           polygonSignedArea(solid) < 0

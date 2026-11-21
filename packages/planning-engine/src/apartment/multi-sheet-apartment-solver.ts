@@ -1095,6 +1095,41 @@ export function solveStiltParkingSheet(
   let carBaysCount = 0;
   let bikeBaysCount = 0;
 
+  const packBikeRemainder = (strip: Box2D, aisleSide: 'WEST' | 'EAST' | 'NORTH' | 'SOUTH', zoneKey: string) => {
+    const vertical = aisleSide === 'WEST' || aisleSide === 'EAST';
+    const approachSpan = vertical ? strip.h : strip.w;
+    const depth = vertical ? strip.w : strip.h;
+    const stallCount = Math.floor(approachSpan / 1000);
+    const aisleAtHighEdge = aisleSide === 'EAST' || aisleSide === 'SOUTH';
+    const fromAisle = (along: number, span: number, offset: number, run: number): Box2D => {
+      const across = aisleAtHighEdge ? depth - offset - run : offset;
+      return vertical
+        ? { x: strip.x + across, y: strip.y + along, w: run, h: span }
+        : { x: strip.x + along, y: strip.y + across, w: span, h: run };
+    };
+    const addCirculation = (box: Box2D) => {
+      if (box.w <= 0 || box.h <= 0) return;
+      rooms.push(createBoxRoom({
+        id: `stilt__open_remainder_${zoneKey}_${rooms.length}`,
+        name: 'Open parking remainder', type: RoomType.Foyer, spaceUse: 'COMMON', box, floorId,
+      }));
+    };
+    if (depth < 2000 || stallCount === 0) {
+      addCirculation(strip);
+      return;
+    }
+    for (let index = 0; index < stallCount; index++) {
+      const number = String(++bikeBaysCount).padStart(2, '0');
+      rooms.push(createBoxRoom({
+        id: `stilt__bike_bay_b${number}`, name: `Two-Wheeler Parking Bay B-${number}`,
+        architecturalRole: 'PARKING_BAY', type: RoomType.Parking, spaceUse: 'COMMON',
+        box: fromAisle(index * 1000, 1000, 0, 2000), floorId, tags: [`parking:B-${number}`],
+      }));
+    }
+    addCirculation(fromAisle(stallCount * 1000, approachSpan - stallCount * 1000, 0, 2000));
+    addCirculation(fromAisle(0, approachSpan, 2000, depth - 2000));
+  };
+
   const packParkingBox = (box: Box2D, zoneKey: string) => {
     // Standard Indian car stall is 2,500 x 5,000 mm abutting a clear driveway aisle
     // (>= 3,600 mm one-way or >= 6,000 mm two-way). Never create an aisle narrower than 3,600 mm.
@@ -1153,19 +1188,7 @@ export function solveStiltParkingSheet(
         );
       }
 
-      if (remH > 0) {
-        bikeBaysCount += remH >= 1000 ? 2 : 0;
-        rooms.push(
-          createBoxRoom({
-            id: remH >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
-            name: remH >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
-            type: remH >= 1000 ? RoomType.Parking : RoomType.Foyer,
-            spaceUse: 'COMMON',
-            box: { x: box.x, y: box.y + stallsH, w: stallDepth, h: remH },
-            floorId,
-          }),
-        );
-      }
+      packBikeRemainder({ x: box.x, y: box.y + stallsH, w: stallDepth, h: remH }, 'EAST', zoneKey);
 
       if (vertDouble) {
         const eastX = box.x + box.w - stallDepth;
@@ -1187,19 +1210,7 @@ export function solveStiltParkingSheet(
           );
         }
 
-        if (remH > 0) {
-          bikeBaysCount += remH >= 1000 ? 2 : 0;
-          rooms.push(
-            createBoxRoom({
-              id: remH >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
-              name: remH >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
-              type: remH >= 1000 ? RoomType.Parking : RoomType.Foyer,
-              spaceUse: 'COMMON',
-              box: { x: eastX, y: box.y + stallsH, w: stallDepth, h: remH },
-              floorId,
-            }),
-          );
-        }
+        packBikeRemainder({ x: eastX, y: box.y + stallsH, w: stallDepth, h: remH }, 'WEST', zoneKey);
 
         const driveW = box.w - 2 * stallDepth;
         rooms.push(
@@ -1258,19 +1269,7 @@ export function solveStiltParkingSheet(
     }
 
     // North Remainder Two-Wheeler Bay
-    if (remW > 0) {
-      bikeBaysCount += remW >= 1000 ? 2 : 0;
-      rooms.push(
-        createBoxRoom({
-          id: remW >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
-          name: remW >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
-          type: remW >= 1000 ? RoomType.Parking : RoomType.Foyer,
-          spaceUse: 'COMMON',
-          box: { x: box.x + stallsW, y: box.y, w: remW, h: stallDepth },
-          floorId,
-        }),
-      );
-    }
+    packBikeRemainder({ x: box.x + stallsW, y: box.y, w: remW, h: stallDepth }, 'SOUTH', zoneKey);
 
     if (isDoubleLoaded) {
       // South Row of Car Bays (2,500 x 5,000 mm, P-01..)
@@ -1294,19 +1293,7 @@ export function solveStiltParkingSheet(
       }
 
       // South Remainder Two-Wheeler Bay
-      if (remW > 0) {
-        bikeBaysCount += remW >= 1000 ? 2 : 0;
-        rooms.push(
-          createBoxRoom({
-            id: remW >= 1000 ? `stilt__bike_bay_b${String(bikeBaysCount).padStart(2, '0')}` : `stilt__open_remainder_${zoneKey}_${rooms.length}`,
-            name: remW >= 1000 ? `Two-Wheeler Parking Bay B-${String(bikeBaysCount).padStart(2, '0')}` : 'Open parking remainder (not a vehicle bay)',
-            type: remW >= 1000 ? RoomType.Parking : RoomType.Foyer,
-            spaceUse: 'COMMON',
-            box: { x: box.x + stallsW, y: southY, w: remW, h: stallDepth },
-            floorId,
-          }),
-        );
-      }
+      packBikeRemainder({ x: box.x + stallsW, y: southY, w: remW, h: stallDepth }, 'NORTH', zoneKey);
 
       // Central Two-Way Driveway Aisle (>= 6,000 mm)
       const driveH = box.h - 2 * stallDepth;
@@ -1350,7 +1337,21 @@ export function solveStiltParkingSheet(
   const packFree = (box: Box2D, zoneKey: string) => {
     for (const free of subtractBoxes(box, occupied)) {
       if (free.w < 2500 || free.h < 2500) continue;
-      packParkingBox(free, zoneKey);
+      // The free cells are measured to wall centre lines. Reserve the full
+      // exterior half-thickness before laying out the clear stall markings.
+      const wallFaceAllowance = 115;
+      const clear = {
+        x: free.x + wallFaceAllowance, y: free.y + wallFaceAllowance,
+        w: free.w - 2 * wallFaceAllowance, h: free.h - 2 * wallFaceAllowance,
+      };
+      for (const strip of subtractBoxes(free, [clear])) {
+        rooms.push(createBoxRoom({
+          id: `stilt__parking_clearance_${zoneKey}_${rooms.length}`,
+          name: 'Parking perimeter clearance', type: RoomType.Foyer,
+          architecturalRole: 'OPEN_CIRCULATION', spaceUse: 'COMMON', box: strip, floorId,
+        }));
+      }
+      packParkingBox(clear, zoneKey);
       occupied.push(free);
     }
   };
@@ -1397,6 +1398,8 @@ export function solveStiltParkingSheet(
     if (entryDoorW > 0 && openingFitsApartmentWall(mainEntryWall, entryPos, entryDoorW)) {
       doors.push({
         id: 'door_stilt_grand_lobby_main_entrance',
+        openingGeometryVersion: 1,
+        positionReference: 'CENTER',
         floorId,
         wallId: mainEntryWall.id,
         position: entryPos,
@@ -1686,7 +1689,14 @@ export function solveTypicalFloorSheet(
       w.boundaryRole !== 'PARAPET' &&
       w.roomIds.includes(r.id),
     );
+    const targetWindowArea = Math.max(1_250_000, polygonArea(r.boundary) * 0.12);
+    const windowHeight = r.type === RoomType.Dining ? 1350 : 1500;
+    const availableWindowArea = () => windows.reduce(
+      (area, window) => window.roomId === r.id ? area + window.width * window.height : area, 0,
+    );
     for (const hw of extWalls) {
+      const remainingWindowArea = targetWindowArea - availableWindowArea();
+      if (!isBath && remainingWindowArea <= 0) break;
       // Check if wall segment already has a door opening (e.g. balcony door)
       const doorIdx = doors.findIndex(d => d.wallId === hw.id);
       const len = Math.hypot(hw.endPoint.x - hw.startPoint.x, hw.endPoint.y - hw.startPoint.y);
@@ -1705,12 +1715,12 @@ export function solveTypicalFloorSheet(
           const shiftedDoorAlong = Math.ceil((100 + effectiveDoorW / 2) / 10) * 10;
           const winAlong = Math.floor((len - 100 - sideWinW / 2) / 10) * 10;
           const doorPos = {
-            x: snap10(hw.startPoint.x + ux * shiftedDoorAlong),
-            y: snap10(hw.startPoint.y + uy * shiftedDoorAlong),
+            x: hw.startPoint.x + ux * shiftedDoorAlong,
+            y: hw.startPoint.y + uy * shiftedDoorAlong,
           };
           const winPos = {
-            x: snap10(hw.startPoint.x + ux * winAlong),
-            y: snap10(hw.startPoint.y + uy * winAlong),
+            x: hw.startPoint.x + ux * winAlong,
+            y: hw.startPoint.y + uy * winAlong,
           };
           if (
             winAlong - sideWinW / 2 >= shiftedDoorAlong + effectiveDoorW / 2 + 80 &&
@@ -1729,7 +1739,7 @@ export function solveTypicalFloorSheet(
               wallId: hw.id,
               position: winPos,
               width: sideWinW,
-              height: 1200,
+              height: windowHeight,
               sillHeight: 900,
               type: WindowType.Sliding,
               roomId: r.id,
@@ -1739,12 +1749,16 @@ export function solveTypicalFloorSheet(
         }
         continue;
       }
-      const winW = isBath ? (len >= 800 ? 600 : Math.max(350, Math.round(len - 200))) : (len >= 1400 ? 1200 : Math.max(600, Math.round(len - 200)));
-      const winH = isBath ? 650 : 1200;
+      if (len < 650) continue;
+      const winW = isBath
+        ? (len >= 800 ? 600 : Math.max(350, Math.round(len - 200)))
+        : Math.min(Math.floor(len - 200), Math.max(450, Math.ceil(remainingWindowArea / windowHeight / 10) * 10));
+      if (!isBath && winW < 450) continue;
+      const winH = isBath ? 650 : windowHeight;
       const sillH = isBath ? 1500 : 900;
       const winPos = {
-        x: snap10((hw.startPoint.x + hw.endPoint.x) / 2),
-        y: snap10((hw.startPoint.y + hw.endPoint.y) / 2),
+        x: (hw.startPoint.x + hw.endPoint.x) / 2,
+        y: (hw.startPoint.y + hw.endPoint.y) / 2,
       };
       if (winW > 0 && openingFitsApartmentWall(hw, winPos, winW)) {
         windows.push({
@@ -2561,13 +2575,20 @@ function namespaceFloorEntities(floor: Floor): Floor {
     for (const wall of floor.walls) {
       if (wall.wallUse !== 'SHAFT' || !wall.roomIds.some(roomId => ducts.has(roomId)) || occupiedWalls.has(wall.id)) continue;
       const room = wall.roomIds.map(roomId => rooms.get(roomId)).find(room => room?.unitId &&
-        [RoomType.Living, RoomType.Dining, RoomType.Kitchen, RoomType.Bedroom].includes(room.type));
+        [RoomType.Living, RoomType.Dining, RoomType.Kitchen, RoomType.Bedroom, RoomType.Utility].includes(room.type) &&
+        room.spaceUse !== 'OUTDOOR');
       if (!room) continue;
       const length = Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y);
       if (length < 650) continue;
+      const height = room.type === RoomType.Dining ? 1350 : 1500;
+      const targetArea = Math.max(1_250_000, polygonArea(room.boundary) * 0.12);
+      const existingArea = windows.reduce(
+        (area, window) => window.roomId === room.id ? area + window.width * window.height : area, 0,
+      );
+      const deficit = targetArea - existingArea;
       windows.push({ id: `ots-window:${room.id}:${wall.id}`, floorId: floor.id, wallId: wall.id, roomId: room.id,
         position: { x: (wall.startPoint.x + wall.endPoint.x) / 2, y: (wall.startPoint.y + wall.endPoint.y) / 2 },
-        width: Math.min(length - 200, 1200), height: 1200, sillHeight: 900, type: WindowType.Sliding,
+        width: Math.min(Math.floor(length - 200), Math.max(450, Math.ceil(deficit / height / 10) * 10)), height, sillHeight: 900, type: WindowType.Sliding,
         openingGeometryVersion: 1, positionReference: 'CENTER' });
     }
     floor = { ...floor, windows };
@@ -3193,9 +3214,8 @@ export function solveMultiSheetApartmentProject(
           },
         );
         if (
-          rawConfig.buildingMassingShape &&
-          nextRaw.building.metadata.generationBrief?.buildingMassingShape &&
-          nextRaw.building.metadata.generationBrief.buildingMassingShape !== rawConfig.buildingMassingShape
+          config.buildingMassingShape &&
+          nextRaw.building.metadata.generationBrief?.buildingMassingShape !== config.buildingMassingShape
         ) {
           continue;
         }
@@ -3247,7 +3267,10 @@ export function solveMultiSheetApartmentProject(
         legacyCompliance.redConflictCount === 0 &&
         legacyCompliance.score >= finalCompliance.score &&
         legacyCompliance.redConflictCount <= finalCompliance.redConflictCount;
-      if (legacyMeetsComplianceFloor && (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!))) {
+      const legacyPreservesShape = !config.buildingMassingShape ||
+        legacy.building.metadata.generationBrief?.buildingMassingShape === config.buildingMassingShape;
+      if (legacyPreservesShape && legacyMeetsComplianceFloor &&
+          (balconyRegression || (differing >= 0 && legacyQuality[differing]! < candidateQuality[differing]!))) {
         const report = legacy.generationReport!;
         const updated = {
           ...report, violations: [...report.violations, {

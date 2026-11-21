@@ -144,11 +144,19 @@ export function useEditorStore() {
   // Single EditorEngine instance
   const engine = useMemo(() => {
     return new EditorEngine(initialEnvelope.building, {
-      coordinateRevision: (next, previous) => next.metadata.tags?.includes('STRUCTURAL_FRAMING_PRELIMINARY') &&
-        (next.floors.length !== previous.floors.length || next.floors.some((floor, index) => {
+      coordinateRevision: (next, previous) => {
+        const unframed = !next.metadata.tags?.includes('STRUCTURAL_DESIGN_DEFERRED') &&
+          next.floors.some(floor => floor.rooms.length > 0) &&
+          next.floors.every(floor => (floor.columns?.length ?? 0) === 0);
+        const geometryChanged = next.floors.length !== previous.floors.length || next.floors.some((floor, index) => {
           const before = previous.floors[index];
           return floor.walls !== before?.walls || floor.rooms !== before?.rooms || floor.boundary !== before?.boundary;
-        })) ? synthesizeStructuralFraming(next) : next,
+        });
+        if (unframed || (next.metadata.tags?.includes('STRUCTURAL_FRAMING_PRELIMINARY') && geometryChanged)) {
+          try { return synthesizeStructuralFraming(next); } catch { return next; }
+        }
+        return next;
+      },
     });
   }, [initialEnvelope.building]);
 

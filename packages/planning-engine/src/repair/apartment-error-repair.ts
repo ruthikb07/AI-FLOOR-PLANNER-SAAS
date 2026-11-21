@@ -1503,8 +1503,8 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
 
           const winWidth = Math.min(1500, Math.max(700, Math.min(len - 200, Math.round(len * 0.40))));
           const pos: Point = {
-            x: snap10((hostWall.startPoint.x + hostWall.endPoint.x) / 2),
-            y: snap10((hostWall.startPoint.y + hostWall.endPoint.y) / 2),
+            x: (hostWall.startPoint.x + hostWall.endPoint.x) / 2,
+            y: (hostWall.startPoint.y + hostWall.endPoint.y) / 2,
           };
 
           if (openingFitsApartmentWall(hostWall, pos, winWidth)) {
@@ -1547,8 +1547,8 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
           if (len >= 600) {
             const ventWidth = Math.min(600, Math.max(350, Math.round(len - 200)));
             const pos: Point = {
-              x: snap10((extWall.startPoint.x + extWall.endPoint.x) / 2),
-              y: snap10((extWall.startPoint.y + extWall.endPoint.y) / 2),
+              x: (extWall.startPoint.x + extWall.endPoint.x) / 2,
+              y: (extWall.startPoint.y + extWall.endPoint.y) / 2,
             };
             if (openingFitsApartmentWall(extWall, pos, ventWidth)) {
               const newVent: Window = {
@@ -1658,44 +1658,36 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
     const stacked = Math.abs(living.x - foyer.x) <= 2 && Math.abs(living.width - foyer.width) <= 2;
     let nextFoyer = foyer;
     let nextLiving = living;
+    const resizeRectRoom = (r: Room, nx: number, ny: number, nw: number, nh: number): Room => ({
+      ...r,
+      x: nx,
+      y: ny,
+      width: nw,
+      height: nh,
+      area: nw * nh,
+      boundary: {
+        points: [
+          { x: nx, y: ny },
+          { x: nx + nw, y: ny },
+          { x: nx + nw, y: ny + nh },
+          { x: nx, y: ny + nh },
+        ],
+      },
+    });
     if (stacked) {
       const targetH = Math.max(1200, Math.floor(11_000_000 / Math.max(1, foyer.width) / 10) * 10);
       const trim = foyer.height - targetH;
       if (trim <= 50) continue;
       const foyerOnTop = Math.abs(foyer.y + foyer.height - living.y) <= 2;
-      nextFoyer = createRoom({
-        ...foyer,
-        tags: [...foyer.tags],
-        adjacencyRequirements: foyer.adjacencyRequirements ? [...foyer.adjacencyRequirements] : undefined,
-        y: foyerOnTop ? foyer.y : foyer.y + trim,
-        height: targetH,
-      });
-      nextLiving = createRoom({
-        ...living,
-        tags: [...living.tags],
-        adjacencyRequirements: living.adjacencyRequirements ? [...living.adjacencyRequirements] : undefined,
-        y: foyerOnTop ? living.y - trim : living.y,
-        height: living.height + trim,
-      });
+      nextFoyer = resizeRectRoom(foyer, foyer.x, foyerOnTop ? foyer.y : foyer.y + trim, foyer.width, targetH);
+      nextLiving = resizeRectRoom(living, living.x, foyerOnTop ? living.y - trim : living.y, living.width, living.height + trim);
     } else {
       const targetW = Math.max(1200, Math.floor(11_000_000 / Math.max(1, foyer.height) / 10) * 10);
       const trim = foyer.width - targetW;
       if (trim <= 50) continue;
       const foyerAtLeft = Math.abs(foyer.x + foyer.width - living.x) <= 2;
-      nextFoyer = createRoom({
-        ...foyer,
-        tags: [...foyer.tags],
-        adjacencyRequirements: foyer.adjacencyRequirements ? [...foyer.adjacencyRequirements] : undefined,
-        x: foyerAtLeft ? foyer.x : foyer.x + trim,
-        width: targetW,
-      });
-      nextLiving = createRoom({
-        ...living,
-        tags: [...living.tags],
-        adjacencyRequirements: living.adjacencyRequirements ? [...living.adjacencyRequirements] : undefined,
-        x: foyerAtLeft ? living.x - trim : living.x,
-        width: living.width + trim,
-      });
+      nextFoyer = resizeRectRoom(foyer, foyerAtLeft ? foyer.x : foyer.x + trim, foyer.y, targetW, foyer.height);
+      nextLiving = resizeRectRoom(living, foyerAtLeft ? living.x - trim : living.x, living.y, living.width + trim, living.height);
     }
 
     const candidateRooms = rooms.map(r =>

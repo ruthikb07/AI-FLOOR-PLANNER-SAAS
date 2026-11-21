@@ -225,9 +225,12 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
 
     // Re-absorb any dropped balcony into its bedroom so the flat still tiles
     // exactly; an unassigned sliver would fail the area ledger.
-    const finalRooms = carvedInterflat.droppedRemaining.length
+    const retainedRooms = carvedInterflat.droppedRemaining.length
       ? reabsorbDropped(carvedInterflat.keptRooms, carvedInterflat.droppedRemaining)
       : carvedInterflat.keptRooms;
+    const finalRooms = partition.massingShape === 'PINWHEEL_CLUSTER'
+      ? integrateDiningSitOut(retainedRooms, flatId, partition)
+      : retainedRooms;
 
     // Rebuild in-flat openings in world space AFTER finalRooms are settled so
     // kept Sit-out Balconies preserve their wide sliding doors and dropped rooms
@@ -624,6 +627,43 @@ function carveInterflatOtsForDroppedSitout(
       assignedFlatId: null,
     },
   };
+}
+
+/**
+ * Use a combined dining and family seating area where an enclosed sit-out is
+ * the viable ventilation frontage. Keep open balconies and separated rooms
+ * whose dining area already has sufficient opening frontage.
+ */
+function integrateDiningSitOut(
+  rooms: readonly ApartmentPlanRoom[],
+  flatId: string,
+  partition: TopologyPartition,
+): readonly ApartmentPlanRoom[] {
+  const dining = rooms.find(room => room.type === 'dining');
+  const sitOut = rooms.find(room => room.id === `${flatId}__balcony` && room.type === 'living');
+  if (!dining || !sitOut) return rooms;
+  const a = rectToBox(dining.rect);
+  const b = rectToBox(sitOut.rect);
+  if (sharedEdgeLength(a, b) <= 0) return rooms;
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  const merged = { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+  if (Math.abs(merged.w * merged.h - a.w * a.h - b.w * b.h) >= 0.001) return rooms;
+
+  const openFrontages = partition.shaftBoxes.filter((_, index) => {
+    const tags = partition.shaftTags?.[index];
+    return tags?.includes('shaft:interflat') || tags?.includes('recess:perimeter');
+  });
+  const windowCapacity = (box: Box2D) => openFrontages.reduce((area, frontage) => {
+    const length = sharedEdgeLength(box, frontage);
+    return length >= 650 ? area + (length - 200) * 1350 : area;
+  }, 0);
+  const targetArea = (box: Box2D) => Math.max(1_250_000, box.w * box.h * 0.12);
+  if (windowCapacity(a) >= targetArea(a) || windowCapacity(merged) < targetArea(merged)) return rooms;
+
+  return rooms.filter(room => room !== sitOut).map(room =>
+    room === dining ? { ...room, rect: boxToRect(merged) } : room,
+  );
 }
 
 function reabsorbDropped(

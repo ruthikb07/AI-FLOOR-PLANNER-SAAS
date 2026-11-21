@@ -202,9 +202,13 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
 
   // Explore in an order biased toward the brief's stated priority, with a
   // deterministic tiebreak. Ordering affects only exploration, never validity.
-  const ordered = [...topologies]
-    .map(t => ({ t, key: explorationKey(t, program, random()) }))
-    .sort((a, b) => a.key - b.key)
+  const ordered = topologies
+    .map(t => ({
+      t,
+      key: explorationKey(t, program, random()),
+      priority: input.preferredMassingShape && t.partition.massingShape === effectiveMassingShape ? 0 : 1,
+    }))
+    .sort((a, b) => a.priority - b.priority || a.key - b.key)
     .map(x => x.t);
   const rejectedHashSet = new Set(input.rejectedTopologyHashes ?? []);
 

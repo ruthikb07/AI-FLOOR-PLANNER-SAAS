@@ -36,6 +36,8 @@ export interface ProjectSetupWizardData {
   projectType?: ProjectDevelopmentType;
   authorityType?: AuthorityType;
   congestionZone?: CongestionZone;
+  clearRoomHeightMm?: number;
+  stiltClearHeightBelowBeamMm?: number;
   projectName: string;
   plotWidthM: number;
   plotDepthM: number;

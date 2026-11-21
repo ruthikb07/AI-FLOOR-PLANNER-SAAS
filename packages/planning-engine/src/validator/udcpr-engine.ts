@@ -119,8 +119,9 @@ export function evaluateUDCPRCompliance(
   for(const floor of building.floors.filter(f=>f.floorUse==='STILT_PARKING')){
     const habitable=floor.rooms.filter(r=>['bedroom','living','dining','kitchen','study','drawing','family_living','servant_quarter'].includes(r.type));
     add(`stilt.${floor.id}.enclosures`,'parking','Stilt has no flats or habitable enclosures',habitable.length+(floor.apartmentUnits?.length??0),0,habitable.length||floor.apartmentUnits?.length?'VIOLATION':floor.rooms.some(r=>r.type==='custom'&&!r.tags?.includes('SECURITY_CABIN'))?'NOT_VERIFIED':'PASS',habitable.map(r=>r.id),undefined,'Remove habitable enclosures from the designated parking-only floor; exemption eligibility requires separate review.',floor.id);
-    const clearance=floor.parkingClearHeightMm??null;
-    add(`stilt.${floor.id}.clearance`,'parking','Explicit stilt clearance below beams',clearance,2400,cmp(clearance,2400),[floor.id],'mm','Provide measured below-beam clearance; floor-to-floor height does not establish parking clearance.',floor.id);
+    const clearance = floor.parkingClearHeightMm ?? c.stiltClearHeightBelowBeamMm ?? null;
+    add(`stilt.${floor.id}.clearance`,'parking',floor.parkingClearHeightMm == null && c.stiltClearHeightBelowBeamMm != null
+      ? 'Stilt clearance below beams (asserted in brief)' : 'Explicit stilt clearance below beams',clearance,2400,cmp(clearance,2400),[floor.id],'mm','Provide measured below-beam clearance; floor-to-floor height does not establish parking clearance.',floor.id);
   }
   const measured = measureRegulatoryFloors(building);
   const physical = measured.filter((m) => m.floor.floorUse !== "ROOF");
@@ -785,13 +786,17 @@ export function evaluateUDCPRCompliance(
             f.id,
           );
       }
+      const briefHeight = bath ? undefined : c.clearRoomHeightMm;
+      const clearHeight = r.clearHeightMm ?? briefHeight;
       add(
         `room.${r.id}.height`,
         "rooms",
-        "Explicit clear room height below slab/beam",
-        r.clearHeightMm ?? null,
+        r.clearHeightMm == null && briefHeight != null
+          ? "Clear room height below slab/beam (asserted in brief)"
+          : "Explicit clear room height below slab/beam",
+        clearHeight ?? null,
         bath ? 2100 : 2750,
-        cmp(r.clearHeightMm, bath ? 2100 : 2750),
+        cmp(clearHeight, bath ? 2100 : 2750),
         [r.id],
         "mm",
         "Supply measured section clear height; floor-to-floor height alone does not establish clearance.",

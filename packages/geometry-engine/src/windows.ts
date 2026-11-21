@@ -1,4 +1,4 @@
-import { canonicalOpeningGeometry } from './opening-geometry';
+import { canonicalOpeningGeometry, safeCanonicalOpeningGeometry } from './opening-geometry';
 /**
  * Window Geometry and Placement Validation.
  * Handles window placement along host walls, glazing segments, and architectural clearances.
@@ -96,7 +96,7 @@ export function assertWindowPlacement(
 
 /** Compute the line segment representing the window opening on the host wall. */
 export function computeWindowOpeningSegment(window: Window, hostWall: Wall): LineSegment {
-  if (window.openingGeometryVersion === 1) { const g = canonicalOpeningGeometry(window, hostWall); return { start: g.startPoint, end: g.endPoint }; }
+  if (window.openingGeometryVersion === 1) { const g = safeCanonicalOpeningGeometry(window, hostWall, true); if (g) return { start: g.startPoint, end: g.endPoint }; }
   const wallSeg: LineSegment = { start: hostWall.startPoint, end: hostWall.endPoint };
   const wallLen = segmentLength(wallSeg);
   const dx = (hostWall.endPoint.x - hostWall.startPoint.x) / wallLen;

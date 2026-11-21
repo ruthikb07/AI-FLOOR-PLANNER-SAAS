@@ -21,10 +21,19 @@ function length(start: Point, end: Point): number {
 
 function projectionOpeningInterval(opening: Door | Window, wall: Wall, allowNarrowing: boolean) {
   if (opening.openingGeometryVersion === 1) {
-    const fitted = fitOpeningInsideWall(opening, wall, allowNarrowing);
-    if (!fitted) return undefined;
-    const geometry = canonicalOpeningGeometry(fitted, wall);
-    return { position: geometry.startPoint, alongWall: geometry.start, width: fitted.width };
+    // Defensive sanitizer: never let an out-of-bounds opening crash Floor 3D / Building 3D.
+    try {
+      const fitted = fitOpeningInsideWall(opening, wall, allowNarrowing);
+      if (!fitted) return undefined;
+      const geometry = canonicalOpeningGeometry(fitted, wall);
+      const wallLen = geometry.length;
+      const width = Math.min(fitted.width, wallLen - 200);
+      if (!(width > 0)) return undefined;
+      const alongWall = Math.max(100, Math.min(wallLen - 100 - width, geometry.start));
+      return { position: geometry.pointAt(alongWall), alongWall, width };
+    } catch {
+      return undefined;
+    }
   }
   const wallLength = length(wall.startPoint, wall.endPoint);
   if (wallLength < 650 || opening.width <= 0 || ![wallLength, opening.width, opening.position.x, opening.position.y].every(Number.isFinite) ||

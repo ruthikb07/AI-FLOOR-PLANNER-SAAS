@@ -1,5 +1,7 @@
 import {
+  RoomType,
   WallType,
+  WindowType,
   type BuildingMassingShape,
   type Door,
   type Floor,
@@ -204,20 +206,31 @@ function createShapeTransform(
   const availN = Math.max(0, floorBounds.y - envelope.y - 60);
   const availS = Math.max(0, envelope.y + envelope.h - (floorBounds.y + floorBounds.h) - 60);
 
-  const isPinned = (pt: Point): boolean =>
-    pinnedPoints.some(p => Math.hypot(p.x - pt.x, p.y - pt.y) <= 0.8);
+  const pinBlendFor = (pt: Point): number => {
+    if (!pinnedPoints.length) return 1;
+    let minD = Infinity;
+    for (const p of pinnedPoints) {
+      const d = Math.hypot(p.x - pt.x, p.y - pt.y);
+      if (d < minD) minD = d;
+    }
+    if (minD <= 0.8) return 0;
+    return clamp((minD - 0.8) / 3000, 0, 1);
+  };
 
-  const clampEnv = (x: number, y: number): Point => ({
-    x: r3(clamp(x, envelope.x + 20, envelope.x + envelope.w - 20)),
-    y: r3(clamp(y, envelope.y + 20, envelope.y + envelope.h - 20)),
-  });
+  const clampEnv = (x: number, y: number, pt?: Point, pinW = 1): Point => {
+    const bx = pt ? pt.x + (x - pt.x) * pinW : x;
+    const by = pt ? pt.y + (y - pt.y) * pinW : y;
+    return {
+      x: r3(clamp(bx, envelope.x + 20, envelope.x + envelope.w - 20)),
+      y: r3(clamp(by, envelope.y + 20, envelope.y + envelope.h - 20)),
+    };
+  };
 
   // Gentle vertical slack compressor (leaves core untouched, pulls non-core Y slightly inward to carve sculptural space)
   const wingYCompress = (y: number, factor = 0.88): number => cy + (y - cy) * factor;
   const wingXCompress = (x: number, factor = 0.88): number => cx + (x - cx) * factor;
 
-  return (pt: Point): Point => {
-    if (isPinned(pt)) return { x: pt.x, y: pt.y };
+  const rawTransform = (pt: Point): Point => {
 
     const dx = pt.x - cx;
     const dy = pt.y - cy;
@@ -229,63 +242,61 @@ function createShapeTransform(
     const outerRingW = clamp((Math.max(absU, absV) - 0.56) / 0.44, 0, 1);
 
     if (shapeId === 'CURVED_CRESCENT') {
-      // Sweeping C-arc: compress non-core vertical slightly downward first, then sweep both wings upward on circular arc
-      if (wingS === 0) {
-        return clampEnv(pt.x, cy + dy * 0.90);
-      }
-      const maxRise = Math.max(1800, Math.min(hh * 0.36, availN + hh * 0.14));
-      const baseY = cy + dy * 0.84 + Math.min(availS * 0.4, hh * 0.08);
-      const yShift = -maxRise * (wingS * wingS);
-      // Radial inward contraction keeps radial wedge chord walls perpendicular to the arc
-      const xPull = dx * (1 - 0.04 * wingS * wingS);
-      return clampEnv(cx + xPull, baseY + yShift);
+      // Sweeping C-arc: leave core band untouched (wingS === 0) and blend smoothly across both wings
+      if (wingS === 0) return { x: pt.x, y: pt.y };
+      const maxRise = Math.max(1800, Math.min(hh * 0.28, availN + hh * 0.10));
+      const targetY = cy + dy * 0.96 + Math.min(availS * 0.25, hh * 0.04) - maxRise * (wingS * wingS);
+      const y = pt.y + (targetY - pt.y) * wingS;
+      return clampEnv(pt.x, y);
     }
 
     if (shapeId === 'WAVE_SERPENTINE') {
-      if (wingS === 0) return clampEnv(pt.x, pt.y);
+      if (wingS === 0) return { x: pt.x, y: pt.y };
       const amp = Math.min(hh * 0.18, 2200, Math.max(1200, Math.min(availN, availS) + hh * 0.1));
       const sign = dx >= 0 ? 1 : -1;
-      const baseY = cy + dy * 0.86;
-      const yWave = sign * amp * Math.sin((wingS * Math.PI) / 2);
-      return clampEnv(pt.x, baseY + yWave);
+      const targetY = cy + dy * 0.86 + sign * amp * Math.sin((wingS * Math.PI) / 2);
+      return clampEnv(pt.x, pt.y + (targetY - pt.y) * wingS);
     }
 
     if (shapeId === 'ROTUNDA_COURTYARD') {
-      if (outerRingW <= 0) return { x: pt.x, y: pt.y };
+      const rotW = clamp((Math.max(absU, absV) - 0.86) / 0.14, 0, 1);
+      if (rotW <= 0) return { x: pt.x, y: pt.y };
       const r = Math.hypot(u, v);
       if (r < 1e-4) return { x: pt.x, y: pt.y };
-      // Project infinity-norm outer box cleanly onto true circle `x'^2/Rx^2 + y'^2/Ry^2 = 1`
-      const rx = Math.min(hw * 0.98, envelope.w / 2 - 60);
-      const ry = Math.min(hh * 0.98, envelope.h / 2 - 60);
-      const isoR = Math.min(rx, ry);
-      const scaleBox = Math.max(absU, absV) / r;
-      const targetX = cx + (u / Math.max(0.01, Math.max(absU, absV))) * isoR * scaleBox * Math.max(absU, absV);
-      const targetY = cy + (v / Math.max(0.01, Math.max(absU, absV))) * isoR * scaleBox * Math.max(absU, absV);
-      const nx = pt.x + (targetX - pt.x) * outerRingW;
-      const ny = pt.y + (targetY - pt.y) * outerRingW;
+      // Project outer perimeter ring smoothly onto a rounded rotunda without shrinking interior door walls
+      const rx = Math.min(hw * 1.0, envelope.w / 2 - 40);
+      const ry = Math.min(hh * 1.0, envelope.h / 2 - 40);
+      const mNorm = Math.max(absU, absV);
+      const targetX = cx + (u / r) * rx * mNorm;
+      const targetY = cy + (v / r) * ry * mNorm;
+      const blend = 0.14 * rotW;
+      const nx = pt.x + (targetX - pt.x) * blend;
+      const ny = pt.y + (targetY - pt.y) * blend;
       return clampEnv(nx, ny);
     }
 
     if (shapeId === 'ELLIPTICAL_TOWER') {
-      if (outerRingW <= 0) return { x: pt.x, y: pt.y };
+      const ellipW = clamp((Math.max(absU, absV) - 0.72) / 0.28, 0, 1);
+      if (ellipW <= 0) return { x: pt.x, y: pt.y };
       const r = Math.hypot(u, v);
       if (r < 1e-4) return { x: pt.x, y: pt.y };
-      const rx = Math.min(hw * 0.96, envelope.w / 2 - 50);
-      const ry = Math.min(hh * 0.90, envelope.h / 2 - 50);
+      const rx = Math.min(hw * 0.99, envelope.w / 2 - 40);
+      const ry = Math.min(hh * 0.97, envelope.h / 2 - 40);
       const mNorm = Math.max(absU, absV);
       const ex = cx + (u / r) * rx * mNorm;
       const ey = cy + (v / r) * ry * mNorm;
-      return clampEnv(pt.x + (ex - pt.x) * outerRingW, pt.y + (ey - pt.y) * outerRingW);
+      return clampEnv(pt.x + (ex - pt.x) * ellipW, pt.y + (ey - pt.y) * ellipW);
     }
 
     if (shapeId === 'LOTUS_PETAL_RADIAL') {
-      if (outerRingW <= 0) return { x: pt.x, y: pt.y };
+      const lotusW = clamp((Math.max(absU, absV) - 0.86) / 0.14, 0, 1);
+      if (lotusW <= 0) return { x: pt.x, y: pt.y };
       const theta = Math.atan2(v, u);
       const petals = Math.max(3, Math.min(6, shapeParams?.wings ?? 4));
-      const petalMod = 0.84 + 0.16 * Math.abs(Math.cos((petals * theta) / 2));
+      const petalMod = 0.94 + 0.06 * Math.abs(Math.cos((petals * theta) / 2));
       const tx = cx + dx * petalMod;
       const ty = cy + dy * petalMod;
-      return clampEnv(pt.x + (tx - pt.x) * outerRingW, pt.y + (ty - pt.y) * outerRingW);
+      return clampEnv(pt.x + (tx - pt.x) * lotusW, pt.y + (ty - pt.y) * lotusW);
     }
 
     if (shapeId === 'BOWFRONT_CHAMFERED') {
@@ -305,9 +316,9 @@ function createShapeTransform(
     }
 
     if (shapeId === 'TRIANGULAR_ATRIUM') {
-      if (wingS === 0) return clampEnv(pt.x, pt.y);
-      // North v=-1 narrow apex wings (0.28 width outside core), South v=+1 full base width (1.0)
-      const apexRatio = 0.22;
+      if (wingS === 0) return { x: pt.x, y: pt.y };
+      // North v=-1 tapered apex wings (0.78 width outside core), South v=+1 full base width (1.0)
+      const apexRatio = 0.78;
       const wFactor = apexRatio + (1 - apexRatio) * ((v + 1) / 2);
       const sgn = dx >= 0 ? 1 : -1;
       const tx = cx + sgn * (coreHalfW + (Math.abs(dx) - coreHalfW) * wFactor);
@@ -315,20 +326,19 @@ function createShapeTransform(
     }
 
     if (shapeId === 'Y_SHAPE_TRISKELE') {
-      if (wingS === 0) return clampEnv(pt.x, cy + dy * 0.90);
+      if (wingS === 0) return { x: pt.x, y: pt.y };
       // Twin upper angled arms splayed upward + tapered lower core waist
       const splayRise = Math.min(hh * 0.34, availN + hh * 0.16, 2800);
-      const baseY = cy + dy * 0.84 + Math.min(availS * 0.4, hh * 0.08);
-      const ty = baseY - splayRise * wingS;
-      return clampEnv(pt.x, ty);
+      const targetY = cy + dy * 0.84 + Math.min(availS * 0.4, hh * 0.08) - splayRise * wingS;
+      return clampEnv(pt.x, pt.y + (targetY - pt.y) * wingS);
     }
 
     if (shapeId === 'BUTTERFLY_V_WING') {
-      if (wingS === 0) return clampEnv(pt.x, cy + dy * 0.92);
+      if (wingS === 0) return { x: pt.x, y: pt.y };
       const vRise = Math.min(hh * 0.32, availN + hh * 0.14, 2600);
-      const ty = cy + dy * 0.86 - vRise * wingS;
+      const targetY = cy + dy * 0.86 - vRise * wingS;
       const xFlare = cx + dx * (1 + 0.04 * wingS);
-      return clampEnv(xFlare, ty);
+      return clampEnv(xFlare, pt.y + (targetY - pt.y) * wingS);
     }
 
     if (shapeId === 'HEXAGONAL_HONEYCOMB') {
@@ -352,13 +362,13 @@ function createShapeTransform(
     }
 
     if (shapeId === 'DIAGONAL_ZIGZAG') {
-      if (wingS === 0) return clampEnv(pt.x, pt.y);
+      if (wingS === 0) return { x: pt.x, y: pt.y };
       const zigX = 1 - 0.16 * (0.5 + 0.5 * Math.sin(v * Math.PI * 2.5));
       const zigY = 0.88;
       const sgn = dx >= 0 ? 1 : -1;
       const tx = cx + sgn * (coreHalfW + (Math.abs(dx) - coreHalfW) * zigX);
-      const ty = cy + dy * zigY + Math.sin(wingS * Math.PI * 1.5) * Math.min(hh * 0.12, 1200);
-      return clampEnv(tx, ty);
+      const targetY = cy + dy * zigY + Math.sin(wingS * Math.PI * 1.5) * Math.min(hh * 0.12, 1200);
+      return clampEnv(tx, pt.y + (targetY - pt.y) * wingS);
     }
 
     if (shapeId === 'T_SHAPE_SPINE') {
@@ -387,14 +397,21 @@ function createShapeTransform(
     const amp = Math.min(hh * 0.28, 2600);
     if (outerRingW <= 0 && wingS === 0) return { x: pt.x, y: pt.y };
     const theta = Math.atan2(v, u);
-    const radialScale = 1 - stepRatio * 0.45 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
+    const radialScale = 1 - stepRatio * 0.14 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
     const arcBend = arcSweepDeg > 10 ? -amp * (arcSweepDeg / 180) * wingS * wingS * (splayNorm >= 0 ? 1 : -1) : 0;
     const baseTx = cx + dx * radialScale;
-    const baseTy = cy + dy * 0.88 + arcBend;
+    const baseTy = cy + dy * 0.96 + arcBend;
     return clampEnv(
       pt.x + (baseTx - pt.x) * Math.max(wingS, outerRingW),
       pt.y + (baseTy - pt.y) * Math.max(wingS, outerRingW),
     );
+  };
+
+  return (pt: Point): Point => {
+    const pinW = pinBlendFor(pt);
+    if (pinW <= 0) return { x: pt.x, y: pt.y };
+    const t = rawTransform(pt);
+    return clampEnv(t.x, t.y, pt, pinW);
   };
 }
 
@@ -473,7 +490,7 @@ function remapDoorsToWalls(
     });
     const host = candidates[0]!;
     const len = Math.hypot(host.endPoint.x - host.startPoint.x, host.endPoint.y - host.startPoint.y);
-    const maxW = Math.floor(len - 210);
+    const maxW = Math.floor(len - 200);
     const width = Math.min(door.width, maxW);
     if (width < 600) continue;
     const pos: Point = {
@@ -495,7 +512,7 @@ function remapDoorsToWalls(
 function remapWindowsToWalls(
   origWindows: readonly Window[],
   newWalls: readonly Wall[],
-  doors: readonly Door[],
+  doors: Door[],
   rooms: readonly Room[],
   floorId: string,
 ): Window[] {
@@ -511,7 +528,10 @@ function remapWindowsToWalls(
         w.boundaryRole !== 'OPEN_BOUNDARY' &&
         (w.wallUse === 'EXTERNAL' ||
           w.wallUse === 'SHAFT' ||
-          (w.wallUse === 'BALCONY' && ownerRoom.spaceUse !== 'OUTDOOR')),
+          (w.wallUse === 'BALCONY' && ownerRoom.spaceUse !== 'OUTDOOR') ||
+          (w.wallUse === 'INTERNAL_PARTITION' &&
+            ownerRoom.type === RoomType.Kitchen &&
+            w.roomIds.some(id => roomMap.get(id)?.type === RoomType.Utility))),
     );
     if (!candidates.length) continue;
     candidates.sort((w1, w2) => {
@@ -524,22 +544,44 @@ function remapWindowsToWalls(
       if (len < 750) continue;
       const ux = (host.endPoint.x - host.startPoint.x) / len;
       const uy = (host.endPoint.y - host.startPoint.y) / len;
-      const hasDoorOnHost = doors.some(d => d.wallId === host.id);
+      const doorIdx = doors.findIndex(d => d.wallId === host.id);
       let along = len / 2;
       let width = Math.min(win.width, Math.floor((len - 220) / 10) * 10);
-      if (hasDoorOnHost) {
-        const door = doors.find(d => d.wallId === host.id)!;
+      if (doorIdx >= 0) {
+        const door = doors[doorIdx]!;
         const doorAlong = (door.position.x - host.startPoint.x) * ux + (door.position.y - host.startPoint.y) * uy;
         const rightRoom = len - 100 - (doorAlong + door.width / 2 + 80);
         const leftRoom = doorAlong - door.width / 2 - 80 - 100;
-        if (rightRoom >= 550) {
+        if (rightRoom >= 450) {
           width = Math.min(win.width, Math.floor(rightRoom / 10) * 10);
           along = len - 100 - width / 2;
-        } else if (leftRoom >= 550) {
+        } else if (leftRoom >= 450) {
           width = Math.min(win.width, Math.floor(leftRoom / 10) * 10);
           along = 100 + width / 2;
         } else {
-          continue;
+          // Shift the centered door toward the wall start (narrowing >900 mm sliding doors if needed)
+          // so the room retains an operable ventilation window alongside the balcony/utility door.
+          const effectiveDoorW =
+            door.width > 900 && len - door.width < 730
+              ? Math.max(900, Math.floor((len - 730) / 10) * 10)
+              : door.width;
+          const availWin = len - 200 - effectiveDoorW - 80;
+          if (availWin >= 450) {
+            const shiftedDoorAlong = 100 + effectiveDoorW / 2;
+            const doorPos: Point = {
+              x: r3(host.startPoint.x + ux * shiftedDoorAlong),
+              y: r3(host.startPoint.y + uy * shiftedDoorAlong),
+            };
+            if (openingFitsApartmentWall(host, doorPos, effectiveDoorW)) {
+              doors[doorIdx] = { ...door, width: effectiveDoorW, position: doorPos };
+              width = Math.min(win.width, Math.floor(availWin / 10) * 10);
+              along = len - 100 - width / 2;
+            } else {
+              continue;
+            }
+          } else {
+            continue;
+          }
         }
       }
       if (width < 450) continue;
@@ -561,6 +603,89 @@ function remapWindowsToWalls(
         position: pos,
         width,
       });
+      break;
+    }
+  }
+
+  // Fill pass: every habitable Living/Dining/Kitchen/Bedroom must keep >= 1 operable window on an
+  // exterior wall, an OTS duct wall, or a wall shared with its own open balcony / utility balcony.
+  const habitable = new Set<string>([RoomType.Living, RoomType.Dining, RoomType.Kitchen, RoomType.Bedroom]);
+  for (const room of rooms) {
+    if (!room.unitId || !habitable.has(room.type) || room.spaceUse === 'OUTDOOR') continue;
+    if (/PASSAGE|CORRIDOR|BALCONY|FOYER|LOBBY/i.test(room.name)) continue;
+    if (result.some(w => w.roomId === room.id)) continue;
+    const ventWalls = newWalls.filter(w => {
+      if (!w.roomIds.includes(room.id) || w.boundaryRole === 'PARAPET' || w.boundaryRole === 'OPEN_BOUNDARY') return false;
+      if (w.wallUse === 'UNIT_SEPARATION' || w.wallUse === 'COMMON_CORRIDOR') return false;
+      if (w.wallUse === 'EXTERNAL' || w.roomIds.length === 1) return true;
+      return w.roomIds.some(id => {
+        if (id === room.id) return false;
+        const other = roomMap.get(id);
+        if (!other || (other.unitId && other.unitId !== room.unitId)) return false;
+        return other.spaceUse === 'OUTDOOR' || other.openToSky === true ||
+          other.architecturalRole === 'OPEN_TO_SKY_VOID' ||
+          other.type === RoomType.Balcony || other.type === RoomType.Utility || other.type === RoomType.OTS;
+      });
+    }).sort((a, b) =>
+      Math.hypot(b.endPoint.x - b.startPoint.x, b.endPoint.y - b.startPoint.y) -
+      Math.hypot(a.endPoint.x - a.startPoint.x, a.endPoint.y - a.startPoint.y));
+    for (const host of ventWalls) {
+      const len = Math.hypot(host.endPoint.x - host.startPoint.x, host.endPoint.y - host.startPoint.y);
+      if (len < 750) continue;
+      const ux = (host.endPoint.x - host.startPoint.x) / len;
+      const uy = (host.endPoint.y - host.startPoint.y) / len;
+      // Free intervals on the host, honouring 100 mm end clearance and 80 mm gap to doors/windows.
+      const blocked = [
+        ...doors.filter(d => d.wallId === host.id).map(d => ({ c: (d.position.x - host.startPoint.x) * ux + (d.position.y - host.startPoint.y) * uy, w: d.width })),
+        ...result.filter(w => w.wallId === host.id).map(w => ({ c: (w.position.x - host.startPoint.x) * ux + (w.position.y - host.startPoint.y) * uy, w: w.width })),
+      ].map(o => ({ from: o.c - o.w / 2 - 80, to: o.c + o.w / 2 + 80 })).sort((a, b) => a.from - b.from);
+      let cursor = 100;
+      let best: { from: number; to: number } | undefined;
+      for (const b of [...blocked, { from: len - 100, to: len }]) {
+        if (b.from - cursor > (best ? best.to - best.from : 0)) best = { from: cursor, to: b.from };
+        cursor = Math.max(cursor, b.to);
+      }
+      if (!best || best.to - best.from < 450) {
+        // If a single centered door is blocking both sides of the wall, shift it toward start.
+        const hostDoors = doors.map((d, idx) => ({ d, idx })).filter(x => x.d.wallId === host.id);
+        const hostWins = result.filter(w => w.wallId === host.id);
+        if (hostDoors.length === 1 && hostWins.length === 0) {
+          const { d: door, idx } = hostDoors[0]!;
+          const effectiveDoorW =
+            door.width > 900 && len - door.width < 730
+              ? Math.max(900, Math.floor((len - 730) / 10) * 10)
+              : door.width;
+          const availWin = len - 200 - effectiveDoorW - 80;
+          if (availWin >= 450) {
+            const shiftedDoorAlong = 100 + effectiveDoorW / 2;
+            const doorPos: Point = {
+              x: r3(host.startPoint.x + ux * shiftedDoorAlong),
+              y: r3(host.startPoint.y + uy * shiftedDoorAlong),
+            };
+            if (openingFitsApartmentWall(host, doorPos, effectiveDoorW)) {
+              doors[idx] = { ...door, width: effectiveDoorW, position: doorPos };
+              best = { from: 100 + effectiveDoorW + 80, to: len - 100 };
+            }
+          }
+        }
+      }
+      if (!best) continue;
+      const width = Math.min(1500, Math.floor((best.to - best.from) / 10) * 10);
+      if (width < 450) continue;
+      const along = (best.from + best.to) / 2;
+      const pos: Point = { x: r3(host.startPoint.x + ux * along), y: r3(host.startPoint.y + uy * along) };
+      if (!openingFitsApartmentWall(host, pos, width)) continue;
+      result.push({
+        id: `win_${room.id}_${host.id}_vent`,
+        floorId,
+        wallId: host.id,
+        position: pos,
+        width,
+        height: room.type === RoomType.Dining ? 1350 : 1500,
+        sillHeight: 900,
+        type: WindowType.Sliding,
+        roomId: room.id,
+      } as Window);
       break;
     }
   }

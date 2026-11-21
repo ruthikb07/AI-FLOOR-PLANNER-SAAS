@@ -1,5 +1,5 @@
 import { architecturalBoundaryRole, architecturalSpaceRole, WallType, type Room, type Wall, type Polygon, type Point } from '@ai-floor-planner/core';
-import { polygonSignedArea, containsPolygon, polygonCentroid } from './polygon';
+import { polygonSignedArea, containsPolygon } from './polygon';
 import { matchEdgeToArcSpec } from './curves';
 
 /** Millimetres. Numerical coincidence is separate from opening corner clearance. */
@@ -34,17 +34,22 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
   const groups = new Map<string, Edge[]>();
   for (const room of rooms) {
     const p = room.boundary.points;
-    const centroid = polygonCentroid(room.boundary);
+    const ccw = polygonSignedArea(room.boundary) >= 0;
     for (let i = 0; i < p.length; i++) {
       const a = p[i]!, b = p[(i + 1) % p.length]!;
-      const axis = Math.abs(a.y - b.y) <= 1 ? 'x' : Math.abs(a.x - b.x) <= 1 ? 'y' : null;
+      const isInt = (v: number) => Math.abs(v - Math.round(v)) <= 0.01;
+      const axis =
+        Math.abs(a.y - b.y) <= 0.01 && isInt(a.y) && isInt(a.x) && isInt(b.x) ? 'x' :
+        Math.abs(a.x - b.x) <= 0.01 && isInt(a.x) && isInt(a.y) && isInt(b.y) ? 'y' :
+        null;
       if (axis) {
         const line = Math.round(axis === 'x' ? a.y : a.x);
-        const lo = Math.round(Math.min(axis === 'x' ? a.x : a.y, axis === 'x' ? b.x : b.y));
-        const hi = Math.round(Math.max(axis === 'x' ? a.x : a.y, axis === 'x' ? b.x : b.y));
+        const aCoord = axis === 'x' ? a.x : a.y;
+        const bCoord = axis === 'x' ? b.x : b.y;
+        const lo = Math.round(Math.min(aCoord, bCoord));
+        const hi = Math.round(Math.max(aCoord, bCoord));
         if (hi <= lo) continue;
-        const center = axis === 'x' ? room.y + room.height / 2 : room.x + room.width / 2;
-        const side = (axis === 'x' ? center > line : center < line) ? 'left' : 'right';
+        const side: 'left' | 'right' = (ccw === (aCoord <= bCoord)) ? 'left' : 'right';
         const key = `${axis}:${line}`;
         groups.set(key, [
           ...(groups.get(key) ?? []),
@@ -86,8 +91,7 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
         if (hi - lo <= 1) continue;
         const loPt = pa <= pb ? a : b;
         const hiPt = pa <= pb ? b : a;
-        const dot = (centroid.x - a.x) * (-uy) + (centroid.y - a.y) * ux;
-        const side: 'left' | 'right' = dot >= 0 ? 'left' : 'right';
+        const side: 'left' | 'right' = (ccw === (pa <= pb)) ? 'left' : 'right';
         groups.set(key, [
           ...(groups.get(key) ?? []),
           { kind: 'general', ux, uy, originX, originY, lo, hi, loPt, hiPt, room, side },
