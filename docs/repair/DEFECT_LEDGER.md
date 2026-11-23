@@ -54,3 +54,16 @@ See [Phase 2 architectural verification](PHASE2_ARCHITECTURAL_VERIFICATION.md) f
 | Export trust and default drawing content | GLB downloads verify the expected revision and canonical source digest. Architectural PDF defaults exclude structural overlays. Unsupported Unicode labels raise an explicit error before publishing a drawing. |
 
 See [Phase 3 verification](PHASE3_FINAL_VERIFICATION.md) for inputs, test runs, native evidence and remaining gaps. Phase 4 adapter contracts are recorded in [integration readiness](PHASE4_INTEGRATION_READINESS.md).
+
+## Phase 3.5 release gates
+
+| Defect | Reproduced state | Disposition |
+| --- | --- | --- |
+| Provider health and late generation response | Health accepted the presence of a key as reachability. The legacy browser gave up after 45 seconds during live provider retries and could switch to its local solver before the backend answered. | Probe Google for credential acceptance. Increase the worker deadline, retain failure codes and display model fallback or local planning in the study. |
+| AI guidance could reject a feasible brief | Gemini’s alternate guidance failed the mandatory room and access requirements on a live four-flat request. | Keep the mandatory audit and test the same brief without optional guidance. The verified alternate differed in geometry and respected all four requirements. |
+| Limited local editing | Rectangular partitions only. Edits applied immediately, and strict and advisory carpet targets could be conflated during retargeting. | Audited straight partition moves with oblique geometry, fixed returns, hosted-opening checks, area target verification, before/after preview and stale-revision refusal. |
+| Localized Unicode labels | Drawing PDFs rejected Indic labels and compliance reports replaced non-ASCII characters. | Embed and shape fonts and preserve searchable logical labels. Independently reopened Marathi, Hindi, Bengali, Gujarati, Tamil and Latin drawing text. |
+| Cinematic UI regression checks | Attribution and inspector controls had disappeared, and some selectors used former captions. | Restore attribution, the inspector toggle and the design-review entry point. The extended production walkthrough and WebGL cleanup checks remain open. |
+| CAD and IFC adapter review | External source provenance and native reader fidelity remain unverified. | Add isolated outbound contract and manifest checks. External source and license review remain open. |
+
+See [Phase 3.5 verification](PHASE35_RELEASE_GATE_VERIFICATION.md) for results and remaining release gates.

@@ -84,3 +84,11 @@ The apartment editor's validated local revisions support opening edits and full-
 See [Phase 3 engineering verification](PHASE3_FINAL_VERIFICATION.md) for actual results and unresolved acceptance. [Phase 4 integration readiness](PHASE4_INTEGRATION_READINESS.md) defines the adapter contracts and remaining gates. Phase 4 production integration is NOT READY.
 
 Final verification passed 1,731 monorepo tests with 8 opt-in skips, 52 integration tests and 14 Chromium repair tests. Native fixture results and the supplemental legacy browser failures are recorded in the verification report.
+
+## Phase 3.5 handoff
+
+The local repair workflow verified Gemini credentials by contacting Google and exercised the default wizard and a strict architectural brief. The production route retains the audit and records when rejected AI guidance requires a deterministic interpretation of the same brief. In-progress browser requests surface their fallback reason.
+
+The canonical editor previews changes before acceptance and protects the current revision and lock state. The partition change supports straight returns on skewed room geometry. Unicode plan PDFs were independently reopened and rendered.
+
+See [Phase 3.5 verification](PHASE35_RELEASE_GATE_VERIFICATION.md) and the [CAD and IFC adapter contract](../integration/PHASE4_CAD_BIM_ADAPTER_CONTRACT.md). Phase 4 production integration remains NOT READY pending source and license review and native exchange validation.

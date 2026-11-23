@@ -18,6 +18,7 @@ import {
   Save,
   FileUp,
   Library,
+  Sparkles,
 } from 'lucide-react';
 import type { Building, BuildingMassingShape, GalleryCoordinationMode, PlanCategory } from '@ai-floor-planner/core';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
@@ -31,6 +32,7 @@ import { InteractivePlanEditorPage } from './InteractivePlanEditorPage';
 import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { UdcprEtabsAnalysis } from './UdcprEtabsAnalysis';
 import { GenerationProgressModal } from './GenerationProgressModal';
+import { DesignAssistant } from './DesignAssistant';
 import { CommandPalette } from '../workspace/CommandPalette';
 import { exportProjectAsJsonFile, projectStorage } from '../../services/storage';
 import {
@@ -272,6 +274,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const shapeExplicitlyLocked = useRef<boolean>(false);
   const [generationSeed, setGenerationSeed] = useState(1);
   const [generationError, setGenerationError] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const canOpenReview = activeWorkspace === 'cad_2d' || activeWorkspace === 'edit_plan';
   const [saveWarning, setSaveWarning] = useState('');
   const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
 
@@ -799,6 +803,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
           {/* Right: Import CAD + Save + Library + FT/M Toggle + Lighting Switch + Live Compliance Pill */}
           <div className="rh-topbar-right">
+            {canOpenReview && <button type="button" aria-label="Architectural design review" aria-expanded={reviewOpen}
+              title="Architectural design review" className="rh-topbar-tab"
+              onClick={() => setReviewOpen(open => !open)}>
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>}
             <button
               type="button"
               data-testid="topbar-import-cad"
@@ -1067,6 +1076,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
               </div>
             )}
 
+            {canOpenReview && reviewOpen && <DesignAssistant key={editor.projectId} editor={editor}
+              onClose={() => setReviewOpen(false)} onEdit={() => { setReviewOpen(false); setActiveWorkspace('edit_plan'); }} />}
             <GenerationProgressModal
               isOpen={isGenerating}
               progress={pipelineProgress}

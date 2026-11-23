@@ -91,6 +91,7 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
     }
   };
   const [showCadUnderlay, setShowCadUnderlay] = useState(false);
+  const [showInspector, setShowInspector] = useState(true);
   const sourceCadUnderlay = editor.building.metadata.sourceCadUnderlay;
   const underlayBounds = useMemo(() => {
     const pts = sourceCadUnderlay?.polylines.flatMap(pl => pl.points) ?? [];
@@ -341,6 +342,11 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             </button>
           ))}
         </div>
+        <button type="button" aria-expanded={showInspector} aria-controls="drawing-inspector"
+          className="rounded bg-slate-800 px-3 py-2 text-xs text-slate-200"
+          onClick={() => setShowInspector(visible => !visible)}>
+          {showInspector ? 'Hide inspector' : 'Show inspector'}
+        </button>
         <div
           className="argon-tool-strip argon-discipline-toolbar flex flex-wrap items-center gap-1.5"
           role="toolbar"
@@ -419,7 +425,8 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             </div>
           )}
         </div>
-        <aside className="w-full overflow-auto border-t border-slate-700 bg-slate-900 p-5 lg:w-80 lg:border-l lg:border-t-0">
+        <aside id="drawing-inspector" aria-label="Drawing inspector" hidden={!showInspector}
+          className="rh-drawing-inspector w-full overflow-auto border-t border-slate-700 bg-slate-900 p-5 lg:w-80 lg:border-l lg:border-t-0">
           <PropertyInspector editor={editor} embedded />
           <h2 className="font-bold">Geometry audit · revision {editor.building.version}</h2>
           <p className={`my-3 text-sm ${report.isValid ? 'text-emerald-300' : 'text-amber-300'}`}>
