@@ -22,15 +22,13 @@ const config: MultiSheetApartmentConfig = {
   terraceAmenities: DEFAULT_TERRACE_AMENITIES,
 };
 
-it('returns a useful rejection without publishing the real solver output that failed geometry', async () => {
-  const audit = await executeAuditedPlanningPipeline(config);
-  expect(audit.validationReport.isValid).toBe(false);
-  expect(audit.validationReport.errors).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'FLOATING_COLUMN' })]));
-  const result = await handleProjectGeneration({ config }, { gemini: null });
+it('returns a useful rejection without publishing geometry that misses a required area', async () => {
+  const infeasible = { ...config, targetAreaSqFt: 8000, areaTargetScope: 'PER_APARTMENT_CARPET' as const, requireAreaTargets: true };
+  const result = await handleProjectGeneration({ config: infeasible }, { gemini: null });
   expect(result.status).toBe(422);
   expect(result.json).toMatchObject({ error: {
     code: 'GENERATION_CHECKS_FAILED',
-    findings: expect.arrayContaining([expect.objectContaining({ code: 'FLOATING_COLUMN' })]),
+    findings: expect.arrayContaining([expect.objectContaining({ code: 'AREA_TARGET_UNMET' })]),
   } });
   expect(result.json).not.toHaveProperty('building');
 }, 30_000);

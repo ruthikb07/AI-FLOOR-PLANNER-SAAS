@@ -1,4 +1,5 @@
 import {
+  APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM,
   DoorType,
   RoomType,
   WallType,
@@ -476,9 +477,11 @@ function remapDoorsToWalls(
   const result: Door[] = [];
   for (const door of origDoors) {
     const [rA, rB] = door.connectsRooms;
-    const candidates = newWalls.filter(
-      w => w.roomIds.includes(rA) && w.roomIds.includes(rB),
-    );
+    const exterior = rA === '__outside__' || rB === '__outside__';
+    const interiorRoom = rA === '__outside__' ? rB : rA;
+    const candidates = newWalls.filter(w => exterior
+      ? w.wallUse === 'EXTERNAL' && w.roomIds.length === 1 && w.roomIds.includes(interiorRoom)
+      : w.roomIds.includes(rA) && w.roomIds.includes(rB));
     if (!candidates.length) continue;
     candidates.sort((w1, w2) => {
       // Never pick an OPEN_BOUNDARY for a physical door leaf when a physical wall exists
@@ -790,89 +793,107 @@ export function applyParametricShapeToFloor(params: {
     shapeParams ?? shapeEntry.defaultParams,
   );
 
-  const transformedPolys = subdividedPolys.map((pts, rIdx) => {
-    if (pinnedRoomIndices.has(rIdx)) return pts;
-    return pts.map(transformPt);
-  });
-
-  const morphedRooms = attachArcSpecsToRooms(
-    builtRooms,
-    curvedChainsByRoom,
-    transformedPolys,
-    shapeEntry.id,
-    wantsCurves,
-  );
-
-  // Guard against any self-intersecting / zero-area deformation
-  if (morphedRooms.some(r => polygonArea(r.boundary) < 100_000)) {
-    return { floor, appliedShapeId: shapeId };
-  }
-
-  try {
-    const rawWalls = generateApartmentWalls(morphedRooms, floor.id, floor.boundary);
-    const newBoundary = apartmentFloorOutline(rawWalls);
-
-    // Tag Duplex / Luxury Villa internal feature rooms if applicable
-    const taggedRooms = morphedRooms.map(r => {
-      const tags = new Set(r.tags);
-      tags.add(`shape:${shapeEntry.id}`);
-      if (planCategory) tags.add(`category:${planCategory}`);
-      return { ...r, tags: [...tags] };
+  function morph(strength: number): Floor | undefined {
+    const transformedPolys = subdividedPolys.map((pts, rIdx) => {
+      if (pinnedRoomIndices.has(rIdx)) return pts;
+      return pts.map(point => {
+        const mapped = transformPt(point);
+        return strength === 1 ? mapped : {
+          x: r3(point.x + (mapped.x - point.x) * strength),
+          y: r3(point.y + (mapped.y - point.y) * strength),
+        };
+      });
     });
 
-    const newDoors = remapDoorsToWalls(floor.doors, rawWalls, floor.id);
-    const newWindows = remapWindowsToWalls(floor.windows, rawWalls, newDoors, taggedRooms, floor.id);
+    const morphedRooms = attachArcSpecsToRooms(
+      builtRooms,
+      curvedChainsByRoom,
+      transformedPolys,
+      shapeEntry.id,
+      wantsCurves,
+    );
 
-    const openWallIds = new Set([...newDoors.map(d => d.wallId), ...newWindows.map(w => w.wallId)]);
-    const finalizedWalls: Wall[] = rawWalls.map(w => ({
-      ...w,
-      hasOpening: openWallIds.has(w.id),
-      ...(w.wallUse === 'EXTERNAL' && w.type === WallType.External ? {} : {}),
-    }));
-
-    // Recompute unit boundaries cleanly from each unit's morphed rooms
-    const newUnits = (floor.apartmentUnits ?? []).map(u => {
-      const uRooms = taggedRooms.filter(r => r.unitId === u.id);
-      if (!uRooms.length) return u;
-      try {
-        const uWalls = generateApartmentWalls(uRooms, floor.id, newBoundary);
-        return { ...u, boundary: apartmentFloorOutline(uWalls) };
-      } catch {
-        return u;
-      }
-    });
-
-    // Keep columns that sit comfortably inside the sculpted perimeter
-    const validCols = floor.columns.filter(c => pointNearPolygon(c.position, newBoundary, 260));
-    const ensuredCols = validCols.length >= 4 ? validCols : floor.columns;
-
-    const morphedFloor: Floor = {
-      ...floor,
-      boundary: newBoundary,
-      rooms: taggedRooms,
-      walls: finalizedWalls,
-      doors: newDoors,
-      windows: newWindows,
-      columns: ensuredCols,
-      apartmentUnits: newUnits,
-    };
-
-    const ledger = measureApartmentAreaLedger(morphedFloor);
-    if (
-      !ledger.supported ||
-      Math.abs(ledger.delta) >= 0.001 ||
-      ledger.unassigned >= 0.001 ||
-      ledger.overlap >= 0.001 ||
-      ledger.roomVoidOverlap >= 0.001
-    ) {
-      // Fall back cleanly rather than emitting a non-conserved floor
-      return { floor, appliedShapeId: shapeId };
+    // Guard against any self-intersecting / zero-area deformation
+    if (morphedRooms.some(r => polygonArea(r.boundary) < 100_000)) {
+      return undefined;
     }
 
-    return { floor: morphedFloor, appliedShapeId: shapeEntry.id };
-  } catch {
-    return { floor, appliedShapeId: shapeId };
+    try {
+      const rawWalls = generateApartmentWalls(morphedRooms, floor.id, floor.boundary);
+      const newBoundary = apartmentFloorOutline(rawWalls);
+
+      // Tag Duplex / Luxury Villa internal feature rooms if applicable
+      const taggedRooms = morphedRooms.map(r => {
+        const tags = new Set(r.tags);
+        tags.add(`shape:${shapeEntry.id}`);
+        if (planCategory) tags.add(`category:${planCategory}`);
+        return { ...r, tags: [...tags] };
+      });
+
+      const newDoors = remapDoorsToWalls(floor.doors, rawWalls, floor.id);
+      const newWindows = remapWindowsToWalls(floor.windows, rawWalls, newDoors, taggedRooms, floor.id);
+
+      const openWallIds = new Set([...newDoors.map(d => d.wallId), ...newWindows.map(w => w.wallId)]);
+      const finalizedWalls: Wall[] = rawWalls.map(w => ({
+        ...w,
+        hasOpening: openWallIds.has(w.id),
+        ...(w.wallUse === 'EXTERNAL' && w.type === WallType.External ? {} : {}),
+      }));
+
+      // Recompute unit boundaries cleanly from each unit's morphed rooms
+      const newUnits = (floor.apartmentUnits ?? []).map(u => {
+        const uRooms = taggedRooms.filter(r => r.unitId === u.id);
+        if (!uRooms.length) return u;
+        try {
+          const uWalls = generateApartmentWalls(uRooms, floor.id, newBoundary);
+          return { ...u, boundary: apartmentFloorOutline(uWalls) };
+        } catch {
+          return u;
+        }
+      });
+
+      // Keep columns that sit comfortably inside the sculpted perimeter
+      const validCols = floor.columns.filter(c => pointNearPolygon(c.position, newBoundary, 260));
+      const ensuredCols = validCols.length >= 4 ? validCols : floor.columns;
+
+      const morphedFloor: Floor = {
+        ...floor,
+        boundary: newBoundary,
+        rooms: taggedRooms,
+        walls: finalizedWalls,
+        doors: newDoors,
+        windows: newWindows,
+        columns: ensuredCols,
+        apartmentUnits: newUnits,
+      };
+
+      const ledger = measureApartmentAreaLedger(morphedFloor);
+      if (
+        !ledger.supported ||
+        Math.abs(ledger.delta) >= 0.001 ||
+        ledger.unassigned >= 0.001 ||
+        ledger.overlap >= 0.001 ||
+        ledger.roomVoidOverlap >= 0.001
+      ) {
+        // Fall back cleanly rather than emitting a non-conserved floor
+        return undefined;
+      }
+
+      const preservedDoorIds = new Set(morphedFloor.doors.map(door => door.id));
+      if (floor.doors.some(door => !preservedDoorIds.has(door.id))
+        || ledger.balconies.some(balcony => balcony.usableDepth < APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM)) return undefined;
+      return morphedFloor;
+    } catch {
+      return undefined;
+    }
   }
+
+  // Back off the sculpt rather than accepting a narrow deck or losing a door.
+  for (const strength of [1, 0.75, 0.5, 0.25]) {
+    const candidate = morph(strength);
+    if (candidate) return { floor: candidate, appliedShapeId: shapeEntry.id };
+  }
+  return { floor, appliedShapeId: shapeId };
 }
 
 export function buildFurniturePolygonContainmentGuard(room: Room, xMm: number, yMm: number, wMm: number, dMm: number, rotDeg = 0): boolean {

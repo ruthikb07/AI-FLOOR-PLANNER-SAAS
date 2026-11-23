@@ -2,6 +2,7 @@ import type { GalleryCoordinationMode } from '@ai-floor-planner/core';
 
 /** Deterministic supported placement clauses; no inferred engineering approval. */
 export interface ArchitecturalPlacement {
+  readonly noBalconies?: boolean;
   liftSide: 'EAST' | 'WEST';
   otsPlacement: 'CENTRAL' | 'SIDE';
   coreCompactness: 'STANDARD' | 'COMPACT';

@@ -68,6 +68,8 @@ export interface MandatoryRequirements {
   readonly everyBathroomVentilated: true;
   readonly everyFlatAccessibleFromCommonCore: true;
   readonly stairCount: number;
+  readonly stairCountRequired?: boolean;
+  readonly noBalconies?: boolean;
   readonly withinBuildingEnvelope: true;
   /** Set only when the brief states a core side as a requirement. */
   readonly corePlacement?: CorePreference;
@@ -77,6 +79,7 @@ export interface MandatoryRequirements {
   readonly centerBuilding?: boolean;
   /** Set when the brief explicitly asks for a single central lift car rather than a multi-lift bank. */
   readonly singleLift?: boolean;
+  readonly singleLiftRequired?: boolean;
   /** Explicit area target in sq. ft. when stated in brief or config. */
   readonly targetAreaSqFt?: number;
   /** Explicit scope for targetAreaSqFt. */
@@ -201,8 +204,10 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
   let minimizeCorridor = false;
   let bedroomBalconies: SoftPreferences['bedroomBalconies'] = 'NONE_REQUESTED';
   let stairCount = 2;
+  let stairCountRequired = false;
   let centerBuilding = false;
   let singleLift = false;
+  let singleLiftRequired = false;
   let targetAreaSqFt: number | undefined;
   let areaTargetScope: MandatoryRequirements['areaTargetScope'];
   let properSpaceUtilization = false;
@@ -287,6 +292,10 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
       ) {
         coreIsRequired = true;
       }
+      if (has(clause, /\b(?:one|1|single)\s+(?:central\s+)?(?:lift|elevator)\b/)) {
+        singleLift = true;
+        singleLiftRequired = true;
+      }
       if (has(clause, /\b(?:one|1|single|central)\s+lift\b/) && !has(clause, /\blift\s+(?:core|bank|shafts)\b/) && !has(clause, /\blifts\b/)) {
         singleLift = true;
       }
@@ -296,10 +305,12 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
 
       const stairMatch = clause.match(/\b(one|two|three|1|2|3)\s+(?:fire\s+)?(?:stairs?|staircases?)\b/);
       if (stairMatch) {
+        stairCountRequired = true;
         const word = stairMatch[1]!;
         stairCount = word === 'one' || word === '1' ? 1 : word === 'three' || word === '3' ? 3 : 2;
       } else if (has(clause, /\b(?:stairs?|staircases?)\s+(?:positioned\s+)?on\s+(?:both|either)\s+sides?\b/)) {
         stairCount = 2;
+        stairCountRequired = true;
       }
     }
 
@@ -440,11 +451,14 @@ export function interpretArchitecturalIntent(input: InterpretIntentInput): Archi
     everyBathroomVentilated: true,
     everyFlatAccessibleFromCommonCore: true,
     stairCount,
+    ...(stairCountRequired ? { stairCountRequired } : {}),
+    ...(/\b(?:no|without)\s+(?:any\s+)?balcon(?:y|ies)\b/i.test(prompt) ? { noBalconies: true } : {}),
     withinBuildingEnvelope: true,
     ...(coreIsRequired && corePick ? { corePlacement: corePick } : {}),
     ...(ventIsRequired && ventPick ? { ventilationStrategy: ventPick } : {}),
     ...(centerBuilding ? { centerBuilding: true } : {}),
     ...(singleLift ? { singleLift: true } : {}),
+    ...(singleLiftRequired ? { singleLiftRequired: true } : {}),
     ...(targetAreaSqFt !== undefined ? { targetAreaSqFt } : {}),
     ...(areaTargetScope !== undefined ? { areaTargetScope } : {}),
   };

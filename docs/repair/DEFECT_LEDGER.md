@@ -27,3 +27,16 @@ Baseline `1e0d1fefd87e8550b648e1c62732c5e5c7cf24ce`.
 ## Final disposition
 
 The six repair areas above are covered by the regressions and verification in [the phase handoff](PHASE_HANDOFF.md). Candidate quality failures remain visible as solver or framing findings and require their own diagnosis. Hosted multi-user authorization and native/provider verification are separate remaining gates.
+
+## Phase 2 generation and geometry repairs
+
+| Defect | Reproduced state | Disposition |
+| --- | --- | --- |
+| A1/A2 provisional columns | Real audit rejected a 42 × 34 m apartment and stilt staff toilet at seed 1. | Cross-floor support hosts and spacing repaired. Preliminary columns remain concept geometry. |
+| A3/A4 floor shape and plot feasibility | 32 × 36 m seed 2 produced a 718 mm balcony and rejected candidate. Irregular DXF import also rejected. | Ledger-preserving shape backoff and frontages repaired; the two stack profiles and the DXF now pass the unchanged mandatory gate. |
+| A5 openings and circulation | A 1,200 mm stair boundary was selected as a host for a 1,200 mm passage marker with no fitting returns. | Stair-host selection uses the actual opening fit; foyer repair retains doors and windows across wall rebuilds. |
+| B1/B2 area allocation and accuracy | Fixed 310.08 m² floor-plate floor and 15% tolerance produced incorrect outcomes. Unequal target dimensions had no effect in the spaced dual-wing row. | Measured area buckets, target-weighted rows, bounded sizing and configurable tolerance. Strict misses are rejected and advisory misses are shown. |
+| C1/C2 mandatory brief and unit support | The no-balcony brief still built balconies. CAD and Studio stopped unit selection at four; exhausted searches could reuse rejected variant IDs. | Honor the supported negative balcony brief, validate core and type/count outputs, expose 1–6 counts, and exclude rejected topology candidates. |
+| D1/D2 provider attribution | Provider and deterministic interpretation were ambiguous after errors; unvalidated reference responses could supply default spatial hints. | Report Gemini attempt, model and deterministic fallback separately with sanitized errors. Apply only validated attached-image hints. |
+
+See [Phase 2 architectural verification](PHASE2_ARCHITECTURAL_VERIFICATION.md) for exact configurations, measurements, regression files, and limits. Remaining work includes strict per-unit fit for more irregular and mixed layouts, broader final-geometry diversity checks, additional reference-image spatial constraints, and statutory and native structural verification.

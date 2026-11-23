@@ -40,7 +40,12 @@ self.onmessage = async (event: MessageEvent<PlanningRequest>) => {
   const { generationRunId, config } = event.data;
   try {
     const result = await tryBackendHybridGeneration(event.data)
-      ?? await executeAuditedPlanningPipeline(config, progress => {
+      ?? await executeAuditedPlanningPipeline({ ...config,
+        aiTelemetryOverride: { geminiInvoked: false, provider: 'deterministic-rule-engine',
+          interpretationSource: 'DETERMINISTIC', fallbackTriggered: true,
+          fallbackReason: 'The planning backend was unavailable. Generation ran locally.',
+          referenceImageUsedForGeometry: false },
+      }, progress => {
         self.postMessage({ type: 'progress', generationRunId, progress });
       });
     requireAcceptedGeneration(result);

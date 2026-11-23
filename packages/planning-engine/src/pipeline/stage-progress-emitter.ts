@@ -1,3 +1,4 @@
+import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
 /**
  * Pipeline Stage Progress Emitter & Observable Coordinator (§1A).
@@ -214,7 +215,9 @@ export async function executeAuditedPlanningPipeline(
         || !Number.isInteger(config.numTypicalFloors) || config.numTypicalFloors < 1 || config.numTypicalFloors > 40
         || ![1, 2, 3, 4, 5, 6].includes(config.flatsPerFloor)
         || config.units?.length !== config.flatsPerFloor
-        || config.units.some(unit => !/^[1-4]BHK$/.test(unit.bhkType))
+        || config.units.some((unit, index) => !/^[1-4]BHK$/.test(unit.bhkType) || unit.unitIndex !== index + 1
+          || (unit.targetCarpetSqFt !== undefined && (!Number.isFinite(unit.targetCarpetSqFt) || unit.targetCarpetSqFt <= 0)))
+        || (config.areaAcceptanceTolerancePercent !== undefined && !(config.areaAcceptanceTolerancePercent >= 0 && config.areaAcceptanceTolerancePercent < 100))
         || (config.setbacksMm && Object.values(config.setbacksMm).some(value => !Number.isFinite(value) || value < 0))) {
         throw new Error('Provide positive plot/road dimensions, 1–40 floors, valid setbacks and an exact 1–6 unit BHK mix.');
       }
@@ -229,7 +232,7 @@ export async function executeAuditedPlanningPipeline(
       next('COLUMN_AND_BEAM_GRID');
     }
     next('GEOMETRY_ZERO_ERROR_AUDIT');
-    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: 800 });
+    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: MIN_PROVISIONAL_COLUMN_SPACING_MM });
     const audit = validator.audit(building, false);
     const closureErrors = building.floors.filter(f => f.apartmentUnits?.length).flatMap(floor =>
       validateApartmentClosure({ ...building, floors: [floor] }).issues.filter(issue => issue.severity === 'error')

@@ -1591,7 +1591,7 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
   let rooms = floor.rooms.map(r => ({ ...r }));
   let walls = floor.walls.map(w => ({ ...w }));
   let doors = floor.doors.map(d => ({ ...d }));
-  const windows = floor.windows.map(w => ({ ...w }));
+  let windows = floor.windows.map(w => ({ ...w }));
   let healed = false;
 
   // 1. Ensure party walls dividing units meet 230 mm minimum thickness
@@ -1695,31 +1695,44 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
     );
     const guardHeight = walls.find(w => w.boundaryRole === 'PARAPET')?.heightMm;
     const candidateWalls = generateApartmentWalls(candidateRooms, floor.id, floor.boundary, true, guardHeight);
-    const candidateFloor: Floor = { ...floor, rooms: candidateRooms, walls: candidateWalls, doors, windows };
+    const reboundWindows = windows.flatMap(window => {
+      const previousHost = walls.find(wall => wall.id === window.wallId);
+      const host = candidateWalls.find(wall => wall.roomIds.includes(window.roomId)
+        && wall.wallUse === previousHost?.wallUse && openingFitsApartmentWall(wall, window.position, window.width));
+      return host ? [{ ...window, wallId: host.id }] : [];
+    });
+    if (reboundWindows.length !== windows.length) continue;
+
+    const reboundDoors: Door[] = [];
+    for (const door of doors) {
+      const exterior = door.connectsRooms.includes('__outside__');
+      const hostRooms = door.connectsRooms.filter(id => id !== '__outside__');
+      const matchingWalls = candidateWalls.filter(wall => hostRooms.every(id => wall.roomIds.includes(id))
+        && (!exterior || (wall.wallUse === 'EXTERNAL' && wall.roomIds.length === 1)));
+      const previousPositionHost = matchingWalls.find(wall => openingFitsApartmentWall(wall, door.position, door.width));
+      const positions = matchingWalls.map(wall => ({
+        wall, position: {
+          x: (wall.startPoint.x + wall.endPoint.x) / 2,
+          y: (wall.startPoint.y + wall.endPoint.y) / 2,
+        },
+      }));
+      if (previousPositionHost) positions.unshift({ wall: previousPositionHost, position: door.position });
+      const fit = positions.find(({ wall, position }) => openingFitsApartmentWall(wall, position, door.width)
+        && ![...reboundDoors, ...reboundWindows].some(opening => opening.wallId === wall.id
+          && Math.hypot(position.x - opening.position.x, position.y - opening.position.y) < (door.width + opening.width) / 2));
+      if (!fit) break;
+      reboundDoors.push({ ...door, wallId: fit.wall.id, position: fit.position });
+    }
+    if (reboundDoors.length !== doors.length) continue;
+
+    const candidateFloor: Floor = {
+      ...floor, rooms: candidateRooms, walls: candidateWalls, doors: reboundDoors, windows: reboundWindows,
+    };
     if (Math.abs(measureApartmentAreaLedger(candidateFloor).delta) < 0.001) {
       rooms = candidateRooms;
       walls = candidateWalls;
-      // Rebind doors connected between foyer and living onto the moved shared wall
-      doors = doors.map(d => {
-        if (d.connectsRooms.includes(foyer.id) || d.connectsRooms.includes(living.id)) {
-          const matchedWall = candidateWalls.find(w =>
-            d.connectsRooms.every(cid => w.roomIds.includes(cid)) ||
-            (((d as Door & { isFlatEntrance?: boolean }).isFlatEntrance ||
-              d.connectsRooms.some(cid => rooms.find(r => r.id === cid)?.spaceUse === 'COMMON')) &&
-              w.roomIds.some(rid => rid === foyer.id || rid === living.id)),
-          );
-          if (matchedWall) {
-            const mx = Math.round((matchedWall.startPoint.x + matchedWall.endPoint.x) / 2);
-            const my = Math.round((matchedWall.startPoint.y + matchedWall.endPoint.y) / 2);
-            return {
-              ...d,
-              wallId: matchedWall.id,
-              position: openingFitsApartmentWall(matchedWall, d.position, d.width) ? d.position : { x: mx, y: my },
-            };
-          }
-        }
-        return d;
-      });
+      doors = reboundDoors;
+      windows = reboundWindows;
       healed = true;
     }
   }

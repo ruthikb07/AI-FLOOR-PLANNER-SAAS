@@ -146,17 +146,30 @@ describe('RH Planner Local Web-Use: Real CAD Import, Local Disk Library & All Ca
     fs.rmSync(tempProjectsDir, { recursive: true, force: true });
   });
 
-  it('does not publish failed plot-generated geometry as a CAD import result', async () => {
+  it('accepts repaired CAD generation and rejects a plot that cannot host the same program', async () => {
     const inputs = {
       action: 'import_plot', fileName: 'irregular-site-42a.dxf', contentText: IRREGULAR_PLOT_DXF,
       setbacksMm: { front: 3000, rear: 2000, left: 2000, right: 2000 },
       numTypicalFloors: 2, flatsPerFloor: 4, buildingMassingShape: 'IRREGULAR_ANGLED_PLOT',
     };
-    const response = await fetch(serverUrl + '/api/v1/import/cad-layout', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inputs),
+    const importPlot = (payload: typeof inputs) => fetch(serverUrl + '/api/v1/import/cad-layout', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     });
-    expect(response.status).toBe(422);
-    expect(await response.json()).toMatchObject({ error: { code: 'GENERATION_CHECKS_FAILED' } });
+    const response = await importPlot(inputs);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      building: { metadata: { generationRunId: expect.any(String) }, floors: expect.any(Array) },
+    });
+
+    const tightPlot = wrapDxf([makeDxfPolyline('SITE-BOUNDARY', [[0, 0], [19, 2], [17, 22], [1, 21]])], 6);
+    const rejected = await importPlot({ ...inputs, fileName: 'tight-site.dxf', contentText: tightPlot });
+    expect(rejected.status).toBe(422);
+    const result = await rejected.json();
+    expect(result).toMatchObject({ error: { code: 'GENERATION_CHECKS_FAILED',
+      findings: expect.arrayContaining([expect.objectContaining({ code: 'INVALID_BUILDING' })]),
+    } });
+    expect(result).not.toHaveProperty('building');
   }, 30_000);
 
   it('imports a real .DXF irregular quadrilateral plot boundary and generates a multi-storey apartment inside setbacks', () => {

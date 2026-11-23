@@ -82,6 +82,7 @@ export function placementFromProgram(
     kitchenStyle: p.kitchenStyle === 'OPEN' ? 'OPEN' : 'ENCLOSED',
     sitoutSize: p.sitoutSize,
     entranceStyle: 'LIVING_FIRST',
+    noBalconies: program.mandatory.noBalconies,
     bedroomBalconies: p.bedroomBalconies === 'NONE_REQUESTED' ? 'STANDARD' : 'ALL_BEDROOMS',
     ...(opts?.staggeredBalconies !== undefined ? { staggeredBalconies: opts.staggeredBalconies } : {}),
     ...(opts?.galleryCoordinationMode ? { galleryCoordinationMode: opts.galleryCoordinationMode } : {}),

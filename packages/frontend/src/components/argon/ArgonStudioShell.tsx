@@ -1030,8 +1030,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             )}
 
             {generationFindings.length > 0 &&
-              (activeWorkspace === 'cad_2d' || activeWorkspace === 'engineering') &&
-              complianceSummary && !complianceSummary.passed && (
+              (activeWorkspace === 'cad_2d' || activeWorkspace === 'engineering' || activeWorkspace === 'concepts') && (
                 <details className="fixed bottom-4 right-4 z-30 max-w-md max-h-60 overflow-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-xs text-amber-950 shadow-lg backdrop-blur">
                   <summary>
                     {generationFindings.length} generation findings · Professional review required

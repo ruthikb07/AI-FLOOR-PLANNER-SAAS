@@ -147,7 +147,7 @@ const SAMPLE_PLOT_BOUNDARY_DXF = [
   '',
 ].join('\n');
 
-test('a plot DXF is measured but rejected when the generated plan fails mandatory checks', async ({ page }, info) => {
+test('a real plot DXF is measured and the repaired apartment is accepted', async ({ page }, info) => {
   test.setTimeout(180_000);
   const dxfPath = info.outputPath('e2e-irregular-plot.dxf');
   await writeFile(dxfPath, SAMPLE_PLOT_BOUNDARY_DXF, 'utf8');
@@ -175,11 +175,10 @@ test('a plot DXF is measured but rejected when the generated plan fails mandator
   const response = page.waitForResponse(answer => answer.url().endsWith('/api/v1/import/cad-layout')
     && answer.request().postDataJSON()?.action === 'import_plot');
   await page.getByTestId('cad-load-into-studio').click();
-  const rejected = await response;
-  expect(rejected.status()).toBe(422);
-  expect(await rejected.json()).toMatchObject({ error: { code: 'GENERATION_CHECKS_FAILED' } });
-  const dialog = page.getByTestId('cad-import-modal');
-  await expect(dialog.getByRole('alert')).toContainText('the generated design failed checks');
-  expect(await page.evaluate(() => localStorage.getItem('ai_floor_planner_active_id'))).toBe(activeId);
+  const generated = await response;
+  expect(generated.status()).toBe(200);
+  expect(await generated.json()).toMatchObject({ ok: true, building: { metadata: { generationRunId: expect.any(String) } } });
+  await expect(page.getByTestId('cad-import-modal')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('ai_floor_planner_active_id'))).not.toBe(activeId);
   expect(pageErrors).toEqual([]);
 });

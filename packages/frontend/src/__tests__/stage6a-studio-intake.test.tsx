@@ -238,16 +238,19 @@ describe('STAGE 6A: Design Tokens, Atomic System, State Store & Intake Stages', 
       expect(html).toContain('Ground Floor Residential Units');
     });
 
-    it('renders Stage 3 with Double/Triple/Quad strategy and BHK mix matrix', () => {
+    it('renders all six Stage 3 strategies and the BHK mix matrix', () => {
       studioStoreActions.setFlatsPerFloor(4);
       studioStoreActions.setBhkCount('2BHK', 2);
       studioStoreActions.setBhkCount('3BHK', 2);
 
       const html = renderToStaticMarkup(<Stage3FlatsAndBhkMix />);
       expect(html).toContain('Flats Per Typical Floor Strategy');
+      expect(html).toContain('Single Flat Layout');
       expect(html).toContain('Double Flat Layout');
       expect(html).toContain('Triple Flat Layout');
       expect(html).toContain('Quad Flat Layout');
+      expect(html).toContain('Five Flat Layout');
+      expect(html).toContain('Six Flat Layout');
       expect(html).toContain('4 / 4 Flats Balanced');
     });
 

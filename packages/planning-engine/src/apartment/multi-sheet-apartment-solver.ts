@@ -6,6 +6,7 @@ import { createGenerationReport } from './generation-report';
 import type { GenerateConceptsResult } from '../topology/generative-topology-engine';
 import { architecturalSpaceRole, withArchitecturalElements, parseMixedUnitProgram, mixedUnitSpecs } from '@ai-floor-planner/core';
 import type { BuildingMassingShape } from '@ai-floor-planner/core';
+import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
 /**
  * Multi-Sheet Apartment Project Engine (Phase 1C).
  *
@@ -58,6 +59,7 @@ import {
 } from '@ai-floor-planner/core';
 import { repairApartmentPlan, healFloorGeometryForCompliance } from '../repair/apartment-error-repair';
 import { populateCanonicalFurniture } from '../plancraft/auto-furnish-apartment.js';
+import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import {
   deriveCornerLockedStructuralColumns,
   synthesizeCornerLockedBuildingFraming,
@@ -84,6 +86,8 @@ import {
   type RoomSlicingArchetypeId,
 } from '../interpretation/space-filling-snapper';
 import { selectProductionTopology, type SelectedTopology } from '../topology/production-bridge';
+import { FLAT_AREA_BOUNDS_SQM, requiredCoreBandWidth, requiredCoreBandLength } from '../topology/topology-families';
+import { measureResidentialFloorAreas, measureAreaTarget, SQUARE_METRES_PER_SQUARE_FOOT } from './apartment-area-targets';
 import { assembleStructureFromPartition } from '../topology/plan-assembler';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { validateAndRepairBuildingGeometry } from '../validator/geometry-validator';
@@ -2218,10 +2222,13 @@ export function generateApartmentProjectSchedule(params: {
   refugeSheet?: RefugeFloorSheetResult;
   terraceSheet: TerraceSheetResult;
   stackParams: BuildingStackParameters;
+  residentialFloors?: readonly Floor[];
+  minimumProgramGrossM2?: number;
+  permissibleEnvelopeAreaM2?: number;
 }): ApartmentProjectSchedule {
   const { config, siteSheet, stiltSheet, typicalSheet, refugeSheet, terraceSheet } = params;
 
-  const plotAreaM2 = (config.plotWidthMm * config.plotDepthMm) / 1e6;
+  const plotAreaM2 = polygonArea(siteSheet.site.plotBoundary) / 1e6;
   const plotAreaSqFt = plotAreaM2 * 10.7639;
 
   const typicalFloor = typicalSheet.floor;
@@ -2242,45 +2249,30 @@ export function generateApartmentProjectSchedule(params: {
         roadW >= 12000 ? 2.0 :
           roadW >= 9000 ? 1.5 : 1.2;
 
-  const floorBuiltUpM2 = groundCoverageM2;
-  const totalBuiltUpAreaM2 = floorBuiltUpM2 * config.numTypicalFloors;
+  const floorAreas = (params.residentialFloors ?? [typicalFloor]).map(floor => measureResidentialFloorAreas(floor, config));
+  const typicalAreas = floorAreas[0]!;
+  const totalBuiltUpAreaM2 = floorAreas.reduce((sum, floor) => sum + floor.builtUpMm2, 0) / 1e6;
   const consumedFsi = totalBuiltUpAreaM2 / plotAreaM2;
-
-  // Measure typical floor usable carpet per flat
-  const typicalLedger = measureApartmentAreaLedger(typicalFloor);
-  const flatSchedule: FlatScheduleItem[] = [];
-  let totalTypicalCarpetM2 = 0;
-
-  for (const flat of typicalSheet.structure.flats) {
-    const flatRooms = typicalFloor.rooms.filter(r => r.unitId === flat.id);
-    const carpetMm2 = flatRooms
-      .filter(r => r.spaceUse === 'UNIT' && r.type !== RoomType.Balcony)
-      .reduce((sum, r) => sum + (typicalLedger.roomUsable[r.id] ?? r.area), 0);
-    const balconyMm2 = flatRooms
-      .filter(r => r.spaceUse === 'OUTDOOR' || r.type === RoomType.Balcony)
-      .reduce((sum, r) => sum + (typicalLedger.roomUsable[r.id] ?? r.area), 0);
-
-    const carpetM2 = carpetMm2 / 1e6;
-    const balconyM2 = balconyMm2 / 1e6;
-    const totalUnitBuiltUpM2 = carpetM2 + balconyM2 + (carpetM2 + balconyM2) * 0.15; // +15% wall & pro-rata core
-
-    totalTypicalCarpetM2 += carpetM2;
-
-    flatSchedule.push({
+  const totalTypicalCarpetM2 = typicalAreas.carpetMm2 / 1e6;
+  const totalReraCarpetAreaM2 = floorAreas.reduce((sum, floor) => sum + floor.carpetMm2, 0) / 1e6;
+  const floorPlateEfficiencyPercent = totalTypicalCarpetM2 / (typicalAreas.builtUpMm2 / 1e6) * 100;
+  const flatSchedule: FlatScheduleItem[] = typicalSheet.structure.flats.map(flat => {
+    const measured = typicalAreas.units.find(unit => unit.unitId === flat.id);
+    const carpetM2 = (measured?.carpetMm2 ?? 0) / 1e6;
+    const balconyM2 = (measured?.balconyMm2 ?? 0) / 1e6;
+    const builtUpM2 = (measured?.builtUpMm2 ?? 0) / 1e6;
+    return {
       flatId: flat.id,
       flatNumber: flat.label,
       bhkType: flat.unitType as ApartmentBhkType,
       reraCarpetAreaM2: Math.round(carpetM2 * 100) / 100,
-      reraCarpetAreaSqFt: Math.round(carpetM2 * 10.7639),
+      reraCarpetAreaSqFt: Math.round(carpetM2 / SQUARE_METRES_PER_SQUARE_FOOT),
       balconyAreaM2: Math.round(balconyM2 * 100) / 100,
-      balconyAreaSqFt: Math.round(balconyM2 * 10.7639),
-      totalBuiltUpAreaM2: Math.round(totalUnitBuiltUpM2 * 100) / 100,
-      totalBuiltUpAreaSqFt: Math.round(totalUnitBuiltUpM2 * 10.7639),
-    });
-  }
-
-  const totalReraCarpetAreaM2 = totalTypicalCarpetM2 * config.numTypicalFloors;
-  const floorPlateEfficiencyPercent = (totalTypicalCarpetM2 / floorBuiltUpM2) * 100;
+      balconyAreaSqFt: Math.round(balconyM2 / SQUARE_METRES_PER_SQUARE_FOOT),
+      totalBuiltUpAreaM2: Math.round(builtUpM2 * 100) / 100,
+      totalBuiltUpAreaSqFt: Math.round(builtUpM2 / SQUARE_METRES_PER_SQUARE_FOOT),
+    };
+  });
 
   // Parking Ledger under UDCPR Table 13.1 / NBC 2016
   let reqCarStalls = 0;
@@ -2352,47 +2344,19 @@ export function generateApartmentProjectSchedule(params: {
   if (targetSqFt !== undefined && targetSqFt > 0) {
     const scope: AreaTargetScope =
       config.areaTargetScope ?? promptIntentForDiag?.mandatory.areaTargetScope ?? 'PER_APARTMENT_CARPET';
-    const requestedM2 = Math.round((targetSqFt / 10.7639) * 100) / 100;
-    const achievedM2 =
-      scope === 'GROSS_FLOOR_AREA'
-        ? Math.round(groundCoverageM2 * 100) / 100
-        : scope === 'FLOOR_TOTAL_CARPET'
-          ? Math.round(totalTypicalCarpetM2 * 100) / 100
-          : Math.round((totalTypicalCarpetM2 / Math.max(1, flatSchedule.length)) * 100) / 100;
-    const achievedSqFt = Math.round(achievedM2 * 10.7639 * 10) / 10;
-    const minHabitableGrossM2 = 310.08; // 20,400 x 15,200 mm minimum for 4 x 2BHK + 2 stairs + central lift
-    const relErr = Math.abs(achievedM2 - requestedM2) / Math.max(1, requestedM2);
-    let status: AreaTargetDiagnostic['status'];
-    let explanation: string;
-    if (scope === 'GROSS_FLOOR_AREA' && requestedM2 < minHabitableGrossM2) {
-      status = 'INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE';
-      explanation =
-        `Requested ${targetSqFt} sq. ft. (${requestedM2} m²) gross floor area is below the ${minHabitableGrossM2} m² ` +
-        `(${Math.round(minHabitableGrossM2 * 10.7639)} sq. ft.) minimum habitable floor plate required for ${config.flatsPerFloor} ` +
-        `units + 2 staircases + central lift under NBC 2016 / UDCPR minimums; clamped to minimum habitable floor plate.`;
-    } else if (relErr <= 0.15) {
-      status = 'ACHIEVED';
-      explanation = `Achieved ${achievedSqFt} sq. ft. (${achievedM2} m²) for ${scope} against ${targetSqFt} sq. ft. (${requestedM2} m²) target.`;
-    } else {
-      status = 'CLAMPED_TO_ENVELOPE_MAX';
-      explanation = `Target ${targetSqFt} sq. ft. (${requestedM2} m²) for ${scope} was bounded by the permissible plot envelope (${achievedSqFt} sq. ft. / ${achievedM2} m² achieved).`;
+    const measured = scope === 'GROSS_FLOOR_AREA' ? typicalAreas.grossMm2
+      : scope === 'FLOOR_TOTAL_CARPET' ? typicalAreas.carpetMm2
+      : (typicalAreas.units.length ? Math.min(...typicalAreas.units.map(unit => unit.carpetMm2)) : 0);
+    areaTargetDiagnostic = measureAreaTarget(targetSqFt, measured / 1e6, scope, config.areaAcceptanceTolerancePercent,
+      scope === 'GROSS_FLOOR_AREA' ? params.minimumProgramGrossM2 : undefined,
+      scope === 'PER_APARTMENT_CARPET' && params.permissibleEnvelopeAreaM2 !== undefined
+        ? params.permissibleEnvelopeAreaM2 / config.flatsPerFloor : params.permissibleEnvelopeAreaM2);
+    if (scope === 'PER_APARTMENT_CARPET' && areaTargetDiagnostic.status === 'ACHIEVED') {
+      const missed = typicalAreas.units
+        .map(unit => measureAreaTarget(targetSqFt, unit.carpetMm2 / 1e6, scope, config.areaAcceptanceTolerancePercent))
+        .find(target => target.status !== 'ACHIEVED');
+      if (missed) areaTargetDiagnostic = missed;
     }
-    areaTargetDiagnostic = {
-      scope,
-      requestedAreaSqFt: targetSqFt,
-      requestedAreaM2: requestedM2,
-      achievedAreaSqFt: achievedSqFt,
-      achievedAreaM2: achievedM2,
-      minFeasibleGrossAreaM2: minHabitableGrossM2,
-      minFeasibleGrossAreaSqFt: Math.round(minHabitableGrossM2 * 10.7639),
-      requestedSqFt: targetSqFt,
-      requestedM2,
-      achievedSqFt,
-      achievedM2,
-      minimumFeasibleGrossM2: minHabitableGrossM2,
-      status,
-      explanation,
-    };
   }
 
   return {
@@ -2409,6 +2373,7 @@ export function generateApartmentProjectSchedule(params: {
     totalReraCarpetAreaM2: Math.round(totalReraCarpetAreaM2 * 100) / 100,
     floorPlateEfficiencyPercent: Math.round(floorPlateEfficiencyPercent * 10) / 10,
     flatSchedule,
+    floorAreas,
     parking,
     sheetAudits,
     overallDeltaMm2,
@@ -2458,7 +2423,7 @@ function namespaceFloorEntities(floor: Floor): Floor {
     ...floor,
     rooms: floor.rooms.map(room => ({ ...room, id: id(room.id), floorId: floor.id, bathroomOwnerRoomId: reference(room.bathroomOwnerRoomId) })),
     walls: floor.walls.map(wall => ({ ...wall, id: id(wall.id), floorId: floor.id, roomIds: wall.roomIds.map(id), leftRoomId: reference(wall.leftRoomId), rightRoomId: reference(wall.rightRoomId) })),
-    doors: floor.doors.map(door => ({ ...door, id: id(door.id), floorId: floor.id, wallId: id(door.wallId), connectsRooms: [id(door.connectsRooms[0]), door.connectsRooms[1].startsWith('__') ? door.connectsRooms[1] : id(door.connectsRooms[1])] as const })),
+    doors: floor.doors.map(door => ({ ...door, id: id(door.id), floorId: floor.id, wallId: id(door.wallId), connectsRooms: door.connectsRooms.map(roomId => roomId.startsWith('__') ? roomId : id(roomId)) as [string, string] })),
     windows: floor.windows.map(window => ({ ...window, id: id(window.id), floorId: floor.id, wallId: id(window.wallId), roomId: id(window.roomId) })),
     stairs: floor.stairs.map(stair => ({ ...stair, id: id(stair.id), floorId: floor.id })),
     columns: floor.columns.map(column => ({ ...column, id: id(column.id), floorId: floor.id })),
@@ -2645,6 +2610,8 @@ export function solveMultiSheetApartmentProject(
     readonly legacyOnly?: boolean;
     readonly skipComplianceGate?: boolean;
     readonly complianceAttempt?: number;
+    readonly areaEnvelopeScale?: number;
+    readonly areaScaleAxis?: 'BOTH' | 'RUN';
   },
 ): MultiSheetApartmentResult {
   const resolvedCategory = rawConfig.planCategory ?? inferPlanCategoryFromPrompt(rawConfig.aiPrompt);
@@ -2766,35 +2733,45 @@ export function solveMultiSheetApartmentProject(
     }
   })();
 
-  const effectiveTargetSqFt = config.targetAreaSqFt ?? promptIntent?.mandatory.targetAreaSqFt;
+  const specifiedUnits = config.units ?? [];
+  const aggregateRequiredCarpetSqFt = config.requireAreaTargets && specifiedUnits.length === config.flatsPerFloor
+    && specifiedUnits.every(unit => unit.targetCarpetSqFt && unit.targetCarpetSqFt > 0)
+    ? specifiedUnits.reduce((total, unit) => total + (unit.targetCarpetSqFt ?? 0), 0)
+    : undefined;
+  const explicitTargetSqFt = config.targetAreaSqFt ?? promptIntent?.mandatory.targetAreaSqFt;
+  const effectiveTargetSqFt = explicitTargetSqFt ?? aggregateRequiredCarpetSqFt;
   const effectiveAreaScope: AreaTargetScope | undefined =
     config.areaTargetScope ??
     promptIntent?.mandatory.areaTargetScope ??
-    (effectiveTargetSqFt !== undefined ? 'PER_APARTMENT_CARPET' : undefined);
+    (explicitTargetSqFt !== undefined ? 'PER_APARTMENT_CARPET'
+      : aggregateRequiredCarpetSqFt !== undefined ? 'FLOOR_TOTAL_CARPET' : undefined);
   const shouldCenterBuilding = Boolean(
     config.centerBuildingInEnvelope ||
     promptIntent?.mandatory.centerBuilding ||
     effectiveTargetSqFt !== undefined,
   );
 
+  const coreAcross = requiredCoreBandWidth({ compact: true, corridorSides: 'BOTH' });
+  const coreRun = requiredCoreBandLength({ compact: true,
+    stairCount: promptIntent?.mandatory.stairCount === 1 ? 1 : 2, corridorSides: 'BOTH',
+    liftCount: promptIntent?.mandatory.singleLift ? 1 : 2 });
+  const minimumProgramGrossM2 = (config.units ?? []).reduce((area, unit) =>
+    area + (FLAT_AREA_BOUNDS_SQM[unit.bhkType]?.min ?? 0), 0) + coreAcross * coreRun / 1e6;
   if (effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
     const coreW = 7800;
-    const minHabitableW = 20400;
-    const minHabitableH = 15200;
-    const targetM2 = effectiveTargetSqFt / 10.7639;
+    const bedroomBalconiesRequested = promptIntent?.preferences.bedroomBalconies === 'ALL_BEDROOMS';
+    const minHabitableW = Math.min(permissibleEnvelope.w,
+      coreAcross + (config.flatsPerFloor > 1 ? 2 : 1) * (bedroomBalconiesRequested ? 7300 : 5600));
+    const minHabitableH = Math.min(permissibleEnvelope.h, Math.max(coreRun, Math.ceil(config.flatsPerFloor / 2) * 6800));
+    const targetM2 = effectiveTargetSqFt * SQUARE_METRES_PER_SQUARE_FOOT;
     let builtW = permissibleEnvelope.w;
     let builtH = permissibleEnvelope.h;
 
     if (effectiveAreaScope === 'GROSS_FLOOR_AREA') {
-      const targetGrossMm2 = targetM2 * 1e6;
-      if (targetGrossMm2 <= minHabitableW * minHabitableH) {
-        builtW = Math.min(permissibleEnvelope.w, minHabitableW);
-        builtH = Math.min(permissibleEnvelope.h, minHabitableH);
-      } else {
-        const aspect = permissibleEnvelope.w / Math.max(1, permissibleEnvelope.h);
-        builtW = Math.min(permissibleEnvelope.w, Math.max(minHabitableW, snap10(Math.sqrt(targetGrossMm2 * aspect))));
-        builtH = Math.min(permissibleEnvelope.h, Math.max(minHabitableH, snap10(targetGrossMm2 / Math.max(1, builtW))));
-      }
+      const targetGrossMm2 = Math.max(targetM2, minimumProgramGrossM2) * 1e6;
+      const aspect = permissibleEnvelope.w / permissibleEnvelope.h;
+      builtW = Math.min(permissibleEnvelope.w, Math.max(minHabitableW, snap10(Math.sqrt(targetGrossMm2 * aspect))));
+      builtH = Math.min(permissibleEnvelope.h, Math.max(minHabitableH, Math.ceil(targetGrossMm2 / builtW / 10) * 10));
     } else if (effectiveAreaScope === 'FLOOR_TOTAL_CARPET') {
       const targetCarpetPerFlatM2 = targetM2 / Math.max(1, config.flatsPerFloor);
       const wantsBedBalcs = Boolean(
@@ -2821,6 +2798,13 @@ export function solveMultiSheetApartmentProject(
       builtH = Math.min(permissibleEnvelope.h, Math.max(minHabitableH, flatsPerWing * flatH));
     }
 
+    if (recovery?.areaEnvelopeScale) {
+      if (recovery.areaScaleAxis !== 'RUN') {
+        builtW = Math.min(permissibleEnvelope.w, snap10(builtW * recovery.areaEnvelopeScale));
+      }
+      const runScale = recovery.areaScaleAxis === 'RUN' ? recovery.areaEnvelopeScale ** 2 : recovery.areaEnvelopeScale;
+      builtH = Math.min(permissibleEnvelope.h, snap10(builtH * runScale));
+    }
     if (shouldCenterBuilding) {
       envelope = {
         x: permissibleEnvelope.x + snap10((permissibleEnvelope.w - builtW) / 2),
@@ -2880,6 +2864,7 @@ export function solveMultiSheetApartmentProject(
     envelope,
     flatsPerFloor: config.flatsPerFloor,
     unitTypes: (config.units ?? []).map(unit => unit.bhkType),
+    unitCarpetTargetsSqFt: (config.units ?? []).map(unit => unit.targetCarpetSqFt),
     aiPrompt: effectiveAiPrompt,
     seed: config.generationSeed,
     preferredArchetype: config.preferredArchetype as RoomSlicingArchetypeId | undefined,
@@ -2891,6 +2876,11 @@ export function solveMultiSheetApartmentProject(
     galleryCoordinationMode: resolvedGalleryMode,
     includeStudyRoom: config.includeStudyRoom ?? false,
   });
+
+  if (!topology && config.rejectedTopologyHashes?.length) {
+    throw new Error('No fresh topology passed the bounded search after excluding the rejected layouts.');
+  }
+
 
   const macro = topology
     ? topology.macro
@@ -2933,17 +2923,6 @@ export function solveMultiSheetApartmentProject(
   // 8. Solve Sheet 6: TERRACE_PLAN
   const terraceLevel = config.numTypicalFloors + (config.verticalStackType === 'G_PLUS_N' ? 0 : 1);
   const terraceSheet = solveTerraceSheet(config, envelope, macro, terraceLevel);
-
-  // 9. Solve Sheet 7: AREA_SCHEDULE_SHEET
-  const schedule = generateApartmentProjectSchedule({
-    config,
-    siteSheet,
-    stiltSheet,
-    typicalSheet,
-    refugeSheet,
-    terraceSheet,
-    stackParams,
-  });
 
   // 10. Assemble Coordinated Sheets Package
   const sheetOffset = 103;
@@ -3004,21 +2983,6 @@ export function solveMultiSheetApartmentProject(
       floor: terraceSheet.floor,
       audit: terraceSheet.audit,
     },
-    {
-      sheetType: 'AREA_SCHEDULE_SHEET',
-      sheetNumber: `A-${nextSheetNum + (refugeSheet ? 3 : 2)}`,
-      title: 'UDCPR / NBC FSI, RERA Carpet & Parking Statement',
-      schedule,
-      audit: {
-        sheetId: 'sheet_06_schedule',
-        sheetName: 'Sheet 06: Statutory Area Schedule',
-        grossAreaMm2: schedule.sheetAudits.reduce((sum, a) => sum + a.grossAreaMm2, 0),
-        accountedAreaMm2: schedule.sheetAudits.reduce((sum, a) => sum + a.accountedAreaMm2, 0),
-        deltaMm2: schedule.overallDeltaMm2,
-        unassignedMm2: 0,
-        isPlanarConserved: schedule.overallDeltaMm2 < 0.001,
-      },
-    },
   ];
 
   // 11. Assemble Complete Multi-Floor Canonical Building
@@ -3043,7 +3007,9 @@ export function solveMultiSheetApartmentProject(
     metadata: {
       projectId: config.projectId ?? 'apartment_project',
       generationBrief: {
-        source: config.aiTelemetryOverride?.geminiInvoked ? 'HYBRID' : 'DETERMINISTIC',
+        source: (config.aiTelemetryOverride?.interpretationSource === 'GEMINI'
+          || (config.aiTelemetryOverride?.interpretationSource === undefined && config.aiTelemetryOverride?.geminiInvoked))
+          ? 'HYBRID' : 'DETERMINISTIC',
         aiPrompt: config.aiPrompt,
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
@@ -3086,7 +3052,8 @@ export function solveMultiSheetApartmentProject(
   const deferredStructure = config.structuralLayoutMode !== 'PROVISIONAL_EXISTING_PROFILE';
   const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...(buildingWithFurniture.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : buildingWithFurniture;
   const placedStructure = deferredStructure ? architecturalBuilding : synthesizeStructuralFraming(architecturalBuilding);
-  const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
+  const auditOptions = { autoCorrect: false, columnMergeThresholdMm: MIN_PROVISIONAL_COLUMN_SPACING_MM };
+  const audit = validateAndRepairBuildingGeometry(placedStructure, auditOptions);
   const finalFloors = audit.building.floors.map(namespaceFloorEntities);
   const rawValidatedBuilding: Building = withArchitecturalElements(coordinateArchitecturalStairs({
     ...audit.building, floors: finalFloors,
@@ -3132,13 +3099,27 @@ export function solveMultiSheetApartmentProject(
     flatExposures: typicalSheet.structure.flatExposures ?? [],
     includeWindowChajjas: config.includeWindowChajjas ?? true,
   });
-  const finalAudit = validateAndRepairBuildingGeometry(validatedBuilding, { autoCorrect: false });
+  const finalAudit = validateAndRepairBuildingGeometry(validatedBuilding, auditOptions);
   const validationReport = {
     ...finalAudit.report, errors: finalAudit.report.errors.map(error => ({
       ...error,
       elementIds: error.elementIds.map(value => value === error.floorId || value.startsWith(`${error.floorId}::`) ? value : `${error.floorId}::${value}`),
     }))
   };
+  // 9. Solve Sheet 7: AREA_SCHEDULE_SHEET
+  const schedule = generateApartmentProjectSchedule({
+    config,
+    siteSheet,
+    stiltSheet,
+    typicalSheet,
+    refugeSheet,
+    terraceSheet,
+    stackParams,
+    residentialFloors: validatedBuilding.floors.filter(floor => floor.apartmentUnits?.length),
+    minimumProgramGrossM2,
+    permissibleEnvelopeAreaM2: permissibleEnvelope.w * permissibleEnvelope.h / 1e6,
+  });
+
   const validatedFloorsById = new Map(validatedBuilding.floors.map(f => [f.id, f]));
   const updatedSheets = sheets.map(s => {
     if (s.floor) {
@@ -3148,6 +3129,48 @@ export function solveMultiSheetApartmentProject(
     return s;
   });
 
+  updatedSheets.push(
+    {
+      sheetType: 'AREA_SCHEDULE_SHEET',
+      sheetNumber: `A-${nextSheetNum + (refugeSheet ? 3 : 2)}`,
+      title: 'UDCPR / NBC FSI, RERA Carpet & Parking Statement',
+      schedule,
+      audit: {
+        sheetId: 'sheet_06_schedule',
+        sheetName: 'Sheet 06: Statutory Area Schedule',
+        grossAreaMm2: schedule.sheetAudits.reduce((sum, a) => sum + a.grossAreaMm2, 0),
+        accountedAreaMm2: schedule.sheetAudits.reduce((sum, a) => sum + a.accountedAreaMm2, 0),
+        deltaMm2: schedule.overallDeltaMm2,
+        unassignedMm2: 0,
+        isPlanarConserved: schedule.overallDeltaMm2 < 0.001,
+      },
+    },
+  );
+
+  const mandatoryFindings = validatedBuilding.floors.flatMap(floor => {
+    if (!floor.apartmentUnits?.length || !promptIntent) return [];
+    const { mandatory } = promptIntent;
+    const issues: string[] = [];
+    if (floor.apartmentUnits.length !== config.flatsPerFloor) issues.push(`Expected ${config.flatsPerFloor} flats on the floor.`);
+    if (floor.apartmentUnits.some((unit, index) => unit.unitType !== mandatory.unitTypes[index])) {
+      issues.push('The generated flat mix differs from the required unit types.');
+    }
+    if (mandatory.singleLiftRequired && floor.rooms.filter(room => room.type === RoomType.Lift).length !== 1) {
+      issues.push('The brief specifies one lift.');
+    }
+    if (mandatory.stairCountRequired && floor.rooms.filter(room => room.type === RoomType.Staircase).length !== mandatory.stairCount) {
+      issues.push(`The brief specifies ${mandatory.stairCount} stairs.`);
+    }
+    if (mandatory.ventilationStrategy === 'PERIMETER_ONLY' && floor.rooms.some(room =>
+      architecturalSpaceRole(room) === 'OPEN_TO_SKY_VOID' && !room.tags.includes('recess:perimeter'))) {
+      issues.push('The brief prohibits internal open-to-sky voids.');
+    }
+    if (mandatory.noBalconies && floor.rooms.some(room => room.type === RoomType.Balcony || room.spaceUse === 'OUTDOOR')) {
+      issues.push('The brief prohibits balconies.');
+    }
+    return issues.map(description => ({ code: 'MANDATORY_BRIEF_UNMET', source: 'GENERATION' as const,
+      severity: 'CRITICAL' as const, description, floorId: floor.id, elementIds: [floor.id] }));
+  });
   const generationReport = createGenerationReport(validatedBuilding, validationReport, {
     strategy: !topology ? 'LEGACY_FALLBACK' : topology.chosen.score.feasible ? 'VALIDATED_TOPOLOGY' : 'BEST_EFFORT_TOPOLOGY',
     selectedFamily: topology?.chosen.familyId,
@@ -3155,8 +3178,12 @@ export function solveMultiSheetApartmentProject(
     selectedShapeId: typicalSheet.shapeId,
     selectedPlanCategory: config.planCategory,
     rejectedCandidates: topologyEvidence?.rejected ?? [],
-  }, !topology ? [{
-    code: 'LEGACY_FALLBACK_USED', severity: 'WARNING', source: 'GENERATION', elementIds: [],
+    floorAreas: schedule.floorAreas,
+    areaTargetDiagnostic: schedule.areaTargetDiagnostic,
+  }, [
+    ...mandatoryFindings,
+    ...(!topology ? [{
+    code: 'LEGACY_FALLBACK_USED', severity: 'WARNING' as const, source: 'GENERATION' as const, elementIds: [],
     description: recovery?.legacyOnly
       ? 'The legacy partition was evaluated as a bounded recovery option and requires review.'
       : 'No assembled topology candidate was available. The legacy partition was used and requires review.'
@@ -3164,7 +3191,15 @@ export function solveMultiSheetApartmentProject(
     : topology.chosen.score.hardConstraints.filter(c => !c.satisfied).map(c => ({
       code: c.id, severity: 'WARNING' as const, source: 'TOPOLOGY' as const, elementIds: [],
       description: `Pre-repair candidate finding: ${c.detail}. Final geometry and closure findings are reported separately.`,
-    })));
+    }))),
+    ...[
+      ...(schedule.floorAreas ?? []).flatMap(floor => floor.units.filter(unit => unit.target && unit.target.status !== 'ACHIEVED')
+        .map(unit => ({ description: `Flat ${unit.unitIndex}: ${unit.target!.explanation}`, floorId: floor.floorId, elementIds: [unit.unitId] }))),
+      ...(schedule.areaTargetDiagnostic && schedule.areaTargetDiagnostic.status !== 'ACHIEVED'
+        ? [{ description: schedule.areaTargetDiagnostic.explanation, elementIds: [] }] : []),
+    ].map(issue => ({ ...issue, code: 'AREA_TARGET_UNMET', source: 'GENERATION' as const,
+      severity: config.requireAreaTargets ? 'CRITICAL' as const : 'WARNING' as const })),
+  ]);
   const result: MultiSheetApartmentResult = {
     generationReport,
     config,
@@ -3218,6 +3253,25 @@ export function solveMultiSheetApartmentProject(
     building: res.building.mepEngineering ? res.building : withMepEngineering(res.building),
   });
 
+  const currentArea = finalResult.schedule.areaTargetDiagnostic;
+  if (currentArea?.status === 'TARGET_NOT_MET' && currentArea.achievedAreaM2 > 0 && !recovery?.skipComplianceGate) {
+    // Use measured areas to size a second envelope without changing the requested area.
+    const suggestedScale = Math.sqrt(currentArea.requestedAreaM2 / currentArea.achievedAreaM2);
+    for (const areaScaleAxis of ['BOTH', 'RUN'] as const) {
+      if (suggestedScale < 0.75 || suggestedScale > 1.25) break;
+      try {
+        const resized = solveMultiSheetApartmentProject(rawConfig, undefined,
+          { skipComplianceGate: true, areaEnvelopeScale: suggestedScale, areaScaleAxis });
+        const criticalCount = (candidate: MultiSheetApartmentResult) => candidate.generationReport?.violations
+          .filter(finding => finding.severity === 'CRITICAL' && finding.code !== 'AREA_TARGET_UNMET').length ?? 0;
+        if (resized.schedule.areaTargetDiagnostic?.status === 'ACHIEVED' && criticalCount(resized) <= criticalCount(finalResult)
+          && (!config.buildingMassingShape || resized.building.metadata.generationBrief?.buildingMassingShape === config.buildingMassingShape)) {
+          return finalizeWithMep(resized);
+        }
+      } catch { /* Keep the measured candidate and unmet-area evidence. */ }
+    }
+  }
+
   // Bounded Auto-Regeneration Quality Gate Loop (up to 12 total attempts):
   // If complianceScore < 85 or redConflictCount > 0, automatically reject the candidate,
   // append its topology hash to rejectedTopologyHashes, mutate the seed, and regenerate.
@@ -3229,7 +3283,7 @@ export function solveMultiSheetApartmentProject(
   ) {
     const baseSeed = Math.max(1, Math.floor(Number(rawConfig.generationSeed ?? 1)));
     const rejectedHashes = new Set<string>(rawConfig.rejectedTopologyHashes ?? []);
-    const initialHash = (finalResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+    const initialHash = finalResult.building.metadata.generationBrief?.topologyHash;
     if (typeof initialHash === 'string' && initialHash.length > 0) {
       rejectedHashes.add(initialHash);
     }
@@ -3282,7 +3336,7 @@ export function solveMultiSheetApartmentProject(
           continue;
         }
         const { result: nextEvaluated, compliance: nextCompliance } = attachCompliance(nextRaw, attempt + 1);
-        const nextHash = (nextEvaluated.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+        const nextHash = nextEvaluated.building.metadata.generationBrief?.topologyHash;
         if (typeof nextHash === 'string' && nextHash.length > 0) {
           rejectedHashes.add(nextHash);
         }
@@ -3291,15 +3345,18 @@ export function solveMultiSheetApartmentProject(
           rejectedHashes.add(nextVariant);
         }
 
-        const isBetter =
+        const nextBlocked = generationBlockingFindings(nextEvaluated.building, nextEvaluated.validationReport).length;
+        const currentBlocked = generationBlockingFindings(finalResult.building, finalResult.validationReport).length;
+        const isBetter = nextBlocked < currentBlocked || (nextBlocked === currentBlocked && (
           nextCompliance.score > finalCompliance.score ||
           (nextCompliance.score === finalCompliance.score &&
-            nextCompliance.redConflictCount < finalCompliance.redConflictCount);
+            nextCompliance.redConflictCount < finalCompliance.redConflictCount)
+        ));
         if (isBetter) {
           finalResult = nextEvaluated;
           finalCompliance = nextCompliance;
         }
-        if (nextCompliance.passed) {
+        if (nextCompliance.passed && nextBlocked === 0) {
           return finalizeWithMep(nextEvaluated);
         }
       } catch {
@@ -3308,7 +3365,7 @@ export function solveMultiSheetApartmentProject(
     }
   }
 
-  if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly &&
+  if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly && !config.rejectedTopologyHashes?.length &&
     finalResult.building.metadata.generationBrief?.buildingMassingShape !== 'PINWHEEL_CLUSTER') {
     // One bounded comparison after repair. Never replace a previously conserved
     // solution with an unassigned/overlapping candidate solely to avoid fallback.

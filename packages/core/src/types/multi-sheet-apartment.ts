@@ -1,5 +1,11 @@
 import type { ArchitecturalGenerationOptions } from './architectural-elements';
 import type { RegulatoryContextInput } from './udcpr';
+
+/** Project-level internal clear-depth rule, measured inside the balcony envelope. */
+export const APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM = 1200;
+/** Centreline deduction used by the current apartment ledger. */
+export const APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM = 230;
+
 /**
  * Multi-Sheet Apartment Project Domain & Configuration Contracts (§1C).
  *
@@ -200,7 +206,8 @@ export interface AreaTargetDiagnostic {
   readonly achievedSqFt?: number;
   readonly achievedM2?: number;
   readonly minimumFeasibleGrossM2?: number;
-  readonly status: 'ACHIEVED' | 'CLAMPED_TO_ENVELOPE_MAX' | 'INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE';
+  readonly status: 'ACHIEVED' | 'TARGET_NOT_MET' | 'CLAMPED_TO_ENVELOPE_MAX' | 'INFEASIBLE_BELOW_MINIMUM_HABITABLE_FLOOR_PLATE';
+  readonly tolerancePercent?: number;
   readonly explanation: string;
 }
 
@@ -267,6 +274,10 @@ export interface MultiSheetApartmentConfig {
     readonly provider: string;
     readonly modelUsed?: string;
     readonly fallbackReason?: string;
+    readonly fallbackTriggered?: boolean;
+    readonly providerErrorCode?: string;
+    readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
+    readonly referenceGuidanceApplied?: readonly string[];
     readonly referenceImageUsedForGeometry: boolean;
   };
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
@@ -295,6 +306,9 @@ export interface MultiSheetApartmentConfig {
   readonly targetAreaSqFt?: number;
   /** Explicit interpretation scope for targetAreaSqFt. */
   readonly areaTargetScope?: AreaTargetScope;
+  /** Default reporting tolerance is 5%. Required targets block acceptance when outside tolerance. */
+  readonly areaAcceptanceTolerancePercent?: number;
+  readonly requireAreaTargets?: boolean;
   /** Center the building footprint inside the permissible setback envelope when smaller than the envelope. */
   readonly centerBuildingInEnvelope?: boolean;
   /** Render 600 mm concrete window sunshade chajjas in 2D dashed A-CHAJJA, DXF, and 3D (default true). */
@@ -341,6 +355,29 @@ export const DEFAULT_TERRACE_AMENITIES: TerraceAmenitiesConfig = {
   solarPvArray: true,
   terraceYogaDeck: true,
 };
+
+export interface ApartmentUnitAreaMeasurement {
+  readonly unitId: string;
+  readonly unitIndex: number;
+  readonly carpetMm2: number;
+  readonly balconyMm2: number;
+  readonly builtUpMm2: number;
+  readonly target?: AreaTargetDiagnostic;
+}
+
+export interface ApartmentFloorAreaMeasurement {
+  readonly floorId: string;
+  readonly grossMm2: number;
+  readonly builtUpMm2: number;
+  readonly carpetMm2: number;
+  readonly balconyMm2: number;
+  readonly commonMm2: number;
+  readonly coreMm2: number;
+  readonly servicesMm2: number;
+  readonly wallMm2: number;
+  readonly voidMm2: number;
+  readonly units: readonly ApartmentUnitAreaMeasurement[];
+}
 
 /** Individual flat schedule entry in the RERA / UDCPR area statement. */
 export interface FlatScheduleItem {
@@ -398,6 +435,7 @@ export interface ApartmentProjectSchedule {
   readonly sheetAudits: readonly SheetLedgerAudit[];
   readonly overallDeltaMm2: number;
   readonly areaTargetDiagnostic?: AreaTargetDiagnostic;
+  readonly floorAreas?: readonly ApartmentFloorAreaMeasurement[];
 }
 
 export type ApartmentSheetType =
@@ -440,6 +478,8 @@ export interface ApartmentGenerationReport {
   readonly selectedVariant?: string;
   readonly selectedShapeId?: BuildingMassingShape;
   readonly selectedPlanCategory?: PlanCategory;
+  readonly floorAreas?: readonly ApartmentFloorAreaMeasurement[];
+  readonly areaTargetDiagnostic?: AreaTargetDiagnostic;
   readonly rejectedCandidates: readonly { readonly familyId: string; readonly variantId: string; readonly stage: string; readonly reasons: readonly string[] }[];
   readonly violations: readonly ApartmentGenerationViolation[];
 }

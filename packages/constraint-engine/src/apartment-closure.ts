@@ -1,5 +1,5 @@
 import type { Building, Room, DynamicApartmentManifest, ApartmentBhkType } from '@ai-floor-planner/core';
-import { architecturalSpaceRole } from '@ai-floor-planner/core';
+import { APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, architecturalSpaceRole } from '@ai-floor-planner/core';
 import { containsPolygon, polygonIntersectionArea, measureApartmentAreaLedger, openingFitsApartmentWall } from '@ai-floor-planner/geometry-engine';
 
 function sharesBoundarySegment(
@@ -340,7 +340,7 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
             })),
       );
       if (!hasExteriorOrOtsEdge) add('BALCONY_EXTERIOR_EDGE_MISSING', balcony.id);
-      if (balcony.usableDepth < 1200) add('BALCONY_CLEAR_DEPTH_SUBSTANDARD', `${balcony.id}: clear depth ${balcony.usableDepth} mm < 1200 mm`);
+      if (balcony.usableDepth < APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM) add('BALCONY_CLEAR_DEPTH_SUBSTANDARD', `${balcony.id}: clear depth ${balcony.usableDepth} mm < ${APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM} mm`);
       const r = rooms.find(room => room.id === balcony.id);
       const isBedBalcony = balcony.id.toLowerCase().includes('bed') || r?.name?.toLowerCase().includes('bedroom');
       if (!isBedBalcony && (balcony.usableDepth < 1500 || balcony.usableWidth < 2800)) add('BALCONY_TOO_SMALL', balcony.id, 'warning');

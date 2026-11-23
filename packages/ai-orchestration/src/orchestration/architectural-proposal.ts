@@ -8,7 +8,7 @@ import {
   mixedUnitSpecs,
   parseMixedUnitProgram,
 } from '@ai-floor-planner/core';
-import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES } from '../providers/gemini';
+import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES, geminiErrorCode } from '../providers/gemini';
 
 export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
   'CURVED_CRESCENT',
@@ -80,15 +80,15 @@ export type ProposalTopologyFamilyId =
   | 'SPLIT_CORE';
 
 export interface ReferenceSpatialGraph {
-  readonly detectedCorePosition: 'CENTRAL' | 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'SPLIT';
-  readonly detectedCorridorAxis: 'HORIZONTAL' | 'VERTICAL' | 'RING';
+  readonly detectedCorePosition?: 'CENTRAL' | 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'SPLIT';
+  readonly detectedCorridorAxis?: 'HORIZONTAL' | 'VERTICAL' | 'RING';
   readonly relativeRoomCentroids: ReadonlyArray<{
     readonly roomType: string;
     readonly nx: number;
     readonly ny: number;
   }>;
   readonly balconyEdges: readonly ('NORTH' | 'SOUTH' | 'EAST' | 'WEST')[];
-  readonly wetCoreClustering: 'SHARED_SHAFT' | 'PERIMETER' | 'MIXED';
+  readonly wetCoreClustering?: 'SHARED_SHAFT' | 'PERIMETER' | 'MIXED';
 }
 
 export interface ArchitecturalProposal {
@@ -122,6 +122,9 @@ export interface ArchitecturalProposalTelemetry {
   readonly latencyMs: number;
   readonly fallbackTriggered: boolean;
   readonly fallbackReason?: string;
+  readonly providerErrorCode?: string;
+  readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
+  readonly referenceGuidanceApplied?: readonly string[];
   readonly referenceImageUsedForGeometry: boolean;
 }
 
@@ -352,6 +355,7 @@ function sanitizeProposalWithPromptGuardrails(
   raw: Record<string, unknown> | undefined,
   config: MultiSheetApartmentConfig,
   seed: number,
+  hasReferenceImage: boolean,
 ): ArchitecturalProposal {
   const base = defaultProposalForConfig(config, seed);
   if (!raw) return base;
@@ -418,15 +422,20 @@ function sanitizeProposalWithPromptGuardrails(
     : {};
 
   let referenceSpatialGraph: ReferenceSpatialGraph | undefined;
-  if (typeof raw.referenceSpatialGraph === 'object' && raw.referenceSpatialGraph !== null) {
+  if (hasReferenceImage && typeof raw.referenceSpatialGraph === 'object' && raw.referenceSpatialGraph !== null) {
     const rg = raw.referenceSpatialGraph as Record<string, unknown>;
     const centroids = Array.isArray(rg.relativeRoomCentroids)
       ? rg.relativeRoomCentroids
-        .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+        .filter((item): item is { roomType: string; nx: number; ny: number } => {
+          if (!item || typeof item !== 'object') return false;
+          const point = item as Record<string, unknown>;
+          return typeof point.roomType === 'string' && typeof point.nx === 'number' && typeof point.ny === 'number'
+            && Number.isFinite(point.nx) && Number.isFinite(point.ny);
+        })
         .map(item => ({
-          roomType: String(item.roomType ?? 'room'),
-          nx: Math.max(0, Math.min(1, Number(item.nx ?? 0.5))),
-          ny: Math.max(0, Math.min(1, Number(item.ny ?? 0.5))),
+          roomType: item.roomType,
+          nx: Math.max(0, Math.min(1, item.nx)),
+          ny: Math.max(0, Math.min(1, item.ny)),
         }))
       : [];
     const balconyEdges = Array.isArray(rg.balconyEdges)
@@ -435,15 +444,15 @@ function sanitizeProposalWithPromptGuardrails(
     referenceSpatialGraph = {
       detectedCorePosition: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'].includes(String(rg.detectedCorePosition))
         ? (String(rg.detectedCorePosition) as ReferenceSpatialGraph['detectedCorePosition'])
-        : 'CENTRAL',
+        : undefined,
       detectedCorridorAxis: ['HORIZONTAL', 'VERTICAL', 'RING'].includes(String(rg.detectedCorridorAxis))
         ? (String(rg.detectedCorridorAxis) as ReferenceSpatialGraph['detectedCorridorAxis'])
-        : 'HORIZONTAL',
+        : undefined,
       relativeRoomCentroids: centroids,
       balconyEdges,
       wetCoreClustering: ['SHARED_SHAFT', 'PERIMETER', 'MIXED'].includes(String(rg.wetCoreClustering))
         ? (String(rg.wetCoreClustering) as ReferenceSpatialGraph['wetCoreClustering'])
-        : 'PERIMETER',
+        : undefined,
     };
   }
 
@@ -542,7 +551,7 @@ export async function generateArchitecturalProposal(
 
     const basePrompt = (input.config.aiPrompt ?? '').trim();
     const synthesizedClauses: string[] = [];
-    if (telemetry.geminiInvoked || rg) {
+    if (telemetry.interpretationSource === 'GEMINI' || rg) {
       if (
         effectiveMassingShape !== 'PINWHEEL_CLUSTER' &&
         basePrompt.length > 0 &&
@@ -568,11 +577,20 @@ export async function generateArchitecturalProposal(
           synthesizedClauses.push('Central lift core.');
         } else if (rg.detectedCorePosition === 'SPLIT') {
           synthesizedClauses.push('Split cores.');
-        } else if (['EAST', 'WEST', 'NORTH', 'SOUTH'].includes(rg.detectedCorePosition)) {
+        } else if (rg.detectedCorePosition) {
           synthesizedClauses.push(`${rg.detectedCorePosition.toLowerCase()} core.`);
         }
       }
     }
+    const referenceGuidanceApplied = [
+      ...(rg && synthesizedClauses.some(clause => /core/i.test(clause)) ? ['CORE_PLACEMENT'] : []),
+      ...(rg?.detectedCorridorAxis === 'RING' && !input.config.buildingMassingShape
+        && effectiveMassingShape === 'U_SHAPE_COURTYARD' && proposal.buildingMassingShape !== effectiveMassingShape ? ['COURTYARD_CIRCULATION'] : []),
+      ...(rg?.wetCoreClustering === 'SHARED_SHAFT' && !input.config.preferredArchetype
+        && effectiveArchetype === 'MIRRORED_WET_CORE_STACK' && proposal.preferredArchetype !== effectiveArchetype ? ['WET_CORE_CLUSTERING'] : []),
+    ];
+    const finalTelemetry: ArchitecturalProposalTelemetry = { ...telemetry,
+      referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0, referenceGuidanceApplied };
     const effectiveAiPrompt = [basePrompt, ...synthesizedClauses].filter(Boolean).join(' ').trim();
 
     const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(input.config.aiPrompt));
@@ -607,17 +625,20 @@ export async function generateArchitecturalProposal(
         : {}),
       aiProposal: finalProposal as unknown as Record<string, unknown>,
       aiTelemetryOverride: {
-        geminiInvoked: telemetry.geminiInvoked,
-        provider: telemetry.provider,
-        modelUsed: telemetry.modelUsed,
-        ...(telemetry.fallbackReason ? { fallbackReason: telemetry.fallbackReason } : {}),
-        referenceImageUsedForGeometry: telemetry.referenceImageUsedForGeometry,
+        ...finalTelemetry,
       },
     };
-    return { proposal: finalProposal, telemetry, enrichedConfig };
+    return { proposal: finalProposal, telemetry: finalTelemetry, enrichedConfig };
   };
 
-  if (!provider || !(await provider.isAvailable())) {
+  let available = false;
+  let availabilityError = false;
+  try {
+    available = Boolean(provider && await provider.isAvailable());
+  } catch {
+    availabilityError = true;
+  }
+  if (!provider || !available) {
     const proposal = defaultProposalForConfig(input.config, seed);
     return buildEnriched(proposal, {
       geminiInvoked: false,
@@ -625,7 +646,9 @@ export async function generateArchitecturalProposal(
       modelUsed: 'none',
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
-      fallbackReason: 'GEMINI_API_KEY not configured or provider unavailable',
+      fallbackReason: provider ? 'Gemini provider is unavailable.' : 'No Gemini provider is configured.',
+      interpretationSource: 'DETERMINISTIC',
+      ...(availabilityError ? { providerErrorCode: 'AVAILABILITY_CHECK_FAILED' } : {}),
       referenceImageUsedForGeometry: false,
     });
   }
@@ -668,24 +691,32 @@ export async function generateArchitecturalProposal(
       maxTokens: 4096,
     });
 
-    const proposal = sanitizeProposalWithPromptGuardrails(response.parsed, input.config, seed);
+    if (!response.parsed || Object.keys(response.parsed).length === 0) {
+      throw new Error('Gemini returned no structured architectural proposal.');
+    }
+    const proposal = sanitizeProposalWithPromptGuardrails(response.parsed, input.config, seed, Boolean(imagePart));
     return buildEnriched(proposal, {
       geminiInvoked: true,
       provider: 'google-genai',
       modelUsed: response.model,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: response.model !== provider.getModelInfo().model,
-      referenceImageUsedForGeometry: Boolean(imagePart && proposal.referenceSpatialGraph),
+      ...(response.fallbackFromErrorCode ? { providerErrorCode: response.fallbackFromErrorCode } : {}),
+      interpretationSource: 'GEMINI',
+      referenceImageUsedForGeometry: false,
     });
   } catch (error) {
     const proposal = defaultProposalForConfig(input.config, seed);
+    const providerErrorCode = geminiErrorCode(error);
     return buildEnriched(proposal, {
-      geminiInvoked: false,
+      geminiInvoked: true,
       provider: 'deterministic-rule-engine',
       modelUsed: provider.getModelInfo().model,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
-      fallbackReason: error instanceof Error ? error.message : String(error),
+      interpretationSource: 'DETERMINISTIC',
+      providerErrorCode,
+      fallbackReason: `Gemini interpretation failed (${providerErrorCode}).`,
       referenceImageUsedForGeometry: false,
     });
   }

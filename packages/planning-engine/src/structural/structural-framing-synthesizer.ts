@@ -1,3 +1,4 @@
+import { findUnhostedInteriorColumn, MIN_PROVISIONAL_COLUMN_SPACING_MM } from './provisional-column-host';
 import {
   ColumnShape,
   RoomType,
@@ -31,7 +32,6 @@ export interface Box2DLike {
 
 const MAX_COLUMN_CLEAR_SPAN_MM = 5000;
 const DOOR_JAMB_CLEARANCE_MM = 300;
-const MIN_COLUMN_CENTER_SPACING_MM = 750;
 const GRID_ALIGN_TOLERANCE_MM = 160;
 
 interface CandidateNode {
@@ -405,10 +405,10 @@ export function deriveCornerLockedStructuralColumns(
     mergedNodes.push(c);
   }
 
-  // Cluster columns to respect minimum structural spacing (750 mm) while keeping dense grid lines
+  // Cluster columns to respect minimum structural spacing (800 mm) while keeping dense grid lines
   const acceptedNodes: CandidateNode[] = [];
   for (const c of mergedNodes) {
-    const tooClose = acceptedNodes.some(m => dist(m, c) < MIN_COLUMN_CENTER_SPACING_MM);
+    const tooClose = acceptedNodes.some(m => dist(m, c) < MIN_PROVISIONAL_COLUMN_SPACING_MM);
     if (tooClose) continue;
     acceptedNodes.push(c);
   }
@@ -476,7 +476,7 @@ export function deriveCornerLockedStructuralColumns(
                 ? { x: coordAlong, y: axisCoord }
                 : { x: axisCoord, y: coordAlong };
               if (!validCandidate(pt)) continue;
-              if (acceptedNodes.some(m => dist(m, pt) < MIN_COLUMN_CENTER_SPACING_MM)) continue;
+              if (acceptedNodes.some(m => dist(m, pt) < MIN_PROVISIONAL_COLUMN_SPACING_MM)) continue;
               acceptedNodes.push({
                 x: pt.x,
                 y: pt.y,
@@ -771,25 +771,21 @@ export function synthesizeCornerLockedBuildingFraming(building: Building): Build
     building.floors.length,
   );
 
-  // Also ensure zero balcony/utility intrusion across EVERY floor (matching ResidentialCadSerializer!)
-  if (building.floors.length > 0) {
-    masterCols = masterCols
-      .map(col => {
-        let resolved: Column | null = col;
-        for (const fl of building.floors) {
-          const flOutdoor = fl.rooms.filter(r => ['balcony', 'utility'].includes(r.type));
-          if (!flOutdoor.length) continue;
-          const flWalls = fl.walls.map(wallToPolygon);
-          const intrudes = (c: Column) =>
-            flOutdoor.some(r => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, flWalls) >= 0.001);
-          if (resolved && intrudes(resolved)) {
-            const flush: Column = { ...resolved, width: 200, depth: 200 };
-            resolved = intrudes(flush) ? null : flush;
-          }
-        }
-        return resolved;
-      })
-      .filter((c): c is Column => c !== null);
+  // A vertically continuous grid is provisional. Omit a stack that clashes on any
+  // storey rather than moving rooms or offsetting individual columns.
+  for (const floor of building.floors) {
+    const outdoor = floor.rooms.filter(room => isOutdoorCantileverRoom(room));
+    const walls = floor.walls.filter(isPhysicalBoundary).map(wallToPolygon);
+    const wallById = new Map(floor.walls.map(wall => [wall.id, wall]));
+    masterCols = masterCols.flatMap(column => {
+      if (findUnhostedInteriorColumn(floor, column.position)
+        || pointNearAnyDoorOpening(column.position, floor, wallById, DOOR_JAMB_CLEARANCE_MM)) return [];
+      const intrudes = (candidate: Column) => outdoor.some(room =>
+        uncoveredResidentialOverlap(columnFootprint(candidate), room.boundary, walls) >= 0.001);
+      if (!intrudes(column)) return [column];
+      const flush = { ...column, width: 200, depth: 200 };
+      return intrudes(flush) ? [] : [flush];
+    });
   }
 
   // Re-number sequentially C1..Cn after cross-floor clearance check

@@ -49,7 +49,11 @@ function parseGenerationRequest(body: unknown): {
     || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40
     || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6
     || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats
-    || rawConfig.units.some(unit => !isRecord(unit) || typeof unit.bhkType !== 'string' || !/^[1-4]BHK$/.test(unit.bhkType))
+    || rawConfig.units.some((unit, index) => !isRecord(unit) || typeof unit.bhkType !== 'string' || !/^[1-4]BHK$/.test(unit.bhkType)
+      || unit.unitIndex !== index + 1 || (unit.targetCarpetSqFt !== undefined && !positive(unit.targetCarpetSqFt)))
+    || (rawConfig.requireAreaTargets !== undefined && typeof rawConfig.requireAreaTargets !== 'boolean')
+    || (rawConfig.areaAcceptanceTolerancePercent !== undefined && (!Number.isFinite(rawConfig.areaAcceptanceTolerancePercent)
+      || Number(rawConfig.areaAcceptanceTolerancePercent) < 0 || Number(rawConfig.areaAcceptanceTolerancePercent) >= 100))
     || (rawConfig.projectId !== undefined && (typeof rawConfig.projectId !== 'string' || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)))
     || (rawConfig.aiPrompt !== undefined && (typeof rawConfig.aiPrompt !== 'string' || rawConfig.aiPrompt.length > 32_000))
     || (setbacks !== undefined && (!isRecord(setbacks) ||
@@ -123,7 +127,7 @@ export async function handleProjectGeneration(
     const maxOuterRetries = deps.gemini ? 2 : 0;
     for (let retryIdx = 1; (blockers.length || !complianceReport.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
       try {
-        const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+        const priorHash = pipelineResult.building.metadata.generationBrief?.topologyHash;
         const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
         const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
           ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
@@ -168,7 +172,7 @@ export async function handleProjectGeneration(
     if (blockers.length) {
       return {
         status: 422,
-        json: { generationRunId: parsed.generationRunId, error: {
+        json: { generationRunId: parsed.generationRunId, telemetry: proposalResult.telemetry, error: {
           code: 'GENERATION_CHECKS_FAILED',
           message: `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
           findings: blockers.slice(0, 20),

@@ -24,7 +24,7 @@ export function generationBlockingFindings(
     .map(issue => ({ code: issue.code, message: issue.description }));
   const generationReport = building.metadata.generationReport;
   for (const issue of generationReport?.violations ?? []) {
-    if (issue.severity === 'CRITICAL' && ['GEOMETRY', 'CLOSURE', 'OPENING'].includes(issue.source)) {
+    if (issue.severity === 'CRITICAL' && (['GEOMETRY', 'CLOSURE', 'OPENING'].includes(issue.source) || ['AREA_TARGET_UNMET', 'MANDATORY_BRIEF_UNMET'].includes(issue.code))) {
       findings.push({ code: issue.code, message: issue.description });
     }
   }

@@ -53,6 +53,13 @@ export function extractHttpStatus(error: unknown): number | null {
   return null;
 }
 
+export function geminiErrorCode(error: unknown): string {
+  const status = extractHttpStatus(error);
+  if (status !== null) return `HTTP_${status}`;
+  if (error instanceof Error && /abort|timeout|timed out/i.test(`${error.name} ${error.message}`)) return 'TIMEOUT';
+  return 'RESPONSE_OR_TRANSPORT_ERROR';
+}
+
 export function isTransientHttpError(status: number | null, error?: unknown): boolean {
   if (status === 503 || status === 429 || status === 408 || (status !== null && status >= 500 && status < 600)) {
     return true;
@@ -201,6 +208,7 @@ export class GeminiProvider extends BaseAIProvider {
     const modelsToExecute: string[] = [primaryModel, ...this.options.fallbackModels];
 
     let lastError: unknown;
+    let fallbackFromErrorCode: string | undefined;
 
     for (let mIdx = 0; mIdx < modelsToExecute.length; mIdx++) {
       const currentModel = modelsToExecute[mIdx]!;
@@ -236,13 +244,14 @@ export class GeminiProvider extends BaseAIProvider {
           const content = this.extractOutputText(result.body);
           const parsed = wantsJson ? parseJsonContent(content) : undefined;
           const rawUsage = asRecord(result.body.usageMetadata);
-          return response(
+          const completed = response(
             content,
             parsed,
             usage(rawUsage.promptTokenCount, rawUsage.candidatesTokenCount, rawUsage.totalTokenCount),
             currentModel,
             result.latencyMs,
           );
+          return fallbackFromErrorCode ? { ...completed, fallbackFromErrorCode } : completed;
         } catch (err) {
           lastError = err;
           const status = extractHttpStatus(err);
@@ -303,6 +312,7 @@ export class GeminiProvider extends BaseAIProvider {
       }
 
       if (hasNextFallback) {
+        fallbackFromErrorCode = geminiErrorCode(lastError);
         console.warn(
           `[GeminiProvider] Model "${currentModel}" temporarily unavailable (503/transient). Falling back to "${modelsToExecute[mIdx + 1]}"...`,
         );

@@ -89,6 +89,7 @@ export interface GenerateConceptsInput {
   readonly envelope: Box2D;
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
+  readonly unitCarpetTargetsSqFt?: readonly (number | undefined)[];
   readonly aiPrompt?: string;
   readonly manifest?: DynamicApartmentManifest;
   readonly rawRooms?: readonly ExtractedRoom[];
@@ -202,6 +203,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     envelope: input.envelope,
     flatsPerFloor: input.flatsPerFloor,
     program,
+    unitCarpetTargetsSqFt: input.unitCarpetTargetsSqFt,
     enableMacroShapes: Boolean(effectiveMassingShape && effectiveMassingShape !== 'COMPACT_DOUBLE_LOADED'),
   });
 
@@ -327,10 +329,26 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     c => !allWithBalconies.includes(c) && !withBalconies.includes(c),
   );
 
+  const targets = input.unitCarpetTargetsSqFt;
+  const targetSum = targets?.reduce<number>((sum, target) => sum + (target ?? 0), 0) ?? 0;
+  const hasUnequalTargets = targets?.length === input.flatsPerFloor
+    && targets.every(target => target !== undefined && target > 0)
+    && targets.some(target => target !== targets[0]);
+  const areaAllocationError = (candidate: ScoredCandidate): number => {
+    const areas = candidate.partition.flatBoxes.map(box => box.w * box.h);
+    const total = areas.reduce((sum, area) => sum + area, 0);
+    return areas.reduce((error, area, index) => error + Math.abs(area / total - targets![index]! / targetSum), 0);
+  };
+  const rank = (pool: ScoredCandidate[]) => {
+    const ordered = rankCandidates(pool);
+    return hasUnequalTargets
+      ? [...ordered].sort((a, b) => areaAllocationError(a) - areaAllocationError(b))
+      : ordered;
+  };
   const basePool = [
-    ...rankCandidates(allWithBalconies),
-    ...rankCandidates(withBalconies),
-    ...rankCandidates(withoutBalconies),
+    ...rank(allWithBalconies),
+    ...rank(withBalconies),
+    ...rank(withoutBalconies),
   ];
   const matchingShape = effectiveMassingShape
     ? basePool.filter(c => (c.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED') === effectiveMassingShape)
@@ -342,12 +360,11 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     rejectedHashSet.has(c.fingerprint.digests.canonical)
     || rejectedHashSet.has(c.fingerprint.canonical)
     || rejectedHashSet.has(c.topology.variantId);
-  const freshRanked = rejectedHashSet.size > 0
-    ? baseRanked.filter(c => !isRejectedCandidate(c))
-    : baseRanked;
-  const ranked = freshRanked.length > 0
-    ? [...freshRanked, ...baseRanked.filter(c => isRejectedCandidate(c))]
-    : baseRanked;
+  for (const candidate of baseRanked.filter(isRejectedCandidate)) {
+    rejected.push({ familyId: candidate.topology.familyId, variantId: candidate.topology.variantId,
+      reasons: ['The requested topology exclusion matches this candidate.'], stage: 'DIVERSITY' });
+  }
+  const ranked = baseRanked.filter(candidate => !isRejectedCandidate(candidate));
   const { selected, suppressed } = selectDistinct(ranked, conceptLimit);
 
   for (const s of suppressed) {
@@ -380,9 +397,10 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
 
   // Failed candidates remain failed. Choose the fewest hard violations first,
   // then measured utility, with a stable identity tie-break for review/repair.
+  const freshFailed = failed.filter(candidate => !isRejectedCandidate(candidate));
   const preferredFailed = requestedShapeId === 'PINWHEEL_CLUSTER'
-    ? failed.filter(candidate => candidate.partition.massingShape === requestedShapeId) : [];
-  const leastBad = [...(preferredFailed.length ? preferredFailed : failed)].sort((a, b) =>
+    ? freshFailed.filter(candidate => candidate.partition.massingShape === requestedShapeId) : [];
+  const leastBad = [...(preferredFailed.length ? preferredFailed : freshFailed)].sort((a, b) =>
     a.score.hardConstraints.filter(c => !c.satisfied).length - b.score.hardConstraints.filter(c => !c.satisfied).length
     || b.score.weightedTotal - a.score.weightedTotal
     || a.topology.variantId.localeCompare(b.topology.variantId))[0];

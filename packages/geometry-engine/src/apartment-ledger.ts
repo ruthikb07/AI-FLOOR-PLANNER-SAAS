@@ -1,4 +1,4 @@
-import { isPhysicalBoundary } from '@ai-floor-planner/core';
+import { APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM, isPhysicalBoundary } from '@ai-floor-planner/core';
 import { partitionPlanarCells } from "./planar-cells";
 import type { Floor, Room, Point, Polygon } from "@ai-floor-planner/core";
 import { polygonArea } from "./polygon";
@@ -181,8 +181,8 @@ export function measureApartmentAreaLedger(floor: Floor) {
       boundary: r.boundary,
       area: roomUsable[r.id] ?? 0,
       grossArea: polygonArea(r.boundary),
-      usableDepth: Math.min(r.width, r.height) - 230,
-      usableWidth: Math.max(r.width, r.height) - 230,
+      usableDepth: Math.min(r.width, r.height) - APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM,
+      usableWidth: Math.max(r.width, r.height) - APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM,
       accessDoorIds: floor.doors
         .filter((d) => d.connectsRooms.includes(r.id))
         .map((d) => d.id),

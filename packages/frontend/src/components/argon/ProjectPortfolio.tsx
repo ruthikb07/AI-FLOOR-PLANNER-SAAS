@@ -39,7 +39,13 @@ function conceptId(building: Building): string {
 
 function conceptFacts(building: Building) {
   const floor = representativeFloor(building);
+  const telemetry = building.metadata.generationBrief?.aiTelemetry;
   return [
+    ...(telemetry?.interpretationSource ? [{
+      name: 'Brief interpretation',
+      value: telemetry.interpretationSource === 'GEMINI' ? `Gemini (${telemetry.modelUsed})`
+        : telemetry.fallbackReason ?? 'Deterministic rules',
+    }] : []),
     { name: 'Levels', value: building.floors.length.toString() },
     { name: 'Units on shown floor', value: floor?.apartmentUnits?.length.toString() ?? '—' },
     { name: 'Room area on shown floor', value: floor ? `${(floor.rooms.reduce((total, room) => total + room.area, 0) / 1_000_000).toFixed(1)} m²` : '—' },

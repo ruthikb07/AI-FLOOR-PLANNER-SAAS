@@ -61,6 +61,7 @@ export interface AIResponse {
   readonly usage: TokenUsage;
   readonly model: string;
   readonly latencyMs: number;
+  readonly fallbackFromErrorCode?: string;
 }
 
 /** A streaming AI response chunk. */

@@ -1,3 +1,4 @@
+import { findUnhostedInteriorColumn } from '../structural/provisional-column-host';
 /**
  * Zero-Error Mathematical Geometry Audit & Auto-Correction Engine (§1A).
  *
@@ -31,7 +32,6 @@ import {
 import {
   distance,
   pointToSegmentDistance,
-  pointInPolygon,
   measureApartmentAreaLedger,
   polygonIntersectionArea,
 } from '@ai-floor-planner/geometry-engine';
@@ -245,17 +245,6 @@ export class GeometryValidator {
       let columns = [...floor.columns];
       const walls = floor.walls;
 
-      // Habitable rooms where floating columns are prohibited
-      const habitableRoomTypes = new Set<RoomType>([
-        RoomType.Kitchen,
-        RoomType.Bedroom,
-        RoomType.Living,
-        RoomType.Dining,
-        RoomType.Bathroom,
-        RoomType.Pooja,
-        RoomType.Study,
-      ]);
-
       // Collect all wall corner points (endpoints & intersections)
       const wallCorners: Point[] = [];
       walls.forEach(w => {
@@ -264,30 +253,9 @@ export class GeometryValidator {
 
       // A. Floating Column Detection & Snapping
       columns = columns.map(col => {
-        let isFloating = false;
-        let hostRoom: Room | undefined;
-
-        for (const room of floor.rooms) {
-          if (habitableRoomTypes.has(room.type) && pointInPolygon(col.position, room.boundary)) {
-            // Check distance to all walls
-            let minWallDist = Number.POSITIVE_INFINITY;
-            for (const wall of walls) {
-              const seg = { start: wall.startPoint, end: wall.endPoint };
-              const d = pointToSegmentDistance(col.position, seg);
-              if (d < minWallDist) minWallDist = d;
-            }
-
-            // A column is floating if distance from wall centerline exceeds clearance
-            const maxEmbeddedDistance = 150;
-            if (minWallDist > maxEmbeddedDistance) {
-              isFloating = true;
-              hostRoom = room;
-              break;
-            }
-          }
-        }
-
-        if (isFloating && hostRoom) {
+        const hostRoom = findUnhostedInteriorColumn(floor, col.position,
+          building.metadata.tags?.includes('STRUCTURAL_FRAMING_PRELIMINARY') ?? false);
+        if (hostRoom) {
           errors.push({
             code: 'FLOATING_COLUMN',
             severity: 'CRITICAL',

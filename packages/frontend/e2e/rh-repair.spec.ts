@@ -89,14 +89,15 @@ test('a real IndexedDB abort leaves work open and a manual retry persists it', a
   expect((await durableProject(page)).building).toEqual(original.building);
 });
 
-async function seedWizard(page: Page, width: number, depth: number, floors: number, hasStiltParking = true) {
-  await page.addInitScript(({ width, depth, floors, hasStiltParking }) => {
+async function seedWizard(page: Page, width: number, depth: number, floors: number, hasStiltParking = true, aiPrompt?: string) {
+  await page.addInitScript(({ width, depth, floors, hasStiltParking, aiPrompt }) => {
     localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
       plotWidthM: width, plotDepthM: depth, floorsCount: floors, hasStiltParking, roadFacing: 'South',
+      ...(aiPrompt ? { aiPrompt } : {}),
       authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
       bhkCounts: { '1BHK': 0, '2BHK': 4, '3BHK': 0, '4BHK': 0 },
     }));
-  }, { width, depth, floors, hasStiltParking });
+  }, { width, depth, floors, hasStiltParking, aiPrompt });
 }
 
 test('a verified generated revision keeps project identity and archives the previous IndexedDB data', async ({ page, context }) => {
@@ -128,8 +129,8 @@ test('a verified generated revision keeps project identity and archives the prev
   expect((await durableProject(page)).building).toEqual(after.building);
 });
 
-test('the production studio surfaces real geometry rejection without replacing the current design', async ({ page }) => {
-  await seedWizard(page, 42, 34, 1);
+test('the production studio surfaces mandatory circulation rejection without replacing the current design', async ({ page }) => {
+  await seedWizard(page, 42, 34, 1, true, 'Provide three stairs.');
   await openCad(page);
   await expect.poll(() => durableProject(page)).toBeTruthy();
   const before = await durableProject(page);

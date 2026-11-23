@@ -349,6 +349,10 @@ export interface BuildingMetadata {
       readonly provider: string;
       readonly modelUsed?: string;
       readonly fallbackReason?: string;
+      readonly fallbackTriggered?: boolean;
+      readonly providerErrorCode?: string;
+      readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
+      readonly referenceGuidanceApplied?: readonly string[];
       readonly referenceImageUsedForGeometry: boolean;
     };
   };
