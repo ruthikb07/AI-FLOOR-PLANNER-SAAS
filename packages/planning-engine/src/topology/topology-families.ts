@@ -163,6 +163,7 @@ export interface TopologyPartition {
 
 export interface TopologyContext {
   readonly unitCarpetTargetsSqFt?: readonly (number | undefined)[];
+  readonly unitGrossAreasMm2?: readonly number[];
   readonly envelope: Box2D;
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly program: ArchitecturalProgram;
@@ -1529,6 +1530,38 @@ const centralCoreSpine: FamilyBuilder = ctx => {
  * frame transposes, room proportions genuinely rotate rather than merely
  * shifting, so this is a different plan and not a mirrored one.
  */
+function sizeFlatRow(
+  region: Box2D, grossAreas: readonly number[], entranceAtLowEnd: boolean,
+): ReturnType<typeof sliceFlatRow> | undefined {
+  const minSpan = FLAT_BOUNDS.balconySpanMm;
+  const minRun = FLAT_BOUNDS.minRunMm;
+  if (region.h < minSpan || !grossAreas.length) return undefined;
+
+  const totalGross = grossAreas.reduce((sum, area) => sum + area, 0);
+  const span = Math.max(minSpan, Math.ceil(totalGross / region.w / 10) * 10);
+  if (span > region.h) return undefined;
+  const sizes = grossAreas.map(area => Math.max(minRun, snap10(area / span)));
+  const freeRun = region.w - sizes.reduce((sum, width) => sum + width, 0);
+  if (freeRun < 0) return undefined;
+  if (freeRun > 0 && freeRun < MIN_LIGHT_SLOT) sizes[sizes.length - 1]! += freeRun;
+
+  const band = { ...region, y: entranceAtLowEnd ? region.y : region.y + region.h - span, h: span };
+  const outerDepth = region.h - span;
+  const leftovers: Box2D[] = outerDepth > 0
+    ? [{ ...region, y: entranceAtLowEnd ? region.y + span : region.y, h: outerDepth }] : [];
+  const flats: Box2D[] = [];
+  let x = band.x;
+  for (const [index, width] of sizes.entries()) {
+    if (index === sizes.length - 1 && freeRun >= MIN_LIGHT_SLOT) {
+      leftovers.push({ ...band, x, w: freeRun });
+      x += freeRun;
+    }
+    flats.push({ ...band, x, w: width });
+    x += width;
+  }
+  return { flats, leftovers };
+}
+
 const dualWing: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
   const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
@@ -1548,8 +1581,13 @@ const dualWing: FamilyBuilder = ctx => {
   const weightOf = (ts: readonly string[]) => ts.reduce((s, t) => s + (BHK_BAY_WEIGHTS[t] ?? 1), 0);
   const northWeight = weightOf(northTypes);
   const southWeight = weightOf(southTypes);
+  const northGross = ctx.unitGrossAreasMm2?.slice(0, northCount);
+  const southGross = ctx.unitGrossAreasMm2?.slice(northCount);
   const minWingSpan = availH >= 2 * FLAT_BOUNDS.balconySpanMm ? FLAT_BOUNDS.balconySpanMm : FLAT_BOUNDS.minSpanMm;
-  const northH = isMixed && northWeight + southWeight > 0
+  const northH = northGross && southGross?.length && availH >= minWingSpan * 2
+    ? snap10(clamp(availH * northGross.reduce((sum, area) => sum + area, 0)
+      / ctx.unitGrossAreasMm2!.reduce((sum, area) => sum + area, 0), minWingSpan, availH - minWingSpan))
+    : isMixed && northWeight + southWeight > 0
     ? snap10(clamp(availH * (northWeight / (northWeight + southWeight)), minWingSpan, availH - minWingSpan))
     : snap10(availH / 2);
   const attempts: BuildAttempt[] = [];
@@ -1609,8 +1647,10 @@ const dualWing: FamilyBuilder = ctx => {
       maxSpanS = rebalanced.bSpan;
       runS = rebalanced.bRun;
     }
-    const northRow = sliceFlatRow(north, northCount, runN, false, maxSpanN, false, ctx.unitCarpetTargetsSqFt?.slice(0, northCount));
-    const southRow = sliceFlatRow(south, southCount, runS, false, maxSpanS, true, ctx.unitCarpetTargetsSqFt?.slice(northCount));
+    const sizedNorth = northGross && sizeFlatRow(north, northGross, false);
+    const sizedSouth = southGross && sizeFlatRow(south, southGross, true);
+    const northRow = sizedNorth ?? sliceFlatRow(north, northCount, runN, false, maxSpanN, false, ctx.unitCarpetTargetsSqFt?.slice(0, northCount));
+    const southRow = sizedSouth ?? sliceFlatRow(south, southCount, runS, false, maxSpanS, true, ctx.unitCarpetTargetsSqFt?.slice(northCount));
 
     const flatBoxes: Box2D[] = [];
     const edges: AccessEdge[] = [];
@@ -3054,7 +3094,7 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       // its BHK weight (2BHK : 3BHK : 4BHK = 1.0 : 1.35 : 1.70). The rebalanced
       // dissection is only kept when it passes every partition defect check.
       const unweighted = withTightBuiltOutline(partition);
-      const weightedPartition = partition.massingShape === 'PINWHEEL_CLUSTER' ? partition : rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes, ctx.unitCarpetTargetsSqFt);
+      const weightedPartition = partition.massingShape === 'PINWHEEL_CLUSTER' || ctx.unitGrossAreasMm2 ? partition : rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes, ctx.unitCarpetTargetsSqFt);
       const weighted = weightedPartition !== partition ? withTightBuiltOutline(weightedPartition) : undefined;
       const balanced = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
       const tightened = withTightBuiltOutline(reserveInterflatDucts(balanced, ctx.program));

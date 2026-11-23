@@ -54,8 +54,12 @@ const PAPER_POINTS: Record<string, { width: number; height: number }> = {
 };
 
 function ascii(value: string): string {
-  return value
-    .normalize('NFKD')
+  const normalized = value.normalize('NFKD');
+  if ([...normalized].some(character => /\p{Letter}/u.test(character) && !/[A-Za-z]/.test(character))) {
+    throw new ExportError('PDF_TEXT_FONT_UNAVAILABLE',
+      'This drawing uses text that requires a Unicode drawing font. The current PDF exporter cannot render those labels.', 422);
+  }
+  return normalized
     .replace(/[^\x20-\x7E]/g, '')
     .replace(/([\\()])/g, '\\$1');
 }
@@ -273,7 +277,7 @@ export class PdfExportService {
           else line(a,{x:a.x-uy*op.width,y:a.y+ux*op.width});
         }
       }
-      if(options.includeStructural!==false) {
+      if (options.includeStructural ?? options.drawingKind === 'STRUCTURAL') {
         commands.push('0.7 0.2 0.2 RG','0.5 w');
         for(const col of floor.columns)polygon([{x:col.position.x-col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y+col.depth/2},{x:col.position.x-col.width/2,y:col.position.y+col.depth/2}]);
         for(const beam of floor.beams??[]) {commands.push(`${(beam.widthMm*fitScale).toFixed(4)} w`);line(beam.startPoint,beam.endPoint);}

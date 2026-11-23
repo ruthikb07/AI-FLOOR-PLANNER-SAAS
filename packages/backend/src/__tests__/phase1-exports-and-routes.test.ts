@@ -226,6 +226,13 @@ describe('RH Planner Phase 1 — Backend Hybrid AI Generation & Exports', () => 
       body: JSON.stringify({ building: genBody.building }),
     });
     expect(glbRes.status).toBe(200);
+    expect(glbRes.headers.get('x-building-revision')).toBe(String(genBody.building.version));
+    expect(glbRes.headers.get('x-building-sha256')).toMatch(/^[a-f0-9]{64}$/);
+    const staleGlb = await fetch(`${base}/api/v1/export/glb`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ building: genBody.building, options: { expectedRevision: genBody.building.version + 1 } }),
+    });
+    expect(staleGlb.status).toBe(409);
     const httpGlbBuf = Buffer.from(await glbRes.arrayBuffer());
     verifyBlenderArtifact(httpGlbBuf, 'GLTF');
 
@@ -247,6 +254,12 @@ describe('RH Planner Phase 1 — Backend Hybrid AI Generation & Exports', () => 
     const pdfAscii = Buffer.from(pdfResult.data).toString('latin1');
     expect(pdfAscii.startsWith('%PDF-1.4')).toBe(true);
     expect(pdfAscii).toContain('Sheet A-901: RERA Carpet Area & Compliance Schedule');
+
+    expect(pdfAscii).not.toContain('0.7 0.2 0.2 RG');
+    const structural = new PdfExportService().exportMultiSheetPdf(genBody.building, { drawingKind: 'STRUCTURAL' });
+    expect(Buffer.from(structural.data).toString('latin1')).toContain('0.7 0.2 0.2 RG');
+    expect(() => new PdfExportService().exportMultiSheetPdf({ ...genBody.building, name: 'मराठी निवास' }))
+      .toThrow(/requires a Unicode drawing font/);
 
     const pdfRes = await fetch(`${base}/api/v1/export/multi-sheet-pdf`, {
       method: 'POST',

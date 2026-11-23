@@ -1,12 +1,13 @@
 import { expect, it } from 'vitest';
 import {
   DEFAULT_SITE_AMENITIES, DEFAULT_STILT_AMENITIES, DEFAULT_TERRACE_AMENITIES,
-  APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, Direction, type Building, type MultiSheetApartmentConfig,
+  APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, Direction, createGenerationControlState, updateGenerationControl,
+  type Building, type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
 import { generateArchitecturalProposal } from '@ai-floor-planner/ai-orchestration';
 import { generationBlockingFindings, validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
-import { measureApartmentAreaLedger, openingFitsApartmentWall } from '@ai-floor-planner/geometry-engine';
-import { executeAuditedPlanningPipeline, solveMultiSheetApartmentProject } from '@ai-floor-planner/planning-engine';
+import { containsPolygon, measureApartmentAreaLedger, openingFitsApartmentWall, polygonArea, projectOnSegment } from '@ai-floor-planner/geometry-engine';
+import { editApartmentOpening, executeAuditedPlanningPipeline, moveApartmentPartition, solveMultiSheetApartmentProject } from '@ai-floor-planner/planning-engine';
 
 const base: MultiSheetApartmentConfig = {
   projectId: 'phase2-ordinary', structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
@@ -109,6 +110,116 @@ it.each(configurations)('verifies the %s brief on a production building', async 
     expect(result.generationReport?.violations.some(issue => issue.code === 'AREA_TARGET_UNMET')).toBe(true);
   }
 }, 60_000);
+
+it('allocates four unequal strict carpet targets from audited geometry at two percent tolerance', async () => {
+  const input = { ...base, structuralLayoutMode: 'DEFERRED' as const, units: targeted,
+    requireAreaTargets: true, areaAcceptanceTolerancePercent: 2, generationSeed: 1 };
+  const plan = await executeAuditedPlanningPipeline(input);
+  expect(generationBlockingFindings(plan.building, plan.validationReport)).toEqual([]);
+  const areas = plan.building.metadata.generationReport?.floorAreas?.[0]?.units;
+  expect(areas?.map(unit => unit.target?.requestedAreaSqFt)).toEqual([700, 1100, 1500, 1900]);
+  for (const unit of areas!) {
+    expect(unit.target?.status).toBe('ACHIEVED');
+    expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThanOrEqual(0.02);
+  }
+  console.log('PHASE3_STRICT_CARPET_SQFT', areas?.map(unit => unit.target?.achievedAreaSqFt));
+}, 60_000);
+
+const mixedCarpet = [
+  { unitIndex: 1, bhkType: '1BHK' as const, hasUtilityBalcony: true, targetCarpetSqFt: 800 },
+  { unitIndex: 2, bhkType: '3BHK' as const, hasUtilityBalcony: true, targetCarpetSqFt: 1400 },
+];
+const obliquePolygon = { points: [{ x: 0, y: 0 }, { x: 42000, y: 1000 }, { x: 40500, y: 34000 }, { x: 1000, y: 33000 }] };
+const obliquePlot = { polygon: obliquePolygon, areaMm2: polygonArea(obliquePolygon),
+  perimeterMm: obliquePolygon.points.reduce((sum, point, index, points) => {
+    const next = points[(index + 1) % points.length]!;
+    return sum + Math.hypot(next.x - point.x, next.y - point.y);
+  }, 0),
+};
+it.each([
+  ['mixed', {}],
+  ['narrow', { plotWidthMm: 25000, plotDepthMm: 32000 }],
+  ['oblique', { irregularPlotBoundary: obliquePlot }],
+] as const)('fits strict mixed BHK targets on a %s site', async (label, overrides) => {
+  const result = await executeAuditedPlanningPipeline({ ...base, ...overrides, structuralLayoutMode: 'DEFERRED',
+    verticalStackType: 'G_PLUS_N', flatsPerFloor: 2, units: mixedCarpet,
+    requireAreaTargets: true, areaAcceptanceTolerancePercent: 3 });
+  expect(generationBlockingFindings(result.building, result.validationReport)).toEqual([]);
+  const floor = result.building.floors.find(candidate => candidate.apartmentUnits?.length)!;
+  expect(floor.apartmentUnits?.map(unit => unit.unitType)).toEqual(['1BHK', '3BHK']);
+  if (label === 'oblique') {
+    const envelope = result.building.metadata.irregularPlotBoundary?.buildablePolygon;
+    expect(envelope && containsPolygon(envelope, floor.boundary)).toBe(true);
+  }
+  const areas = result.building.metadata.generationReport?.floorAreas?.[0]?.units;
+  expect(areas?.map(unit => unit.target?.requestedAreaSqFt)).toEqual([800, 1400]);
+  for (const unit of areas!) {
+    expect(unit.target?.status).toBe('ACHIEVED');
+    expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThanOrEqual(0.03);
+  }
+  console.log('PHASE3_MIXED_CARPET_SQFT', label, areas?.map(unit => unit.target?.achievedAreaSqFt));
+}, 30_000);
+
+it('preserves other floors and blocks opening edits on a locked apartment', async () => {
+  const plan = await executeAuditedPlanningPipeline({ ...wave, structuralLayoutMode: 'DEFERRED' });
+  expect(generationBlockingFindings(plan.building, plan.validationReport)).toEqual([]);
+  const floor = plan.building.floors.find(candidate => candidate.apartmentUnits?.length)!;
+  const window = floor.windows.find(opening => opening.width >= 1100 && floor.rooms.some(room =>
+    room.id === opening.roomId && room.unitId && !room.isFixed) &&
+    floor.walls.some(wall => wall.id === opening.wallId && !wall.arc && wall.roomIds.length === 1))!;
+  const host = floor.walls.find(wall => wall.id === window.wallId)!;
+  const room = floor.rooms.find(candidate => candidate.id === window.roomId)!;
+  const control = createGenerationControlState();
+  const edit = { action: 'update' as const, id: window.id, wallId: host.id,
+    offsetMm: projectOnSegment(window.position, host.startPoint, host.endPoint)!.along, widthMm: window.width - 40 };
+  expect(() => editApartmentOpening(plan.building,
+    updateGenerationControl(control, { lockedEntityIds: [room.unitId!] }), floor.id, edit)).toThrow(/locked/);
+  const edited = editApartmentOpening(plan.building, control, floor.id, edit);
+  expect(edited.version).toBe(plan.building.version + 1);
+  const changed = edited.floors.find(candidate => candidate.id === floor.id)!;
+  expect(changed.windows.find(candidate => candidate.id === window.id)?.width).toBe(window.width - 40);
+  expect(changed.apartmentUnits).toEqual(floor.apartmentUnits);
+  expect(edited.floors.filter(candidate => candidate.id !== floor.id))
+    .toEqual(plan.building.floors.filter(candidate => candidate.id !== floor.id));
+  const accepted = await executeAuditedPlanningPipeline(edited);
+  expect(generationBlockingFindings(accepted.building, accepted.validationReport)).toEqual([]);
+}, 30_000);
+
+it('moves a real rectangular partition 50 mm and keeps its neighbouring floors and openings', async () => {
+  const plan = await executeAuditedPlanningPipeline({ ...base, structuralLayoutMode: 'DEFERRED' });
+  const floor = plan.building.floors.find(item => item.apartmentUnits?.length)!;
+  const control = createGenerationControlState();
+  const walls = floor.walls.filter(wall => wall.wallUse === 'INTERNAL_PARTITION' && !wall.arc && wall.roomIds.length === 2);
+  const rejected: string[] = [];
+  let accepted: { revised: Building; wall: (typeof walls)[number]; offset: number } | undefined;
+  for (const wall of walls) {
+    for (const offset of [50, -50]) {
+      try {
+        accepted = { revised: moveApartmentPartition(plan.building, control, floor.id, wall.id, offset), wall, offset };
+        break;
+      } catch (error) {
+        rejected.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+    if (accepted) break;
+  }
+  expect(accepted, [...new Set(rejected)].join(' | ')).toBeDefined();
+  const { revised, wall, offset } = accepted!;
+  const updated = revised.floors.find(item => item.id === floor.id)!;
+  const moved = updated.walls.find(item => item.id === wall.id)!;
+  const axis = wall.startPoint.x === wall.endPoint.x ? 'x' : 'y';
+  expect(moved.startPoint[axis] - wall.startPoint[axis]).toBe(offset);
+  expect(moved.endPoint[axis] - wall.endPoint[axis]).toBe(offset);
+  expect(updated.boundary).toEqual(floor.boundary);
+  expect(updated.rooms.filter(room => !wall.roomIds.includes(room.id)))
+    .toEqual(floor.rooms.filter(room => !wall.roomIds.includes(room.id)));
+  expect(updated.doors.map(door => door.id)).toEqual(floor.doors.map(door => door.id));
+  expect(updated.windows.map(window => window.id)).toEqual(floor.windows.map(window => window.id));
+  expect(revised.floors.filter(item => item.id !== floor.id)).toEqual(plan.building.floors.filter(item => item.id !== floor.id));
+  expect(() => moveApartmentPartition(plan.building, updateGenerationControl(control, { lockedEntityIds: [wall.id] }),
+    floor.id, wall.id, offset)).toThrow(/unlocked/);
+  console.log('PHASE3_PARTITION_MOVE_MM', wall.id, offset);
+}, 30_000);
 
 function adjacency(building: Building): string[] {
   const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;

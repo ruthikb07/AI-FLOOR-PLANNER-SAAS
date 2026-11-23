@@ -41,6 +41,7 @@ export function validateGenerationControl(
   const floorIds = new Set(building.floors.map(floor => floor.id));
   const entityIds = new Set(building.floors.flatMap(floor => [
     ...floor.rooms.map(value => value.id),
+    ...(floor.apartmentUnits ?? []).map(value => value.id),
     ...floor.walls.map(value => value.id),
     ...floor.doors.map(value => value.id),
     ...floor.windows.map(value => value.id),

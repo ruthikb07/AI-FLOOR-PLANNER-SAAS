@@ -436,12 +436,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const handleRegenerateVariant = (target: 'edit' | 'compare' = 'edit') => {
     const brief = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
-    const currentHash = editor.building.metadata.generationBrief?.topologyHash;
+    const currentBrief = editor.building.metadata.generationBrief;
     const currentShape = editor.building.metadata.generationBrief?.buildingMassingShape;
     const currentArch = editor.building.metadata.generationBrief?.archetype;
-    if (currentHash && !rejectedTopologyHashes.current.includes(currentHash)) {
-      rejectedTopologyHashes.current = [...rejectedTopologyHashes.current, currentHash];
-    }
+    rejectedTopologyHashes.current = [...new Set([...rejectedTopologyHashes.current,
+      currentBrief?.topologyHash, currentBrief?.physicalLayoutHash].filter((hash): hash is string => Boolean(hash)))];
     if (currentShape && !usedShapeIds.current.includes(currentShape)) {
       usedShapeIds.current = [...usedShapeIds.current, currentShape];
     }
@@ -500,8 +499,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       return;
     }
     const nextSeed = generationSeed + 1;
-    const topologyHash = editor.building.metadata.generationBrief?.topologyHash;
-    rejectedTopologyHashes.current = topologyHash ? [topologyHash] : [];
+    const generated = editor.building.metadata.generationBrief;
+    rejectedTopologyHashes.current = [generated?.topologyHash, generated?.physicalLayoutHash]
+      .filter((hash): hash is string => Boolean(hash));
     setAutoFixStatus('');
     setGenerationSeed(nextSeed);
     runGeneration(brief.data, nextSeed, rejectedTopologyHashes.current, 'repair');

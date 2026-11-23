@@ -40,3 +40,17 @@ The six repair areas above are covered by the regressions and verification in [t
 | D1/D2 provider attribution | Provider and deterministic interpretation were ambiguous after errors; unvalidated reference responses could supply default spatial hints. | Report Gemini attempt, model and deterministic fallback separately with sanitized errors. Apply only validated attached-image hints. |
 
 See [Phase 2 architectural verification](PHASE2_ARCHITECTURAL_VERIFICATION.md) for exact configurations, measurements, regression files, and limits. Remaining work includes strict per-unit fit for more irregular and mixed layouts, broader final-geometry diversity checks, additional reference-image spatial constraints, and statutory and native structural verification.
+
+## Phase 3 engineering repairs
+
+| Defect | Verified disposition |
+| --- | --- |
+| Unequal strict carpet targets missed | The seed-1 four-flat fixture changed from 888.19 / 1,610.46 / 983.81 / 1,472.71 sq ft to 703.75 / 1,106.29 / 1,500.71 / 1,900.80 sq ft against the same 2% brief. Target slots and mandatory geometry checks are preserved. |
+| An explicit wave could publish as a stepped massing | Preserve and enforce the lock at the acceptance boundary. The original substitute fails with `LOCKED_MASSING_UNREALIZED`. Realized compact massing passes. |
+| Repeated or conflicting design inputs | Exclude an identical final architectural geometry and door graph. Reject a prompt that would remove sized schedule slots. |
+| Oblique footprint could cross setbacks | The measured envelope is persisted. The rectangle search rounds inwards and finished floor footprints are checked at the audited boundary. |
+| Unsafe local edits and duplicate editor history | The apartment editor supports hosted openings and full-edge rectangular internal partitions through the canonical revision store. A 40 mm window edit and a 50 mm partition move were exercised. Locked geometry and other floors were preserved. |
+| Duplicate orbit renders | A browser trace measured up to three renders per frame. Coalescing requests reduced the peak to one and the sample from 66 to 31 renders at the same measured draw count. |
+| Export trust and default drawing content | GLB downloads verify the expected revision and canonical source digest. Architectural PDF defaults exclude structural overlays. Unsupported Unicode labels raise an explicit error before publishing a drawing. |
+
+See [Phase 3 verification](PHASE3_FINAL_VERIFICATION.md) for inputs, test runs, native evidence and remaining gaps. Phase 4 adapter contracts are recorded in [integration readiness](PHASE4_INTEGRATION_READINESS.md).

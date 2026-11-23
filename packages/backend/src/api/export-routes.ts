@@ -3,7 +3,7 @@
  * Provides HTTP request handlers for AutoCAD DWG, DXF, and 1:100 ISO A3 Vector PDF exports.
  */
 
-import type { Building } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, type Building } from '@ai-floor-planner/core';
 import { buildingInputError, isRecord, RequestBodyTooLarge } from './http-input.js';
 import {
   exportBuildingToGlb,
@@ -130,6 +130,10 @@ export async function handleExportRoute(
     if (body.format !== undefined && typeof body.format !== 'string')
       throw new ExportError('INVALID_FORMAT', 'Format must be a string.', 400);
     if (match[1] === 'glb') {
+      const revision = body.options?.expectedRevision;
+      if (revision !== undefined && revision !== body.building.version) {
+        throw new ExportError('STALE_REVISION', 'The requested GLB revision does not match the canonical building.', 409);
+      }
       const glbBytes = exportBuildingToGlb(body.building);
       const safeName = (body.building.name || body.building.id || 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
       response.writeHead(200, {
@@ -137,6 +141,8 @@ export async function handleExportRoute(
         'Content-Length': String(glbBytes.length),
         'Content-Disposition': `attachment; filename="${safeName}.glb"`,
         'X-CAD-Format': 'GLB',
+        'X-Building-Revision': String(body.building.version),
+        'X-Building-Sha256': canonicalBuildingHash(body.building),
       });
       response.end(Buffer.from(glbBytes));
       return true;
@@ -156,25 +162,8 @@ export async function handleExportRoute(
       return true;
     }
     if (match[1] === 'blender') {
-      try {
-        sendJson(response, 200, await blenderService.exportBuilding(body.building));
-        return true;
-      } catch (err) {
-        if (err instanceof ExportError && err.code === 'BLENDER_BINARY_NOT_FOUND') {
-          const glbBytes = exportBuildingToGlb(body.building);
-          const safeName = (body.building.name || body.building.id || 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
-          response.writeHead(200, {
-            'Content-Type': 'model/gltf-binary',
-            'Content-Length': String(glbBytes.length),
-            'Content-Disposition': `attachment; filename="${safeName}.glb"`,
-            'X-CAD-Format': 'GLB',
-            'X-Blender-Fallback': 'pure-ts-glb',
-              });
-          response.end(Buffer.from(glbBytes));
-          return true;
-        }
-        throw err;
-      }
+      sendJson(response, 200, await blenderService.exportBuilding(body.building));
+      return true;
     }
     if (match[1] === 'multi-sheet-pdf') {
       const pdfResult = new PdfExportService().exportMultiSheetPdf(body.building, body.options ?? {});

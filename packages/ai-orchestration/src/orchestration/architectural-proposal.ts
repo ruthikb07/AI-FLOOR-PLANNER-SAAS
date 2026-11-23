@@ -595,7 +595,10 @@ export async function generateArchitecturalProposal(
 
     const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(input.config.aiPrompt));
     const currentUnitTypes = (input.config.units ?? []).map(u => u.bhkType);
+    const sizedUnitsMatch = !input.config.units?.some(unit => unit.targetCarpetSqFt !== undefined)
+      || parsedMixed?.length === currentUnitTypes.length;
     const shouldOverrideMixedUnits = Boolean(
+      sizedUnitsMatch &&
       parsedMixed &&
       parsedMixed.length >= 2 &&
       parsedMixed.length <= 6 &&
@@ -604,7 +607,10 @@ export async function generateArchitecturalProposal(
     const resolvedFlatsPerFloor = shouldOverrideMixedUnits
       ? (parsedMixed!.length as 1 | 2 | 3 | 4 | 5 | 6)
       : input.config.flatsPerFloor;
-    const resolvedUnits = shouldOverrideMixedUnits ? mixedUnitSpecs(parsedMixed!) : input.config.units;
+    const resolvedUnits = shouldOverrideMixedUnits
+      ? mixedUnitSpecs(parsedMixed!).map((unit, index) => ({ ...input.config.units?.[index], ...unit,
+        targetCarpetSqFt: input.config.units?.[index]?.targetCarpetSqFt }))
+      : input.config.units;
 
     const promptMentionsArea = /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|sft|sq\.?\s*m|sqm|m2|m²)\b/i.test(basePrompt);
     const enrichedConfig: MultiSheetApartmentConfig = {
@@ -616,6 +622,7 @@ export async function generateArchitecturalProposal(
       rejectedTopologyHashes: rejected,
       preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
       buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
+      lockedMassingShape: input.config.lockedMassingShape ?? input.config.buildingMassingShape,
       centerBuildingInEnvelope: input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
       ...(promptMentionsArea && finalProposal.targetAreaSqFt !== undefined && input.config.targetAreaSqFt === undefined
         ? { targetAreaSqFt: finalProposal.targetAreaSqFt }

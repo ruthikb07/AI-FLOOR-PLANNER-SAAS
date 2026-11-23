@@ -1062,6 +1062,7 @@ export function importPlotBoundaryFromCad(doc: ParsedCadDocument, req: CadImport
       projectId: `cad-plot-${randomUUID().slice(0, 8)}`,
       projectName: req.projectName || `CAD Site — ${path.parse(doc.fileName).name}`,
       buildingMassingShape: requestedShape,
+      lockedMassingShape: req.buildingMassingShape,
       planCategory: 'IRREGULAR_PLOT_CUSTOM',
       structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
       irregularPlotBoundary: plotBoundary,

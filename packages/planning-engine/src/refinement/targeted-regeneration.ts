@@ -327,7 +327,11 @@ export function generateTargetedRefinements(input: TargetedRegenerationInput): r
   const selected = new Set(input.selectedRoomIds); if (!selected.size) throw new RefinementError('INVALID_REGENERATION_SELECTION', 'Select at least one unlocked room to regenerate.');
   const allRooms = input.building.floors.flatMap(floor => floor.rooms); const selectedRooms = allRooms.filter(room => selected.has(room.id));
   if (selectedRooms.length !== selected.size) throw new RefinementError('INVALID_REGENERATION_SELECTION', 'One or more selected rooms no longer exist.');
-  const locked = new Set(input.control.lockedEntityIds); const lockedFloors = new Set(input.control.lockedFloorIds);
+  const locked = new Set(input.control.lockedEntityIds);
+  for (const room of allRooms) {
+    if (room.unitId && locked.has(room.unitId)) locked.add(room.id);
+  }
+  const lockedFloors = new Set(input.control.lockedFloorIds);
   if (selectedRooms.some(room => locked.has(room.id) || lockedFloors.has(room.floorId) || room.type === 'staircase')) throw new RefinementError('REGENERATION_SCOPE_CONFLICT', 'Unlock the selected room or floor. Stair/core geometry remains protected during room refinement.');
   const baseRevision = buildingRefinementRevision(input.building, input.control);
   const baseline = diagnosticsToValidation(input.building);

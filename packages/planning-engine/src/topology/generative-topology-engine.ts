@@ -90,6 +90,7 @@ export interface GenerateConceptsInput {
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
   readonly unitCarpetTargetsSqFt?: readonly (number | undefined)[];
+  readonly unitGrossAreasMm2?: readonly number[];
   readonly aiPrompt?: string;
   readonly manifest?: DynamicApartmentManifest;
   readonly rawRooms?: readonly ExtractedRoom[];
@@ -204,6 +205,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     flatsPerFloor: input.flatsPerFloor,
     program,
     unitCarpetTargetsSqFt: input.unitCarpetTargetsSqFt,
+    unitGrossAreasMm2: input.unitGrossAreasMm2,
     enableMacroShapes: Boolean(effectiveMassingShape && effectiveMassingShape !== 'COMPACT_DOUBLE_LOADED'),
   });
 
@@ -336,12 +338,14 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     && targets.some(target => target !== targets[0]);
   const areaAllocationError = (candidate: ScoredCandidate): number => {
     const areas = candidate.partition.flatBoxes.map(box => box.w * box.h);
+    const grossTargets = input.unitGrossAreasMm2;
+    if (grossTargets) return areas.reduce((error, area, index) => error + Math.abs(area / grossTargets[index]! - 1), 0);
     const total = areas.reduce((sum, area) => sum + area, 0);
     return areas.reduce((error, area, index) => error + Math.abs(area / total - targets![index]! / targetSum), 0);
   };
   const rank = (pool: ScoredCandidate[]) => {
     const ordered = rankCandidates(pool);
-    return hasUnequalTargets
+    return hasUnequalTargets || input.unitGrossAreasMm2
       ? [...ordered].sort((a, b) => areaAllocationError(a) - areaAllocationError(b))
       : ordered;
   };

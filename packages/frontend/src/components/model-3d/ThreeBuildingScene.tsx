@@ -761,6 +761,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
 
     let rafId = 0;
     let remainingFrames = 0;
+    let updatingOrbit = false;
     let disposed = false;
 
     const recordStats = () => {
@@ -803,7 +804,10 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       }
 
       if (remainingFrames > 0) {
+        // OrbitControls emits change here. This tick already owns the render.
+        updatingOrbit = true;
         controls.update();
+        updatingOrbit = false;
         remainingFrames -= 1;
       }
 
@@ -837,7 +841,9 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       () => {},
     );
 
-    const onControlsChange = () => renderNow();
+    const onControlsChange = () => {
+      if (!updatingOrbit) requestRender();
+    };
     const onControlsStart = () => requestRender(24);
     const onControlsEnd = () => requestRender(16);
     controls.addEventListener('change', onControlsChange);

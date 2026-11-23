@@ -74,3 +74,13 @@ Phase 2 started from `c480f137c874988e0a67d14d04d78be3a6a06194` on the same repa
 - Site-specific authority and approved FSI inputs, stair protection/egress, legal carpet definitions and analyzed framing remain professional review gates. Phase 2 evidence applies to internal geometry and plan acceptance.
 
 Phase 3 engineering can begin from this repair branch. Carry the remaining dimensional, massing, and review gates forward. The 288-case benchmark generated a plan in every case and used legacy partitioning in 88 cases. That benchmark counts solver outputs. The production API and Studio apply the audited acceptance gate before publishing a building.
+
+## Phase 3 handoff
+
+Phase 3 started from `7358df3760515cea588c2cef5203387d5574f74f`. The architectural generation gate now checks locked massing, final-design exclusions, conflicting sized programs and finished footprint containment. The strict area search compares measured carpet and retains the candidate with fewer non-area blockers and a better worst-unit fit.
+
+The apartment editor's validated local revisions support opening edits and full-edge rectangular partition shifts. The editor rejects proportional changes that would rewrite neighbouring flats, floors or cores. PDF drawing exports now default to architectural content. GLB responses include the revision and source digest.
+
+See [Phase 3 engineering verification](PHASE3_FINAL_VERIFICATION.md) for actual results and unresolved acceptance. [Phase 4 integration readiness](PHASE4_INTEGRATION_READINESS.md) defines the adapter contracts and remaining gates. Phase 4 production integration is NOT READY.
+
+Final verification passed 1,731 monorepo tests with 8 opt-in skips, 52 integration tests and 14 Chromium repair tests. Native fixture results and the supplemental legacy browser failures are recorded in the verification report.

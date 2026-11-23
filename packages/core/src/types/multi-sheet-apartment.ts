@@ -263,6 +263,8 @@ export interface MultiSheetApartmentConfig {
   readonly rejectedTopologyHashes?: readonly string[];
   readonly preferredArchetype?: string;
   readonly buildingMassingShape?: BuildingMassingShape;
+  /** User-selected shape. The generation gate rejects a different realized massing. */
+  readonly lockedMassingShape?: BuildingMassingShape;
   readonly planCategory?: PlanCategory;
   readonly shapeParams?: ParametricShapeParams;
   readonly rejectedShapeIds?: readonly BuildingMassingShape[];

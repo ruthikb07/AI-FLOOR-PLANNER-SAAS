@@ -45,6 +45,53 @@ it('accepts audited geometry and carries independent project, revision and run i
   });
 }, 30_000);
 
+it('rejects a conflicting prompt count rather than discarding specified unit targets', async () => {
+  const result = await handleProjectGeneration({ config: {
+    ...config, aiPrompt: 'Two 2BHK and one 3BHK flats.',
+    units: config.units!.map((unit, index) => ({ ...unit, targetCarpetSqFt: 850 + index * 100 })),
+  } }, { gemini: null });
+  expect(result.status).toBe(422);
+  expect(result.json).toMatchObject({ error: { findings: expect.arrayContaining([
+    expect.objectContaining({ code: 'MANDATORY_BRIEF_UNMET', message: expect.stringContaining('sized unit schedule has 4 slots') }),
+  ]) } });
+  expect(result.json).not.toHaveProperty('building');
+}, 30_000);
+
+const shapedBrief = {
+  ...config, plotWidthMm: 32000, plotDepthMm: 36000, numTypicalFloors: 2,
+  units: config.units!.map(unit => ({ ...unit, targetCarpetSqFt: 850 })),
+};
+
+it('rejects a stepped substitute for the locked wave brief instead of returning an accepted building', async () => {
+  const result = await handleProjectGeneration({ config: {
+    ...shapedBrief, generationSeed: 2, buildingMassingShape: 'WAVE_SERPENTINE',
+  } }, { gemini: null });
+  expect(result.status).toBe(422);
+  expect(result.json).toMatchObject({ error: { findings: expect.arrayContaining([
+    expect.objectContaining({ code: 'LOCKED_MASSING_UNREALIZED', message: expect.stringContaining('WAVE_SERPENTINE') }),
+  ]) } });
+  expect(result.json).not.toHaveProperty('building');
+}, 30_000);
+
+it('accepts a realized lock and rejects the same final geometry independently of the topology digest', async () => {
+  const candidate = { ...shapedBrief, buildingMassingShape: 'COMPACT_DOUBLE_LOADED' as const, generationSeed: 1 };
+  const first = await handleProjectGeneration({ config: candidate }, { gemini: null });
+  expect(first.status).toBe(200);
+  expect(first.json).toMatchObject({ building: { metadata: { generationBrief: {
+    buildingMassingShape: candidate.buildingMassingShape, lockedMassingShape: candidate.buildingMassingShape,
+    physicalLayoutHash: expect.stringMatching(/^layout:[a-f0-9]{64}$/),
+  } } } });
+  const brief = (first.json as { building: import('@ai-floor-planner/core').Building }).building.metadata.generationBrief!;
+  const repeat = await handleProjectGeneration({
+    config: candidate, rejectedTopologyHashes: [brief.physicalLayoutHash!],
+  }, { gemini: null });
+  expect(repeat.status).toBe(422);
+  expect(repeat.json).toMatchObject({ error: { findings: expect.arrayContaining([
+    expect.objectContaining({ code: 'DUPLICATE_FINAL_LAYOUT' }),
+  ]) } });
+  expect(repeat.json).not.toHaveProperty('building');
+}, 30_000);
+
 it('blocks mandatory closure failure on a real generated model with a detached entrance', async () => {
   const { building } = await executeAuditedPlanningPipeline({ ...config, structuralLayoutMode: 'DEFERRED' });
   const floor = building.floors.find(item => item.apartmentUnits?.length)!;

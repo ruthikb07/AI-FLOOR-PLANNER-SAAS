@@ -11,7 +11,7 @@ import {
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
 import { randomUUID } from 'node:crypto';
-import { validateRegulatoryContextSchema, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { validateRegulatoryContextSchema, type Building, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
 import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
 import { isRecord } from './http-input.js';
 import {
@@ -125,13 +125,16 @@ export async function handleProjectGeneration(
     // If compliance < 85 after deterministic solver loop and live AI provider is configured,
     // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
     const maxOuterRetries = deps.gemini ? 2 : 0;
+    const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
+    const rememberLayout = (brief: Building['metadata']['generationBrief']) => {
+      if (brief?.topologyHash) attemptedLayouts.add(brief.topologyHash);
+      if (brief?.physicalLayoutHash) attemptedLayouts.add(brief.physicalLayoutHash);
+    };
     for (let retryIdx = 1; (blockers.length || !complianceReport.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
       try {
-        const priorHash = pipelineResult.building.metadata.generationBrief?.topologyHash;
-        const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
-        const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
-          ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
-          : [...parsed.rejectedTopologyHashes];
+        const prior = pipelineResult.building.metadata.generationBrief;
+        rememberLayout(prior);
+        const priorShape = prior?.buildingMassingShape;
         const updatedRejectedShapes =
           !parsed.config.buildingMassingShape && priorShape
             ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
@@ -147,9 +150,10 @@ export async function handleProjectGeneration(
             aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
           },
           seed: parsed.seed + retryIdx * 12,
-          rejectedTopologyHashes: updatedRejected,
+          rejectedTopologyHashes: [...attemptedLayouts],
         });
         const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
+        rememberLayout(retryPipeline.building.metadata.generationBrief);
         const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
           config: retryProposal.enrichedConfig,
         });

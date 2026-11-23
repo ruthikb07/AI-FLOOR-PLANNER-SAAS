@@ -4,12 +4,14 @@ import { architecturalSpaceRole } from '@ai-floor-planner/core';
 import { polygonArea, polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
 import { fitToView, renderFloor, screenToWorld, worldToScreen } from '@ai-floor-planner/renderer';
 import {
+  createRoomAreaRegenerationCommand,
   expandFlatIntoSetbackMargin,
   regenerateWithPreservedRatios,
   type RoomAreaCandidate,
 } from '@ai-floor-planner/planning-engine';
 import { solveRoomArea } from '../../services/room-area-solver';
 import type { EditorContextValue } from '../../stores/editor-store';
+import { ApartmentOpeningEditor } from './ApartmentOpeningEditor';
 
 export interface InteractivePlanEditorPageProps {
   editor: EditorContextValue;
@@ -45,8 +47,6 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
   };
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>(() => (editor.selection?.entityType === 'room' ? editor.selection.entityId : undefined) ?? editableRooms[0]?.id ?? floor.rooms[0]?.id ?? '');
-  const [historyPast, setHistoryPast] = useState<typeof editor.building[]>([]);
-  const [historyFuture, setHistoryFuture] = useState<typeof editor.building[]>([]);
 
   const selectedRoom: Room | undefined = useMemo(
     () => floor.rooms.find((r) => r.id === selectedRoomId) ?? editableRooms[0] ?? floor.rooms[0],
@@ -58,33 +58,6 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
     return getRoomBounds(selectedRoom);
   }, [selectedRoom]);
 
-  const applyBuildingWithHistory = (nextBuilding: typeof editor.building, description: string) => {
-    setHistoryPast((prev) => [...prev.slice(-19), editor.building]);
-    setHistoryFuture([]);
-    editor.applyRefinement(nextBuilding, description);
-  };
-
-  const handleUndo = () => {
-    if (historyPast.length > 0) {
-      const previous = historyPast[historyPast.length - 1]!;
-      setHistoryPast((prev) => prev.slice(0, -1));
-      setHistoryFuture((fut) => [editor.building, ...fut]);
-      editor.applyRefinement(previous, 'Undo room edit');
-      return;
-    }
-    editor.undo();
-  };
-
-  const handleRedo = () => {
-    if (historyFuture.length > 0) {
-      const next = historyFuture[0]!;
-      setHistoryFuture((fut) => fut.slice(1));
-      setHistoryPast((prev) => [...prev, editor.building]);
-      editor.applyRefinement(next, 'Redo room edit');
-      return;
-    }
-    editor.redo();
-  };
 
   const [targetRoomSqFtInput, setTargetRoomSqFtInput] = useState<string>(() =>
     selectedRoom ? Math.round(selectedRoom.area * MM2_TO_SQFT).toString() : '160',
@@ -108,6 +81,10 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
   }, [floor.apartmentUnits, floor.rooms]);
 
   const activeUnitId = selectedRoom?.unitId ?? unitIds[0];
+  const selectedFlat = floor.apartmentUnits?.find(unit => unit.id === activeUnitId);
+  const lockedEntities = editor.generationControl.lockedEntityIds;
+  const flatLocked = Boolean(selectedFlat && lockedEntities.includes(selectedFlat.id));
+  const floorLocked = editor.generationControl.lockedFloorIds.includes(floor.id);
   const currentUnitAreaSqFt = useMemo(() => {
     const unitRooms = floor.rooms.filter(
       (r) =>
@@ -156,8 +133,20 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
     setErrorMessage('');
   };
 
-  const applyCandidate = (cand: RoomAreaCandidate, label?: string) => {
-    applyBuildingWithHistory(cand.building, label ?? cand.name);
+  const applyCandidate = (cand: RoomAreaCandidate) => {
+    try {
+      const command = createRoomAreaRegenerationCommand(editor.building, cand, {
+        targetAreaMm2: cand.requestedAreaMm2,
+        allowAdjacentAdjustments: true,
+        allowEnvelopeExpansion: expandIntoSetback,
+        minSetbackMm,
+        preserveStructural: true,
+      }, () => editor.getGenerationControl?.() ?? editor.generationControl);
+      editor.executeCommand(command);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'This room edit did not pass acceptance.');
+      return;
+    }
     setCandidates([]);
     setErrorMessage('');
     const updated = cand.building.floors
@@ -226,7 +215,7 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
       control: editor.generationControl,
     });
     if (res.isFeasible && res.candidates.length > 0) {
-      applyCandidate(res.candidates[0]!, 'Mode A: Expand Flat into Setback');
+      applyCandidate(res.candidates[0]!);
     } else {
       setErrorMessage(res.infeasibilityReason ?? 'Setback expansion reached minimum plot setback boundary.');
     }
@@ -235,6 +224,10 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
   const handleModeBRegenerateSimilar = () => {
     setErrorMessage('');
     setStatusMessage('');
+    if (floorLocked || flatLocked || lockedEntities.includes(selectedRoom?.id ?? '')) {
+      setErrorMessage('Unlock the selected room, flat and floor before requesting proportional regeneration.');
+      return;
+    }
     const parsedSqFt = Number(targetFlatSqFtInput);
     const editedSqFt = Number(targetRoomSqFtInput);
     const result = regenerateWithPreservedRatios(editor.building, {
@@ -254,7 +247,17 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
       setErrorMessage(result.error ?? 'Proportional ratio scaling exceeded plot envelope.');
       return;
     }
-    applyBuildingWithHistory(result.building, 'Mode B: Regenerate Similar (Keep Edited Ratios)');
+    const proposedFloor = result.building.floors.find(item => item.id === floor.id);
+    const same = (before: unknown, after: unknown) => JSON.stringify(before) === JSON.stringify(after);
+    const outsideUnit = floor.rooms.filter(room => !activeUnitId || room.unitId !== activeUnitId || lockedEntities.includes(room.id));
+    const outsideChanged = !proposedFloor || editor.building.floors.some(item => item.id !== floor.id &&
+      !same(item, result.building.floors.find(candidate => candidate.id === item.id))) ||
+      outsideUnit.some(room => !same(room.boundary, proposedFloor.rooms.find(candidate => candidate.id === room.id)?.boundary));
+    if (outsideChanged) {
+      setErrorMessage('This proportional change requires moving other floors, a neighbouring flat or the core. Adjust a room target inside the current flat instead.');
+      return;
+    }
+    editor.applyRefinement(result.building, 'Mode B: Regenerate Similar (Keep Edited Ratios)');
     if (result.achievedUnitSqFt) {
       setTargetFlatSqFtInput(Math.round(result.achievedUnitSqFt).toString());
     }
@@ -351,8 +354,8 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
           <button
             type="button"
             data-testid="edit-plan-undo"
-            disabled={historyPast.length === 0 && !editor.canUndo}
-            onClick={handleUndo}
+            disabled={!editor.canUndo}
+            onClick={editor.undo}
             className="rounded border border-argon-border bg-argon-surface px-2.5 py-1 text-xs text-argon-text hover:bg-argon-border disabled:opacity-45"
           >
             Undo
@@ -360,8 +363,8 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
           <button
             type="button"
             data-testid="edit-plan-redo"
-            disabled={historyFuture.length === 0 && !editor.canRedo}
-            onClick={handleRedo}
+            disabled={!editor.canRedo}
+            onClick={editor.redo}
             className="rounded border border-argon-border bg-argon-surface px-2.5 py-1 text-xs text-argon-text hover:bg-argon-border disabled:opacity-45"
           >
             Redo
@@ -653,6 +656,25 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
               ))}
             </div>
           )}
+
+          {floor.apartmentUnits?.length ? <>
+            <div aria-label="Plan locks" className="flex flex-wrap gap-2">
+              {selectedRoom && <button type="button" className="rounded border border-argon-border px-2 py-1 text-xs"
+                onClick={() => editor.setRoomLocks([selectedRoom.id], !lockedEntities.includes(selectedRoom.id))}>
+                {lockedEntities.includes(selectedRoom.id) ? 'Unlock room' : 'Lock room'}
+              </button>}
+              {selectedFlat && <button type="button" className="rounded border border-argon-border px-2 py-1 text-xs"
+                onClick={() => editor.setRoomLocks([selectedFlat.id], !flatLocked)}>{flatLocked ? 'Unlock flat' : 'Lock flat'}</button>}
+              <button type="button" className="rounded border border-argon-border px-2 py-1 text-xs"
+                onClick={() => editor.setFloorLock(floor.id, !floorLocked)}>{floorLocked ? 'Unlock floor' : 'Lock floor'}</button>
+              {[...new Set(floor.stairs.map(stair => stair.verticalCoreId).filter((id): id is string => Boolean(id)))].map((coreId, index) => {
+                const locked = editor.generationControl.protectedCoreIds.includes(coreId);
+                return <button key={coreId} type="button" className="rounded border border-argon-border px-2 py-1 text-xs"
+                  onClick={() => editor.setCoreLock(coreId, !locked)}>{locked ? 'Unlock' : 'Lock'} core {index + 1}</button>;
+              })}
+            </div>
+            <ApartmentOpeningEditor key={floor.id} editor={editor} />
+          </> : null}
 
           {statusMessage && (
             <div className="rounded border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs text-argon-pass">

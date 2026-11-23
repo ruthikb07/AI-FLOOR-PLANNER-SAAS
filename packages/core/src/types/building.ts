@@ -336,6 +336,8 @@ export interface BuildingMetadata {
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
     readonly requestedMassingShape?: string;
+    readonly lockedMassingShape?: string;
+    readonly physicalLayoutHash?: string;
     readonly planCategory?: string;
     readonly usedShapeIds?: readonly string[];
     readonly usedArchetypeIds?: readonly string[];

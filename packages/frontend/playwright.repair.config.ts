@@ -6,7 +6,7 @@ process.env.RH_CINEMATIC_URL = frontend;
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: ['rh-repair.spec.ts', 'rh-local-cad-import-and-library.spec.ts', 'rh-survey-setup.spec.ts'],
+  testMatch: ['rh-repair.spec.ts', 'rh-local-cad-import-and-library.spec.ts', 'rh-survey-setup.spec.ts', 'rh-studio-workflow.spec.ts'],
   timeout: 90_000,
   workers: 1,
   use: { baseURL: frontend, trace: 'retain-on-failure' },

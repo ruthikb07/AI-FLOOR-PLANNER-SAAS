@@ -62,7 +62,7 @@ export function createArgonRequest(data: ProjectSetupWizardData, projectId: stri
     verticalStackType: data.hasStiltParking ? 'STILT_PLUS_N' : 'G_PLUS_N',
     lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT', jurisdiction: 'generic_maharashtra',
     ...(data.buildingMassingShape && data.buildingMassingShape !== 'AUTO'
-      ? { buildingMassingShape: data.buildingMassingShape }
+      ? { buildingMassingShape: data.buildingMassingShape, lockedMassingShape: data.buildingMassingShape }
       : {}),
     ...(data.planCategory ? { planCategory: data.planCategory } : {}),
     ...(data.shapeParams ? { shapeParams: data.shapeParams } : {}),
