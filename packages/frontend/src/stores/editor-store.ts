@@ -69,7 +69,7 @@ export interface EditorContextValue {
   setRoomLocks: (roomIds: readonly string[], locked: boolean) => void;
   setFloorLock: (floorId: string, locked: boolean) => void;
   setCoreLock: (coreId: string, locked: boolean) => void;
-  applyRefinement: (building: Building, description?: string, preserveSnapshot?: boolean) => void;
+  applyRefinement: (building: Building, description?: string, preserveSnapshot?: boolean, expectedRevision?: string) => void;
   loadProject: (projectId: string) => void;
   setBuilding: (
     building: Building,
@@ -337,8 +337,13 @@ export function useEditorStore() {
     persistControl(updateGenerationControl(generationControlRef.current, { protectedCoreIds: [...current] }));
   }, [persistControl]);
 
-  const applyRefinement = useCallback((nextBuilding: Building, description = 'Targeted regeneration', preserveSnapshot = false) => {
-    engine.execute(new ReplaceBuildingCommand(engine.getBuilding(), nextBuilding, description, preserveSnapshot));
+  const applyRefinement = useCallback((nextBuilding: Building, description = 'Targeted regeneration', preserveSnapshot = false,
+    expectedRevision?: string) => {
+    const live = engine.getBuilding();
+    if (expectedRevision && expectedRevision !== buildingRefinementRevision(live, generationControlRef.current)) {
+      throw new Error('Plan or constraints changed. Preview the edit again against the current revision.');
+    }
+    engine.execute(new ReplaceBuildingCommand(live, nextBuilding, description, preserveSnapshot));
   }, [engine]);
 
   const revalidate = useCallback(() => {

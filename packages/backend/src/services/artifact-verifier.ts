@@ -304,7 +304,7 @@ export function verifyPdfArtifact(data: Uint8Array): ArtifactVerification {
   if (!entries.length) errors.push("Empty PDF object table");
   const count = Number(text.match(/\/Type \/Pages[^]*?\/Count (\d+)/)?.[1]);
   if (count !== pages) errors.push("PDF page tree count mismatch");
-  for (const m of text.matchAll(/<< \/Length (\d+) >>\nstream\n/g)) {
+  for (const m of text.matchAll(/<< \/Length (\d+)[^\r\n]* >>\nstream\n/g)) {
     const start = m.index! + m[0].length;
     if (!text.slice(start + Number(m[1])).startsWith("endstream"))
       errors.push("Invalid PDF stream length");

@@ -327,6 +327,16 @@ export class GeminiProvider extends BaseAIProvider {
     yield { content: completed.content, isComplete: true };
   }
 
+  /** Verify the configured key through a read-only Gemini API request. */
+  async probeCredentials(): Promise<number> {
+    const result = await this.options.fetchImplementation(`${this.endpointBase}?pageSize=1`, {
+      headers: { 'x-goog-api-key': this.options.apiKey },
+      signal: AbortSignal.timeout(Math.min(this.options.timeoutMs, 5_000)),
+    });
+    await result.body?.cancel();
+    return result.status;
+  }
+
   async isAvailable(): Promise<boolean> {
     return this.options.apiKey.trim().length > 0;
   }

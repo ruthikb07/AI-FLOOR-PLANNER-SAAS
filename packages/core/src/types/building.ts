@@ -332,6 +332,7 @@ export interface BuildingMetadata {
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
     readonly generationSeed?: number;
+    readonly requireAreaTargets?: boolean;
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;

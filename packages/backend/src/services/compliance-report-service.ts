@@ -4,6 +4,7 @@ import {
   type UDCPRComplianceReport,
 } from "@ai-floor-planner/core";
 import { ExportError } from "./export-selection.js";
+import { PdfDrawingText } from "./pdf-drawing-text.js";
 import { evaluateUDCPRCompliance } from "@ai-floor-planner/planning-engine";
 export function complianceReport(building: Building): UDCPRComplianceReport {
   const errors = validateBuildingSchema(building);
@@ -83,26 +84,31 @@ export function complianceReportPdf(report: UDCPRComplianceReport, actionPlan?: 
     ]),
     report.disclaimer,
   ];
-  const lines = reportLines.flatMap((line) => {
-    const out: string[] = [];
-    let rest = line.replace(/[^\x20-\x7e]/g, "?");
-    while (rest.length > 108) {
-      let n = rest.lastIndexOf(" ", 108);
-      if (n < 20) n = 108;
-      out.push(rest.slice(0, n));
-      rest = rest.slice(n).trimStart();
+  const text = new PdfDrawingText();
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  const lines = reportLines.flatMap(line => line.split(/\r\n|\r|\n/).flatMap(paragraph => {
+    const lines: string[] = [];
+    const graphemes = [...segmenter.segment(paragraph)].map(item => item.segment);
+    while (graphemes.length > 0) {
+      let end = Math.min(graphemes.length, 108);
+      while (end > 1 && text.width(graphemes.slice(0, end).join(''), 8) > 530) end--;
+      if (end < graphemes.length) {
+        const wordBreak = graphemes.slice(0, end + 1).lastIndexOf(' ');
+        if (wordBreak >= 20) end = wordBreak;
+      }
+      lines.push(graphemes.splice(0, end).join(''));
+      while (graphemes[0] === ' ') graphemes.shift();
     }
-    out.push(rest);
-    return out;
-  });
+    return lines.length ? lines : [''];
+  }));
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>",
+    "",
   ];
-  const refs: string[] = [],
-    count = Math.ceil(lines.length / 48),
-    escape = (s: string) => s.replace(/([\\()])/g, "\\$1");
+  const refs: string[] = [];
+  const count = Math.ceil(lines.length / 48);
   for (let start = 0; start < lines.length; start += 48) {
     const page = objects.length + 1;
     refs.push(`${page} 0 R`);
@@ -111,15 +117,16 @@ export function complianceReportPdf(report: UDCPRComplianceReport, actionPlan?: 
       `BT /F1 8 Tf 32 824 Td (${actionPlan ? 'Compliance audit and fix plan' : 'UDCPR engineering report'} - revision ${report.buildingVersion} - page ${Math.floor(start / 48) + 1} of ${count}) Tj ET\n` +
       lines
         .slice(start, start + 48)
-        .map((s, i) => `BT /F1 8 Tf 32 ${800 - i * 15} Td (${escape(s)}) Tj ET`)
+        .map((s, i) => text.draw(s, 8, 32, 800 - i * 15))
         .join("\n") +
       "\n";
     objects.push(
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${page + 1} 0 R >>`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font 4 0 R >> /Contents ${page + 1} 0 R >>`,
       `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}endstream`,
     );
   }
   objects[1] = `<< /Type /Pages /Kids [${refs.join(" ")}] /Count ${refs.length} >>`;
+  objects[3] = text.embedFonts(objects);
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
   objects.forEach((o, i) => {

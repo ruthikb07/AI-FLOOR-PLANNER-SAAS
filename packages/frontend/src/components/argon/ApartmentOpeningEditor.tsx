@@ -1,8 +1,76 @@
 import { useState } from 'react';
-import { isPhysicalBoundary } from '@ai-floor-planner/core';
-import { projectOnSegment, safeCanonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
-import { editApartmentOpening, moveApartmentPartition, type OpeningEdit } from '@ai-floor-planner/planning-engine';
+import { isPhysicalBoundary, type Building, type Floor } from '@ai-floor-planner/core';
+import { getFloorContentBounds, projectOnSegment, safeCanonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
+import { buildingRefinementRevision, editApartmentOpening, moveApartmentPartition, type OpeningEdit } from '@ai-floor-planner/planning-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
+
+interface EditPreview {
+  readonly building: Building;
+  readonly before: Floor;
+  readonly baseRevision: string;
+  readonly description: string;
+  readonly message: string;
+  readonly clearSelection?: boolean;
+}
+
+function FloorEditPreview({ preview, apply, cancel }: { preview: EditPreview; apply: () => void; cancel: () => void }) {
+  const before = preview.before;
+  const after = preview.building.floors.find(floor => floor.id === before.id)!;
+  const walls = after.walls.filter(isPhysicalBoundary);
+  const bounds = getFloorContentBounds(after);
+  const previous = new Map(before.walls.map(wall => [wall.id, wall]));
+  const changed = walls.filter(wall => {
+    const old = previous.get(wall.id);
+    return !old || old.startPoint !== wall.startPoint || old.endPoint !== wall.endPoint;
+  });
+  const oldOpenings = [...before.doors, ...before.windows];
+  const newOpenings = [...after.doors, ...after.windows];
+  const oldById = new Map(oldOpenings.map(opening => [opening.id, opening]));
+  const newById = new Map(newOpenings.map(opening => [opening.id, opening]));
+  const revisedOpenings = newOpenings.filter(opening => oldById.get(opening.id) !== opening);
+  const formerOpenings = oldOpenings.filter(opening => newById.get(opening.id) !== opening);
+  const affectedRooms = new Set([
+    ...changed.flatMap(wall => wall.roomIds),
+    ...[...formerOpenings, ...revisedOpenings].flatMap(opening => previous.get(opening.wallId)?.roomIds ?? []),
+  ]);
+  const width = Math.max(bounds.width, bounds.height);
+  const line = (wall: Floor['walls'][number], color: string, thickness: number, dashed = false) =>
+    <line key={wall.id} x1={wall.startPoint.x} y1={wall.startPoint.y} x2={wall.endPoint.x} y2={wall.endPoint.y}
+      stroke={color} strokeWidth={thickness} strokeDasharray={dashed ? '5 3' : undefined} vectorEffect="non-scaling-stroke" />;
+  const openingMark = (opening: typeof newOpenings[number], floor: Floor, color: string) => {
+    const host = floor.walls.find(wall => wall.id === opening.wallId);
+    const geometry = host && safeCanonicalOpeningGeometry(opening, host, 'sillHeight' in opening);
+    return geometry && line({ ...host, id: opening.id, startPoint: geometry.startPoint, endPoint: geometry.endPoint }, color, 4);
+  };
+  const beforeRooms = new Map(before.rooms.map(room => [room.id, room]));
+  return <section aria-label="Preview local regeneration" className="space-y-2 rounded border border-argon-border bg-argon-surface p-2">
+    <p className="text-sm font-semibold">Preview on {before.name}</p>
+    <svg role="img" aria-label="Plan showing the original and proposed wall and opening positions" className="h-44 w-full rounded bg-argon-card"
+      viewBox={`${bounds.x - width * 0.03} ${bounds.y - width * 0.03} ${bounds.width + width * 0.06} ${bounds.height + width * 0.06}`}>
+      {walls.map(wall => line(wall, '#788897', 1))}
+      {changed.flatMap(wall => {
+        const old = previous.get(wall.id);
+        return old ? [line(old, '#c98335', 2, true)] : [];
+      })}
+      {changed.map(wall => line(wall, '#2b8dcd', 3))}
+      {formerOpenings.map(opening => openingMark(opening, before, '#c98335'))}
+      {revisedOpenings.map(opening => openingMark(opening, after, '#2b8dcd'))}
+    </svg>
+    <p className="text-xs text-argon-muted">Amber marks the original position. Blue marks the proposed position.</p>
+    <ul className="text-xs">
+      {after.rooms.filter(room => affectedRooms.has(room.id)).map(room => {
+        const previousArea = beforeRooms.get(room.id)?.area ?? room.area;
+        return <li key={room.id}>{room.name}{Math.abs(previousArea - room.area) > 0.001 &&
+          ` · ${(previousArea / 1e6).toFixed(2)} to ${(room.area / 1e6).toFixed(2)} m² (room boundary)`}</li>;
+      })}
+    </ul>
+    <p className="text-xs">{changed.length} wall positions and {new Set([...formerOpenings, ...revisedOpenings].map(opening => opening.id)).size} openings affected. Area and closure checks passed.</p>
+    <div className="flex gap-2">
+      <button type="button" className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card" onClick={apply}>Accept preview</button>
+      <button type="button" className="rounded border border-argon-border px-2 py-1 text-xs" onClick={cancel}>Discard preview</button>
+    </div>
+  </section>;
+}
 
 export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue }) {
   const { activeFloor: floor } = editor;
@@ -14,6 +82,7 @@ export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue 
   const [partitionOffset, setPartitionOffset] = useState('');
   const [message, setMessage] = useState('');
   const [failed, setFailed] = useState(false);
+  const [preview, setPreview] = useState<EditPreview | null>(null);
   const doors = floor.doors.filter(door => door.type !== 'open_passage');
   const openings = [...doors, ...floor.windows];
   const existing = openings.find(opening => opening.id === selection);
@@ -32,18 +101,18 @@ export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue 
     setOffset(along === undefined ? '' : String(Math.round(along)));
   };
 
-  const apply = (remove = false) => {
+  const previewOpening = (remove = false) => {
     const values = { wallId, widthMm: Number(width), offsetMm: Number(offset) };
     const edit: OpeningEdit = remove && existing ? { action: 'remove', id: existing.id }
       : existing ? { action: 'update', id: existing.id, ...values }
         : { action: 'add', kind: selection === 'add-door' ? 'door' : 'window', ...values };
     try {
-      const result = editApartmentOpening(editor.building, editor.getGenerationControl?.() ?? editor.generationControl, floor.id, edit);
+      const control = editor.getGenerationControl?.() ?? editor.generationControl;
+      const result = editApartmentOpening(editor.building, control, floor.id, edit);
       const description = edit.action === 'add' ? 'Add hosted opening' : edit.action === 'remove' ? 'Remove hosted opening' : 'Edit hosted opening';
-      editor.applyRefinement(result, description, true);
-      if (edit.action !== 'update') choose('');
-      setFailed(false);
-      setMessage(description + ' applied.');
+      setPreview({ building: result, before: floor, baseRevision: buildingRefinementRevision(editor.building, control),
+        description, message: description + ' applied.', clearSelection: edit.action !== 'update' });
+      setMessage('');
     } catch (error) {
       setFailed(true);
       setMessage(error instanceof Error ? error.message : 'Could not edit this opening.');
@@ -53,18 +122,33 @@ export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue 
   const partitions = walls.filter(wall => wall.wallUse === 'INTERNAL_PARTITION' && !wall.loadBearing && wall.roomIds.length === 2);
   const movePartition = () => {
     try {
-      const result = moveApartmentPartition(editor.building, editor.getGenerationControl?.() ?? editor.generationControl,
-        floor.id, partitionId, Number(partitionOffset));
-      editor.applyRefinement(result, 'Move apartment partition', true);
-      setFailed(false);
-      setMessage('Partition moved.');
+      const control = editor.getGenerationControl?.() ?? editor.generationControl;
+      const result = moveApartmentPartition(editor.building, control, floor.id, partitionId, Number(partitionOffset));
+      setPreview({ building: result, before: floor, baseRevision: buildingRefinementRevision(editor.building, control),
+        description: 'Move apartment partition', message: 'Partition moved.' });
+      setMessage('');
     } catch (error) {
       setFailed(true);
       setMessage(error instanceof Error ? error.message : 'Could not move this partition.');
     }
   };
 
+  const acceptPreview = () => {
+    if (!preview) return;
+    try {
+      editor.applyRefinement(preview.building, preview.description, true, preview.baseRevision);
+      if (preview.clearSelection) choose('');
+      setFailed(false);
+      setMessage(preview.message);
+    } catch (error) {
+      setFailed(true);
+      setMessage(error instanceof Error ? error.message : 'Preview could not be applied.');
+    }
+    setPreview(null);
+  };
+
   return <>
+    <div className="grid gap-2" onChange={() => setPreview(null)}>
     <details className="space-y-2 rounded border border-argon-border bg-argon-surface p-2">
       <summary className="cursor-pointer text-sm font-semibold text-argon-text">Move partition</summary>
       <label className="grid gap-1 text-xs">Interior partition
@@ -80,9 +164,9 @@ export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue 
         <input type="number" value={partitionOffset} onChange={event => setPartitionOffset(event.target.value)}
           className="rounded border border-argon-border bg-argon-card p-1 text-argon-text" />
       </label>
-      <p className="text-xs text-argon-muted">Positive offsets move towards the right or bottom of the plan.</p>
+      <p className="text-xs text-argon-muted">Positive offsets move perpendicular to the wall, towards plan right or down for a horizontal wall.</p>
       <button type="button" disabled={!partitionId || !partitionOffset} onClick={movePartition}
-        className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card disabled:opacity-40">Apply partition move</button>
+        className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card disabled:opacity-40">Preview partition move</button>
     </details>
     <details className="space-y-2 rounded border border-argon-border bg-argon-surface p-2">
     <summary className="cursor-pointer text-sm font-semibold text-argon-text">Doors and windows</summary>
@@ -121,13 +205,15 @@ export function ApartmentOpeningEditor({ editor }: { editor: EditorContextValue 
           type="number" min="1" value={width} onChange={event => setWidth(event.target.value)} />
       </label>
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={!wallId || !offset || !width} onClick={() => apply()}
-          className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card disabled:opacity-40">Apply opening</button>
-        {existing && <button type="button" onClick={() => apply(true)}
-          className="rounded border border-argon-border px-2 py-1 text-xs text-argon-text">Remove opening</button>}
+        <button type="button" disabled={!wallId || !offset || !width} onClick={() => previewOpening()}
+          className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card disabled:opacity-40">Preview opening</button>
+        {existing && <button type="button" onClick={() => previewOpening(true)}
+          className="rounded border border-argon-border px-2 py-1 text-xs text-argon-text">Preview removal</button>}
       </div>
     </>}
     </details>
+    </div>
+    {preview?.before.id === floor.id && <FloorEditPreview preview={preview} apply={acceptPreview} cancel={() => setPreview(null)} />}
     {message && <p role={failed ? 'alert' : 'status'} className={failed ? 'text-xs text-argon-error' : 'text-xs text-argon-pass'}>{message}</p>}
   </>;
 }

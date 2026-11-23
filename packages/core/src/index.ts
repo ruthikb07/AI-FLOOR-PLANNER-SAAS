@@ -15,6 +15,7 @@ export * from './types/building-budget';
 export * from './models/building-budget';
 export * from './models/reviewed-generation';
 export * from './models/canonical-revision';
+export * from './interchange/cad-bim-adapter-contract';
 
 export * from './compliance/udcpr-residential-types';
 export * from './compliance/vastu-advisory-types';

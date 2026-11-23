@@ -23,8 +23,9 @@ export class AnnotationLayout {
     height: number,
     limits?: { width: number; height: number },
     rotated = false,
+    measuredWidth?: number,
   ): TextBox {
-    const width = rotated ? height * 1.2 : Math.max(1, text.length) * height * 0.7;
+    const width = rotated ? height * 1.2 : measuredWidth ?? Math.max(1, text.length) * height * 0.7;
     const boxHeight = rotated ? Math.max(1, text.length) * height * 0.7 : height * 1.2;
     const step = Math.max(height * 1.3, boxHeight * 1.1);
     for (let i = 0; i < 10000; i++) {

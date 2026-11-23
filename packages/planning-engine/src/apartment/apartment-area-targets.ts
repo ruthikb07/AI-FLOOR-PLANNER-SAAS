@@ -39,7 +39,10 @@ export function measureAreaTarget(
 }
 
 /** Centreline allocation for built-up and wall-clipped interiors for carpet. */
-export function measureResidentialFloorAreas(floor: Floor, config: MultiSheetApartmentConfig): ApartmentFloorAreaMeasurement {
+export function measureResidentialFloorAreas(floor: Floor, config: {
+  readonly units?: readonly { readonly unitIndex: number; readonly targetCarpetSqFt?: number }[];
+  readonly areaAcceptanceTolerancePercent?: MultiSheetApartmentConfig['areaAcceptanceTolerancePercent'];
+}): ApartmentFloorAreaMeasurement {
   const ledger = measureApartmentAreaLedger(floor);
   const units = (floor.apartmentUnits ?? []).map((unit, index) => {
     const unitIndex = index + 1;

@@ -122,9 +122,35 @@ export async function handleProjectGeneration(
     });
 
     let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
+    if (blockers.length && proposalResult.telemetry.interpretationSource === 'GEMINI') {
+      // The user brief and exclusions stay in force when optional AI guidance fails the geometry gate.
+      const rules = await generateArchitecturalProposal(null, {
+        config: parsed.config, seed: parsed.seed, rejectedTopologyHashes: parsed.rejectedTopologyHashes,
+      });
+      try {
+        const candidate = await executeAuditedPlanningPipeline(rules.enrichedConfig);
+        if (!generationBlockingFindings(candidate.building, candidate.validationReport).length) {
+          const telemetry = {
+            ...rules.telemetry,
+            geminiInvoked: true,
+            modelUsed: proposalResult.telemetry.modelUsed,
+            providerErrorCode: proposalResult.telemetry.providerErrorCode,
+            latencyMs: proposalResult.telemetry.latencyMs + rules.telemetry.latencyMs,
+            fallbackReason: `Gemini guidance did not pass the required plan checks (${blockers[0]!.code}). The geometry engine used the original brief.`,
+          };
+          const candidateCompliance = evaluateArchitecturalComplianceScore(candidate.building, { config: rules.enrichedConfig });
+          pipelineResult = candidate;
+          proposalResult = { ...rules, telemetry };
+          complianceReport = candidateCompliance;
+          blockers = [];
+        }
+      } catch {
+        // Keep the first failed audit if the same brief also fails the deterministic solve.
+      }
+    }
     // If compliance < 85 after deterministic solver loop and live AI provider is configured,
     // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
-    const maxOuterRetries = deps.gemini ? 2 : 0;
+    const maxOuterRetries = deps.gemini && proposalResult.telemetry.interpretationSource === 'GEMINI' ? 2 : 0;
     const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
     const rememberLayout = (brief: Building['metadata']['generationBrief']) => {
       if (brief?.topologyHash) attemptedLayouts.add(brief.topologyHash);

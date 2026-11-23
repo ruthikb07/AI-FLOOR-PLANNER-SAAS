@@ -2994,6 +2994,7 @@ export function solveMultiSheetApartmentProject(
         aiPrompt: config.aiPrompt,
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
+        requireAreaTargets: config.requireAreaTargets,
         includeWindowChajjas: config.includeWindowChajjas ?? true,
         staggeredBalconies: resolvedGalleryMode === 'DOUBLE_HEIGHT_STAGGER',
         galleryCoordinationMode: resolvedGalleryMode,

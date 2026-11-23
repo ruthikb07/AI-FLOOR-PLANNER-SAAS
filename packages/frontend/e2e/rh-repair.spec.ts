@@ -154,10 +154,19 @@ test('edits a hosted window, enforces its floor lock and saves the exact undoabl
   await page.getByLabel('Opening', { exact: true }).selectOption(window.id);
   await page.getByLabel('Opening width (mm)').fill(String(window.width - 40));
   await page.getByRole('button', { name: 'Lock floor', exact: true }).click();
-  await page.getByRole('button', { name: 'Apply opening' }).click();
+  await page.getByRole('button', { name: 'Preview opening' }).click();
   await expect(page.getByRole('alert')).toContainText('Unlock the floor');
   await page.getByRole('button', { name: 'Unlock floor', exact: true }).click();
-  await page.getByRole('button', { name: 'Apply opening' }).click();
+  await page.getByRole('button', { name: 'Preview opening' }).click();
+  await expect(page.getByRole('region', { name: 'Preview local regeneration' })).toContainText('1 openings affected');
+  expect((await durableProject(page)).building).toEqual(original);
+  await page.getByRole('button', { name: 'Lock floor', exact: true }).click();
+  await page.getByRole('button', { name: 'Accept preview' }).click();
+  await expect(page.getByRole('alert')).toContainText('Plan or constraints changed');
+  expect((await durableProject(page)).building).toEqual(original);
+  await page.getByRole('button', { name: 'Unlock floor', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview opening' }).click();
+  await page.getByRole('button', { name: 'Accept preview' }).click();
   await expect(page.getByText('Edit hosted opening applied.', { exact: true })).toBeVisible();
   await expect.poll(async () => (await durableProject(page)).building.version).toBe(original.version + 1);
   const edited = (await durableProject(page)).building as import('@ai-floor-planner/core').Building;
@@ -213,20 +222,32 @@ test('moves a supported apartment partition by exactly 50 mm in the production e
   await expect.poll(async () => (await durableProject(page))?.projectId).toBe(projectId);
   const before = (await durableProject(page)).building as Building;
   const floor = before.floors.find(item => item.apartmentUnits?.length)!;
+  const refusals = new Set<string>();
   const movable = floor.walls.find(wall => {
     if (wall.wallUse !== 'INTERNAL_PARTITION' || wall.roomIds.length !== 2) return false;
     try {
       moveApartmentPartition(before, createGenerationControlState(), floor.id, wall.id, 50);
       return true;
-    } catch { return false; }
+    } catch (error) {
+      refusals.add(error instanceof Error ? error.message : String(error));
+      return false;
+    }
   });
-  expect(movable).toBeDefined();
+  expect(movable, [...refusals].join('\n')).toBeDefined();
   await page.getByTestId('nav-edit_plan').click();
   await page.getByLabel('Edit Plan Floors').getByRole('button', { name: floor.name, exact: true }).click();
   await page.getByText('Move partition', { exact: true }).click();
   await page.getByLabel('Interior partition', { exact: true }).selectOption(movable!.id);
   await page.getByLabel('Partition offset (mm)', { exact: true }).fill('50');
-  await page.getByRole('button', { name: 'Apply partition move' }).click();
+  await page.getByRole('button', { name: 'Preview partition move' }).click();
+  const preview = page.getByRole('region', { name: 'Preview local regeneration' });
+  await expect(preview.getByRole('img')).toBeVisible();
+  await expect(preview).toContainText('room boundary');
+  expect((await durableProject(page)).building).toEqual(before);
+  await preview.getByRole('button', { name: 'Discard preview' }).click();
+  await expect(preview).toBeHidden();
+  await page.getByRole('button', { name: 'Preview partition move' }).click();
+  await page.getByRole('button', { name: 'Accept preview' }).click();
   await expect(page.getByText('Partition moved.', { exact: true })).toBeVisible();
   await expect.poll(async () => (await durableProject(page)).building.version).toBe(before.version + 1);
   const revision = (await durableProject(page)).building as Building;

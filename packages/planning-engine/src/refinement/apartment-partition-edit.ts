@@ -1,79 +1,126 @@
 import { RoomType, type Building, type GenerationControlState, type Point, type Room } from '@ai-floor-planner/core';
-import { openingFitsApartmentWall, pointToSegmentDistance, safeCanonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
+import {
+  assertValidPolygon, distanceToLine, lineFromPoints, lineIntersection, openingFitsApartmentWall,
+  pointInPolygon, pointToSegmentDistance, polygonArea, polygonBoundingBox, safeCanonicalOpeningGeometry, sampleArcChordPoints,
+} from '@ai-floor-planner/geometry-engine';
 import { acceptApartmentFloorEdit } from './apartment-opening-edit';
 
-const coincides = (a: Point, b: Point) => Math.abs(a.x - b.x) < 0.001 && Math.abs(a.y - b.y) < 0.001;
+const JOINT_TOLERANCE_MM = 0.001;
+const coincides = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y) < JOINT_TOLERANCE_MM;
+const directionDot = (origin: Point, a: Point, b: Point) =>
+  (a.x - origin.x) * (b.x - origin.x) + (a.y - origin.y) * (b.y - origin.y);
 
-/** Move a straight, full-length partition within a flat. Adjacent wall returns follow its endpoints. */
+function returnVertex(room: Room, endpoint: Point, otherEndpoint: Point): Point {
+  const points = room.boundary.points;
+  const index = points.findIndex(point => coincides(point, endpoint));
+  if (index !== -1) {
+    const previous = points[(index + points.length - 1) % points.length]!;
+    const next = points[(index + 1) % points.length]!;
+    if (coincides(previous, otherEndpoint)) return next;
+    if (coincides(next, otherEndpoint)) return previous;
+  }
+  throw new Error('Select a partition spanning one complete common edge of both rooms. Split edges and T-junctions require a different edit.');
+}
+
+/** Positive offsets follow the unit normal pointing towards plan right, or down for a horizontal partition. */
 export function moveApartmentPartition(
   building: Building, control: GenerationControlState, floorId: string, wallId: string, offsetMm: number,
 ): Building {
   const floor = building.floors.find(candidate => candidate.id === floorId);
   const wall = floor?.walls.find(candidate => candidate.id === wallId);
   if (!floor?.apartmentUnits?.length || !wall || wall.arc || wall.loadBearing || wall.wallUse !== 'INTERNAL_PARTITION') {
-    throw new Error('Select a straight non-load-bearing partition inside a generated apartment.');
+    throw new Error('Select a straight non-load-bearing partition inside a generated apartment. Curved or structural walls require coordinated editing.');
   }
-  if (!Number.isFinite(offsetMm) || Math.abs(offsetMm) < 0.001) throw new Error('Enter a nonzero offset in millimetres.');
+  if (!Number.isFinite(offsetMm) || Math.abs(offsetMm) < JOINT_TOLERANCE_MM) throw new Error('Enter a nonzero offset in millimetres.');
   if (control.lockedFloorIds.includes(floorId)) throw new Error('Unlock the floor before moving its partition.');
   const locked = new Set([...control.lockedEntityIds, ...control.protectedCoreIds]);
   const frozen = (room: Room) => room.isFixed || locked.has(room.id) || locked.has(room.unitId ?? '')
     || room.type === RoomType.Lift || room.type === RoomType.Staircase;
   const rooms = floor.rooms.filter(room => wall.roomIds.includes(room.id));
-  if (locked.has(wall.id) || rooms.length !== 2 || !rooms[0]!.unitId ||
-    rooms.some(room => room.unitId !== rooms[0]!.unitId || frozen(room) || room.boundary.points.length !== 4)) {
-    throw new Error('Use a partition between two rectangular unlocked rooms in the same flat.');
+  const unitId = rooms[0]?.unitId;
+  if (locked.has(wall.id) || rooms.length !== 2 || !unitId ||
+    rooms.some(room => room.unitId !== unitId || frozen(room))) {
+    throw new Error('Use a partition between two unlocked rooms in the same flat.');
   }
-  const vertical = wall.startPoint.x === wall.endPoint.x;
-  if (!vertical && wall.startPoint.y !== wall.endPoint.y) throw new Error('The partition must align with a plan axis.');
-  const along = vertical ? 'y' : 'x';
-  const across = vertical ? 'x' : 'y';
-  const low = Math.min(wall.startPoint[along], wall.endPoint[along]);
-  const high = Math.max(wall.startPoint[along], wall.endPoint[along]);
-  const axis = wall.startPoint[across];
-  const [before, after] = [...rooms].sort((a, b) => a[across] - b[across]);
-  const crossSize = vertical ? 'width' : 'height';
-  const runSize = vertical ? 'height' : 'width';
-  if (before![across] + before![crossSize] !== axis || after![across] !== axis ||
-    rooms.some(room => room[along] !== low || room[along] + room[runSize] !== high ||
-      room.boundary.points.some(point => ![room.x, room.x + room.width].includes(point.x) ||
-        ![room.y, room.y + room.height].includes(point.y)))) {
-    throw new Error('The partition must span the full common edge of both rectangular rooms.');
+
+  const start = wall.startPoint;
+  const end = wall.endPoint;
+  const original = lineFromPoints(start, end);
+  const offset = original.a < -1e-10 || (Math.abs(original.a) <= 1e-10 && original.b < 0) ? -offsetMm : offsetMm;
+  const target = { ...original, c: original.c - offset };
+  const translate = (point: Point): Point => ({ x: point.x + offset * original.a, y: point.y + offset * original.b });
+  const solveJoint = (endpoint: Point, other: Point): Point => {
+    const [left, right] = rooms.map(room => returnVertex(room, endpoint, other));
+    const returnLine = lineFromPoints(endpoint, left!);
+    if (distanceToLine(right!, returnLine) >= JOINT_TOLERANCE_MM || directionDot(endpoint, left!, right!) >= 0) {
+      throw new Error('The partition ends at a corner or junction. Move a partition with continuous straight returns to preserve the flat boundary.');
+    }
+    const moved = lineIntersection(target, returnLine);
+    if (!moved || directionDot(left!, endpoint, moved) <= 0 || directionDot(right!, endpoint, moved) <= 0) {
+      throw new Error('The partition would cross a corner or collapse a connected edge. Reduce the offset.');
+    }
+    return moved;
+  };
+  const nextStart = solveJoint(start, end);
+  const nextEnd = solveJoint(end, start);
+  if ((end.x - start.x) * (nextEnd.x - nextStart.x) + (end.y - start.y) * (nextEnd.y - nextStart.y) <= 0) {
+    throw new Error('The partition would reverse between its returns. Reduce the offset.');
   }
-  const shift = (point: Point): Point => ({ ...point, [across]: point[across] + offsetMm });
-  const currentSegment = { start: wall.startPoint, end: wall.endPoint };
-  const nextSegment = { start: shift(wall.startPoint), end: shift(wall.endPoint) };
+  const sweep = { points: [start, end, nextEnd, nextStart] };
   if (floor.columns.some(column => {
     const radius = Math.hypot(column.width, column.depth) / 2 + wall.thickness / 2;
-    return Math.min(pointToSegmentDistance(column.position, currentSegment), pointToSegmentDistance(column.position, nextSegment)) <= radius;
-  })) throw new Error('The partition or its new position meets a structural column.');
+    const nearBoundary = sweep.points.some((point, index) =>
+      pointToSegmentDistance(column.position, { start: point, end: sweep.points[(index + 1) % sweep.points.length]! }) <= radius);
+    return nearBoundary || pointInPolygon(column.position, sweep);
+  })) throw new Error('The proposed partition move crosses a structural column. Reduce the offset or choose another partition.');
 
+  const joins = (point: Point) => coincides(point, start) || coincides(point, end);
+  const moveJoint = (point: Point) => coincides(point, start) ? nextStart : coincides(point, end) ? nextEnd : point;
+  const affectedRooms = new Set(rooms.map(room => room.id));
+  const unavailable = new Set(floor.rooms.filter(room => frozen(room) || (room.unitId && room.unitId !== unitId)).map(room => room.id));
+  if (floor.rooms.some(room => !affectedRooms.has(room.id) && room.boundary.points.some(joins))) {
+    throw new Error('A partition junction is shared by another room or core. Select a partition with independent returns.');
+  }
   const moved = new Map(rooms.map(room => {
-    const first = room.id === before!.id;
-    const start = first ? room[across] : room[across] + offsetMm;
-    const length = room[crossSize] + offsetMm * (first ? 1 : -1);
-    const area = length * room[runSize];
-    if (length < 1000 || (room.minArea && area < room.minArea) || (room.maxArea && area > room.maxArea)) {
-      throw new Error(`The move would violate the size requirements for ${room.name}.`);
+    if (room.curvedEdges?.some(arc => sampleArcChordPoints(arc).some(joins))) {
+      throw new Error('This move touches a curved return. Select a straight joint or revise the curve in the source geometry.');
     }
-    const boundary = { points: room.boundary.points.map(point => point[across] === axis ? shift(point) : point) };
-    return [room.id, { ...room, [across]: start, [crossSize]: length, area, boundary }];
+    const boundary = { ...room.boundary, points: room.boundary.points.map(moveJoint) };
+    assertValidPolygon(boundary, room.name);
+    const bounds = polygonBoundingBox(boundary);
+    const area = polygonArea(boundary);
+    if (Math.min(bounds.width, bounds.height) < 1000 || (room.minArea && area < room.minArea)
+      || (room.maxArea && area > room.maxArea)) {
+      throw new Error(`The move would violate the size requirements for ${room.name}. Reduce the offset.`);
+    }
+    return [room.id, { ...room, ...bounds, area, boundary }];
   }));
+  const projectedTotal = [...moved.values()].reduce((sum, room) => sum + room.area, 0);
+  if (Math.abs(projectedTotal - rooms.reduce((sum, room) => sum + polygonArea(room.boundary), 0)) >= 0.001) {
+    throw new Error('The partition move would change the edited zone boundary.');
+  }
 
-  const joins = (point: Point) => coincides(point, wall.startPoint) || coincides(point, wall.endPoint);
   const changedWallIds = new Set<string>();
   const walls = floor.walls.map(candidate => {
-    const start = joins(candidate.startPoint);
-    const end = joins(candidate.endPoint);
-    if (!start && !end) return candidate;
-    if (locked.has(candidate.id) || candidate.arc || candidate.loadBearing || floor.rooms.some(room =>
-      candidate.roomIds.includes(room.id) && frozen(room))) throw new Error('A joining wall is locked, curved or structural.');
-    if (candidate.id !== wallId && (candidate.startPoint[along] !== candidate.endPoint[along] ||
-      Math.abs(candidate.startPoint[across] - candidate.endPoint[across]) <= Math.abs(offsetMm))) {
-      throw new Error('The move would alter a parallel wall or reverse a joining segment.');
+    const movesStart = joins(candidate.startPoint);
+    const movesEnd = joins(candidate.endPoint);
+    if (!movesStart && !movesEnd) return candidate;
+    if (locked.has(candidate.id) || candidate.arc || candidate.loadBearing || candidate.roomIds.some(id => unavailable.has(id))) {
+      throw new Error('A joining wall is locked, curved, structural or serves another room. Keep it fixed and select a different partition.');
+    }
+    const startPoint = moveJoint(candidate.startPoint);
+    const endPoint = moveJoint(candidate.endPoint);
+    if (candidate.id !== wallId) {
+      const fixed = movesStart ? candidate.endPoint : candidate.startPoint;
+      const from = movesStart ? candidate.startPoint : candidate.endPoint;
+      const to = movesStart ? startPoint : endPoint;
+      if ((movesStart && movesEnd) || distanceToLine(to, lineFromPoints(fixed, from)) >= JOINT_TOLERANCE_MM
+        || directionDot(fixed, from, to) <= 0) {
+        throw new Error('The move would rotate or reverse a joining wall. Reduce the offset or choose another partition.');
+      }
     }
     changedWallIds.add(candidate.id);
-    return { ...candidate, startPoint: start ? shift(candidate.startPoint) : candidate.startPoint,
-      endPoint: end ? shift(candidate.endPoint) : candidate.endPoint };
+    return { ...candidate, startPoint, endPoint };
   });
   const remap = <T extends (typeof floor.doors)[number] | (typeof floor.windows)[number]>(opening: T): T => {
     if (!changedWallIds.has(opening.wallId)) return opening;
@@ -82,7 +129,7 @@ export function moveApartmentPartition(
     const host = walls.find(candidate => candidate.id === opening.wallId)!;
     const geometry = safeCanonicalOpeningGeometry(opening, oldHost, 'sillHeight' in opening);
     if (!geometry) throw new Error('An opening has an invalid original host.');
-    const position = host.id === wallId ? shift(geometry.centerPoint) : geometry.centerPoint;
+    const position = host.id === wallId ? translate(geometry.centerPoint) : geometry.centerPoint;
     if (!openingFitsApartmentWall(host, position, opening.width)) {
       throw new Error('A door or window no longer fits its host. Reduce the offset or move the opening first.');
     }

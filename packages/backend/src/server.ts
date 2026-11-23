@@ -131,23 +131,21 @@ export async function checkProviderHealth(
     };
   } else {
     try {
-      // `isAvailable` is the provider contract's own reachability probe.
-      const reachable = await deps.gemini.isAvailable();
-      geminiStatus = {
-        configured: true,
-        reachable,
-        status: reachable ? 'REACHABLE' : 'TEMPORARILY_UNAVAILABLE',
-        model: config.geminiModel,
-        detail: reachable ? undefined : 'Provider did not report itself available',
-      };
+      const provider = deps.gemini;
+      const code = provider instanceof GeminiProvider ? await provider.probeCredentials()
+        : await provider.isAvailable() ? 200 : 503;
+      const reachable = code >= 200 && code < 300;
+      let status: GeminiStatus = 'REQUEST_ERROR';
+      if (reachable) status = 'REACHABLE';
+      else if ([400, 401, 403].includes(code)) status = 'AUTH_FAILED';
+      else if (code === 429) status = 'RATE_LIMITED';
+      else if (code >= 500) status = 'TEMPORARILY_UNAVAILABLE';
+      geminiStatus = { configured: true, reachable, status, model: config.geminiModel,
+        detail: reachable ? undefined : `Gemini credential probe returned HTTP ${code}.` };
     } catch (error) {
-      geminiStatus = {
-        configured: true,
-        reachable: false,
-        status: 'NETWORK_ERROR',
-        model: config.geminiModel,
-        detail: error instanceof Error ? error.message : 'Provider probe failed',
-      };
+      const timedOut = error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name);
+      geminiStatus = { configured: true, reachable: false, status: timedOut ? 'TIMEOUT' : 'NETWORK_ERROR',
+        model: config.geminiModel, detail: timedOut ? 'Gemini credential probe timed out.' : 'Could not contact Gemini.' };
     }
   }
 

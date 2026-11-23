@@ -6,7 +6,7 @@ import {
 } from '@ai-floor-planner/core';
 import { generateArchitecturalProposal } from '@ai-floor-planner/ai-orchestration';
 import { generationBlockingFindings, validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
-import { containsPolygon, measureApartmentAreaLedger, openingFitsApartmentWall, polygonArea, projectOnSegment } from '@ai-floor-planner/geometry-engine';
+import { containsPolygon, measureApartmentAreaLedger, openingFitsApartmentWall, polygonArea, polygonBoundingBox, projectOnSegment, safeCanonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 import { editApartmentOpening, executeAuditedPlanningPipeline, moveApartmentPartition, solveMultiSheetApartmentProject } from '@ai-floor-planner/planning-engine';
 
 const base: MultiSheetApartmentConfig = {
@@ -219,6 +219,45 @@ it('moves a real rectangular partition 50 mm and keeps its neighbouring floors a
   expect(() => moveApartmentPartition(plan.building, updateGenerationControl(control, { lockedEntityIds: [wall.id] }),
     floor.id, wall.id, offset)).toThrow(/unlocked/);
   console.log('PHASE3_PARTITION_MOVE_MM', wall.id, offset);
+
+  // Skew the same generated partition at one end while retaining both straight returns and the original room graph.
+  const atEnd = (point: { x: number; y: number }) => Math.hypot(point.x - wall.endPoint.x, point.y - wall.endPoint.y) < 0.001;
+  const skewEnd = (point: { x: number; y: number }) => atEnd(point) ? moved.endPoint : point;
+  const wallsWithSkew = floor.walls.map(host => ({
+    ...host, startPoint: skewEnd(host.startPoint), endPoint: skewEnd(host.endPoint),
+  }));
+  const skewedWall = wallsWithSkew.find(host => host.id === wall.id)!;
+  const skewOpening = <T extends (typeof floor.doors)[number] | (typeof floor.windows)[number]>(opening: T): T => {
+    if (opening.wallId !== wall.id) return opening;
+    const geometry = safeCanonicalOpeningGeometry(opening, wall, 'sillHeight' in opening)!;
+    const axis = projectOnSegment(geometry.centerPoint, wall.startPoint, wall.endPoint)!;
+    const ratio = axis.along / axis.length;
+    return { ...opening, openingGeometryVersion: 1, positionReference: 'CENTER',
+      position: { x: skewedWall.startPoint.x + (skewedWall.endPoint.x - skewedWall.startPoint.x) * ratio,
+        y: skewedWall.startPoint.y + (skewedWall.endPoint.y - skewedWall.startPoint.y) * ratio },
+    };
+  };
+  const skewedFloor = { ...floor, walls: wallsWithSkew, doors: floor.doors.map(skewOpening), windows: floor.windows.map(skewOpening),
+    rooms: floor.rooms.map(room => {
+      if (!wall.roomIds.includes(room.id)) return room;
+      const boundary = { ...room.boundary, points: room.boundary.points.map(skewEnd) };
+      return { ...room, ...polygonBoundingBox(boundary), area: polygonArea(boundary), boundary };
+    }),
+  };
+  const skewed = { ...plan.building, floors: plan.building.floors.map(item => item.id === floor.id ? skewedFloor : item) };
+  expect(validateApartmentClosure({ ...skewed, floors: [skewedFloor] }).issues.filter(issue => issue.severity === 'error')).toEqual([]);
+  const edited = moveApartmentPartition(skewed, control, floor.id, wall.id, offset / 2);
+  const editedFloor = edited.floors.find(item => item.id === floor.id)!;
+  const sloped = editedFloor.walls.find(host => host.id === wall.id)!;
+  const directionX = skewedWall.endPoint.x - skewedWall.startPoint.x;
+  const directionY = skewedWall.endPoint.y - skewedWall.startPoint.y;
+  const measuredShift = Math.abs(directionX * (sloped.startPoint.y - skewedWall.startPoint.y) -
+    directionY * (sloped.startPoint.x - skewedWall.startPoint.x)) / Math.hypot(directionX, directionY);
+  expect(measuredShift).toBeCloseTo(25, 6);
+  expect(editedFloor.boundary).toEqual(floor.boundary);
+  expect(editedFloor.doors.map(item => item.id)).toEqual(floor.doors.map(item => item.id));
+  expect(validateApartmentClosure({ ...edited, floors: [editedFloor] }).issues.filter(issue => issue.severity === 'error')).toEqual([]);
+  console.log('PHASE35_OBLIQUE_PARTITION_MOVE_MM', measuredShift);
 }, 30_000);
 
 function adjacency(building: Building): string[] {

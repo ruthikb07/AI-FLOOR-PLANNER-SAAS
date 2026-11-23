@@ -43,7 +43,8 @@ function conceptFacts(building: Building) {
   return [
     ...(telemetry?.interpretationSource ? [{
       name: 'Brief interpretation',
-      value: telemetry.interpretationSource === 'GEMINI' ? `Gemini (${telemetry.modelUsed})`
+      value: telemetry.interpretationSource === 'GEMINI'
+        ? `Gemini (${telemetry.modelUsed ?? 'model unavailable'})${telemetry.fallbackTriggered ? ' Â· fallback model' : ''}`
         : telemetry.fallbackReason ?? 'Deterministic rules',
     }] : []),
     { name: 'Levels', value: building.floors.length.toString() },
@@ -110,7 +111,7 @@ function BrowserRevisionArchive({ projectId }: { projectId: string }) {
     });
   }}>
     <summary>Archived browser revisions</summary>
-    {error ? <p role="alert">{error}</p> : !entries ? <p role="status">Reading archive…</p> :
+    {error ? <p role="alert">{error}</p> : !entries ? <p role="status">Reading archiveï¿½</p> :
       entries.length === 0 ? <p>No browser revisions have been archived.</p> :
         <ol>{entries.map(entry => <li key={entry.id}>
           <time dateTime={entry.savedAt}>{new Date(entry.savedAt).toLocaleString()}</time>

@@ -10,6 +10,8 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
+import { writeFileSync } from 'node:fs';
+import { PDFDocument } from 'pdf-lib';
 import {
   DEFAULT_SITE_AMENITIES,
   DEFAULT_STILT_AMENITIES,
@@ -23,7 +25,7 @@ import {
   generateArchitecturalProposal,
 } from '@ai-floor-planner/ai-orchestration';
 import { exportBuildingToGlb } from '@ai-floor-planner/projection-3d';
-import { createBackendServer } from '../server.js';
+import { checkProviderHealth, createBackendServer } from '../server.js';
 import { generateETABSE2KFromBuilding } from '../services/etabs-e2k-generator.js';
 import { PdfExportService } from '../services/pdf-export-service.js';
 import { verifyBlenderArtifact } from '../services/blender-export-service.js';
@@ -149,6 +151,19 @@ describe('RH Planner Phase 1 — Backend Hybrid AI Generation & Exports', () => 
     expect(modelsTried).toContain('gemini-3.1-flash-lite');
   });
 
+  it.each([[200, 'REACHABLE'], [400, 'AUTH_FAILED'], [429, 'RATE_LIMITED'], [503, 'TEMPORARILY_UNAVAILABLE']])(
+    'checks the Gemini credentials with a provider response of %s', async (code, status) => {
+      const config = { port: 0, geminiApiKey: 'test-key', geminiModel: 'test-model',
+        geminiFallbackModel: 'test-fallback', briefInterpreterKind: 'gemini' as const, providerTimeoutMs: 5000 };
+      const fetchImplementation = vi.fn<typeof fetch>(async () => new Response('{}', { status: code }));
+      const gemini = new GeminiProvider({ apiKey: config.geminiApiKey, fetchImplementation });
+      const health = await checkProviderHealth(config, { gemini, briefInterpreterKind: 'gemini' });
+      expect(fetchImplementation).toHaveBeenCalledWith(expect.stringContaining('models?pageSize=1'),
+        expect.objectContaining({ headers: { 'x-goog-api-key': 'test-key' } }));
+      expect(health.gemini).toMatchObject({ configured: true, reachable: code === 200, status });
+      expect(JSON.stringify(health)).not.toContain('test-key');
+    });
+
   it('serves /api/v1/health, /api/v1/projects/generate, .e2k, .glb, blender-script, and multi-sheet-pdf', async () => {
     const server = createBackendServer({
       gemini: null,
@@ -258,8 +273,24 @@ describe('RH Planner Phase 1 — Backend Hybrid AI Generation & Exports', () => 
     expect(pdfAscii).not.toContain('0.7 0.2 0.2 RG');
     const structural = new PdfExportService().exportMultiSheetPdf(genBody.building, { drawingKind: 'STRUCTURAL' });
     expect(Buffer.from(structural.data).toString('latin1')).toContain('0.7 0.2 0.2 RG');
-    expect(() => new PdfExportService().exportMultiSheetPdf({ ...genBody.building, name: 'मराठी निवास' }))
-      .toThrow(/requires a Unicode drawing font/);
+    const name = 'मराठी निवास | हिंदी क्षेत्र | Café';
+    const label = 'बैठक कक्ष';
+    const author = 'বাংলা | ગુજરાતી | தமிழ்';
+    const named = { ...genBody.building, name, floors: genBody.building.floors.map((floor, index) => index !== 0 ? floor : ({
+      ...floor, rooms: floor.rooms.map((room, roomIndex) => roomIndex === 0 ? { ...room, name: label } : room),
+    })) };
+    const unicode = new PdfExportService().exportMultiSheetPdf(named, { drawnBy: author });
+    const readback = await PDFDocument.load(unicode.data);
+    expect(readback.getTitle()).toBe(name);
+    expect(readback.getAuthor()).toBe(author);
+    expect(readback.getPageCount()).toBe(pdfResult.pageCount);
+    const unicodeSyntax = Buffer.from(unicode.data).toString('ascii');
+    expect(unicodeSyntax.match(/\/FontFile2 /g)).toHaveLength(5);
+    expect(unicodeSyntax.match(/\/ToUnicode /g)).toHaveLength(5);
+    expect(unicodeSyntax).toContain('/ActualText <FEFF' + Buffer.from(label, 'utf16le').swap16().toString('hex').toUpperCase());
+    if (process.env.RH_UNICODE_PDF_EVIDENCE) writeFileSync(process.env.RH_UNICODE_PDF_EVIDENCE, unicode.data);
+    expect(() => new PdfExportService().exportMultiSheetPdf({ ...genBody.building, name: 'Unsupported 🦄' }))
+      .toThrow(/No supported PDF drawing font or shaping engine.*U\+1F984/);
 
     const pdfRes = await fetch(`${base}/api/v1/export/multi-sheet-pdf`, {
       method: 'POST',
