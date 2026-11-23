@@ -386,7 +386,7 @@ export function useEditorStore() {
     category: BuildingCategory = 'residential',
   ) => {
     const resolvedName = newName || newBuilding.name;
-    if (newName) setProjectName(newName);
+    setProjectName(resolvedName);
     setProjectId(newBuilding.projectId);
     setProjectCategory(category);
     setProjectStatus('CONCEPT');

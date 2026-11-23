@@ -294,20 +294,72 @@ export const Stage2FloorsAndParking: React.FC = () => {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer hover:bg-argon-surface/70">
+          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer">
             <input
               type="checkbox"
-              checked={wizard.staggeredBalconies ?? false}
-              onChange={(e) => updateWizard({ staggeredBalconies: e.target.checked })}
-              className="mt-1 accent-amber-500"
+              data-testid="brief-include-study-toggle"
+              checked={wizard.includeStudyRoom ?? false}
+              onChange={(e) => updateWizard({ includeStudyRoom: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-amber-500"
             />
             <span className="text-xs">
-              <strong className="block text-argon-text">Staggered Balconies (Odd vs Even Floors)</strong>
+              <strong className="block text-argon-text">Include Study / Home Office</strong>
               <span className="text-argon-muted">
-                Alternate double-height balcony bays between Odd and Even upper floors while locking columns &amp; wet shafts.
+                Optional dedicated study alcove per flat (off by default — keeps extra area in Living, Bedrooms &amp; Galleries).
               </span>
             </span>
           </label>
+          <div className="flex flex-col gap-2 p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="flex items-center justify-between gap-2">
+              <strong className="text-xs text-argon-text">Gallery / Balcony Rhythm</strong>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-argon-muted">
+                Multi-Floor
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Gallery coordination rhythm">
+              <button
+                type="button"
+                data-testid="brief-gallery-stagger"
+                aria-pressed={(wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'}
+                onClick={() =>
+                  updateWizard({
+                    galleryCoordinationMode: 'DOUBLE_HEIGHT_STAGGER',
+                    staggeredBalconies: true,
+                  })
+                }
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  (wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'
+                    ? 'bg-amber-500/20 border-amber-500 text-argon-text shadow-sm'
+                    : 'border-argon-border bg-argon-card/60 text-argon-muted hover:text-argon-text'
+                }`}
+              >
+                Double-Height Stagger
+              </button>
+              <button
+                type="button"
+                data-testid="brief-gallery-stacked"
+                aria-pressed={wizard.galleryCoordinationMode === 'STACKED_RIBBON'}
+                onClick={() =>
+                  updateWizard({
+                    galleryCoordinationMode: 'STACKED_RIBBON',
+                    staggeredBalconies: false,
+                  })
+                }
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  wizard.galleryCoordinationMode === 'STACKED_RIBBON'
+                    ? 'bg-amber-500/20 border-amber-500 text-argon-text shadow-sm'
+                    : 'border-argon-border bg-argon-card/60 text-argon-muted hover:text-argon-text'
+                }`}
+              >
+                Stacked Ribbon
+              </button>
+            </div>
+            <span className="text-[11px] text-argon-muted">
+              {(wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'
+                ? 'Alternates primary sky-deck bays across odd/even floors for 6,300 mm double-height open volume.'
+                : 'Aligns galleries vertically across every storey in continuous recessed ribbon bands.'}
+            </span>
+          </div>
         </div>
       </ArgonCard>
 

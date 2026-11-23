@@ -1545,7 +1545,7 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
         for (const extWall of candWalls) {
           const len = Math.hypot(extWall.endPoint.x - extWall.startPoint.x, extWall.endPoint.y - extWall.startPoint.y);
           if (len >= 600) {
-            const ventWidth = Math.min(600, Math.max(350, Math.round(len - 200)));
+            const ventWidth = Math.min(650, Math.max(350, Math.round(len - 200)));
             const pos: Point = {
               x: (extWall.startPoint.x + extWall.endPoint.x) / 2,
               y: (extWall.startPoint.y + extWall.endPoint.y) / 2,
@@ -1558,7 +1558,7 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
                 position: pos,
                 width: ventWidth,
                 height: 600,
-                sillHeight: 1800,
+                sillHeight: 1500,
                 type: WindowType.Ventilator,
                 roomId: r.id,
               };
@@ -1616,7 +1616,7 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
     );
     if (!hostWall) continue;
     const wallLen = Math.hypot(hostWall.endPoint.x - hostWall.startPoint.x, hostWall.endPoint.y - hostWall.startPoint.y);
-    const ventW = Math.min(600, Math.max(350, Math.floor(wallLen - 200)));
+    const ventW = Math.min(650, Math.max(350, Math.floor(wallLen - 200)));
     const mid = {
       x: Math.round((hostWall.startPoint.x + hostWall.endPoint.x) / 2),
       y: Math.round((hostWall.startPoint.y + hostWall.endPoint.y) / 2),

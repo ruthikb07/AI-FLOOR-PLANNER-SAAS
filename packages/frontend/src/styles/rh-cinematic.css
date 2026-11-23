@@ -305,6 +305,11 @@
   --border-subtle: var(--rh-rule);
   --accent-cyan: var(--rh-accent);
   background: var(--rh-paper);
+  color: var(--rh-ink);
+}
+.argon-shell .refinement-control strong,
+.argon-shell .refinement-control p {
+  color: var(--rh-ink);
 }
 .argon-shell .refinement-control .footprint-protected,
 .argon-shell .refinement-room-picker button.selected { color: var(--rh-accent); }

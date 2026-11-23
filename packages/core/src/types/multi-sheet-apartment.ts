@@ -24,11 +24,100 @@ import type {
 } from './enums';
 import type { DynamicApartmentUnitSpec } from './apartment-manifest';
 import type { Floor, Site, Building, Setbacks } from './building';
+import type { Point, Polygon, WallArcSpec } from './geometry';
 import type { GeometryValidationReport } from './geometry-validation';
 
 export type VerticalStackType = 'G_PLUS_N' | 'STILT_PLUS_N' | 'BASEMENT_STILT_PLUS_N';
 export type ParkingMode = 'STILT_AND_SURFACE' | 'STILT_ONLY' | 'MECHANICAL_STACK';
 export type AreaTargetScope = 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
+export type GalleryCoordinationMode = 'DOUBLE_HEIGHT_STAGGER' | 'STACKED_RIBBON';
+
+/** Exposure tier for a flat boundary edge (Tier 1 highest -> Tier 4 internal). */
+export type FlatEdgeExposureTier = 1 | 2 | 3 | 4;
+
+/** Exposure-driven per-flat internal room orientation mode. */
+export type FlatOrientationMode =
+  | 'NORTH_SOUTH'
+  | 'EAST_WEST'
+  | 'CORNER_L_WRAP'
+  | 'ANGLED_PERIMETER_FIT';
+
+export type FlatEdgeExposureClassification =
+  | 'ROAD_FRONTAGE'
+  | 'CORNER_DUAL_ASPECT'
+  | 'EXTERIOR_SETBACK'
+  | 'INTERFLAT_OTS_DUCT'
+  | 'CORRIDOR_ENTRY'
+  | 'PARTY_WALL';
+
+export interface FlatEdgeExposureScore {
+  readonly edge: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+  readonly tier: FlatEdgeExposureTier;
+  readonly score: number;
+  readonly classification: FlatEdgeExposureClassification;
+  readonly lengthMm: number;
+}
+
+export interface FlatExposureProfile {
+  readonly flatId: string;
+  readonly orientationMode: FlatOrientationMode;
+  readonly primaryExteriorEdge: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+  readonly secondaryExteriorEdge?: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+  readonly livingExteriorEdge: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+  readonly livingExposureTier: FlatEdgeExposureTier;
+  readonly crossVentilationAxis: 'NORTH_SOUTH' | 'EAST_WEST' | 'CORNER_DIAGONAL';
+  readonly livingBaySide: 'CORRIDOR_SIDE' | 'EXTERIOR_SIDE';
+  readonly edgeScores: readonly FlatEdgeExposureScore[];
+}
+
+export interface CoordinatedChajjaBand {
+  readonly id: string;
+  readonly floorId: string;
+  readonly facadeSide: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'CURVED';
+  readonly wallIds: readonly string[];
+  readonly windowIds: readonly string[];
+  readonly startPoint: Point;
+  readonly endPoint: Point;
+  readonly outwardNormal: Point;
+  readonly projectionMm: number;
+  readonly lintelHeightMm: number;
+  readonly fasciaThicknessMm: number;
+  readonly mergedWindowCount: number;
+  readonly arc?: WallArcSpec;
+}
+
+export interface OtsLouverScreen {
+  readonly id: string;
+  readonly floorId: string;
+  readonly roomId: string;
+  readonly kind: 'OTS_DUCT' | 'UTILITY_BALCONY';
+  readonly startPoint: Point;
+  readonly endPoint: Point;
+  readonly outwardNormal: Point;
+  readonly bottomMm: number;
+  readonly topMm: number;
+  readonly slatPitchMm: number;
+}
+
+export interface GalleryBayCoordination {
+  readonly floorId: string;
+  readonly level: number;
+  readonly variant: 'ODD' | 'EVEN';
+  readonly mode: GalleryCoordinationMode;
+  readonly galleryRoomIds: readonly string[];
+  readonly doubleHeightRoomIds: readonly string[];
+}
+
+export interface FacadeCoordinationMetadata {
+  readonly galleryCoordinationMode: GalleryCoordinationMode;
+  readonly lintelDatumMm: number;
+  readonly verticalJambDriftMaxMm: number;
+  readonly coreAlignmentDriftMaxMm: number;
+  readonly chajjaBands: readonly CoordinatedChajjaBand[];
+  readonly otsLouverScreens: readonly OtsLouverScreen[];
+  readonly galleryBays: readonly GalleryBayCoordination[];
+  readonly flatExposures: readonly FlatExposureProfile[];
+}
 
 export type PlanCategory =
   | 'HIGH_RISE_APARTMENT'
@@ -62,7 +151,29 @@ export type NamedBuildingMassingShape =
   | 'PINWHEEL_CLUSTER'
   | 'STEPPED_OFFSET_BLOCK'
   | 'T_SHAPE_SPINE'
-  | 'O_SHAPE_PERIMETER_COURT';
+  | 'O_SHAPE_PERIMETER_COURT'
+  // Custom Irregular Plot & Imported CAD
+  | 'IRREGULAR_ANGLED_PLOT'
+  | 'IMPORTED_CAD_LAYOUT';
+
+export interface IrregularPlotBoundary {
+  readonly polygon: Polygon;
+  readonly areaMm2: number;
+  readonly perimeterMm: number;
+  readonly roadEdgeIndex?: number;
+  readonly edgeSetbacksMm?: readonly number[];
+  readonly edgeLengthsMm?: readonly number[];
+  readonly cornerAnglesDeg?: readonly number[];
+  readonly buildablePolygon?: Polygon;
+  readonly inscribedEnvelopeMm?: {
+    readonly x: number;
+    readonly y: number;
+    readonly w: number;
+    readonly h: number;
+  };
+  readonly sourceFileName?: string;
+  readonly sourceFormat?: 'dxf' | 'dwg' | 'pdf' | 'survey';
+}
 
 export type BuildingMassingShape = NamedBuildingMassingShape | `PARAM_${string}`;
 
@@ -160,6 +271,8 @@ export interface MultiSheetApartmentConfig {
   };
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
+  /** Optional imported or surveyed irregular plot boundary polygon (mm). */
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly plotWidthMm: number;
   readonly plotDepthMm: number;
   readonly roadWidthMm: number;
@@ -188,8 +301,12 @@ export interface MultiSheetApartmentConfig {
   readonly includeWindowChajjas?: boolean;
   /** Alternate cantilever balcony bays across Odd vs Even upper floors while locking vertical structure/MEP cores. */
   readonly staggeredBalconies?: boolean;
+  /** Coordinated multi-floor gallery / balcony rhythm (defaults to DOUBLE_HEIGHT_STAGGER). */
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
   /** Include a dedicated Dining Hall (RoomType.Dining) connected to Living & Kitchen (default true). */
   readonly includeDiningHall?: boolean;
+  /** Explicitly include a Study / Home Office room inside flats (default false — never auto-generated unless requested). */
+  readonly includeStudyRoom?: boolean;
   /** Internal tag set during multi-floor coordination when generating Odd vs Even typical floor variants. */
   readonly floorVariant?: 'ODD' | 'EVEN';
 }

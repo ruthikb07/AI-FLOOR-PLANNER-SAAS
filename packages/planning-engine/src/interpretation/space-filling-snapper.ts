@@ -35,6 +35,14 @@ import type {
   DynamicApartmentManifest,
   LotAllotmentMode,
   ApartmentBhkType,
+  Direction,
+  Setbacks,
+  IrregularPlotBoundary,
+  FlatEdgeExposureClassification,
+  FlatEdgeExposureScore,
+  FlatEdgeExposureTier,
+  FlatExposureProfile,
+  FlatOrientationMode,
 } from '@ai-floor-planner/core';
 import { interpretArchitecturalPlacement, type ArchitecturalPlacement } from './architectural-placement';
 import type {
@@ -112,12 +120,12 @@ export function createConnectingDoor(
   // Service/Bath: 750 -> 700 mm (NBC min 700 mm)
   const effectiveHorizWidth =
     sharedXLen >= width + 200 ? width :
-    width >= 1050 && sharedXLen >= 1200 ? 1000 :
-    width >= 1050 && sharedXLen >= 1000 ? 900 :
-    width >= 900 && sharedXLen >= 1000 ? 800 :
-    width < 900 && width >= 750 && sharedXLen >= width + 100 ? width :
-    width < 900 && width >= 750 && sharedXLen >= 900 ? 700 :
-    width;
+      width >= 1050 && sharedXLen >= 1200 ? 1000 :
+        width >= 1050 && sharedXLen >= 1000 ? 900 :
+          width >= 900 && sharedXLen >= 1000 ? 800 :
+            width < 900 && width >= 750 && sharedXLen >= width + 100 ? width :
+              width < 900 && width >= 750 && sharedXLen >= 900 ? 700 :
+                width;
 
   const isRoomBBath = /bath|toilet|wc|dress/i.test(roomB.id);
   const isRoomABath = /bath|toilet|wc|dress/i.test(roomA.id);
@@ -166,12 +174,12 @@ export function createConnectingDoor(
 
   const effectiveVertWidth =
     sharedYLen >= width + 200 ? width :
-    width >= 1050 && sharedYLen >= 1200 ? 1000 :
-    width >= 1050 && sharedYLen >= 1000 ? 900 :
-    width >= 900 && sharedYLen >= 1000 ? 800 :
-    width < 900 && width >= 750 && sharedYLen >= width + 100 ? width :
-    width < 900 && width >= 750 && sharedYLen >= 900 ? 700 :
-    width;
+      width >= 1050 && sharedYLen >= 1200 ? 1000 :
+        width >= 1050 && sharedYLen >= 1000 ? 900 :
+          width >= 900 && sharedYLen >= 1000 ? 800 :
+            width < 900 && width >= 750 && sharedYLen >= width + 100 ? width :
+              width < 900 && width >= 750 && sharedYLen >= 900 ? 700 :
+                width;
 
   const vertReqMargin =
     !options?.isFlatEntrance && width < 900 && width >= 750 && sharedYLen >= width + 100 && sharedYLen < width + 200
@@ -438,10 +446,10 @@ function matchFlatTopology(
     const normType: ApartmentBhkType =
       manifestUnit?.bhkType ??
       (rawType.includes('4BHK') ? '4BHK' :
-       rawType.includes('3BHK') ? '3BHK' :
-       rawType.includes('2BHK') ? '2BHK' :
-       rawType.includes('1BHK') ? '1BHK' :
-       '3BHK');
+        rawType.includes('3BHK') ? '3BHK' :
+          rawType.includes('2BHK') ? '2BHK' :
+            rawType.includes('1BHK') ? '1BHK' :
+              '3BHK');
 
     configs.push({
       id: raw?.id ?? `flat_0${i + 1}`,
@@ -842,6 +850,290 @@ function resolveArchetypeSlicingParams(archetype?: RoomSlicingArchetypeId): Arch
   }
 }
 
+export type WorldEdgeSide = 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
+
+export interface ScoreFlatExteriorEdgesContext {
+  readonly flatId?: string;
+  readonly envelope: Box2D;
+  readonly accessEdge: WorldEdgeSide;
+  readonly otsShaftBoxes?: readonly Box2D[];
+  readonly recessBoxes?: readonly Box2D[];
+  readonly roadAccessSides?: readonly (Direction | string)[];
+  readonly setbacksMm?: Setbacks;
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
+}
+
+export interface LocalFlatExposure {
+  readonly lowYTier: FlatEdgeExposureTier;
+  readonly highYTier: FlatEdgeExposureTier;
+  readonly lowYIsExterior: boolean;
+  readonly highYIsExterior: boolean;
+  readonly lowYHasOts: boolean;
+  readonly highYHasOts: boolean;
+  readonly westIsExterior: boolean;
+  readonly lowYScore: number;
+  readonly highYScore: number;
+  readonly primaryLocalY: 'LOW_Y' | 'HIGH_Y';
+  readonly hasExteriorY: boolean;
+  readonly livingBaySide: 'CORRIDOR_SIDE' | 'EXTERIOR_SIDE';
+  readonly orientationMode: FlatOrientationMode;
+  readonly preferMasterAtPrimaryY: boolean;
+}
+
+function sharedSegmentOverlap1D(a0: number, a1: number, b0: number, b1: number): number {
+  return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
+}
+
+function boxEdgeSharedWithList(flatBox: Box2D, side: WorldEdgeSide, boxes: readonly Box2D[] = []): number {
+  const tol = 15;
+  let total = 0;
+  for (const b of boxes) {
+    if (side === 'NORTH' && Math.abs(b.y + b.h - flatBox.y) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.x, flatBox.x + flatBox.w, b.x, b.x + b.w);
+    } else if (side === 'SOUTH' && Math.abs(b.y - (flatBox.y + flatBox.h)) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.x, flatBox.x + flatBox.w, b.x, b.x + b.w);
+    } else if (side === 'WEST' && Math.abs(b.x + b.w - flatBox.x) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.y, flatBox.y + flatBox.h, b.y, b.y + b.h);
+    } else if (side === 'EAST' && Math.abs(b.x - (flatBox.x + flatBox.w)) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.y, flatBox.y + flatBox.h, b.y, b.y + b.h);
+    }
+  }
+  return total;
+}
+
+function pointToSegmentDistance(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq <= 1e-6) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+/**
+ * Classifies and scores all four perimeter edges of a flat polygon against
+ * road frontage, corner dual-aspect exposure, open setbacks, 5'-6' inter-flat
+ * OTS ventilation ducts, corridor entry, and irregular angled plot boundaries.
+ *
+ * Tier 1 (Highest): Front Road / Corner Dual-Aspect Exterior Wall.
+ * Tier 2: Side / Rear Open Setback Exterior Wall.
+ * Tier 3: 5'-6' (1,525-1,830 mm) Inter-Flat OTS Ventilation Duct Wall.
+ * Tier 4 (Internal): Corridor / Lobby Entry Wall & Shared Party Wall.
+ */
+export function scoreFlatExteriorEdges(
+  flatBox: Box2D,
+  context: ScoreFlatExteriorEdgesContext,
+): FlatExposureProfile {
+  const {
+    flatId = 'flat',
+    envelope,
+    accessEdge,
+    otsShaftBoxes = [],
+    recessBoxes = [],
+    roadAccessSides = [],
+    setbacksMm,
+    irregularPlotBoundary,
+  } = context;
+
+  const roadSet = new Set(
+    roadAccessSides.map(side => String(side).toUpperCase() as WorldEdgeSide),
+  );
+  const tol = 15;
+  const sides: readonly WorldEdgeSide[] = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
+
+  const edgeMidpoint = (side: WorldEdgeSide): { x: number; y: number } => {
+    switch (side) {
+      case 'NORTH': return { x: flatBox.x + flatBox.w / 2, y: flatBox.y };
+      case 'SOUTH': return { x: flatBox.x + flatBox.w / 2, y: flatBox.y + flatBox.h };
+      case 'WEST': return { x: flatBox.x, y: flatBox.y + flatBox.h / 2 };
+      case 'EAST': return { x: flatBox.x + flatBox.w, y: flatBox.y + flatBox.h / 2 };
+    }
+  };
+
+  const edgeLength = (side: WorldEdgeSide): number =>
+    side === 'NORTH' || side === 'SOUTH' ? flatBox.w : flatBox.h;
+
+  const irregularInfoForSide = (side: WorldEdgeSide): {
+    isRoadEdge: boolean;
+    isAngledEdge: boolean;
+    distMm: number;
+  } => {
+    const pts = irregularPlotBoundary?.polygon.points;
+    if (!pts || pts.length < 3) return { isRoadEdge: false, isAngledEdge: false, distMm: 3000 };
+    const mid = edgeMidpoint(side);
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i]!;
+      const b = pts[(i + 1) % pts.length]!;
+      const d = pointToSegmentDistance(mid.x, mid.y, a.x, a.y, b.x, b.y);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    const a = pts[bestIdx]!;
+    const b = pts[(bestIdx + 1) % pts.length]!;
+    const dx = Math.abs(b.x - a.x);
+    const dy = Math.abs(b.y - a.y);
+    const isAngledEdge = dx > 250 && dy > 250;
+    const isRoadEdge = irregularPlotBoundary?.roadEdgeIndex === bestIdx;
+    return { isRoadEdge, isAngledEdge, distMm: bestDist };
+  };
+
+  const setbackForSide = (side: WorldEdgeSide): number => {
+    if (irregularPlotBoundary) {
+      return irregularInfoForSide(side).distMm;
+    }
+    if (!setbacksMm) return 3000;
+    if (side === 'SOUTH') return setbacksMm.front;
+    if (side === 'NORTH') return setbacksMm.rear;
+    if (side === 'WEST') return setbacksMm.left;
+    return setbacksMm.right;
+  };
+
+  const rawSides = sides.map(side => {
+    const len = edgeLength(side);
+    const isCorridor = side === accessEdge;
+    const onEnvelope =
+      (side === 'NORTH' && Math.abs(flatBox.y - envelope.y) <= tol) ||
+      (side === 'SOUTH' && Math.abs(flatBox.y + flatBox.h - (envelope.y + envelope.h)) <= tol) ||
+      (side === 'WEST' && Math.abs(flatBox.x - envelope.x) <= tol) ||
+      (side === 'EAST' && Math.abs(flatBox.x + flatBox.w - (envelope.x + envelope.w)) <= tol);
+    const recessOverlap = boxEdgeSharedWithList(flatBox, side, recessBoxes);
+    const otsOverlap = boxEdgeSharedWithList(flatBox, side, otsShaftBoxes);
+    const isExterior = !isCorridor && (onEnvelope || recessOverlap >= 1200);
+    const irr = irregularInfoForSide(side);
+    const isRoad = isExterior && (roadSet.has(side) || irr.isRoadEdge);
+    const setbackMm = setbackForSide(side);
+    return {
+      side,
+      len,
+      isCorridor,
+      isExterior,
+      otsOverlap,
+      isRoad,
+      isAngledEdge: irr.isAngledEdge,
+      setbackMm,
+    };
+  });
+
+  const exteriorSides = rawSides.filter(s => s.isExterior);
+  const isCornerFlat = exteriorSides.length >= 2;
+  const maxExtLen = Math.max(1, ...exteriorSides.map(s => s.len));
+
+  const edgeScores: FlatEdgeExposureScore[] = rawSides.map(s => {
+    let tier: FlatEdgeExposureTier;
+    let classification: FlatEdgeExposureClassification;
+    let score: number;
+
+    if (s.isCorridor) {
+      tier = 4;
+      classification = 'CORRIDOR_ENTRY';
+      score = 12;
+    } else if (s.isExterior) {
+      const lengthBonus = Math.min(8, (s.len / maxExtLen) * 6 + s.len / 6000);
+      const setbackBonus = Math.min(6, s.setbackMm / 1500);
+      if (s.isRoad) {
+        tier = 1;
+        classification = 'ROAD_FRONTAGE';
+        score = Math.round((105 + lengthBonus + setbackBonus) * 10) / 10;
+      } else if (isCornerFlat && (s.len >= maxExtLen * 0.85 || s.isAngledEdge)) {
+        tier = 1;
+        classification = 'CORNER_DUAL_ASPECT';
+        score = Math.round((92 + lengthBonus + setbackBonus) * 10) / 10;
+      } else {
+        tier = 2;
+        classification = 'EXTERIOR_SETBACK';
+        score = Math.round((75 + lengthBonus + setbackBonus) * 10) / 10;
+      }
+    } else if (s.otsOverlap >= 1000) {
+      tier = 3;
+      classification = 'INTERFLAT_OTS_DUCT';
+      score = Math.round((45 + Math.min(10, (s.otsOverlap / Math.max(1, s.len)) * 10)) * 10) / 10;
+    } else {
+      tier = 4;
+      classification = 'PARTY_WALL';
+      score = 5;
+    }
+
+    return {
+      edge: s.side,
+      tier,
+      score,
+      classification,
+      lengthMm: Math.round(s.len),
+    };
+  });
+
+  const sorted = [...edgeScores].sort((a, b) => b.score - a.score);
+  const primary = sorted[0]!;
+  const secondary = sorted[1] && sorted[1].tier <= 2 ? sorted[1] : undefined;
+  const hasAngledExposure = rawSides.some(s => s.isExterior && s.isAngledEdge);
+  const hasRoadExposure = rawSides.some(s => s.isRoad);
+
+  let orientationMode: FlatOrientationMode;
+  if (irregularPlotBoundary && (hasAngledExposure || isCornerFlat)) {
+    orientationMode = hasAngledExposure
+      ? 'ANGLED_PERIMETER_FIT'
+      : hasRoadExposure
+        ? 'CORNER_L_WRAP'
+        : primary.edge === 'NORTH' || primary.edge === 'SOUTH'
+          ? 'NORTH_SOUTH'
+          : 'EAST_WEST';
+  } else if (hasRoadExposure && secondary) {
+    orientationMode = 'CORNER_L_WRAP';
+  } else if (primary.edge === 'NORTH' || primary.edge === 'SOUTH') {
+    orientationMode = 'NORTH_SOUTH';
+  } else {
+    orientationMode = 'EAST_WEST';
+  }
+
+  // Independently choose Living vs Gallery bay side per flat so opposite wings
+  // and front-vs-rear quadrants respond to road, corner, angled plot edges,
+  // and solar aspect rather than cloning one mirrored template.
+  let livingBaySide: 'CORRIDOR_SIDE' | 'EXTERIOR_SIDE';
+  if (orientationMode === 'ANGLED_PERIMETER_FIT') {
+    const westSide = rawSides.find(s => s.side === 'WEST');
+    const eastSide = rawSides.find(s => s.side === 'EAST');
+    livingBaySide = (westSide?.isExterior && westSide.isAngledEdge) || (eastSide?.isExterior && eastSide.setbackMm > (westSide?.setbackMm ?? 0))
+      ? 'EXTERIOR_SIDE'
+      : 'CORRIDOR_SIDE';
+  } else if (orientationMode === 'CORNER_L_WRAP') {
+    livingBaySide = 'CORRIDOR_SIDE';
+  } else if (orientationMode === 'NORTH_SOUTH') {
+    livingBaySide = 'EXTERIOR_SIDE';
+  } else {
+    livingBaySide = primary.edge === 'EAST' ? 'CORRIDOR_SIDE' : 'EXTERIOR_SIDE';
+  }
+
+  const crossVentilationAxis: FlatExposureProfile['crossVentilationAxis'] =
+    orientationMode === 'CORNER_L_WRAP' || orientationMode === 'ANGLED_PERIMETER_FIT'
+      ? 'CORNER_DIAGONAL'
+      : primary.edge === 'NORTH' || primary.edge === 'SOUTH'
+        ? 'NORTH_SOUTH'
+        : 'EAST_WEST';
+
+  return {
+    flatId,
+    orientationMode,
+    primaryExteriorEdge: primary.edge,
+    ...(secondary ? { secondaryExteriorEdge: secondary.edge } : {}),
+    livingExteriorEdge: primary.edge,
+    livingExposureTier: primary.tier,
+    crossVentilationAxis,
+    livingBaySide,
+    edgeScores,
+  };
+}
+
 export function sliceFlatRooms(params: {
   flatId: string;
   flatLabel: string;
@@ -854,8 +1146,10 @@ export function sliceFlatRooms(params: {
   placement?: ArchitecturalPlacement;
   archetype?: RoomSlicingArchetypeId;
   localExteriorFaces?: { lowY?: boolean; highY?: boolean };
+  exposureProfile?: FlatExposureProfile;
+  localExposure?: LocalFlatExposure;
 }): SliceFlatResult {
-  const { flatId, flatLabel, unitType, box, corridorIsEast, corridorBox, envelope, rawRooms = [], placement, archetype } = params;
+  const { flatId, flatLabel, unitType, box, corridorIsEast, corridorBox, envelope, rawRooms = [], placement, archetype, localExposure } = params;
   const arch = resolveArchetypeSlicingParams(archetype);
   const rooms: ApartmentPlanRoom[] = [];
   const flatOpenings: ApartmentPlanOpening[] = [];
@@ -880,9 +1174,9 @@ export function sliceFlatRooms(params: {
       livingZoneW = box.w - bedZoneW;
     }
   } else {
-    livingZoneW = snap10(Math.min(Math.max(6500, box.w - 5800), Math.max(3600, box.w * arch.livingZoneRatio)));
+    livingZoneW = snap10(Math.min(Math.max(6650, box.w - 5800), Math.max(3600, box.w * arch.livingZoneRatio)));
     bedZoneW = box.w - livingZoneW;
-    const maxSingleColBedW = snap10(Math.max(4200, Math.min(6000, box.h * 0.65)));
+    const maxSingleColBedW = snap10(Math.max(4250, Math.min(6000, box.h * 0.65)));
     if ((unitType === '1BHK' || unitType === '2BHK') && bedZoneW > maxSingleColBedW && box.w - maxSingleColBedW >= 3600) {
       bedZoneW = maxSingleColBedW;
       livingZoneW = box.w - bedZoneW;
@@ -891,9 +1185,15 @@ export function sliceFlatRooms(params: {
       bedZoneW = 3600;
       livingZoneW = box.w - bedZoneW;
     }
-    if (placement?.bedroomBalconies === 'ALL_BEDROOMS' && bedZoneW < 4200 && box.w >= 7800) {
-      bedZoneW = 4200;
+    if (placement?.bedroomBalconies === 'ALL_BEDROOMS' && bedZoneW < 4250 && box.w >= 7750) {
+      bedZoneW = Math.min(4250, box.w - 3550);
       livingZoneW = box.w - bedZoneW;
+    }
+    // When box.w allows >= 3,600 mm Living + >= 3,000 mm Dining side-by-side (6,600 mm)
+    // while keeping >= 4,350 mm bedZoneW (3,050 mm bedroom + 1,300 mm private balcony), prefer that balance.
+    if (unitType === '2BHK' && box.w >= 10950 && livingZoneW < 6600 && box.w - 6600 >= 4350) {
+      livingZoneW = 6600;
+      bedZoneW = box.w - livingZoneW;
     }
   }
 
@@ -901,220 +1201,1094 @@ export function sliceFlatRooms(params: {
   const livingZoneX = corridorIsEast ? box.x + bedZoneW : box.x;
   const bedZoneX = corridorIsEast ? box.x : box.x + livingZoneW;
 
-  const isSouth = box.y > envelope.y + 100;
-
-  // ─── 1. Public Zone: Living/Dining + Kitchen + Kitchen Utility Balcony + Sit-out Balcony ──
-  // Proportional sizing: kitchen width scales with living zone (50% to 60%), never artificially capped at 4000 mm.
-  const baseKitchRatio = placement?.kitchenSize === 'LARGER' ? 0.58 : 0.53;
-  const kitchRatio = arch.isDefault
-    ? baseKitchRatio
-    : Math.max(0.42, Math.min(0.64, baseKitchRatio + arch.kitchRatioOffset));
-  const rawKitchW = snap10(livingZoneW * kitchRatio);
-  const kitchW = arch.isDefault || livingZoneW < 3100
-    ? rawKitchW
-    : Math.min(livingZoneW - 1400, Math.max(1600, rawKitchW));
-  const livW = livingZoneW - kitchW;
-
-  const livX = arch.swapKitchenLiving
-    ? (corridorIsEast ? livingZoneX : livingZoneX + kitchW)
-    : (corridorIsEast ? livingZoneX + kitchW : livingZoneX);
-  const kitchX = arch.swapKitchenLiving
-    ? (corridorIsEast ? livingZoneX + livW : livingZoneX)
-    : (corridorIsEast ? livingZoneX : livingZoneX + livW);
+  const isSouth = localExposure
+    ? localExposure.primaryLocalY === 'HIGH_Y'
+    : box.y > envelope.y + 100;
 
   const utilDepth = box.h < 7000 ? 1000 : box.h < 9000 ? 1200 : 1430;
   const baseBalconyDepth = box.h < 9000 ? 1450 : (placement?.sitoutSize === 'COMPACT' ? 1550 : 1830);
   const balconyDepth = arch.extraBalconyDepth > 0 && box.h >= 9000
     ? Math.min(2000, baseBalconyDepth + arch.extraBalconyDepth)
     : baseBalconyDepth;
+  const isKitchenOpen = placement?.kitchenStyle === 'OPEN' || arch.forceOpenKitchen;
 
-  // Scale kitchen and service depth with flat area to prevent undersized kitchens on large plots
-  const flatAreaSqM = (box.w * box.h) / 1_000_000;
-  const scaledKitchenArea = Math.min(24_000_000, Math.max(12_500_000, snap10(flatAreaSqM * 0.08 * 10) * 100_000));
-  const ratioKitchenTarget = snap10((livingZoneW * Math.min(8500, Math.max(3600, box.h * 0.50))) / 3.35);
-  const kitchenTargetArea = Math.max(
-    ratioKitchenTarget,
-    placement?.kitchenSize === 'LARGER' ? Math.max(15_000_000, scaledKitchenArea * 1.15) : scaledKitchenArea,
+  // Exposure-driven Perimeter Living Rule:
+  // When localExposure indicates a genuine Tier 1/2 exterior Y-edge, anchor
+  // Living Room + primary Sit-out Gallery directly along that exterior wall
+  // (never buried on an internal party wall), orienting each flat independently
+  // and alternating the primary gallery bay cleanly across Odd/Even floors
+  // when DOUBLE_HEIGHT_STAGGER is active.
+  const oppYIsExterior = localExposure
+    ? (isSouth ? localExposure.lowYIsExterior : localExposure.highYIsExterior)
+    : false;
+  const oppYHasOts = localExposure
+    ? (isSouth ? localExposure.lowYHasOts : localExposure.highYHasOts)
+    : false;
+  const isDoubleHeightStagger =
+    placement?.galleryCoordinationMode === 'DOUBLE_HEIGHT_STAGGER' ||
+    (placement?.galleryCoordinationMode === undefined && placement?.staggeredBalconies === true);
+
+  const canUseOtsPerimeterLiving = Boolean(
+    localExposure?.hasExteriorY &&
+    (oppYHasOts || oppYIsExterior) &&
+    livingZoneW >= 4600 &&
+    box.h >= 7600,
   );
-  const kitchenTargetDepth = utilDepth + Math.ceil(kitchenTargetArea / kitchW / 10) * 10;
-
-  const minLivingDepth = box.h < 8000 ? 2700 : (box.h >= 9500 && box.h <= 10400 && unitType === '2BHK' ? 4100 : 3600);
-  const minServiceDepthForRefuge = box.h >= 14000 ? Math.ceil(15_000_000 / Math.max(1, livW) / 10) * 10 : 0;
-  const baseServiceDepth = Math.max(
-    utilDepth + 2600,
-    balconyDepth + 2600,
-    box.h > 15000
-      ? snap10(Math.min(9000, Math.max(5500, box.h * 0.28)))
-      : snap10(Math.min(box.h * 0.45, Math.max(4200, box.h * 0.38))),
+  const canUseThreeColPerimeterLiving = Boolean(
+    localExposure?.hasExteriorY &&
+    !oppYHasOts &&
+    !oppYIsExterior &&
+    livingZoneW >= 6800 &&
+    box.h >= 8200 &&
+    corridorIsEast,
   );
-  const serviceDepth = Math.min(box.h - minLivingDepth, Math.max(baseServiceDepth, kitchenTargetDepth, minServiceDepthForRefuge));
-  const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
 
-  // Utility Balcony: exterior facade in kitchen column
-  const utilityRoom: ApartmentPlanRoom = {
-    id: `${flatId}__utility`,
-    name: `${flatLabel} Kitchen Utility Balcony`,
-    type: 'utility',
-    planningZone: 'OUTDOOR',
-    rect: {
-      x: kitchX,
-      y: isSouth ? box.y + box.h - utilDepth : box.y,
-      width: kitchW,
-      height: utilDepth,
-    },
-  };
-
-  // Kitchen: behind utility in kitchen column
-  const kitchenRoom: ApartmentPlanRoom = {
-    id: `${flatId}__kitchen`,
-    name: `${flatLabel} Kitchen`,
-    type: 'kitchen',
-    planningZone: 'SERVICE',
-    rect: {
-      x: kitchX,
-      y: isSouth ? serviceY : box.y + utilDepth,
-      width: kitchW,
-      height: serviceDepth - utilDepth,
-    },
-  };
-
-  // Sit-out Balcony: exterior facade in living/dining column (strictly statutory bounded)
-  const balconyRoom: ApartmentPlanRoom = {
-    id: `${flatId}__balcony`,
-    name: `${flatLabel} Sit-out Balcony`,
-    type: 'balcony',
-    planningZone: 'OUTDOOR',
-    rect: {
-      x: livX,
-      y: isSouth ? box.y + box.h - balconyDepth : box.y,
-      width: livW,
-      height: balconyDepth,
-    },
-  };
-
-  // Dining & Family Hall: behind sit-out balcony in living/dining column
-  const diningRoom: ApartmentPlanRoom = {
-    id: `${flatId}__dining`,
-    name: `${flatLabel} Dining & Family Hall`,
-    type: 'dining',
-    planningZone: 'PUBLIC',
-    rect: {
-      x: livX,
-      y: isSouth ? serviceY : box.y + balconyDepth,
-      width: livW,
-      height: serviceDepth - balconyDepth,
-    },
-  };
-
-  // Living Room: spans full livingZoneW behind the service band, touching the common corridor!
-  const remLivH = box.h - serviceDepth;
-  // Keep any optional entrance foyer strictly compact (<= 11.5 sq m) and opening only to Living Room.
-  const kitchArea = kitchW * Math.max(1000, serviceDepth - utilDepth);
-  const maxLivHForRatio = snap10((3.35 * kitchArea) / Math.max(1, livingZoneW));
-  const targetLivH = Math.min(8500, maxLivHForRatio);
-  const maxFoyerH = Math.min(2200, snap10(Math.floor(11_500_000 / Math.max(1, livingZoneW))));
-  const rawFoyerH = remLivH > targetLivH ? Math.min(maxFoyerH, remLivH - targetLivH) : 0;
-  const hasFoyer = rawFoyerH >= 1200 && (remLivH - rawFoyerH) >= 3600 && unitType !== '3BHK' && unitType !== '4BHK';
-  const foyerH = hasFoyer ? rawFoyerH : 0;
-  const livingH = remLivH - foyerH;
-
-  const livingY = isSouth
-    ? (hasFoyer ? box.y + foyerH : box.y)
-    : box.y + serviceDepth;
-
-  const livingRoom: ApartmentPlanRoom = {
-    id: `${flatId}__living`,
-    name: `${flatLabel} Living Room`,
-    type: 'living',
-    planningZone: 'PUBLIC',
-    rect: {
-      x: livingZoneX,
-      y: livingY,
-      width: livingZoneW,
-      height: livingH,
-    },
-  };
-
+  let livingRoom!: ApartmentPlanRoom;
+  let diningRoom!: ApartmentPlanRoom;
+  let kitchenRoom!: ApartmentPlanRoom;
+  let balconyRoom!: ApartmentPlanRoom;
+  let utilityRoom: ApartmentPlanRoom | undefined;
   let foyerRoom: ApartmentPlanRoom | undefined;
-  if (hasFoyer) {
-    foyerRoom = {
-      id: `${flatId}__foyer`,
-      name: `${flatLabel} Entrance Foyer`,
-      type: 'foyer',
-      planningZone: 'PUBLIC',
+  let perimeterLivingActive = false;
+  let galleryOnCorridorSide = false;
+
+  if (canUseOtsPerimeterLiving && localExposure) {
+    perimeterLivingActive = true;
+    // Anchor Living Room at the corridor-exterior corner so every flat enters
+    // directly from the corridor into Living Room (never Dining) while keeping
+    // Living directly on the Tier 1/2 exterior facade; DOUBLE_HEIGHT_STAGGER
+    // alternates the outer bedroom sky-balcony bays cleanly across Odd/Even floors.
+    galleryOnCorridorSide = false;
+
+    // Prioritize >= 3,600 mm clear Living width (and >= 3,000 mm Dining/Gallery when livingZoneW >= 6,600 mm)
+    const wantLivW = livingZoneW >= 6600
+      ? Math.max(3600, snap10(livingZoneW * 0.545))
+      : livingZoneW >= 5800
+        ? Math.min(livingZoneW - 2200, Math.max(3600, snap10(livingZoneW * 0.58)))
+        : Math.min(livingZoneW - 1900, Math.max(2700, snap10(livingZoneW * 0.56)));
+    const wantGalW = livingZoneW - wantLivW;
+    const leftIsLiving = corridorIsEast ? galleryOnCorridorSide : !galleryOnCorridorSide;
+    const leftColW = leftIsLiving ? wantLivW : wantGalW;
+    const rightColW = livingZoneW - leftColW;
+
+    const leftX = livingZoneX;
+    const rightX = livingZoneX + leftColW;
+    const livColX = leftIsLiving ? leftX : rightX;
+    const livColW = leftIsLiving ? leftColW : rightColW;
+    const galColX = leftIsLiving ? rightX : leftX;
+    const galColW = leftIsLiving ? rightColW : leftColW;
+
+    const targetKitchArea = placement?.kitchenSize === 'LARGER' ? 19_000_000 : 14_500_000;
+    const minKitchBandH = placement?.kitchenSize === 'LARGER' ? 3200 : 2800;
+    const rawKitchH = snap10(
+      Math.max(
+        minKitchBandH,
+        Math.min(box.h * 0.36, targetKitchArea / Math.max(1, livingZoneW)),
+      ),
+    );
+    const minFrontH = Math.max(4600, snap10(box.h * (placement?.kitchenSize === 'LARGER' ? 0.56 : 0.60)));
+    const kitchBandH = Math.max(2400, Math.min(rawKitchH, box.h - minFrontH));
+    const frontBandH = box.h - kitchBandH;
+
+    const frontStartY = isSouth ? box.y + kitchBandH : box.y;
+    const frontEndY = frontStartY + frontBandH;
+    const kitchStartY = isSouth ? box.y : box.y + frontBandH;
+    const diningFrontStartY = isSouth ? frontStartY : box.y + balconyDepth;
+    const diningFrontEndY = diningFrontStartY + (frontBandH - balconyDepth);
+    const corridorHostStartY = galleryOnCorridorSide ? diningFrontStartY : frontStartY;
+    const corridorHostEndY = galleryOnCorridorSide ? diningFrontEndY : frontEndY;
+    const corridorOverlapFront =
+      Math.min(corridorBox.y + corridorBox.h, corridorHostEndY) - Math.max(corridorBox.y, corridorHostStartY);
+    const fullWidthKitchen = corridorOverlapFront >= 1250;
+
+    const useLShapedOpenLiving =
+      fullWidthKitchen &&
+      livingZoneW >= 4800 &&
+      livingZoneW < 6600 &&
+      box.h >= 9400;
+
+    // Detect deep living zones where 2 parallel columns would create tunnel Living/Dining (> 2.08:1).
+    // Cap the exterior Living + Dining/Sit-out band so BOTH sit directly on the exterior facade /
+    // outdoor Sit-out Balcony (<= 2.05:1, Living >= 3,600 mm, Dining >= 3,000 mm), while the rear
+    // band pairs a proportionate OTS-ventilated Kitchen (<= 2.0:1, >= 2,400 mm) with an Entrance Foyer
+    // on the corridor side (zero tunnel kitchens, zero unventilated dining, zero reabsorbed utilities).
+    const useThreeBandOpenLiving =
+      !useLShapedOpenLiving &&
+      fullWidthKitchen &&
+      box.h >= 10_200 &&
+      livingZoneW >= 5400 &&
+      (frontBandH > livColW * 2.08 || (frontBandH - balconyDepth) > galColW * 2.08);
+
+    // Helper: keep Kitchen strictly <= 2.05:1 by pairing it with an exterior Utility Balcony
+    // (when oppYIsExterior) or a Corridor-side Entrance Foyer / Pantry Vestibule (on internal OTS ducts).
+    const buildKitchenBand = (bandY: number, bandH: number) => {
+      if (oppYIsExterior && bandH >= 3200 && livingZoneW <= (bandH - Math.min(utilDepth, bandH - 2100)) * 2.05) {
+        const effUtilD = Math.min(utilDepth, bandH - 2100);
+        utilityRoom = {
+          id: `${flatId}__utility`,
+          name: `${flatLabel} Kitchen Utility Balcony`,
+          type: 'utility',
+          planningZone: 'OUTDOOR',
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? bandY : bandY + bandH - effUtilD,
+            width: livingZoneW,
+            height: effUtilD,
+          },
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: 'kitchen',
+          planningZone: 'SERVICE',
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? bandY + effUtilD : bandY,
+            width: livingZoneW,
+            height: bandH - effUtilD,
+          },
+        };
+      } else if (livingZoneW > bandH * 2.05 && livingZoneW >= 4600) {
+        // Horizontal split eliminates > 2.05:1 tunnel kitchens; place Kitchen on the wet/OTS
+        // interior side and Utility (if exterior) or Pantry/Store (if OTS/corridor) on the corridor side.
+        const kitchWFrac = placement?.kitchenSize === 'LARGER' ? 0.68 : 0.62;
+        const kitchMaxAspect = placement?.kitchenSize === 'LARGER' ? 2.08 : 1.95;
+        const kitchW = snap10(Math.min(bandH * kitchMaxAspect, Math.max(2600, livingZoneW * kitchWFrac)));
+        const sideW = livingZoneW - kitchW;
+        const kitchOnLeft = corridorIsEast;
+        const kitchX = kitchOnLeft ? livingZoneX : livingZoneX + sideW;
+        const sideX = kitchOnLeft ? livingZoneX + kitchW : livingZoneX;
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: 'kitchen',
+          planningZone: 'SERVICE',
+          rect: { x: kitchX, y: bandY, width: kitchW, height: bandH },
+        };
+        if (oppYIsExterior) {
+          utilityRoom = {
+            id: `${flatId}__utility`,
+            name: `${flatLabel} Kitchen Utility Balcony`,
+            type: 'utility',
+            planningZone: 'OUTDOOR',
+            rect: { x: sideX, y: bandY, width: sideW, height: bandH },
+          };
+        } else {
+          // Pair wide OTS kitchens with a dedicated Store / Pantry (RoomType.Storage)
+          // so Kitchen stays <= 2.0:1 and never trips foyer entrance rules.
+          const storeRoom: ApartmentPlanRoom = {
+            id: `${flatId}__pantry`,
+            name: `${flatLabel} Kitchen Pantry & Store`,
+            type: 'storage',
+            planningZone: 'SERVICE',
+            rect: { x: sideX, y: bandY, width: sideW, height: bandH },
+          };
+          rooms.push(storeRoom);
+          const dStore = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, storeRoom, 800, { doorType: 'single' });
+          if (dStore) flatOpenings.push(dStore);
+        }
+      } else {
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: 'kitchen',
+          planningZone: 'SERVICE',
+          rect: { x: livingZoneX, y: bandY, width: livingZoneW, height: bandH },
+        };
+      }
+    };
+
+    // Sit-out Balcony directly on Tier 1/2 Exterior Wall
+    balconyRoom = {
+      id: `${flatId}__balcony`,
+      name: `${flatLabel} Sit-out Balcony`,
+      type: 'balcony',
+      planningZone: 'OUTDOOR',
       rect: {
-        x: livingZoneX,
-        y: isSouth ? box.y : box.y + serviceDepth + livingH,
-        width: livingZoneW,
-        height: foyerH,
+        x: galColX,
+        y: isSouth ? box.y + box.h - balconyDepth : box.y,
+        width: galColW,
+        height: balconyDepth,
       },
     };
-    rooms.push(foyerRoom);
+
+    if (useLShapedOpenLiving) {
+      // Open-Plan L-Shaped Living–Dining Zone for 4,800–6,590 mm public zones (e.g. 3BHK flats):
+      // Front exterior band: Living Room (>= 3,600 mm wide) beside Sit-out Gallery (>= 1,200 mm wide).
+      // Middle band: Full-width Open-Plan Dining & Family Hall (>= 3,000 mm deep, <= 2.0:1) wrapping Living + Gallery.
+      // Rear OTS band: Proportionate OTS-ventilated Kitchen (>= 2,400 mm, <= 2.0:1) + Pantry/Utility.
+      const livW_L = Math.max(3600, Math.min(livingZoneW - 1200, snap10(livingZoneW * 0.68)));
+      const galW_L = livingZoneW - livW_L;
+      const leftIsLivL = corridorIsEast ? galleryOnCorridorSide : !galleryOnCorridorSide;
+      const livX_L = leftIsLivL ? livingZoneX : livingZoneX + galW_L;
+      const galX_L = leftIsLivL ? livingZoneX + livW_L : livingZoneX;
+
+      const maxFrontH_L = Math.min(box.h - 5600, snap10(livW_L * 1.65));
+      const frontH_L = Math.max(3600, Math.min(maxFrontH_L, snap10(box.h * 0.36)));
+      const remAfterFront_L = box.h - frontH_L;
+      const maxDinH_L = Math.min(remAfterFront_L - 2500, snap10(livingZoneW * 1.15));
+      const diningH_L = Math.max(3000, Math.min(maxDinH_L, snap10(remAfterFront_L * 0.50)));
+      const rearH_L = remAfterFront_L - diningH_L;
+
+      const frontY_L = isSouth ? box.y + rearH_L + diningH_L : box.y;
+      const diningY_L = isSouth ? box.y + rearH_L : box.y + frontH_L;
+      const rearY_L = isSouth ? box.y : box.y + frontH_L + diningH_L;
+
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: 'balcony',
+        planningZone: 'OUTDOOR',
+        rect: { x: galX_L, y: frontY_L, width: galW_L, height: frontH_L },
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: { x: livX_L, y: frontY_L, width: livW_L, height: frontH_L },
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: { x: livingZoneX, y: diningY_L, width: livingZoneW, height: diningH_L },
+      };
+      buildKitchenBand(rearY_L, rearH_L);
+    } else if (useThreeBandOpenLiving) {
+      // Front exterior band: Living Room (<= 2.0:1, >= 3,600 mm) + Dining behind Sit-out Balcony (<= 2.0:1, >= 3,000 mm)
+      const maxFrontByLiv = snap10(livColW * 2.0);
+      const maxFrontByDin = balconyDepth + snap10(galColW * 2.0);
+      const maxFrontH = Math.min(maxFrontByLiv, maxFrontByDin, box.h - 2600);
+      const frontH3 = Math.max(balconyDepth + 3000, Math.min(maxFrontH, box.h - 3200));
+      const remAfterFront = box.h - frontH3;
+
+      const rearY3 = isSouth ? box.y : box.y + frontH3;
+      const frontY3 = isSouth ? box.y + remAfterFront : box.y;
+
+      // Living Room directly on Tier 1/2 Exterior Wall (>= 3,600 mm wide, <= 2.0:1)
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livColX,
+          y: frontY3,
+          width: livColW,
+          height: frontH3,
+        },
+      };
+
+      // Dining & Family Hall directly behind Sit-out Balcony (direct outdoor sliding glass + open_passage to Living)
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: galColX,
+          y: isSouth ? frontY3 : frontY3 + balconyDepth,
+          width: galColW,
+          height: frontH3 - balconyDepth,
+        },
+      };
+
+      // Rear / OTS band sits DIRECTLY against Living & Dining (never separated by a giant Foyer):
+      // Split horizontally into OTS-ventilated Kitchen (<= 2.0:1) + compact Entrance Foyer (<= 11.2 m²)
+      // on the corridor side (plus optional Pantry/Store behind Foyer if depth allows).
+      const kitchWidthRatio = placement?.kitchenSize === 'LARGER' ? 0.68 : 0.56;
+      const maxKitchW = Math.min(livingZoneW - 1800, snap10(Math.min(remAfterFront * 1.95, Math.max(2600, livingZoneW * kitchWidthRatio))));
+      const kitchW3 = Math.max(2400, maxKitchW);
+      const sideW3 = livingZoneW - kitchW3;
+      const kitchOnLeft3 = corridorIsEast;
+      const kitchX3 = kitchOnLeft3 ? livingZoneX : livingZoneX + sideW3;
+      const sideX3 = kitchOnLeft3 ? livingZoneX + kitchW3 : livingZoneX;
+
+      const maxKitchH3 = Math.min(remAfterFront, snap10(kitchW3 * (placement?.kitchenSize === 'LARGER' ? 2.05 : 1.95)));
+      const kitchH3 = Math.max(2400, maxKitchH3);
+      const kitchStartY3 = isSouth ? rearY3 : rearY3 + (remAfterFront - kitchH3);
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: 'kitchen',
+        planningZone: 'SERVICE',
+        rect: { x: kitchX3, y: kitchStartY3, width: kitchW3, height: kitchH3 },
+      };
+      if (remAfterFront - kitchH3 >= 1200) {
+        const extraPantryY = isSouth ? rearY3 + kitchH3 : rearY3;
+        const extraPantry: ApartmentPlanRoom = {
+          id: `${flatId}__kitchen_pantry`,
+          name: `${flatLabel} Kitchen Pantry`,
+          type: 'storage',
+          planningZone: 'SERVICE',
+          rect: { x: kitchX3, y: extraPantryY, width: kitchW3, height: remAfterFront - kitchH3 },
+        };
+        rooms.push(extraPantry);
+        const dExtra = createConnectingDoor(`${flatId}__door_kitchen_pantry`, kitchenRoom, extraPantry, 800, { doorType: 'single' });
+        if (dExtra) flatOpenings.push(dExtra);
+      } else if (remAfterFront > kitchH3) {
+        // Absorb small sliver (< 1200 mm) directly into Kitchen for exact planar tiling
+        kitchenRoom = {
+          ...kitchenRoom,
+          rect: { x: kitchX3, y: rearY3, width: kitchW3, height: remAfterFront },
+        };
+      }
+
+      // Corridor-side companion beside Kitchen: compact Entrance Foyer (<= 11.2 m²) touching Living/Dining
+      const maxFoyerH3 = Math.min(remAfterFront, snap10(Math.floor(11_200_000 / Math.max(1, sideW3))));
+      const foyerH3 = maxFoyerH3 >= 1800 && remAfterFront - maxFoyerH3 >= 1200 ? maxFoyerH3 : remAfterFront;
+      const foyerTouchesPublicY = isSouth ? rearY3 + (remAfterFront - foyerH3) : rearY3;
+      if (sideW3 * foyerH3 <= 11_500_000 && !oppYIsExterior) {
+        foyerRoom = {
+          id: `${flatId}__foyer`,
+          name: `${flatLabel} Entrance Foyer`,
+          type: 'foyer',
+          planningZone: 'PUBLIC',
+          rect: { x: sideX3, y: foyerTouchesPublicY, width: sideW3, height: foyerH3 },
+        };
+        if (remAfterFront - foyerH3 >= 1200) {
+          const storeY3 = isSouth ? rearY3 : rearY3 + foyerH3;
+          const store3: ApartmentPlanRoom = {
+            id: `${flatId}__pantry`,
+            name: `${flatLabel} Kitchen Pantry & Store`,
+            type: 'storage',
+            planningZone: 'SERVICE',
+            rect: { x: sideX3, y: storeY3, width: sideW3, height: remAfterFront - foyerH3 },
+          };
+          rooms.push(store3);
+          const dStore3 = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, store3, 800, { doorType: 'single' });
+          if (dStore3) flatOpenings.push(dStore3);
+        }
+      } else if (oppYIsExterior) {
+        utilityRoom = {
+          id: `${flatId}__utility`,
+          name: `${flatLabel} Kitchen Utility Balcony`,
+          type: 'utility',
+          planningZone: 'OUTDOOR',
+          rect: { x: sideX3, y: rearY3, width: sideW3, height: remAfterFront },
+        };
+      } else {
+        const store3: ApartmentPlanRoom = {
+          id: `${flatId}__pantry`,
+          name: `${flatLabel} Kitchen Pantry & Store`,
+          type: 'storage',
+          planningZone: 'SERVICE',
+          rect: { x: sideX3, y: rearY3, width: sideW3, height: remAfterFront },
+        };
+        rooms.push(store3);
+        const dStore3 = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, store3, 800, { doorType: 'single' });
+        if (dStore3) flatOpenings.push(dStore3);
+      }
+    } else if (fullWidthKitchen) {
+      // Living Room directly on Tier 1/2 Exterior Wall!
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livColX,
+          y: frontStartY,
+          width: livColW,
+          height: frontBandH,
+        },
+      };
+
+      // Dining & Family Hall behind Sit-out Gallery
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: galColX,
+          y: isSouth ? frontStartY : box.y + balconyDepth,
+          width: galColW,
+          height: frontBandH - balconyDepth,
+        },
+      };
+
+      buildKitchenBand(kitchStartY, kitchBandH);
+    } else {
+      // Compact central lobby touching only the inner end: keep the corridor-side
+      // column extending full height so the flat entrance ALWAYS connects cleanly,
+      // while Kitchen stays anchored on the OTS/exterior edge in the inner column.
+      const corridorSideIsLiving = !galleryOnCorridorSide;
+      if (corridorSideIsLiving) {
+        livingRoom = {
+          id: `${flatId}__living`,
+          name: `${flatLabel} Living Room`,
+          type: 'living',
+          planningZone: 'PUBLIC',
+          rect: {
+            x: livColX,
+            y: box.y,
+            width: livColW,
+            height: box.h,
+          },
+        };
+        diningRoom = {
+          id: `${flatId}__dining`,
+          name: `${flatLabel} Dining & Family Hall`,
+          type: 'dining',
+          planningZone: 'PUBLIC',
+          rect: {
+            x: galColX,
+            y: isSouth ? frontStartY : box.y + balconyDepth,
+            width: galColW,
+            height: frontBandH - balconyDepth,
+          },
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: 'kitchen',
+          planningZone: 'SERVICE',
+          rect: {
+            x: galColX,
+            y: kitchStartY,
+            width: galColW,
+            height: kitchBandH,
+          },
+        };
+      } else {
+        livingRoom = {
+          id: `${flatId}__living`,
+          name: `${flatLabel} Living Room`,
+          type: 'living',
+          planningZone: 'PUBLIC',
+          rect: {
+            x: livColX,
+            y: frontStartY,
+            width: livColW,
+            height: frontBandH,
+          },
+        };
+        diningRoom = {
+          id: `${flatId}__dining`,
+          name: `${flatLabel} Dining & Family Hall`,
+          type: 'dining',
+          planningZone: 'PUBLIC',
+          rect: {
+            x: galColX,
+            y: isSouth ? box.y : box.y + balconyDepth,
+            width: galColW,
+            height: box.h - balconyDepth,
+          },
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: 'kitchen',
+          planningZone: 'SERVICE',
+          rect: {
+            x: livColX,
+            y: kitchStartY,
+            width: livColW,
+            height: kitchBandH,
+          },
+        };
+      }
+    }
+
+    if (foyerRoom) rooms.push(foyerRoom);
+    if (utilityRoom) rooms.push(utilityRoom);
+    rooms.push(kitchenRoom, balconyRoom, diningRoom, livingRoom);
+
+    // 1. Living <-> Dining open passage (wide 2,000+ mm in Open-Plan Living–Dining, 1,200 mm in 2-band)
+    const dLivDin = createConnectingDoor(
+      `${flatId}__door_living_dining`,
+      livingRoom,
+      diningRoom,
+      useLShapedOpenLiving || useThreeBandOpenLiving
+        ? Math.min(2400, Math.max(1500, Math.min(livingRoom.rect.width, diningRoom.rect.width) - 400))
+        : 1200,
+      { doorType: 'open_passage' },
+    );
+    if (dLivDin) flatOpenings.push(dLivDin);
+    if (foyerRoom) {
+      const dFoyLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: 'open_passage' });
+      if (dFoyLiv) flatOpenings.push(dFoyLiv);
+      const dFoyDin = createConnectingDoor(`${flatId}__door_foyer_dining`, foyerRoom, diningRoom, 1200, { doorType: 'open_passage' });
+      if (dFoyDin) flatOpenings.push(dFoyDin);
+    }
+
+    // 2. Sit-out Gallery wide sliding glass door (>= 1200 mm) — strictly connects Dining / Living (never Foyer)
+    const galleryAdjacentRoom = diningRoom;
+    const livBalcShared = Math.min(
+      livingRoom.rect.y + livingRoom.rect.height,
+      balconyRoom.rect.y + balconyRoom.rect.height,
+    ) - Math.max(livingRoom.rect.y, balconyRoom.rect.y);
+    const adjBalcShared = Math.min(
+      galleryAdjacentRoom.rect.x + galleryAdjacentRoom.rect.width,
+      balconyRoom.rect.x + balconyRoom.rect.width,
+    ) - Math.max(galleryAdjacentRoom.rect.x, balconyRoom.rect.x);
+    const balcFromLivingW = Math.min(2000, Math.max(1200, Math.floor((livBalcShared - 250) / 10) * 10));
+    const balcFromAdjW = Math.min(2400, Math.max(1200, Math.floor((adjBalcShared - 250) / 10) * 10));
+    const dBalcony =
+      (adjBalcShared >= 1450 && adjBalcShared >= livBalcShared
+        ? createConnectingDoor(`${flatId}__door_balcony`, galleryAdjacentRoom, balconyRoom, balcFromAdjW, { doorType: 'sliding' })
+        : null) ??
+      (livBalcShared >= 1450
+        ? createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, balcFromLivingW, { doorType: 'sliding' })
+        : null) ??
+      createConnectingDoor(`${flatId}__door_balcony`, galleryAdjacentRoom, balconyRoom, balcFromAdjW, { doorType: 'sliding' });
+    if (dBalcony) flatOpenings.push(dBalcony);
+    if (dBalcony && !dBalcony.connects?.includes(livingRoom.id) && livBalcShared >= 1800) {
+      const dLivBalc = createConnectingDoor(`${flatId}__door_living_balcony`, livingRoom, balconyRoom, Math.min(1600, Math.max(1200, Math.floor((livBalcShared - 250) / 10) * 10)), { doorType: 'sliding' });
+      if (dLivBalc) flatOpenings.push(dLivBalc);
+    }
+
+    // 3. Dining/Living <-> Kitchen connection (Kitchen always branches from Dining or Living, never Foyer)
+    const dKitchen = createConnectingDoor(
+      `${flatId}__door_kitchen`,
+      diningRoom,
+      kitchenRoom,
+      isKitchenOpen ? 1200 : 900,
+      { doorType: isKitchenOpen ? 'open_passage' : 'single' },
+    ) ?? createConnectingDoor(
+      `${flatId}__door_kitchen`,
+      livingRoom,
+      kitchenRoom,
+      900,
+      { doorType: 'single' },
+    );
+    if (dKitchen) flatOpenings.push(dKitchen);
+
+    if (utilityRoom) {
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: 'single' });
+      if (dUtil) flatOpenings.push(dUtil);
+    }
+
+    // 4. Main Flat Entrance directly from Corridor into Living first (preferred), then Foyer/Dining fallback
+    const primaryEntryRoom = livingRoom;
+    const secondaryEntryRoom = foyerRoom ?? diningRoom;
+    const dEntrance = createConnectingDoor(
+      `${flatId}__door_entrance`,
+      { id: 'corridor_1', rect: corridorBox },
+      primaryEntryRoom,
+      1050,
+      { isFlatEntrance: true },
+    ) ?? createConnectingDoor(
+      `${flatId}__door_entrance`,
+      { id: 'corridor_1', rect: corridorBox },
+      secondaryEntryRoom,
+      1050,
+      { isFlatEntrance: true },
+    ) ?? createConnectingDoor(
+      `${flatId}__door_entrance`,
+      { id: 'corridor_1', rect: corridorBox },
+      diningRoom,
+      1050,
+      { isFlatEntrance: true },
+    );
+    if (dEntrance) flatOpenings.push(dEntrance);
+  } else if (canUseThreeColPerimeterLiving && localExposure) {
+    // 3-Column NO-OTS Perimeter Living: Sit-out+Dining | Living (Direct Exterior!) | Utility+Kitchen+Foyer
+    const col1W = snap10(Math.max(2000, Math.min(2600, livingZoneW * 0.28)));
+    const col3W = snap10(Math.max(2000, Math.min(2600, livingZoneW * 0.28)));
+    const col2W = livingZoneW - col1W - col3W;
+    const foyerH = Math.max(1800, Math.min(3400, snap10(Math.floor(10_500_000 / Math.max(1, col3W)))));
+    const foyerY = isSouth ? box.y : box.y + box.h - foyerH;
+    const foyerOverlap =
+      Math.min(corridorBox.y + corridorBox.h, foyerY + foyerH) - Math.max(corridorBox.y, foyerY);
+
+    if (col2W >= 2600 && box.h - foyerH >= utilDepth + 2400 && foyerOverlap >= 1250) {
+      perimeterLivingActive = true;
+      const baseGalleryOnLeft = localExposure.livingBaySide === 'CORRIDOR_SIDE';
+      const galleryOnLeft =
+        isDoubleHeightStagger && placement?.floorVariant === 'EVEN'
+          ? !baseGalleryOnLeft
+          : baseGalleryOnLeft;
+      galleryOnCorridorSide = !galleryOnLeft;
+
+      const x1 = livingZoneX;
+      const x2 = livingZoneX + (galleryOnLeft ? col1W : col2W);
+      const x3 = livingZoneX + col1W + col2W;
+      const galX = galleryOnLeft ? x1 : x2;
+      const livX3 = galleryOnLeft ? x2 : x1;
+      const kitchTotH = box.h - foyerH;
+
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: 'balcony',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: galX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: col1W,
+          height: balconyDepth,
+        },
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: galX,
+          y: isSouth ? box.y : box.y + balconyDepth,
+          width: col1W,
+          height: box.h - balconyDepth,
+        },
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livX3,
+          y: box.y,
+          width: col2W,
+          height: box.h,
+        },
+      };
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: 'utility',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: x3,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: col3W,
+          height: utilDepth,
+        },
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: 'kitchen',
+        planningZone: 'SERVICE',
+        rect: {
+          x: x3,
+          y: isSouth ? box.y + foyerH : box.y + utilDepth,
+          width: col3W,
+          height: kitchTotH - utilDepth,
+        },
+      };
+      foyerRoom = {
+        id: `${flatId}__foyer`,
+        name: `${flatLabel} Entrance Foyer`,
+        type: 'foyer',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: x3,
+          y: foyerY,
+          width: col3W,
+          height: foyerH,
+        },
+      };
+
+      rooms.push(foyerRoom, utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
+
+      const foyerPartner = galleryOnLeft ? livingRoom : diningRoom;
+      const dFoyer = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, foyerPartner, 1200, { doorType: 'open_passage' });
+      if (dFoyer) flatOpenings.push(dFoyer);
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: 'open_passage' });
+      if (dLivDin) flatOpenings.push(dLivDin);
+      const balcW3 = Math.min(2000, Math.max(1200, Math.floor((balconyDepth - 250) / 10) * 10));
+      const balcFromDinW3 = Math.min(2400, Math.max(1200, Math.floor((col1W - 250) / 10) * 10));
+      const dBalc =
+        (col1W >= 1450 && col1W >= balconyDepth
+          ? createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcFromDinW3, { doorType: 'sliding' })
+          : null) ??
+        (balconyDepth >= 1450
+          ? createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, balcW3, { doorType: 'sliding' })
+          : null) ??
+        createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcFromDinW3, { doorType: 'sliding' });
+      if (dBalc) flatOpenings.push(dBalc);
+      const kitchPartner = galleryOnLeft ? livingRoom : diningRoom;
+      const dKitch = createConnectingDoor(
+        `${flatId}__door_kitchen`,
+        kitchPartner,
+        kitchenRoom,
+        isKitchenOpen ? 1200 : 900,
+        { doorType: isKitchenOpen ? 'open_passage' : 'single' },
+      );
+      if (dKitch) flatOpenings.push(dKitch);
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: 'single' });
+      if (dUtil) flatOpenings.push(dUtil);
+      const dEntrance = createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        foyerRoom,
+        1050,
+        { isFlatEntrance: true },
+      );
+      if (dEntrance) flatOpenings.push(dEntrance);
+    }
   }
 
-  rooms.push(utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
+  if (!perimeterLivingActive) {
+    // ─── 1. Compact / Non-OTS Public Zone (Strictly <= 2.15:1, zero tunnel rooms) ──
+    const useStackedOpenDining = livingZoneW >= 3600 && livingZoneW < 5400 && box.h >= 9400;
 
-  // If foyer exists, open passage connecting foyer to living room
-  if (foyerRoom) {
-    const dFoyerLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: 'open_passage' });
-    if (dFoyerLiv) flatOpenings.push(dFoyerLiv);
+    if (useStackedOpenDining) {
+      // Narrower public column (< 5,400 mm): keep Kitchen >= 2,400 mm alongside Sit-out+Foyer
+      // at the exterior band, then stack full-width Open-Plan Dining (>= 3,000 mm) and Living (>= 3,600 mm).
+      const kitchW = Math.min(livingZoneW - 1500, Math.max(2400, snap10(livingZoneW * 0.54)));
+      const sideW = livingZoneW - kitchW;
+      const kitchX = corridorIsEast ? livingZoneX : livingZoneX + sideW;
+      const sideX = corridorIsEast ? livingZoneX + kitchW : livingZoneX;
+
+      const rawServiceD = Math.max(utilDepth + 2400, balconyDepth + 2200, snap10(box.h * 0.30));
+      const serviceDepth = Math.min(
+        box.h - 6600,
+        utilDepth + snap10(kitchW * 1.95),
+        Math.max(utilDepth + 2400, rawServiceD),
+      );
+      const remAfterService = box.h - serviceDepth;
+      const diningH = Math.max(
+        3000,
+        Math.min(remAfterService - 3600, snap10(Math.min(4000, Math.max(3100, remAfterService * 0.44)))),
+      );
+      const livingH = remAfterService - diningH;
+
+      const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
+      const diningY = isSouth ? box.y + livingH : box.y + serviceDepth;
+      const livingY = isSouth ? box.y : box.y + serviceDepth + diningH;
+
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: 'utility',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: kitchX,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: kitchW,
+          height: utilDepth,
+        },
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: 'kitchen',
+        planningZone: 'SERVICE',
+        rect: {
+          x: kitchX,
+          y: isSouth ? serviceY : box.y + utilDepth,
+          width: kitchW,
+          height: serviceDepth - utilDepth,
+        },
+      };
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: 'balcony',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: sideX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: sideW,
+          height: balconyDepth,
+        },
+      };
+      foyerRoom = {
+        id: `${flatId}__foyer`,
+        name: `${flatLabel} Gallery Foyer`,
+        type: 'foyer',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: sideX,
+          y: isSouth ? serviceY : box.y + balconyDepth,
+          width: sideW,
+          height: serviceDepth - balconyDepth,
+        },
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livingZoneX,
+          y: diningY,
+          width: livingZoneW,
+          height: diningH,
+        },
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livingZoneX,
+          y: livingY,
+          width: livingZoneW,
+          height: livingH,
+        },
+      };
+
+      rooms.push(utilityRoom, kitchenRoom, balconyRoom, foyerRoom, diningRoom, livingRoom);
+
+      const dFoyerDin = createConnectingDoor(`${flatId}__door_foyer_dining`, foyerRoom, diningRoom, Math.min(1400, Math.max(900, sideW - 300)), { doorType: 'open_passage' });
+      if (dFoyerDin) flatOpenings.push(dFoyerDin);
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, Math.min(2400, Math.max(1500, livingZoneW - 600)), { doorType: 'open_passage' });
+      if (dLivDin) flatOpenings.push(dLivDin);
+      const balcDoorWidth = Math.min(2400, Math.max(1200, Math.floor((sideW - 250) / 10) * 10));
+      const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, foyerRoom, balconyRoom, balcDoorWidth, { doorType: 'sliding' });
+      if (dBalcony) flatOpenings.push(dBalcony);
+      const dKitchen = createConnectingDoor(
+        `${flatId}__door_kitchen`,
+        diningRoom,
+        kitchenRoom,
+        isKitchenOpen ? 1200 : 900,
+        { doorType: isKitchenOpen ? 'open_passage' : 'single' },
+      ) ?? createConnectingDoor(`${flatId}__door_kitchen`, foyerRoom, kitchenRoom, 900, { doorType: 'single' });
+      if (dKitchen) flatOpenings.push(dKitchen);
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: 'single' });
+      if (dUtil) flatOpenings.push(dUtil);
+      const dEntrance = createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        livingRoom,
+        1050,
+        { isFlatEntrance: true },
+      ) ?? createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        diningRoom,
+        1050,
+        { isFlatEntrance: true },
+      ) ?? createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        foyerRoom,
+        1050,
+        { isFlatEntrance: true },
+      );
+      if (dEntrance) flatOpenings.push(dEntrance);
+    } else {
+      const baseKitchRatio = placement?.kitchenSize === 'LARGER' ? 0.54 : 0.48;
+      const kitchRatio = arch.isDefault
+        ? baseKitchRatio
+        : Math.max(0.42, Math.min(0.58, baseKitchRatio + arch.kitchRatioOffset));
+      const rawKitchW = snap10(livingZoneW * kitchRatio);
+      const kitchW = livingZoneW >= 5400
+        ? Math.max(2400, Math.min(livingZoneW - 3000, rawKitchW))
+        : (arch.isDefault || livingZoneW < 3100
+          ? rawKitchW
+          : Math.min(livingZoneW - 1400, Math.max(1600, rawKitchW)));
+      const livW = livingZoneW - kitchW;
+
+      const livX = arch.swapKitchenLiving
+        ? (corridorIsEast ? livingZoneX : livingZoneX + kitchW)
+        : (corridorIsEast ? livingZoneX + kitchW : livingZoneX);
+      const kitchX = arch.swapKitchenLiving
+        ? (corridorIsEast ? livingZoneX + livW : livingZoneX)
+        : (corridorIsEast ? livingZoneX : livingZoneX + livW);
+
+      const flatAreaSqM = (box.w * box.h) / 1_000_000;
+      const scaledKitchenArea = Math.min(24_000_000, Math.max(12_500_000, snap10(flatAreaSqM * 0.08 * 10) * 100_000));
+      const ratioKitchenTarget = snap10((livingZoneW * Math.min(8500, Math.max(3600, box.h * 0.50))) / 3.35);
+      const kitchenTargetArea = Math.max(
+        ratioKitchenTarget,
+        placement?.kitchenSize === 'LARGER' ? Math.max(15_000_000, scaledKitchenArea * 1.15) : scaledKitchenArea,
+      );
+      const kitchenTargetDepth = utilDepth + Math.ceil(kitchenTargetArea / kitchW / 10) * 10;
+
+      const minLivingDepth = box.h < 8000 ? 2700 : (box.h >= 9500 && box.h <= 10400 && unitType === '2BHK' ? 4100 : 3600);
+      const minServiceDepthForRefuge = box.h >= 14000 ? Math.ceil(15_000_000 / Math.max(1, livW) / 10) * 10 : 0;
+      const baseServiceDepth = Math.max(
+        utilDepth + 2600,
+        balconyDepth + 2600,
+        box.h > 15000
+          ? snap10(Math.min(9000, Math.max(5500, box.h * 0.28)))
+          : snap10(Math.min(box.h * 0.45, Math.max(4200, box.h * 0.38))),
+      );
+      const maxNonTunnelServiceDepth = Math.min(
+        utilDepth + snap10(kitchW * 2.08),
+        balconyDepth + snap10(livW * 2.08),
+      );
+      const uncappedServiceDepth = Math.min(
+        box.h - minLivingDepth,
+        Math.max(baseServiceDepth, kitchenTargetDepth, minServiceDepthForRefuge),
+      );
+      const serviceDepth = Math.max(
+        Math.min(box.h - minLivingDepth, Math.max(utilDepth + 2400, balconyDepth + 2400)),
+        Math.min(uncappedServiceDepth, maxNonTunnelServiceDepth),
+      );
+      const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
+
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: 'utility',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: kitchX,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: kitchW,
+          height: utilDepth,
+        },
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: 'kitchen',
+        planningZone: 'SERVICE',
+        rect: {
+          x: kitchX,
+          y: isSouth ? serviceY : box.y + utilDepth,
+          width: kitchW,
+          height: serviceDepth - utilDepth,
+        },
+      };
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: 'balcony',
+        planningZone: 'OUTDOOR',
+        rect: {
+          x: livX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: livW,
+          height: balconyDepth,
+        },
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: 'dining',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livX,
+          y: isSouth ? serviceY : box.y + balconyDepth,
+          width: livW,
+          height: serviceDepth - balconyDepth,
+        },
+      };
+
+      const remLivH = box.h - serviceDepth;
+      const kitchArea = kitchW * Math.max(1000, serviceDepth - utilDepth);
+      const maxLivHForRatio = Math.min(snap10(livingZoneW * 2.08), snap10((3.35 * kitchArea) / Math.max(1, livingZoneW)));
+      const targetLivH = Math.min(8500, maxLivHForRatio);
+      const maxFoyerH = Math.min(2600, snap10(Math.floor(13_500_000 / Math.max(1, livingZoneW))));
+      const rawFoyerH = remLivH > targetLivH ? Math.min(maxFoyerH, remLivH - targetLivH) : 0;
+      const hasFoyer = rawFoyerH >= 1200 && (remLivH - rawFoyerH) >= 3600 && unitType !== '3BHK' && unitType !== '4BHK';
+      const foyerH = hasFoyer ? rawFoyerH : 0;
+      const livingH = remLivH - foyerH;
+
+      const livingY = isSouth
+        ? (hasFoyer ? box.y + foyerH : box.y)
+        : box.y + serviceDepth;
+
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: 'living',
+        planningZone: 'PUBLIC',
+        rect: {
+          x: livingZoneX,
+          y: livingY,
+          width: livingZoneW,
+          height: livingH,
+        },
+      };
+
+      if (hasFoyer) {
+        foyerRoom = {
+          id: `${flatId}__foyer`,
+          name: `${flatLabel} Entrance Foyer`,
+          type: 'foyer',
+          planningZone: 'PUBLIC',
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? box.y : box.y + serviceDepth + livingH,
+            width: livingZoneW,
+            height: foyerH,
+          },
+        };
+        rooms.push(foyerRoom);
+      }
+
+      rooms.push(utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
+
+      if (foyerRoom) {
+        const dFoyerLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: 'open_passage' });
+        if (dFoyerLiv) flatOpenings.push(dFoyerLiv);
+      }
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: 'open_passage' });
+      if (dLivDin) flatOpenings.push(dLivDin);
+
+      const balcDoorWidth = Math.min(
+        2400,
+        Math.max(1200, Math.floor(Math.min(diningRoom.rect.width, balconyRoom.rect.width) - 250)),
+      );
+      const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcDoorWidth, { doorType: 'sliding' });
+      if (dBalcony) flatOpenings.push(dBalcony);
+
+      const dKitchen = createConnectingDoor(
+        `${flatId}__door_kitchen`,
+        diningRoom,
+        kitchenRoom,
+        isKitchenOpen ? 1200 : 900,
+        { doorType: isKitchenOpen ? 'open_passage' : 'single' },
+      ) ?? createConnectingDoor(
+        `${flatId}__door_kitchen`,
+        livingRoom,
+        kitchenRoom,
+        900,
+        { doorType: 'single' },
+      );
+      if (dKitchen) flatOpenings.push(dKitchen);
+
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: 'single' });
+      if (dUtil) flatOpenings.push(dUtil);
+
+      const entranceHostRoom = foyerRoom ?? livingRoom;
+      const dEntrance = createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        entranceHostRoom,
+        1050,
+        { isFlatEntrance: true },
+      ) ?? createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        livingRoom,
+        1050,
+        { isFlatEntrance: true },
+      ) ?? createConnectingDoor(
+        `${flatId}__door_entrance`,
+        { id: 'corridor_1', rect: corridorBox },
+        diningRoom,
+        1050,
+        { isFlatEntrance: true },
+      );
+      if (dEntrance) flatOpenings.push(dEntrance);
+    }
   }
 
-  // 1. Living to Dining open passage (1200 mm)
-  const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: 'open_passage' });
-  if (dLivDin) flatOpenings.push(dLivDin);
-
-  // 2. Dining to Sit-out Balcony wide sliding glass door (>= 1200 mm, up to 2400 mm)
-  const balcDoorWidth = Math.min(
-    2400,
-    Math.max(1200, Math.floor(Math.min(diningRoom.rect.width, balconyRoom.rect.width) - 250)),
-  );
-  const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcDoorWidth, { doorType: 'sliding' });
-  if (dBalcony) flatOpenings.push(dBalcony);
-
-  // 3. Dining to Kitchen connection (single door or open passage)
-  const isKitchenOpen = placement?.kitchenStyle === 'OPEN' || arch.forceOpenKitchen;
-  const dKitchen = createConnectingDoor(
-    `${flatId}__door_kitchen`,
-    diningRoom,
-    kitchenRoom,
-    isKitchenOpen ? 1200 : 900,
-    { doorType: isKitchenOpen ? 'open_passage' : 'single' },
-  ) ?? createConnectingDoor(
-    `${flatId}__door_kitchen`,
-    livingRoom,
-    kitchenRoom,
-    900,
-    { doorType: 'single' },
-  );
-  if (dKitchen) flatOpenings.push(dKitchen);
-
-  // 4. Kitchen to Utility (750 mm)
-  const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: 'single' });
-  if (dUtil) flatOpenings.push(dUtil);
-
-  // 5. Main Flat Entrance: 1050 mm single door connecting Corridor directly to Living Room or Foyer!
-  const entranceHostRoom = foyerRoom ?? livingRoom;
-  const dEntrance = createConnectingDoor(
-    `${flatId}__door_entrance`,
-    { id: 'corridor_1', rect: corridorBox },
-    entranceHostRoom,
-    1050,
-    { isFlatEntrance: true },
-  ) ?? createConnectingDoor(
-    `${flatId}__door_entrance`,
-    { id: 'corridor_1', rect: corridorBox },
-    livingRoom,
-    1050,
-    { isFlatEntrance: true },
-  ) ?? createConnectingDoor(
-    `${flatId}__door_entrance`,
-    { id: 'corridor_1', rect: corridorBox },
-    diningRoom,
-    1050,
-    { isFlatEntrance: true },
-  );
-  if (dEntrance) flatOpenings.push(dEntrance);
+  // Public room directly bordering bedZone along x = bedZoneW (used for passage alignment & connections).
+  // For bedroom/bathroom stack alignment across Odd/Even staggered floors, use the
+  // vertical span common to both Living and Dining so wet shafts & bathrooms lock to 0 mm drift.
+  const bedZonePublicHost = perimeterLivingActive
+    ? (galleryOnCorridorSide ? livingRoom : diningRoom)
+    : livingRoom;
+  const alignedPublicSpanY = perimeterLivingActive
+    ? {
+      start: Math.max(livingRoom.rect.y, diningRoom.rect.y),
+      end: Math.min(
+        livingRoom.rect.y + livingRoom.rect.height,
+        diningRoom.rect.y + diningRoom.rect.height,
+      ),
+    }
+    : {
+      start: livingRoom.rect.y,
+      end: livingRoom.rect.y + livingRoom.rect.height,
+    };
+  const effectiveInvertBedroomOrder =
+    arch.isDefault && localExposure
+      ? (localExposure.preferMasterAtPrimaryY ? isSouth : !isSouth)
+      : arch.invertBedroomOrder;
 
   // ─── 2. Private Zone: Bedrooms + Bathrooms + Internal Passage ───────────
   // Clamps aspect ratio so all habitable bedrooms have max(w/h, h/w) <= 1.35
@@ -1153,7 +2327,9 @@ export function sliceFlatRooms(params: {
         };
         rooms.push(passage);
         bY += passH;
-        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, bedZonePublicHost, passage, 900, { doorType: 'open_passage' })
+          ?? createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' })
+          ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
         if (dPass) flatOpenings.push(dPass);
       }
 
@@ -1177,7 +2353,9 @@ export function sliceFlatRooms(params: {
         };
         rooms.push(passage);
         bY += passH;
-        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' });
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, bedZonePublicHost, passage, 900, { doorType: 'open_passage' })
+          ?? createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' })
+          ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
         if (dPass) flatOpenings.push(dPass);
       }
 
@@ -1201,7 +2379,9 @@ export function sliceFlatRooms(params: {
       rooms.push(masterBed);
     }
 
-    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, bedZonePublicHost, masterBed, 900)
+      ?? createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900)
+      ?? createConnectingDoor(`${flatId}__door_master_bed`, diningRoom, masterBed, 900);
     if (dMaster) flatOpenings.push(dMaster);
 
     const dBath = createConnectingDoor(`${flatId}__door_common_bath`, masterBed, commonBath, 750);
@@ -1209,11 +2389,11 @@ export function sliceFlatRooms(params: {
   } else if (unitType === '2BHK') {
     // 2BHK: Strictly 2 Bedrooms (Master Bedroom, Bedroom 02) and 2 Bathrooms (Master Toilet, Common Bathroom)
     // Parameter-driven proportional allocation: aspect ratios strictly clamped <= 1.85, eliminating fake 10.3m rooms.
-    let bathH = box.h >= 8200 && box.h < 9000
-      ? snap10(Math.min(1800, Math.max(1200, (box.h - 6000) * 0.58)))
+    let bathH = box.h < 9000
+      ? snap10(Math.min(1800, Math.max(1060, (box.h - 6060) * 0.54)))
       : snap10(Math.min(2200, Math.max(1800, box.h * 0.09)));
-    const passH = box.h >= 8200 && box.h < 9000
-      ? snap10(Math.max(950, box.h - 6000 - bathH))
+    const passH = box.h < 9000
+      ? snap10(Math.min(1250, Math.max(1020, box.h - 6060 - bathH)))
       : snap10(Math.min(1500, Math.max(1200, box.h * 0.06)));
     let availBedH = box.h - bathH - passH;
 
@@ -1222,10 +2402,19 @@ export function sliceFlatRooms(params: {
     let studyH = 0;
     let poojaH = 0;
 
-    const hasStudyRequested = rawRooms.some(r => r.type === 'study' || r.type === 'office' || r.name.toLowerCase().includes('study'));
+    const hasStudyRequested =
+      Boolean(placement?.includeStudyRoom) ||
+      rawRooms.some(r => r.type === 'study' || r.type === 'office' || r.name.toLowerCase().includes('study'));
     const hasPoojaRequested = rawRooms.some(r => r.type === 'pooja' || r.name.toLowerCase().includes('pooja') || r.name.toLowerCase().includes('mandir'));
 
-    const maxBandAspectH = snap10(Math.max(3000, bedZoneW * 2.12));
+    const estBedBalcDepth =
+      bedZoneW >= 4550
+        ? 1500
+        : placement?.bedroomBalconies === 'ALL_BEDROOMS' && bedZoneW >= 4250
+          ? Math.max(1200, bedZoneW - 3050)
+          : 0;
+    const effBedW = bedZoneW - estBedBalcDepth;
+    const maxBandAspectH = snap10(Math.max(3050, effBedW * 2.12));
     if (hasStudyRequested && hasPoojaRequested && availBedH >= 7600) {
       masterBedH = snap10(Math.min(4800, Math.max(3600, availBedH * 0.28)));
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.25)));
@@ -1241,17 +2430,16 @@ export function sliceFlatRooms(params: {
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.34)));
       poojaH = availBedH - (masterBedH + bed2H);
     } else {
-      if (availBedH > maxBandAspectH * 2 + 1200) {
-        studyH = snap10(availBedH - maxBandAspectH * 2);
-      } else if (availBedH > maxBandAspectH * 2) {
-        const extraToBath = snap10(Math.min(800, availBedH - maxBandAspectH * 2));
+      // NEVER auto-generate unrequested Study rooms: give extra depth back to baths/passage/bedrooms
+      if (availBedH > maxBandAspectH * 2) {
+        const extraToBath = snap10(Math.min(1800, availBedH - maxBandAspectH * 2));
         bathH += extraToBath;
         availBedH -= extraToBath;
       }
-      const bedBudgetH = availBedH - studyH;
+      const bedBudgetH = availBedH;
       masterBedH = snap10(bedBudgetH * arch.masterBedRatio);
       bed2H = bedBudgetH - masterBedH;
-      const minRequiredBedH = bedBudgetH >= 6000 ? 3000 : 2700;
+      const minRequiredBedH = bedBudgetH >= 6100 ? 3050 : bedBudgetH >= 6000 ? 3000 : bedBudgetH >= 5720 ? 2860 : 2700;
       if (bedBudgetH >= 5400 && bed2H < minRequiredBedH) {
         bed2H = minRequiredBedH;
         masterBedH = bedBudgetH - bed2H;
@@ -1264,27 +2452,27 @@ export function sliceFlatRooms(params: {
 
     // Facade adjacency alone does not establish ventilation: canonical openings
     // must be checked after wall and window generation.
-    const bathBlockH = bathH + passH;
+    let bathBlockH = bathH + passH;
     const bedBudgetAfterExtras = availBedH - studyH - poojaH;
     if (!hasStudyRequested && !hasPoojaRequested && bedBudgetAfterExtras >= 6000) {
-      const livStart = livingRoom.rect.y;
-      const livEnd = livStart + livingRoom.rect.height;
-      const topBedInitialH = arch.invertBedroomOrder ? bed2H : masterBedH;
+      const livStart = alignedPublicSpanY.start;
+      const livEnd = alignedPublicSpanY.end;
+      const topBedInitialH = effectiveInvertBedroomOrder ? bed2H : masterBedH;
       const passStart = box.y + topBedInitialH;
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100) {
-        const floorMin = Math.min(3000, snap10(bedBudgetAfterExtras / 2));
+        const floorMin = Math.min(3050, snap10(bedBudgetAfterExtras / 2));
         const minBedRun = Math.max(floorMin, bedBudgetAfterExtras - maxBandAspectH);
         const maxBedRun = Math.min(bedBudgetAfterExtras - floorMin, maxBandAspectH);
-        const targetTopH = isSouth
+        const targetTopH = passStart > livEnd - 1100
           ? snap10(livEnd - 1100 - box.y)
           : snap10(livStart + 1100 - bathBlockH - box.y);
         const clampedTopH =
           minBedRun <= maxBedRun
             ? Math.max(minBedRun, Math.min(maxBedRun, targetTopH))
             : Math.max(floorMin, Math.min(bedBudgetAfterExtras - floorMin, targetTopH));
-        if (arch.invertBedroomOrder) {
+        if (effectiveInvertBedroomOrder) {
           bed2H = clampedTopH;
           masterBedH = bedBudgetAfterExtras - bed2H;
         } else {
@@ -1292,22 +2480,41 @@ export function sliceFlatRooms(params: {
           bed2H = bedBudgetAfterExtras - masterBedH;
         }
       }
-      // If a single bedroom STILL exceeds 2.12:1, siphon excess into a Study / Dressing alcove cleanly
-      if (studyH === 0 && (masterBedH > maxBandAspectH || bed2H > maxBandAspectH)) {
-        const overflow = Math.max(0, masterBedH - maxBandAspectH) + Math.max(0, bed2H - maxBandAspectH);
-        if (overflow >= 1200) {
-          studyH = snap10(overflow);
-          if (masterBedH > maxBandAspectH) masterBedH -= snap10(masterBedH - maxBandAspectH);
-          if (bed2H > maxBandAspectH) bed2H -= snap10(bed2H - maxBandAspectH);
-          const diff = bedBudgetAfterExtras - (masterBedH + bed2H + studyH);
-          studyH += diff;
+      // If a single bedroom STILL exceeds 2.12:1, rebalance into the sibling bedroom
+      // and bath/passage block — NEVER auto-create an unrequested Study room!
+      if (masterBedH > maxBandAspectH || bed2H > maxBandAspectH) {
+        let shed = 0;
+        if (masterBedH > maxBandAspectH) {
+          const cut = snap10(masterBedH - maxBandAspectH);
+          masterBedH -= cut;
+          shed += cut;
+        }
+        if (bed2H > maxBandAspectH) {
+          const cut = snap10(bed2H - maxBandAspectH);
+          bed2H -= cut;
+          shed += cut;
+        }
+        if (shed > 0 && bed2H < maxBandAspectH) {
+          const take = Math.min(shed, snap10(maxBandAspectH - bed2H));
+          bed2H += take;
+          shed -= take;
+        }
+        if (shed > 0 && masterBedH < maxBandAspectH) {
+          const take = Math.min(shed, snap10(maxBandAspectH - masterBedH));
+          masterBedH += take;
+          shed -= take;
+        }
+        if (shed > 0) {
+          bathBlockH += shed;
         }
       }
     }
     const bath1H = snap10(bathBlockH / 2);
     const bath2H = bathBlockH - bath1H;
 
-    const bathW = snap10(Math.max(2600, Math.min(bedZoneW - 1200, bedZoneW * 0.65)));
+    const bathW = bedZoneW >= 3800
+      ? snap10(Math.max(2600, Math.min(bedZoneW - 1200, bedZoneW * 0.65)))
+      : snap10(Math.max(1800, Math.min(bedZoneW - 1150, Math.max(2100, bedZoneW * 0.65))));
     const passW = bedZoneW - bathW;
 
     const bathX = corridorIsEast ? bedZoneX : bedZoneX + passW;
@@ -1320,7 +2527,7 @@ export function sliceFlatRooms(params: {
     let passage: ApartmentPlanRoom;
     let bed2: ApartmentPlanRoom;
 
-    if (arch.invertBedroomOrder) {
+    if (effectiveInvertBedroomOrder) {
       bed2 = {
         id: `${flatId}__bed_2`,
         name: `${flatLabel} Bedroom 02`,
@@ -1449,10 +2656,11 @@ export function sliceFlatRooms(params: {
     }
 
     // Door Connections:
-    const publicRoom = livingRoom;
+    const publicRoom = bedZonePublicHost;
 
     // Passage connects to Living/Dining:
     const dPass = createConnectingDoor(`${flatId}__door_passage`, publicRoom, passage, 900, { doorType: 'open_passage' }) ??
+      createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: 'open_passage' }) ??
       createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
     if (dPass) flatOpenings.push(dPass);
 
@@ -1485,12 +2693,14 @@ export function sliceFlatRooms(params: {
     const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, passage, masterBed, 900);
     if (dMaster) flatOpenings.push(dMaster);
   } else if (unitType === '3BHK') {
-    const hasStudyRequested = rawRooms.some(r => r.type === 'study' || r.type === 'office' || r.name.toLowerCase().includes('study'));
+    const hasStudyRequested =
+      Boolean(placement?.includeStudyRoom) ||
+      rawRooms.some(r => r.type === 'study' || r.type === 'office' || r.name.toLowerCase().includes('study'));
     const hasPoojaRequested = rawRooms.some(r => r.type === 'pooja' || r.name.toLowerCase().includes('pooja') || r.name.toLowerCase().includes('mandir'));
 
-    if (bedZoneW >= 5800 && box.h >= 8000) {
+    if (bedZoneW >= 6100 && box.h >= 8000) {
       // 3-Band 2D Grid Subdivision for 3BHK: eliminates narrow tunnel bedrooms and preserves 100% exterior ventilation.
-      const colExtW = snap10(Math.max(3000, Math.min(bedZoneW - 2800, bedZoneW * 0.50)));
+      const colExtW = snap10(Math.max(3050, Math.min(bedZoneW - 3050, bedZoneW * 0.50)));
       const colIntW = bedZoneW - colExtW;
       const xExt = corridorIsEast ? bedZoneX : bedZoneX + colIntW;
       const xInt = corridorIsEast ? bedZoneX + colExtW : bedZoneX;
@@ -1511,15 +2721,15 @@ export function sliceFlatRooms(params: {
       const extraAtTop = isSouth && extraBandH > 0;
       const bedStartY = box.y + (extraAtTop ? extraBandH : 0);
 
-      const livStart = livingRoom.rect.y;
-      const livEnd = livStart + livingRoom.rect.height;
+      const livStart = alignedPublicSpanY.start;
+      const livEnd = alignedPublicSpanY.end;
       const passStart = bedStartY + topBandH;
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100 && remBedH >= 6000) {
         const minRun = Math.max(3000, remBedH - maxBandAspectH);
         const maxRun = Math.min(remBedH - 3000, maxBandAspectH);
-        const targetTopH = isSouth
+        const targetTopH = passStart > livEnd - 1100
           ? snap10(livEnd - 1100 - bedStartY)
           : snap10(livStart + 1100 - bathBlockH - bedStartY);
         topBandH =
@@ -1642,37 +2852,48 @@ export function sliceFlatRooms(params: {
       let pooja: ApartmentPlanRoom | undefined;
 
       if (placeBed3AtTop && splitBottomBand) {
-        const usePoojaCell = hasPoojaRequested && !hasStudyRequested;
+        const useStudyCell = hasStudyRequested;
+        const usePoojaCell = hasPoojaRequested && !useStudyCell;
         const cellRoom: ApartmentPlanRoom = {
-          id: usePoojaCell ? `${flatId}__pooja` : `${flatId}__study`,
-          name: usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Study & Home Office`,
-          type: usePoojaCell ? 'pooja' : 'study',
+          id: useStudyCell ? `${flatId}__study` : usePoojaCell ? `${flatId}__pooja` : `${flatId}__family_lounge`,
+          name: useStudyCell
+            ? `${flatLabel} Study & Home Office`
+            : usePoojaCell
+              ? `${flatLabel} Pooja & Meditation Room`
+              : `${flatLabel} Walk-in Dressing & Lounge`,
+          type: useStudyCell ? 'study' : usePoojaCell ? 'pooja' : 'foyer',
           planningZone: 'PRIVATE',
           rect: { x: xInt, y: botY, width: colIntW, height: botBandH },
         };
         rooms.push(cellRoom);
-        if (usePoojaCell) pooja = cellRoom;
-        else study = cellRoom;
+        if (useStudyCell) study = cellRoom;
+        else pooja = cellRoom;
       } else if (!placeBed3AtTop && splitTopBand) {
-        const usePoojaCell = hasPoojaRequested && !hasStudyRequested;
+        const useStudyCell = hasStudyRequested;
+        const usePoojaCell = hasPoojaRequested && !useStudyCell;
         const cellRoom: ApartmentPlanRoom = {
-          id: usePoojaCell ? `${flatId}__pooja` : `${flatId}__study`,
-          name: usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Study & Home Office`,
-          type: usePoojaCell ? 'pooja' : 'study',
+          id: useStudyCell ? `${flatId}__study` : usePoojaCell ? `${flatId}__pooja` : `${flatId}__family_lounge`,
+          name: useStudyCell
+            ? `${flatLabel} Study & Home Office`
+            : usePoojaCell
+              ? `${flatLabel} Pooja & Meditation Room`
+              : `${flatLabel} Walk-in Dressing & Lounge`,
+          type: useStudyCell ? 'study' : usePoojaCell ? 'pooja' : 'foyer',
           planningZone: 'PRIVATE',
           rect: { x: xInt, y: bedStartY, width: colIntW, height: topBandH },
         };
         rooms.push(cellRoom);
-        if (usePoojaCell) pooja = cellRoom;
-        else study = cellRoom;
+        if (useStudyCell) study = cellRoom;
+        else pooja = cellRoom;
       }
 
       if (extraBandH > 0) {
         const extraY = extraAtTop ? box.y : botY + botBandH;
+        const useStudyExtra = Boolean(hasStudyRequested && !study);
         const extraRoom: ApartmentPlanRoom = {
-          id: pooja ? `${flatId}__study` : `${flatId}__pooja`,
-          name: pooja ? `${flatLabel} Study & Home Office` : `${flatLabel} Pooja & Family Lounge`,
-          type: pooja ? 'study' : 'pooja',
+          id: useStudyExtra ? `${flatId}__study` : `${flatId}__pooja`,
+          name: useStudyExtra ? `${flatLabel} Study & Home Office` : `${flatLabel} Private Terrace Lounge`,
+          type: useStudyExtra ? 'study' : 'foyer',
           planningZone: 'PRIVATE',
           rect: { x: bedZoneX, y: extraY, width: bedZoneW, height: extraBandH },
         };
@@ -1815,7 +3036,7 @@ export function sliceFlatRooms(params: {
       };
       rooms.push(bed3);
 
-      const publicRoom = livingRoom;
+      const publicRoom = bedZonePublicHost;
       const dPass = createConnectingDoor(`${flatId}__door_passage`, publicRoom, passage, 900, { doorType: 'open_passage' }) ??
         createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: 'open_passage' });
       if (dPass) flatOpenings.push(dPass);
@@ -2047,15 +3268,15 @@ export function sliceFlatRooms(params: {
         let topBandH = snap10(Math.max(3000, Math.min(remBedH - 3000, remBedH * (arch.invertBedroomOrder ? 0.48 : 0.52))));
         let botBandH = remBedH - topBandH;
 
-        const livStart = livingRoom.rect.y;
-        const livEnd = livStart + livingRoom.rect.height;
+        const livStart = alignedPublicSpanY.start;
+        const livEnd = alignedPublicSpanY.end;
         const passStart = box.y + topBandH;
         const passEnd = passStart + bathBlockH;
         const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
         if (overlap < 1100 && remBedH >= 6000) {
           const minRun = 3000;
           const maxRun = remBedH - 3000;
-          const targetTopH = isSouth
+          const targetTopH = passStart > livEnd - 1100
             ? snap10(livEnd - 1100 - box.y)
             : snap10(livStart + 1100 - bathBlockH - box.y);
           topBandH = Math.max(minRun, Math.min(maxRun, targetTopH));
@@ -2375,12 +3596,20 @@ export function sliceFlatRooms(params: {
   // primary/odd bedroom bays while Even floors favor alternate even-indexed bays
   // with columns, lifts, stairs, and wet shafts remaining identically stacked.
   const allBedrooms = [...rooms].filter(r => r.type === 'bedroom');
-  const staggerActive = Boolean(placement?.staggeredBalconies && allBedrooms.length >= 2);
+  // When DOUBLE_HEIGHT_STAGGER is active (and ALL_BEDROOMS private balconies are not
+  // explicitly forced), alternate Odd vs Even bedroom inset balconies cleanly across floors
+  // while keeping columns, lifts, stairs, OTS ducts, and Living-first entrances locked.
+  const staggerActive = Boolean(
+    placement?.floorVariant &&
+    (isDoubleHeightStagger || placement?.staggeredBalconies) &&
+    placement?.bedroomBalconies !== 'ALL_BEDROOMS' &&
+    allBedrooms.length >= 2,
+  );
   const orderedBedrooms = staggerActive && placement?.floorVariant === 'EVEN'
     ? [
-        ...allBedrooms.filter((_, idx) => idx % 2 === 1),
-        ...allBedrooms.filter((_, idx) => idx % 2 === 0),
-      ]
+      ...allBedrooms.filter((_, idx) => idx % 2 === 1),
+      ...allBedrooms.filter((_, idx) => idx % 2 === 0),
+    ]
     : allBedrooms;
   for (let bIdx = 0; bIdx < orderedBedrooms.length; bIdx++) {
     const bedroom = orderedBedrooms[bIdx]!;
@@ -2392,13 +3621,13 @@ export function sliceFlatRooms(params: {
       if (!isPreferredBay && (alreadyCarved || origIdx === 0)) continue;
     }
     const r = bedroom.rect;
-    const minRemW = 3000;
-    const minRemH = 3000;
     const forceBedBalc =
       placement?.bedroomBalconies === 'ALL_BEDROOMS' &&
-      ((r.width < 4500 && r.width >= 4200) || (r.height < 4500 && r.height >= 4200));
-    const depthX = forceBedBalc && r.width < 4500 ? Math.max(1200, r.width - minRemW) : 1500;
-    const depthY = forceBedBalc && r.height < 4500 ? Math.max(1200, r.height - minRemH) : 1500;
+      ((r.width < 4550 && r.width >= 3800) || (r.height < 4550 && r.height >= 3800));
+    const minRemW = forceBedBalc ? 2700 : 3050;
+    const minRemH = forceBedBalc ? 2700 : 3050;
+    const depthX = forceBedBalc && r.width < 4550 ? Math.min(1500, Math.max(1100, r.width - minRemW)) : 1500;
+    const depthY = forceBedBalc && r.height < 4550 ? Math.min(1500, Math.max(1100, r.height - minRemH)) : 1500;
     const west = Math.abs(r.x - envelope.x) < 0.001;
     const east = Math.abs(r.x + r.width - envelope.x - envelope.w) < 0.001;
     const north = Math.abs(r.y - envelope.y) < 0.001;
@@ -2408,30 +3637,36 @@ export function sliceFlatRooms(params: {
     );
 
     const candidates: Array<{ trimmed: ApartmentPlanRoom; balcony: ApartmentPlanRoom }> = [];
-    if ((west || east) && r.width - depthX >= minRemW && r.height >= minRemH && r.height / (r.width - depthX) <= 2.18) {
-      candidates.push({
-        trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
-        balcony: {
-          id: bedroom.id + '__balcony',
-          name: bedroom.name + ' Balcony',
-          type: 'balcony',
-          planningZone: 'OUTDOOR',
-          rect: { x: west ? r.x : r.x + r.width - depthX, y: r.y, width: depthX, height: r.height },
-        },
-      });
-    }
-    if ((placement?.bedroomBalconies === 'ALL_BEDROOMS' || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minRemH && r.width >= minRemW && r.width / (r.height - depthY) <= 2.18) {
-      candidates.push({
-        trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
-        balcony: {
-          id: bedroom.id + '__balcony',
-          name: bedroom.name + ' Balcony',
-          type: 'balcony',
-          planningZone: 'OUTDOOR',
-          rect: { x: r.x, y: north ? r.y : r.y + r.height - depthY, width: r.width, height: depthY },
-        },
-      });
-    }
+    const pushWestEast = (maxRatio: number, minW: number, minH: number) => {
+      if ((west || east) && r.width - depthX >= minW && r.height >= minH && r.height / (r.width - depthX) <= maxRatio) {
+        candidates.push({
+          trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
+          balcony: {
+            id: bedroom.id + '__balcony',
+            name: bedroom.name + ' Balcony',
+            type: 'balcony',
+            planningZone: 'OUTDOOR',
+            rect: { x: west ? r.x : r.x + r.width - depthX, y: r.y, width: depthX, height: r.height },
+          },
+        });
+      }
+    };
+    const pushNorthSouth = (maxRatio: number, minW: number, minH: number) => {
+      if ((placement?.bedroomBalconies === 'ALL_BEDROOMS' || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minH && r.width >= minW && r.width / (r.height - depthY) <= maxRatio) {
+        candidates.push({
+          trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
+          balcony: {
+            id: bedroom.id + '__balcony',
+            name: bedroom.name + ' Balcony',
+            type: 'balcony',
+            planningZone: 'OUTDOOR',
+            rect: { x: r.x, y: north ? r.y : r.y + r.height - depthY, width: r.width, height: depthY },
+          },
+        });
+      }
+    };
+    pushWestEast(2.18, minRemW, minRemH);
+    pushNorthSouth(2.18, minRemW, minRemH);
 
     for (const candidate of candidates) {
       const { trimmed, balcony } = candidate;

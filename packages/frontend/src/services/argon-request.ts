@@ -72,7 +72,9 @@ export function createArgonRequest(data: ProjectSetupWizardData): MultiSheetApar
     siteAmenities: DEFAULT_SITE_AMENITIES, stiltAmenities: { ...DEFAULT_STILT_AMENITIES, societyOffice: false, fitnessGymnasium: false, multipurposeHall: false },
     terraceAmenities: DEFAULT_TERRACE_AMENITIES, parkingMode: data.hasStiltParking ? 'STILT_ONLY' : 'STILT_AND_SURFACE',
     includeWindowChajjas: data.includeWindowChajjas ?? true,
-    staggeredBalconies: data.staggeredBalconies ?? false,
+    galleryCoordinationMode: data.galleryCoordinationMode ?? (data.staggeredBalconies === false ? 'STACKED_RIBBON' : 'DOUBLE_HEIGHT_STAGGER'),
+    staggeredBalconies: (data.galleryCoordinationMode ?? (data.staggeredBalconies === false ? 'STACKED_RIBBON' : 'DOUBLE_HEIGHT_STAGGER')) === 'DOUBLE_HEIGHT_STAGGER',
     ...(data.includeDiningHall !== undefined ? { includeDiningHall: data.includeDiningHall } : {}),
+    includeStudyRoom: data.includeStudyRoom ?? false,
   };
 }

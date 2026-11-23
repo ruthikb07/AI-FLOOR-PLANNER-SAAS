@@ -370,9 +370,10 @@ export function generateETABSE2KFromBuilding(building: Building): string {
   }
   lines.push('');
   lines.push('$ AREA CONNECTIVITIES');
-  for (const slab of uniqueSlabs) {
-    const [p1, p2, p3, p4] = slab.pointIds;
-    lines.push(`  AREA  "${slab.id}"  FLOOR  4  "${p1}"  "${p2}"  "${p3}"  "${p4}"`);
+  const orderedSlabs = [...uniqueSlabs].sort((a, b) => b.pointIds.length - a.pointIds.length);
+  for (const slab of orderedSlabs) {
+    const ptList = slab.pointIds.map((pid) => `"${pid}"`).join('  ');
+    lines.push(`  AREA  "${slab.id}"  FLOOR  ${slab.pointIds.length}  ${ptList}`);
   }
   lines.push('');
   lines.push('$ POINT ASSIGNS');

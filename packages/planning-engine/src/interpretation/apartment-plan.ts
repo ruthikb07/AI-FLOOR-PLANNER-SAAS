@@ -110,6 +110,7 @@ export interface ApartmentPlanStructure {
   readonly corridors: readonly ApartmentCoreElement[];
   readonly shafts: readonly ApartmentCoreElement[];
   readonly openings: readonly ApartmentPlanOpening[];
+  readonly flatExposures?: readonly import('@ai-floor-planner/core').FlatExposureProfile[];
 }
 
 export interface ApartmentUnitExpectation {

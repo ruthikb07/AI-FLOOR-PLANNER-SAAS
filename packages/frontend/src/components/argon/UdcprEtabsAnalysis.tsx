@@ -12,6 +12,7 @@ import {
   downloadVerifiedExport,
 } from "../../services/export-client";
 import { ETABSExportPanel } from "./ETABSExportPanel";
+import { StructuralAnalysisPanel } from "./StructuralAnalysisPanel";
 
 const fmt = (v: number | null | undefined, d = 2) =>
   v == null ? "Not verified" : v.toFixed(d);
@@ -281,16 +282,14 @@ export const UdcprEtabsAnalysis: React.FC<{
       </p>
       {tab === "ETABS" ? (
         <div className="space-y-4">
-          <article className="rh-export-card p-4">
-            <h3 className="font-semibold">ETABS analysis status</h3>
-            <p className="my-2 text-sm text-argon-muted">
-              Verified analysis results are unavailable in this workspace. Native model export
-              requires reviewed structural inputs for this architectural revision.
-            </p>
-            {onOpenExports && (
+          <div className="rounded-xl border border-slate-700/80 overflow-hidden">
+            <StructuralAnalysisPanel building={building} />
+          </div>
+          {onOpenExports && (
+            <div className="flex justify-end">
               <button type="button" className="rh-button" onClick={onOpenExports}>Open Export Center</button>
-            )}
-          </article>
+            </div>
+          )}
           <ETABSExportPanel building={building} />
         </div>
       ) : (

@@ -195,9 +195,9 @@ describe("Phase 3 measured dashboard and wizard", () => {
     expect(fetchVerifiedBytes).not.toHaveBeenCalled();
     expect(host.querySelector("iframe")).toBeNull();
   });
-  it("ETABS withholds analysis claims without native results", async () => {
+  it("ETABS tab renders built-in IS 456/1893 preliminary analysis while withholding native ETABS verification claims", async () => {
     await click("ETABS Structural Analysis");
-    expect(host.textContent).toContain("Verified analysis results are unavailable");
+    expect(host.textContent).toContain("Built-In IS 456:2000 & IS 1893:2016 Structural Analysis");
     expect(host.textContent).toContain("PROFESSIONAL REVIEW REQUIRED");
     expect(host.textContent).not.toContain("FEM STATUS: PASS");
     expect(host.textContent).not.toContain("ALL STOREYS COMPLIANT");

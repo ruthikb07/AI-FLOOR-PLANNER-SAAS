@@ -112,8 +112,10 @@ export async function handleProjectGeneration(
       config: proposalResult.enrichedConfig,
     });
 
-    // If compliance < 85 after deterministic solver loop, escalate up to 3 corrective re-proposals
-    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= 3; retryIdx++) {
+    // If compliance < 85 after deterministic solver loop and live AI provider is configured,
+    // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
+    const maxOuterRetries = deps.gemini ? 2 : 0;
+    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= maxOuterRetries; retryIdx++) {
       const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
       const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
       const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
@@ -123,7 +125,10 @@ export async function handleProjectGeneration(
         !parsed.config.buildingMassingShape && priorShape
           ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
           : parsed.config.rejectedShapeIds;
-      const correctiveHint = complianceReport.violations.slice(0, 3).join(' ');
+      const correctiveHint = complianceReport.violations
+        .slice(0, 3)
+        .map(v => (typeof v === 'string' ? v : v.message))
+        .join(' ');
       const retryProposal = await generateArchitecturalProposal(deps.gemini, {
         config: {
           ...parsed.config,

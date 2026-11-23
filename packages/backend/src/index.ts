@@ -33,3 +33,29 @@ export { StructuralDrawingsService } from './services/structural-drawings-servic
 export { IndianCodeLoadingService, type StoreyLoadSummary, type BuildingSeismicCalculation } from './services/indian-code-loading.js';
 export { ETABSDesignCheckEngine, type ETABSDesignCheckOptions } from './services/etabs-design-checks.js';
 export { StructuralQuantityService, type StructuralQuantitySchedule, type ConcreteElementQuantity, type RebarDiameterSummary } from './services/structural-quantities.js';
+export {
+  CadImportError,
+  parseDxfContent,
+  parseUploadedCadFile,
+  extractPlanarRoomPolygons,
+  extractOuterPlotPolygon,
+  importPlotBoundaryFromCad,
+  importFloorPlanLayoutFromCad,
+  resolveLocalAutoCadConsole,
+  convertDwgBufferToDxf,
+  type CadImportRequest,
+  type ParsedCadDocument,
+  type PlotImportResult,
+  type FloorPlanImportResult,
+} from './services/cad-layout-importer.js';
+export {
+  resolveLocalProjectsRoot,
+  listLocalProjects,
+  saveLocalProject,
+  loadLocalProject,
+  readLocalProjectSourceCad,
+  deleteLocalProject,
+  type LocalProjectManifest,
+  type SaveLocalProjectInput,
+  type LoadedLocalProject,
+} from './services/local-project-store.js';

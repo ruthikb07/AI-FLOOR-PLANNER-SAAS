@@ -16,8 +16,10 @@ import {
   Check,
   Edit3,
   Save,
+  FileUp,
+  Library,
 } from 'lucide-react';
-import type { Building, BuildingMassingShape, PlanCategory } from '@ai-floor-planner/core';
+import type { Building, BuildingMassingShape, GalleryCoordinationMode, PlanCategory } from '@ai-floor-planner/core';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 import { fitFloorOpeningsInsideWalls } from '@ai-floor-planner/geometry-engine';
 import { useEditorStore } from '../../stores/editor-store';
@@ -32,6 +34,7 @@ import { GenerationProgressModal } from './GenerationProgressModal';
 import { CommandPalette } from '../workspace/CommandPalette';
 import { projectStorage } from '../../services/storage';
 import {
+  coordinateBuildingFacade,
   evaluateStudioLayoutScore,
   evaluateUDCPRCompliance,
   generateTargetedRefinements,
@@ -43,6 +46,14 @@ import {
 import type { WorkspaceCommand } from '../../services/workspace-commands';
 import { createArgonRequest } from '../../services/argon-request';
 import { ConceptReviewWorkspace, ProjectLibrary, representativeFloor, type GeneratedConcept } from './ProjectPortfolio';
+import { CadImportModal, type CadImportCommittedPayload } from './CadImportModal';
+import {
+  deleteLocalDiskProject,
+  listLocalDiskProjects,
+  loadLocalDiskProject,
+  saveLocalDiskProject,
+  type LocalDiskProjectManifest,
+} from '../../services/local-project-api';
 
 const LazyBuilding3DCustomizer = lazy(() => import('./Building3DCustomizer'));
 const ProjectSetupWizard = lazy(async () => ({ default: (await import('./ProjectSetupWizard')).ProjectSetupWizard }));
@@ -120,8 +131,101 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const [concepts, setConcepts] = useState<readonly GeneratedConcept[]>([]);
   const [conceptNotice, setConceptNotice] = useState('');
   const [autoFixStatus, setAutoFixStatus] = useState('');
+  const [cadImportOpen, setCadImportOpen] = useState(false);
+  const [diskProjects, setDiskProjects] = useState<LocalDiskProjectManifest[]>([]);
+  const [isSavingDisk, setIsSavingDisk] = useState(false);
+  const [saveToast, setSaveToast] = useState('');
+  const pendingSourceCad = useRef<{ fileName: string; contentBase64?: string; contentText?: string } | null>(null);
 
   const projectList = projectStorage.list();
+
+  const refreshDiskProjects = async () => {
+    try {
+      const items = await listLocalDiskProjects();
+      setDiskProjects(items);
+    } catch {
+      // Backend disk library unavailable (e.g. offline static preview)
+    }
+  };
+
+  useEffect(() => {
+    void refreshDiskProjects();
+  }, []);
+
+  useEffect(() => {
+    if (activeWorkspace === 'library' || isProjectSwitcherOpen) {
+      void refreshDiskProjects();
+    }
+  }, [activeWorkspace, isProjectSwitcherOpen]);
+
+  const handleCadImportLoaded = (payload: CadImportCommittedPayload) => {
+    const nextBuilding = payload.building;
+    pendingSourceCad.current = payload.sourceCadAttachment ?? null;
+    editor.setBuilding(nextBuilding, payload.projectName, {}, 'residential');
+    const floor = representativeFloor(nextBuilding);
+    if (floor) editor.switchFloor(floor.id);
+    if (typeof window !== 'undefined') sessionStorage.setItem('rh_welcome_dismissed', 'true');
+    setShowWelcome(false);
+    setConcepts([{ building: nextBuilding, seed: 1 }]);
+    setActiveWorkspace('cad_2d');
+    setSaveToast(`Imported ${payload.projectName} (${payload.importMode === 'floor_plan' ? 'CAD Floor Plan' : 'CAD Plot Boundary'})`);
+    setTimeout(() => setSaveToast(''), 4000);
+  };
+
+  const handleSaveToLocalDisk = async () => {
+    setIsSavingDisk(true);
+    setSaveWarning('');
+    try {
+      editor.saveProject();
+      const current = editor.building;
+      const saved = await saveLocalDiskProject({
+        projectId: editor.projectId || current.projectId,
+        name: editor.projectName || current.name,
+        building: current,
+        note: `Studio save (${current.metadata.generationBrief?.buildingMassingShape ?? 'layout'})`,
+        sourceCad: pendingSourceCad.current ?? undefined,
+      });
+      await refreshDiskProjects();
+      setSaveToast(`Saved "${saved.manifest.name}" · Rev. ${saved.revision} to local disk`);
+      setTimeout(() => setSaveToast(''), 3500);
+    } catch (err) {
+      setSaveWarning(err instanceof Error ? `Local disk save failed: ${err.message}` : 'Local disk save failed.');
+    } finally {
+      setIsSavingDisk(false);
+    }
+  };
+
+  const handleOpenDiskProject = async (projectId: string, revision?: number) => {
+    try {
+      const loaded = await loadLocalDiskProject(projectId, revision);
+      pendingSourceCad.current = null;
+      const syncedBuilding: Building = {
+        ...loaded.building,
+        projectId: loaded.manifest.projectId,
+      };
+      editor.setBuilding(syncedBuilding, loaded.manifest.name, {}, 'residential');
+      const floor = representativeFloor(syncedBuilding);
+      if (floor) editor.switchFloor(floor.id);
+      if (typeof window !== 'undefined') sessionStorage.setItem('rh_welcome_dismissed', 'true');
+      setShowWelcome(false);
+      setConcepts([{ building: syncedBuilding, seed: 1 }]);
+      lastBrief.current = null;
+      setActiveWorkspace('cad_2d');
+      setSaveToast(`Loaded "${loaded.manifest.name}" (Rev. ${loaded.revision}) from local disk`);
+      setTimeout(() => setSaveToast(''), 3500);
+    } catch (err) {
+      setSaveWarning(err instanceof Error ? err.message : 'Could not load project from local disk.');
+    }
+  };
+
+  const handleDeleteDiskProject = async (projectId: string) => {
+    try {
+      await deleteLocalDiskProject(projectId);
+      await refreshDiskProjects();
+    } catch (err) {
+      setSaveWarning(err instanceof Error ? err.message : 'Could not delete project from local disk.');
+    }
+  };
 
   const complianceSummary = useMemo(() => {
     try {
@@ -146,7 +250,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const workerRef = useRef<Worker | null>(null);
   const lastBrief = useRef<ProjectSetupWizardData | null>(null);
   const regenerationBrief = useRef<{ projectId: string; data: ProjectSetupWizardData } | null>(null);
-  const generationTarget = useRef<'edit' | 'intake' | 'compare' | 'repair'>('edit');
+  const generationTarget = useRef<'edit' | 'intake' | 'compare' | 'repair' | 'building_3d'>('edit');
   const rejectedTopologyHashes = useRef<string[]>([]);
   const usedShapeIds = useRef<string[]>([]);
   const usedArchetypeIds = useRef<string[]>([]);
@@ -179,7 +283,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     data: ProjectSetupWizardData,
     seed: number,
     rejectedHashes: readonly string[],
-    target: 'edit' | 'intake' | 'compare' | 'repair' = 'edit',
+    target: 'edit' | 'intake' | 'compare' | 'repair' | 'building_3d' = 'edit',
   ) => {
     workerRef.current?.terminate();
     lastBrief.current = data;
@@ -274,7 +378,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             regenerationBrief.current = { projectId: event.data.result.building.projectId, data };
             if (firstResidential) editor.switchFloor(firstResidential.id);
             setIsGenerating(false);
-            setActiveWorkspace(target === 'intake' ? 'concepts' : 'cad_2d');
+            setActiveWorkspace(
+              target === 'intake' ? 'concepts' : target === 'building_3d' ? 'building_3d' : 'cad_2d',
+            );
             setSaveWarning('');
 
             void outcome.durable.then(result => {
@@ -526,7 +632,10 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         <RHWelcomeScreen
           key={welcomeMountKey}
           onStartNewProject={(type) => handleStartFromWelcome(type, 1)}
-          onImportReference={() => handleStartFromWelcome('new_construction', 4)}
+          onImportReference={() => {
+            dismissWelcome();
+            setCadImportOpen(true);
+          }}
           onOpenExisting={() => {
             dismissWelcome();
             setActiveWorkspace('library');
@@ -679,8 +788,43 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             ))}
           </nav>
 
-          {/* Right: FT/M Toggle + Day/Sunset/Night Lighting Switch + Live Compliance Rating Pill */}
+          {/* Right: Import CAD + Save + Library + FT/M Toggle + Lighting Switch + Live Compliance Pill */}
           <div className="rh-topbar-right">
+            <button
+              type="button"
+              data-testid="topbar-import-cad"
+              onClick={() => setCadImportOpen(true)}
+              className="rh-topbar-tab rh-topbar-action-cad"
+              title="Import local .DXF, .DWG, or .PDF plot or floor plan"
+            >
+              <FileUp className="w-3.5 h-3.5 text-sky-400" />
+              <span className="rh-topbar-action-label whitespace-nowrap">Import CAD</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="topbar-save-local"
+              disabled={isSavingDisk}
+              onClick={() => void handleSaveToLocalDisk()}
+              className="rh-topbar-tab rh-topbar-action-save"
+              title="Save active revision to local disk library"
+            >
+              <Save className="w-3.5 h-3.5 text-amber-400" />
+              <span className="rh-topbar-action-label whitespace-nowrap">{isSavingDisk ? 'Saving…' : 'Save'}</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="nav-library"
+              aria-current={activeWorkspace === 'library' ? 'page' : undefined}
+              onClick={() => setActiveWorkspace('library')}
+              className="rh-topbar-tab rh-topbar-action-library"
+              title="Open Local Disk Project Library"
+            >
+              <Library className="w-3.5 h-3.5" />
+              <span className="rh-topbar-action-label whitespace-nowrap">Library</span>
+            </button>
+
             <div className="rh-segmented-pill" role="group" aria-label="Measurement Units">
               <button
                 type="button"
@@ -700,38 +844,40 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
               </button>
             </div>
 
-            <div className="rh-segmented-pill rh-lighting-pill" role="group" aria-label="Viewport Lighting">
-              <button
-                type="button"
-                data-testid="shell-light-day"
-                aria-pressed={studio.lightingMode === 'day'}
-                title="Morning Daylight"
-                onClick={() => studioStoreActions.setLightingMode('day')}
-              >
-                <Sun className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Day</span>
-              </button>
-              <button
-                type="button"
-                data-testid="shell-light-golden"
-                aria-pressed={studio.lightingMode === 'golden'}
-                title="Golden Sunset"
-                onClick={() => studioStoreActions.setLightingMode('golden')}
-              >
-                <Sunset className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Sunset</span>
-              </button>
-              <button
-                type="button"
-                data-testid="shell-theme-toggle"
-                aria-pressed={studio.lightingMode === 'night'}
-                title="Night Illumination"
-                onClick={() => studioStoreActions.setLightingMode('night')}
-              >
-                <Moon className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Night</span>
-              </button>
-            </div>
+            {activeWorkspace !== 'building_3d' && (
+              <div className="rh-segmented-pill rh-lighting-pill" role="group" aria-label="Viewport Lighting">
+                <button
+                  type="button"
+                  data-testid="shell-light-day"
+                  aria-pressed={studio.lightingMode === 'day'}
+                  title="Morning Daylight"
+                  onClick={() => studioStoreActions.setLightingMode('day')}
+                >
+                  <Sun className="w-3.5 h-3.5" />
+                  <span className="hidden 2xl:inline">Day</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="shell-light-golden"
+                  aria-pressed={studio.lightingMode === 'golden'}
+                  title="Golden Sunset"
+                  onClick={() => studioStoreActions.setLightingMode('golden')}
+                >
+                  <Sunset className="w-3.5 h-3.5" />
+                  <span className="hidden 2xl:inline">Sunset</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="shell-theme-toggle"
+                  aria-pressed={studio.lightingMode === 'night'}
+                  title="Night Illumination"
+                  onClick={() => studioStoreActions.setLightingMode('night')}
+                >
+                  <Moon className="w-3.5 h-3.5" />
+                  <span className="hidden 2xl:inline">Night</span>
+                </button>
+              </div>
+            )}
 
             <button
               type="button"
@@ -752,12 +898,20 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             className="rh-portfolio-body rh-tab-transition relative flex min-h-0 flex-1 flex-col overflow-hidden"
           >
             {activeWorkspace === 'library' && (
-              <ProjectLibrary projects={projectList} onCreate={() => handleStartFromWelcome()} onOpen={id => {
-                editor.loadProject(id);
-                setConcepts([]);
-                lastBrief.current = null;
-                setActiveWorkspace('cad_2d');
-              }} />
+              <ProjectLibrary
+                projects={projectList}
+                diskProjects={diskProjects}
+                onCreate={() => handleStartFromWelcome()}
+                onImportCad={() => setCadImportOpen(true)}
+                onOpen={id => {
+                  editor.loadProject(id);
+                  setConcepts([]);
+                  lastBrief.current = null;
+                  setActiveWorkspace('cad_2d');
+                }}
+                onOpenDiskProject={(id, rev) => void handleOpenDiskProject(id, rev)}
+                onDeleteDiskProject={(id) => void handleDeleteDiskProject(id)}
+              />
             )}
             {activeWorkspace === 'concepts' && (
               <ConceptReviewWorkspace activeBuilding={editor.building} concepts={concepts}
@@ -772,7 +926,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             {activeWorkspace === 'setup' && (
               <Suspense fallback={<p role="status" className="p-4">Opening project setup…</p>}>
                 <ProjectSetupWizard onGenerate={handleGenerate} onCancel={() => setActiveWorkspace('cad_2d')}
-                  onBackToWelcome={openWelcomeHome} />
+                  onBackToWelcome={openWelcomeHome} onOpenCadImport={() => setCadImportOpen(true)} />
               </Suspense>
             )}
             {activeWorkspace === 'cad_2d' && (
@@ -795,7 +949,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                 onBackToCad={() => setActiveWorkspace('cad_2d')}
               />
             )}
-            {activeWorkspace === 'isometric' && <FloorIsometricEditor editor={editor} />}
+            {activeWorkspace === 'isometric' && <FloorIsometricEditor editor={editor} lightingMode={studio.lightingMode} />}
             {activeWorkspace === 'building_3d' && (
               <Suspense
                 fallback={
@@ -804,7 +958,37 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                   </div>
                 }
               >
-                <LazyBuilding3DCustomizer editor={editor} lightingMode={studio.lightingMode} onLightingModeChange={studioStoreActions.setLightingMode} />
+                <LazyBuilding3DCustomizer
+                  editor={editor}
+                  lightingMode={studio.lightingMode}
+                  onLightingModeChange={studioStoreActions.setLightingMode}
+                  onGalleryCoordinationModeChange={(mode: GalleryCoordinationMode) => {
+                    studioStoreActions.updateWizard({
+                      galleryCoordinationMode: mode,
+                      staggeredBalconies: mode === 'DOUBLE_HEIGHT_STAGGER',
+                    });
+                    const brief = lastBrief.current;
+                    if (brief) {
+                      const nextBrief: ProjectSetupWizardData = {
+                        ...brief,
+                        galleryCoordinationMode: mode,
+                        staggeredBalconies: mode === 'DOUBLE_HEIGHT_STAGGER',
+                        buildingMassingShape:
+                          (editor.building.metadata?.generationBrief?.buildingMassingShape as BuildingMassingShape | undefined) ??
+                          brief.buildingMassingShape,
+                      };
+                      runGeneration(nextBrief, generationSeed, rejectedTopologyHashes.current, 'building_3d');
+                    } else {
+                      const coordinated = coordinateBuildingFacade(editor.building, {
+                        galleryCoordinationMode: mode,
+                      });
+                      editor.applyRefinement(
+                        { ...coordinated, version: editor.building.version + 1 },
+                        `Switch gallery rhythm to ${mode}`,
+                      );
+                    }
+                  }}
+                />
               </Suspense>
             )}
             {activeWorkspace === 'structural_cad' && (
@@ -871,6 +1055,29 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           commands={paletteCommands}
           onClose={() => setPaletteOpen(false)}
         />
+
+        <CadImportModal
+          isOpen={cadImportOpen}
+          onClose={() => setCadImportOpen(false)}
+          onLoaded={handleCadImportLoaded}
+        />
+
+        {saveToast && (
+          <div
+            role="status"
+            data-testid="local-save-toast"
+            className="fixed bottom-5 right-5 z-[180] px-4 py-2.5 rounded-xl text-xs font-mono flex items-center gap-2 shadow-2xl"
+            style={{
+              background: 'rgba(13, 17, 25, 0.94)',
+              border: '1px solid rgba(245, 158, 11, 0.45)',
+              color: '#FDE68A',
+              backdropFilter: 'blur(16px)',
+            }}
+          >
+            <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>{saveToast}</span>
+          </div>
+        )}
       </div>
       );
 };

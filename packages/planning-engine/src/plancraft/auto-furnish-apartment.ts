@@ -42,10 +42,12 @@ function getRoomDoorClearanceBoxes(room: Room, floor: Floor): DoorClearanceBox[]
     d => d.connectsRooms?.includes(room.id) || (d as any).adjacentRoomId === room.id,
   );
 
+  const isCompactWetRoom =
+    room.type === RoomType.Bathroom || /BATH|TOILET|WC/i.test(room.name);
   for (const door of roomDoors) {
     const dW = door.width || 900;
-    // 600mm walking circulation safety buffer around the swing arc
-    const buffer = 600;
+    // 600mm walking circulation safety buffer in habitable rooms; 200mm clearance in compact bathrooms
+    const buffer = isCompactWetRoom ? 200 : 600;
     const sweep = dW + buffer;
 
     // Approximate door swing region centered around door position
@@ -108,8 +110,13 @@ export function furnishRoom(
   const doorBoxes = getRoomDoorClearanceBoxes(room, floor);
 
   // Compute each room's Inner Clear Box by shrinking the room centerline inward
-  // by wallThickness / 2 + 40 mm (155 mm inset from 230 mm walls, 100 mm from internal walls)
-  const wallInset = 155;
+  // by wallThickness / 2 + clearance (85 mm for tiled bathroom partitions, 155 mm for main rooms)
+  const isBathroomRoom =
+    room.type === RoomType.Bathroom ||
+    rName.includes('BATH') ||
+    rName.includes('TOILET') ||
+    rName.includes('WC');
+  const wallInset = isBathroomRoom ? 85 : 155;
   const innerMinX = rx + wallInset;
   const innerMinY = ry + wallInset;
   const innerMaxX = rx + rw - wallInset;
@@ -130,6 +137,21 @@ export function furnishRoom(
   const hasWestWindow = roomWindows.some(w => Math.abs(w.position.x - rx) <= 250);
   const hasEastWindow = roomWindows.some(w => Math.abs(w.position.x - (rx + rw)) <= 250);
 
+  const isKitchenRoom =
+    (room.type === RoomType.Kitchen || rName.includes('KITCHEN')) &&
+    !rName.includes('UTILITY') &&
+    !rName.includes('BALCONY');
+
+  const boxesOverlapWithMargin = (
+    a: { x: number; y: number; w: number; h: number },
+    b: { x: number; y: number; w: number; h: number },
+    marginMm: number,
+  ): boolean =>
+    a.x < b.x + b.w + marginMm &&
+    a.x + a.w + marginMm > b.x &&
+    a.y < b.y + b.h + marginMm &&
+    a.y + a.h + marginMm > b.y;
+
   const addItem = (
     type: PlancraftFurnitureElementType,
     rawX: number,
@@ -148,10 +170,31 @@ export function furnishRoom(
     // Strict clamping 100% inside the Inner Clear Box
     const clampedX = Math.max(innerMinX, Math.min(innerMaxX - w, rawX));
     const clampedY = Math.max(innerMinY, Math.min(innerMaxY - d, rawY));
+    const candBox = { x: clampedX, y: clampedY, w, h: d };
 
-    // Check door collision
-    if (!force && collidesWithDoorClearance({ x: clampedX, y: clampedY, w, h: d }, doorBoxes)) {
+    // Check door clearance collision
+    if (!force && collidesWithDoorClearance(candBox, doorBoxes)) {
       return;
+    }
+
+    // Strict furniture-to-furniture non-overlap & bed-to-wardrobe >= 650 mm aisle check
+    const isCounterAppliance =
+      isKitchenRoom && (type === 'stove' || type === 'sink' || type === 'oven');
+    for (const existing of items) {
+      if (existing.roomId !== room.id) continue;
+      if (isCounterAppliance && existing.type === 'counter') continue;
+      if (type === 'counter' && (existing.type === 'stove' || existing.type === 'sink' || existing.type === 'oven')) {
+        continue;
+      }
+      // Allow nightstand beside bed without tripping bed clearance, forbid everything else overlapping
+      const isBedWardrobePair =
+        (type === 'wardrobe' && existing.type === 'bed') ||
+        (type === 'bed' && existing.type === 'wardrobe');
+      const requiredMargin = isBedWardrobePair ? 650 : 20;
+      const exBox = { x: existing.xMm, y: existing.yMm, w: existing.widthMm, h: existing.depthMm };
+      if (boxesOverlapWithMargin(candBox, exBox, requiredMargin)) {
+        return;
+      }
     }
 
     const itemIndex = items.filter(i => i.roomId === room.id && i.type === type).length + 1;
@@ -348,9 +391,8 @@ export function furnishRoom(
       }
     }
 
-    // Wardrobe (600mm depth) along solid wall free of doors and windows
+    // Wardrobe (550–600 mm depth) snapped flush against a solid wall with >= 650 mm clearance from bed
     const wardDim1 = Math.min(1800, Math.max(900, Math.min(rw, rh) - 1000));
-    const wardDim2 = 600;
     const rawWardCandidates: Array<{
       x: number;
       y: number;
@@ -359,30 +401,32 @@ export function furnishRoom(
       rot: 0 | 90 | 180 | 270;
       wall: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST';
     }> = [];
-    for (const len of [...new Set([wardDim1, Math.min(wardDim1, 1400), Math.min(wardDim1, 1000)])]) {
-      const yOffsets = [...new Set([
-        ry + 200,
-        ry + Math.round(rh * 0.25),
-        ry + Math.round((rh - len) / 2),
-        ry + Math.round(rh * 0.65) - Math.round(len / 2),
-        ry + rh - len - 200,
-      ])].filter(yPos => yPos >= ry + 100 && yPos + len <= ry + rh - 100);
-      for (const yPos of yOffsets) {
-        rawWardCandidates.push(
-          { x: rx + 150, y: yPos, w: wardDim2, d: len, rot: 90, wall: 'WEST' },
-          { x: rx + rw - wardDim2 - 150, y: yPos, w: wardDim2, d: len, rot: 270, wall: 'EAST' },
-        );
-      }
-      const xOffsets = [...new Set([
-        rx + 200,
-        rx + Math.round((rw - len) / 2),
-        rx + rw - len - 200,
-      ])].filter(xPos => xPos >= rx + 100 && xPos + len <= rx + rw - 100);
-      for (const xPos of xOffsets) {
-        rawWardCandidates.push(
-          { x: xPos, y: ry + rh - wardDim2 - 150, w: len, d: wardDim2, rot: 0, wall: 'SOUTH' },
-          { x: xPos, y: ry + 150, w: len, d: wardDim2, rot: 0, wall: 'NORTH' },
-        );
+    for (const depth of [600, 550]) {
+      for (const len of [...new Set([wardDim1, Math.min(wardDim1, 1400), Math.min(wardDim1, 1200), Math.min(wardDim1, 1000)])]) {
+        const yOffsets = [...new Set([
+          innerMinY,
+          ry + Math.round(rh * 0.25),
+          ry + Math.round((rh - len) / 2),
+          ry + Math.round(rh * 0.65) - Math.round(len / 2),
+          innerMaxY - len,
+        ])].filter(yPos => yPos >= innerMinY && yPos + len <= innerMaxY);
+        for (const yPos of yOffsets) {
+          rawWardCandidates.push(
+            { x: innerMinX, y: yPos, w: depth, d: len, rot: 90, wall: 'WEST' },
+            { x: innerMaxX - depth, y: yPos, w: depth, d: len, rot: 270, wall: 'EAST' },
+          );
+        }
+        const xOffsets = [...new Set([
+          innerMinX,
+          rx + Math.round((rw - len) / 2),
+          innerMaxX - len,
+        ])].filter(xPos => xPos >= innerMinX && xPos + len <= innerMaxX);
+        for (const xPos of xOffsets) {
+          rawWardCandidates.push(
+            { x: xPos, y: innerMaxY - depth, w: len, d: depth, rot: 0, wall: 'SOUTH' },
+            { x: xPos, y: innerMinY, w: len, d: depth, rot: 0, wall: 'NORTH' },
+          );
+        }
       }
     }
     const wardCandidates = rawWardCandidates.filter(wc => {
@@ -392,7 +436,7 @@ export function furnishRoom(
       if (wc.wall === 'EAST' && hasEastWindow) return false;
       return true;
     });
-    const finalWardCandidates = wardCandidates.length > 0 ? wardCandidates : rawWardCandidates;
+    const finalWardCandidates = wardCandidates.length > 0 ? [...wardCandidates, ...rawWardCandidates] : rawWardCandidates;
 
     for (const wc of finalWardCandidates) {
       if (rw >= wc.w + 100 && rh >= wc.d + 100) {
@@ -421,23 +465,36 @@ export function furnishRoom(
     !rName.includes('BALCONY')
   ) {
     const counterD = 600;
-    const counterW = Math.min(3000, rw - 400);
+    const counterW = Math.min(3000, Math.max(1200, innerMaxX - innerMinX));
+    const counterH = Math.min(3000, Math.max(1200, innerMaxY - innerMinY));
 
-    // Filter candidate walls to those free of door clearance collisions:
+    // Snap kitchen counter strictly flush to a plumbing/exterior wall (preferring window/OTS walls)
+    const wallPriority = (wall: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST'): number => {
+      if (wall === 'NORTH' && hasNorthWindow) return 0;
+      if (wall === 'SOUTH' && hasSouthWindow) return 0;
+      if (wall === 'EAST' && hasEastWindow) return 0;
+      if (wall === 'WEST' && hasWestWindow) return 0;
+      return 1;
+    };
     const rawCounterCandidates = [
-      { x: rx + 200, y: ry + rh - counterD - 150, w: counterW, d: counterD, wall: 'SOUTH' as const, isHoriz: true },
-      { x: rx + 200, y: ry + 150, w: counterW, d: counterD, wall: 'NORTH' as const, isHoriz: true },
-      { x: rx + rw - counterD - 150, y: ry + 200, w: counterD, d: Math.min(3000, rh - 400), wall: 'EAST' as const, isHoriz: false },
-      { x: rx + 150, y: ry + 200, w: counterD, d: Math.min(3000, rh - 400), wall: 'WEST' as const, isHoriz: false },
-    ];
+      { x: innerMinX, y: innerMaxY - counterD, w: counterW, d: counterD, wall: 'SOUTH' as const, isHoriz: true },
+      { x: innerMinX, y: innerMinY, w: counterW, d: counterD, wall: 'NORTH' as const, isHoriz: true },
+      { x: innerMaxX - counterD, y: innerMinY, w: counterD, d: counterH, wall: 'EAST' as const, isHoriz: false },
+      { x: innerMinX, y: innerMinY, w: counterD, d: counterH, wall: 'WEST' as const, isHoriz: false },
+    ].sort((a, b) => wallPriority(a.wall) - wallPriority(b.wall));
 
-    // Search shorter wall runs as well; a full-length counter may cross a door
-    // even though a usable worktop exists farther along the same wall.
-    for (const run of [1800, 1500, 1400]) {
-      for (let offset = 150; offset + run <= rh - 100; offset += 100) {
+    // Search shorter flush wall runs as well; a full-length counter may cross a door
+    for (const run of [2000, 1600, 1400]) {
+      for (let offset = innerMinY; offset + run <= innerMaxY; offset += 150) {
         rawCounterCandidates.push(
-          { x: rx + 100, y: ry + offset, w: counterD, d: run, wall: 'WEST', isHoriz: false },
-          { x: rx + rw - counterD - 100, y: ry + offset, w: counterD, d: run, wall: 'EAST', isHoriz: false },
+          { x: innerMinX, y: offset, w: counterD, d: run, wall: 'WEST', isHoriz: false },
+          { x: innerMaxX - counterD, y: offset, w: counterD, d: run, wall: 'EAST', isHoriz: false },
+        );
+      }
+      for (let offset = innerMinX; offset + run <= innerMaxX; offset += 150) {
+        rawCounterCandidates.push(
+          { x: offset, y: innerMinY, w: run, d: counterD, wall: 'NORTH', isHoriz: true },
+          { x: offset, y: innerMaxY - counterD, w: run, d: counterD, wall: 'SOUTH', isHoriz: true },
         );
       }
     }
@@ -496,77 +553,80 @@ export function furnishRoom(
     rName.includes('TOILET') ||
     rName.includes('WC')
   ) {
-    // WC fixture against wet wall (try North, South, West, East, both left and right sides)
-    const wcCandidates = [
-      { x: rx + 200, y: ry + 200, w: 400, d: 700, wall: 'NORTH' as const },
-      { x: rx + rw - 600, y: ry + 200, w: 400, d: 700, wall: 'NORTH' as const },
-      { x: rx + 200, y: ry + rh - 900, w: 400, d: 700, wall: 'SOUTH' as const },
-      { x: rx + rw - 600, y: ry + rh - 900, w: 400, d: 700, wall: 'SOUTH' as const },
-      { x: rx + 200, y: ry + (rh - 700) / 2, w: 400, d: 700, wall: 'WEST' as const },
-      { x: rx + rw - 600, y: ry + (rh - 700) / 2, w: 400, d: 700, wall: 'EAST' as const },
-    ];
-    for (const wc of wcCandidates) {
-      if (rw >= wc.w + 100 && rh >= wc.d + 100) {
-        const init = items.length;
-        addItem('toilet', wc.x, wc.y, wc.w, wc.d, 0, wc.wall);
-        if (items.length > init) break;
-      }
-    }
+    // Helper: scan wall-flush perimeter positions around all 4 bathroom walls so WC,
+    // washbasin, and shower always find a clean, zero-overlap, door-clear wall slot.
+    const tryWallFlushPlacement = (
+      kind: 'toilet' | 'sink' | 'shower',
+      dims: readonly { w: number; d: number }[],
+    ): boolean => {
+      const innerW = innerMaxX - innerMinX;
+      const innerH = innerMaxY - innerMinY;
+      for (const { w, d } of dims) {
+        if (w > innerW + 20 || d > innerH + 20) continue;
+        const stepX = Math.max(120, Math.floor((innerW - w) / 4) || 120);
+        const stepY = Math.max(120, Math.floor((innerH - d) / 4) || 120);
+        const xs: number[] = [innerMinX, innerMaxX - w];
+        for (let x = innerMinX + stepX; x < innerMaxX - w - 20; x += stepX) xs.push(x);
+        const ys: number[] = [innerMinY, innerMaxY - d];
+        for (let y = innerMinY + stepY; y < innerMaxY - d - 20; y += stepY) ys.push(y);
 
-    // Washbasin sink
-    const sinkCandidates = [
-      { x: rx + 750, y: ry + 200, w: 450, d: 350, wall: 'NORTH' as const },
-      { x: rx + 200, y: ry + 800, w: 350, d: 450, wall: 'WEST' as const },
-      { x: rx + rw - 700, y: ry + 200, w: 500, d: 400, wall: 'NORTH' as const },
-      { x: rx + rw - 700, y: ry + rh - 600, w: 500, d: 400, wall: 'SOUTH' as const },
-      { x: rx + rw - 600, y: ry + (rh - 400) / 2, w: 500, d: 400, wall: 'EAST' as const },
-    ];
-    for (const sc of sinkCandidates) {
-      if (rw >= sc.w + 100 && rh >= sc.d + 100) {
-        const init = items.length;
-        addItem('sink', sc.x, sc.y, sc.w, sc.d, 0, sc.wall);
-        if (items.length > init) break;
+        const candidates: Array<{ x: number; y: number; wall: 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' }> = [];
+        for (const x of xs) {
+          candidates.push({ x, y: innerMinY, wall: 'NORTH' });
+          candidates.push({ x, y: innerMaxY - d, wall: 'SOUTH' });
+        }
+        for (const y of ys) {
+          candidates.push({ x: innerMinX, y, wall: 'WEST' });
+          candidates.push({ x: innerMaxX - w, y, wall: 'EAST' });
+        }
+        for (const c of candidates) {
+          const init = items.length;
+          addItem(kind, c.x, c.y, w, d, 0, c.wall);
+          if (items.length > init) return true;
+        }
       }
-    }
+      return false;
+    };
 
-    // Shower enclosure in opposite corner
+    // 1. WC fixture flush against wet wall
+    tryWallFlushPlacement('toilet', [
+      { w: 400, d: 680 },
+      { w: 680, d: 400 },
+      { w: 380, d: 600 },
+      { w: 600, d: 380 },
+    ]);
+
+    // 2. Shower enclosure (or Bathtub + Shower for large master baths) in free corner
     const is4BhkMasterBath = (rName.includes('MASTER') || rName.includes('ATTACHED')) && areaM2 >= 4.5;
     if (is4BhkMasterBath) {
-      // 4BHK Master bath luxury: Bathtub + Shower
       if (rw >= 2000) {
-        addItem('bathtub', rx + 200, ry + rh - 850, 1700, 700, 0, 'SOUTH');
+        addItem('bathtub', innerMinX, innerMaxY - 700, 1700, 700, 0, 'SOUTH');
       } else if (rh >= 2000) {
-        addItem('bathtub', rx + 200, ry + 200, 700, 1700, 90, 'WEST');
+        addItem('bathtub', innerMinX, innerMinY, 700, 1700, 90, 'WEST');
       }
       if (rw >= 2400) {
-        addItem('shower', rx + rw - 1000, ry + rh - 1000, 900, 900, 0, 'SOUTH');
+        addItem('shower', innerMaxX - 900, innerMaxY - 900, 900, 900, 0, 'SOUTH');
       }
     }
 
     if (!items.some(i => i.roomId === room.id && (i.type === 'shower' || i.type === 'bathtub'))) {
-      const showerCandidates = [
-        { x: rx + rw - 1000, y: ry + rh - 1000, w: 900, d: 900, wall: 'SOUTH' as const },
-        { x: rx + 200, y: ry + rh - 1000, w: 900, d: 900, wall: 'SOUTH' as const },
-        { x: rx + rw - 1000, y: ry + 200, w: 900, d: 900, wall: 'NORTH' as const },
-        { x: rx + 200, y: ry + 200, w: 900, d: 900, wall: 'NORTH' as const },
-        { x: rx + rw - 850, y: ry + rh - 850, w: 800, d: 800, wall: 'SOUTH' as const },
-        { x: rx + 150, y: ry + rh - 850, w: 800, d: 800, wall: 'SOUTH' as const },
-        { x: rx + rw - 850, y: ry + 150, w: 800, d: 800, wall: 'NORTH' as const },
-        { x: rx + 150, y: ry + 150, w: 800, d: 800, wall: 'NORTH' as const },
-      ];
-      for (const sh of showerCandidates) {
-        if (rw >= sh.w + 100 && rh >= sh.d + 100) {
-          const init = items.length;
-          addItem('shower', sh.x, sh.y, sh.w, sh.d, 0, sh.wall);
-          if (items.length > init) break;
-        }
-      }
-      if (!items.some(i => i.roomId === room.id && (i.type === 'shower' || i.type === 'bathtub'))) {
-        const shX = Math.max(innerMinX, innerMaxX - 800);
-        const shY = Math.max(innerMinY, innerMaxY - 800);
-        addItem('shower', shX, shY, 800, 800, 0, 'SOUTH', true);
-      }
+      tryWallFlushPlacement('shower', [
+        { w: 900, d: 900 },
+        { w: 800, d: 800 },
+        { w: 750, d: 750 },
+        { w: 650, d: 650 },
+        { w: 600, d: 600 },
+        { w: 550, d: 550 },
+      ]);
     }
+
+    // 3. Washbasin sink flush against remaining free wall stretch
+    tryWallFlushPlacement('sink', [
+      { w: 450, d: 350 },
+      { w: 350, d: 450 },
+      { w: 380, d: 300 },
+      { w: 300, d: 380 },
+    ]);
   }
 
   // ─── 6. Vertical Staircase Cores ───────────────────────────────────────────

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { ArchitecturalCanvas } from '../canvas/ArchitecturalCanvas';
-import { ThreeBuildingScene } from '../model-3d/ThreeBuildingScene';
+import { ThreeBuildingScene, type BuildingLightingMode } from '../model-3d/ThreeBuildingScene';
 import { Building3DProjector, type ProjectionSource } from '@ai-floor-planner/projection-3d';
 import {
   projectionSourceToSelection,
@@ -18,10 +18,12 @@ import {
 
 interface FloorIsometricEditorProps {
   editor: EditorContextValue;
+  lightingMode?: BuildingLightingMode;
 }
 
 export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
   editor,
+  lightingMode = 'golden',
 }) => {
   const [viewMode, setViewMode] = useState<'3d_iso' | '2d_plan'>('3d_iso');
   const [fitRequest, setFitRequest] = useState(0);
@@ -74,7 +76,7 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
         <div className="flex min-w-0 max-w-full items-center gap-3 overflow-x-auto py-1">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-argon-btn mr-1 flex items-center gap-1.5 whitespace-nowrap">
             <Layers className="w-4 h-4 text-argon-btn" />
-            <span>FLOOR ISOMETRIC:</span>
+            <span>FLOOR 3D · CUTAWAY:</span>
           </span>
 
           <div
@@ -118,7 +120,7 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
               }`}
             >
               <Box className="w-3.5 h-3.5" />
-              <span>3D Isometric</span>
+              <span>3D Cutaway</span>
             </button>
             <button
               data-testid="toggle-view-2d"
@@ -172,7 +174,7 @@ export const FloorIsometricEditor: React.FC<FloorIsometricEditorProps> = ({
               cameraPreset="isometric"
               floorMode="isolate"
               exploded={false}
-              lightingMode="day"
+              lightingMode={lightingMode}
               materialPalette="travertine"
               layers={isoLayers}
               fitRequest={fitRequest}

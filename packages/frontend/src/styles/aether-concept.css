@@ -200,7 +200,9 @@ input[type='range'] {
   min-width: 380px;
   max-width: 380px;
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
+  box-sizing: border-box;
   border-left: 1px solid #E2D9C8;
 }
 

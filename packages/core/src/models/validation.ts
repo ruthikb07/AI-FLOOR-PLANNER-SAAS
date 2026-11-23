@@ -81,6 +81,28 @@ function validatePolygon(value: unknown, path: string, errors: ValidationError[]
 
 // ─── Room Validation ────────────────────────────────────────────────────────
 
+function computePolygonArea(boundary: unknown): number | null {
+  if (!isObject(boundary) || !isArray(boundary['points'])) return null;
+  const pts = boundary['points'] as unknown[];
+  if (pts.length < 3) return null;
+  let sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    if (!isObject(a) || !isObject(b)) return null;
+    const ax = a['x'];
+    const ay = a['y'];
+    const bx = b['x'];
+    const by = b['y'];
+    if (!isFiniteNumber(ax) || !isFiniteNumber(ay) || !isFiniteNumber(bx) || !isFiniteNumber(by)) {
+      return null;
+    }
+    sum += ax * by - bx * ay;
+  }
+  const area = Math.abs(sum) / 2;
+  return area > 0 ? area : null;
+}
+
 export function validateRoomSchema(room: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
   const path = 'room';
@@ -115,13 +137,21 @@ export function validateRoomSchema(room: unknown): ValidationError[] {
     errors.push({ path: `${path}.height`, message: 'Must be a positive number', value: room['height'] });
   }
 
-  // Area must match width × height (tolerance: 1 sq mm)
+  // Area must match polygon boundary area when present (or width × height for rectangular/nominal-box rooms)
   if (isPositiveNumber(room['width']) && isPositiveNumber(room['height']) && isFiniteNumber(room['area'])) {
-    const expectedArea = (room['width'] as number) * (room['height'] as number);
-    if (Math.abs((room['area'] as number) - expectedArea) > 1) {
+    const rectArea = (room['width'] as number) * (room['height'] as number);
+    const polyArea = computePolygonArea(room['boundary']);
+    const tags = isArray(room['tags']) ? (room['tags'] as unknown[]) : [];
+    const allowNominalBox = tags.includes('NOMINAL_BOUNDING_BOX_AREA');
+    const areaVal = room['area'] as number;
+    const expectedArea = polyArea ?? rectArea;
+    const tol = polyArea !== null ? Math.max(1, expectedArea * 1e-6) : 1;
+    const matchesExpected = Math.abs(areaVal - expectedArea) <= tol;
+    const matchesNominal = allowNominalBox && Math.abs(areaVal - rectArea) <= 1;
+    if (!matchesExpected && !matchesNominal) {
       errors.push({
         path: `${path}.area`,
-        message: `Area mismatch: expected ${expectedArea}, got ${room['area'] as number}`,
+        message: `Area mismatch: expected ${expectedArea}, got ${areaVal}`,
         value: room['area'],
       });
     }
@@ -261,13 +291,21 @@ export function validateBuildingSchema(building: unknown): ValidationError[] {
             errors.push({ path: `${rp}.y`, message: 'Must be a finite number', value: room['y'] });
           }
 
-          // Area validation
+          // Area validation (polygon boundary area for curved/polygonal rooms, width × height fallback)
           if (isPositiveNumber(room['width']) && isPositiveNumber(room['height']) && isFiniteNumber(room['area'])) {
-            const expected = (room['width'] as number) * (room['height'] as number);
-            if (Math.abs((room['area'] as number) - expected) > 1) {
+            const rectArea = (room['width'] as number) * (room['height'] as number);
+            const polyArea = computePolygonArea(room['boundary']);
+            const tags = isArray(room['tags']) ? (room['tags'] as unknown[]) : [];
+            const allowNominalBox = tags.includes('NOMINAL_BOUNDING_BOX_AREA');
+            const areaVal = room['area'] as number;
+            const expected = polyArea ?? rectArea;
+            const tol = polyArea !== null ? Math.max(1, expected * 1e-6) : 1;
+            const matchesExpected = Math.abs(areaVal - expected) <= tol;
+            const matchesNominal = allowNominalBox && Math.abs(areaVal - rectArea) <= 1;
+            if (!matchesExpected && !matchesNominal) {
               errors.push({
                 path: `${rp}.area`,
-                message: `Area mismatch: expected ${expected}, got ${room['area'] as number}`,
+                message: `Area mismatch: expected ${expected}, got ${areaVal}`,
                 value: room['area'],
               });
             }

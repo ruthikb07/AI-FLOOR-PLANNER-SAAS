@@ -76,8 +76,8 @@ describe('StructuralCADWorkspace Component', () => {
 
   it('renders the active project and preliminary framing status', async () => {
     await mount();
-    expect(host.querySelector('h1')?.textContent).toBe('Structural CAD');
-    expect(host.textContent).toContain('Preliminary framing');
+    expect(host.querySelector('h1')?.textContent).toBe('Structural CAD & RCC Framing');
+    expect(host.textContent).toContain('IS 456:2000 & IS 1893:2016');
     expect(host.textContent).toContain('RH Skyview Heights');
   });
 
@@ -89,22 +89,25 @@ describe('StructuralCADWorkspace Component', () => {
     const beamBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Beam Framing'));
     expect(beamBtn).toBeDefined();
 
-    const slabBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Slab outline'));
+    const slabBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Slab Outline'));
     expect(slabBtn).toBeDefined();
 
-    const etabsBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('ETABS status'));
-    expect(etabsBtn).toBeDefined();
+    const analysisBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Structural Analysis'));
+    expect(analysisBtn).toBeDefined();
 
     // Click Beam Framing
     await act(async () => beamBtn?.click());
     expect(host.querySelector('#beams-layer')).not.toBeNull();
+
+    // Click Structural Analysis tab
+    await act(async () => analysisBtn?.click());
+    expect(host.querySelector('[data-testid="structural-analysis-panel"]')).not.toBeNull();
   });
 
-  it('displays canonical framing without simulated analysis values', async () => {
+  it('displays canonical framing with built-in IS 456/1893 engineering disclaimer', async () => {
     await mount();
-    expect(host.textContent).toContain('Professional review required');
-    expect(host.textContent).toContain('verified ETABS results are unavailable');
-    expect(host.textContent).not.toContain('IS COMPLIANT');
+    expect(host.textContent).toContain('IS 456:2000 & IS 1893:2016');
+    expect(host.textContent).not.toContain('verified ETABS results are unavailable');
     expect(host.querySelectorAll('#columns-layer rect')).toHaveLength(building.floors[0]!.columns.length);
   });
 

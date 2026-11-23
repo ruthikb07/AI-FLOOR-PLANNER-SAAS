@@ -1,4 +1,5 @@
 import {
+  DoorType,
   RoomType,
   WallType,
   WindowType,
@@ -44,6 +45,8 @@ const CLASSIC_PASSTHROUGH_SHAPES = new Set<string>([
   'CRUCIFORM_PLUS',
   'PINWHEEL_CLUSTER',
   'STEPPED_OFFSET_BLOCK',
+  'IRREGULAR_ANGLED_PLOT',
+  'IMPORTED_CAD_LAYOUT',
 ]);
 
 function samePoint(a: Point, b: Point, eps = 0.5): boolean {
@@ -397,10 +400,10 @@ function createShapeTransform(
     const amp = Math.min(hh * 0.28, 2600);
     if (outerRingW <= 0 && wingS === 0) return { x: pt.x, y: pt.y };
     const theta = Math.atan2(v, u);
-    const radialScale = 1 - stepRatio * 0.14 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
+    const radialScale = 1 - stepRatio * 0.10 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
     const arcBend = arcSweepDeg > 10 ? -amp * (arcSweepDeg / 180) * wingS * wingS * (splayNorm >= 0 ? 1 : -1) : 0;
     const baseTx = cx + dx * radialScale;
-    const baseTy = cy + dy * 0.96 + arcBend;
+    const baseTy = cy + dy * 0.98 + arcBend;
     return clampEnv(
       pt.x + (baseTx - pt.x) * Math.max(wingS, outerRingW),
       pt.y + (baseTy - pt.y) * Math.max(wingS, outerRingW),
@@ -478,6 +481,12 @@ function remapDoorsToWalls(
     );
     if (!candidates.length) continue;
     candidates.sort((w1, w2) => {
+      // Never pick an OPEN_BOUNDARY for a physical door leaf when a physical wall exists
+      if (door.type !== DoorType.OpenPassage) {
+        const open1 = w1.boundaryRole === 'OPEN_BOUNDARY' ? 1 : 0;
+        const open2 = w2.boundaryRole === 'OPEN_BOUNDARY' ? 1 : 0;
+        if (open1 !== open2) return open1 - open2;
+      }
       const m1 = { x: (w1.startPoint.x + w1.endPoint.x) / 2, y: (w1.startPoint.y + w1.endPoint.y) / 2 };
       const m2 = { x: (w2.startPoint.x + w2.endPoint.x) / 2, y: (w2.startPoint.y + w2.endPoint.y) / 2 };
       const l1 = Math.hypot(w1.endPoint.x - w1.startPoint.x, w1.endPoint.y - w1.startPoint.y);
@@ -500,6 +509,7 @@ function remapDoorsToWalls(
     if (!openingFitsApartmentWall(host, pos, width)) continue;
     result.push({
       ...door,
+      type: host.boundaryRole === 'OPEN_BOUNDARY' ? DoorType.OpenPassage : door.type,
       floorId,
       wallId: host.id,
       position: pos,

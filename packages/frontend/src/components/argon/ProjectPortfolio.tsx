@@ -1,9 +1,10 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { ArrowRight, Box, FilePlus2, LayoutTemplate } from 'lucide-react';
+import { ArrowRight, Box, FilePlus2, FileUp, HardDrive, LayoutTemplate, Trash2 } from 'lucide-react';
 import type { Building } from '@ai-floor-planner/core';
 import { polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
 import { fitToView, renderFloor } from '@ai-floor-planner/renderer';
 import { projectStorage, type ProjectHeader } from '../../services/storage';
+import type { LocalDiskProjectManifest } from '../../services/local-project-api';
 
 const ConceptModel = lazy(() => import('./ConceptModel'));
 
@@ -86,20 +87,110 @@ export function ConceptReviewWorkspace({ concepts, activeBuilding, canGenerate, 
   </section>;
 }
 
-export function ProjectLibrary({ projects, onOpen, onCreate }: {
+export function ProjectLibrary({
+  projects,
+  diskProjects = [],
+  onOpen,
+  onOpenDiskProject,
+  onDeleteDiskProject,
+  onCreate,
+  onImportCad,
+}: {
   projects: readonly ProjectHeader[];
+  diskProjects?: readonly LocalDiskProjectManifest[];
   onOpen: (id: string) => void;
+  onOpenDiskProject?: (id: string, revision?: number) => void;
+  onDeleteDiskProject?: (id: string) => void;
   onCreate: () => void;
+  onImportCad?: () => void;
 }) {
   const [visible, setVisible] = useState(12);
-  return <section className="rh-catalog rh-project-library" aria-label="Project library">
+  const diskIds = useMemo(() => new Set(diskProjects.map(p => p.projectId)), [diskProjects]);
+  const browserOnlyProjects = useMemo(() => projects.filter(p => !diskIds.has(p.id)), [projects, diskIds]);
+  const totalCount = diskProjects.length + browserOnlyProjects.length;
+
+  return <section className="rh-catalog rh-project-library" aria-label="Project library" data-testid="project-library-view">
     <header className="rh-catalog-heading">
-      <div><p className="rh-atelier-kicker">{projects.length} saved {projects.length === 1 ? 'project' : 'projects'}</p><h1>Project library</h1></div>
-      <button type="button" className="rh-solid-action" data-testid="btn-new-project-from-switcher" onClick={onCreate}><FilePlus2 size={17} /> New project</button>
+      <div>
+        <p className="rh-atelier-kicker">
+          {totalCount} saved {totalCount === 1 ? 'project' : 'projects'} · Local Disk Library
+        </p>
+        <h1>Project Library</h1>
+      </div>
+      <div className="flex items-center gap-2">
+        {onImportCad && (
+          <button type="button" className="rh-outline-action" onClick={onImportCad}>
+            <FileUp size={16} /> Import CAD
+          </button>
+        )}
+        <button type="button" className="rh-solid-action" data-testid="btn-new-project-from-switcher" onClick={onCreate}>
+          <FilePlus2 size={17} /> New project
+        </button>
+      </div>
     </header>
-    {projects.length === 0 && <p className="rh-catalog-notice">Saved projects will appear here.</p>}
+    {totalCount === 0 && <p className="rh-catalog-notice">Saved local disk and browser projects will appear here. Click Save in the top bar to archive any revision to local disk.</p>}
     <div className="rh-library-grid">
-      {projects.slice(0, visible).map(project => {
+      {diskProjects.slice(0, visible).map(project => {
+        const localCached = projectStorage.load(project.projectId);
+        return <article key={`disk-${project.projectId}`} data-testid={`disk-project-card-${project.projectId}`}>
+          {localCached ? (
+            <PlanThumbnail building={localCached.building} />
+          ) : (
+            <div className="rh-catalog-plan rh-catalog-plan-empty flex flex-col items-center justify-center gap-1.5">
+              <HardDrive size={22} className="text-amber-400" />
+              <span className="font-mono text-xs uppercase tracking-wider text-amber-300">
+                {project.shapeId.replaceAll('_', ' ')}
+              </span>
+              {project.sourceCadFileName && (
+                <span className="font-mono text-[10px] text-sky-400">CAD: {project.sourceCadFileName}</span>
+              )}
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <h2>{project.name}</h2>
+            <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/35 text-amber-300 shrink-0">
+              {project.shapeId.replaceAll('_', ' ')}
+            </span>
+          </div>
+          <p className="font-mono text-xs">
+            {project.floorCount} floors · {project.roomCount} rooms · Rev. {project.latestRevision}
+            {project.complianceScore !== undefined ? ` · ${project.complianceScore}/100` : ''}
+          </p>
+          <p className="font-mono text-[11px] opacity-75">
+            {project.structuralColumnsCount} cols · {project.structuralBeamsCount} beams
+            {project.hasSourceCad ? ` · Source CAD attached` : ''}
+            {' · '}Saved {new Date(project.updatedAt).toLocaleString()}
+          </p>
+          {!!project.revisions?.length && <details className="rh-library-revisions">
+            <summary>Disk revisions ({project.revisions.length})</summary>
+            <ol>{project.revisions.map(revision => <li key={revision.version}>
+              <span>Revision {revision.version}{revision.complianceScore !== undefined ? ` (${revision.complianceScore}/100)` : ''}</span>
+              <time dateTime={revision.savedAt}>{new Date(revision.savedAt).toLocaleString()}</time>
+            </li>)}</ol>
+          </details>}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              className="rh-outline-action flex-1"
+              type="button"
+              data-testid={`open-disk-project-${project.projectId}`}
+              onClick={() => onOpenDiskProject?.(project.projectId)}
+            >
+              Open from Disk <ArrowRight size={16} />
+            </button>
+            {onDeleteDiskProject && (
+              <button
+                className="rh-outline-action"
+                type="button"
+                aria-label={`Delete ${project.name}`}
+                onClick={() => onDeleteDiskProject(project.projectId)}
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
+        </article>;
+      })}
+      {browserOnlyProjects.slice(0, Math.max(0, visible - diskProjects.length)).map(project => {
         const envelope = projectStorage.load(project.id);
         return <article key={project.id}>
           {envelope && <PlanThumbnail building={envelope.building} />}
@@ -117,6 +208,6 @@ export function ProjectLibrary({ projects, onOpen, onCreate }: {
         </article>;
       })}
     </div>
-    {visible < projects.length && <button className="rh-outline-action" type="button" onClick={() => setVisible(current => current + 12)}>Show more projects</button>}
+    {visible < totalCount && <button className="rh-outline-action" type="button" onClick={() => setVisible(current => current + 12)}>Show more projects</button>}
   </section>;
 }

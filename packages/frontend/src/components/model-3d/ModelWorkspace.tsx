@@ -24,6 +24,7 @@ import {
   ThreeBuildingScene,
   type ArchitecturalMaterialPalette,
   type BuildingLightingMode,
+  type OpeningFinishOverride,
 } from './ThreeBuildingScene';
 import {
   loadModelViewPreferences,
@@ -49,6 +50,7 @@ export interface ModelWorkspaceProps {
   readonly onLightingModeChange?: (mode: BuildingLightingMode) => void;
   readonly materialPalette?: ArchitecturalMaterialPalette;
   readonly onMaterialPaletteChange?: (palette: ArchitecturalMaterialPalette) => void;
+  readonly openingFinish?: OpeningFinishOverride;
   readonly linkedSpanStoreys?: 1 | 2 | 3;
   readonly onLinkedSpanChange?: (span: 1 | 2 | 3) => void;
   readonly sceneRef?: React.MutableRefObject<THREE.Scene | null>;
@@ -77,6 +79,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
   onLightingModeChange,
   materialPalette,
   onMaterialPaletteChange,
+  openingFinish,
   linkedSpanStoreys,
   onLinkedSpanChange,
   sceneRef,
@@ -225,6 +228,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
         explodeDistance={effectiveExplodeDistance}
         lightingMode={effectiveLighting}
         materialPalette={effectivePalette}
+        openingFinish={openingFinish}
         sectionCut={sectionCut}
         parallelProjection={parallelProjection}
         walkthroughActive={walkthroughActive}
@@ -328,7 +332,7 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
             setWalkthroughActive(false);
             setParallelProjection(current => !current);
           }}>Orthographic</button>
-          <button type="button" aria-pressed={sectionCut} className={sectionCut ? 'active' : ''} onClick={() => setSectionCut(current => !current)}>
+          <button type="button" data-testid="btn-cutaway" title="Cutaway section plane" aria-pressed={sectionCut} className={sectionCut ? 'active' : ''} onClick={() => setSectionCut(current => !current)}>
             Section cut
           </button>
           <button
@@ -358,18 +362,20 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
           >
             <Palette size={14} /> Materials
           </button>
-          <button
-            type="button"
-            data-testid="btn-daylight-cycle"
-            onClick={() => {
-              const order: BuildingLightingMode[] = ['day', 'golden', 'night'];
-              const next = order[(order.indexOf(effectiveLighting) + 1) % order.length]!;
-              setLighting(next);
-            }}
-            title="Cycle Daylight / Golden Hour / Night"
-          >
-            <Sun size={14} /> {effectiveLighting === 'day' ? 'Day' : effectiveLighting === 'golden' ? 'Golden' : 'Night'}
-          </button>
+          {!onLightingModeChange && (
+            <button
+              type="button"
+              data-testid="btn-daylight-cycle"
+              onClick={() => {
+                const order: BuildingLightingMode[] = ['day', 'golden', 'night'];
+                const next = order[(order.indexOf(effectiveLighting) + 1) % order.length]!;
+                setLighting(next);
+              }}
+              title="Cycle Daylight / Golden Hour / Night"
+            >
+              <Sun size={14} /> {effectiveLighting === 'day' ? 'Day' : effectiveLighting === 'golden' ? 'Golden' : 'Night'}
+            </button>
+          )}
           <button className={layersOpen ? 'active' : ''} onClick={() => setLayersOpen(o => !o)}>
             <Eye size={14} /> Layers
           </button>

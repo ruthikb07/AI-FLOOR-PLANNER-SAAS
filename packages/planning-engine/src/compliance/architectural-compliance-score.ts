@@ -301,24 +301,38 @@ export function evaluateArchitecturalComplianceScore(
       typicalFloor.walls.some(w => w.roomIds.includes(hRoom.id) && w.wallUse === 'EXTERNAL');
     const touchesOts = shaftRooms.some(s => sharesOrthogonalEdge(hRoom, s, 500));
     const hasWindow = typicalFloor.windows.some(w => w.roomId === hRoom.id);
-    // Open-plan Living connected directly (>= 1000 mm OpenPassage arch) to a ventilated Dining half
-    // in the same unit forms one continuous naturally lit Living-Dining hall (NBC / RERA open plan).
+    // Open-plan / L-shaped Living–Dining connected directly (>= 1000 mm OpenPassage arch)
+    // to a naturally ventilated Living/Dining partner or exterior Balcony forms one continuous
+    // naturally lit & cross-ventilated hall (NBC / RERA open-plan standard).
     const openPlanDiningDaylight =
-      hRoom.type === RoomType.Living &&
+      (hRoom.type === RoomType.Living || hRoom.type === RoomType.Dining) &&
       typicalFloor.doors.some(d => {
-        if (d.type !== DoorType.OpenPassage || d.width < 1000 || !d.connectsRooms.includes(hRoom.id)) {
+        if (!d.connectsRooms.includes(hRoom.id)) {
           return false;
         }
         const partnerId = d.connectsRooms.find(id => id !== hRoom.id);
         const partner = partnerId ? typicalFloor.rooms.find(rm => rm.id === partnerId) : undefined;
-        if (!partner || partner.unitId !== hRoom.unitId || partner.type !== RoomType.Dining) {
+        if (!partner || partner.unitId !== hRoom.unitId) {
+          return false;
+        }
+        const isOpenLivingDining =
+          d.type === DoorType.OpenPassage &&
+          d.width >= 1000 &&
+          ((hRoom.type === RoomType.Living && partner.type === RoomType.Dining) ||
+            (hRoom.type === RoomType.Dining && partner.type === RoomType.Living));
+        const isDirectBalconyAccess =
+          (d.type === DoorType.Sliding || d.type === DoorType.OpenPassage) &&
+          d.width >= 1000 &&
+          partner.type === RoomType.Balcony;
+        if (!isOpenLivingDining && !isDirectBalconyAccess) {
           return false;
         }
         const partnerOnExterior =
           Math.abs(partner.x - fMinX) <= 5 ||
           Math.abs(partner.x + partner.width - fMaxX) <= 5 ||
           Math.abs(partner.y - fMinY) <= 5 ||
-          Math.abs(partner.y + partner.height - fMaxY) <= 5;
+          Math.abs(partner.y + partner.height - fMaxY) <= 5 ||
+          typicalFloor.walls.some(w => w.roomIds.includes(partner.id) && w.wallUse === 'EXTERNAL');
         const partnerHasWin = typicalFloor.windows.some(w => w.roomId === partner.id);
         const partnerTouchesOts = shaftRooms.some(s => sharesOrthogonalEdge(partner, s, 500));
         return partnerHasWin || partnerOnExterior || partnerTouchesOts;

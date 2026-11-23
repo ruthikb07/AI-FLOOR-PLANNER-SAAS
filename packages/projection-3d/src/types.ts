@@ -1,4 +1,15 @@
-import type { Direction, DoorType, Point, Polygon, Stair, WallArcSpec } from '@ai-floor-planner/core';
+import type {
+  CoordinatedChajjaBand,
+  Direction,
+  DoorType,
+  GalleryBayCoordination,
+  GalleryCoordinationMode,
+  OtsLouverScreen,
+  Point,
+  Polygon,
+  Stair,
+  WallArcSpec,
+} from '@ai-floor-planner/core';
 
 export type ProjectionSourceEntityType =
   | 'site'
@@ -132,8 +143,22 @@ export interface Site3D extends ProjectionSource {
   readonly roadWidth?: number;
 }
 
+export interface CoordinatedChajja3D extends CoordinatedChajjaBand {
+  readonly elevation: number;
+  readonly bottom: number;
+  readonly top: number;
+}
+
+export interface OtsLouverScreen3D extends OtsLouverScreen {
+  readonly elevation: number;
+}
+
 export interface Building3DProjection {
   readonly architecturalSolids?: readonly { readonly sourceEntityId: string; readonly sourceEntityType: 'stair' | 'room'; readonly floorId: string; readonly boundary: Polygon; readonly bottom: number; readonly top: number; readonly kind: string }[];
+  readonly coordinatedChajjas?: readonly CoordinatedChajja3D[];
+  readonly otsLouverScreens?: readonly OtsLouverScreen3D[];
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
+  readonly galleryBays?: readonly GalleryBayCoordination[];
   readonly buildingId: string;
   readonly buildingVersion: number;
   readonly settings: Building3DProjectionSettings;

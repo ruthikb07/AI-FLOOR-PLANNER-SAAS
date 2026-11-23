@@ -9,6 +9,7 @@ import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 
 import type {
   Building,
+  CoordinatedChajjaBand,
   Floor,
   ViewTransform,
   ExportOptions,
@@ -680,8 +681,59 @@ function renderDoors(floor: Floor, transform: ViewTransform): string {
   return `<g class="layer-openings" data-layer="${RenderLayer.Openings}">\n${elements.join('\n')}\n</g>`;
 }
 
-function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = true): string {
+function renderWindows(
+  floor: Floor,
+  transform: ViewTransform,
+  includeChajjas = true,
+  coordinatedChajjas: readonly CoordinatedChajjaBand[] = [],
+): string {
   const elements: string[] = [];
+  const coveredByBand = new Set<string>();
+
+  if (includeChajjas && coordinatedChajjas.length > 0) {
+    for (const band of coordinatedChajjas) {
+      for (const wid of band.windowIds) coveredByBand.add(wid);
+      const proj = band.projectionMm || 600;
+      const n = band.outwardNormal;
+      if (band.arc && band.arc.radiusMm > 0) {
+        const arc = band.arc;
+        const midX = (band.startPoint.x + band.endPoint.x) / 2;
+        const midY = (band.startPoint.y + band.endPoint.y) / 2;
+        const span = Math.hypot(band.endPoint.x - band.startPoint.x, band.endPoint.y - band.startPoint.y);
+        const rCenter = Math.hypot(midX - arc.center.x, midY - arc.center.y) || arc.radiusMm;
+        const midAng = Math.atan2(midY - arc.center.y, midX - arc.center.x);
+        const halfAng = Math.min(0.65, (span / 2) / Math.max(500, rCenter));
+        const a0 = midAng - halfAng;
+        const a1 = midAng + halfAng;
+        const outSign = (midX + n.x * proj - arc.center.x) ** 2 + (midY + n.y * proj - arc.center.y) ** 2 >= arc.radiusMm ** 2 ? 1 : -1;
+        const rIn = Math.max(100, arc.radiusMm + outSign * 115);
+        const rOut = Math.max(150, arc.radiusMm + outSign * (115 + proj));
+        const p0 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a0), y: arc.center.y + rIn * Math.sin(a0) }, transform);
+        const p1 = worldToScreen({ x: arc.center.x + rIn * Math.cos(a1), y: arc.center.y + rIn * Math.sin(a1) }, transform);
+        const q1 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a1), y: arc.center.y + rOut * Math.sin(a1) }, transform);
+        const q0 = worldToScreen({ x: arc.center.x + rOut * Math.cos(a0), y: arc.center.y + rOut * Math.sin(a0) }, transform);
+        const cSc = worldToScreen(arc.center, transform);
+        const sw = arcSweepFlagInScreen(p0, p1, cSc);
+        const rInPx = scaleToScreen(rIn, transform);
+        const rOutPx = scaleToScreen(rOut, transform);
+        elements.push(
+          `<path class="window-chajja" data-chajja-band="true" data-chajja-arc="true" data-cad-layer="A-CHAJJA" data-entity-id="${band.id}" data-merged-windows="${band.mergedWindowCount}" d="M ${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A ${rInPx.toFixed(2)} ${rInPx.toFixed(2)} 0 0 ${sw} ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} L ${q1.x.toFixed(2)} ${q1.y.toFixed(2)} A ${rOutPx.toFixed(2)} ${rOutPx.toFixed(2)} 0 0 ${sw === 1 ? 0 : 1} ${q0.x.toFixed(2)} ${q0.y.toFixed(2)} Z" fill="#94a3b8" fill-opacity="0.14" stroke="#475569" stroke-width="0.75" stroke-dasharray="4,2"/>`,
+        );
+      } else {
+        const chajjaWorld: Polygon = {
+          points: [
+            band.startPoint,
+            band.endPoint,
+            { x: band.endPoint.x + n.x * proj, y: band.endPoint.y + n.y * proj },
+            { x: band.startPoint.x + n.x * proj, y: band.startPoint.y + n.y * proj },
+          ],
+        };
+        elements.push(
+          `<polygon class="window-chajja" data-chajja-band="true" data-cad-layer="A-CHAJJA" data-entity-id="${band.id}" data-merged-windows="${band.mergedWindowCount}" points="${polygonToSvgPoints(chajjaWorld, transform)}" fill="#94a3b8" fill-opacity="0.13" stroke="#475569" stroke-width="0.75" stroke-dasharray="4,2"/>`,
+        );
+      }
+    }
+  }
 
   for (const win of floor.windows) {
     let wall = floor.walls.find(w => w.id === win.wallId);
@@ -715,7 +767,7 @@ function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = 
       continue;
     }
 
-    if (includeChajjas) {
+    if (includeChajjas && !coveredByBand.has(win.id)) {
       const dx = win.position.x - wall.startPoint.x;
       const dy = win.position.y - wall.startPoint.y;
       const t = dx * frame.ux + dy * frame.uy;
@@ -735,11 +787,10 @@ function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = 
       const outB = isOutsideBuilt(probeB) || !pointInPolygon(probeB, floor.boundary);
       const isExtOrShaft =
         wall.wallUse === 'EXTERNAL' ||
-        wall.wallUse === 'SHAFT' ||
         wall.type === WallType.External ||
         wall.roomIds.length <= 1 ||
         outA !== outB;
-      if (isExtOrShaft && (outA || outB)) {
+      if (wall.wallUse !== 'SHAFT' && wall.wallUse !== 'BALCONY' && isExtOrShaft && (outA || outB)) {
         const outN = !pointInPolygon(probeA, floor.boundary)
           ? nA
           : !pointInPolygon(probeB, floor.boundary)
@@ -747,6 +798,16 @@ function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = 
             : outA && !outB
               ? nA
               : nB;
+        // Skip opposing 600 mm chajjas projecting into narrow OTS shafts (< 2,400 mm span)
+        const otsProbe: Point = { x: cx + outN.x * 350, y: cy + outN.y * 350 };
+        const projectsIntoNarrowOts = floor.rooms.some(
+          (r) =>
+            architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' &&
+            !r.tags?.includes('recess:perimeter') &&
+            Math.min(r.width, r.height) < 2400 &&
+            pointInPolygon(otsProbe, r.boundary),
+        );
+        if (!projectsIntoNarrowOts) {
         const halfChajjaW = win.width / 2 + 150;
         const innerOff = wallThick / 2;
         const outerOff = innerOff + 600;
@@ -785,6 +846,7 @@ function renderWindows(floor: Floor, transform: ViewTransform, includeChajjas = 
           elements.push(
             `<polygon class="window-chajja" data-cad-layer="A-CHAJJA" data-entity-id="${win.id}-chajja" points="${polygonToSvgPoints(chajjaWorld, transform)}" fill="#94a3b8" fill-opacity="0.12" stroke="#475569" stroke-width="0.7" stroke-dasharray="4,2"/>`,
           );
+        }
         }
       }
     }
@@ -1182,7 +1244,14 @@ export function renderFloor(
       ? renderBeams(floor, transform) : '',
     // 4. Doors & 90° Swing Arcs + Windows + Stairs
     resolved.layers[RenderLayer.Openings] ? renderDoors(floor, transform) : '',
-    resolved.layers[RenderLayer.Openings] ? renderWindows(floor, transform, building.metadata?.generationBrief?.includeWindowChajjas !== false) : '',
+    resolved.layers[RenderLayer.Openings]
+      ? renderWindows(
+          floor,
+          transform,
+          building.metadata?.generationBrief?.includeWindowChajjas !== false,
+          (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter(b => b.floorId === floor.id),
+        )
+      : '',
     resolved.layers[RenderLayer.Stairs] ? renderStairs(floor, transform) : '',
     // 4b. Phase 3 Engineering Discipline Overlays (MEP / Ceiling / Fire / Cantilevers)
     renderMepOverlays(floor, building, transform, resolved),

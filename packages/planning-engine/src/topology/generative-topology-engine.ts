@@ -23,7 +23,14 @@
  * an alternative, and never presents a mirror image as a second design.
  */
 
-import type { ApartmentBhkType, DynamicApartmentManifest } from '@ai-floor-planner/core';
+import type {
+  ApartmentBhkType,
+  Direction,
+  DynamicApartmentManifest,
+  GalleryCoordinationMode,
+  IrregularPlotBoundary,
+  Setbacks,
+} from '@ai-floor-planner/core';
 import type { ExtractedRoom } from '../interpretation/extraction';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { fnv1a, mulberry32, type Box2D } from './rect-frame';
@@ -99,6 +106,11 @@ export interface GenerateConceptsInput {
   readonly preferredMassingShape?: BuildingMassingShape;
   /** Canonical topology digests or variant IDs rejected from prior generations. */
   readonly rejectedTopologyHashes?: readonly string[];
+  readonly roadAccessSides?: readonly Direction[];
+  readonly setbacksMm?: Setbacks;
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
+  readonly includeStudyRoom?: boolean;
 }
 
 export interface RejectedCandidate {
@@ -248,6 +260,11 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         unitTypes: input.unitTypes,
         rawRooms: input.rawRooms,
         archetype: effectiveArchetype,
+        roadAccessSides: input.roadAccessSides,
+        setbacksMm: input.setbacksMm,
+        irregularPlotBoundary: input.irregularPlotBoundary,
+        galleryCoordinationMode: input.galleryCoordinationMode,
+        includeStudyRoom: input.includeStudyRoom,
       });
     } catch (error) {
       rejected.push({

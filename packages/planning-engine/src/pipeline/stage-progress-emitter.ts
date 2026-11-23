@@ -229,7 +229,7 @@ export async function executeAuditedPlanningPipeline(
       next('COLUMN_AND_BEAM_GRID');
     }
     next('GEOMETRY_ZERO_ERROR_AUDIT');
-    const validator = new GeometryValidator({ autoCorrect: false });
+    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: 800 });
     const audit = validator.audit(building, false);
     const closureErrors = building.floors.filter(f => f.apartmentUnits?.length).flatMap(floor =>
       validateApartmentClosure({ ...building, floors: [floor] }).issues.filter(issue => issue.severity === 'error')

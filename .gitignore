@@ -63,3 +63,10 @@ build/
 /scripts/last_exit_gate_result.json
 /scripts/phase2_seed_7919_output.png
 /scripts/test_schematic_512.png
+
+.env
+packages/backend/.env
+test-artifacts/
+packages/backend/data/local-projects/
+*.webm
+*.mp4

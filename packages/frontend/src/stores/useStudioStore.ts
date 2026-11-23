@@ -3,6 +3,7 @@ import type {
   AuthorityType,
   BuildingMassingShape,
   CongestionZone,
+  GalleryCoordinationMode,
   ParametricShapeParams,
   PlanCategory,
 } from '@ai-floor-planner/core';
@@ -62,7 +63,9 @@ export interface WizardState {
   usedArchetypeIds?: readonly string[];
   includeWindowChajjas: boolean;
   staggeredBalconies: boolean;
+  galleryCoordinationMode: GalleryCoordinationMode;
   includeDiningHall: boolean;
+  includeStudyRoom: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
@@ -120,8 +123,10 @@ const DEFAULT_WIZARD_STATE: WizardState = {
   usedShapeIds: [],
   usedArchetypeIds: [],
   includeWindowChajjas: true,
-  staggeredBalconies: false,
+  staggeredBalconies: true,
+  galleryCoordinationMode: 'DOUBLE_HEIGHT_STAGGER',
   includeDiningHall: true,
+  includeStudyRoom: false,
   aiPrompt:
     'Modern multi-unit residential apartment with central elevator core, ventilated OTS shafts, private balconies for bedrooms, and Vastu-compliant kitchen placement.',
   redevelopment: DEFAULT_REDEVELOPMENT_PROGRAM,
@@ -483,8 +488,10 @@ export const studioStoreActions = {
         usedShapeIds: wizard.usedShapeIds ?? [],
         usedArchetypeIds: wizard.usedArchetypeIds ?? [],
         includeWindowChajjas: wizard.includeWindowChajjas ?? true,
-        staggeredBalconies: wizard.staggeredBalconies ?? false,
+        galleryCoordinationMode: wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER',
+        staggeredBalconies: (wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER',
         includeDiningHall: wizard.includeDiningHall ?? true,
+        includeStudyRoom: wizard.includeStudyRoom ?? false,
         aiPrompt: wizard.aiPrompt,
         referenceSketchName: wizard.referenceSketchName,
         referenceImage: wizard.referenceImage,

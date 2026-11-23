@@ -194,7 +194,8 @@ export class GeometryValidator {
 
       const measuredFloor = { ...floor, rooms };
       const ledger = measureApartmentAreaLedger(measuredFloor);
-      const floorDelta = Math.abs(ledger.delta);
+      const rawFloorDelta = Math.abs(ledger.delta);
+      const floorDelta = rawFloorDelta < 1e-4 ? 0 : rawFloorDelta;
       totalPlanarDelta += floorDelta;
       for (const [code, area, description] of [
         ['PLANAR_DELTA_NONZERO', floorDelta, 'Disjoint component area differs from gross floor area'],

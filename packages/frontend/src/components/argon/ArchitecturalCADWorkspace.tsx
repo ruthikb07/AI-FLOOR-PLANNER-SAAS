@@ -90,6 +90,18 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
       setExportStatus(String(e));
     }
   };
+  const [showCadUnderlay, setShowCadUnderlay] = useState(false);
+  const sourceCadUnderlay = editor.building.metadata.sourceCadUnderlay;
+  const underlayBounds = useMemo(() => {
+    const pts = sourceCadUnderlay?.polylines.flatMap(pl => pl.points) ?? [];
+    if (!pts.length) return null;
+    const minX = Math.min(...pts.map(p => p.x));
+    const maxX = Math.max(...pts.map(p => p.x));
+    const minY = Math.min(...pts.map(p => p.y));
+    const maxY = Math.max(...pts.map(p => p.y));
+    return { minX, minY, w: Math.max(1000, maxX - minX), h: Math.max(1000, maxY - minY) };
+  }, [sourceCadUnderlay]);
+
   const [layers, setLayers] = useState<Record<WorkspaceLayer, boolean>>({
     rooms: true,
     walls: true,
@@ -379,6 +391,33 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             layers={layers}
             fitRequest={0}
           />
+          {showCadUnderlay && sourceCadUnderlay && underlayBounds && (
+            <div
+              data-testid="cad-underlay-overlay"
+              className="pointer-events-none absolute bottom-4 left-4 z-20 w-72 rounded-xl border border-sky-400/40 bg-[#080A0F]/90 p-2.5 shadow-2xl backdrop-blur"
+            >
+              <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-sky-300">
+                <span>CAD UNDERLAY · {sourceCadUnderlay.fileName}</span>
+                <span>{sourceCadUnderlay.detectedUnit.toUpperCase()}</span>
+              </div>
+              <svg
+                viewBox={`${underlayBounds.minX - 500} ${underlayBounds.minY - 500} ${underlayBounds.w + 1000} ${underlayBounds.h + 1000}`}
+                className="h-44 w-full rounded bg-black/50"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                {sourceCadUnderlay.polylines.map((pl, idx) => (
+                  <path
+                    key={idx}
+                    d={pl.points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + (pl.closed ? ' Z' : '')}
+                    fill="none"
+                    stroke="#38BDF8"
+                    strokeOpacity={0.8}
+                    strokeWidth={Math.max(underlayBounds.w * 0.005, 45)}
+                  />
+                ))}
+              </svg>
+            </div>
+          )}
         </div>
         <aside className="w-full overflow-auto border-t border-slate-700 bg-slate-900 p-5 lg:w-80 lg:border-l lg:border-t-0">
           <PropertyInspector editor={editor} embedded />
@@ -448,6 +487,21 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             {layer[0]!.toUpperCase() + layer.slice(1)}
           </button>
         ))}
+        {sourceCadUnderlay && (
+          <button
+            type="button"
+            data-testid="toggle-cad-underlay"
+            aria-pressed={showCadUnderlay}
+            onClick={() => setShowCadUnderlay(v => !v)}
+            className={`rounded px-2.5 py-1 text-xs font-mono border ${
+              showCadUnderlay
+                ? 'border-sky-400/60 bg-sky-500/20 text-sky-200'
+                : 'border-slate-700 bg-slate-800 text-slate-300'
+            }`}
+          >
+            CAD Underlay ({sourceCadUnderlay.fileName})
+          </button>
+        )}
       </div>
     </section>
   );

@@ -120,6 +120,23 @@ export {
 } from './interpretation/extraction-parser';
 export type { ExtractedFlat, ExtractedCoreElement } from './interpretation/extraction';
 export {
+  FacadeCoordinationEngine,
+  coordinateBuildingFacade,
+  synthesizeCoordinatedChajjaBands,
+  synthesizeOtsLouverScreens,
+  FACADE_LINTEL_DATUM_MM,
+  CHAJJA_PROJECTION_MM,
+  CHAJJA_FASCIA_MM,
+  CHAJJA_MERGE_GAP_MM,
+  type FacadeCoordinationOptions,
+} from './facade/facade-coordination-engine';
+export {
+  scoreFlatExteriorEdges,
+  type ScoreFlatExteriorEdgesContext,
+  type LocalFlatExposure,
+  type WorldEdgeSide,
+} from './interpretation/space-filling-snapper';
+export {
   APARTMENT_COMMON_FLAT_ID,
   apartmentRoomRoles,
   normalizeApartmentUnitType,
@@ -168,6 +185,7 @@ export {
 export {
   solveMultiSheetApartmentProject,
   synthesizeStructuralFraming,
+  computeIrregularPlotInscribedEnvelope,
   computeBuildingStackParameters,
   solveSitePlanSheet,
   solveStiltParkingSheet,
@@ -233,6 +251,8 @@ export * from './structural/solver-result';
 export * from './structural/column-grid-generator';
 export * from './structural/beam-network-generator';
 export * from './structural/hardened-residential-generation';
+export * from './structural/structural-framing-synthesizer';
+export * from './structural/is456-structural-analysis';
 export * from './core/vertical-core-solver';
 export * from './layout/stilt-layout-solver';
 export * from './layout/apartment-unit-packer';

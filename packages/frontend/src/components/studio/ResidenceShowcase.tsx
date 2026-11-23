@@ -126,7 +126,7 @@ export default function ResidenceShowcase({ progress, orbit, night = false, ligh
     const compact = innerWidth < 760;
     renderer.setPixelRatio(softwareRendering ? .66 : Math.min(devicePixelRatio, compact ? 1 : 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.shadowMap.autoUpdate = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;

@@ -23,11 +23,17 @@ import {
   UpdateWindowPropertiesCommand,
   UpdateDoorPropertiesCommand,
   BatchCommand,
+  type GalleryCoordinationMode,
   type OpeningStyleId,
   type IEditorCommand,
 } from '@ai-floor-planner/core';
+import { coordinateBuildingFacade } from '@ai-floor-planner/planning-engine';
 import { use3DAnimation } from '../../hooks/use3dAnimations';
-import type { ArchitecturalMaterialPalette, BuildingLightingMode } from '../model-3d/ThreeBuildingScene';
+import type {
+  ArchitecturalMaterialPalette,
+  BuildingLightingMode,
+  OpeningFinishOverride,
+} from '../model-3d/ThreeBuildingScene';
 
 const ModelWorkspace = lazy(() => import('../model-3d/ModelWorkspace'));
 
@@ -35,6 +41,7 @@ interface Building3DCustomizerProps {
   editor: EditorContextValue;
   lightingMode?: BuildingLightingMode;
   onLightingModeChange?: (mode: BuildingLightingMode) => void;
+  onGalleryCoordinationModeChange?: (mode: GalleryCoordinationMode) => void;
 }
 
 interface FixtureOption {
@@ -59,6 +66,7 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
   editor,
   lightingMode: controlledLightingMode,
   onLightingModeChange,
+  onGalleryCoordinationModeChange,
 }) => {
   const [explodeValue, setExplodeValue] = useState(0);
   const [localLightingMode, setLocalLightingMode] = useState<BuildingLightingMode>(controlledLightingMode ?? 'golden');
@@ -68,15 +76,49 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
     onLightingModeChange?.(mode);
   };
   const [materialPalette, setMaterialPalette] = useState<ArchitecturalMaterialPalette>('travertine');
+  const [openingFinish, setOpeningFinish] = useState<OpeningFinishOverride>({});
   const [linkedSpanStoreys, setLinkedSpanStoreys] = useState<1 | 2 | 3>(1);
   const [customizerTab, setCustomizerTab] = useState<'fixtures' | 'furniture'>('fixtures');
   const [selectedFixtureId, setSelectedFixtureId] = useState<string>('sliding_aluminum_win');
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const sceneRef = useRef<THREE.Scene | null>(null);
 
+  const fixtureFinishMap: Record<string, OpeningFinishOverride> = {
+    sliding_aluminum_win: { frameColorHex: 0x262c36, glassColorHex: 0x5282a6, glassOpacity: 0.56 },
+    casement_timber_win: { frameColorHex: 0x9b6236, glassColorHex: 0x5f8fa8, glassOpacity: 0.52 },
+    fixed_structural_glass: { frameColorHex: 0x181e26, glassColorHex: 0x3b86b8, glassOpacity: 0.64 },
+    solid_core_main_door: { doorColorHex: 0x6b3a1e },
+    internal_flush_door: { doorColorHex: 0xd8cec0 },
+  };
+
+  const activeGalleryMode: GalleryCoordinationMode =
+    editor.building.metadata?.facadeCoordination?.galleryCoordinationMode ??
+    editor.building.metadata?.generationBrief?.galleryCoordinationMode ??
+    (editor.building.metadata?.generationBrief?.staggeredBalconies === false
+      ? 'STACKED_RIBBON'
+      : 'DOUBLE_HEIGHT_STAGGER');
+
+  const handleGalleryModeSwitch = (mode: GalleryCoordinationMode) => {
+    if (onGalleryCoordinationModeChange) {
+      onGalleryCoordinationModeChange(mode);
+    } else {
+      const updated = coordinateBuildingFacade(editor.building, { galleryCoordinationMode: mode });
+      editor.applyRefinement(
+        { ...updated, version: editor.building.version + 1 },
+        `Switch facade gallery rhythm to ${mode}`,
+      );
+    }
+    setFeedbackMessage(
+      mode === 'DOUBLE_HEIGHT_STAGGER'
+        ? 'Applied Double-Height Stagger (6,300 mm alternating sky-decks)'
+        : 'Applied Stacked Ribbon (vertically aligned continuous galleries)',
+    );
+  };
+
+  // Disable continuous particle loop so idle GPU stays at 0% (60fps on-demand rendering)
   use3DAnimation(sceneRef, {
-    particles: { enabled: lightingMode === 'night', color: '#e2b969', count: 35 },
-    explosion: { enabled: explodeValue > 0, intensity: explodeValue / 10 },
+    particles: { enabled: false },
+    explosion: { enabled: false },
   });
 
   const fixtureOptions: readonly FixtureOption[] = useMemo(
@@ -144,6 +186,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
 
   const applyFixtureToSelectionOrFloor = (fixture: FixtureOption) => {
     setSelectedFixtureId(fixture.id);
+    const visualDelta = fixtureFinishMap[fixture.id];
+    if (visualDelta) {
+      setOpeningFinish((prev) => ({ ...prev, ...visualDelta }));
+    }
     const selection = editor.selection;
 
     if (selection && selection.entityType === fixture.type) {
@@ -220,6 +266,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
     const defaultFixture = fixtureOptions[0]!;
     const selectedFixture =
       fixtureOptions.find((f) => f.id === selectedFixtureId) ?? defaultFixture;
+    const visualDelta = fixtureFinishMap[selectedFixture.id];
+    if (visualDelta) {
+      setOpeningFinish((prev) => ({ ...prev, ...visualDelta }));
+    }
     const commands: IEditorCommand[] = [];
 
     editor.building.floors.forEach((floor) => {
@@ -268,9 +318,8 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
   return (
     <div
       data-testid="building-3d-customizer"
-      className={`rh-3d-split-shell transition-colors ${
-        isNight ? 'bg-slate-950 text-slate-100' : 'bg-argon-bg text-argon-text'
-      }`}
+      className={`rh-3d-split-shell transition-colors ${isNight ? 'bg-slate-950 text-slate-100' : 'bg-argon-bg text-argon-text'
+        }`}
     >
       {/* Left Column: Full Interactive 3D Viewport (1fr, min-height 520px) */}
       <main className="rh-3d-split-canvas-col">
@@ -299,6 +348,7 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
             onLightingModeChange={setLightingMode}
             materialPalette={materialPalette}
             onMaterialPaletteChange={setMaterialPalette}
+            openingFinish={openingFinish}
             linkedSpanStoreys={linkedSpanStoreys}
             onLinkedSpanChange={setLinkedSpanStoreys}
             sceneRef={sceneRef}
@@ -308,11 +358,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
         {/* Top-right Explode & Lighting Controls (clear of bottom floor selector) */}
         <div
           data-testid="hud-controls"
-          className={`hidden sm:flex absolute top-3 right-3 z-20 items-center gap-4 px-4 py-2 rounded-2xl border shadow-xl backdrop-blur-xl ${
-            isNight
-              ? 'bg-slate-900/90 border-slate-800 text-slate-100'
-              : 'bg-[#FFFDF9]/92 border-[#D8CAB8] text-[#221D18]'
-          }`}
+          className={`hidden sm:flex absolute top-3 right-3 z-20 items-center gap-4 px-4 py-2 rounded-2xl border shadow-xl backdrop-blur-xl ${isNight
+            ? 'bg-slate-900/90 border-slate-800 text-slate-100'
+            : 'bg-[#FFFDF9]/92 border-[#D8CAB8] text-[#221D18]'
+            }`}
         >
           <div className="flex flex-col gap-1 min-w-[150px]">
             <div className="flex items-center justify-between">
@@ -349,11 +398,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
                 data-testid="btn-lighting-day"
                 aria-pressed={lightingMode === 'day'}
                 onClick={() => setLightingMode('day')}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
-                  lightingMode === 'day'
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                    : 'opacity-65 hover:opacity-100'
-                }`}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${lightingMode === 'day'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                  : 'opacity-65 hover:opacity-100'
+                  }`}
               >
                 <Sun className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-bold">DAY</span>
@@ -362,11 +410,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
                 data-testid="btn-lighting-golden"
                 aria-pressed={lightingMode === 'golden'}
                 onClick={() => setLightingMode('golden')}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
-                  lightingMode === 'golden'
-                    ? 'bg-orange-500 text-white font-bold shadow'
-                    : 'opacity-65 hover:opacity-100'
-                }`}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${lightingMode === 'golden'
+                  ? 'bg-orange-500 text-white font-bold shadow'
+                  : 'opacity-65 hover:opacity-100'
+                  }`}
               >
                 <Sunset className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-bold">SUNSET</span>
@@ -375,11 +422,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
                 data-testid="btn-lighting-night"
                 aria-pressed={lightingMode === 'night'}
                 onClick={() => setLightingMode('night')}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
-                  lightingMode === 'night'
-                    ? 'bg-indigo-500 text-white font-bold shadow'
-                    : 'opacity-65 hover:opacity-100'
-                }`}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer ${lightingMode === 'night'
+                  ? 'bg-indigo-500 text-white font-bold shadow'
+                  : 'opacity-65 hover:opacity-100'
+                  }`}
               >
                 <Moon className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-bold">NIGHT</span>
@@ -390,20 +436,19 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
 
       </main>
 
-      {/* Right Column: Constrained 380px Element Customizer Sidebar */}
+      {/* Right Column: Constrained 380px Element Customizer Sidebar (strictly zero horizontal overflow) */}
       <aside
         data-testid="element-customizer-sidebar"
-        className={`rh-3d-split-sidebar-col flex flex-col shadow-lg ${
-          isNight ? 'bg-slate-900 border-slate-800' : 'bg-argon-card border-argon-border'
-        }`}
+        className={`rh-3d-split-sidebar-col flex flex-col shadow-lg overflow-x-hidden ${isNight ? 'bg-slate-900 border-slate-800' : 'bg-argon-card border-argon-border'
+          }`}
       >
-        <div className={`p-4 border-b ${isNight ? 'border-slate-800' : 'border-argon-border bg-argon-surface/50'}`}>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-argon-btn">
+        <div className="px-3.5 py-3 border-b border-slate-700/80 bg-[#0D1320] text-[#F8FAFC] min-w-0">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
             3D VISUALIZER
           </span>
-          <h3 className="font-display text-2xl font-semibold mt-0.5">Finishes &amp; openings</h3>
-          <p className="text-[11px] opacity-75 font-mono mt-0.5">
-            Review materials, windows and doors on the active model.
+          <h3 className="font-display text-xl font-semibold mt-0.5 truncate text-[#F8FAFC]">Finishes &amp; openings</h3>
+          <p className="text-[11px] text-slate-300 font-mono mt-0.5 leading-snug">
+            Instant PBR finish hot-swap without rebuilding geometry.
           </p>
         </div>
 
@@ -415,63 +460,99 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
           </figure>
         </details>
 
+        {/* Gallery Rhythm Switcher (Double-Height Stagger vs Stacked Ribbon) */}
+        <div className={`px-3.5 py-2.5 border-b min-w-0 ${isNight ? 'border-slate-800' : 'border-argon-border/70'}`}>
+          <div className="flex items-center justify-between gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-argon-btn mb-1.5">
+            <span className="flex items-center gap-1 min-w-0 truncate"><Layers className="w-3.5 h-3.5 shrink-0" /> Gallery Rhythm</span>
+            <span className="text-[9px] opacity-75 shrink-0">2,100 mm Lock</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Tower 3D Gallery Coordination Mode">
+            <button
+              type="button"
+              data-testid="tower-gallery-stagger"
+              aria-pressed={activeGalleryMode === 'DOUBLE_HEIGHT_STAGGER'}
+              onClick={() => handleGalleryModeSwitch('DOUBLE_HEIGHT_STAGGER')}
+              className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-mono border cursor-pointer transition-colors truncate ${activeGalleryMode === 'DOUBLE_HEIGHT_STAGGER'
+                ? 'bg-argon-btn text-white border-argon-btn font-bold'
+                : 'border-argon-border opacity-80 hover:opacity-100'
+                }`}
+            >
+              Double-Height
+            </button>
+            <button
+              type="button"
+              data-testid="tower-gallery-stacked"
+              aria-pressed={activeGalleryMode === 'STACKED_RIBBON'}
+              onClick={() => handleGalleryModeSwitch('STACKED_RIBBON')}
+              className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-mono border cursor-pointer transition-colors truncate ${activeGalleryMode === 'STACKED_RIBBON'
+                ? 'bg-argon-btn text-white border-argon-btn font-bold'
+                : 'border-argon-border opacity-80 hover:opacity-100'
+                }`}
+            >
+              Stacked Ribbon
+            </button>
+          </div>
+        </div>
+
         {/* Material / Texture Finish Swapper */}
-        <div className={`px-3.5 py-2.5 border-b ${isNight ? 'border-slate-800' : 'border-argon-border/70'}`}>
+        <div className={`px-3.5 py-2.5 border-b min-w-0 ${isNight ? 'border-slate-800' : 'border-argon-border/70'}`}>
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-argon-btn mb-1.5">
-            <Palette className="w-3.5 h-3.5" /> Room &amp; Facade Materials
+            <Palette className="w-3.5 h-3.5 shrink-0" /> PRIMARY WALL MATERIAL
           </div>
           <div className="grid grid-cols-3 gap-1.5">
             {([
-              ['travertine', 'Travertine'],
-              ['concrete', 'Concrete'],
-              ['coastal', 'Coastal'],
-            ] as const).map(([id, label]) => (
+              ['travertine', 'Travertine', '#EAE5DC'],
+              ['concrete', 'Concrete', '#C7CFD9'],
+              ['coastal', 'Coastal', '#F4EAD8'],
+            ] as const).map(([id, label, swatch]) => (
               <button
                 key={id}
                 type="button"
                 data-testid={`sidebar-material-${id}`}
+                aria-pressed={materialPalette === id}
                 onClick={() => {
                   setMaterialPalette(id);
                   setFeedbackMessage(`Applied ${label} architectural PBR finish`);
                 }}
-                className={`py-1.5 px-2 rounded-lg text-[11px] font-mono border cursor-pointer transition-colors ${
-                  materialPalette === id
-                    ? 'bg-argon-btn text-white border-argon-btn font-bold'
-                    : 'border-argon-border opacity-80 hover:opacity-100'
-                }`}
+                className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-mono border cursor-pointer transition-colors flex items-center justify-center gap-1 min-w-0 ${materialPalette === id
+                  ? 'bg-argon-btn text-white border-argon-btn font-bold'
+                  : 'border-argon-border opacity-85 hover:opacity-100'
+                  }`}
               >
-                {label}
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-black/30 shrink-0"
+                  style={{ backgroundColor: swatch }}
+                />
+                <span className="truncate">{label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="p-3 flex items-center gap-2">
+        <div className="px-3 py-2.5 grid grid-cols-2 gap-1.5 min-w-0">
           <button
             data-testid="tab-fixtures"
             onClick={() => setCustomizerTab('fixtures')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              customizerTab === 'fixtures'
-                ? 'bg-argon-btn text-argon-card shadow-xs'
-                : 'border border-argon-border opacity-75'
-            }`}
+            className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer truncate ${customizerTab === 'fixtures'
+              ? 'bg-argon-btn text-argon-card shadow-xs'
+              : 'border border-argon-border opacity-75'
+              }`}
           >
             FIXTURES (ACTIVE)
           </button>
           <button
             data-testid="tab-furniture"
             onClick={() => setCustomizerTab('furniture')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              customizerTab === 'furniture'
-                ? 'bg-argon-btn text-argon-card shadow-xs'
-                : 'border border-argon-border opacity-75'
-            }`}
+            className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer truncate ${customizerTab === 'furniture'
+              ? 'bg-argon-btn text-argon-card shadow-xs'
+              : 'border border-argon-border opacity-75'
+              }`}
           >
-            FURNITURE (PHASE 8)
+            FURNITURE
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-2 space-y-2 min-w-0">
           {customizerTab === 'fixtures' ? (
             <div data-testid="fixtures-list" className="space-y-2">
               {fixtureOptions.map((opt) => {
@@ -481,16 +562,14 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
                     key={opt.id}
                     data-testid={`fixture-opt-${opt.id}`}
                     onClick={() => applyFixtureToSelectionOrFloor(opt)}
-                    className={`w-full p-3 rounded-xl border flex items-start gap-2.5 text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-argon-btn bg-argon-btn/10'
-                        : 'border-argon-border hover:bg-argon-surface/60'
-                    }`}
+                    className={`w-full p-3 rounded-xl border flex items-start gap-2.5 text-left transition-all cursor-pointer ${isSelected
+                      ? 'border-argon-btn bg-argon-btn/10'
+                      : 'border-argon-border hover:bg-argon-surface/60'
+                      }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        isSelected ? 'bg-argon-btn text-white' : 'bg-argon-surface text-argon-muted'
-                      }`}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${isSelected ? 'bg-argon-btn text-white' : 'bg-argon-surface text-argon-muted'
+                        }`}
                     >
                       {opt.icon}
                     </div>
@@ -540,7 +619,7 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
           )}
         </div>
 
-        <div className={`p-3.5 border-t ${isNight ? 'border-slate-800' : 'border-argon-border bg-argon-surface/40'}`}>
+        <div className="p-3.5 border-t border-slate-700/80 bg-[#0D1320]">
           {feedbackMessage && <p data-testid="feedback-notice" role="status" className="rh-finish-feedback">{feedbackMessage}</p>}
           <button
             data-testid="btn-apply-global-skin"

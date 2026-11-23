@@ -272,7 +272,7 @@
 .rh-atelier-studio .rh-engineering-cover { background: #24332f; }
 .rh-atelier-studio .rh-workspace-body { background: #f4f7ee; }
 .rh-atelier-studio .rh-cad-actions .rh-workspace-title { color: var(--rh-accent); }
-.rh-atelier-studio .rh-3d-split-sidebar-col .rh-finish-reference { background: var(--argon-surface); }
+.rh-atelier-studio .rh-3d-split-sidebar-col .rh-finish-reference { background: rgba(15, 23, 42, 0.72); color: #e2e8f0; }
 .rh-atelier-studio .rh-exports { margin-inline: auto; width: 100%; }
 .rh-atelier-studio .rh-export-card { box-shadow: 0 3px 15px #1b342508; }
 @media (max-width: 900px) {

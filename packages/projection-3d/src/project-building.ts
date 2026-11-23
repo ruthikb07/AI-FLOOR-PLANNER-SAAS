@@ -1,7 +1,18 @@
-import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from '@ai-floor-planner/geometry-engine';
+import {
+  apartmentFloorRegions,
+  architecturalSlabCutouts,
+  canonicalOpeningGeometry,
+  canonicalStairSolids,
+  fitOpeningInsideWall,
+  generateApartmentWalls,
+  mumtyCoverSolids,
+  pointInPolygon,
+  pointToSegmentDistance,
+  polygonArea,
+  polygonCentroid,
+} from '@ai-floor-planner/geometry-engine';
 import { isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
-import { canonicalOpeningGeometry, fitOpeningInsideWall } from '@ai-floor-planner/geometry-engine';
-import type { Building, Door, Floor, Point, Polygon, Wall, Window } from '@ai-floor-planner/core';
+import type { Building, Door, Floor, Point, Polygon, Room, Wall, Window } from '@ai-floor-planner/core';
 import { rectToPolygon, RoomType } from '@ai-floor-planner/core';
 import { resolveProjectionSettings } from './settings';
 import type {
@@ -14,6 +25,88 @@ import type {
 } from './types';
 
 const EPSILON = 0.001;
+
+function isOpenToSkyVoidRoom(room: Room): boolean {
+  return (
+    Boolean(room.openToSky) ||
+    room.architecturalRole === 'OPEN_TO_SKY_VOID' ||
+    room.spaceUse === 'VOID' ||
+    room.type === RoomType.OTS
+  );
+}
+
+function pointNearPolygonBoundary(pt: Point, poly: Polygon, toleranceMm: number): boolean {
+  const pts = poly.points;
+  for (let i = 0; i < pts.length; i += 1) {
+    const start = pts[i]!;
+    const end = pts[(i + 1) % pts.length]!;
+    if (pointToSegmentDistance(pt, { start, end }) <= toleranceMm) return true;
+  }
+  return false;
+}
+
+/**
+ * Retains strictly-interior cutout holes (e.g. stairs, lifts, internal MEP shafts)
+ * while dropping perimeter recesses and open-ended OTS voids already carved out of
+ * the outer built slab contour. Canonical hole coordinates are preserved unmodified.
+ */
+function sanitizeInteriorHole(hole: Polygon, outerBoundary: Polygon): Polygon | null {
+  if (hole.points.length < 3 || polygonArea(hole) < 50_000) return null;
+  const center = polygonCentroid(hole);
+  if (!pointInPolygon(center, outerBoundary) || pointNearPolygonBoundary(center, outerBoundary, 25)) {
+    return null;
+  }
+  return hole;
+}
+
+/**
+ * Derives the exact built floor slab contour from actual built rooms + balconies/galleries,
+ * carving out ALL perimeter recesses and open-ended OTS ventilation slots directly from the
+ * outer slab polygon so zero floating empty slab trays or bridge strips appear in 3D.
+ */
+export function deriveBuiltFloorPlate(
+  floor: Floor,
+  rawCutouts: readonly Polygon[],
+): { readonly boundary: Polygon; readonly cutouts: readonly Polygon[] } {
+  const hasVoidRooms = floor.rooms.some(isOpenToSkyVoidRoom);
+  if (!hasVoidRooms) {
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+  const builtRooms = floor.rooms.filter(room => !isOpenToSkyVoidRoom(room));
+  if (builtRooms.length === 0) {
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+
+  try {
+    const builtWalls = generateApartmentWalls(builtRooms, floor.id, floor.boundary);
+    const regions = apartmentFloorRegions(builtWalls);
+    const builtBoundary = regions.boundary;
+    if (builtBoundary.points.length < 3 || polygonArea(builtBoundary) < 500_000) {
+      return { boundary: floor.boundary, cutouts: rawCutouts };
+    }
+
+    // Merge strictly-interior voids from the built union with shaft/stair cutouts,
+    // dropping any perimeter recess / open-ended OTS polygon already carved out of builtBoundary.
+    const candidateHoles: Polygon[] = [...regions.voids, ...rawCutouts];
+    const seen = new Set<string>();
+    const cleanCutouts: Polygon[] = [];
+    for (const candidate of candidateHoles) {
+      const sanitized = sanitizeInteriorHole(candidate, builtBoundary);
+      if (!sanitized) continue;
+      const key = sanitized.points
+        .map(p => `${Math.round(p.x / 10)},${Math.round(p.y / 10)}`)
+        .sort()
+        .join(';');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleanCutouts.push(sanitized);
+    }
+    return { boundary: builtBoundary, cutouts: cleanCutouts };
+  } catch {
+    // Disconnected or non-standard topology fallback: preserve floor.boundary with strictly-interior holes
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+}
 
 function length(start: Point, end: Point): number {
   return Math.hypot(end.x - start.x, end.y - start.y);
@@ -178,9 +271,34 @@ export function projectBuildingTo3D(
   const openingsByWall = new Map<string, Opening3D[]>();
   openings.forEach(opening => openingsByWall.set(opening.hostWallId, [...(openingsByWall.get(opening.hostWallId) ?? []), opening]));
 
+  const facadeCoord = building.metadata?.facadeCoordination;
+  const coordinatedChajjas = (facadeCoord?.chajjaBands ?? []).map(band => {
+    const lvl = levelByFloor.get(band.floorId);
+    const elev = lvl?.elevation ?? 0;
+    const fascia = band.fasciaThicknessMm || 100;
+    const bottom = elev + (band.lintelHeightMm || 2100);
+    return {
+      ...band,
+      elevation: elev,
+      bottom,
+      top: bottom + fascia,
+    };
+  });
+  const otsLouverScreens = (facadeCoord?.otsLouverScreens ?? []).map(screen => {
+    const lvl = levelByFloor.get(screen.floorId);
+    return {
+      ...screen,
+      elevation: lvl?.elevation ?? 0,
+    };
+  });
+
   return {
     buildingId: building.id,
     buildingVersion: building.version,
+    ...(coordinatedChajjas.length ? { coordinatedChajjas } : {}),
+    ...(otsLouverScreens.length ? { otsLouverScreens } : {}),
+    ...(facadeCoord?.galleryCoordinationMode ? { galleryCoordinationMode: facadeCoord.galleryCoordinationMode } : {}),
+    ...(facadeCoord?.galleryBays?.length ? { galleryBays: facadeCoord.galleryBays } : {}),
     architecturalSolids: building.floors.filter(f => f.architecture).flatMap(f => {
       const level = levelByFloor.get(f.id)!;
       const next = levels.find(l => l.level > level.level);
@@ -191,12 +309,8 @@ export function projectBuildingTo3D(
     }),
     settings,
     levels,
-    floorPlates: building.floors.map(floor => ({
-      sourceEntityId: floor.id,
-      sourceEntityType: 'floor',
-      floorId: floor.id,
-      boundary: floor.boundary,
-      cutouts: floor.architecture ? architecturalSlabCutouts(floor) : [
+    floorPlates: building.floors.map(floor => {
+      const rawCutouts = floor.architecture ? architecturalSlabCutouts(floor) : [
         ...floor.rooms.filter(room => room.type === RoomType.ServiceShaft || room.openToSky || room.architecturalRole === 'OPEN_TO_SKY_VOID').map(room => room.boundary),
         // Cut the arrival slab from the actual lower-floor stair footprint,
         // only when the destination has an explicitly aligned representation.
@@ -209,31 +323,45 @@ export function projectBuildingTo3D(
               && stair.boundary.points.every(point => arrival.boundary.points.some(other =>
                 Math.abs(point.x - other.x) < EPSILON && Math.abs(point.y - other.y) < EPSILON))))
           .map(stair => stair.boundary)),
-      ],
-      elevation: levelByFloor.get(floor.id)?.elevation ?? 0,
-      thickness: floor.architecture ? floor.slabThicknessMm ?? 150 : settings.slabThickness.value,
-    })),
+      ];
+      const builtPlate = deriveBuiltFloorPlate(floor, rawCutouts);
+      return {
+        sourceEntityId: floor.id,
+        sourceEntityType: 'floor',
+        floorId: floor.id,
+        boundary: builtPlate.boundary,
+        cutouts: builtPlate.cutouts,
+        elevation: levelByFloor.get(floor.id)?.elevation ?? 0,
+        thickness: floor.architecture ? floor.slabThicknessMm ?? 150 : settings.slabThickness.value,
+      };
+    }),
     walls: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
       const canonicalHeight = (levels.find(l => l.level > (level?.level ?? floor.level))?.elevation ?? ((level?.elevation ?? 0) + floor.floorHeight)) - (level?.elevation ?? 0) - (floor.slabThicknessMm ?? 150);
       const wallHeight = floor.architecture ? canonicalHeight : Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value));
-      return floor.walls.filter(isPhysicalBoundary).map(wall => {
-        const physicalHeight = architecturalWallHeight(wall, wallHeight);
-        const wallLength = length(wall.startPoint, wall.endPoint);
-        return {
-          sourceEntityId: wall.id,
-          sourceEntityType: 'wall' as const,
-          floorId: floor.id,
-          startPoint: wall.startPoint,
-          endPoint: wall.endPoint,
-          elevation: level?.elevation ?? 0,
-          length: wallLength,
-          thickness: wall.thickness,
-          height: physicalHeight,
-          ...(wall.arc ? { arc: wall.arc } : {}),
-          solidSegments: wallSolidSegments(wallLength, physicalHeight, openingsByWall.get(wall.id) ?? []),
-        };
-      });
+      const voidRoomIds = new Set(floor.rooms.filter(isOpenToSkyVoidRoom).map(r => r.id));
+      return floor.walls
+        .filter(wall =>
+          isPhysicalBoundary(wall) &&
+          !(wall.roomIds.length > 0 && wall.roomIds.every(id => voidRoomIds.has(id))),
+        )
+        .map(wall => {
+          const physicalHeight = architecturalWallHeight(wall, wallHeight);
+          const wallLength = length(wall.startPoint, wall.endPoint);
+          return {
+            sourceEntityId: wall.id,
+            sourceEntityType: 'wall' as const,
+            floorId: floor.id,
+            startPoint: wall.startPoint,
+            endPoint: wall.endPoint,
+            elevation: level?.elevation ?? 0,
+            length: wallLength,
+            thickness: wall.thickness,
+            height: physicalHeight,
+            ...(wall.arc ? { arc: wall.arc } : {}),
+            solidSegments: wallSolidSegments(wallLength, physicalHeight, openingsByWall.get(wall.id) ?? []),
+          };
+        });
     }),
     openings,
     rooms: building.floors.flatMap(floor => {

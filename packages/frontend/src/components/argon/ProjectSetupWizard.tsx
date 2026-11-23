@@ -3,6 +3,7 @@ import type {
   AuthorityType,
   BuildingMassingShape,
   CongestionZone,
+  GalleryCoordinationMode,
   ParametricShapeParams,
   PlanCategory,
 } from '@ai-floor-planner/core';
@@ -65,7 +66,9 @@ export interface ProjectSetupWizardData {
   usedArchetypeIds?: readonly string[];
   includeWindowChajjas?: boolean;
   staggeredBalconies?: boolean;
+  galleryCoordinationMode?: GalleryCoordinationMode;
   includeDiningHall?: boolean;
+  includeStudyRoom?: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
@@ -77,12 +80,14 @@ interface ProjectSetupWizardProps {
   onGenerate: (data: ProjectSetupWizardData) => void;
   onCancel?: () => void;
   onBackToWelcome?: () => void;
+  onOpenCadImport?: () => void;
 }
 
 export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   onGenerate,
   onCancel,
   onBackToWelcome,
+  onOpenCadImport,
 }) => {
   const {
     currentStep,
@@ -145,7 +150,19 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
             currentStep={currentStep}
             onStepClick={(id) => setStep(id as 1 | 2 | 3 | 4)}
           />
-          {currentStep !== 4 && <button type="button" onClick={() => setStep(4)} className="rh-program-reference-link">Reference Upload</button>}
+          <div className="flex items-center gap-3">
+            {currentStep !== 4 && <button type="button" onClick={() => setStep(4)} className="rh-program-reference-link">Reference Upload</button>}
+            {onOpenCadImport && (
+              <button
+                type="button"
+                data-testid="brief-import-cad-btn"
+                onClick={onOpenCadImport}
+                className="rh-program-reference-link text-sky-400 hover:text-sky-300"
+              >
+                Import CAD (.DXF / .DWG / .PDF)
+              </button>
+            )}
+          </div>
         </header>
         <div key={currentStep} className="rh-program-fields">
           {currentStep === 1 && <Stage1PlotAndSetbacks survey={survey} />}

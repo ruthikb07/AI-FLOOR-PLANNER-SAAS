@@ -78,6 +78,7 @@ describe('Repro post-generation render across all workspaces', () => {
   });
 
   it('mounts ArgonStudioShell cleanly', async () => {
+    studioStoreActions.resetWizard();
     const host = document.createElement('div');
     document.body.appendChild(host);
     const root = createRoot(host);

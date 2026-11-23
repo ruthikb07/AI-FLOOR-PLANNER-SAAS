@@ -20,6 +20,8 @@ import { GeminiProvider, type BaseAIProvider } from '@ai-floor-planner/ai-orches
 import { resolveServiceConfig, type ServiceConfig } from './env.js';
 import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
+import { handleCadImportRoute } from './routes/cad-import-routes.js';
+import { handleLocalProjectRoute } from './routes/local-project-routes.js';
 
 // Auto-load .env file if available in process.env or common locations
 if (typeof process.loadEnvFile === 'function') {
@@ -43,7 +45,7 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Expose-Headers': 'Content-Disposition, Content-Length, X-CAD-Format, X-CAD-Magic, X-CAD-Entities, X-CAD-Layers, X-CAD-Validation, X-CAD-Disk-Path, X-CAD-Download-URL, X-Artifact-Descriptor',
 };
@@ -256,6 +258,8 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
       return;
     }
 
+    if (await handleCadImportRoute(request, response, url, readBody, sendJson)) return;
+    if (await handleLocalProjectRoute(request, response, url, readBody, sendJson, CORS_HEADERS)) return;
     if (await handleExportRoute(request, response, url, readBody, sendJson, CORS_HEADERS)) return;
 
     sendJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Unknown endpoint.' } });

@@ -80,6 +80,7 @@ export type {
   Stair,
   Column,
   Floor,
+  SourceCadUnderlay,
   BuildingMetadata,
   Building,
   Project,

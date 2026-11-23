@@ -37,20 +37,20 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
     const ccw = polygonSignedArea(room.boundary) >= 0;
     for (let i = 0; i < p.length; i++) {
       const a = p[i]!, b = p[(i + 1) % p.length]!;
-      const isInt = (v: number) => Math.abs(v - Math.round(v)) <= 0.01;
+      const r3 = (v: number) => Math.round(v * 1000) / 1000;
       const axis =
-        Math.abs(a.y - b.y) <= 0.01 && isInt(a.y) && isInt(a.x) && isInt(b.x) ? 'x' :
-        Math.abs(a.x - b.x) <= 0.01 && isInt(a.x) && isInt(a.y) && isInt(b.y) ? 'y' :
+        Math.abs(a.y - b.y) <= 0.01 ? 'x' :
+        Math.abs(a.x - b.x) <= 0.01 ? 'y' :
         null;
       if (axis) {
-        const line = Math.round(axis === 'x' ? a.y : a.x);
+        const line = r3(axis === 'x' ? a.y : a.x);
         const aCoord = axis === 'x' ? a.x : a.y;
         const bCoord = axis === 'x' ? b.x : b.y;
-        const lo = Math.round(Math.min(aCoord, bCoord));
-        const hi = Math.round(Math.max(aCoord, bCoord));
-        if (hi <= lo) continue;
+        const lo = r3(Math.min(aCoord, bCoord));
+        const hi = r3(Math.max(aCoord, bCoord));
+        if (hi - lo <= 0.01) continue;
         const side: 'left' | 'right' = (ccw === (aCoord <= bCoord)) ? 'left' : 'right';
-        const key = `${axis}:${line}`;
+        const key = `${axis}:${Math.round(line * 100) / 100}`;
         groups.set(key, [
           ...(groups.get(key) ?? []),
           {

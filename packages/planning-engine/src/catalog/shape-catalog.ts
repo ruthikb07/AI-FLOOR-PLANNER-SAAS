@@ -297,6 +297,18 @@ export const BUILDING_SHAPE_CATALOG: readonly BuildingShapeCatalogEntry[] = [
     defaultParams: { wings: 4, angleDeg: 90, setbackStepRatio: 0.3, rotationSeed: 21 },
     svgPath: 'M 10 10 L 70 10 L 70 50 L 10 50 Z M 28 22 L 52 22 L 52 38 L 28 38 Z',
   },
+  {
+    id: 'IRREGULAR_ANGLED_PLOT',
+    label: 'Irregular / CAD Site Fit',
+    family: 'POLYGONAL_ANGLED',
+    description: 'Custom setback-fitted footprint inscribed cleanly within an irregular or imported CAD site polygon.',
+    baseTopologyShape: 'COMPACT_DOUBLE_LOADED',
+    recommendedCategories: ['IRREGULAR_PLOT_CUSTOM', 'HIGH_RISE_APARTMENT', 'LUXURY_VILLA_BUNGALOW'],
+    supportsCurves: false,
+    supportsNonOrthogonal: true,
+    defaultParams: { wings: 2, angleDeg: 80, setbackStepRatio: 0.18, rotationSeed: 22 },
+    svgPath: 'M 12 14 L 62 8 L 70 46 L 18 52 Z',
+  },
 ];
 
 export const PLAN_CATEGORY_CATALOG: readonly PlanCategoryCatalogEntry[] = [
@@ -441,6 +453,20 @@ export function synthesizeParametricShape(params: ParametricShapeParams): Buildi
 }
 
 export function getShapeCatalogEntry(id?: BuildingMassingShape | string, fallbackParams?: ParametricShapeParams): BuildingShapeCatalogEntry {
+  if (id === 'IMPORTED_CAD_LAYOUT') {
+    return {
+      id: 'IMPORTED_CAD_LAYOUT',
+      label: 'Imported CAD Layout',
+      family: 'ORTHOGONAL',
+      description: 'Canonical multi-storey building reconstructed directly from an imported local .DXF / .DWG / .PDF floor plan.',
+      baseTopologyShape: 'COMPACT_DOUBLE_LOADED',
+      recommendedCategories: ['HIGH_RISE_APARTMENT', 'IRREGULAR_PLOT_CUSTOM', 'LUXURY_VILLA_BUNGALOW'],
+      supportsCurves: true,
+      supportsNonOrthogonal: true,
+      defaultParams: { wings: 2, angleDeg: 90, setbackStepRatio: 0.1, rotationSeed: 1 },
+      svgPath: 'M 10 12 L 70 12 L 70 48 L 10 48 Z M 35 12 L 35 48 M 10 30 L 70 30',
+    };
+  }
   if (id && SHAPE_BY_ID.has(id)) {
     return SHAPE_BY_ID.get(id)!;
   }

@@ -4652,8 +4652,8 @@ var require_trees = __commonJS({
       this.stat_desc = stat_desc;
     }
     __name(TreeDesc, "TreeDesc");
-    function d_code(dist2) {
-      return dist2 < 256 ? _dist_code[dist2] : _dist_code[256 + (dist2 >>> 7)];
+    function d_code(dist3) {
+      return dist3 < 256 ? _dist_code[dist3] : _dist_code[256 + (dist3 >>> 7)];
     }
     __name(d_code, "d_code");
     function put_short(s, w) {
@@ -4795,7 +4795,7 @@ var require_trees = __commonJS({
       var bits;
       var length;
       var code;
-      var dist2;
+      var dist3;
       var bl_count = new Array(MAX_BITS + 1);
       length = 0;
       for (code = 0; code < LENGTH_CODES - 1; code++) {
@@ -4805,18 +4805,18 @@ var require_trees = __commonJS({
         }
       }
       _length_code[length - 1] = code;
-      dist2 = 0;
+      dist3 = 0;
       for (code = 0; code < 16; code++) {
-        base_dist[code] = dist2;
+        base_dist[code] = dist3;
         for (n = 0; n < 1 << extra_dbits[code]; n++) {
-          _dist_code[dist2++] = code;
+          _dist_code[dist3++] = code;
         }
       }
-      dist2 >>= 7;
+      dist3 >>= 7;
       for (; code < D_CODES; code++) {
-        base_dist[code] = dist2 << 7;
+        base_dist[code] = dist3 << 7;
         for (n = 0; n < 1 << extra_dbits[code] - 7; n++) {
-          _dist_code[256 + dist2++] = code;
+          _dist_code[256 + dist3++] = code;
         }
       }
       for (bits = 0; bits <= MAX_BITS; bits++) {
@@ -4913,17 +4913,17 @@ var require_trees = __commonJS({
     }
     __name(pqdownheap, "pqdownheap");
     function compress_block(s, ltree, dtree) {
-      var dist2;
+      var dist3;
       var lc;
       var lx = 0;
       var code;
       var extra;
       if (s.last_lit !== 0) {
         do {
-          dist2 = s.pending_buf[s.d_buf + lx * 2] << 8 | s.pending_buf[s.d_buf + lx * 2 + 1];
+          dist3 = s.pending_buf[s.d_buf + lx * 2] << 8 | s.pending_buf[s.d_buf + lx * 2 + 1];
           lc = s.pending_buf[s.l_buf + lx];
           lx++;
-          if (dist2 === 0) {
+          if (dist3 === 0) {
             send_code(s, lc, ltree);
           } else {
             code = _length_code[lc];
@@ -4933,13 +4933,13 @@ var require_trees = __commonJS({
               lc -= base_length[code];
               send_bits(s, lc, extra);
             }
-            dist2--;
-            code = d_code(dist2);
+            dist3--;
+            code = d_code(dist3);
             send_code(s, code, dtree);
             extra = extra_dbits[code];
             if (extra !== 0) {
-              dist2 -= base_dist[code];
-              send_bits(s, dist2, extra);
+              dist3 -= base_dist[code];
+              send_bits(s, dist3, extra);
             }
           }
         } while (lx < s.last_lit);
@@ -5221,18 +5221,18 @@ var require_trees = __commonJS({
       }
     }
     __name(_tr_flush_block, "_tr_flush_block");
-    function _tr_tally(s, dist2, lc) {
-      s.pending_buf[s.d_buf + s.last_lit * 2] = dist2 >>> 8 & 255;
-      s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist2 & 255;
+    function _tr_tally(s, dist3, lc) {
+      s.pending_buf[s.d_buf + s.last_lit * 2] = dist3 >>> 8 & 255;
+      s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist3 & 255;
       s.pending_buf[s.l_buf + s.last_lit] = lc & 255;
       s.last_lit++;
-      if (dist2 === 0) {
+      if (dist3 === 0) {
         s.dyn_ltree[lc * 2]++;
       } else {
         s.matches++;
-        dist2--;
+        dist3--;
         s.dyn_ltree[(_length_code[lc] + LITERALS + 1) * 2]++;
-        s.dyn_dtree[d_code(dist2) * 2]++;
+        s.dyn_dtree[d_code(dist3) * 2]++;
       }
       return s.last_lit === s.lit_bufsize - 1;
     }
@@ -6758,7 +6758,7 @@ var require_inffast = __commonJS({
       var here;
       var op;
       var len;
-      var dist2;
+      var dist3;
       var from;
       var from_source;
       var input, output;
@@ -6824,7 +6824,7 @@ var require_inffast = __commonJS({
                     bits -= op;
                     op = here >>> 16 & 255;
                     if (op & 16) {
-                      dist2 = here & 65535;
+                      dist3 = here & 65535;
                       op &= 15;
                       if (bits < op) {
                         hold += input[_in++] << bits;
@@ -6834,8 +6834,8 @@ var require_inffast = __commonJS({
                           bits += 8;
                         }
                       }
-                      dist2 += hold & (1 << op) - 1;
-                      if (dist2 > dmax) {
+                      dist3 += hold & (1 << op) - 1;
+                      if (dist3 > dmax) {
                         strm.msg = "invalid distance too far back";
                         state.mode = BAD;
                         break top;
@@ -6843,8 +6843,8 @@ var require_inffast = __commonJS({
                       hold >>>= op;
                       bits -= op;
                       op = _out - beg;
-                      if (dist2 > op) {
-                        op = dist2 - op;
+                      if (dist3 > op) {
+                        op = dist3 - op;
                         if (op > whave) {
                           if (state.sane) {
                             strm.msg = "invalid distance too far back";
@@ -6861,7 +6861,7 @@ var require_inffast = __commonJS({
                             do {
                               output[_out++] = s_window[from++];
                             } while (--op);
-                            from = _out - dist2;
+                            from = _out - dist3;
                             from_source = output;
                           }
                         } else if (wnext < op) {
@@ -6879,7 +6879,7 @@ var require_inffast = __commonJS({
                               do {
                                 output[_out++] = s_window[from++];
                               } while (--op);
-                              from = _out - dist2;
+                              from = _out - dist3;
                               from_source = output;
                             }
                           }
@@ -6890,7 +6890,7 @@ var require_inffast = __commonJS({
                             do {
                               output[_out++] = s_window[from++];
                             } while (--op);
-                            from = _out - dist2;
+                            from = _out - dist3;
                             from_source = output;
                           }
                         }
@@ -6907,7 +6907,7 @@ var require_inffast = __commonJS({
                           }
                         }
                       } else {
-                        from = _out - dist2;
+                        from = _out - dist3;
                         do {
                           output[_out++] = output[from++];
                           output[_out++] = output[from++];
@@ -7497,7 +7497,7 @@ var require_inflate = __commonJS({
     }
     __name(fixedtables, "fixedtables");
     function updatewindow(strm, src, end, copy) {
-      var dist2;
+      var dist3;
       var state = strm.state;
       if (state.window === null) {
         state.wsize = 1 << state.wbits;
@@ -7510,23 +7510,23 @@ var require_inflate = __commonJS({
         state.wnext = 0;
         state.whave = state.wsize;
       } else {
-        dist2 = state.wsize - state.wnext;
-        if (dist2 > copy) {
-          dist2 = copy;
+        dist3 = state.wsize - state.wnext;
+        if (dist3 > copy) {
+          dist3 = copy;
         }
-        utils.arraySet(state.window, src, end - copy, dist2, state.wnext);
-        copy -= dist2;
+        utils.arraySet(state.window, src, end - copy, dist3, state.wnext);
+        copy -= dist3;
         if (copy) {
           utils.arraySet(state.window, src, end - copy, copy, 0);
           state.wnext = copy;
           state.whave = state.wsize;
         } else {
-          state.wnext += dist2;
+          state.wnext += dist3;
           if (state.wnext === state.wsize) {
             state.wnext = 0;
           }
           if (state.whave < state.wsize) {
-            state.whave += dist2;
+            state.whave += dist3;
           }
         }
       }
@@ -16190,13 +16190,13 @@ var require_FlateStream = __commonJS({
             if (code2 > 0) {
               code2 = this.getBits(code2);
             }
-            var dist2 = (code1 & 65535) + code2;
+            var dist3 = (code1 & 65535) + code2;
             if (pos + len >= limit) {
               buffer = this.ensureBuffer(pos + len);
               limit = buffer.length;
             }
             for (var k = 0; k < len; ++k, ++pos) {
-              buffer[pos] = buffer[pos - dist2];
+              buffer[pos] = buffer[pos - dist3];
             }
           }
         };
@@ -20391,14 +20391,14 @@ var require_svgPath = __commonJS({
       ["Z", 0],
       ["z", 0]
     ]);
-    var parse = /* @__PURE__ */ __name(function(path8) {
+    var parse = /* @__PURE__ */ __name(function(path10) {
       var cmd;
       var ret = [];
       var args = [];
       var curArg = "";
       var foundDecimal = false;
       var params = 0;
-      for (var _i = 0, path_1 = path8; _i < path_1.length; _i++) {
+      for (var _i = 0, path_1 = path10; _i < path_1.length; _i++) {
         var c = path_1[_i];
         if (parameters.has(c)) {
           params = parameters.get(c);
@@ -20712,8 +20712,8 @@ var require_svgPath = __commonJS({
       ];
       return result;
     }, "segmentToBezier");
-    exports2.svgPathToOperators = function(path8) {
-      return apply(parse(path8));
+    exports2.svgPathToOperators = function(path10) {
+      return apply(parse(path10));
     };
   }
 });
@@ -20896,7 +20896,7 @@ var require_operations = __commonJS({
         operators_1.popGraphicsState()
       ]).filter(Boolean);
     };
-    exports2.drawSvgPath = function(path8, options) {
+    exports2.drawSvgPath = function(path10, options) {
       var _a, _b, _c;
       return tslib_1.__spreadArrays([
         operators_1.pushGraphicsState(),
@@ -20910,7 +20910,7 @@ var require_operations = __commonJS({
         options.borderWidth && operators_1.setLineWidth(options.borderWidth),
         options.borderLineCap && operators_1.setLineCap(options.borderLineCap),
         operators_1.setDashPattern((_b = options.borderDashArray) !== null && _b !== void 0 ? _b : [], (_c = options.borderDashPhase) !== null && _c !== void 0 ? _c : 0)
-      ], svgPath_1.svgPathToOperators(path8), [
+      ], svgPath_1.svgPathToOperators(path10), [
         // prettier-ignore
         options.color && options.borderWidth ? operators_1.fillAndStroke() : options.color ? operators_1.fill() : options.borderColor ? operators_1.stroke() : operators_1.closePath(),
         operators_1.popGraphicsState()
@@ -25239,12 +25239,12 @@ var require_PDFPage = __commonJS({
             graphicsState: graphicsStateKey
           }));
         };
-        PDFPage2.prototype.drawSvgPath = function(path8, options) {
+        PDFPage2.prototype.drawSvgPath = function(path10, options) {
           var _a, _b, _c, _d, _e, _f, _g, _h, _j;
           if (options === void 0) {
             options = {};
           }
-          utils_1.assertIs(path8, "path", ["string"]);
+          utils_1.assertIs(path10, "path", ["string"]);
           utils_1.assertOrUndefined(options.x, "options.x", ["number"]);
           utils_1.assertOrUndefined(options.y, "options.y", ["number"]);
           utils_1.assertOrUndefined(options.scale, "options.scale", ["number"]);
@@ -25273,7 +25273,7 @@ var require_PDFPage = __commonJS({
             options.borderColor = colors_1.rgb(0, 0, 0);
           }
           var contentStream = this.getContentStream();
-          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path8, {
+          contentStream.push.apply(contentStream, operations_1.drawSvgPath(path10, {
             x: (_a = options.x) !== null && _a !== void 0 ? _a : this.x,
             y: (_b = options.y) !== null && _b !== void 0 ? _b : this.y,
             scale: options.scale,
@@ -25778,8 +25778,8 @@ __export(server_exports, {
 });
 module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
-var import_node_fs6 = __toESM(require("node:fs"), 1);
-var import_node_path7 = __toESM(require("node:path"), 1);
+var import_node_fs8 = __toESM(require("node:fs"), 1);
+var import_node_path9 = __toESM(require("node:path"), 1);
 
 // ../core/dist/types/enums.js
 var RoomType;
@@ -26854,10 +26854,18 @@ function requiresEnclosure(role) {
 }
 __name(requiresEnclosure, "requiresEnclosure");
 function architecturalBoundaryRole(owners, exterior) {
-  if (owners.length > 0 && owners.every((r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID" && r.tags?.includes("recess:perimeter")))
+  if (owners.length > 0 && owners.every((r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID"))
     return "OPEN_BOUNDARY";
   const distinctUnits = new Set(owners.map((r) => r.unitId).filter(Boolean));
   if (distinctUnits.size > 1)
+    return "FULL_HEIGHT_WALL";
+  const hasUnitRoom = distinctUnits.size > 0;
+  const hasPublicSpace = owners.some((r) => !r.unitId && (r.spaceUse === "COMMON" || r.spaceUse === "CORE"));
+  if (hasUnitRoom && hasPublicSpace)
+    return "FULL_HEIGHT_WALL";
+  const hasUnitIndoorCirc = owners.some((r) => r.unitId && architecturalSpaceRole(r) === "OPEN_CIRCULATION");
+  const hasBalcony = owners.some((r) => architecturalSpaceRole(r) === "BALCONY_SLAB");
+  if (hasUnitIndoorCirc && hasBalcony)
     return "FULL_HEIGHT_WALL";
   if (owners.some((r) => requiresEnclosure(architecturalSpaceRole(r))))
     return "FULL_HEIGHT_WALL";
@@ -27425,37 +27433,62 @@ function isArray(v) {
 }
 __name(isArray, "isArray");
 var VALID_ROOM_TYPES = new Set(Object.values(RoomType));
-function validatePoint(value, path8, errors) {
+function validatePoint(value, path10, errors) {
   if (!isObject(value)) {
-    errors.push({ path: path8, message: "Must be an object with x and y", value });
+    errors.push({ path: path10, message: "Must be an object with x and y", value });
     return;
   }
   if (!isFiniteNumber(value["x"])) {
-    errors.push({ path: `${path8}.x`, message: "Must be a finite number", value: value["x"] });
+    errors.push({ path: `${path10}.x`, message: "Must be a finite number", value: value["x"] });
   }
   if (!isFiniteNumber(value["y"])) {
-    errors.push({ path: `${path8}.y`, message: "Must be a finite number", value: value["y"] });
+    errors.push({ path: `${path10}.y`, message: "Must be a finite number", value: value["y"] });
   }
 }
 __name(validatePoint, "validatePoint");
-function validatePolygon(value, path8, errors) {
+function validatePolygon(value, path10, errors) {
   if (!isObject(value)) {
-    errors.push({ path: path8, message: "Must be an object with points array", value });
+    errors.push({ path: path10, message: "Must be an object with points array", value });
     return;
   }
   const points = value["points"];
   if (!isArray(points)) {
-    errors.push({ path: `${path8}.points`, message: "Must be an array", value: points });
+    errors.push({ path: `${path10}.points`, message: "Must be an array", value: points });
     return;
   }
   if (points.length < 3) {
-    errors.push({ path: `${path8}.points`, message: "Must have at least 3 points", value: points.length });
+    errors.push({ path: `${path10}.points`, message: "Must have at least 3 points", value: points.length });
   }
   for (let i = 0; i < points.length; i++) {
-    validatePoint(points[i], `${path8}.points[${i}]`, errors);
+    validatePoint(points[i], `${path10}.points[${i}]`, errors);
   }
 }
 __name(validatePolygon, "validatePolygon");
+function computePolygonArea(boundary) {
+  if (!isObject(boundary) || !isArray(boundary["points"]))
+    return null;
+  const pts = boundary["points"];
+  if (pts.length < 3)
+    return null;
+  let sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    if (!isObject(a) || !isObject(b))
+      return null;
+    const ax = a["x"];
+    const ay = a["y"];
+    const bx = b["x"];
+    const by = b["y"];
+    if (!isFiniteNumber(ax) || !isFiniteNumber(ay) || !isFiniteNumber(bx) || !isFiniteNumber(by)) {
+      return null;
+    }
+    sum += ax * by - bx * ay;
+  }
+  const area2 = Math.abs(sum) / 2;
+  return area2 > 0 ? area2 : null;
+}
+__name(computePolygonArea, "computePolygonArea");
 function validateBuildingSchema(building) {
   const errors = [];
   if (!isObject(building)) {
@@ -27565,11 +27598,19 @@ function validateBuildingSchema(building) {
             errors.push({ path: `${rp}.y`, message: "Must be a finite number", value: room["y"] });
           }
           if (isPositiveNumber(room["width"]) && isPositiveNumber(room["height"]) && isFiniteNumber(room["area"])) {
-            const expected = room["width"] * room["height"];
-            if (Math.abs(room["area"] - expected) > 1) {
+            const rectArea2 = room["width"] * room["height"];
+            const polyArea = computePolygonArea(room["boundary"]);
+            const tags = isArray(room["tags"]) ? room["tags"] : [];
+            const allowNominalBox = tags.includes("NOMINAL_BOUNDING_BOX_AREA");
+            const areaVal = room["area"];
+            const expected = polyArea ?? rectArea2;
+            const tol = polyArea !== null ? Math.max(1, expected * 1e-6) : 1;
+            const matchesExpected = Math.abs(areaVal - expected) <= tol;
+            const matchesNominal = allowNominalBox && Math.abs(areaVal - rectArea2) <= 1;
+            if (!matchesExpected && !matchesNominal) {
               errors.push({
                 path: `${rp}.area`,
-                message: `Area mismatch: expected ${expected}, got ${room["area"]}`,
+                message: `Area mismatch: expected ${expected}, got ${areaVal}`,
                 value: room["area"]
               });
             }
@@ -28462,7 +28503,7 @@ function pointToSegmentDistance(point, segment) {
   return distance(point, closest);
 }
 __name(pointToSegmentDistance, "pointToSegmentDistance");
-function offsetSegment(segment, dist2, side) {
+function offsetSegment(segment, dist3, side) {
   const dx = segment.end.x - segment.start.x;
   const dy = segment.end.y - segment.start.y;
   const len = Math.sqrt(dx * dx + dy * dy);
@@ -28476,8 +28517,8 @@ function offsetSegment(segment, dist2, side) {
     ny = -ny;
   }
   return {
-    start: { x: segment.start.x + nx * dist2, y: segment.start.y + ny * dist2 },
-    end: { x: segment.end.x + nx * dist2, y: segment.end.y + ny * dist2 }
+    start: { x: segment.start.x + nx * dist3, y: segment.start.y + ny * dist3 },
+    end: { x: segment.end.x + nx * dist3, y: segment.end.y + ny * dist3 }
   };
 }
 __name(offsetSegment, "offsetSegment");
@@ -29121,18 +29162,18 @@ function generateApartmentWalls(rooms, floorId, _boundary, semantic = rooms.some
     const ccw = polygonSignedArea(room.boundary) >= 0;
     for (let i = 0; i < p.length; i++) {
       const a = p[i], b = p[(i + 1) % p.length];
-      const isInt = /* @__PURE__ */ __name((v) => Math.abs(v - Math.round(v)) <= 0.01, "isInt");
-      const axis = Math.abs(a.y - b.y) <= 0.01 && isInt(a.y) && isInt(a.x) && isInt(b.x) ? "x" : Math.abs(a.x - b.x) <= 0.01 && isInt(a.x) && isInt(a.y) && isInt(b.y) ? "y" : null;
+      const r32 = /* @__PURE__ */ __name((v) => Math.round(v * 1e3) / 1e3, "r3");
+      const axis = Math.abs(a.y - b.y) <= 0.01 ? "x" : Math.abs(a.x - b.x) <= 0.01 ? "y" : null;
       if (axis) {
-        const line = Math.round(axis === "x" ? a.y : a.x);
+        const line = r32(axis === "x" ? a.y : a.x);
         const aCoord = axis === "x" ? a.x : a.y;
         const bCoord = axis === "x" ? b.x : b.y;
-        const lo = Math.round(Math.min(aCoord, bCoord));
-        const hi = Math.round(Math.max(aCoord, bCoord));
-        if (hi <= lo)
+        const lo = r32(Math.min(aCoord, bCoord));
+        const hi = r32(Math.max(aCoord, bCoord));
+        if (hi - lo <= 0.01)
           continue;
         const side = ccw === aCoord <= bCoord ? "left" : "right";
-        const key = `${axis}:${line}`;
+        const key = `${axis}:${Math.round(line * 100) / 100}`;
         groups.set(key, [
           ...groups.get(key) ?? [],
           {
@@ -29899,13 +29940,13 @@ function measureEgressTravel(floor) {
   const paths = [];
   let max = 0;
   for (const start of corners) {
-    const uid = rooms[nodes[start].room].unitId, dist2 = nodes.map(() => Infinity), prev = nodes.map(() => -1), done = /* @__PURE__ */ new Set();
-    dist2[start] = 0;
+    const uid = rooms[nodes[start].room].unitId, dist3 = nodes.map(() => Infinity), prev = nodes.map(() => -1), done = /* @__PURE__ */ new Set();
+    dist3[start] = 0;
     let end = -1;
     while (done.size < nodes.length) {
       let u = -1;
       for (let i = 0; i < nodes.length; i++)
-        if (!done.has(i) && Number.isFinite(dist2[i]) && (u < 0 || dist2[i] < dist2[u]))
+        if (!done.has(i) && Number.isFinite(dist3[i]) && (u < 0 || dist3[i] < dist3[u]))
           u = i;
       if (u < 0)
         break;
@@ -29918,8 +29959,8 @@ function measureEgressTravel(floor) {
         const foreign = rooms[nodes[v].room].unitId;
         if (foreign && foreign !== uid)
           continue;
-        if (dist2[u] + d < dist2[v]) {
-          dist2[v] = dist2[u] + d;
+        if (dist3[u] + d < dist3[v]) {
+          dist3[v] = dist3[u] + d;
           prev[v] = u;
         }
       }
@@ -29931,11 +29972,11 @@ function measureEgressTravel(floor) {
         paths,
         reason: "A unit corner has no door/corridor route to OPEN_PASSAGE."
       };
-    max = Math.max(max, dist2[end]);
-    const path8 = [];
+    max = Math.max(max, dist3[end]);
+    const path10 = [];
     for (let n = end; n >= 0; n = prev[n])
-      path8.unshift(nodes[n].p);
-    paths.push(path8);
+      path10.unshift(nodes[n].p);
+    paths.push(path10);
   }
   return {
     distanceMm: max,
@@ -30602,6 +30643,68 @@ function architecturalSlabCutouts(f) {
   ];
 }
 __name(architecturalSlabCutouts, "architecturalSlabCutouts");
+
+// ../projection-3d/dist/project-building.js
+function isOpenToSkyVoidRoom(room) {
+  return Boolean(room.openToSky) || room.architecturalRole === "OPEN_TO_SKY_VOID" || room.spaceUse === "VOID" || room.type === RoomType.OTS;
+}
+__name(isOpenToSkyVoidRoom, "isOpenToSkyVoidRoom");
+function pointNearPolygonBoundary(pt, poly, toleranceMm) {
+  const pts = poly.points;
+  for (let i = 0; i < pts.length; i += 1) {
+    const start = pts[i];
+    const end = pts[(i + 1) % pts.length];
+    if (pointToSegmentDistance(pt, { start, end }) <= toleranceMm)
+      return true;
+  }
+  return false;
+}
+__name(pointNearPolygonBoundary, "pointNearPolygonBoundary");
+function sanitizeInteriorHole(hole, outerBoundary) {
+  if (hole.points.length < 3 || polygonArea2(hole) < 5e4)
+    return null;
+  const center2 = polygonCentroid(hole);
+  if (!pointInPolygon(center2, outerBoundary) || pointNearPolygonBoundary(center2, outerBoundary, 25)) {
+    return null;
+  }
+  return hole;
+}
+__name(sanitizeInteriorHole, "sanitizeInteriorHole");
+function deriveBuiltFloorPlate(floor, rawCutouts) {
+  const hasVoidRooms = floor.rooms.some(isOpenToSkyVoidRoom);
+  if (!hasVoidRooms) {
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+  const builtRooms = floor.rooms.filter((room) => !isOpenToSkyVoidRoom(room));
+  if (builtRooms.length === 0) {
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+  try {
+    const builtWalls = generateApartmentWalls(builtRooms, floor.id, floor.boundary);
+    const regions = apartmentFloorRegions(builtWalls);
+    const builtBoundary = regions.boundary;
+    if (builtBoundary.points.length < 3 || polygonArea2(builtBoundary) < 5e5) {
+      return { boundary: floor.boundary, cutouts: rawCutouts };
+    }
+    const candidateHoles = [...regions.voids, ...rawCutouts];
+    const seen = /* @__PURE__ */ new Set();
+    const cleanCutouts = [];
+    for (const candidate of candidateHoles) {
+      const sanitized = sanitizeInteriorHole(candidate, builtBoundary);
+      if (!sanitized)
+        continue;
+      const key = sanitized.points.map((p) => `${Math.round(p.x / 10)},${Math.round(p.y / 10)}`).sort().join(";");
+      if (seen.has(key))
+        continue;
+      seen.add(key);
+      cleanCutouts.push(sanitized);
+    }
+    return { boundary: builtBoundary, cutouts: cleanCutouts };
+  } catch {
+    return { boundary: floor.boundary, cutouts: rawCutouts };
+  }
+}
+__name(deriveBuiltFloorPlate, "deriveBuiltFloorPlate");
 
 // ../../node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js
 var REVISION = "185";
@@ -43956,8 +44059,8 @@ var Loader = class {
    * @param {string} path - The base path.
    * @return {Loader} A reference to this instance.
    */
-  setPath(path8) {
-    this.path = path8;
+  setPath(path10) {
+    this.path = path10;
     return this;
   }
   /**
@@ -44008,10 +44111,10 @@ var Composite = class {
   static {
     __name(this, "Composite");
   }
-  constructor(targetGroup, path8, optionalParsedPath) {
-    const parsedPath = optionalParsedPath || PropertyBinding.parseTrackName(path8);
+  constructor(targetGroup, path10, optionalParsedPath) {
+    const parsedPath = optionalParsedPath || PropertyBinding.parseTrackName(path10);
     this._targetGroup = targetGroup;
-    this._bindings = targetGroup.subscribe_(path8, parsedPath);
+    this._bindings = targetGroup.subscribe_(path10, parsedPath);
   }
   getValue(array, offset) {
     this.bind();
@@ -44048,9 +44151,9 @@ var PropertyBinding = class _PropertyBinding {
    * @param {string} path - The path.
    * @param {?Object} [parsedPath] - The parsed path.
    */
-  constructor(rootNode, path8, parsedPath) {
-    this.path = path8;
-    this.parsedPath = parsedPath || _PropertyBinding.parseTrackName(path8);
+  constructor(rootNode, path10, parsedPath) {
+    this.path = path10;
+    this.parsedPath = parsedPath || _PropertyBinding.parseTrackName(path10);
     this.node = _PropertyBinding.findNode(rootNode, this.parsedPath.nodeName);
     this.rootNode = rootNode;
     this.getValue = this._getValue_unbound;
@@ -44065,11 +44168,11 @@ var PropertyBinding = class _PropertyBinding {
    * @param {?Object} [parsedPath] - The parsed path.
    * @return {PropertyBinding|Composite} The created property binding or composite.
    */
-  static create(root, path8, parsedPath) {
+  static create(root, path10, parsedPath) {
     if (!(root && root.isAnimationObjectGroup)) {
-      return new _PropertyBinding(root, path8, parsedPath);
+      return new _PropertyBinding(root, path10, parsedPath);
     } else {
-      return new _PropertyBinding.Composite(root, path8, parsedPath);
+      return new _PropertyBinding.Composite(root, path10, parsedPath);
     }
   }
   /**
@@ -46003,8 +46106,9 @@ function projectBuildingScene(building) {
       ...stairs.map((s) => s.polygon),
       ...f.stairs.map((s) => s.boundary)
     ];
-    add2(f, f.id, "slab", "MAT_Concrete_Structural", f.boundary, z - slab, z, [
-      ...voids,
+    const builtSlab = deriveBuiltFloorPlate(f, voids);
+    add2(f, f.id, "slab", "MAT_Concrete_Structural", builtSlab.boundary, z - slab, z, [
+      ...builtSlab.cutouts,
       ...f.rooms.filter(isBalcony).map((r) => r.boundary)
     ]);
     for (const room of f.rooms) {
@@ -46081,14 +46185,16 @@ function projectBuildingScene(building) {
         ])
           add2(f, o.id, "opening-frame", "MAT_Metal_Railing", segmentFootprint(point(a), point(b), wall.thickness), z + bottom, z + top, [], true);
         add2(f, o.id, o.isWindow ? "glazing" : "door-leaf", o.isWindow ? "MAT_Glass_Aperture" : "MAT_Door", segmentFootprint(point(start + frame), point(end - frame), o.isWindow ? 8 : 35), z + o.sill + (o.isWindow ? frame : 0), z + o.sill + h - frame, [], true);
-        if (o.isWindow && (exterior || wall.wallUse === "SHAFT") && building.metadata?.generationBrief?.includeWindowChajjas !== false) {
+        const floorCoordinatedBands = (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter((b) => b.floorId === f.id);
+        const coveredByCoordinatedBand = floorCoordinatedBands.some((b) => b.windowIds.includes(o.id));
+        if (o.isWindow && !coveredByCoordinatedBand && (exterior || wall.wallUse === "SHAFT") && building.metadata?.generationBrief?.includeWindowChajjas !== false) {
           const probeDist = wall.thickness / 2 + 250;
           const probePos = point(centre, probeDist);
           const isBuiltAt = /* @__PURE__ */ __name((pt) => f.rooms.some((r) => architecturalSpaceRole(r) !== "OPEN_TO_SKY_VOID" && !r.tags?.includes("recess:perimeter") && pointInPolygon(pt, r.boundary)), "isBuiltAt");
           const posIsInside = pointInPolygon(probePos, f.boundary) && isBuiltAt(probePos);
           const normal = (posIsInside ? -1 : 1) * (wall.thickness / 2 + 300);
-          const chajjaBottom = Math.min(Math.max(z + o.sill + h, z + 2100), z + Math.max(0, wallHeight - 75));
-          add2(f, o.id, "chajja", "MAT_Concrete_Structural", segmentFootprint(point(start - 150, normal), point(end + 150, normal), 600), chajjaBottom, chajjaBottom + 75, [], true);
+          const chajjaBottom = Math.min(Math.max(z + o.sill + h, z + 2100), z + Math.max(0, wallHeight - 100));
+          add2(f, o.id, "chajja", "MAT_Concrete_Structural", segmentFootprint(point(start - 150, normal), point(end + 150, normal), 600), chajjaBottom, chajjaBottom + 100, [], true);
         }
       }
       const geometry = (() => {
@@ -46132,6 +46238,25 @@ function projectBuildingScene(building) {
           cutters
         };
       scene.meshes.push(m);
+    }
+    if (building.metadata?.generationBrief?.includeWindowChajjas !== false) {
+      const floorChajjaBands = (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter((b) => b.floorId === f.id);
+      for (const band of floorChajjaBands) {
+        const proj = band.projectionMm || 600;
+        const fascia = band.fasciaThicknessMm || 100;
+        const n = band.outwardNormal;
+        const chajjaPoly = {
+          points: [
+            band.startPoint,
+            band.endPoint,
+            { x: band.endPoint.x + n.x * proj, y: band.endPoint.y + n.y * proj },
+            { x: band.startPoint.x + n.x * proj, y: band.startPoint.y + n.y * proj }
+          ]
+        };
+        const floorClearH = Math.max(2100, (next !== void 0 ? next - z : f.floorHeight) - (f.slabThicknessMm ?? 150));
+        const chajjaBottom = Math.min(z + (band.lintelHeightMm || 2100), z + Math.max(0, floorClearH - fascia));
+        add2(f, band.id, "chajja", "MAT_Concrete_Structural", chajjaPoly, chajjaBottom, chajjaBottom + fascia, [], true);
+      }
     }
     for (const col of f.columns)
       if (next !== void 0) {
@@ -47854,9 +47979,10 @@ function generateETABSE2KFromBuilding(building) {
   }
   lines.push("");
   lines.push("$ AREA CONNECTIVITIES");
-  for (const slab of uniqueSlabs) {
-    const [p1, p2, p3, p4] = slab.pointIds;
-    lines.push(`  AREA  "${slab.id}"  FLOOR  4  "${p1}"  "${p2}"  "${p3}"  "${p4}"`);
+  const orderedSlabs = [...uniqueSlabs].sort((a, b) => b.pointIds.length - a.pointIds.length);
+  for (const slab of orderedSlabs) {
+    const ptList = slab.pointIds.map((pid) => `"${pid}"`).join("  ");
+    lines.push(`  AREA  "${slab.id}"  FLOOR  ${slab.pointIds.length}  ${ptList}`);
   }
   lines.push("");
   lines.push("$ POINT ASSIGNS");
@@ -48850,11 +48976,11 @@ var Color2 = class _Color {
   static approxIndex(r, g, b) {
     let prevDist = -1;
     for (let i = 0; i < _Color._indexRgb.length; i++) {
-      const dist2 = r - _Color._indexRgb[i][0] + (g - _Color._indexRgb[i][1]) + (b - _Color._indexRgb[i][2]);
-      if (dist2 === 0)
+      const dist3 = r - _Color._indexRgb[i][0] + (g - _Color._indexRgb[i][1]) + (b - _Color._indexRgb[i][2]);
+      if (dist3 === 0)
         return i;
-      if (dist2 < prevDist) {
-        prevDist = dist2;
+      if (dist3 < prevDist) {
+        prevDist = dist3;
         return i;
       }
     }
@@ -69902,11 +70028,11 @@ var HatchBoundaryPath = class _HatchBoundaryPath {
     }
   }
   clone() {
-    const path8 = new _HatchBoundaryPath();
-    path8._flags = this._flags;
-    path8.entities = this.entities.map((e) => e.clone());
-    path8.edges = this.edges.map((e) => e.clone());
-    return path8;
+    const path10 = new _HatchBoundaryPath();
+    path10._flags = this._flags;
+    path10.entities = this.entities.map((e) => e.clone());
+    path10.edges = this.edges.map((e) => e.clone());
+    return path10;
   }
   getBoundingBox() {
     const boxes = this.edges.map((edge) => edge.getBoundingBox()).filter((box) => box != null);
@@ -70160,7 +70286,7 @@ var Hatch = class _Hatch extends Entity {
     return entities;
   }
   getBoundingBox() {
-    const boxes = this.paths.map((path8) => path8.getBoundingBox()).filter((box) => box != null);
+    const boxes = this.paths.map((path10) => path10.getBoundingBox()).filter((box) => box != null);
     if (boxes.length === 0) {
       return null;
     }
@@ -89683,9 +89809,9 @@ ${decoded}` : decoded);
         this._builder.notify(`Boundary path should start with code 92 but was ${this._reader.code}`);
         break;
       }
-      const path8 = this._readLoop();
-      if (path8 !== null) {
-        template.pathTemplates.push(path8);
+      const path10 = this._readLoop();
+      if (path10 !== null) {
+        template.pathTemplates.push(path10);
       }
     }
   }
@@ -101650,8 +101776,8 @@ var DxfSectionWriterBase = class {
     this._writer.write(70, hatch.isSolid ? 1 : 0, subclass);
     this._writer.write(71, hatch.isAssociative ? 1 : 0, subclass);
     this._writer.write(91, hatch.paths.length);
-    for (const path8 of hatch.paths) {
-      this._writeBoundaryPath(path8);
+    for (const path10 of hatch.paths) {
+      this._writeBoundaryPath(path10);
     }
     this._writer.write(75, hatch.style, subclass);
     this._writer.write(76, hatch.patternType, subclass);
@@ -101696,22 +101822,22 @@ var DxfSectionWriterBase = class {
       this._writer.write(470, hatch.gradientColor.name);
     }
   }
-  _writeBoundaryPath(path8) {
-    this._writer.write(92, path8.flags);
-    if ((path8.flags & BoundaryPathFlags.Polyline) !== 0) {
-      for (const edge of path8.edges) {
+  _writeBoundaryPath(path10) {
+    this._writer.write(92, path10.flags);
+    if ((path10.flags & BoundaryPathFlags.Polyline) !== 0) {
+      for (const edge of path10.edges) {
         if (edge instanceof HatchBoundaryPathPolyline) {
           this._writePolylineBoundary(edge);
         }
       }
     } else {
-      this._writer.write(93, path8.edges.length);
-      for (const edge of path8.edges) {
+      this._writer.write(93, path10.edges.length);
+      for (const edge of path10.edges) {
         this._writeBoundaryEdge(edge);
       }
     }
-    this._writer.write(97, path8.entities.length);
-    for (const entity of path8.entities) {
+    this._writer.write(97, path10.entities.length);
+    for (const entity of path10.entities) {
       this._writer.write(330, entity.handle);
     }
   }
@@ -104366,8 +104492,8 @@ var SvgXmlWriter = class {
     this.writeStartElement("g");
     const patternId = this._writePattern(hatch);
     const plines = [];
-    for (const path8 of hatch.paths) {
-      const pts = path8.getPoints ? path8.getPoints(this.configuration.arcPoints) : [];
+    for (const path10 of hatch.paths) {
+      const pts = path10.getPoints ? path10.getPoints(this.configuration.arcPoints) : [];
       const pline = new Polyline3D(pts);
       plines.push(pline);
     }
@@ -105913,13 +106039,84 @@ var ResidentialCadSerializer = class {
             }
           }
           if (!chosen) {
-            if (["living", "bedroom", "kitchen", "bathroom"].includes(r.type))
+            const xsR = r.boundary.points.map((p) => p.x);
+            const ysR = r.boundary.points.map((p) => p.y);
+            const minXR = Math.min(...xsR), maxXR = Math.max(...xsR);
+            const minYR = Math.min(...ysR), maxYR = Math.max(...ysR);
+            const midR = { x: (minXR + maxXR) / 2, y: (minYR + maxYR) / 2 };
+            const dxR = (maxXR - minXR) * 0.22;
+            const dyR = (maxYR - minYR) * 0.22;
+            const anchors = [
+              midR,
+              { x: centerPoint.x - dxR, y: centerPoint.y },
+              { x: centerPoint.x + dxR, y: centerPoint.y },
+              { x: centerPoint.x, y: centerPoint.y - dyR },
+              { x: centerPoint.x, y: centerPoint.y + dyR },
+              { x: midR.x - dxR, y: midR.y - dyR },
+              { x: midR.x + dxR, y: midR.y + dyR }
+            ];
+            const candLabels = [
+              label,
+              roomName,
+              r.type === "bathroom" ? "WC" : roomName.slice(0, 6)
+            ];
+            outerFallback: for (const candLabel of candLabels) {
+              for (const anchor of anchors) {
+                let hf = Math.min(
+                  90,
+                  widths * 0.65 / (candLabel.length * 0.7),
+                  heights / 4
+                );
+                for (let attempt = 0; attempt < 25 && hf >= 2; attempt++, hf *= 0.8) {
+                  const wf = candLabel.length * hf * 0.7;
+                  const df = hf * 1.2;
+                  const box = {
+                    points: [
+                      { x: anchor.x - wf / 2, y: anchor.y - df / 2 },
+                      { x: anchor.x + wf / 2, y: anchor.y - df / 2 },
+                      { x: anchor.x + wf / 2, y: anchor.y + df / 2 },
+                      { x: anchor.x - wf / 2, y: anchor.y + df / 2 }
+                    ]
+                  };
+                  if (containsPolygon(r.boundary, box) && !floor.walls.some(
+                    (w) => hardeningOverlapArea(box, wallToPolygon(w)) >= 1e-3
+                  ) && !floor.columns.some(
+                    (c) => hardeningOverlapArea(box, columnFootprint(c)) >= 1e-3
+                  )) {
+                    text2(candLabel, cad(anchor), hf);
+                    chosen = true;
+                    break outerFallback;
+                  }
+                }
+              }
+            }
+          }
+          if (!chosen) {
+            if (r.unitId && ["living", "bedroom", "kitchen", "bathroom"].includes(r.type))
               throw new ExportError("CAD_LABEL_INFEASIBLE", r.id);
             omissions.push({
               roomId: r.id,
               reason: "No clear centroid annotation envelope; nonhabitable boundary is retained"
             });
           }
+        }
+        const floorCoordinatedChajjas = building.metadata?.generationBrief?.includeWindowChajjas !== false ? (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter(
+          (b) => b.floorId === floor.id
+        ) : [];
+        const coveredChajjaWindowIds = /* @__PURE__ */ new Set();
+        for (const band of floorCoordinatedChajjas) {
+          for (const wid of band.windowIds) coveredChajjaWindowIds.add(wid);
+          const proj = band.projectionMm || 600;
+          const n = band.outwardNormal;
+          poly(
+            [
+              band.startPoint,
+              band.endPoint,
+              { x: band.endPoint.x + n.x * proj, y: band.endPoint.y + n.y * proj },
+              { x: band.startPoint.x + n.x * proj, y: band.startPoint.y + n.y * proj }
+            ].map(cad),
+            "A-CHAJJA"
+          );
         }
         for (const opening of [...floor.doors, ...floor.windows].filter((o) => floor.walls.some((w) => w.id === o.wallId && isPhysicalBoundary(w)))) {
           const wall = floor.walls.find((w) => w.id === opening.wallId);
@@ -105935,7 +106132,7 @@ var ResidentialCadSerializer = class {
           poly(segmentFootprint(a, b, wall.thickness).points.map(cad), name);
           if (!isDoor) {
             line(cad(a), cad(b), name);
-            if (building.metadata?.generationBrief?.includeWindowChajjas !== false && p.length > 0) {
+            if (building.metadata?.generationBrief?.includeWindowChajjas !== false && !coveredChajjaWindowIds.has(opening.id) && p.length > 0) {
               const ux = (wall.endPoint.x - wall.startPoint.x) / p.length, uy = (wall.endPoint.y - wall.startPoint.y) / p.length;
               const nA = { x: -uy, y: ux }, nB = { x: uy, y: -ux };
               const probeDist = wall.thickness / 2 + 120;
@@ -106180,6 +106377,7 @@ var ResidentialCadSerializer = class {
         const insert = new Insert(block);
         insert.insertPoint = new XYZ(0, 0, 0);
         add2(insert, "A-ANNO-TEXT");
+        const emittedFootingOutlines = [];
         for (const [i, c] of columns.entries()) {
           const tag = `C${i + 1}`, grid = `${axisName(xs.indexOf(c.position.x))}/${ys.indexOf(c.position.y) + 1}`;
           schedule.push({
@@ -106193,32 +106391,55 @@ var ResidentialCadSerializer = class {
           });
           const p = cad(c.position);
           text2(tag, { x: p.x + 650, y: p.y + 650 }, 110);
-          if (floor.floorUse === "STILT_PARKING")
+          if (floor.floorUse === "STILT_PARKING") {
+            let maxHalfX = c.width * 1.5;
+            let maxHalfY = c.depth * 1.5;
+            for (const o of columns) {
+              if (o.id === c.id) continue;
+              const dx = Math.abs(o.position.x - c.position.x);
+              const dy = Math.abs(o.position.y - c.position.y);
+              if (dy < maxHalfY + o.depth * 1.5 && dx > 0) {
+                maxHalfX = Math.min(maxHalfX, Math.max(c.width * 0.52, dx / 2 - 25));
+              }
+              if (dx < maxHalfX + o.width * 1.5 && dy > 0) {
+                maxHalfY = Math.min(maxHalfY, Math.max(c.depth * 0.52, dy / 2 - 25));
+              }
+            }
             for (const [factor, name] of [
               [2, "S-PEDESTAL-DIAG"],
               [3, "S-FOOT-DIAG"]
             ]) {
-              const w = c.width * factor, h = c.depth * factor;
-              const outline = {
+              const scaleCap = factor === 2 ? 0.72 : 1;
+              let w = Math.min(c.width * factor, maxHalfX * 2 * scaleCap);
+              let h = Math.min(c.depth * factor, maxHalfY * 2 * scaleCap);
+              const makeOutline = /* @__PURE__ */ __name((ow, oh) => ({
                 points: [
-                  { x: c.position.x - w / 2, y: c.position.y - h / 2 },
-                  { x: c.position.x + w / 2, y: c.position.y - h / 2 },
-                  { x: c.position.x + w / 2, y: c.position.y + h / 2 },
-                  { x: c.position.x - w / 2, y: c.position.y + h / 2 }
+                  { x: c.position.x - ow / 2, y: c.position.y - oh / 2 },
+                  { x: c.position.x + ow / 2, y: c.position.y - oh / 2 },
+                  { x: c.position.x + ow / 2, y: c.position.y + oh / 2 },
+                  { x: c.position.x - ow / 2, y: c.position.y + oh / 2 }
                 ]
-              };
-              if (columns.some(
-                (o) => o.id !== c.id && hardeningOverlapArea(outline, {
-                  points: columnFootprint({
-                    ...o,
-                    width: o.width * 3,
-                    depth: o.depth * 3
-                  }).points
-                }) >= 1e-3
-              ))
-                throw new ExportError("FOOTING_DIAGRAM_COLLISION", c.id);
+              }), "makeOutline");
+              let outline = makeOutline(w, h);
+              if (factor === 3) {
+                for (let shrink = 0; shrink < 8; shrink++) {
+                  if (!emittedFootingOutlines.some(
+                    (prev) => hardeningOverlapArea(outline, prev) >= 1e-3
+                  ))
+                    break;
+                  w = Math.max(c.width * 1.05, w * 0.85);
+                  h = Math.max(c.depth * 1.05, h * 0.85);
+                  outline = makeOutline(w, h);
+                }
+                if (emittedFootingOutlines.some(
+                  (prev) => hardeningOverlapArea(outline, prev) >= 1e-3
+                ))
+                  continue;
+                emittedFootingOutlines.push(outline);
+              }
               poly(outline.points.map(cad), name);
             }
+          }
         }
         text2(
           "FOOTING DIAGRAMS ONLY / NOT TO SCALE / FOUNDATION SIZING NOT PROVIDED",
@@ -106228,8 +106449,6 @@ var ResidentialCadSerializer = class {
       }
       const axis = /* @__PURE__ */ __name((values, horizontal) => {
         const base2 = values[0];
-        let tier = 0;
-        let lastVal = -Infinity;
         for (const [i, value] of values.entries()) {
           const p = horizontal ? { x: value + shift.x, y: bottom - 2e3 } : { x: left2 - 2800, y: -value };
           line(
@@ -106237,13 +106456,21 @@ var ResidentialCadSerializer = class {
             { x: p.x + 100, y: p.y + 100 },
             "A-ANNO-DIMS"
           );
-          const minGap = horizontal ? 750 : 220;
-          if (value - lastVal < minGap) tier = (tier + 1) % 4;
-          else tier = 0;
-          lastVal = value;
+          const label = residentialImperial(value - base2);
+          const labelW = label.length * 100 * 0.7;
+          const labelH = 100 * 1.2;
+          let labelPos = horizontal ? { x: p.x, y: p.y - 350 } : { x: p.x - 1e3, y: p.y };
+          for (let tier = 0; tier < 10; tier++) {
+            const cand = horizontal ? { x: p.x, y: p.y - 350 - tier * 240 } : { x: p.x - 1e3 - tier * 800, y: p.y };
+            const candBox = { x: cand.x, y: cand.y, width: labelW, height: labelH, text: label };
+            if (!boxes.some((b) => textBoxesOverlap(b, candBox))) {
+              labelPos = cand;
+              break;
+            }
+          }
           text2(
-            residentialImperial(value - base2),
-            horizontal ? { x: p.x, y: p.y - 350 - tier * 240 } : { x: p.x - 1e3 - tier * 800, y: p.y },
+            label,
+            labelPos,
             100,
             "A-ANNO-DIMS"
           );
@@ -107949,16 +108176,16 @@ var CadExportService = class {
       const h = new Hatch();
       h.layer = layer;
       h.isSolid = true;
-      const path8 = new HatchBoundaryPath();
+      const path10 = new HatchBoundaryPath();
       for (let i = 0; i < points.length; i++) {
         const p1 = points[i];
         const p2 = points[(i + 1) % points.length];
         const edge = new HatchBoundaryPathLine();
         edge.start = new XY(p1.x, p1.y);
         edge.end = new XY(p2.x, p2.y);
-        path8.edges.push(edge);
+        path10.edges.push(edge);
       }
-      h.paths.push(path8);
+      h.paths.push(path10);
       doc.entities?.add(h);
     } catch {
     }
@@ -111346,6 +111573,18 @@ var BUILDING_SHAPE_CATALOG = [
     supportsNonOrthogonal: false,
     defaultParams: { wings: 4, angleDeg: 90, setbackStepRatio: 0.3, rotationSeed: 21 },
     svgPath: "M 10 10 L 70 10 L 70 50 L 10 50 Z M 28 22 L 52 22 L 52 38 L 28 38 Z"
+  },
+  {
+    id: "IRREGULAR_ANGLED_PLOT",
+    label: "Irregular / CAD Site Fit",
+    family: "POLYGONAL_ANGLED",
+    description: "Custom setback-fitted footprint inscribed cleanly within an irregular or imported CAD site polygon.",
+    baseTopologyShape: "COMPACT_DOUBLE_LOADED",
+    recommendedCategories: ["IRREGULAR_PLOT_CUSTOM", "HIGH_RISE_APARTMENT", "LUXURY_VILLA_BUNGALOW"],
+    supportsCurves: false,
+    supportsNonOrthogonal: true,
+    defaultParams: { wings: 2, angleDeg: 80, setbackStepRatio: 0.18, rotationSeed: 22 },
+    svgPath: "M 12 14 L 62 8 L 70 46 L 18 52 Z"
   }
 ];
 var PLAN_CATEGORY_CATALOG = [
@@ -111464,6 +111703,20 @@ function synthesizeParametricShape(params) {
 }
 __name(synthesizeParametricShape, "synthesizeParametricShape");
 function getShapeCatalogEntry(id, fallbackParams) {
+  if (id === "IMPORTED_CAD_LAYOUT") {
+    return {
+      id: "IMPORTED_CAD_LAYOUT",
+      label: "Imported CAD Layout",
+      family: "ORTHOGONAL",
+      description: "Canonical multi-storey building reconstructed directly from an imported local .DXF / .DWG / .PDF floor plan.",
+      baseTopologyShape: "COMPACT_DOUBLE_LOADED",
+      recommendedCategories: ["HIGH_RISE_APARTMENT", "IRREGULAR_PLOT_CUSTOM", "LUXURY_VILLA_BUNGALOW"],
+      supportsCurves: true,
+      supportsNonOrthogonal: true,
+      defaultParams: { wings: 2, angleDeg: 90, setbackStepRatio: 0.1, rotationSeed: 1 },
+      svgPath: "M 10 12 L 70 12 L 70 48 L 10 48 Z M 35 12 L 35 48 M 10 30 L 70 30"
+    };
+  }
   if (id && SHAPE_BY_ID.has(id)) {
     return SHAPE_BY_ID.get(id);
   }
@@ -111601,7 +111854,9 @@ var CLASSIC_PASSTHROUGH_SHAPES = /* @__PURE__ */ new Set([
   "L_SHAPE_CORNER",
   "CRUCIFORM_PLUS",
   "PINWHEEL_CLUSTER",
-  "STEPPED_OFFSET_BLOCK"
+  "STEPPED_OFFSET_BLOCK",
+  "IRREGULAR_ANGLED_PLOT",
+  "IMPORTED_CAD_LAYOUT"
 ]);
 function samePoint(a, b, eps = 0.5) {
   return Math.hypot(a.x - b.x, a.y - b.y) <= eps;
@@ -111924,10 +112179,10 @@ function createShapeTransform(shapeId, floorBounds, envelope, coreXRange, pinned
     if (outerRingW <= 0 && wingS === 0)
       return { x: pt.x, y: pt.y };
     const theta = Math.atan2(v, u);
-    const radialScale = 1 - stepRatio * 0.14 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
+    const radialScale = 1 - stepRatio * 0.1 * (0.5 - 0.5 * Math.cos(wings * theta + (shapeParams?.rotationSeed ?? 1)));
     const arcBend = arcSweepDeg > 10 ? -amp * (arcSweepDeg / 180) * wingS * wingS * (splayNorm >= 0 ? 1 : -1) : 0;
     const baseTx = cx + dx * radialScale;
-    const baseTy = cy + dy * 0.96 + arcBend;
+    const baseTy = cy + dy * 0.98 + arcBend;
     return clampEnv(pt.x + (baseTx - pt.x) * Math.max(wingS, outerRingW), pt.y + (baseTy - pt.y) * Math.max(wingS, outerRingW));
   }, "rawTransform");
   return (pt) => {
@@ -111994,6 +112249,12 @@ function remapDoorsToWalls(origDoors, newWalls, floorId) {
     if (!candidates.length)
       continue;
     candidates.sort((w1, w2) => {
+      if (door.type !== DoorType.OpenPassage) {
+        const open1 = w1.boundaryRole === "OPEN_BOUNDARY" ? 1 : 0;
+        const open2 = w2.boundaryRole === "OPEN_BOUNDARY" ? 1 : 0;
+        if (open1 !== open2)
+          return open1 - open2;
+      }
       const m1 = { x: (w1.startPoint.x + w1.endPoint.x) / 2, y: (w1.startPoint.y + w1.endPoint.y) / 2 };
       const m2 = { x: (w2.startPoint.x + w2.endPoint.x) / 2, y: (w2.startPoint.y + w2.endPoint.y) / 2 };
       const l1 = Math.hypot(w1.endPoint.x - w1.startPoint.x, w1.endPoint.y - w1.startPoint.y);
@@ -112018,6 +112279,7 @@ function remapDoorsToWalls(origDoors, newWalls, floorId) {
       continue;
     result.push({
       ...door,
+      type: host.boundaryRole === "OPEN_BOUNDARY" ? DoorType.OpenPassage : door.type,
       floorId,
       wallId: host.id,
       position: pos,
@@ -112341,9 +112603,10 @@ __name(buildFurniturePolygonContainmentGuard, "buildFurniturePolygonContainmentG
 function getRoomDoorClearanceBoxes(room, floor) {
   const clearanceBoxes = [];
   const roomDoors = floor.doors.filter((d) => d.connectsRooms?.includes(room.id) || d.adjacentRoomId === room.id);
+  const isCompactWetRoom = room.type === RoomType.Bathroom || /BATH|TOILET|WC/i.test(room.name);
   for (const door of roomDoors) {
     const dW = door.width || 900;
-    const buffer = 600;
+    const buffer = isCompactWetRoom ? 200 : 600;
     const sweep = dW + buffer;
     const minX = Math.max(room.x, door.position.x - sweep / 2);
     const maxX = Math.min(room.x + room.width, door.position.x + sweep / 2);
@@ -112384,7 +112647,8 @@ function furnishRoom(room, floor, _manifest) {
   }
   const areaM2 = room.area / 1e6;
   const doorBoxes = getRoomDoorClearanceBoxes(room, floor);
-  const wallInset = 155;
+  const isBathroomRoom = room.type === RoomType.Bathroom || rName.includes("BATH") || rName.includes("TOILET") || rName.includes("WC");
+  const wallInset = isBathroomRoom ? 85 : 155;
   const innerMinX = rx + wallInset;
   const innerMinY = ry + wallInset;
   const innerMaxX = rx + rw - wallInset;
@@ -112394,14 +112658,33 @@ function furnishRoom(room, floor, _manifest) {
   const hasSouthWindow = roomWindows.some((w) => Math.abs(w.position.y - (ry + rh)) <= 250);
   const hasWestWindow = roomWindows.some((w) => Math.abs(w.position.x - rx) <= 250);
   const hasEastWindow = roomWindows.some((w) => Math.abs(w.position.x - (rx + rw)) <= 250);
+  const isKitchenRoom = (room.type === RoomType.Kitchen || rName.includes("KITCHEN")) && !rName.includes("UTILITY") && !rName.includes("BALCONY");
+  const boxesOverlapWithMargin = /* @__PURE__ */ __name((a, b, marginMm) => a.x < b.x + b.w + marginMm && a.x + a.w + marginMm > b.x && a.y < b.y + b.h + marginMm && a.y + a.h + marginMm > b.y, "boxesOverlapWithMargin");
   const addItem = /* @__PURE__ */ __name((type, rawX, rawY, w, d, rot = 0, anchorWall, force = false) => {
     if (w > innerMaxX - innerMinX + 20 || d > innerMaxY - innerMinY + 20) {
       return;
     }
     const clampedX = Math.max(innerMinX, Math.min(innerMaxX - w, rawX));
     const clampedY = Math.max(innerMinY, Math.min(innerMaxY - d, rawY));
-    if (!force && collidesWithDoorClearance({ x: clampedX, y: clampedY, w, h: d }, doorBoxes)) {
+    const candBox = { x: clampedX, y: clampedY, w, h: d };
+    if (!force && collidesWithDoorClearance(candBox, doorBoxes)) {
       return;
+    }
+    const isCounterAppliance = isKitchenRoom && (type === "stove" || type === "sink" || type === "oven");
+    for (const existing of items) {
+      if (existing.roomId !== room.id)
+        continue;
+      if (isCounterAppliance && existing.type === "counter")
+        continue;
+      if (type === "counter" && (existing.type === "stove" || existing.type === "sink" || existing.type === "oven")) {
+        continue;
+      }
+      const isBedWardrobePair = type === "wardrobe" && existing.type === "bed" || type === "bed" && existing.type === "wardrobe";
+      const requiredMargin = isBedWardrobePair ? 650 : 20;
+      const exBox = { x: existing.xMm, y: existing.yMm, w: existing.widthMm, h: existing.depthMm };
+      if (boxesOverlapWithMargin(candBox, exBox, requiredMargin)) {
+        return;
+      }
     }
     const itemIndex = items.filter((i) => i.roomId === room.id && i.type === type).length + 1;
     items.push({
@@ -112564,26 +112847,27 @@ function furnishRoom(room, floor, _manifest) {
       }
     }
     const wardDim1 = Math.min(1800, Math.max(900, Math.min(rw, rh) - 1e3));
-    const wardDim2 = 600;
     const rawWardCandidates = [];
-    for (const len of [.../* @__PURE__ */ new Set([wardDim1, Math.min(wardDim1, 1400), Math.min(wardDim1, 1e3)])]) {
-      const yOffsets = [.../* @__PURE__ */ new Set([
-        ry + 200,
-        ry + Math.round(rh * 0.25),
-        ry + Math.round((rh - len) / 2),
-        ry + Math.round(rh * 0.65) - Math.round(len / 2),
-        ry + rh - len - 200
-      ])].filter((yPos) => yPos >= ry + 100 && yPos + len <= ry + rh - 100);
-      for (const yPos of yOffsets) {
-        rawWardCandidates.push({ x: rx + 150, y: yPos, w: wardDim2, d: len, rot: 90, wall: "WEST" }, { x: rx + rw - wardDim2 - 150, y: yPos, w: wardDim2, d: len, rot: 270, wall: "EAST" });
-      }
-      const xOffsets = [.../* @__PURE__ */ new Set([
-        rx + 200,
-        rx + Math.round((rw - len) / 2),
-        rx + rw - len - 200
-      ])].filter((xPos) => xPos >= rx + 100 && xPos + len <= rx + rw - 100);
-      for (const xPos of xOffsets) {
-        rawWardCandidates.push({ x: xPos, y: ry + rh - wardDim2 - 150, w: len, d: wardDim2, rot: 0, wall: "SOUTH" }, { x: xPos, y: ry + 150, w: len, d: wardDim2, rot: 0, wall: "NORTH" });
+    for (const depth of [600, 550]) {
+      for (const len of [.../* @__PURE__ */ new Set([wardDim1, Math.min(wardDim1, 1400), Math.min(wardDim1, 1200), Math.min(wardDim1, 1e3)])]) {
+        const yOffsets = [.../* @__PURE__ */ new Set([
+          innerMinY,
+          ry + Math.round(rh * 0.25),
+          ry + Math.round((rh - len) / 2),
+          ry + Math.round(rh * 0.65) - Math.round(len / 2),
+          innerMaxY - len
+        ])].filter((yPos) => yPos >= innerMinY && yPos + len <= innerMaxY);
+        for (const yPos of yOffsets) {
+          rawWardCandidates.push({ x: innerMinX, y: yPos, w: depth, d: len, rot: 90, wall: "WEST" }, { x: innerMaxX - depth, y: yPos, w: depth, d: len, rot: 270, wall: "EAST" });
+        }
+        const xOffsets = [.../* @__PURE__ */ new Set([
+          innerMinX,
+          rx + Math.round((rw - len) / 2),
+          innerMaxX - len
+        ])].filter((xPos) => xPos >= innerMinX && xPos + len <= innerMaxX);
+        for (const xPos of xOffsets) {
+          rawWardCandidates.push({ x: xPos, y: innerMaxY - depth, w: len, d: depth, rot: 0, wall: "SOUTH" }, { x: xPos, y: innerMinY, w: len, d: depth, rot: 0, wall: "NORTH" });
+        }
       }
     }
     const wardCandidates = rawWardCandidates.filter((wc) => {
@@ -112597,7 +112881,7 @@ function furnishRoom(room, floor, _manifest) {
         return false;
       return true;
     });
-    const finalWardCandidates = wardCandidates.length > 0 ? wardCandidates : rawWardCandidates;
+    const finalWardCandidates = wardCandidates.length > 0 ? [...wardCandidates, ...rawWardCandidates] : rawWardCandidates;
     for (const wc of finalWardCandidates) {
       if (rw >= wc.w + 100 && rh >= wc.d + 100) {
         const init = items.length;
@@ -112617,16 +112901,31 @@ function furnishRoom(room, floor, _manifest) {
     }
   } else if ((room.type === RoomType.Kitchen || rName.includes("KITCHEN")) && !rName.includes("UTILITY") && !rName.includes("BALCONY")) {
     const counterD = 600;
-    const counterW = Math.min(3e3, rw - 400);
+    const counterW = Math.min(3e3, Math.max(1200, innerMaxX - innerMinX));
+    const counterH = Math.min(3e3, Math.max(1200, innerMaxY - innerMinY));
+    const wallPriority2 = /* @__PURE__ */ __name((wall) => {
+      if (wall === "NORTH" && hasNorthWindow)
+        return 0;
+      if (wall === "SOUTH" && hasSouthWindow)
+        return 0;
+      if (wall === "EAST" && hasEastWindow)
+        return 0;
+      if (wall === "WEST" && hasWestWindow)
+        return 0;
+      return 1;
+    }, "wallPriority");
     const rawCounterCandidates = [
-      { x: rx + 200, y: ry + rh - counterD - 150, w: counterW, d: counterD, wall: "SOUTH", isHoriz: true },
-      { x: rx + 200, y: ry + 150, w: counterW, d: counterD, wall: "NORTH", isHoriz: true },
-      { x: rx + rw - counterD - 150, y: ry + 200, w: counterD, d: Math.min(3e3, rh - 400), wall: "EAST", isHoriz: false },
-      { x: rx + 150, y: ry + 200, w: counterD, d: Math.min(3e3, rh - 400), wall: "WEST", isHoriz: false }
-    ];
-    for (const run of [1800, 1500, 1400]) {
-      for (let offset = 150; offset + run <= rh - 100; offset += 100) {
-        rawCounterCandidates.push({ x: rx + 100, y: ry + offset, w: counterD, d: run, wall: "WEST", isHoriz: false }, { x: rx + rw - counterD - 100, y: ry + offset, w: counterD, d: run, wall: "EAST", isHoriz: false });
+      { x: innerMinX, y: innerMaxY - counterD, w: counterW, d: counterD, wall: "SOUTH", isHoriz: true },
+      { x: innerMinX, y: innerMinY, w: counterW, d: counterD, wall: "NORTH", isHoriz: true },
+      { x: innerMaxX - counterD, y: innerMinY, w: counterD, d: counterH, wall: "EAST", isHoriz: false },
+      { x: innerMinX, y: innerMinY, w: counterD, d: counterH, wall: "WEST", isHoriz: false }
+    ].sort((a, b) => wallPriority2(a.wall) - wallPriority2(b.wall));
+    for (const run of [2e3, 1600, 1400]) {
+      for (let offset = innerMinY; offset + run <= innerMaxY; offset += 150) {
+        rawCounterCandidates.push({ x: innerMinX, y: offset, w: counterD, d: run, wall: "WEST", isHoriz: false }, { x: innerMaxX - counterD, y: offset, w: counterD, d: run, wall: "EAST", isHoriz: false });
+      }
+      for (let offset = innerMinX; offset + run <= innerMaxX; offset += 150) {
+        rawCounterCandidates.push({ x: offset, y: innerMinY, w: run, d: counterD, wall: "NORTH", isHoriz: true }, { x: offset, y: innerMaxY - counterD, w: run, d: counterD, wall: "SOUTH", isHoriz: true });
       }
     }
     const counterCandidates = rawCounterCandidates.filter((cc) => !collidesWithDoorClearance({ x: cc.x, y: cc.y, w: cc.w, h: cc.d }, doorBoxes));
@@ -112662,73 +112961,71 @@ function furnishRoom(room, floor, _manifest) {
     addItem("fridge", rx + rw - 850, ry + 150, 700, 700, 0, "EAST");
   } else if (rName.includes("UTILITY") || rName.includes("BALCONY")) {
   } else if (room.type === RoomType.Bathroom || rName.includes("BATH") || rName.includes("TOILET") || rName.includes("WC")) {
-    const wcCandidates = [
-      { x: rx + 200, y: ry + 200, w: 400, d: 700, wall: "NORTH" },
-      { x: rx + rw - 600, y: ry + 200, w: 400, d: 700, wall: "NORTH" },
-      { x: rx + 200, y: ry + rh - 900, w: 400, d: 700, wall: "SOUTH" },
-      { x: rx + rw - 600, y: ry + rh - 900, w: 400, d: 700, wall: "SOUTH" },
-      { x: rx + 200, y: ry + (rh - 700) / 2, w: 400, d: 700, wall: "WEST" },
-      { x: rx + rw - 600, y: ry + (rh - 700) / 2, w: 400, d: 700, wall: "EAST" }
-    ];
-    for (const wc of wcCandidates) {
-      if (rw >= wc.w + 100 && rh >= wc.d + 100) {
-        const init = items.length;
-        addItem("toilet", wc.x, wc.y, wc.w, wc.d, 0, wc.wall);
-        if (items.length > init)
-          break;
+    const tryWallFlushPlacement = /* @__PURE__ */ __name((kind, dims) => {
+      const innerW = innerMaxX - innerMinX;
+      const innerH = innerMaxY - innerMinY;
+      for (const { w, d } of dims) {
+        if (w > innerW + 20 || d > innerH + 20)
+          continue;
+        const stepX = Math.max(120, Math.floor((innerW - w) / 4) || 120);
+        const stepY = Math.max(120, Math.floor((innerH - d) / 4) || 120);
+        const xs = [innerMinX, innerMaxX - w];
+        for (let x = innerMinX + stepX; x < innerMaxX - w - 20; x += stepX)
+          xs.push(x);
+        const ys = [innerMinY, innerMaxY - d];
+        for (let y = innerMinY + stepY; y < innerMaxY - d - 20; y += stepY)
+          ys.push(y);
+        const candidates = [];
+        for (const x of xs) {
+          candidates.push({ x, y: innerMinY, wall: "NORTH" });
+          candidates.push({ x, y: innerMaxY - d, wall: "SOUTH" });
+        }
+        for (const y of ys) {
+          candidates.push({ x: innerMinX, y, wall: "WEST" });
+          candidates.push({ x: innerMaxX - w, y, wall: "EAST" });
+        }
+        for (const c of candidates) {
+          const init = items.length;
+          addItem(kind, c.x, c.y, w, d, 0, c.wall);
+          if (items.length > init)
+            return true;
+        }
       }
-    }
-    const sinkCandidates = [
-      { x: rx + 750, y: ry + 200, w: 450, d: 350, wall: "NORTH" },
-      { x: rx + 200, y: ry + 800, w: 350, d: 450, wall: "WEST" },
-      { x: rx + rw - 700, y: ry + 200, w: 500, d: 400, wall: "NORTH" },
-      { x: rx + rw - 700, y: ry + rh - 600, w: 500, d: 400, wall: "SOUTH" },
-      { x: rx + rw - 600, y: ry + (rh - 400) / 2, w: 500, d: 400, wall: "EAST" }
-    ];
-    for (const sc of sinkCandidates) {
-      if (rw >= sc.w + 100 && rh >= sc.d + 100) {
-        const init = items.length;
-        addItem("sink", sc.x, sc.y, sc.w, sc.d, 0, sc.wall);
-        if (items.length > init)
-          break;
-      }
-    }
+      return false;
+    }, "tryWallFlushPlacement");
+    tryWallFlushPlacement("toilet", [
+      { w: 400, d: 680 },
+      { w: 680, d: 400 },
+      { w: 380, d: 600 },
+      { w: 600, d: 380 }
+    ]);
     const is4BhkMasterBath = (rName.includes("MASTER") || rName.includes("ATTACHED")) && areaM2 >= 4.5;
     if (is4BhkMasterBath) {
       if (rw >= 2e3) {
-        addItem("bathtub", rx + 200, ry + rh - 850, 1700, 700, 0, "SOUTH");
+        addItem("bathtub", innerMinX, innerMaxY - 700, 1700, 700, 0, "SOUTH");
       } else if (rh >= 2e3) {
-        addItem("bathtub", rx + 200, ry + 200, 700, 1700, 90, "WEST");
+        addItem("bathtub", innerMinX, innerMinY, 700, 1700, 90, "WEST");
       }
       if (rw >= 2400) {
-        addItem("shower", rx + rw - 1e3, ry + rh - 1e3, 900, 900, 0, "SOUTH");
+        addItem("shower", innerMaxX - 900, innerMaxY - 900, 900, 900, 0, "SOUTH");
       }
     }
     if (!items.some((i) => i.roomId === room.id && (i.type === "shower" || i.type === "bathtub"))) {
-      const showerCandidates = [
-        { x: rx + rw - 1e3, y: ry + rh - 1e3, w: 900, d: 900, wall: "SOUTH" },
-        { x: rx + 200, y: ry + rh - 1e3, w: 900, d: 900, wall: "SOUTH" },
-        { x: rx + rw - 1e3, y: ry + 200, w: 900, d: 900, wall: "NORTH" },
-        { x: rx + 200, y: ry + 200, w: 900, d: 900, wall: "NORTH" },
-        { x: rx + rw - 850, y: ry + rh - 850, w: 800, d: 800, wall: "SOUTH" },
-        { x: rx + 150, y: ry + rh - 850, w: 800, d: 800, wall: "SOUTH" },
-        { x: rx + rw - 850, y: ry + 150, w: 800, d: 800, wall: "NORTH" },
-        { x: rx + 150, y: ry + 150, w: 800, d: 800, wall: "NORTH" }
-      ];
-      for (const sh of showerCandidates) {
-        if (rw >= sh.w + 100 && rh >= sh.d + 100) {
-          const init = items.length;
-          addItem("shower", sh.x, sh.y, sh.w, sh.d, 0, sh.wall);
-          if (items.length > init)
-            break;
-        }
-      }
-      if (!items.some((i) => i.roomId === room.id && (i.type === "shower" || i.type === "bathtub"))) {
-        const shX = Math.max(innerMinX, innerMaxX - 800);
-        const shY = Math.max(innerMinY, innerMaxY - 800);
-        addItem("shower", shX, shY, 800, 800, 0, "SOUTH", true);
-      }
+      tryWallFlushPlacement("shower", [
+        { w: 900, d: 900 },
+        { w: 800, d: 800 },
+        { w: 750, d: 750 },
+        { w: 650, d: 650 },
+        { w: 600, d: 600 },
+        { w: 550, d: 550 }
+      ]);
     }
+    tryWallFlushPlacement("sink", [
+      { w: 450, d: 350 },
+      { w: 350, d: 450 },
+      { w: 380, d: 300 },
+      { w: 300, d: 380 }
+    ]);
   } else if (!room.architecturalRole && (room.type === RoomType.Staircase || rName.includes("STAIR"))) {
     const stairW = Math.min(1200, rw - 400);
     const stairL = Math.min(3e3, rh - 400);
@@ -112876,6 +113173,593 @@ var ENGINEERING_MIN_ROOM_WIDTH = {
   [RoomType.Bathroom]: 1200,
   [RoomType.Balcony]: 1200
 };
+
+// ../planning-engine/dist/facade/facade-coordination-engine.js
+var FACADE_LINTEL_DATUM_MM = 2100;
+var CHAJJA_PROJECTION_MM = 600;
+var CHAJJA_FASCIA_MM = 100;
+var CHAJJA_MERGE_GAP_MM = 1500;
+var VERTICAL_BAY_CLUSTER_MM = 350;
+function standardizedWindowVerticals(room, win) {
+  if (room?.type === RoomType.Bathroom || win.type === WindowType.Ventilator) {
+    return { sillHeight: 1500, height: 600 };
+  }
+  if (room?.type === RoomType.Kitchen) {
+    return { sillHeight: 1100, height: 1e3 };
+  }
+  return { sillHeight: 900, height: 1200 };
+}
+__name(standardizedWindowVerticals, "standardizedWindowVerticals");
+function isBuiltSolidRoom(room) {
+  return architecturalSpaceRole(room) !== "OPEN_TO_SKY_VOID" && !room.tags?.includes("recess:perimeter") && !room.openToSky;
+}
+__name(isBuiltSolidRoom, "isBuiltSolidRoom");
+function cleanZero(v) {
+  return Object.is(v, -0) || Math.abs(v) < 1e-12 ? 0 : v;
+}
+__name(cleanZero, "cleanZero");
+function computeWallOutwardNormal(wall, floor) {
+  const dx = wall.endPoint.x - wall.startPoint.x;
+  const dy = wall.endPoint.y - wall.startPoint.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 10)
+    return null;
+  const ux = dx / len;
+  const uy = dy / len;
+  const nA = { x: cleanZero(-uy), y: cleanZero(ux) };
+  const nB = { x: cleanZero(uy), y: cleanZero(-ux) };
+  const mid2 = {
+    x: (wall.startPoint.x + wall.endPoint.x) / 2,
+    y: (wall.startPoint.y + wall.endPoint.y) / 2
+  };
+  const probeDist = (wall.thickness || 150) / 2 + 160;
+  const probeA = { x: mid2.x + nA.x * probeDist, y: mid2.y + nA.y * probeDist };
+  const probeB = { x: mid2.x + nB.x * probeDist, y: mid2.y + nB.y * probeDist };
+  const builtRooms = floor.rooms.filter(isBuiltSolidRoom);
+  const insideBuilt = /* @__PURE__ */ __name((pt) => builtRooms.some((r) => pointInPolygon(pt, r.boundary)), "insideBuilt");
+  const aOutBoundary = !pointInPolygon(probeA, floor.boundary);
+  const bOutBoundary = !pointInPolygon(probeB, floor.boundary);
+  if (aOutBoundary && !bOutBoundary)
+    return nA;
+  if (bOutBoundary && !aOutBoundary)
+    return nB;
+  const aOutBuilt = !insideBuilt(probeA);
+  const bOutBuilt = !insideBuilt(probeB);
+  if (aOutBuilt && !bOutBuilt)
+    return nA;
+  if (bOutBuilt && !aOutBuilt)
+    return nB;
+  return aOutBoundary ? nA : bOutBoundary ? nB : null;
+}
+__name(computeWallOutwardNormal, "computeWallOutwardNormal");
+function facadeSideFromNormal(normal) {
+  if (Math.abs(normal.y) >= 0.85) {
+    return normal.y < 0 ? "NORTH" : "SOUTH";
+  }
+  if (Math.abs(normal.x) >= 0.85) {
+    return normal.x < 0 ? "WEST" : "EAST";
+  }
+  return null;
+}
+__name(facadeSideFromNormal, "facadeSideFromNormal");
+function isExteriorOrOpenShaftWall(wall) {
+  return wall.wallUse === "EXTERNAL" || wall.type === WallType.External || wall.roomIds.length <= 1;
+}
+__name(isExteriorOrOpenShaftWall, "isExteriorOrOpenShaftWall");
+function measurePointSetDrift(refPts, targetPts) {
+  if (refPts.length === 0 || targetPts.length === 0)
+    return 0;
+  let maxDrift = 0;
+  for (const p of targetPts) {
+    let best = Infinity;
+    for (const q of refPts) {
+      const d = Math.hypot(p.x - q.x, p.y - q.y);
+      if (d < best)
+        best = d;
+    }
+    if (Number.isFinite(best) && best > maxDrift)
+      maxDrift = best;
+  }
+  return maxDrift;
+}
+__name(measurePointSetDrift, "measurePointSetDrift");
+function roomCenters(floor, predicate) {
+  return floor.rooms.filter(predicate).map((r) => {
+    const b = polygonBoundingBox(r.boundary);
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  });
+}
+__name(roomCenters, "roomCenters");
+function columnFootprintPoly(col) {
+  const hw = (col.width || 300) / 2;
+  const hd = (col.depth || 300) / 2;
+  return {
+    points: [
+      { x: col.position.x - hw, y: col.position.y - hd },
+      { x: col.position.x + hw, y: col.position.y - hd },
+      { x: col.position.x + hw, y: col.position.y + hd },
+      { x: col.position.x - hw, y: col.position.y + hd }
+    ]
+  };
+}
+__name(columnFootprintPoly, "columnFootprintPoly");
+function lockResidentialColumnsToReference(floors) {
+  const resIndices = [];
+  floors.forEach((f, idx) => {
+    if (f.floorUse === "RESIDENTIAL" || (f.apartmentUnits?.length ?? 0) > 0) {
+      resIndices.push(idx);
+    }
+  });
+  if (resIndices.length <= 1) {
+    return { floors: [...floors], coreAlignmentDriftMaxMm: 0 };
+  }
+  const refFloor = floors[resIndices[0]];
+  const updatedFloors = [...floors];
+  if (refFloor.columns.length > 0) {
+    const allBalconies = floors.flatMap((fl) => fl.rooms.filter((r) => r.type === RoomType.Balcony || r.type === RoomType.Utility));
+    const seenCoords = /* @__PURE__ */ new Set();
+    const dedupedRefCols = refFloor.columns.filter((col) => {
+      const key = `${col.position.x}:${col.position.y}`;
+      if (seenCoords.has(key))
+        return false;
+      seenCoords.add(key);
+      return true;
+    });
+    const sharedSafeColumns = dedupedRefCols.filter((col) => {
+      const colPoly = columnFootprintPoly(col);
+      return !allBalconies.some((balc) => polygonIntersectionArea(colPoly, balc.boundary) >= 1e-3);
+    });
+    const canonicalGrid = sharedSafeColumns.length > 0 ? sharedSafeColumns : dedupedRefCols;
+    for (let floorIdx = 0; floorIdx < updatedFloors.length; floorIdx++) {
+      const fl = updatedFloors[floorIdx];
+      if (fl.columns.length === 0)
+        continue;
+      const lockedCols = canonicalGrid.map((col, cIdx) => ({
+        ...col,
+        id: `${fl.id}::col_locked_${cIdx + 1}`,
+        floorId: fl.id,
+        position: { x: col.position.x, y: col.position.y }
+      }));
+      updatedFloors[floorIdx] = { ...fl, columns: lockedCols };
+    }
+  }
+  const refLifts = roomCenters(refFloor, (r) => r.type === RoomType.Lift);
+  const refStairs = roomCenters(refFloor, (r) => r.type === RoomType.Staircase);
+  const refOts = roomCenters(refFloor, (r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID" && !r.tags?.includes("recess:perimeter"));
+  const refShafts = roomCenters(refFloor, (r) => r.type === RoomType.ServiceShaft && architecturalSpaceRole(r) !== "OPEN_TO_SKY_VOID");
+  const refCols = updatedFloors[resIndices[0]].columns.map((c) => c.position);
+  let maxDrift = 0;
+  for (let k = 1; k < resIndices.length; k++) {
+    const fl = updatedFloors[resIndices[k]];
+    maxDrift = Math.max(maxDrift, measurePointSetDrift(refLifts, roomCenters(fl, (r) => r.type === RoomType.Lift)), measurePointSetDrift(refStairs, roomCenters(fl, (r) => r.type === RoomType.Staircase)), measurePointSetDrift(refOts, roomCenters(fl, (r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID" && !r.tags?.includes("recess:perimeter"))), measurePointSetDrift(refShafts, roomCenters(fl, (r) => r.type === RoomType.ServiceShaft && architecturalSpaceRole(r) !== "OPEN_TO_SKY_VOID")), measurePointSetDrift(refCols, fl.columns.map((c) => c.position)));
+  }
+  return {
+    floors: updatedFloors,
+    coreAlignmentDriftMaxMm: Math.round(maxDrift * 100) / 100
+  };
+}
+__name(lockResidentialColumnsToReference, "lockResidentialColumnsToReference");
+function openingAlongWall(wall, pos) {
+  const dx = wall.endPoint.x - wall.startPoint.x;
+  const dy = wall.endPoint.y - wall.startPoint.y;
+  const len = Math.hypot(dx, dy);
+  if (len <= 1e-6)
+    return 0;
+  return ((pos.x - wall.startPoint.x) * dx + (pos.y - wall.startPoint.y) * dy) / len;
+}
+__name(openingAlongWall, "openingAlongWall");
+function noOpeningCollisionOnWall(wall, candidateCenterAlong, candidateWidth, candidateId, floor) {
+  const c0 = candidateCenterAlong - candidateWidth / 2;
+  const c1 = candidateCenterAlong + candidateWidth / 2;
+  const minGap = 60;
+  for (const d of floor.doors) {
+    if (d.wallId !== wall.id)
+      continue;
+    const t = openingAlongWall(wall, d.position);
+    if (c0 < t + d.width / 2 + minGap && c1 > t - d.width / 2 - minGap)
+      return false;
+  }
+  for (const w of floor.windows) {
+    if (w.wallId !== wall.id || w.id === candidateId)
+      continue;
+    const t = openingAlongWall(wall, w.position);
+    if (c0 < t + w.width / 2 + minGap && c1 > t - w.width / 2 - minGap)
+      return false;
+  }
+  return true;
+}
+__name(noOpeningCollisionOnWall, "noOpeningCollisionOnWall");
+function coordinateVerticalWindowDatum(floors) {
+  const nextFloors = floors.map((floor) => {
+    const isRes = floor.floorUse === "RESIDENTIAL" || (floor.apartmentUnits?.length ?? 0) > 0;
+    if (!isRes)
+      return floor;
+    const roomById = new Map(floor.rooms.map((r) => [r.id, r]));
+    const nextWindows = floor.windows.map((win) => {
+      const room = roomById.get(win.roomId);
+      const { sillHeight, height } = standardizedWindowVerticals(room, win);
+      return {
+        ...win,
+        sillHeight,
+        height,
+        sillHeightMm: sillHeight,
+        heightMm: height,
+        widthMm: win.width
+      };
+    });
+    const nextDoors = floor.doors.map((door) => {
+      const connectsBalcony = door.connectsRooms.some((id) => roomById.get(id)?.type === RoomType.Balcony);
+      if (door.type === DoorType.Sliding && connectsBalcony) {
+        return {
+          ...door,
+          height: FACADE_LINTEL_DATUM_MM,
+          heightMm: FACADE_LINTEL_DATUM_MM,
+          sillHeightMm: 0
+        };
+      }
+      return door;
+    });
+    return { ...floor, windows: nextWindows, doors: nextDoors };
+  });
+  const extWins = [];
+  nextFloors.forEach((floor, floorIdx) => {
+    const isRes = floor.floorUse === "RESIDENTIAL" || (floor.apartmentUnits?.length ?? 0) > 0;
+    if (!isRes)
+      return;
+    const wallById = new Map(floor.walls.map((w) => [w.id, w]));
+    floor.windows.forEach((win, winIdx) => {
+      const wall = wallById.get(win.wallId);
+      if (!wall || wall.arc || !isExteriorOrOpenShaftWall(wall))
+        return;
+      const outN = computeWallOutwardNormal(wall, floor);
+      if (!outN)
+        return;
+      const side = facadeSideFromNormal(outN);
+      if (!side)
+        return;
+      const isHoriz = side === "NORTH" || side === "SOUTH";
+      const planeCoord = isHoriz ? (wall.startPoint.y + wall.endPoint.y) / 2 : (wall.startPoint.x + wall.endPoint.x) / 2;
+      const planeBucket = Math.round(planeCoord / 150) * 150;
+      const axisCoord = isHoriz ? win.position.x : win.position.y;
+      extWins.push({
+        floorIdx,
+        winIdx,
+        wall,
+        side,
+        planeKey: `${side}:${planeBucket}`,
+        axisCoord,
+        width: win.width
+      });
+    });
+  });
+  const byPlane = /* @__PURE__ */ new Map();
+  for (const item of extWins) {
+    const arr = byPlane.get(item.planeKey) ?? [];
+    arr.push(item);
+    byPlane.set(item.planeKey, arr);
+  }
+  let maxJambDrift = 0;
+  for (const items of byPlane.values()) {
+    items.sort((a, b) => a.floorIdx - b.floorIdx || a.axisCoord - b.axisCoord);
+    const clusters = [];
+    for (const item of items) {
+      const match = clusters.find((c) => Math.abs(c.datum - item.axisCoord) <= VERTICAL_BAY_CLUSTER_MM);
+      if (match) {
+        match.members.push(item);
+      } else {
+        clusters.push({ datum: item.axisCoord, members: [item] });
+      }
+    }
+    for (const cluster of clusters) {
+      if (cluster.members.length < 2)
+        continue;
+      const datum = Math.round(cluster.datum);
+      for (const m of cluster.members) {
+        const fl = nextFloors[m.floorIdx];
+        const win = fl.windows[m.winIdx];
+        const isHoriz = m.side === "NORTH" || m.side === "SOUTH";
+        const wall = m.wall;
+        const dx = wall.endPoint.x - wall.startPoint.x;
+        const dy = wall.endPoint.y - wall.startPoint.y;
+        const wallLen = Math.hypot(dx, dy);
+        if (wallLen < 400)
+          continue;
+        const targetPos = isHoriz ? { x: datum, y: win.position.y } : { x: win.position.x, y: datum };
+        const along = openingAlongWall(wall, targetPos);
+        const clampedPos = {
+          x: wall.startPoint.x + dx / wallLen * along,
+          y: wall.startPoint.y + dy / wallLen * along
+        };
+        if (Math.abs(along - openingAlongWall(wall, win.position)) > 0.5 && openingFitsApartmentWall(wall, clampedPos, win.width) && noOpeningCollisionOnWall(wall, along, win.width, win.id, fl)) {
+          const updatedWins = [...fl.windows];
+          updatedWins[m.winIdx] = { ...win, position: clampedPos };
+          nextFloors[m.floorIdx] = { ...fl, windows: updatedWins };
+          m.axisCoord = isHoriz ? clampedPos.x : clampedPos.y;
+        }
+      }
+      const coords = cluster.members.map((m) => m.axisCoord);
+      const bayDrift = Math.max(...coords) - Math.min(...coords);
+      if (bayDrift > maxJambDrift)
+        maxJambDrift = bayDrift;
+    }
+  }
+  return {
+    floors: nextFloors,
+    verticalJambDriftMaxMm: Math.round(maxJambDrift * 100) / 100
+  };
+}
+__name(coordinateVerticalWindowDatum, "coordinateVerticalWindowDatum");
+function synthesizeCoordinatedChajjaBands(floors) {
+  const bands = [];
+  let bandSeq = 1;
+  for (const floor of floors) {
+    const isRes = floor.floorUse === "RESIDENTIAL" || (floor.apartmentUnits?.length ?? 0) > 0;
+    if (!isRes)
+      continue;
+    const wallById = new Map(floor.walls.map((w) => [w.id, w]));
+    const straightGroups = /* @__PURE__ */ new Map();
+    const narrowOtsVoids = floor.rooms.filter((r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID" && !r.tags?.includes("recess:perimeter") && Math.min(r.width, r.height) < 2400);
+    for (const win of floor.windows) {
+      const wall = wallById.get(win.wallId);
+      if (!wall)
+        continue;
+      if (wall.wallUse === "BALCONY" || wall.wallUse === "SHAFT")
+        continue;
+      const isExt = isExteriorOrOpenShaftWall(wall);
+      if (!isExt)
+        continue;
+      const outN = computeWallOutwardNormal(wall, floor);
+      if (!outN)
+        continue;
+      const outProbe = {
+        x: win.position.x + outN.x * 350,
+        y: win.position.y + outN.y * 350
+      };
+      if (narrowOtsVoids.some((v) => pointInPolygon(outProbe, v.boundary))) {
+        continue;
+      }
+      if (wall.arc && wall.arc.radiusMm > 0) {
+        const dx = wall.endPoint.x - wall.startPoint.x;
+        const dy = wall.endPoint.y - wall.startPoint.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const halfSpan = win.width / 2 + 150;
+        bands.push({
+          id: `chajja_band_${floor.id}_${bandSeq++}`,
+          floorId: floor.id,
+          facadeSide: "CURVED",
+          wallIds: [wall.id],
+          windowIds: [win.id],
+          startPoint: { x: win.position.x - ux * halfSpan, y: win.position.y - uy * halfSpan },
+          endPoint: { x: win.position.x + ux * halfSpan, y: win.position.y + uy * halfSpan },
+          outwardNormal: outN,
+          projectionMm: CHAJJA_PROJECTION_MM,
+          lintelHeightMm: FACADE_LINTEL_DATUM_MM,
+          fasciaThicknessMm: CHAJJA_FASCIA_MM,
+          mergedWindowCount: 1,
+          arc: wall.arc
+        });
+        continue;
+      }
+      const side = facadeSideFromNormal(outN);
+      if (!side) {
+        const dx = wall.endPoint.x - wall.startPoint.x;
+        const dy = wall.endPoint.y - wall.startPoint.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const halfSpan = win.width / 2 + 150;
+        bands.push({
+          id: `chajja_band_${floor.id}_${bandSeq++}`,
+          floorId: floor.id,
+          facadeSide: Math.abs(outN.y) >= Math.abs(outN.x) ? outN.y < 0 ? "NORTH" : "SOUTH" : outN.x < 0 ? "WEST" : "EAST",
+          wallIds: [wall.id],
+          windowIds: [win.id],
+          startPoint: { x: win.position.x - ux * halfSpan, y: win.position.y - uy * halfSpan },
+          endPoint: { x: win.position.x + ux * halfSpan, y: win.position.y + uy * halfSpan },
+          outwardNormal: outN,
+          projectionMm: CHAJJA_PROJECTION_MM,
+          lintelHeightMm: FACADE_LINTEL_DATUM_MM,
+          fasciaThicknessMm: CHAJJA_FASCIA_MM,
+          mergedWindowCount: 1
+        });
+        continue;
+      }
+      const isHoriz = side === "NORTH" || side === "SOUTH";
+      const planeCoord = isHoriz ? (wall.startPoint.y + wall.endPoint.y) / 2 : (wall.startPoint.x + wall.endPoint.x) / 2;
+      const planeBucket = Math.round(planeCoord / 120) * 120;
+      const center2 = isHoriz ? win.position.x : win.position.y;
+      const key = `${side}:${planeBucket}`;
+      const list2 = straightGroups.get(key) ?? [];
+      list2.push({
+        win,
+        wall,
+        side,
+        outN,
+        planeCoord,
+        t0: center2 - win.width / 2,
+        t1: center2 + win.width / 2
+      });
+      straightGroups.set(key, list2);
+    }
+    for (const group of straightGroups.values()) {
+      group.sort((a, b) => a.t0 - b.t0);
+      const mergedRuns = [];
+      for (const item of group) {
+        const current = mergedRuns.at(-1);
+        if (!current) {
+          mergedRuns.push([item]);
+          continue;
+        }
+        const prevMaxT1 = Math.max(...current.map((c) => c.t1));
+        if (item.t0 - prevMaxT1 <= CHAJJA_MERGE_GAP_MM) {
+          current.push(item);
+        } else {
+          mergedRuns.push([item]);
+        }
+      }
+      for (const run of mergedRuns) {
+        const first = run[0];
+        const isHoriz = first.side === "NORTH" || first.side === "SOUTH";
+        const planeAvg = run.reduce((s, r) => s + r.planeCoord, 0) / run.length;
+        const wallHalfThick = Math.max(...run.map((r) => (r.wall.thickness || 230) / 2));
+        const faceOffset = wallHalfThick;
+        const startT = Math.min(...run.map((r) => r.t0)) - 150;
+        const endT = Math.max(...run.map((r) => r.t1)) + 150;
+        const startPoint = isHoriz ? { x: startT, y: planeAvg + first.outN.y * faceOffset } : { x: planeAvg + first.outN.x * faceOffset, y: startT };
+        const endPoint = isHoriz ? { x: endT, y: planeAvg + first.outN.y * faceOffset } : { x: planeAvg + first.outN.x * faceOffset, y: endT };
+        bands.push({
+          id: `chajja_band_${floor.id}_${bandSeq++}`,
+          floorId: floor.id,
+          facadeSide: first.side,
+          wallIds: [...new Set(run.map((r) => r.wall.id))],
+          windowIds: run.map((r) => r.win.id),
+          startPoint,
+          endPoint,
+          outwardNormal: first.outN,
+          projectionMm: CHAJJA_PROJECTION_MM,
+          lintelHeightMm: FACADE_LINTEL_DATUM_MM,
+          fasciaThicknessMm: CHAJJA_FASCIA_MM,
+          mergedWindowCount: run.length
+        });
+      }
+    }
+  }
+  return bands;
+}
+__name(synthesizeCoordinatedChajjaBands, "synthesizeCoordinatedChajjaBands");
+function synthesizeOtsLouverScreens(floors) {
+  const screens = [];
+  let seq = 1;
+  for (const floor of floors) {
+    const isRes = floor.floorUse === "RESIDENTIAL" || (floor.apartmentUnits?.length ?? 0) > 0;
+    if (!isRes)
+      continue;
+    const fBox = polygonBoundingBox(floor.boundary);
+    const tol = 25;
+    const clearH = Math.max(2100, floor.floorHeight - (floor.slabThicknessMm ?? 150));
+    for (const room of floor.rooms) {
+      const isOts = architecturalSpaceRole(room) === "OPEN_TO_SKY_VOID" && !room.tags?.includes("recess:perimeter");
+      const isUtility = room.type === RoomType.Utility;
+      if (!isOts && !isUtility)
+        continue;
+      const rBox = polygonBoundingBox(room.boundary);
+      const edges = [
+        {
+          start: { x: rBox.x, y: rBox.y },
+          end: { x: rBox.x + rBox.width, y: rBox.y },
+          normal: { x: 0, y: -1 },
+          onOuter: Math.abs(rBox.y - fBox.y) <= tol
+        },
+        {
+          start: { x: rBox.x, y: rBox.y + rBox.height },
+          end: { x: rBox.x + rBox.width, y: rBox.y + rBox.height },
+          normal: { x: 0, y: 1 },
+          onOuter: Math.abs(rBox.y + rBox.height - (fBox.y + fBox.height)) <= tol
+        },
+        {
+          start: { x: rBox.x, y: rBox.y },
+          end: { x: rBox.x, y: rBox.y + rBox.height },
+          normal: { x: -1, y: 0 },
+          onOuter: Math.abs(rBox.x - fBox.x) <= tol
+        },
+        {
+          start: { x: rBox.x + rBox.width, y: rBox.y },
+          end: { x: rBox.x + rBox.width, y: rBox.y + rBox.height },
+          normal: { x: 1, y: 0 },
+          onOuter: Math.abs(rBox.x + rBox.width - (fBox.x + fBox.width)) <= tol
+        }
+      ];
+      for (const e of edges) {
+        if (!e.onOuter)
+          continue;
+        const span = Math.hypot(e.end.x - e.start.x, e.end.y - e.start.y);
+        if (span < 600)
+          continue;
+        screens.push({
+          id: `louver_${floor.id}_${seq++}`,
+          floorId: floor.id,
+          roomId: room.id,
+          kind: isUtility ? "UTILITY_BALCONY" : "OTS_DUCT",
+          startPoint: e.start,
+          endPoint: e.end,
+          outwardNormal: e.normal,
+          bottomMm: isUtility ? 1050 : 0,
+          topMm: clearH,
+          slatPitchMm: 120
+        });
+      }
+    }
+  }
+  return screens;
+}
+__name(synthesizeOtsLouverScreens, "synthesizeOtsLouverScreens");
+function synthesizeGalleryBays(floors, mode) {
+  const resFloors = floors.filter((f) => f.floorUse === "RESIDENTIAL" || (f.apartmentUnits?.length ?? 0) > 0).sort((a, b) => a.level - b.level);
+  const isPrimaryGallery = /* @__PURE__ */ __name((room) => room.type === RoomType.Balcony && (/sit-?out/i.test(room.name) || room.id.endsWith("__balcony") && !/__bed|master_bed/i.test(room.id)), "isPrimaryGallery");
+  return resFloors.map((floor, idx) => {
+    const variant = idx % 2 === 0 ? "ODD" : "EVEN";
+    const galleries = floor.rooms.filter((r) => r.type === RoomType.Balcony);
+    const primaryGalleries = galleries.filter(isPrimaryGallery);
+    const upperFloor = resFloors[idx + 1];
+    const upperPrimary = upperFloor ? upperFloor.rooms.filter(isPrimaryGallery) : [];
+    const doubleHeightRoomIds = [];
+    if (mode === "DOUBLE_HEIGHT_STAGGER") {
+      for (const gal of primaryGalleries) {
+        const coveredDirectlyAbove = upperPrimary.some((up) => polygonIntersectionArea(gal.boundary, up.boundary) > Math.max(1e5, gal.area * 0.35));
+        if (!coveredDirectlyAbove) {
+          doubleHeightRoomIds.push(gal.id);
+        }
+      }
+    }
+    return {
+      floorId: floor.id,
+      level: floor.level,
+      variant,
+      mode,
+      galleryRoomIds: galleries.map((g) => g.id),
+      doubleHeightRoomIds
+    };
+  });
+}
+__name(synthesizeGalleryBays, "synthesizeGalleryBays");
+function coordinateBuildingFacade(building, options) {
+  const galleryCoordinationMode = options?.galleryCoordinationMode ?? building.metadata.generationBrief?.galleryCoordinationMode ?? (building.metadata.generationBrief?.staggeredBalconies === true ? "DOUBLE_HEIGHT_STAGGER" : "STACKED_RIBBON");
+  const { floors: lockedFloors, coreAlignmentDriftMaxMm } = lockResidentialColumnsToReference(building.floors);
+  const { floors: coordinatedFloors, verticalJambDriftMaxMm } = coordinateVerticalWindowDatum(lockedFloors);
+  const includeChajjas = options?.includeWindowChajjas ?? building.metadata.generationBrief?.includeWindowChajjas ?? true;
+  const chajjaBands = includeChajjas ? synthesizeCoordinatedChajjaBands(coordinatedFloors) : [];
+  const otsLouverScreens = synthesizeOtsLouverScreens(coordinatedFloors);
+  const galleryBays = synthesizeGalleryBays(coordinatedFloors, galleryCoordinationMode);
+  const flatExposures = options?.flatExposures ?? building.metadata.facadeCoordination?.flatExposures ?? [];
+  const facadeCoordination = {
+    galleryCoordinationMode,
+    lintelDatumMm: FACADE_LINTEL_DATUM_MM,
+    verticalJambDriftMaxMm,
+    coreAlignmentDriftMaxMm,
+    chajjaBands,
+    otsLouverScreens,
+    galleryBays,
+    flatExposures
+  };
+  return {
+    ...building,
+    floors: coordinatedFloors,
+    metadata: {
+      ...building.metadata,
+      facadeCoordination,
+      ...building.metadata.generationBrief ? {
+        generationBrief: {
+          ...building.metadata.generationBrief,
+          galleryCoordinationMode,
+          staggeredBalconies: galleryCoordinationMode === "DOUBLE_HEIGHT_STAGGER"
+        }
+      } : {}
+    }
+  };
+}
+__name(coordinateBuildingFacade, "coordinateBuildingFacade");
 
 // ../planning-engine/dist/interpretation/architectural-placement.js
 function interpretArchitecturalPlacement(prompt = "") {
@@ -113450,8 +114334,201 @@ function resolveArchetypeSlicingParams(archetype) {
   }
 }
 __name(resolveArchetypeSlicingParams, "resolveArchetypeSlicingParams");
+function sharedSegmentOverlap1D(a0, a1, b0, b1) {
+  return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
+}
+__name(sharedSegmentOverlap1D, "sharedSegmentOverlap1D");
+function boxEdgeSharedWithList(flatBox, side, boxes = []) {
+  const tol = 15;
+  let total = 0;
+  for (const b of boxes) {
+    if (side === "NORTH" && Math.abs(b.y + b.h - flatBox.y) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.x, flatBox.x + flatBox.w, b.x, b.x + b.w);
+    } else if (side === "SOUTH" && Math.abs(b.y - (flatBox.y + flatBox.h)) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.x, flatBox.x + flatBox.w, b.x, b.x + b.w);
+    } else if (side === "WEST" && Math.abs(b.x + b.w - flatBox.x) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.y, flatBox.y + flatBox.h, b.y, b.y + b.h);
+    } else if (side === "EAST" && Math.abs(b.x - (flatBox.x + flatBox.w)) <= tol) {
+      total += sharedSegmentOverlap1D(flatBox.y, flatBox.y + flatBox.h, b.y, b.y + b.h);
+    }
+  }
+  return total;
+}
+__name(boxEdgeSharedWithList, "boxEdgeSharedWithList");
+function pointToSegmentDistance2(px2, py2, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq <= 1e-6)
+    return Math.hypot(px2 - ax, py2 - ay);
+  const t = Math.max(0, Math.min(1, ((px2 - ax) * dx + (py2 - ay) * dy) / lenSq));
+  return Math.hypot(px2 - (ax + t * dx), py2 - (ay + t * dy));
+}
+__name(pointToSegmentDistance2, "pointToSegmentDistance");
+function scoreFlatExteriorEdges(flatBox, context) {
+  const { flatId = "flat", envelope, accessEdge, otsShaftBoxes = [], recessBoxes = [], roadAccessSides = [], setbacksMm, irregularPlotBoundary } = context;
+  const roadSet = new Set(roadAccessSides.map((side) => String(side).toUpperCase()));
+  const tol = 15;
+  const sides = ["NORTH", "SOUTH", "EAST", "WEST"];
+  const edgeMidpoint = /* @__PURE__ */ __name((side) => {
+    switch (side) {
+      case "NORTH":
+        return { x: flatBox.x + flatBox.w / 2, y: flatBox.y };
+      case "SOUTH":
+        return { x: flatBox.x + flatBox.w / 2, y: flatBox.y + flatBox.h };
+      case "WEST":
+        return { x: flatBox.x, y: flatBox.y + flatBox.h / 2 };
+      case "EAST":
+        return { x: flatBox.x + flatBox.w, y: flatBox.y + flatBox.h / 2 };
+    }
+  }, "edgeMidpoint");
+  const edgeLength = /* @__PURE__ */ __name((side) => side === "NORTH" || side === "SOUTH" ? flatBox.w : flatBox.h, "edgeLength");
+  const irregularInfoForSide = /* @__PURE__ */ __name((side) => {
+    const pts = irregularPlotBoundary?.polygon.points;
+    if (!pts || pts.length < 3)
+      return { isRoadEdge: false, isAngledEdge: false, distMm: 3e3 };
+    const mid2 = edgeMidpoint(side);
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const a2 = pts[i];
+      const b2 = pts[(i + 1) % pts.length];
+      const d = pointToSegmentDistance2(mid2.x, mid2.y, a2.x, a2.y, b2.x, b2.y);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    const a = pts[bestIdx];
+    const b = pts[(bestIdx + 1) % pts.length];
+    const dx = Math.abs(b.x - a.x);
+    const dy = Math.abs(b.y - a.y);
+    const isAngledEdge = dx > 250 && dy > 250;
+    const isRoadEdge = irregularPlotBoundary?.roadEdgeIndex === bestIdx;
+    return { isRoadEdge, isAngledEdge, distMm: bestDist };
+  }, "irregularInfoForSide");
+  const setbackForSide = /* @__PURE__ */ __name((side) => {
+    if (irregularPlotBoundary) {
+      return irregularInfoForSide(side).distMm;
+    }
+    if (!setbacksMm)
+      return 3e3;
+    if (side === "SOUTH")
+      return setbacksMm.front;
+    if (side === "NORTH")
+      return setbacksMm.rear;
+    if (side === "WEST")
+      return setbacksMm.left;
+    return setbacksMm.right;
+  }, "setbackForSide");
+  const rawSides = sides.map((side) => {
+    const len = edgeLength(side);
+    const isCorridor = side === accessEdge;
+    const onEnvelope = side === "NORTH" && Math.abs(flatBox.y - envelope.y) <= tol || side === "SOUTH" && Math.abs(flatBox.y + flatBox.h - (envelope.y + envelope.h)) <= tol || side === "WEST" && Math.abs(flatBox.x - envelope.x) <= tol || side === "EAST" && Math.abs(flatBox.x + flatBox.w - (envelope.x + envelope.w)) <= tol;
+    const recessOverlap = boxEdgeSharedWithList(flatBox, side, recessBoxes);
+    const otsOverlap = boxEdgeSharedWithList(flatBox, side, otsShaftBoxes);
+    const isExterior = !isCorridor && (onEnvelope || recessOverlap >= 1200);
+    const irr = irregularInfoForSide(side);
+    const isRoad = isExterior && (roadSet.has(side) || irr.isRoadEdge);
+    const setbackMm = setbackForSide(side);
+    return {
+      side,
+      len,
+      isCorridor,
+      isExterior,
+      otsOverlap,
+      isRoad,
+      isAngledEdge: irr.isAngledEdge,
+      setbackMm
+    };
+  });
+  const exteriorSides = rawSides.filter((s) => s.isExterior);
+  const isCornerFlat = exteriorSides.length >= 2;
+  const maxExtLen = Math.max(1, ...exteriorSides.map((s) => s.len));
+  const edgeScores = rawSides.map((s) => {
+    let tier;
+    let classification;
+    let score;
+    if (s.isCorridor) {
+      tier = 4;
+      classification = "CORRIDOR_ENTRY";
+      score = 12;
+    } else if (s.isExterior) {
+      const lengthBonus = Math.min(8, s.len / maxExtLen * 6 + s.len / 6e3);
+      const setbackBonus = Math.min(6, s.setbackMm / 1500);
+      if (s.isRoad) {
+        tier = 1;
+        classification = "ROAD_FRONTAGE";
+        score = Math.round((105 + lengthBonus + setbackBonus) * 10) / 10;
+      } else if (isCornerFlat && (s.len >= maxExtLen * 0.85 || s.isAngledEdge)) {
+        tier = 1;
+        classification = "CORNER_DUAL_ASPECT";
+        score = Math.round((92 + lengthBonus + setbackBonus) * 10) / 10;
+      } else {
+        tier = 2;
+        classification = "EXTERIOR_SETBACK";
+        score = Math.round((75 + lengthBonus + setbackBonus) * 10) / 10;
+      }
+    } else if (s.otsOverlap >= 1e3) {
+      tier = 3;
+      classification = "INTERFLAT_OTS_DUCT";
+      score = Math.round((45 + Math.min(10, s.otsOverlap / Math.max(1, s.len) * 10)) * 10) / 10;
+    } else {
+      tier = 4;
+      classification = "PARTY_WALL";
+      score = 5;
+    }
+    return {
+      edge: s.side,
+      tier,
+      score,
+      classification,
+      lengthMm: Math.round(s.len)
+    };
+  });
+  const sorted = [...edgeScores].sort((a, b) => b.score - a.score);
+  const primary = sorted[0];
+  const secondary = sorted[1] && sorted[1].tier <= 2 ? sorted[1] : void 0;
+  const hasAngledExposure = rawSides.some((s) => s.isExterior && s.isAngledEdge);
+  const hasRoadExposure = rawSides.some((s) => s.isRoad);
+  let orientationMode;
+  if (irregularPlotBoundary && (hasAngledExposure || isCornerFlat)) {
+    orientationMode = hasAngledExposure ? "ANGLED_PERIMETER_FIT" : hasRoadExposure ? "CORNER_L_WRAP" : primary.edge === "NORTH" || primary.edge === "SOUTH" ? "NORTH_SOUTH" : "EAST_WEST";
+  } else if (hasRoadExposure && secondary) {
+    orientationMode = "CORNER_L_WRAP";
+  } else if (primary.edge === "NORTH" || primary.edge === "SOUTH") {
+    orientationMode = "NORTH_SOUTH";
+  } else {
+    orientationMode = "EAST_WEST";
+  }
+  let livingBaySide;
+  if (orientationMode === "ANGLED_PERIMETER_FIT") {
+    const westSide = rawSides.find((s) => s.side === "WEST");
+    const eastSide = rawSides.find((s) => s.side === "EAST");
+    livingBaySide = westSide?.isExterior && westSide.isAngledEdge || eastSide?.isExterior && eastSide.setbackMm > (westSide?.setbackMm ?? 0) ? "EXTERIOR_SIDE" : "CORRIDOR_SIDE";
+  } else if (orientationMode === "CORNER_L_WRAP") {
+    livingBaySide = "CORRIDOR_SIDE";
+  } else if (orientationMode === "NORTH_SOUTH") {
+    livingBaySide = "EXTERIOR_SIDE";
+  } else {
+    livingBaySide = primary.edge === "EAST" ? "CORRIDOR_SIDE" : "EXTERIOR_SIDE";
+  }
+  const crossVentilationAxis = orientationMode === "CORNER_L_WRAP" || orientationMode === "ANGLED_PERIMETER_FIT" ? "CORNER_DIAGONAL" : primary.edge === "NORTH" || primary.edge === "SOUTH" ? "NORTH_SOUTH" : "EAST_WEST";
+  return {
+    flatId,
+    orientationMode,
+    primaryExteriorEdge: primary.edge,
+    ...secondary ? { secondaryExteriorEdge: secondary.edge } : {},
+    livingExteriorEdge: primary.edge,
+    livingExposureTier: primary.tier,
+    crossVentilationAxis,
+    livingBaySide,
+    edgeScores
+  };
+}
+__name(scoreFlatExteriorEdges, "scoreFlatExteriorEdges");
 function sliceFlatRooms(params) {
-  const { flatId, flatLabel, unitType, box, corridorIsEast, corridorBox, envelope, rawRooms = [], placement, archetype } = params;
+  const { flatId, flatLabel, unitType, box, corridorIsEast, corridorBox, envelope, rawRooms = [], placement, archetype, localExposure } = params;
   const arch = resolveArchetypeSlicingParams(archetype);
   const rooms = [];
   const flatOpenings = [];
@@ -113471,9 +114548,9 @@ function sliceFlatRooms(params) {
       livingZoneW = box.w - bedZoneW;
     }
   } else {
-    livingZoneW = snap10(Math.min(Math.max(6500, box.w - 5800), Math.max(3600, box.w * arch.livingZoneRatio)));
+    livingZoneW = snap10(Math.min(Math.max(6650, box.w - 5800), Math.max(3600, box.w * arch.livingZoneRatio)));
     bedZoneW = box.w - livingZoneW;
-    const maxSingleColBedW = snap10(Math.max(4200, Math.min(6e3, box.h * 0.65)));
+    const maxSingleColBedW = snap10(Math.max(4250, Math.min(6e3, box.h * 0.65)));
     if ((unitType === "1BHK" || unitType === "2BHK") && bedZoneW > maxSingleColBedW && box.w - maxSingleColBedW >= 3600) {
       bedZoneW = maxSingleColBedW;
       livingZoneW = box.w - bedZoneW;
@@ -113482,144 +114559,809 @@ function sliceFlatRooms(params) {
       bedZoneW = 3600;
       livingZoneW = box.w - bedZoneW;
     }
-    if (placement?.bedroomBalconies === "ALL_BEDROOMS" && bedZoneW < 4200 && box.w >= 7800) {
-      bedZoneW = 4200;
+    if (placement?.bedroomBalconies === "ALL_BEDROOMS" && bedZoneW < 4250 && box.w >= 7750) {
+      bedZoneW = Math.min(4250, box.w - 3550);
       livingZoneW = box.w - bedZoneW;
+    }
+    if (unitType === "2BHK" && box.w >= 10950 && livingZoneW < 6600 && box.w - 6600 >= 4350) {
+      livingZoneW = 6600;
+      bedZoneW = box.w - livingZoneW;
     }
   }
   const livingZoneX = corridorIsEast ? box.x + bedZoneW : box.x;
   const bedZoneX = corridorIsEast ? box.x : box.x + livingZoneW;
-  const isSouth = box.y > envelope.y + 100;
-  const baseKitchRatio = placement?.kitchenSize === "LARGER" ? 0.58 : 0.53;
-  const kitchRatio = arch.isDefault ? baseKitchRatio : Math.max(0.42, Math.min(0.64, baseKitchRatio + arch.kitchRatioOffset));
-  const rawKitchW = snap10(livingZoneW * kitchRatio);
-  const kitchW = arch.isDefault || livingZoneW < 3100 ? rawKitchW : Math.min(livingZoneW - 1400, Math.max(1600, rawKitchW));
-  const livW = livingZoneW - kitchW;
-  const livX = arch.swapKitchenLiving ? corridorIsEast ? livingZoneX : livingZoneX + kitchW : corridorIsEast ? livingZoneX + kitchW : livingZoneX;
-  const kitchX = arch.swapKitchenLiving ? corridorIsEast ? livingZoneX + livW : livingZoneX : corridorIsEast ? livingZoneX : livingZoneX + livW;
+  const isSouth = localExposure ? localExposure.primaryLocalY === "HIGH_Y" : box.y > envelope.y + 100;
   const utilDepth = box.h < 7e3 ? 1e3 : box.h < 9e3 ? 1200 : 1430;
   const baseBalconyDepth = box.h < 9e3 ? 1450 : placement?.sitoutSize === "COMPACT" ? 1550 : 1830;
   const balconyDepth = arch.extraBalconyDepth > 0 && box.h >= 9e3 ? Math.min(2e3, baseBalconyDepth + arch.extraBalconyDepth) : baseBalconyDepth;
-  const flatAreaSqM = box.w * box.h / 1e6;
-  const scaledKitchenArea = Math.min(24e6, Math.max(125e5, snap10(flatAreaSqM * 0.08 * 10) * 1e5));
-  const ratioKitchenTarget = snap10(livingZoneW * Math.min(8500, Math.max(3600, box.h * 0.5)) / 3.35);
-  const kitchenTargetArea = Math.max(ratioKitchenTarget, placement?.kitchenSize === "LARGER" ? Math.max(15e6, scaledKitchenArea * 1.15) : scaledKitchenArea);
-  const kitchenTargetDepth = utilDepth + Math.ceil(kitchenTargetArea / kitchW / 10) * 10;
-  const minLivingDepth = box.h < 8e3 ? 2700 : box.h >= 9500 && box.h <= 10400 && unitType === "2BHK" ? 4100 : 3600;
-  const minServiceDepthForRefuge = box.h >= 14e3 ? Math.ceil(15e6 / Math.max(1, livW) / 10) * 10 : 0;
-  const baseServiceDepth = Math.max(utilDepth + 2600, balconyDepth + 2600, box.h > 15e3 ? snap10(Math.min(9e3, Math.max(5500, box.h * 0.28))) : snap10(Math.min(box.h * 0.45, Math.max(4200, box.h * 0.38))));
-  const serviceDepth = Math.min(box.h - minLivingDepth, Math.max(baseServiceDepth, kitchenTargetDepth, minServiceDepthForRefuge));
-  const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
-  const utilityRoom = {
-    id: `${flatId}__utility`,
-    name: `${flatLabel} Kitchen Utility Balcony`,
-    type: "utility",
-    planningZone: "OUTDOOR",
-    rect: {
-      x: kitchX,
-      y: isSouth ? box.y + box.h - utilDepth : box.y,
-      width: kitchW,
-      height: utilDepth
-    }
-  };
-  const kitchenRoom = {
-    id: `${flatId}__kitchen`,
-    name: `${flatLabel} Kitchen`,
-    type: "kitchen",
-    planningZone: "SERVICE",
-    rect: {
-      x: kitchX,
-      y: isSouth ? serviceY : box.y + utilDepth,
-      width: kitchW,
-      height: serviceDepth - utilDepth
-    }
-  };
-  const balconyRoom = {
-    id: `${flatId}__balcony`,
-    name: `${flatLabel} Sit-out Balcony`,
-    type: "balcony",
-    planningZone: "OUTDOOR",
-    rect: {
-      x: livX,
-      y: isSouth ? box.y + box.h - balconyDepth : box.y,
-      width: livW,
-      height: balconyDepth
-    }
-  };
-  const diningRoom = {
-    id: `${flatId}__dining`,
-    name: `${flatLabel} Dining & Family Hall`,
-    type: "dining",
-    planningZone: "PUBLIC",
-    rect: {
-      x: livX,
-      y: isSouth ? serviceY : box.y + balconyDepth,
-      width: livW,
-      height: serviceDepth - balconyDepth
-    }
-  };
-  const remLivH = box.h - serviceDepth;
-  const kitchArea = kitchW * Math.max(1e3, serviceDepth - utilDepth);
-  const maxLivHForRatio = snap10(3.35 * kitchArea / Math.max(1, livingZoneW));
-  const targetLivH = Math.min(8500, maxLivHForRatio);
-  const maxFoyerH = Math.min(2200, snap10(Math.floor(115e5 / Math.max(1, livingZoneW))));
-  const rawFoyerH = remLivH > targetLivH ? Math.min(maxFoyerH, remLivH - targetLivH) : 0;
-  const hasFoyer = rawFoyerH >= 1200 && remLivH - rawFoyerH >= 3600 && unitType !== "3BHK" && unitType !== "4BHK";
-  const foyerH = hasFoyer ? rawFoyerH : 0;
-  const livingH = remLivH - foyerH;
-  const livingY = isSouth ? hasFoyer ? box.y + foyerH : box.y : box.y + serviceDepth;
-  const livingRoom = {
-    id: `${flatId}__living`,
-    name: `${flatLabel} Living Room`,
-    type: "living",
-    planningZone: "PUBLIC",
-    rect: {
-      x: livingZoneX,
-      y: livingY,
-      width: livingZoneW,
-      height: livingH
-    }
-  };
+  const isKitchenOpen = placement?.kitchenStyle === "OPEN" || arch.forceOpenKitchen;
+  const oppYIsExterior = localExposure ? isSouth ? localExposure.lowYIsExterior : localExposure.highYIsExterior : false;
+  const oppYHasOts = localExposure ? isSouth ? localExposure.lowYHasOts : localExposure.highYHasOts : false;
+  const isDoubleHeightStagger = placement?.galleryCoordinationMode === "DOUBLE_HEIGHT_STAGGER" || placement?.galleryCoordinationMode === void 0 && placement?.staggeredBalconies === true;
+  const canUseOtsPerimeterLiving = Boolean(localExposure?.hasExteriorY && (oppYHasOts || oppYIsExterior) && livingZoneW >= 4600 && box.h >= 7600);
+  const canUseThreeColPerimeterLiving = Boolean(localExposure?.hasExteriorY && !oppYHasOts && !oppYIsExterior && livingZoneW >= 6800 && box.h >= 8200 && corridorIsEast);
+  let livingRoom;
+  let diningRoom;
+  let kitchenRoom;
+  let balconyRoom;
+  let utilityRoom;
   let foyerRoom;
-  if (hasFoyer) {
-    foyerRoom = {
-      id: `${flatId}__foyer`,
-      name: `${flatLabel} Entrance Foyer`,
-      type: "foyer",
-      planningZone: "PUBLIC",
+  let perimeterLivingActive = false;
+  let galleryOnCorridorSide = false;
+  if (canUseOtsPerimeterLiving && localExposure) {
+    perimeterLivingActive = true;
+    galleryOnCorridorSide = false;
+    const wantLivW = livingZoneW >= 6600 ? Math.max(3600, snap10(livingZoneW * 0.545)) : livingZoneW >= 5800 ? Math.min(livingZoneW - 2200, Math.max(3600, snap10(livingZoneW * 0.58))) : Math.min(livingZoneW - 1900, Math.max(2700, snap10(livingZoneW * 0.56)));
+    const wantGalW = livingZoneW - wantLivW;
+    const leftIsLiving = corridorIsEast ? galleryOnCorridorSide : !galleryOnCorridorSide;
+    const leftColW = leftIsLiving ? wantLivW : wantGalW;
+    const rightColW = livingZoneW - leftColW;
+    const leftX = livingZoneX;
+    const rightX = livingZoneX + leftColW;
+    const livColX = leftIsLiving ? leftX : rightX;
+    const livColW = leftIsLiving ? leftColW : rightColW;
+    const galColX = leftIsLiving ? rightX : leftX;
+    const galColW = leftIsLiving ? rightColW : leftColW;
+    const targetKitchArea = placement?.kitchenSize === "LARGER" ? 19e6 : 145e5;
+    const minKitchBandH = placement?.kitchenSize === "LARGER" ? 3200 : 2800;
+    const rawKitchH = snap10(Math.max(minKitchBandH, Math.min(box.h * 0.36, targetKitchArea / Math.max(1, livingZoneW))));
+    const minFrontH = Math.max(4600, snap10(box.h * (placement?.kitchenSize === "LARGER" ? 0.56 : 0.6)));
+    const kitchBandH = Math.max(2400, Math.min(rawKitchH, box.h - minFrontH));
+    const frontBandH = box.h - kitchBandH;
+    const frontStartY = isSouth ? box.y + kitchBandH : box.y;
+    const frontEndY = frontStartY + frontBandH;
+    const kitchStartY = isSouth ? box.y : box.y + frontBandH;
+    const diningFrontStartY = isSouth ? frontStartY : box.y + balconyDepth;
+    const diningFrontEndY = diningFrontStartY + (frontBandH - balconyDepth);
+    const corridorHostStartY = galleryOnCorridorSide ? diningFrontStartY : frontStartY;
+    const corridorHostEndY = galleryOnCorridorSide ? diningFrontEndY : frontEndY;
+    const corridorOverlapFront = Math.min(corridorBox.y + corridorBox.h, corridorHostEndY) - Math.max(corridorBox.y, corridorHostStartY);
+    const fullWidthKitchen = corridorOverlapFront >= 1250;
+    const useLShapedOpenLiving = fullWidthKitchen && livingZoneW >= 4800 && livingZoneW < 6600 && box.h >= 9400;
+    const useThreeBandOpenLiving = !useLShapedOpenLiving && fullWidthKitchen && box.h >= 10200 && livingZoneW >= 5400 && (frontBandH > livColW * 2.08 || frontBandH - balconyDepth > galColW * 2.08);
+    const buildKitchenBand = /* @__PURE__ */ __name((bandY, bandH) => {
+      if (oppYIsExterior && bandH >= 3200 && livingZoneW <= (bandH - Math.min(utilDepth, bandH - 2100)) * 2.05) {
+        const effUtilD = Math.min(utilDepth, bandH - 2100);
+        utilityRoom = {
+          id: `${flatId}__utility`,
+          name: `${flatLabel} Kitchen Utility Balcony`,
+          type: "utility",
+          planningZone: "OUTDOOR",
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? bandY : bandY + bandH - effUtilD,
+            width: livingZoneW,
+            height: effUtilD
+          }
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: "kitchen",
+          planningZone: "SERVICE",
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? bandY + effUtilD : bandY,
+            width: livingZoneW,
+            height: bandH - effUtilD
+          }
+        };
+      } else if (livingZoneW > bandH * 2.05 && livingZoneW >= 4600) {
+        const kitchWFrac = placement?.kitchenSize === "LARGER" ? 0.68 : 0.62;
+        const kitchMaxAspect = placement?.kitchenSize === "LARGER" ? 2.08 : 1.95;
+        const kitchW = snap10(Math.min(bandH * kitchMaxAspect, Math.max(2600, livingZoneW * kitchWFrac)));
+        const sideW = livingZoneW - kitchW;
+        const kitchOnLeft = corridorIsEast;
+        const kitchX = kitchOnLeft ? livingZoneX : livingZoneX + sideW;
+        const sideX = kitchOnLeft ? livingZoneX + kitchW : livingZoneX;
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: "kitchen",
+          planningZone: "SERVICE",
+          rect: { x: kitchX, y: bandY, width: kitchW, height: bandH }
+        };
+        if (oppYIsExterior) {
+          utilityRoom = {
+            id: `${flatId}__utility`,
+            name: `${flatLabel} Kitchen Utility Balcony`,
+            type: "utility",
+            planningZone: "OUTDOOR",
+            rect: { x: sideX, y: bandY, width: sideW, height: bandH }
+          };
+        } else {
+          const storeRoom = {
+            id: `${flatId}__pantry`,
+            name: `${flatLabel} Kitchen Pantry & Store`,
+            type: "storage",
+            planningZone: "SERVICE",
+            rect: { x: sideX, y: bandY, width: sideW, height: bandH }
+          };
+          rooms.push(storeRoom);
+          const dStore = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, storeRoom, 800, { doorType: "single" });
+          if (dStore)
+            flatOpenings.push(dStore);
+        }
+      } else {
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: "kitchen",
+          planningZone: "SERVICE",
+          rect: { x: livingZoneX, y: bandY, width: livingZoneW, height: bandH }
+        };
+      }
+    }, "buildKitchenBand");
+    balconyRoom = {
+      id: `${flatId}__balcony`,
+      name: `${flatLabel} Sit-out Balcony`,
+      type: "balcony",
+      planningZone: "OUTDOOR",
       rect: {
-        x: livingZoneX,
-        y: isSouth ? box.y : box.y + serviceDepth + livingH,
-        width: livingZoneW,
-        height: foyerH
+        x: galColX,
+        y: isSouth ? box.y + box.h - balconyDepth : box.y,
+        width: galColW,
+        height: balconyDepth
       }
     };
-    rooms.push(foyerRoom);
+    if (useLShapedOpenLiving) {
+      const livW_L = Math.max(3600, Math.min(livingZoneW - 1200, snap10(livingZoneW * 0.68)));
+      const galW_L = livingZoneW - livW_L;
+      const leftIsLivL = corridorIsEast ? galleryOnCorridorSide : !galleryOnCorridorSide;
+      const livX_L = leftIsLivL ? livingZoneX : livingZoneX + galW_L;
+      const galX_L = leftIsLivL ? livingZoneX + livW_L : livingZoneX;
+      const maxFrontH_L = Math.min(box.h - 5600, snap10(livW_L * 1.65));
+      const frontH_L = Math.max(3600, Math.min(maxFrontH_L, snap10(box.h * 0.36)));
+      const remAfterFront_L = box.h - frontH_L;
+      const maxDinH_L = Math.min(remAfterFront_L - 2500, snap10(livingZoneW * 1.15));
+      const diningH_L = Math.max(3e3, Math.min(maxDinH_L, snap10(remAfterFront_L * 0.5)));
+      const rearH_L = remAfterFront_L - diningH_L;
+      const frontY_L = isSouth ? box.y + rearH_L + diningH_L : box.y;
+      const diningY_L = isSouth ? box.y + rearH_L : box.y + frontH_L;
+      const rearY_L = isSouth ? box.y : box.y + frontH_L + diningH_L;
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: "balcony",
+        planningZone: "OUTDOOR",
+        rect: { x: galX_L, y: frontY_L, width: galW_L, height: frontH_L }
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: { x: livX_L, y: frontY_L, width: livW_L, height: frontH_L }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: { x: livingZoneX, y: diningY_L, width: livingZoneW, height: diningH_L }
+      };
+      buildKitchenBand(rearY_L, rearH_L);
+    } else if (useThreeBandOpenLiving) {
+      const maxFrontByLiv = snap10(livColW * 2);
+      const maxFrontByDin = balconyDepth + snap10(galColW * 2);
+      const maxFrontH = Math.min(maxFrontByLiv, maxFrontByDin, box.h - 2600);
+      const frontH3 = Math.max(balconyDepth + 3e3, Math.min(maxFrontH, box.h - 3200));
+      const remAfterFront = box.h - frontH3;
+      const rearY3 = isSouth ? box.y : box.y + frontH3;
+      const frontY3 = isSouth ? box.y + remAfterFront : box.y;
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livColX,
+          y: frontY3,
+          width: livColW,
+          height: frontH3
+        }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: {
+          x: galColX,
+          y: isSouth ? frontY3 : frontY3 + balconyDepth,
+          width: galColW,
+          height: frontH3 - balconyDepth
+        }
+      };
+      const kitchWidthRatio = placement?.kitchenSize === "LARGER" ? 0.68 : 0.56;
+      const maxKitchW = Math.min(livingZoneW - 1800, snap10(Math.min(remAfterFront * 1.95, Math.max(2600, livingZoneW * kitchWidthRatio))));
+      const kitchW3 = Math.max(2400, maxKitchW);
+      const sideW3 = livingZoneW - kitchW3;
+      const kitchOnLeft3 = corridorIsEast;
+      const kitchX3 = kitchOnLeft3 ? livingZoneX : livingZoneX + sideW3;
+      const sideX3 = kitchOnLeft3 ? livingZoneX + kitchW3 : livingZoneX;
+      const maxKitchH3 = Math.min(remAfterFront, snap10(kitchW3 * (placement?.kitchenSize === "LARGER" ? 2.05 : 1.95)));
+      const kitchH3 = Math.max(2400, maxKitchH3);
+      const kitchStartY3 = isSouth ? rearY3 : rearY3 + (remAfterFront - kitchH3);
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: "kitchen",
+        planningZone: "SERVICE",
+        rect: { x: kitchX3, y: kitchStartY3, width: kitchW3, height: kitchH3 }
+      };
+      if (remAfterFront - kitchH3 >= 1200) {
+        const extraPantryY = isSouth ? rearY3 + kitchH3 : rearY3;
+        const extraPantry = {
+          id: `${flatId}__kitchen_pantry`,
+          name: `${flatLabel} Kitchen Pantry`,
+          type: "storage",
+          planningZone: "SERVICE",
+          rect: { x: kitchX3, y: extraPantryY, width: kitchW3, height: remAfterFront - kitchH3 }
+        };
+        rooms.push(extraPantry);
+        const dExtra = createConnectingDoor(`${flatId}__door_kitchen_pantry`, kitchenRoom, extraPantry, 800, { doorType: "single" });
+        if (dExtra)
+          flatOpenings.push(dExtra);
+      } else if (remAfterFront > kitchH3) {
+        kitchenRoom = {
+          ...kitchenRoom,
+          rect: { x: kitchX3, y: rearY3, width: kitchW3, height: remAfterFront }
+        };
+      }
+      const maxFoyerH3 = Math.min(remAfterFront, snap10(Math.floor(112e5 / Math.max(1, sideW3))));
+      const foyerH3 = maxFoyerH3 >= 1800 && remAfterFront - maxFoyerH3 >= 1200 ? maxFoyerH3 : remAfterFront;
+      const foyerTouchesPublicY = isSouth ? rearY3 + (remAfterFront - foyerH3) : rearY3;
+      if (sideW3 * foyerH3 <= 115e5 && !oppYIsExterior) {
+        foyerRoom = {
+          id: `${flatId}__foyer`,
+          name: `${flatLabel} Entrance Foyer`,
+          type: "foyer",
+          planningZone: "PUBLIC",
+          rect: { x: sideX3, y: foyerTouchesPublicY, width: sideW3, height: foyerH3 }
+        };
+        if (remAfterFront - foyerH3 >= 1200) {
+          const storeY3 = isSouth ? rearY3 : rearY3 + foyerH3;
+          const store3 = {
+            id: `${flatId}__pantry`,
+            name: `${flatLabel} Kitchen Pantry & Store`,
+            type: "storage",
+            planningZone: "SERVICE",
+            rect: { x: sideX3, y: storeY3, width: sideW3, height: remAfterFront - foyerH3 }
+          };
+          rooms.push(store3);
+          const dStore3 = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, store3, 800, { doorType: "single" });
+          if (dStore3)
+            flatOpenings.push(dStore3);
+        }
+      } else if (oppYIsExterior) {
+        utilityRoom = {
+          id: `${flatId}__utility`,
+          name: `${flatLabel} Kitchen Utility Balcony`,
+          type: "utility",
+          planningZone: "OUTDOOR",
+          rect: { x: sideX3, y: rearY3, width: sideW3, height: remAfterFront }
+        };
+      } else {
+        const store3 = {
+          id: `${flatId}__pantry`,
+          name: `${flatLabel} Kitchen Pantry & Store`,
+          type: "storage",
+          planningZone: "SERVICE",
+          rect: { x: sideX3, y: rearY3, width: sideW3, height: remAfterFront }
+        };
+        rooms.push(store3);
+        const dStore3 = createConnectingDoor(`${flatId}__door_pantry`, kitchenRoom, store3, 800, { doorType: "single" });
+        if (dStore3)
+          flatOpenings.push(dStore3);
+      }
+    } else if (fullWidthKitchen) {
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livColX,
+          y: frontStartY,
+          width: livColW,
+          height: frontBandH
+        }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: {
+          x: galColX,
+          y: isSouth ? frontStartY : box.y + balconyDepth,
+          width: galColW,
+          height: frontBandH - balconyDepth
+        }
+      };
+      buildKitchenBand(kitchStartY, kitchBandH);
+    } else {
+      const corridorSideIsLiving = !galleryOnCorridorSide;
+      if (corridorSideIsLiving) {
+        livingRoom = {
+          id: `${flatId}__living`,
+          name: `${flatLabel} Living Room`,
+          type: "living",
+          planningZone: "PUBLIC",
+          rect: {
+            x: livColX,
+            y: box.y,
+            width: livColW,
+            height: box.h
+          }
+        };
+        diningRoom = {
+          id: `${flatId}__dining`,
+          name: `${flatLabel} Dining & Family Hall`,
+          type: "dining",
+          planningZone: "PUBLIC",
+          rect: {
+            x: galColX,
+            y: isSouth ? frontStartY : box.y + balconyDepth,
+            width: galColW,
+            height: frontBandH - balconyDepth
+          }
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: "kitchen",
+          planningZone: "SERVICE",
+          rect: {
+            x: galColX,
+            y: kitchStartY,
+            width: galColW,
+            height: kitchBandH
+          }
+        };
+      } else {
+        livingRoom = {
+          id: `${flatId}__living`,
+          name: `${flatLabel} Living Room`,
+          type: "living",
+          planningZone: "PUBLIC",
+          rect: {
+            x: livColX,
+            y: frontStartY,
+            width: livColW,
+            height: frontBandH
+          }
+        };
+        diningRoom = {
+          id: `${flatId}__dining`,
+          name: `${flatLabel} Dining & Family Hall`,
+          type: "dining",
+          planningZone: "PUBLIC",
+          rect: {
+            x: galColX,
+            y: isSouth ? box.y : box.y + balconyDepth,
+            width: galColW,
+            height: box.h - balconyDepth
+          }
+        };
+        kitchenRoom = {
+          id: `${flatId}__kitchen`,
+          name: `${flatLabel} Kitchen`,
+          type: "kitchen",
+          planningZone: "SERVICE",
+          rect: {
+            x: livColX,
+            y: kitchStartY,
+            width: livColW,
+            height: kitchBandH
+          }
+        };
+      }
+    }
+    if (foyerRoom)
+      rooms.push(foyerRoom);
+    if (utilityRoom)
+      rooms.push(utilityRoom);
+    rooms.push(kitchenRoom, balconyRoom, diningRoom, livingRoom);
+    const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, useLShapedOpenLiving || useThreeBandOpenLiving ? Math.min(2400, Math.max(1500, Math.min(livingRoom.rect.width, diningRoom.rect.width) - 400)) : 1200, { doorType: "open_passage" });
+    if (dLivDin)
+      flatOpenings.push(dLivDin);
+    if (foyerRoom) {
+      const dFoyLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: "open_passage" });
+      if (dFoyLiv)
+        flatOpenings.push(dFoyLiv);
+      const dFoyDin = createConnectingDoor(`${flatId}__door_foyer_dining`, foyerRoom, diningRoom, 1200, { doorType: "open_passage" });
+      if (dFoyDin)
+        flatOpenings.push(dFoyDin);
+    }
+    const galleryAdjacentRoom = diningRoom;
+    const livBalcShared = Math.min(livingRoom.rect.y + livingRoom.rect.height, balconyRoom.rect.y + balconyRoom.rect.height) - Math.max(livingRoom.rect.y, balconyRoom.rect.y);
+    const adjBalcShared = Math.min(galleryAdjacentRoom.rect.x + galleryAdjacentRoom.rect.width, balconyRoom.rect.x + balconyRoom.rect.width) - Math.max(galleryAdjacentRoom.rect.x, balconyRoom.rect.x);
+    const balcFromLivingW = Math.min(2e3, Math.max(1200, Math.floor((livBalcShared - 250) / 10) * 10));
+    const balcFromAdjW = Math.min(2400, Math.max(1200, Math.floor((adjBalcShared - 250) / 10) * 10));
+    const dBalcony = (adjBalcShared >= 1450 && adjBalcShared >= livBalcShared ? createConnectingDoor(`${flatId}__door_balcony`, galleryAdjacentRoom, balconyRoom, balcFromAdjW, { doorType: "sliding" }) : null) ?? (livBalcShared >= 1450 ? createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, balcFromLivingW, { doorType: "sliding" }) : null) ?? createConnectingDoor(`${flatId}__door_balcony`, galleryAdjacentRoom, balconyRoom, balcFromAdjW, { doorType: "sliding" });
+    if (dBalcony)
+      flatOpenings.push(dBalcony);
+    if (dBalcony && !dBalcony.connects?.includes(livingRoom.id) && livBalcShared >= 1800) {
+      const dLivBalc = createConnectingDoor(`${flatId}__door_living_balcony`, livingRoom, balconyRoom, Math.min(1600, Math.max(1200, Math.floor((livBalcShared - 250) / 10) * 10)), { doorType: "sliding" });
+      if (dLivBalc)
+        flatOpenings.push(dLivBalc);
+    }
+    const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, diningRoom, kitchenRoom, isKitchenOpen ? 1200 : 900, { doorType: isKitchenOpen ? "open_passage" : "single" }) ?? createConnectingDoor(`${flatId}__door_kitchen`, livingRoom, kitchenRoom, 900, { doorType: "single" });
+    if (dKitchen)
+      flatOpenings.push(dKitchen);
+    if (utilityRoom) {
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: "single" });
+      if (dUtil)
+        flatOpenings.push(dUtil);
+    }
+    const primaryEntryRoom = livingRoom;
+    const secondaryEntryRoom = foyerRoom ?? diningRoom;
+    const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, primaryEntryRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, secondaryEntryRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, diningRoom, 1050, { isFlatEntrance: true });
+    if (dEntrance)
+      flatOpenings.push(dEntrance);
+  } else if (canUseThreeColPerimeterLiving && localExposure) {
+    const col1W = snap10(Math.max(2e3, Math.min(2600, livingZoneW * 0.28)));
+    const col3W = snap10(Math.max(2e3, Math.min(2600, livingZoneW * 0.28)));
+    const col2W = livingZoneW - col1W - col3W;
+    const foyerH = Math.max(1800, Math.min(3400, snap10(Math.floor(105e5 / Math.max(1, col3W)))));
+    const foyerY = isSouth ? box.y : box.y + box.h - foyerH;
+    const foyerOverlap = Math.min(corridorBox.y + corridorBox.h, foyerY + foyerH) - Math.max(corridorBox.y, foyerY);
+    if (col2W >= 2600 && box.h - foyerH >= utilDepth + 2400 && foyerOverlap >= 1250) {
+      perimeterLivingActive = true;
+      const baseGalleryOnLeft = localExposure.livingBaySide === "CORRIDOR_SIDE";
+      const galleryOnLeft = isDoubleHeightStagger && placement?.floorVariant === "EVEN" ? !baseGalleryOnLeft : baseGalleryOnLeft;
+      galleryOnCorridorSide = !galleryOnLeft;
+      const x1 = livingZoneX;
+      const x2 = livingZoneX + (galleryOnLeft ? col1W : col2W);
+      const x3 = livingZoneX + col1W + col2W;
+      const galX = galleryOnLeft ? x1 : x2;
+      const livX3 = galleryOnLeft ? x2 : x1;
+      const kitchTotH = box.h - foyerH;
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: "balcony",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: galX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: col1W,
+          height: balconyDepth
+        }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: {
+          x: galX,
+          y: isSouth ? box.y : box.y + balconyDepth,
+          width: col1W,
+          height: box.h - balconyDepth
+        }
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livX3,
+          y: box.y,
+          width: col2W,
+          height: box.h
+        }
+      };
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: "utility",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: x3,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: col3W,
+          height: utilDepth
+        }
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: "kitchen",
+        planningZone: "SERVICE",
+        rect: {
+          x: x3,
+          y: isSouth ? box.y + foyerH : box.y + utilDepth,
+          width: col3W,
+          height: kitchTotH - utilDepth
+        }
+      };
+      foyerRoom = {
+        id: `${flatId}__foyer`,
+        name: `${flatLabel} Entrance Foyer`,
+        type: "foyer",
+        planningZone: "PUBLIC",
+        rect: {
+          x: x3,
+          y: foyerY,
+          width: col3W,
+          height: foyerH
+        }
+      };
+      rooms.push(foyerRoom, utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
+      const foyerPartner = galleryOnLeft ? livingRoom : diningRoom;
+      const dFoyer = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, foyerPartner, 1200, { doorType: "open_passage" });
+      if (dFoyer)
+        flatOpenings.push(dFoyer);
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: "open_passage" });
+      if (dLivDin)
+        flatOpenings.push(dLivDin);
+      const balcW3 = Math.min(2e3, Math.max(1200, Math.floor((balconyDepth - 250) / 10) * 10));
+      const balcFromDinW3 = Math.min(2400, Math.max(1200, Math.floor((col1W - 250) / 10) * 10));
+      const dBalc = (col1W >= 1450 && col1W >= balconyDepth ? createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcFromDinW3, { doorType: "sliding" }) : null) ?? (balconyDepth >= 1450 ? createConnectingDoor(`${flatId}__door_balcony`, livingRoom, balconyRoom, balcW3, { doorType: "sliding" }) : null) ?? createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcFromDinW3, { doorType: "sliding" });
+      if (dBalc)
+        flatOpenings.push(dBalc);
+      const kitchPartner = galleryOnLeft ? livingRoom : diningRoom;
+      const dKitch = createConnectingDoor(`${flatId}__door_kitchen`, kitchPartner, kitchenRoom, isKitchenOpen ? 1200 : 900, { doorType: isKitchenOpen ? "open_passage" : "single" });
+      if (dKitch)
+        flatOpenings.push(dKitch);
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: "single" });
+      if (dUtil)
+        flatOpenings.push(dUtil);
+      const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, foyerRoom, 1050, { isFlatEntrance: true });
+      if (dEntrance)
+        flatOpenings.push(dEntrance);
+    }
   }
-  rooms.push(utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
-  if (foyerRoom) {
-    const dFoyerLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: "open_passage" });
-    if (dFoyerLiv)
-      flatOpenings.push(dFoyerLiv);
+  if (!perimeterLivingActive) {
+    const useStackedOpenDining = livingZoneW >= 3600 && livingZoneW < 5400 && box.h >= 9400;
+    if (useStackedOpenDining) {
+      const kitchW = Math.min(livingZoneW - 1500, Math.max(2400, snap10(livingZoneW * 0.54)));
+      const sideW = livingZoneW - kitchW;
+      const kitchX = corridorIsEast ? livingZoneX : livingZoneX + sideW;
+      const sideX = corridorIsEast ? livingZoneX + kitchW : livingZoneX;
+      const rawServiceD = Math.max(utilDepth + 2400, balconyDepth + 2200, snap10(box.h * 0.3));
+      const serviceDepth = Math.min(box.h - 6600, utilDepth + snap10(kitchW * 1.95), Math.max(utilDepth + 2400, rawServiceD));
+      const remAfterService = box.h - serviceDepth;
+      const diningH = Math.max(3e3, Math.min(remAfterService - 3600, snap10(Math.min(4e3, Math.max(3100, remAfterService * 0.44)))));
+      const livingH = remAfterService - diningH;
+      const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
+      const diningY = isSouth ? box.y + livingH : box.y + serviceDepth;
+      const livingY = isSouth ? box.y : box.y + serviceDepth + diningH;
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: "utility",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: kitchX,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: kitchW,
+          height: utilDepth
+        }
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: "kitchen",
+        planningZone: "SERVICE",
+        rect: {
+          x: kitchX,
+          y: isSouth ? serviceY : box.y + utilDepth,
+          width: kitchW,
+          height: serviceDepth - utilDepth
+        }
+      };
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: "balcony",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: sideX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: sideW,
+          height: balconyDepth
+        }
+      };
+      foyerRoom = {
+        id: `${flatId}__foyer`,
+        name: `${flatLabel} Gallery Foyer`,
+        type: "foyer",
+        planningZone: "PUBLIC",
+        rect: {
+          x: sideX,
+          y: isSouth ? serviceY : box.y + balconyDepth,
+          width: sideW,
+          height: serviceDepth - balconyDepth
+        }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livingZoneX,
+          y: diningY,
+          width: livingZoneW,
+          height: diningH
+        }
+      };
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livingZoneX,
+          y: livingY,
+          width: livingZoneW,
+          height: livingH
+        }
+      };
+      rooms.push(utilityRoom, kitchenRoom, balconyRoom, foyerRoom, diningRoom, livingRoom);
+      const dFoyerDin = createConnectingDoor(`${flatId}__door_foyer_dining`, foyerRoom, diningRoom, Math.min(1400, Math.max(900, sideW - 300)), { doorType: "open_passage" });
+      if (dFoyerDin)
+        flatOpenings.push(dFoyerDin);
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, Math.min(2400, Math.max(1500, livingZoneW - 600)), { doorType: "open_passage" });
+      if (dLivDin)
+        flatOpenings.push(dLivDin);
+      const balcDoorWidth = Math.min(2400, Math.max(1200, Math.floor((sideW - 250) / 10) * 10));
+      const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, foyerRoom, balconyRoom, balcDoorWidth, { doorType: "sliding" });
+      if (dBalcony)
+        flatOpenings.push(dBalcony);
+      const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, diningRoom, kitchenRoom, isKitchenOpen ? 1200 : 900, { doorType: isKitchenOpen ? "open_passage" : "single" }) ?? createConnectingDoor(`${flatId}__door_kitchen`, foyerRoom, kitchenRoom, 900, { doorType: "single" });
+      if (dKitchen)
+        flatOpenings.push(dKitchen);
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: "single" });
+      if (dUtil)
+        flatOpenings.push(dUtil);
+      const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, livingRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, diningRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, foyerRoom, 1050, { isFlatEntrance: true });
+      if (dEntrance)
+        flatOpenings.push(dEntrance);
+    } else {
+      const baseKitchRatio = placement?.kitchenSize === "LARGER" ? 0.54 : 0.48;
+      const kitchRatio = arch.isDefault ? baseKitchRatio : Math.max(0.42, Math.min(0.58, baseKitchRatio + arch.kitchRatioOffset));
+      const rawKitchW = snap10(livingZoneW * kitchRatio);
+      const kitchW = livingZoneW >= 5400 ? Math.max(2400, Math.min(livingZoneW - 3e3, rawKitchW)) : arch.isDefault || livingZoneW < 3100 ? rawKitchW : Math.min(livingZoneW - 1400, Math.max(1600, rawKitchW));
+      const livW = livingZoneW - kitchW;
+      const livX = arch.swapKitchenLiving ? corridorIsEast ? livingZoneX : livingZoneX + kitchW : corridorIsEast ? livingZoneX + kitchW : livingZoneX;
+      const kitchX = arch.swapKitchenLiving ? corridorIsEast ? livingZoneX + livW : livingZoneX : corridorIsEast ? livingZoneX : livingZoneX + livW;
+      const flatAreaSqM = box.w * box.h / 1e6;
+      const scaledKitchenArea = Math.min(24e6, Math.max(125e5, snap10(flatAreaSqM * 0.08 * 10) * 1e5));
+      const ratioKitchenTarget = snap10(livingZoneW * Math.min(8500, Math.max(3600, box.h * 0.5)) / 3.35);
+      const kitchenTargetArea = Math.max(ratioKitchenTarget, placement?.kitchenSize === "LARGER" ? Math.max(15e6, scaledKitchenArea * 1.15) : scaledKitchenArea);
+      const kitchenTargetDepth = utilDepth + Math.ceil(kitchenTargetArea / kitchW / 10) * 10;
+      const minLivingDepth = box.h < 8e3 ? 2700 : box.h >= 9500 && box.h <= 10400 && unitType === "2BHK" ? 4100 : 3600;
+      const minServiceDepthForRefuge = box.h >= 14e3 ? Math.ceil(15e6 / Math.max(1, livW) / 10) * 10 : 0;
+      const baseServiceDepth = Math.max(utilDepth + 2600, balconyDepth + 2600, box.h > 15e3 ? snap10(Math.min(9e3, Math.max(5500, box.h * 0.28))) : snap10(Math.min(box.h * 0.45, Math.max(4200, box.h * 0.38))));
+      const maxNonTunnelServiceDepth = Math.min(utilDepth + snap10(kitchW * 2.08), balconyDepth + snap10(livW * 2.08));
+      const uncappedServiceDepth = Math.min(box.h - minLivingDepth, Math.max(baseServiceDepth, kitchenTargetDepth, minServiceDepthForRefuge));
+      const serviceDepth = Math.max(Math.min(box.h - minLivingDepth, Math.max(utilDepth + 2400, balconyDepth + 2400)), Math.min(uncappedServiceDepth, maxNonTunnelServiceDepth));
+      const serviceY = isSouth ? box.y + box.h - serviceDepth : box.y;
+      utilityRoom = {
+        id: `${flatId}__utility`,
+        name: `${flatLabel} Kitchen Utility Balcony`,
+        type: "utility",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: kitchX,
+          y: isSouth ? box.y + box.h - utilDepth : box.y,
+          width: kitchW,
+          height: utilDepth
+        }
+      };
+      kitchenRoom = {
+        id: `${flatId}__kitchen`,
+        name: `${flatLabel} Kitchen`,
+        type: "kitchen",
+        planningZone: "SERVICE",
+        rect: {
+          x: kitchX,
+          y: isSouth ? serviceY : box.y + utilDepth,
+          width: kitchW,
+          height: serviceDepth - utilDepth
+        }
+      };
+      balconyRoom = {
+        id: `${flatId}__balcony`,
+        name: `${flatLabel} Sit-out Balcony`,
+        type: "balcony",
+        planningZone: "OUTDOOR",
+        rect: {
+          x: livX,
+          y: isSouth ? box.y + box.h - balconyDepth : box.y,
+          width: livW,
+          height: balconyDepth
+        }
+      };
+      diningRoom = {
+        id: `${flatId}__dining`,
+        name: `${flatLabel} Dining & Family Hall`,
+        type: "dining",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livX,
+          y: isSouth ? serviceY : box.y + balconyDepth,
+          width: livW,
+          height: serviceDepth - balconyDepth
+        }
+      };
+      const remLivH = box.h - serviceDepth;
+      const kitchArea = kitchW * Math.max(1e3, serviceDepth - utilDepth);
+      const maxLivHForRatio = Math.min(snap10(livingZoneW * 2.08), snap10(3.35 * kitchArea / Math.max(1, livingZoneW)));
+      const targetLivH = Math.min(8500, maxLivHForRatio);
+      const maxFoyerH = Math.min(2600, snap10(Math.floor(135e5 / Math.max(1, livingZoneW))));
+      const rawFoyerH = remLivH > targetLivH ? Math.min(maxFoyerH, remLivH - targetLivH) : 0;
+      const hasFoyer = rawFoyerH >= 1200 && remLivH - rawFoyerH >= 3600 && unitType !== "3BHK" && unitType !== "4BHK";
+      const foyerH = hasFoyer ? rawFoyerH : 0;
+      const livingH = remLivH - foyerH;
+      const livingY = isSouth ? hasFoyer ? box.y + foyerH : box.y : box.y + serviceDepth;
+      livingRoom = {
+        id: `${flatId}__living`,
+        name: `${flatLabel} Living Room`,
+        type: "living",
+        planningZone: "PUBLIC",
+        rect: {
+          x: livingZoneX,
+          y: livingY,
+          width: livingZoneW,
+          height: livingH
+        }
+      };
+      if (hasFoyer) {
+        foyerRoom = {
+          id: `${flatId}__foyer`,
+          name: `${flatLabel} Entrance Foyer`,
+          type: "foyer",
+          planningZone: "PUBLIC",
+          rect: {
+            x: livingZoneX,
+            y: isSouth ? box.y : box.y + serviceDepth + livingH,
+            width: livingZoneW,
+            height: foyerH
+          }
+        };
+        rooms.push(foyerRoom);
+      }
+      rooms.push(utilityRoom, kitchenRoom, balconyRoom, diningRoom, livingRoom);
+      if (foyerRoom) {
+        const dFoyerLiv = createConnectingDoor(`${flatId}__door_foyer_living`, foyerRoom, livingRoom, 1200, { doorType: "open_passage" });
+        if (dFoyerLiv)
+          flatOpenings.push(dFoyerLiv);
+      }
+      const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: "open_passage" });
+      if (dLivDin)
+        flatOpenings.push(dLivDin);
+      const balcDoorWidth = Math.min(2400, Math.max(1200, Math.floor(Math.min(diningRoom.rect.width, balconyRoom.rect.width) - 250)));
+      const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcDoorWidth, { doorType: "sliding" });
+      if (dBalcony)
+        flatOpenings.push(dBalcony);
+      const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, diningRoom, kitchenRoom, isKitchenOpen ? 1200 : 900, { doorType: isKitchenOpen ? "open_passage" : "single" }) ?? createConnectingDoor(`${flatId}__door_kitchen`, livingRoom, kitchenRoom, 900, { doorType: "single" });
+      if (dKitchen)
+        flatOpenings.push(dKitchen);
+      const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: "single" });
+      if (dUtil)
+        flatOpenings.push(dUtil);
+      const entranceHostRoom = foyerRoom ?? livingRoom;
+      const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, entranceHostRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, livingRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, diningRoom, 1050, { isFlatEntrance: true });
+      if (dEntrance)
+        flatOpenings.push(dEntrance);
+    }
   }
-  const dLivDin = createConnectingDoor(`${flatId}__door_living_dining`, livingRoom, diningRoom, 1200, { doorType: "open_passage" });
-  if (dLivDin)
-    flatOpenings.push(dLivDin);
-  const balcDoorWidth = Math.min(2400, Math.max(1200, Math.floor(Math.min(diningRoom.rect.width, balconyRoom.rect.width) - 250)));
-  const dBalcony = createConnectingDoor(`${flatId}__door_balcony`, diningRoom, balconyRoom, balcDoorWidth, { doorType: "sliding" });
-  if (dBalcony)
-    flatOpenings.push(dBalcony);
-  const isKitchenOpen = placement?.kitchenStyle === "OPEN" || arch.forceOpenKitchen;
-  const dKitchen = createConnectingDoor(`${flatId}__door_kitchen`, diningRoom, kitchenRoom, isKitchenOpen ? 1200 : 900, { doorType: isKitchenOpen ? "open_passage" : "single" }) ?? createConnectingDoor(`${flatId}__door_kitchen`, livingRoom, kitchenRoom, 900, { doorType: "single" });
-  if (dKitchen)
-    flatOpenings.push(dKitchen);
-  const dUtil = createConnectingDoor(`${flatId}__door_utility`, kitchenRoom, utilityRoom, 750, { doorType: "single" });
-  if (dUtil)
-    flatOpenings.push(dUtil);
-  const entranceHostRoom = foyerRoom ?? livingRoom;
-  const dEntrance = createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, entranceHostRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, livingRoom, 1050, { isFlatEntrance: true }) ?? createConnectingDoor(`${flatId}__door_entrance`, { id: "corridor_1", rect: corridorBox }, diningRoom, 1050, { isFlatEntrance: true });
-  if (dEntrance)
-    flatOpenings.push(dEntrance);
+  const bedZonePublicHost = perimeterLivingActive ? galleryOnCorridorSide ? livingRoom : diningRoom : livingRoom;
+  const alignedPublicSpanY = perimeterLivingActive ? {
+    start: Math.max(livingRoom.rect.y, diningRoom.rect.y),
+    end: Math.min(livingRoom.rect.y + livingRoom.rect.height, diningRoom.rect.y + diningRoom.rect.height)
+  } : {
+    start: livingRoom.rect.y,
+    end: livingRoom.rect.y + livingRoom.rect.height
+  };
+  const effectiveInvertBedroomOrder = arch.isDefault && localExposure ? localExposure.preferMasterAtPrimaryY ? isSouth : !isSouth : arch.invertBedroomOrder;
   const maxBedH = snap10(bedZoneW * 1.3);
   const minBedH = 3e3;
   if (unitType === "1BHK") {
@@ -113650,7 +115392,7 @@ function sliceFlatRooms(params) {
         };
         rooms.push(passage);
         bY += passH;
-        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: "open_passage" });
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, bedZonePublicHost, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: "open_passage" });
         if (dPass)
           flatOpenings.push(dPass);
       }
@@ -113674,7 +115416,7 @@ function sliceFlatRooms(params) {
         };
         rooms.push(passage);
         bY += passH;
-        const dPass = createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: "open_passage" });
+        const dPass = createConnectingDoor(`${flatId}__door_passage`, bedZonePublicHost, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: "open_passage" });
         if (dPass)
           flatOpenings.push(dPass);
       }
@@ -113696,23 +115438,25 @@ function sliceFlatRooms(params) {
       };
       rooms.push(masterBed);
     }
-    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900);
+    const dMaster = createConnectingDoor(`${flatId}__door_master_bed`, bedZonePublicHost, masterBed, 900) ?? createConnectingDoor(`${flatId}__door_master_bed`, livingRoom, masterBed, 900) ?? createConnectingDoor(`${flatId}__door_master_bed`, diningRoom, masterBed, 900);
     if (dMaster)
       flatOpenings.push(dMaster);
     const dBath = createConnectingDoor(`${flatId}__door_common_bath`, masterBed, commonBath, 750);
     if (dBath)
       flatOpenings.push(dBath);
   } else if (unitType === "2BHK") {
-    let bathH = box.h >= 8200 && box.h < 9e3 ? snap10(Math.min(1800, Math.max(1200, (box.h - 6e3) * 0.58))) : snap10(Math.min(2200, Math.max(1800, box.h * 0.09)));
-    const passH = box.h >= 8200 && box.h < 9e3 ? snap10(Math.max(950, box.h - 6e3 - bathH)) : snap10(Math.min(1500, Math.max(1200, box.h * 0.06)));
+    let bathH = box.h < 9e3 ? snap10(Math.min(1800, Math.max(1060, (box.h - 6060) * 0.54))) : snap10(Math.min(2200, Math.max(1800, box.h * 0.09)));
+    const passH = box.h < 9e3 ? snap10(Math.min(1250, Math.max(1020, box.h - 6060 - bathH))) : snap10(Math.min(1500, Math.max(1200, box.h * 0.06)));
     let availBedH = box.h - bathH - passH;
     let masterBedH;
     let bed2H;
     let studyH = 0;
     let poojaH = 0;
-    const hasStudyRequested = rawRooms.some((r) => r.type === "study" || r.type === "office" || r.name.toLowerCase().includes("study"));
+    const hasStudyRequested = Boolean(placement?.includeStudyRoom) || rawRooms.some((r) => r.type === "study" || r.type === "office" || r.name.toLowerCase().includes("study"));
     const hasPoojaRequested = rawRooms.some((r) => r.type === "pooja" || r.name.toLowerCase().includes("pooja") || r.name.toLowerCase().includes("mandir"));
-    const maxBandAspectH = snap10(Math.max(3e3, bedZoneW * 2.12));
+    const estBedBalcDepth = bedZoneW >= 4550 ? 1500 : placement?.bedroomBalconies === "ALL_BEDROOMS" && bedZoneW >= 4250 ? Math.max(1200, bedZoneW - 3050) : 0;
+    const effBedW = bedZoneW - estBedBalcDepth;
+    const maxBandAspectH = snap10(Math.max(3050, effBedW * 2.12));
     if (hasStudyRequested && hasPoojaRequested && availBedH >= 7600) {
       masterBedH = snap10(Math.min(4800, Math.max(3600, availBedH * 0.28)));
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.25)));
@@ -113728,17 +115472,15 @@ function sliceFlatRooms(params) {
       bed2H = snap10(Math.min(4200, Math.max(3400, availBedH * 0.34)));
       poojaH = availBedH - (masterBedH + bed2H);
     } else {
-      if (availBedH > maxBandAspectH * 2 + 1200) {
-        studyH = snap10(availBedH - maxBandAspectH * 2);
-      } else if (availBedH > maxBandAspectH * 2) {
-        const extraToBath = snap10(Math.min(800, availBedH - maxBandAspectH * 2));
+      if (availBedH > maxBandAspectH * 2) {
+        const extraToBath = snap10(Math.min(1800, availBedH - maxBandAspectH * 2));
         bathH += extraToBath;
         availBedH -= extraToBath;
       }
-      const bedBudgetH = availBedH - studyH;
+      const bedBudgetH = availBedH;
       masterBedH = snap10(bedBudgetH * arch.masterBedRatio);
       bed2H = bedBudgetH - masterBedH;
-      const minRequiredBedH = bedBudgetH >= 6e3 ? 3e3 : 2700;
+      const minRequiredBedH = bedBudgetH >= 6100 ? 3050 : bedBudgetH >= 6e3 ? 3e3 : bedBudgetH >= 5720 ? 2860 : 2700;
       if (bedBudgetH >= 5400 && bed2H < minRequiredBedH) {
         bed2H = minRequiredBedH;
         masterBedH = bedBudgetH - bed2H;
@@ -113748,22 +115490,22 @@ function sliceFlatRooms(params) {
         bed2H = bedBudgetH - masterBedH;
       }
     }
-    const bathBlockH = bathH + passH;
+    let bathBlockH = bathH + passH;
     const bedBudgetAfterExtras = availBedH - studyH - poojaH;
     if (!hasStudyRequested && !hasPoojaRequested && bedBudgetAfterExtras >= 6e3) {
-      const livStart = livingRoom.rect.y;
-      const livEnd = livStart + livingRoom.rect.height;
-      const topBedInitialH = arch.invertBedroomOrder ? bed2H : masterBedH;
+      const livStart = alignedPublicSpanY.start;
+      const livEnd = alignedPublicSpanY.end;
+      const topBedInitialH = effectiveInvertBedroomOrder ? bed2H : masterBedH;
       const passStart = box.y + topBedInitialH;
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100) {
-        const floorMin = Math.min(3e3, snap10(bedBudgetAfterExtras / 2));
+        const floorMin = Math.min(3050, snap10(bedBudgetAfterExtras / 2));
         const minBedRun = Math.max(floorMin, bedBudgetAfterExtras - maxBandAspectH);
         const maxBedRun = Math.min(bedBudgetAfterExtras - floorMin, maxBandAspectH);
-        const targetTopH = isSouth ? snap10(livEnd - 1100 - box.y) : snap10(livStart + 1100 - bathBlockH - box.y);
+        const targetTopH = passStart > livEnd - 1100 ? snap10(livEnd - 1100 - box.y) : snap10(livStart + 1100 - bathBlockH - box.y);
         const clampedTopH = minBedRun <= maxBedRun ? Math.max(minBedRun, Math.min(maxBedRun, targetTopH)) : Math.max(floorMin, Math.min(bedBudgetAfterExtras - floorMin, targetTopH));
-        if (arch.invertBedroomOrder) {
+        if (effectiveInvertBedroomOrder) {
           bed2H = clampedTopH;
           masterBedH = bedBudgetAfterExtras - bed2H;
         } else {
@@ -113771,22 +115513,36 @@ function sliceFlatRooms(params) {
           bed2H = bedBudgetAfterExtras - masterBedH;
         }
       }
-      if (studyH === 0 && (masterBedH > maxBandAspectH || bed2H > maxBandAspectH)) {
-        const overflow = Math.max(0, masterBedH - maxBandAspectH) + Math.max(0, bed2H - maxBandAspectH);
-        if (overflow >= 1200) {
-          studyH = snap10(overflow);
-          if (masterBedH > maxBandAspectH)
-            masterBedH -= snap10(masterBedH - maxBandAspectH);
-          if (bed2H > maxBandAspectH)
-            bed2H -= snap10(bed2H - maxBandAspectH);
-          const diff = bedBudgetAfterExtras - (masterBedH + bed2H + studyH);
-          studyH += diff;
+      if (masterBedH > maxBandAspectH || bed2H > maxBandAspectH) {
+        let shed = 0;
+        if (masterBedH > maxBandAspectH) {
+          const cut = snap10(masterBedH - maxBandAspectH);
+          masterBedH -= cut;
+          shed += cut;
+        }
+        if (bed2H > maxBandAspectH) {
+          const cut = snap10(bed2H - maxBandAspectH);
+          bed2H -= cut;
+          shed += cut;
+        }
+        if (shed > 0 && bed2H < maxBandAspectH) {
+          const take = Math.min(shed, snap10(maxBandAspectH - bed2H));
+          bed2H += take;
+          shed -= take;
+        }
+        if (shed > 0 && masterBedH < maxBandAspectH) {
+          const take = Math.min(shed, snap10(maxBandAspectH - masterBedH));
+          masterBedH += take;
+          shed -= take;
+        }
+        if (shed > 0) {
+          bathBlockH += shed;
         }
       }
     }
     const bath1H = snap10(bathBlockH / 2);
     const bath2H = bathBlockH - bath1H;
-    const bathW = snap10(Math.max(2600, Math.min(bedZoneW - 1200, bedZoneW * 0.65)));
+    const bathW = bedZoneW >= 3800 ? snap10(Math.max(2600, Math.min(bedZoneW - 1200, bedZoneW * 0.65))) : snap10(Math.max(1800, Math.min(bedZoneW - 1150, Math.max(2100, bedZoneW * 0.65))));
     const passW = bedZoneW - bathW;
     const bathX = corridorIsEast ? bedZoneX : bedZoneX + passW;
     const passX = corridorIsEast ? bedZoneX + bathW : bedZoneX;
@@ -113796,7 +115552,7 @@ function sliceFlatRooms(params) {
     let commonBath;
     let passage;
     let bed2;
-    if (arch.invertBedroomOrder) {
+    if (effectiveInvertBedroomOrder) {
       bed2 = {
         id: `${flatId}__bed_2`,
         name: `${flatLabel} Bedroom 02`,
@@ -113911,8 +115667,8 @@ function sliceFlatRooms(params) {
       rooms.push(pooja);
       bY += poojaH;
     }
-    const publicRoom = livingRoom;
-    const dPass = createConnectingDoor(`${flatId}__door_passage`, publicRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: "open_passage" });
+    const publicRoom = bedZonePublicHost;
+    const dPass = createConnectingDoor(`${flatId}__door_passage`, publicRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, livingRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: "open_passage" });
     if (dPass)
       flatOpenings.push(dPass);
     const dMasterBath = createConnectingDoor(`${flatId}__door_master_bath`, masterBed, masterBath, 750);
@@ -113938,10 +115694,10 @@ function sliceFlatRooms(params) {
     if (dMaster)
       flatOpenings.push(dMaster);
   } else if (unitType === "3BHK") {
-    const hasStudyRequested = rawRooms.some((r) => r.type === "study" || r.type === "office" || r.name.toLowerCase().includes("study"));
+    const hasStudyRequested = Boolean(placement?.includeStudyRoom) || rawRooms.some((r) => r.type === "study" || r.type === "office" || r.name.toLowerCase().includes("study"));
     const hasPoojaRequested = rawRooms.some((r) => r.type === "pooja" || r.name.toLowerCase().includes("pooja") || r.name.toLowerCase().includes("mandir"));
-    if (bedZoneW >= 5800 && box.h >= 8e3) {
-      const colExtW = snap10(Math.max(3e3, Math.min(bedZoneW - 2800, bedZoneW * 0.5)));
+    if (bedZoneW >= 6100 && box.h >= 8e3) {
+      const colExtW = snap10(Math.max(3050, Math.min(bedZoneW - 3050, bedZoneW * 0.5)));
       const colIntW = bedZoneW - colExtW;
       const xExt = corridorIsEast ? bedZoneX : bedZoneX + colIntW;
       const xInt = corridorIsEast ? bedZoneX + colExtW : bedZoneX;
@@ -113957,15 +115713,15 @@ function sliceFlatRooms(params) {
       const placeBed3AtTop = !isSouth;
       const extraAtTop = isSouth && extraBandH > 0;
       const bedStartY = box.y + (extraAtTop ? extraBandH : 0);
-      const livStart = livingRoom.rect.y;
-      const livEnd = livStart + livingRoom.rect.height;
+      const livStart = alignedPublicSpanY.start;
+      const livEnd = alignedPublicSpanY.end;
       const passStart = bedStartY + topBandH;
       const passEnd = passStart + bathBlockH;
       const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
       if (overlap < 1100 && remBedH >= 6e3) {
         const minRun = Math.max(3e3, remBedH - maxBandAspectH);
         const maxRun = Math.min(remBedH - 3e3, maxBandAspectH);
-        const targetTopH = isSouth ? snap10(livEnd - 1100 - bedStartY) : snap10(livStart + 1100 - bathBlockH - bedStartY);
+        const targetTopH = passStart > livEnd - 1100 ? snap10(livEnd - 1100 - bedStartY) : snap10(livStart + 1100 - bathBlockH - bedStartY);
         topBandH = minRun <= maxRun ? Math.max(minRun, Math.min(maxRun, targetTopH)) : Math.max(3e3, Math.min(remBedH - 3e3, targetTopH));
         botBandH = remBedH - topBandH;
       }
@@ -114063,40 +115819,43 @@ function sliceFlatRooms(params) {
       let study;
       let pooja;
       if (placeBed3AtTop && splitBottomBand) {
-        const usePoojaCell = hasPoojaRequested && !hasStudyRequested;
+        const useStudyCell = hasStudyRequested;
+        const usePoojaCell = hasPoojaRequested && !useStudyCell;
         const cellRoom = {
-          id: usePoojaCell ? `${flatId}__pooja` : `${flatId}__study`,
-          name: usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Study & Home Office`,
-          type: usePoojaCell ? "pooja" : "study",
+          id: useStudyCell ? `${flatId}__study` : usePoojaCell ? `${flatId}__pooja` : `${flatId}__family_lounge`,
+          name: useStudyCell ? `${flatLabel} Study & Home Office` : usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Walk-in Dressing & Lounge`,
+          type: useStudyCell ? "study" : usePoojaCell ? "pooja" : "foyer",
           planningZone: "PRIVATE",
           rect: { x: xInt, y: botY, width: colIntW, height: botBandH }
         };
         rooms.push(cellRoom);
-        if (usePoojaCell)
-          pooja = cellRoom;
-        else
+        if (useStudyCell)
           study = cellRoom;
+        else
+          pooja = cellRoom;
       } else if (!placeBed3AtTop && splitTopBand) {
-        const usePoojaCell = hasPoojaRequested && !hasStudyRequested;
+        const useStudyCell = hasStudyRequested;
+        const usePoojaCell = hasPoojaRequested && !useStudyCell;
         const cellRoom = {
-          id: usePoojaCell ? `${flatId}__pooja` : `${flatId}__study`,
-          name: usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Study & Home Office`,
-          type: usePoojaCell ? "pooja" : "study",
+          id: useStudyCell ? `${flatId}__study` : usePoojaCell ? `${flatId}__pooja` : `${flatId}__family_lounge`,
+          name: useStudyCell ? `${flatLabel} Study & Home Office` : usePoojaCell ? `${flatLabel} Pooja & Meditation Room` : `${flatLabel} Walk-in Dressing & Lounge`,
+          type: useStudyCell ? "study" : usePoojaCell ? "pooja" : "foyer",
           planningZone: "PRIVATE",
           rect: { x: xInt, y: bedStartY, width: colIntW, height: topBandH }
         };
         rooms.push(cellRoom);
-        if (usePoojaCell)
-          pooja = cellRoom;
-        else
+        if (useStudyCell)
           study = cellRoom;
+        else
+          pooja = cellRoom;
       }
       if (extraBandH > 0) {
         const extraY = extraAtTop ? box.y : botY + botBandH;
+        const useStudyExtra = Boolean(hasStudyRequested && !study);
         const extraRoom = {
-          id: pooja ? `${flatId}__study` : `${flatId}__pooja`,
-          name: pooja ? `${flatLabel} Study & Home Office` : `${flatLabel} Pooja & Family Lounge`,
-          type: pooja ? "study" : "pooja",
+          id: useStudyExtra ? `${flatId}__study` : `${flatId}__pooja`,
+          name: useStudyExtra ? `${flatLabel} Study & Home Office` : `${flatLabel} Private Terrace Lounge`,
+          type: useStudyExtra ? "study" : "foyer",
           planningZone: "PRIVATE",
           rect: { x: bedZoneX, y: extraY, width: bedZoneW, height: extraBandH }
         };
@@ -114218,7 +115977,7 @@ function sliceFlatRooms(params) {
         rect: { x: bedZoneX, y: bY, width: bedZoneW, height: bed3H }
       };
       rooms.push(bed3);
-      const publicRoom = livingRoom;
+      const publicRoom = bedZonePublicHost;
       const dPass = createConnectingDoor(`${flatId}__door_passage`, publicRoom, passage, 900, { doorType: "open_passage" }) ?? createConnectingDoor(`${flatId}__door_passage`, diningRoom, passage, 900, { doorType: "open_passage" });
       if (dPass)
         flatOpenings.push(dPass);
@@ -114413,15 +116172,15 @@ function sliceFlatRooms(params) {
         const remBedH = availBedH - extraBandH;
         let topBandH = snap10(Math.max(3e3, Math.min(remBedH - 3e3, remBedH * (arch.invertBedroomOrder ? 0.48 : 0.52))));
         let botBandH = remBedH - topBandH;
-        const livStart = livingRoom.rect.y;
-        const livEnd = livStart + livingRoom.rect.height;
+        const livStart = alignedPublicSpanY.start;
+        const livEnd = alignedPublicSpanY.end;
         const passStart = box.y + topBandH;
         const passEnd = passStart + bathBlockH;
         const overlap = Math.min(passEnd, livEnd) - Math.max(passStart, livStart);
         if (overlap < 1100 && remBedH >= 6e3) {
           const minRun = 3e3;
           const maxRun = remBedH - 3e3;
-          const targetTopH = isSouth ? snap10(livEnd - 1100 - box.y) : snap10(livStart + 1100 - bathBlockH - box.y);
+          const targetTopH = passStart > livEnd - 1100 ? snap10(livEnd - 1100 - box.y) : snap10(livStart + 1100 - bathBlockH - box.y);
           topBandH = Math.max(minRun, Math.min(maxRun, targetTopH));
           botBandH = remBedH - topBandH;
         }
@@ -114693,7 +116452,7 @@ function sliceFlatRooms(params) {
       flatOpenings.push(door);
   }
   const allBedrooms = [...rooms].filter((r) => r.type === "bedroom");
-  const staggerActive = Boolean(placement?.staggeredBalconies && allBedrooms.length >= 2);
+  const staggerActive = Boolean(placement?.floorVariant && (isDoubleHeightStagger || placement?.staggeredBalconies) && placement?.bedroomBalconies !== "ALL_BEDROOMS" && allBedrooms.length >= 2);
   const orderedBedrooms = staggerActive && placement?.floorVariant === "EVEN" ? [
     ...allBedrooms.filter((_, idx) => idx % 2 === 1),
     ...allBedrooms.filter((_, idx) => idx % 2 === 0)
@@ -114709,41 +116468,47 @@ function sliceFlatRooms(params) {
         continue;
     }
     const r = bedroom.rect;
-    const minRemW = 3e3;
-    const minRemH = 3e3;
-    const forceBedBalc = placement?.bedroomBalconies === "ALL_BEDROOMS" && (r.width < 4500 && r.width >= 4200 || r.height < 4500 && r.height >= 4200);
-    const depthX = forceBedBalc && r.width < 4500 ? Math.max(1200, r.width - minRemW) : 1500;
-    const depthY = forceBedBalc && r.height < 4500 ? Math.max(1200, r.height - minRemH) : 1500;
+    const forceBedBalc = placement?.bedroomBalconies === "ALL_BEDROOMS" && (r.width < 4550 && r.width >= 3800 || r.height < 4550 && r.height >= 3800);
+    const minRemW = forceBedBalc ? 2700 : 3050;
+    const minRemH = forceBedBalc ? 2700 : 3050;
+    const depthX = forceBedBalc && r.width < 4550 ? Math.min(1500, Math.max(1100, r.width - minRemW)) : 1500;
+    const depthY = forceBedBalc && r.height < 4550 ? Math.min(1500, Math.max(1100, r.height - minRemH)) : 1500;
     const west = Math.abs(r.x - envelope.x) < 1e-3;
     const east = Math.abs(r.x + r.width - envelope.x - envelope.w) < 1e-3;
     const north = Math.abs(r.y - envelope.y) < 1e-3;
     const south = Math.abs(r.y + r.height - envelope.y - envelope.h) < 1e-3;
     const hasBedroomBalcony = rooms.some((rm) => rm.id.endsWith("__balcony") && rm.id !== `${flatId}__balcony`);
     const candidates = [];
-    if ((west || east) && r.width - depthX >= minRemW && r.height >= minRemH && r.height / (r.width - depthX) <= 2.18) {
-      candidates.push({
-        trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
-        balcony: {
-          id: bedroom.id + "__balcony",
-          name: bedroom.name + " Balcony",
-          type: "balcony",
-          planningZone: "OUTDOOR",
-          rect: { x: west ? r.x : r.x + r.width - depthX, y: r.y, width: depthX, height: r.height }
-        }
-      });
-    }
-    if ((placement?.bedroomBalconies === "ALL_BEDROOMS" || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minRemH && r.width >= minRemW && r.width / (r.height - depthY) <= 2.18) {
-      candidates.push({
-        trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
-        balcony: {
-          id: bedroom.id + "__balcony",
-          name: bedroom.name + " Balcony",
-          type: "balcony",
-          planningZone: "OUTDOOR",
-          rect: { x: r.x, y: north ? r.y : r.y + r.height - depthY, width: r.width, height: depthY }
-        }
-      });
-    }
+    const pushWestEast = /* @__PURE__ */ __name((maxRatio, minW, minH) => {
+      if ((west || east) && r.width - depthX >= minW && r.height >= minH && r.height / (r.width - depthX) <= maxRatio) {
+        candidates.push({
+          trimmed: { ...bedroom, rect: { ...r, x: r.x + (west ? depthX : 0), width: r.width - depthX } },
+          balcony: {
+            id: bedroom.id + "__balcony",
+            name: bedroom.name + " Balcony",
+            type: "balcony",
+            planningZone: "OUTDOOR",
+            rect: { x: west ? r.x : r.x + r.width - depthX, y: r.y, width: depthX, height: r.height }
+          }
+        });
+      }
+    }, "pushWestEast");
+    const pushNorthSouth = /* @__PURE__ */ __name((maxRatio, minW, minH) => {
+      if ((placement?.bedroomBalconies === "ALL_BEDROOMS" || !hasBedroomBalcony) && (north || south) && r.height - depthY >= minH && r.width >= minW && r.width / (r.height - depthY) <= maxRatio) {
+        candidates.push({
+          trimmed: { ...bedroom, rect: { ...r, y: r.y + (north ? depthY : 0), height: r.height - depthY } },
+          balcony: {
+            id: bedroom.id + "__balcony",
+            name: bedroom.name + " Balcony",
+            type: "balcony",
+            planningZone: "OUTDOOR",
+            rect: { x: r.x, y: north ? r.y : r.y + r.height - depthY, width: r.width, height: depthY }
+          }
+        });
+      }
+    }, "pushNorthSouth");
+    pushWestEast(2.18, minRemW, minRemH);
+    pushNorthSouth(2.18, minRemW, minRemH);
     for (const candidate of candidates) {
       const { trimmed, balcony } = candidate;
       const access2 = createConnectingDoor(bedroom.id + "__balcony_door", trimmed, balcony, 900, { doorType: "sliding" });
@@ -115725,8 +117490,8 @@ function repairDoorHostsAndClearance(params) {
     for (let j = 0; j < nonOverlappingDoors.length; j++) {
       const d2 = nonOverlappingDoors[j];
       if (d1.wallId === d2.wallId) {
-        const dist2 = Math.hypot(d1.position.x - d2.position.x, d1.position.y - d2.position.y);
-        if (dist2 < (d1.width + d2.width) / 2) {
+        const dist3 = Math.hypot(d1.position.x - d2.position.x, d1.position.y - d2.position.y);
+        if (dist3 < (d1.width + d2.width) / 2) {
           overlap = true;
           break;
         }
@@ -115904,7 +117669,7 @@ function repairDaylightAndVentilation(params) {
         for (const extWall of candWalls) {
           const len = Math.hypot(extWall.endPoint.x - extWall.startPoint.x, extWall.endPoint.y - extWall.startPoint.y);
           if (len >= 600) {
-            const ventWidth = Math.min(600, Math.max(350, Math.round(len - 200)));
+            const ventWidth = Math.min(650, Math.max(350, Math.round(len - 200)));
             const pos = {
               x: (extWall.startPoint.x + extWall.endPoint.x) / 2,
               y: (extWall.startPoint.y + extWall.endPoint.y) / 2
@@ -115917,7 +117682,7 @@ function repairDaylightAndVentilation(params) {
                 position: pos,
                 width: ventWidth,
                 height: 600,
-                sillHeight: 1800,
+                sillHeight: 1500,
                 type: WindowType.Ventilator,
                 roomId: r.id
               };
@@ -115961,7 +117726,7 @@ function healFloorGeometryForCompliance(floor) {
     if (!hostWall)
       continue;
     const wallLen = Math.hypot(hostWall.endPoint.x - hostWall.startPoint.x, hostWall.endPoint.y - hostWall.startPoint.y);
-    const ventW = Math.min(600, Math.max(350, Math.floor(wallLen - 200)));
+    const ventW = Math.min(650, Math.max(350, Math.floor(wallLen - 200)));
     const mid2 = {
       x: Math.round((hostWall.startPoint.x + hostWall.endPoint.x) / 2),
       y: Math.round((hostWall.startPoint.y + hostWall.endPoint.y) / 2)
@@ -117160,6 +118925,670 @@ function validateProgram(program) {
 }
 __name(validateProgram, "validateProgram");
 
+// ../planning-engine/dist/structural/structural-framing-synthesizer.js
+var MAX_COLUMN_CLEAR_SPAN_MM = 5e3;
+var DOOR_JAMB_CLEARANCE_MM = 300;
+var MIN_COLUMN_CENTER_SPACING_MM = 750;
+var GRID_ALIGN_TOLERANCE_MM = 160;
+function snap103(v) {
+  return Math.round(v / 10) * 10;
+}
+__name(snap103, "snap10");
+function dist2(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+__name(dist2, "dist");
+function roomBox2(r) {
+  if (r.boundary?.points?.length) {
+    const xs = r.boundary.points.map((p) => p.x);
+    const ys = r.boundary.points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  }
+  return { x: r.x, y: r.y, w: r.width, h: r.height };
+}
+__name(roomBox2, "roomBox");
+function isVoidOrShaftRoom(r) {
+  const role = architecturalSpaceRole(r);
+  return role === "OPEN_TO_SKY_VOID" || role === "SERVICE_SHAFT" || role === "LIFT_SHAFT" || r.type === RoomType.ServiceShaft || r.type === RoomType.OTS || Boolean(r.openToSky) || r.spaceUse === "VOID" || /^passenger\s*lift/i.test(r.name);
+}
+__name(isVoidOrShaftRoom, "isVoidOrShaftRoom");
+function isOutdoorCantileverRoom(r) {
+  return r.type === RoomType.Balcony || r.type === RoomType.Utility || r.type === RoomType.Terrace || /BALCONY|SIT[ -]?OUT|UTILITY/i.test(r.name);
+}
+__name(isOutdoorCantileverRoom, "isOutdoorCantileverRoom");
+function isStairRoom(r) {
+  const role = architecturalSpaceRole(r);
+  return r.type === RoomType.Staircase || role === "STAIR_ENCLOSURE" || role === "PROTECTED_STAIR_ENCLOSURE" || /STAIR/i.test(r.name);
+}
+__name(isStairRoom, "isStairRoom");
+function pointStrictlyInsideBox(pt, box, marginMm) {
+  return pt.x > box.x + marginMm && pt.x < box.x + box.w - marginMm && pt.y > box.y + marginMm && pt.y < box.y + box.h - marginMm;
+}
+__name(pointStrictlyInsideBox, "pointStrictlyInsideBox");
+function segmentCrossesInteriorBox(a, b, box, insetMm = 140) {
+  const minX = box.x + insetMm;
+  const maxX = box.x + box.w - insetMm;
+  const minY = box.y + insetMm;
+  const maxY = box.y + box.h - insetMm;
+  if (minX >= maxX || minY >= maxY)
+    return false;
+  if (Math.max(a.x, b.x) <= minX || Math.min(a.x, b.x) >= maxX)
+    return false;
+  if (Math.max(a.y, b.y) <= minY || Math.min(a.y, b.y) >= maxY)
+    return false;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  let t0 = 0.04;
+  let t1 = 0.96;
+  const checks = [
+    [-dx, a.x - minX],
+    [dx, maxX - a.x],
+    [-dy, a.y - minY],
+    [dy, maxY - a.y]
+  ];
+  for (const [p, q] of checks) {
+    if (Math.abs(p) < 1e-6) {
+      if (q < 0)
+        return false;
+    } else {
+      const r = q / p;
+      if (p < 0) {
+        if (r > t1)
+          return false;
+        if (r > t0)
+          t0 = r;
+      } else {
+        if (r < t0)
+          return false;
+        if (r < t1)
+          t1 = r;
+      }
+    }
+  }
+  return t1 - t0 > 0.02;
+}
+__name(segmentCrossesInteriorBox, "segmentCrossesInteriorBox");
+function pointNearAnyDoorOpening(pt, floor, wallById, jambClearanceMm) {
+  for (const door of floor.doors) {
+    const wall = wallById.get(door.wallId);
+    const halfSpan = (door.width || 900) / 2 + jambClearanceMm;
+    if (wall) {
+      const wx = wall.endPoint.x - wall.startPoint.x;
+      const wy = wall.endPoint.y - wall.startPoint.y;
+      const len = Math.hypot(wx, wy);
+      if (len > 1) {
+        const ux = wx / len;
+        const uy = wy / len;
+        const perp = Math.abs((pt.x - door.position.x) * -uy + (pt.y - door.position.y) * ux);
+        const along = Math.abs((pt.x - door.position.x) * ux + (pt.y - door.position.y) * uy);
+        if (perp <= Math.max(260, (wall.thickness || 230) / 2 + 160) && along < halfSpan) {
+          return true;
+        }
+      }
+    } else if (dist2(pt, door.position) < halfSpan) {
+      return true;
+    }
+  }
+  return false;
+}
+__name(pointNearAnyDoorOpening, "pointNearAnyDoorOpening");
+function computeSegmentIntersection(w1, w2) {
+  const x1 = w1.startPoint.x;
+  const y1 = w1.startPoint.y;
+  const x2 = w1.endPoint.x;
+  const y2 = w1.endPoint.y;
+  const x3 = w2.startPoint.x;
+  const y3 = w2.startPoint.y;
+  const x4 = w2.endPoint.x;
+  const y4 = w2.endPoint.y;
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  if (Math.abs(denom) < 1e-3)
+    return null;
+  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+  if (t >= -0.02 && t <= 1.02 && u >= -0.02 && u <= 1.02) {
+    return {
+      x: snap103(x1 + t * (x2 - x1)),
+      y: snap103(y1 + t * (y2 - y1))
+    };
+  }
+  return null;
+}
+__name(computeSegmentIntersection, "computeSegmentIntersection");
+function wallOrientation(w) {
+  const dx = Math.abs(w.endPoint.x - w.startPoint.x);
+  const dy = Math.abs(w.endPoint.y - w.startPoint.y);
+  if (dx > dy * 2)
+    return "HORIZONTAL";
+  if (dy > dx * 2)
+    return "VERTICAL";
+  return "SQUARE";
+}
+__name(wallOrientation, "wallOrientation");
+function isStructuralHostWall(w) {
+  if (!isPhysicalBoundary(w))
+    return false;
+  if (w.wallUse === "BALCONY" || w.wallUse === "PARAPET")
+    return false;
+  return true;
+}
+__name(isStructuralHostWall, "isStructuralHostWall");
+function wallPriority(w) {
+  if (w.wallUse === "EXTERNAL" || w.type === WallType.External)
+    return 5;
+  if (w.wallUse === "CORE")
+    return 4;
+  if (w.wallUse === "UNIT_SEPARATION" || w.wallUse === "SHAFT")
+    return 3;
+  return 2;
+}
+__name(wallPriority, "wallPriority");
+function deriveCornerLockedStructuralColumns(floor, _envelope, stiltAisleBoxes = [], storeyCount = 5) {
+  const physicalWalls = floor.walls.filter(isStructuralHostWall);
+  if (physicalWalls.length === 0)
+    return [];
+  const wallById = new Map(floor.walls.map((w) => [w.id, w]));
+  const wallPolys = floor.walls.map(wallToPolygon);
+  const indoorRooms = floor.rooms.filter((r) => !isOutdoorCantileverRoom(r) && !isVoidOrShaftRoom(r));
+  const outdoorRooms = floor.rooms.filter(isOutdoorCantileverRoom);
+  const voidRooms = floor.rooms.filter(isVoidOrShaftRoom);
+  const stairRooms = floor.rooms.filter(isStairRoom);
+  const indoorBoxes = indoorRooms.map(roomBox2);
+  const voidBoxes = voidRooms.map(roomBox2);
+  const stairBoxes = stairRooms.map(roomBox2);
+  const floorAisles = [
+    ...stiltAisleBoxes,
+    ...floor.rooms.filter((r) => r.architecturalRole === "VEHICLE_AISLE").map(roomBox2)
+  ];
+  const touchesIndoorOrCore = /* @__PURE__ */ __name((pt) => indoorBoxes.some((b) => pt.x >= b.x - 160 && pt.x <= b.x + b.w + 160 && pt.y >= b.y - 160 && pt.y <= b.y + b.h + 160) || stairBoxes.some((b) => pt.x >= b.x - 160 && pt.x <= b.x + b.w + 160 && pt.y >= b.y - 160 && pt.y <= b.y + b.h + 160), "touchesIndoorOrCore");
+  const inForbiddenOpenSpace = /* @__PURE__ */ __name((pt) => {
+    if (voidBoxes.some((b) => pointStrictlyInsideBox(pt, b, 140)))
+      return true;
+    if (stairBoxes.some((b) => pointStrictlyInsideBox(pt, b, 160)))
+      return true;
+    if (!touchesIndoorOrCore(pt))
+      return true;
+    if (floorAisles.some((b) => pointStrictlyInsideBox(pt, b, 10)))
+      return true;
+    return false;
+  }, "inForbiddenOpenSpace");
+  const onPhysicalWall = /* @__PURE__ */ __name((pt) => physicalWalls.some((w) => pointToSegmentDistance(pt, { start: w.startPoint, end: w.endPoint }) <= 25), "onPhysicalWall");
+  const rawCandidates = [];
+  for (const w of physicalWalls) {
+    const prio = wallPriority(w);
+    const orient = wallOrientation(w);
+    const isPerim = w.wallUse === "EXTERNAL" || w.type === WallType.External;
+    const isCore = w.wallUse === "CORE";
+    for (const ep of [w.startPoint, w.endPoint]) {
+      rawCandidates.push({
+        x: snap103(ep.x),
+        y: snap103(ep.y),
+        priority: prio,
+        orientation: orient,
+        isCoreOrCorner: isCore || isPerim,
+        isPerimeter: isPerim
+      });
+    }
+  }
+  for (let i = 0; i < physicalWalls.length; i++) {
+    const w1 = physicalWalls[i];
+    for (let j = i + 1; j < physicalWalls.length; j++) {
+      const w2 = physicalWalls[j];
+      const inter = computeSegmentIntersection(w1, w2);
+      if (!inter)
+        continue;
+      const maxPrio = Math.max(wallPriority(w1), wallPriority(w2));
+      const bothPrimary = wallPriority(w1) >= 3 && wallPriority(w2) >= 3;
+      rawCandidates.push({
+        x: inter.x,
+        y: inter.y,
+        priority: bothPrimary ? Math.min(5, maxPrio + 1) : maxPrio,
+        orientation: "SQUARE",
+        isCoreOrCorner: maxPrio >= 4 || bothPrimary,
+        isPerimeter: w1.wallUse === "EXTERNAL" || w2.wallUse === "EXTERNAL" || w1.type === WallType.External || w2.type === WallType.External
+      });
+    }
+  }
+  for (const r of [...stairRooms, ...voidRooms.filter((v) => architecturalSpaceRole(v) === "LIFT_SHAFT" || /^passenger\s*lift/i.test(v.name))]) {
+    const b = roomBox2(r);
+    const corners = [
+      { x: snap103(b.x), y: snap103(b.y) },
+      { x: snap103(b.x + b.w), y: snap103(b.y) },
+      { x: snap103(b.x), y: snap103(b.y + b.h) },
+      { x: snap103(b.x + b.w), y: snap103(b.y + b.h) }
+    ];
+    for (const c of corners) {
+      if (onPhysicalWall(c)) {
+        rawCandidates.push({
+          x: c.x,
+          y: c.y,
+          priority: 5,
+          orientation: "SQUARE",
+          isCoreOrCorner: true,
+          isPerimeter: false
+        });
+      }
+    }
+  }
+  const validCandidate = /* @__PURE__ */ __name((pt) => {
+    if (!onPhysicalWall(pt))
+      return false;
+    if (inForbiddenOpenSpace(pt))
+      return false;
+    if (pointNearAnyDoorOpening(pt, floor, wallById, DOOR_JAMB_CLEARANCE_MM))
+      return false;
+    return true;
+  }, "validCandidate");
+  const resolvedCandidates = [];
+  for (const c of rawCandidates) {
+    if (validCandidate(c)) {
+      resolvedCandidates.push(c);
+      continue;
+    }
+    if (!onPhysicalWall(c) || inForbiddenOpenSpace(c))
+      continue;
+    const incident = physicalWalls.filter((w) => pointToSegmentDistance(c, { start: w.startPoint, end: w.endPoint }) <= 25);
+    let nudged = null;
+    for (const w of incident) {
+      const wx = w.endPoint.x - w.startPoint.x;
+      const wy = w.endPoint.y - w.startPoint.y;
+      const wLen = Math.hypot(wx, wy);
+      if (wLen < 900)
+        continue;
+      const ux = wx / wLen;
+      const uy = wy / wLen;
+      const baseAlong = (c.x - w.startPoint.x) * ux + (c.y - w.startPoint.y) * uy;
+      for (const delta of [350, -350, 500, -500, 650, -650]) {
+        const al = baseAlong + delta;
+        if (al < 100 || al > wLen - 100)
+          continue;
+        const testPt = {
+          x: snap103(w.startPoint.x + ux * al),
+          y: snap103(w.startPoint.y + uy * al)
+        };
+        if (validCandidate(testPt)) {
+          nudged = { ...c, x: testPt.x, y: testPt.y, orientation: wallOrientation(w) };
+          break;
+        }
+      }
+      if (nudged)
+        break;
+    }
+    if (nudged)
+      resolvedCandidates.push(nudged);
+  }
+  const sortedRaw = resolvedCandidates.sort((a, b) => b.priority - a.priority || a.y - b.y || a.x - b.x);
+  const mergedNodes = [];
+  for (const c of sortedRaw) {
+    if (mergedNodes.some((m) => dist2(m, c) < 450))
+      continue;
+    mergedNodes.push(c);
+  }
+  const acceptedNodes = [];
+  for (const c of mergedNodes) {
+    const tooClose = acceptedNodes.some((m) => dist2(m, c) < MIN_COLUMN_CENTER_SPACING_MM);
+    if (tooClose)
+      continue;
+    acceptedNodes.push(c);
+  }
+  const checkSpanAlongAxis = /* @__PURE__ */ __name((isHorizontal) => {
+    const axisBuckets = /* @__PURE__ */ new Map();
+    for (const w of physicalWalls) {
+      const dx = Math.abs(w.endPoint.x - w.startPoint.x);
+      const dy = Math.abs(w.endPoint.y - w.startPoint.y);
+      if (isHorizontal ? dy > 30 : dx > 30)
+        continue;
+      const coord = snap103(isHorizontal ? w.startPoint.y : w.startPoint.x);
+      const bucket = Math.round(coord / 100) * 100;
+      const list2 = axisBuckets.get(bucket) ?? [];
+      list2.push(w);
+      axisBuckets.set(bucket, list2);
+    }
+    for (const [axisCoord, wallsOnAxis] of axisBuckets.entries()) {
+      const intervals = wallsOnAxis.map((w) => ({
+        a: Math.min(isHorizontal ? w.startPoint.x : w.startPoint.y, isHorizontal ? w.endPoint.x : w.endPoint.y),
+        b: Math.max(isHorizontal ? w.startPoint.x : w.startPoint.y, isHorizontal ? w.endPoint.x : w.endPoint.y),
+        isExt: w.wallUse === "EXTERNAL" || w.type === WallType.External
+      })).sort((u, v) => u.a - v.a);
+      const chains = [];
+      for (const iv of intervals) {
+        const last = chains.at(-1);
+        if (last && iv.a <= last.b + 120) {
+          last.b = Math.max(last.b, iv.b);
+          last.isExt = last.isExt || iv.isExt;
+        } else {
+          chains.push({ ...iv });
+        }
+      }
+      for (const chain of chains) {
+        if (chain.b - chain.a <= MAX_COLUMN_CLEAR_SPAN_MM)
+          continue;
+        const ts = [];
+        for (const node of acceptedNodes) {
+          const perp = Math.abs((isHorizontal ? node.y : node.x) - axisCoord);
+          const along = isHorizontal ? node.x : node.y;
+          if (perp <= 160 && along >= chain.a - 100 && along <= chain.b + 100) {
+            ts.push(Math.max(chain.a, Math.min(chain.b, along)));
+          }
+        }
+        ts.sort((u, v) => u - v);
+        if (ts.length === 0 || ts[0] > chain.a + 350)
+          ts.unshift(chain.a);
+        if (ts[ts.length - 1] < chain.b - 350)
+          ts.push(chain.b);
+        for (let k = 0; k < ts.length - 1; k++) {
+          const span = ts[k + 1] - ts[k];
+          if (span <= MAX_COLUMN_CLEAR_SPAN_MM)
+            continue;
+          const segments = Math.ceil(span / 4600);
+          for (let s = 1; s < segments; s++) {
+            const target = ts[k] + span * s / segments;
+            for (const off of [0, 200, -200, 400, -400, 600, -600]) {
+              const coordAlong = snap103(target + off);
+              if (coordAlong <= chain.a + 250 || coordAlong >= chain.b - 250)
+                continue;
+              const pt = isHorizontal ? { x: coordAlong, y: axisCoord } : { x: axisCoord, y: coordAlong };
+              if (!validCandidate(pt))
+                continue;
+              if (acceptedNodes.some((m) => dist2(m, pt) < MIN_COLUMN_CENTER_SPACING_MM))
+                continue;
+              acceptedNodes.push({
+                x: pt.x,
+                y: pt.y,
+                priority: 2,
+                orientation: isHorizontal ? "HORIZONTAL" : "VERTICAL",
+                isCoreOrCorner: false,
+                isPerimeter: chain.isExt
+              });
+              break;
+            }
+          }
+        }
+      }
+    }
+  }, "checkSpanAlongAxis");
+  checkSpanAlongAxis(true);
+  checkSpanAlongAxis(false);
+  const highRiseBoost = storeyCount >= 7 ? 150 : storeyCount >= 5 ? 75 : 0;
+  const sizedColumns = [];
+  for (const node of acceptedNodes) {
+    let width = 300;
+    let depth = 300 + (highRiseBoost >= 75 ? 150 : 0);
+    if (node.isCoreOrCorner) {
+      width = 300;
+      depth = 450 + highRiseBoost;
+    } else if (node.orientation === "HORIZONTAL") {
+      width = 450 + highRiseBoost;
+      depth = 230;
+    } else if (node.orientation === "VERTICAL") {
+      width = 230;
+      depth = 450 + highRiseBoost;
+    } else {
+      width = 300;
+      depth = 450;
+    }
+    const makeCol = /* @__PURE__ */ __name((w, d) => ({
+      id: generateId(),
+      floorId: floor.id,
+      position: { x: node.x, y: node.y },
+      width: w,
+      depth: d,
+      shape: ColumnShape.Rectangular,
+      isStructural: true,
+      gridReference: ""
+    }), "makeCol");
+    const intrudesOutdoor = /* @__PURE__ */ __name((c) => outdoorRooms.some((r) => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, wallPolys) >= 1e-3), "intrudesOutdoor");
+    let col = makeCol(width, depth);
+    if (intrudesOutdoor(col)) {
+      const compact230 = makeCol(230, 230);
+      if (!intrudesOutdoor(compact230)) {
+        col = compact230;
+      } else {
+        const flush200 = makeCol(200, 200);
+        if (!intrudesOutdoor(flush200)) {
+          col = flush200;
+        } else {
+          continue;
+        }
+      }
+    }
+    const collidesExisting = sizedColumns.some((existing) => Math.abs(existing.position.x - col.position.x) < (existing.width + col.width) / 2 + 200 && Math.abs(existing.position.y - col.position.y) < (existing.depth + col.depth) / 2 + 200);
+    if (collidesExisting)
+      continue;
+    sizedColumns.push(col);
+  }
+  sizedColumns.sort((a, b) => {
+    const rowA = Math.round(a.position.y / 250);
+    const rowB = Math.round(b.position.y / 250);
+    if (rowA !== rowB)
+      return rowA - rowB;
+    return a.position.x - b.position.x;
+  });
+  return sizedColumns.map((c, idx) => ({
+    ...c,
+    id: `${floor.id}::col_${idx + 1}`,
+    gridReference: `C${idx + 1}`
+  }));
+}
+__name(deriveCornerLockedStructuralColumns, "deriveCornerLockedStructuralColumns");
+function synthesizeFloorBeamFraming(floor, columns) {
+  const beams = [];
+  const voidAndLiftBoxes = floor.rooms.filter((r) => isVoidOrShaftRoom(r) || isStairRoom(r)).map(roomBox2);
+  const crossesAnyOpenShaft = /* @__PURE__ */ __name((a, b) => voidAndLiftBoxes.some((box) => segmentCrossesInteriorBox(a, b, box, 150)), "crossesAnyOpenShaft");
+  const beamKeySet = /* @__PURE__ */ new Set();
+  const addBeam = /* @__PURE__ */ __name((beam) => {
+    const len = dist2(beam.startPoint, beam.endPoint);
+    if (len < 450 || len > 8500)
+      return;
+    if (crossesAnyOpenShaft(beam.startPoint, beam.endPoint))
+      return;
+    const kA = `${Math.round(beam.startPoint.x / 50)},${Math.round(beam.startPoint.y / 50)}`;
+    const kB = `${Math.round(beam.endPoint.x / 50)},${Math.round(beam.endPoint.y / 50)}`;
+    const key = kA < kB ? `${kA}|${kB}` : `${kB}|${kA}`;
+    if (beamKeySet.has(key))
+      return;
+    beamKeySet.add(key);
+    beams.push({
+      ...beam,
+      id: `${floor.id}::preliminary-beam_${beams.length + 1}`,
+      floorId: floor.id
+    });
+  }, "addBeam");
+  const xGroups = [];
+  const yGroups = [];
+  for (const col of columns) {
+    const gx = xGroups.find((g) => Math.abs(g.coord - col.position.x) <= GRID_ALIGN_TOLERANCE_MM);
+    if (gx)
+      gx.cols.push(col);
+    else
+      xGroups.push({ coord: col.position.x, cols: [col] });
+    const gy = yGroups.find((g) => Math.abs(g.coord - col.position.y) <= GRID_ALIGN_TOLERANCE_MM);
+    if (gy)
+      gy.cols.push(col);
+    else
+      yGroups.push({ coord: col.position.y, cols: [col] });
+  }
+  for (const g of xGroups) {
+    const sorted = [...g.cols].sort((a, b) => a.position.y - b.position.y);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const cA = sorted[i];
+      const cB = sorted[i + 1];
+      const span = dist2(cA.position, cB.position);
+      if (span >= 700 && span <= 7500) {
+        addBeam({
+          startColumnId: cA.id,
+          endColumnId: cB.id,
+          startPoint: cA.position,
+          endPoint: cB.position,
+          widthMm: 230,
+          depthMm: span > 5200 ? 500 : 450,
+          type: "PRIMARY"
+        });
+      }
+    }
+  }
+  for (const g of yGroups) {
+    const sorted = [...g.cols].sort((a, b) => a.position.x - b.position.x);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const cA = sorted[i];
+      const cB = sorted[i + 1];
+      const span = dist2(cA.position, cB.position);
+      if (span >= 700 && span <= 7500) {
+        addBeam({
+          startColumnId: cA.id,
+          endColumnId: cB.id,
+          startPoint: cA.position,
+          endPoint: cB.position,
+          widthMm: 230,
+          depthMm: span > 5200 ? 500 : 450,
+          type: "PRIMARY"
+        });
+      }
+    }
+  }
+  const physicalWalls = floor.walls.filter(isStructuralHostWall);
+  const findNearestColId = /* @__PURE__ */ __name((pt) => {
+    let best;
+    let bestD = 260;
+    for (const c of columns) {
+      const d = dist2(c.position, pt);
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best?.id;
+  }, "findNearestColId");
+  for (const wall of physicalWalls) {
+    const len = dist2(wall.startPoint, wall.endPoint);
+    if (len < 1100 || len > 8e3)
+      continue;
+    const alreadyCovered = beams.some((b) => dist2(b.startPoint, wall.startPoint) < 260 && dist2(b.endPoint, wall.endPoint) < 260 || dist2(b.startPoint, wall.endPoint) < 260 && dist2(b.endPoint, wall.startPoint) < 260 || pointToSegmentDistance(wall.startPoint, { start: b.startPoint, end: b.endPoint }) < 140 && pointToSegmentDistance(wall.endPoint, { start: b.startPoint, end: b.endPoint }) < 140);
+    if (alreadyCovered)
+      continue;
+    const startColId = findNearestColId(wall.startPoint);
+    const endColId = findNearestColId(wall.endPoint);
+    addBeam({
+      ...startColId ? { startColumnId: startColId } : {},
+      ...endColId ? { endColumnId: endColId } : {},
+      startPoint: { x: snap103(wall.startPoint.x), y: snap103(wall.startPoint.y) },
+      endPoint: { x: snap103(wall.endPoint.x), y: snap103(wall.endPoint.y) },
+      widthMm: 230,
+      depthMm: startColId && endColId ? 450 : 400,
+      type: startColId && endColId ? "PRIMARY" : "SECONDARY"
+    });
+  }
+  const balconyRooms = floor.rooms.filter((r) => r.type === RoomType.Balcony || r.type === RoomType.Utility);
+  for (const balc of balconyRooms) {
+    const bb = roomBox2(balc);
+    const edges = [
+      { start: { x: bb.x, y: bb.y }, end: { x: bb.x + bb.w, y: bb.y }, outward: { x: 0, y: 1 }, depthMm: bb.h },
+      { start: { x: bb.x, y: bb.y + bb.h }, end: { x: bb.x + bb.w, y: bb.y + bb.h }, outward: { x: 0, y: -1 }, depthMm: bb.h },
+      { start: { x: bb.x, y: bb.y }, end: { x: bb.x, y: bb.y + bb.h }, outward: { x: 1, y: 0 }, depthMm: bb.w },
+      { start: { x: bb.x + bb.w, y: bb.y }, end: { x: bb.x + bb.w, y: bb.y + bb.h }, outward: { x: -1, y: 0 }, depthMm: bb.w }
+    ];
+    for (const col of columns) {
+      for (const edge of edges) {
+        if (edge.depthMm > 2400 || edge.depthMm < 600)
+          continue;
+        const d = pointToSegmentDistance(col.position, { start: edge.start, end: edge.end });
+        if (d > 240)
+          continue;
+        const tip = {
+          x: snap103(col.position.x + edge.outward.x * edge.depthMm),
+          y: snap103(col.position.y + edge.outward.y * edge.depthMm)
+        };
+        const mid2 = {
+          x: (col.position.x + tip.x) / 2,
+          y: (col.position.y + tip.y) / 2
+        };
+        if (!pointInPolygon(mid2, balc.boundary))
+          continue;
+        addBeam({
+          startColumnId: col.id,
+          startPoint: col.position,
+          endPoint: tip,
+          widthMm: 230,
+          depthMm: 400,
+          type: "CANTILEVER"
+        });
+        break;
+      }
+    }
+  }
+  return beams;
+}
+__name(synthesizeFloorBeamFraming, "synthesizeFloorBeamFraming");
+function synthesizeCornerLockedBuildingFraming(building) {
+  const refRes = building.floors.find((f) => f.floorUse === "RESIDENTIAL") ?? building.floors.find((f) => (f.apartmentUnits?.length ?? 0) > 0) ?? building.floors[0];
+  if (!refRes)
+    return building;
+  const stiltFl = building.floors.find((f) => f.floorUse === "STILT_PARKING");
+  const stiltAisles = (stiltFl?.rooms ?? []).filter((r) => r.architecturalRole === "VEHICLE_AISLE").map(roomBox2);
+  const bounds = polygonBoundingBox(refRes.boundary);
+  let masterCols = deriveCornerLockedStructuralColumns(refRes, { x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height }, stiltAisles, building.floors.length);
+  if (building.floors.length > 0) {
+    masterCols = masterCols.map((col) => {
+      let resolved = col;
+      for (const fl of building.floors) {
+        const flOutdoor = fl.rooms.filter((r) => ["balcony", "utility"].includes(r.type));
+        if (!flOutdoor.length)
+          continue;
+        const flWalls = fl.walls.map(wallToPolygon);
+        const intrudes = /* @__PURE__ */ __name((c) => flOutdoor.some((r) => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, flWalls) >= 1e-3), "intrudes");
+        if (resolved && intrudes(resolved)) {
+          const flush = { ...resolved, width: 200, depth: 200 };
+          resolved = intrudes(flush) ? null : flush;
+        }
+      }
+      return resolved;
+    }).filter((c) => c !== null);
+  }
+  const numberedMaster = masterCols.map((c, idx) => ({
+    ...c,
+    gridReference: `C${idx + 1}`
+  }));
+  const refVoidsAndStairs = refRes.rooms.filter((r) => isVoidOrShaftRoom(r) || isStairRoom(r));
+  const floors = building.floors.map((floor) => {
+    const floorCols = numberedMaster.map((c, idx) => ({
+      ...c,
+      id: `${floor.id}::col_${idx + 1}`,
+      floorId: floor.id,
+      gridReference: `C${idx + 1}`
+    }));
+    const isFullResidential = floor.floorUse === "RESIDENTIAL" || floor.walls.length >= refRes.walls.length * 0.5;
+    const framingHostFloor = isFullResidential ? floor : {
+      ...floor,
+      walls: refRes.walls,
+      rooms: [...floor.rooms, ...refVoidsAndStairs]
+    };
+    const floorBeams = synthesizeFloorBeamFraming(framingHostFloor, floorCols);
+    return {
+      ...floor,
+      slabThicknessMm: floor.slabThicknessMm ?? 150,
+      columns: floorCols,
+      beams: floorBeams
+    };
+  });
+  return {
+    ...building,
+    floors,
+    beams: floors.flatMap((f) => f.beams ?? []),
+    metadata: {
+      ...building.metadata,
+      tags: [
+        ...(building.metadata.tags ?? []).filter((tag) => tag !== "STRUCTURAL_DESIGN_DEFERRED" && tag !== "STRUCTURAL_FRAMING_PRELIMINARY"),
+        "STRUCTURAL_FRAMING_PRELIMINARY"
+      ]
+    }
+  };
+}
+__name(synthesizeCornerLockedBuildingFraming, "synthesizeCornerLockedBuildingFraming");
+
 // ../planning-engine/dist/topology/rect-frame.js
 var boxArea = /* @__PURE__ */ __name((b) => b.w * b.h, "boxArea");
 function boxesOverlap(a, b) {
@@ -117275,7 +119704,7 @@ var BUILDING_MASSING_SHAPES = [
   "PINWHEEL_CLUSTER",
   "STEPPED_OFFSET_BLOCK"
 ];
-var snap103 = /* @__PURE__ */ __name((v) => Math.round(v / 10) * 10, "snap10");
+var snap104 = /* @__PURE__ */ __name((v) => Math.round(v / 10) * 10, "snap10");
 var clamp3 = /* @__PURE__ */ __name((v, lo, hi) => Math.max(lo, Math.min(hi, v)), "clamp");
 var CORE_BOUNDS = {
   stairWidthMin: 2600,
@@ -117426,6 +119855,90 @@ function dissectCoreBand(bandWorld, opts) {
   const shaftBoxes = [];
   const shaftRoles = [];
   const shaftTags = [];
+  const MAX_MEP_SHORT_MM = 1200;
+  const MAX_MEP_LONG_MM = 1800;
+  const pushSizedMepStrip = /* @__PURE__ */ __name((strip) => {
+    if (strip.w <= 0 || strip.h <= 0)
+      return;
+    if (strip.w <= MAX_MEP_SHORT_MM && strip.h <= MAX_MEP_LONG_MM || strip.h <= MAX_MEP_SHORT_MM && strip.w <= MAX_MEP_LONG_MM) {
+      shaftBoxes.push(out(strip));
+      shaftRoles.push("SERVICE_SHAFT");
+      shaftTags.push([]);
+      return;
+    }
+    if (strip.w <= MAX_MEP_SHORT_MM && strip.h > MAX_MEP_LONG_MM) {
+      const count = Math.ceil(strip.h / MAX_MEP_LONG_MM);
+      const chunkH = snap104(strip.h / count);
+      const sizes = Array.from({ length: count }, (_, idx) => idx === count - 1 ? 0 : chunkH);
+      for (const piece of splitY(strip, sizes)) {
+        if (piece.w > 0 && piece.h > 0) {
+          shaftBoxes.push(out(piece));
+          shaftRoles.push("SERVICE_SHAFT");
+          shaftTags.push([]);
+        }
+      }
+      return;
+    }
+    if (strip.h <= MAX_MEP_SHORT_MM && strip.w > MAX_MEP_LONG_MM) {
+      const count = Math.ceil(strip.w / MAX_MEP_LONG_MM);
+      const chunkW = snap104(strip.w / count);
+      const sizes = Array.from({ length: count }, (_, idx) => idx === count - 1 ? 0 : chunkW);
+      for (const piece of splitX(strip, sizes)) {
+        if (piece.w > 0 && piece.h > 0) {
+          shaftBoxes.push(out(piece));
+          shaftRoles.push("SERVICE_SHAFT");
+          shaftTags.push([]);
+        }
+      }
+      return;
+    }
+    const mepW = Math.min(MAX_MEP_SHORT_MM, strip.w);
+    const lobbyRemW = strip.w - mepW;
+    if (corridorCount > 0 && lobbyRemW >= 1500) {
+      const [colA, colB] = opts.liftsAtLowSide ? splitX(strip, [lobbyRemW, 0]) : splitX(strip, [mepW, 0]);
+      const lobbyCol = opts.liftsAtLowSide ? colA : colB;
+      const mepCol = opts.liftsAtLowSide ? colB : colA;
+      lobbyBoxes.push(out(lobbyCol));
+      if (mepCol.h <= MAX_MEP_LONG_MM) {
+        shaftBoxes.push(out(mepCol));
+        shaftRoles.push("SERVICE_SHAFT");
+        shaftTags.push([]);
+      } else {
+        const [mepBox, extraLobby] = splitY(mepCol, [MAX_MEP_LONG_MM, 0]);
+        shaftBoxes.push(out(mepBox));
+        shaftRoles.push("SERVICE_SHAFT");
+        shaftTags.push([]);
+        if (extraLobby.h >= 1200)
+          lobbyBoxes.push(out(extraLobby));
+        else
+          pushSizedMepStrip(extraLobby);
+      }
+      return;
+    }
+    if (strip.h > MAX_MEP_LONG_MM) {
+      const [mepEnd, openLobby] = splitY(strip, [MAX_MEP_LONG_MM, 0]);
+      if (corridorCount > 0 && openLobby.h >= 1500) {
+        lobbyBoxes.push(out(openLobby));
+      } else {
+        pushSizedMepStrip(openLobby);
+      }
+      if (mepEnd.w > MAX_MEP_SHORT_MM && corridorCount > 0 && mepEnd.w - MAX_MEP_SHORT_MM >= 1200) {
+        const [mepBox, sideVestibule] = splitX(mepEnd, [MAX_MEP_SHORT_MM, 0]);
+        shaftBoxes.push(out(mepBox));
+        shaftRoles.push("SERVICE_SHAFT");
+        shaftTags.push([]);
+        lobbyBoxes.push(out(sideVestibule));
+      } else {
+        shaftBoxes.push(out(mepEnd));
+        shaftRoles.push("SERVICE_SHAFT");
+        shaftTags.push([]);
+      }
+    } else {
+      shaftBoxes.push(out(strip));
+      shaftRoles.push("SERVICE_SHAFT");
+      shaftTags.push([]);
+    }
+  }, "pushSizedMepStrip");
   let firstStairSeg;
   let liftSeg;
   let secondStairSeg;
@@ -117436,23 +119949,17 @@ function dissectCoreBand(bandWorld, opts) {
     firstStairSeg = topStair;
     secondStairSeg = botStair;
     const remMidH = midZone.h - liftBankRun;
-    const topPad = snap103(remMidH / 2);
+    const topPad = snap104(remMidH / 2);
     const botPad = remMidH - topPad;
     if (topPad > 0 && botPad > 0) {
       const [padTop, liftCenter, padBot] = splitY(midZone, [topPad, liftBankRun, 0]);
-      shaftBoxes.push(out(padTop));
-      shaftRoles.push("SERVICE_SHAFT");
-      shaftTags.push([]);
+      pushSizedMepStrip(padTop);
       liftSeg = liftCenter;
-      shaftBoxes.push(out(padBot));
-      shaftRoles.push("SERVICE_SHAFT");
-      shaftTags.push([]);
+      pushSizedMepStrip(padBot);
     } else if (remMidH > 0) {
       const [liftCenter, padBot] = splitY(midZone, [liftBankRun, 0]);
       liftSeg = liftCenter;
-      shaftBoxes.push(out(padBot));
-      shaftRoles.push("SERVICE_SHAFT");
-      shaftTags.push([]);
+      pushSizedMepStrip(padBot);
     } else {
       liftSeg = midZone;
     }
@@ -117469,14 +119976,13 @@ function dissectCoreBand(bandWorld, opts) {
   if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
     const [stairCol, shaftCol] = opts.liftsAtLowSide ? splitX(firstStairSeg, [stairW, 0]) : splitX(firstStairSeg, [stairSurplusW, 0]);
     stairBoxes.push(out(opts.liftsAtLowSide ? stairCol : shaftCol));
-    shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol : stairCol));
-    shaftRoles.push("SERVICE_SHAFT");
-    shaftTags.push([]);
+    pushSizedMepStrip(opts.liftsAtLowSide ? shaftCol : stairCol);
   } else {
     stairBoxes.push(out(firstStairSeg));
   }
+  const effectiveLiftsAtLow = sides === "LOW" ? true : sides === "HIGH" ? false : opts.liftsAtLowSide;
   const carDepth = Math.min(CORE_BOUNDS.liftDepth, Math.floor(liftSeg.h / liftCount));
-  const liftW = Math.min(stack.w, clamp3(snap103(stack.w * 0.55), CORE_BOUNDS.liftWidthMin, CORE_BOUNDS.liftWidthMax));
+  const liftW = Math.min(stack.w, clamp3(snap104(stack.w * 0.55), CORE_BOUNDS.liftWidthMin, CORE_BOUNDS.liftWidthMax));
   const lobbyW = stack.w - liftW;
   const stackCars = /* @__PURE__ */ __name((column) => {
     const depths = Array.from({ length: liftCount }, () => carDepth);
@@ -117486,15 +119992,19 @@ function dissectCoreBand(bandWorld, opts) {
     const tail2 = pieces[pieces.length - 1];
     if (tail2.h > 0) {
       const carTailRole = roleFor(tail2, opts.preferOts, opts.noOts, opts.preferCompactOts);
-      shaftBoxes.push(out(tail2));
-      shaftRoles.push(carTailRole);
-      shaftTags.push(carTailRole === "OPEN_TO_SKY_VOID" ? ["shaft:ots"] : []);
+      if (carTailRole === "OPEN_TO_SKY_VOID") {
+        shaftBoxes.push(out(tail2));
+        shaftRoles.push("OPEN_TO_SKY_VOID");
+        shaftTags.push(["shaft:ots"]);
+      } else {
+        pushSizedMepStrip(tail2);
+      }
     }
   }, "stackCars");
   if (lobbyW >= CORE_BOUNDS.lobbyClearMin) {
-    const [a, b] = opts.liftsAtLowSide ? splitX(liftSeg, [liftW, 0]) : splitX(liftSeg, [lobbyW, 0]);
-    const liftCol = opts.liftsAtLowSide ? a : b;
-    const lobbyCol = opts.liftsAtLowSide ? b : a;
+    const [a, b] = effectiveLiftsAtLow ? splitX(liftSeg, [lobbyW, 0]) : splitX(liftSeg, [liftW, 0]);
+    const lobbyCol = effectiveLiftsAtLow ? a : b;
+    const liftCol = effectiveLiftsAtLow ? b : a;
     stackCars(liftCol);
     lobbyBoxes.push(out(lobbyCol));
   } else {
@@ -117509,11 +120019,9 @@ function dissectCoreBand(bandWorld, opts) {
     const carW = Math.min(stack.w, CORE_BOUNDS.liftWidthMax);
     const surplusShaftW = stack.w - carW;
     if (surplusShaftW >= CORE_BOUNDS.shaftMinSpan) {
-      const [carCol, shaftCol] = opts.liftsAtLowSide ? splitX(liftSeg, [carW, 0]) : splitX(liftSeg, [surplusShaftW, 0]);
-      stackCars(opts.liftsAtLowSide ? carCol : shaftCol);
-      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol : carCol));
-      shaftRoles.push("SERVICE_SHAFT");
-      shaftTags.push([]);
+      const [carCol, shaftCol] = effectiveLiftsAtLow ? splitX(liftSeg, [carW, 0]) : splitX(liftSeg, [surplusShaftW, 0]);
+      stackCars(effectiveLiftsAtLow ? carCol : shaftCol);
+      pushSizedMepStrip(effectiveLiftsAtLow ? shaftCol : carCol);
     } else {
       stackCars(liftSeg);
     }
@@ -117522,9 +120030,7 @@ function dissectCoreBand(bandWorld, opts) {
     if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
       const [stairCol, shaftCol] = opts.liftsAtLowSide ? splitX(secondStairSeg, [stairW, 0]) : splitX(secondStairSeg, [stairSurplusW, 0]);
       stairBoxes.push(out(opts.liftsAtLowSide ? stairCol : shaftCol));
-      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol : stairCol));
-      shaftRoles.push("SERVICE_SHAFT");
-      shaftTags.push([]);
+      pushSizedMepStrip(opts.liftsAtLowSide ? shaftCol : stairCol);
     } else {
       stairBoxes.push(out(secondStairSeg));
     }
@@ -117534,15 +120040,24 @@ function dissectCoreBand(bandWorld, opts) {
     const maxCompactOtsH = 3200;
     const minCompactOtsH = 2400;
     if ((opts.preferOts || opts.preferCompactOts) && tailRole === "OPEN_TO_SKY_VOID" && tailSeg.h > maxCompactOtsH && tailSeg.h - minCompactOtsH >= 1200) {
-      const compactOtsH = snap103(Math.min(maxCompactOtsH, tailSeg.h - 1200));
+      const compactOtsH = snap104(Math.min(maxCompactOtsH, tailSeg.h - 1200));
       const [otsPiece, serviceSurplus] = splitY(tailSeg, [compactOtsH, 0]);
-      shaftBoxes.push(out(otsPiece), out(serviceSurplus));
-      shaftRoles.push("OPEN_TO_SKY_VOID", "SERVICE_SHAFT");
-      shaftTags.push(["shaft:ots"], []);
-    } else {
+      shaftBoxes.push(out(otsPiece));
+      shaftRoles.push("OPEN_TO_SKY_VOID");
+      shaftTags.push(["shaft:ots"]);
+      pushSizedMepStrip(serviceSurplus);
+    } else if (tailRole === "OPEN_TO_SKY_VOID" && tailSeg.h <= 4500) {
       shaftBoxes.push(out(tailSeg));
-      shaftRoles.push(tailRole);
-      shaftTags.push(tailRole === "OPEN_TO_SKY_VOID" ? ["shaft:ots"] : []);
+      shaftRoles.push("OPEN_TO_SKY_VOID");
+      shaftTags.push(["shaft:ots"]);
+    } else if (tailRole === "OPEN_TO_SKY_VOID" && tailSeg.h > 4500) {
+      const [otsPiece, remainder] = splitY(tailSeg, [3200, 0]);
+      shaftBoxes.push(out(otsPiece));
+      shaftRoles.push("OPEN_TO_SKY_VOID");
+      shaftTags.push(["shaft:ots"]);
+      pushSizedMepStrip(remainder);
+    } else {
+      pushSizedMepStrip(tailSeg);
     }
   }
   return { stairBoxes, liftBoxes, lobbyBoxes, corridorBoxes, shaftBoxes, shaftRoles, shaftTags, reasons: [] };
@@ -117611,17 +120126,17 @@ function flatFootprintTarget(unitTypes, availableSpan, targetAreaSqFt, available
   const explicitTargetSqm = targetAreaSqFt !== void 0 && targetAreaSqFt > 0 ? targetAreaSqFt / 10.7639 : void 0;
   const targetSqm = explicitTargetSqm ? explicitTargetSqm / 0.86 : Math.max(...bounds.map((b) => b.max));
   const targetMm2 = targetSqm * 1e6;
-  const idealSpan = snap103(Math.sqrt(targetMm2 / 1.45));
+  const idealSpan = snap104(Math.sqrt(targetMm2 / 1.45));
   const wanted = availableSpan >= FLAT_BOUNDS.balconySpanMm ? Math.max(idealSpan, FLAT_BOUNDS.balconySpanMm) : idealSpan;
   const maxAllowedSpan = explicitTargetSqm ? Math.max(FLAT_BOUNDS.maxSpanMm, availableSpan) : FLAT_BOUNDS.maxSpanMm;
   let spanMm = clamp3(Math.min(wanted, availableSpan), FLAT_BOUNDS.minSpanMm, maxAllowedSpan);
-  let rawRunMm = snap103(targetMm2 / spanMm);
+  let rawRunMm = snap104(targetMm2 / spanMm);
   if (explicitTargetSqm && availableRun !== void 0 && availableRun > 0 && rawRunMm > availableRun) {
-    const cappedRun = Math.max(FLAT_BOUNDS.minRunMm, snap103(availableRun));
-    const neededSpan = Math.min(availableSpan, snap103(targetMm2 / cappedRun));
+    const cappedRun = Math.max(FLAT_BOUNDS.minRunMm, snap104(availableRun));
+    const neededSpan = Math.min(availableSpan, snap104(targetMm2 / cappedRun));
     if (neededSpan > spanMm) {
       spanMm = clamp3(neededSpan, FLAT_BOUNDS.minSpanMm, maxAllowedSpan);
-      rawRunMm = snap103(targetMm2 / spanMm);
+      rawRunMm = snap104(targetMm2 / spanMm);
     }
   }
   const maxAllowedRun = explicitTargetSqm ? Math.max(FLAT_BOUNDS.maxRunMm, rawRunMm) : FLAT_BOUNDS.maxRunMm;
@@ -117629,11 +120144,12 @@ function flatFootprintTarget(unitTypes, availableSpan, targetAreaSqFt, available
   return { spanMm, runMm };
 }
 __name(flatFootprintTarget, "flatFootprintTarget");
-function resolveWingFillMode(program) {
+function resolveWingFillMode(program, envelope) {
   const noOts = program.mandatory.ventilationStrategy === "PERIMETER_ONLY";
   const targetAreaSqFt = program.mandatory.targetAreaSqFt;
   const hasAreaTarget = targetAreaSqFt !== void 0 && targetAreaSqFt > 0;
-  const fillWings = !hasAreaTarget && (noOts || Boolean(program.preferences.properSpaceUtilization) || Boolean(program.preferences.ventilatedCentralOtsShafts));
+  const isUrbanFillEnvelope = Boolean(envelope && Math.min(envelope.w, envelope.h) <= 27e3 && Math.max(envelope.w, envelope.h) <= 35e3);
+  const fillWings = !hasAreaTarget && (noOts || isUrbanFillEnvelope || Boolean(program.preferences.properSpaceUtilization) || Boolean(program.preferences.ventilatedCentralOtsShafts));
   return { noOts, hasAreaTarget, fillWings, targetAreaSqFt };
 }
 __name(resolveWingFillMode, "resolveWingFillMode");
@@ -117642,15 +120158,15 @@ function rebalanceMixedWingPair(aSpan, aRun, aMinSpan, aMinRun, aWeightAvg, bSpa
   const aB = bSpan * bRun;
   if (bWeightAvg > 0 && aA > aB * (aWeightAvg / bWeightAvg) * 1.02) {
     const desiredAA = aB * (aWeightAvg / bWeightAvg);
-    aRun = Math.max(aMinRun, Math.min(aRun, snap103(desiredAA / aSpan)));
+    aRun = Math.max(aMinRun, Math.min(aRun, snap104(desiredAA / aSpan)));
     if (aSpan * aRun > desiredAA * 1.02) {
-      aSpan = Math.max(aMinSpan, Math.min(aSpan, snap103(desiredAA / aRun)));
+      aSpan = Math.max(aMinSpan, Math.min(aSpan, snap104(desiredAA / aRun)));
     }
   } else if (aWeightAvg > 0 && aB > aA * (bWeightAvg / aWeightAvg) * 1.02) {
     const desiredAB = aA * (bWeightAvg / aWeightAvg);
-    bRun = Math.max(bMinRun, Math.min(bRun, snap103(desiredAB / bSpan)));
+    bRun = Math.max(bMinRun, Math.min(bRun, snap104(desiredAB / bSpan)));
     if (bSpan * bRun > desiredAB * 1.02) {
-      bSpan = Math.max(bMinSpan, Math.min(bSpan, snap103(desiredAB / bRun)));
+      bSpan = Math.max(bMinSpan, Math.min(bSpan, snap104(desiredAB / bRun)));
     }
   }
   return { aSpan, aRun, bSpan, bRun };
@@ -117707,7 +120223,7 @@ function rebalanceFlatRowsByBhkWeight(partition, unitTypes) {
         const start = horizontal ? first.x : first.y;
         const total = horizontal ? last.x + last.w - start : last.y + last.h - start;
         const sumW = weights.reduce((s, w) => s + w, 0);
-        const sizes = weights.map((w) => snap103(total * w / sumW));
+        const sizes = weights.map((w) => snap104(total * w / sumW));
         sizes[sizes.length - 1] = total - sizes.slice(0, -1).reduce((s, v) => s + v, 0);
         if (sizes.some((s) => s < FLAT_BOUNDS.minSpanMm))
           continue;
@@ -117844,8 +120360,8 @@ function partitionDefects(partition, program) {
     if (runMm < FLAT_BOUNDS.minRunMm) {
       reasons.push(`${label} run ${Math.round(runMm)} mm is below the ${FLAT_BOUNDS.minRunMm} mm needed to stack service, living and sleeping bands`);
     }
-    const fullFill = program?.mandatory.ventilationStrategy === "PERIMETER_ONLY" || program?.mandatory.targetAreaSqFt !== void 0 && program.mandatory.targetAreaSqFt > 0 || Boolean(program?.preferences.properSpaceUtilization) || Boolean(program?.preferences.ventilatedCentralOtsShafts);
     const maxEnvelopeDim = Math.max(envelope.w, envelope.h);
+    const fullFill = Math.min(envelope.w, envelope.h) <= 27e3 && Math.max(envelope.w, envelope.h) <= 35e3 || program?.mandatory.ventilationStrategy === "PERIMETER_ONLY" || program?.mandatory.targetAreaSqFt !== void 0 && program.mandatory.targetAreaSqFt > 0 || Boolean(program?.preferences.properSpaceUtilization) || Boolean(program?.preferences.ventilatedCentralOtsShafts);
     const spanLimit = fullFill ? Math.max(FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE, maxEnvelopeDim) : FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE;
     const runLimit = fullFill ? Math.max(FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE, maxEnvelopeDim) : FLAT_BOUNDS.maxRunMm * OVERSIZE_TOLERANCE;
     if (spanMm > spanLimit) {
@@ -117880,7 +120396,7 @@ var centralCoreSpine = /* @__PURE__ */ __name((ctx) => {
   const westWeight = weightOf(westTypes);
   const eastWeight = weightOf(eastTypes);
   const minWingSpan = availW >= 2 * FLAT_BOUNDS.balconySpanMm ? FLAT_BOUNDS.balconySpanMm : FLAT_BOUNDS.minSpanMm;
-  const balancedLeftW = isMixed && westWeight + eastWeight > 0 ? snap103(clamp3(availW * (westWeight / (westWeight + eastWeight)), minWingSpan, availW - minWingSpan)) : snap103(availW / 2);
+  const balancedLeftW = isMixed && westWeight + eastWeight > 0 ? snap104(clamp3(availW * (westWeight / (westWeight + eastWeight)), minWingSpan, availW - minWingSpan)) : snap104(availW / 2);
   for (const liftsAtLowSide of [false, true]) {
     const variantId = `central:lifts=${liftsAtLowSide ? "west" : "east"}`;
     const label = "Central circulation core";
@@ -117909,7 +120425,7 @@ var centralCoreSpine = /* @__PURE__ */ __name((ctx) => {
       attempts.push({ variantId, label, rationale: "", reasons: band.reasons });
       continue;
     }
-    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const westTarget = flatFootprintTarget(westTypes, leftW, targetAreaSqFt, Math.ceil(left2.h / westCount));
     const eastTarget = flatFootprintTarget(eastTypes, right.w, targetAreaSqFt, Math.ceil(right.h / eastCount));
     let spanCapW = fillWings ? left2.w : hasAreaTarget ? Math.min(left2.w, westTarget.spanMm) : Math.min(left2.w, Math.max(westTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
@@ -117982,7 +120498,7 @@ var dualWing = /* @__PURE__ */ __name((ctx) => {
   const northWeight = weightOf(northTypes);
   const southWeight = weightOf(southTypes);
   const minWingSpan = availH >= 2 * FLAT_BOUNDS.balconySpanMm ? FLAT_BOUNDS.balconySpanMm : FLAT_BOUNDS.minSpanMm;
-  const northH = isMixed && northWeight + southWeight > 0 ? snap103(clamp3(availH * (northWeight / (northWeight + southWeight)), minWingSpan, availH - minWingSpan)) : snap103(availH / 2);
+  const northH = isMixed && northWeight + southWeight > 0 ? snap104(clamp3(availH * (northWeight / (northWeight + southWeight)), minWingSpan, availH - minWingSpan)) : snap104(availH / 2);
   const attempts = [];
   for (const liftsAtLowSide of [false, true]) {
     const variantId = `dualwing:lifts=${liftsAtLowSide ? "west" : "east"}`;
@@ -118011,7 +120527,7 @@ var dualWing = /* @__PURE__ */ __name((ctx) => {
       attempts.push({ variantId, label, rationale: "", reasons: band.reasons });
       continue;
     }
-    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const northTarget = flatFootprintTarget(northTypes, northH, targetAreaSqFt, Math.ceil(north.w / northCount));
     const southTarget = flatFootprintTarget(southTypes, south.h, targetAreaSqFt, Math.ceil(south.w / southCount));
     let maxSpanN = fillWings ? north.h : hasAreaTarget ? Math.min(north.h, northTarget.spanMm) : Math.min(north.h, Math.max(northTarget.spanMm, FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE));
@@ -118122,7 +120638,7 @@ var sideCore = /* @__PURE__ */ __name((ctx) => {
       attempts.push({ variantId, label, rationale: "", reasons: band.reasons });
       continue;
     }
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const alongY = vertical;
     const availRun = alongY ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
@@ -118207,7 +120723,7 @@ var splitCore = /* @__PURE__ */ __name((ctx) => {
       continue;
     }
     const flatsRegion = middle;
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const availRun = axis === "ns" ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
     const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
@@ -118262,9 +120778,9 @@ var centralCourtyard = /* @__PURE__ */ __name((ctx) => {
       continue;
     }
     const coreRun = requiredCoreBandLength({ compact, stairCount: 1 });
-    const courtRun = Math.max(coreRun, snap103(env.h * 0.18));
+    const courtRun = Math.max(coreRun, snap104(env.h * 0.18));
     const bandDepth = courtRun + 2 * corrW;
-    const wingH = snap103((env.h - bandDepth) / 2);
+    const wingH = snap104((env.h - bandDepth) / 2);
     if (wingH < FLAT_BOUNDS.minRunMm) {
       attempts.push({
         variantId,
@@ -118283,7 +120799,7 @@ var centralCourtyard = /* @__PURE__ */ __name((ctx) => {
       attempts.push({ variantId, label, rationale: "", reasons: [...west.reasons, ...east.reasons] });
       continue;
     }
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
     const minCourtyardWingW = Math.min(Math.ceil(northWing.w / Math.max(1, northCount)), Math.ceil(southWing.w / Math.max(1, southCount)));
@@ -118400,7 +120916,7 @@ var linearSingleLoaded = /* @__PURE__ */ __name((ctx) => {
       attempts.push({ variantId, label, rationale: "", reasons: band.reasons });
       continue;
     }
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const availRun = alongY ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
     const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
@@ -118510,7 +121026,7 @@ var perimeterHabitable = /* @__PURE__ */ __name((ctx) => {
     const wingEdge = atWest ? "WEST" : "EAST";
     const wrapEdge = atWest ? "EAST" : "WEST";
     const wingCount = flatsPerFloor - 1;
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const target = flatFootprintTarget(program.mandatory.unitTypes, wingSpan, targetAreaSqFt, Math.ceil(wing.h / wingCount));
     const wingRun = fillWings ? Math.ceil(wing.h / wingCount) : Math.min(Math.ceil(wing.h / wingCount), target.runMm);
     const wingRow = sliceFlatRow(wing, wingCount, wingRun, true, fillWings ? wingSpan : target.spanMm, wingEdge === "WEST");
@@ -118572,7 +121088,7 @@ var hShapeWing = /* @__PURE__ */ __name((ctx) => {
   const liftCountOverride = program.mandatory.singleLift ? 1 : void 0;
   const corridorSides = "BOTH";
   const coreW = requiredCoreBandWidth({ compact, corridorSides });
-  const leftW = snap103((env.w - coreW) / 2);
+  const leftW = snap104((env.w - coreW) / 2);
   if (leftW < FLAT_BOUNDS.minSpanMm) {
     return [{ variantId, label, rationale: "", reasons: [`H-shape wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
   }
@@ -118582,7 +121098,7 @@ var hShapeWing = /* @__PURE__ */ __name((ctx) => {
   const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides, liftCount: liftCountOverride });
   const maxByAccess = Math.floor(env.h / maxFlatsOnSide) - 1600;
   const maxByCore = Math.floor((env.h - coreReqLen) / 2);
-  const recessH = snap103(Math.min(Math.max(3e3, env.h * 0.17), maxByAccess, maxByCore));
+  const recessH = snap104(Math.min(Math.max(3e3, env.h * 0.17), maxByAccess, maxByCore));
   if (recessH < 2400) {
     return [{ variantId, label, rationale: "", reasons: [`plot depth ${Math.round(env.h)} mm cannot spare H-shape courts beside a ${coreReqLen} mm core`] }];
   }
@@ -118648,11 +121164,11 @@ var uShapeCourtyard = /* @__PURE__ */ __name((ctx) => {
   if (flatsPerFloor >= 4 && env.h >= 17500) {
     const coreBandW = requiredCoreBandWidth({ compact, corridorSides: "LOW" });
     const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: "LOW", liftCount: liftCountOverride });
-    const hTop = snap103(Math.max(FLAT_BOUNDS.minRunMm + 200, Math.min(env.h * 0.42, env.h - coreReqLen - corrW)));
+    const hTop = snap104(Math.max(FLAT_BOUNDS.minRunMm + 200, Math.min(env.h * 0.42, env.h - coreReqLen - corrW)));
     const hBot = env.h - hTop - corrW;
-    const nwW = snap103(env.w * 0.36);
+    const nwW = snap104(env.w * 0.36);
     const courtW = env.w - 2 * nwW;
-    const swW = snap103((env.w - coreBandW) / 2);
+    const swW = snap104((env.w - coreBandW) / 2);
     const seW = env.w - coreBandW - swW;
     const botCount = flatsPerFloor - 2;
     const botWestCount = Math.floor(botCount / 2);
@@ -118701,7 +121217,7 @@ var uShapeCourtyard = /* @__PURE__ */ __name((ctx) => {
     }
   }
   const coreW = requiredCoreBandWidth({ compact, corridorSides: "BOTH" });
-  const leftW = snap103((env.w - coreW) / 2);
+  const leftW = snap104((env.w - coreW) / 2);
   if (flatsPerFloor >= 2 && leftW >= FLAT_BOUNDS.minSpanMm) {
     const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const eastCount = flatsPerFloor - westCount;
@@ -118709,7 +121225,7 @@ var uShapeCourtyard = /* @__PURE__ */ __name((ctx) => {
     const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: "BOTH", liftCount: liftCountOverride });
     const maxByAccess = Math.floor(env.h / maxFlatsOnSide) - 1600;
     const maxByCore = env.h - coreReqLen;
-    const recessH = snap103(Math.min(Math.max(3600, env.h * 0.25), maxByAccess, maxByCore));
+    const recessH = snap104(Math.min(Math.max(3600, env.h * 0.25), maxByAccess, maxByCore));
     if (recessH >= 2800) {
       const [left2, coreCol, right] = splitX(env, [leftW, coreW, 0]);
       const [northRecess, midSouthCore] = splitY(coreCol, [recessH, 0]);
@@ -118778,7 +121294,7 @@ var lShapeCorner = /* @__PURE__ */ __name((ctx) => {
   const coreBandW = requiredCoreBandWidth({ compact, corridorSides: "LOW" });
   const coreReqLen = requiredCoreBandLength({ compact, stairCount, corridorSides: "LOW", liftCount: liftCountOverride });
   const maxWingSpan = FLAT_BOUNDS.maxSpanMm * 1.45;
-  const southBandH = snap103(Math.max(FLAT_BOUNDS.minRunMm + 200, coreReqLen, Math.min(env.h * 0.48, maxWingSpan, env.h - FLAT_BOUNDS.minRunMm - corrW)));
+  const southBandH = snap104(Math.max(FLAT_BOUNDS.minRunMm + 200, coreReqLen, Math.min(env.h * 0.48, maxWingSpan, env.h - FLAT_BOUNDS.minRunMm - corrW)));
   const hTop = env.h - southBandH - corrW;
   if (hTop < FLAT_BOUNDS.minRunMm || southBandH < coreReqLen) {
     return [{ variantId, label, rationale: "", reasons: [`plot depth ${Math.round(env.h)} mm insufficient for L-shape upper wing + ${corrW} mm corridor + ${southBandH} mm south band`] }];
@@ -118793,7 +121309,7 @@ var lShapeCorner = /* @__PURE__ */ __name((ctx) => {
   const flatBoxes = [];
   const edges = [];
   if (env.w >= nwCount * FLAT_BOUNDS.minSpanMm + 3e3) {
-    const nwWingW = snap103(clamp3(nwCount === 1 ? env.w * 0.46 : env.w * 0.56, nwCount * FLAT_BOUNDS.minSpanMm, env.w - 3e3));
+    const nwWingW = snap104(clamp3(nwCount === 1 ? env.w * 0.46 : env.w * 0.56, nwCount * FLAT_BOUNDS.minSpanMm, env.w - 3e3));
     const [nwBuilt, neRecess] = splitX(topBand, [nwWingW, 0]);
     const nwSpan = Math.min(nwBuilt.h, maxWingSpan);
     const nwRow = sliceFlatRow(nwBuilt, nwCount, Math.ceil(nwBuilt.w / nwCount), false, nwSpan, false);
@@ -118810,7 +121326,7 @@ var lShapeCorner = /* @__PURE__ */ __name((ctx) => {
     shaftRoles.push("OPEN_TO_SKY_VOID");
     shaftTags.push(["recess:perimeter"]);
   } else if (Math.floor(hTop / nwCount) >= FLAT_BOUNDS.minRunMm && env.w >= FLAT_BOUNDS.minSpanMm + corrW + 3600) {
-    const nwFlatW = snap103(clamp3(env.w * 0.42, FLAT_BOUNDS.minSpanMm, env.w - corrW - 3600));
+    const nwFlatW = snap104(clamp3(env.w * 0.42, FLAT_BOUNDS.minSpanMm, env.w - corrW - 3600));
     const [nwCol, nwCorr, neRecess] = splitX(topBand, [nwFlatW, corrW, 0]);
     corridorBoxes.push(nwCorr);
     const nwRow = sliceFlatRow(nwCol, nwCount, Math.ceil(nwCol.h / nwCount), true, nwCol.w, false);
@@ -118826,7 +121342,7 @@ var lShapeCorner = /* @__PURE__ */ __name((ctx) => {
   }
   let coreCol;
   if (southCount === 1) {
-    const swFlatW = snap103(Math.min(env.w - coreBandW, FLAT_BOUNDS.maxSpanMm * 1.4));
+    const swFlatW = snap104(Math.min(env.w - coreBandW, FLAT_BOUNDS.maxSpanMm * 1.4));
     if (swFlatW < FLAT_BOUNDS.minSpanMm) {
       return [{ variantId, label, rationale: "", reasons: ["L-shape south wing too narrow after core"] }];
     }
@@ -118848,7 +121364,7 @@ var lShapeCorner = /* @__PURE__ */ __name((ctx) => {
   } else {
     const swCount = Math.floor(southCount / 2);
     const seCount = southCount - swCount;
-    const swW = snap103((env.w - coreBandW) * swCount / southCount);
+    const swW = snap104((env.w - coreBandW) * swCount / southCount);
     const seW = env.w - coreBandW - swW;
     if (swW / swCount < FLAT_BOUNDS.minSpanMm || seW / seCount < FLAT_BOUNDS.minSpanMm) {
       return [{ variantId, label, rationale: "", reasons: ["L-shape south flats below minimum span"] }];
@@ -118911,14 +121427,14 @@ var cruciformPlus = /* @__PURE__ */ __name((ctx) => {
   const liftCountOverride = program.mandatory.singleLift ? 1 : void 0;
   const corridorSides = "BOTH";
   const coreW = requiredCoreBandWidth({ compact, corridorSides });
-  const leftW = snap103((env.w - coreW) / 2);
+  const leftW = snap104((env.w - coreW) / 2);
   if (leftW < FLAT_BOUNDS.minSpanMm) {
     return [{ variantId, label, rationale: "", reasons: [`Cruciform (+) wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
   }
   const westCount = Math.floor(flatsPerFloor / 2);
   const eastCount = flatsPerFloor - westCount;
   const maxTotalRecess = Math.min(env.h - westCount * FLAT_BOUNDS.minRunMm, env.h - eastCount * FLAT_BOUNDS.minRunMm);
-  const recessH = snap103(Math.min(Math.max(2400, env.h * 0.15), 3800, Math.floor(maxTotalRecess / 2)));
+  const recessH = snap104(Math.min(Math.max(2400, env.h * 0.15), 3800, Math.floor(maxTotalRecess / 2)));
   if (recessH < 2e3) {
     return [{ variantId, label, rationale: "", reasons: [`envelope height ${Math.round(env.h)} mm too tight for 4-corner cruciform setbacks`] }];
   }
@@ -118974,6 +121490,8 @@ var cruciformPlus = /* @__PURE__ */ __name((ctx) => {
   }];
 }, "cruciformPlus");
 function reserveInterflatDucts(initial, program) {
+  if (program.mandatory.ventilationStrategy === "PERIMETER_ONLY")
+    return initial;
   let partition = initial;
   for (const [left2, original] of initial.flatBoxes.entries()) {
     for (let right = left2 + 1; right < initial.flatBoxes.length; right++) {
@@ -119000,6 +121518,8 @@ function reserveInterflatDucts(initial, program) {
         const overlapStart = Math.max(stripStart, targetStart);
         const overlapEnd = Math.min(stripStart + stripSpan, targetEnd);
         const depth = Math.min(3600, overlapEnd - overlapStart);
+        if (stripSpan >= 14e3)
+          continue;
         const leading = overlapStart - stripStart;
         const pieces = [leading, depth, stripSpan - leading - depth];
         const voids = (vertical ? splitY(strip, pieces) : splitX(strip, pieces)).map((box, index) => ({ box, isDuct: index === 1 })).filter(({ box }) => box.w > 1e-3 && box.h > 1e-3);
@@ -119128,7 +121648,7 @@ var steppedOffsetBlock = /* @__PURE__ */ __name((ctx) => {
   const liftCountOverride = program.mandatory.singleLift ? 1 : void 0;
   const corridorSides = "BOTH";
   const coreW = requiredCoreBandWidth({ compact, corridorSides });
-  const leftW = snap103((env.w - coreW) / 2);
+  const leftW = snap104((env.w - coreW) / 2);
   const rightW = env.w - coreW - leftW;
   if (Math.min(leftW, rightW) < FLAT_BOUNDS.minSpanMm + 3e3) {
     return [{ variantId, label, rationale: "", reasons: ["wing spans too narrow for stepped perimeter offsets alongside >= 5800 mm flat depth"] }];
@@ -119153,7 +121673,7 @@ var steppedOffsetBlock = /* @__PURE__ */ __name((ctx) => {
   const flatBoxes = [];
   const edges = [];
   const recesses = [];
-  const westStep = snap103(clamp3(left2.w * 0.28, 3e3, left2.w - FLAT_BOUNDS.minSpanMm));
+  const westStep = snap104(clamp3(left2.w * 0.28, 3e3, left2.w - FLAT_BOUNDS.minSpanMm));
   westRow.flats.forEach((b, idx) => {
     if (idx === 0 && westStep >= 3e3) {
       const [rec, flat] = splitX(b, [westStep, 0]);
@@ -119164,7 +121684,7 @@ var steppedOffsetBlock = /* @__PURE__ */ __name((ctx) => {
     }
     edges.push("EAST");
   });
-  const eastStep = snap103(clamp3(right.w * 0.34, 3e3, right.w - FLAT_BOUNDS.minSpanMm));
+  const eastStep = snap104(clamp3(right.w * 0.34, 3e3, right.w - FLAT_BOUNDS.minSpanMm));
   eastRow.flats.forEach((b, idx) => {
     if (idx === eastRow.flats.length - 1 && eastStep >= 3e3 && eastCount >= 2) {
       const [flat, rec] = splitX(b, [b.w - eastStep, 0]);
@@ -119293,16 +121813,27 @@ function placementFromProgram(program, opts) {
     sitoutSize: p.sitoutSize,
     entranceStyle: "LIVING_FIRST",
     bedroomBalconies: p.bedroomBalconies === "NONE_REQUESTED" ? "STANDARD" : "ALL_BEDROOMS",
-    ...opts?.staggeredBalconies ? { staggeredBalconies: true } : {},
-    ...opts?.floorVariant ? { floorVariant: opts.floorVariant } : {}
+    ...opts?.staggeredBalconies !== void 0 ? { staggeredBalconies: opts.staggeredBalconies } : {},
+    ...opts?.galleryCoordinationMode ? { galleryCoordinationMode: opts.galleryCoordinationMode } : {},
+    ...opts?.floorVariant ? { floorVariant: opts.floorVariant } : {},
+    includeStudyRoom: opts?.includeStudyRoom ?? false
   };
 }
 __name(placementFromProgram, "placementFromProgram");
+function stripWorldEdge(strip, worldBox) {
+  if (strip.w >= strip.h) {
+    return Math.abs(strip.y - worldBox.y) <= 2 ? "NORTH" : "SOUTH";
+  }
+  return Math.abs(strip.x - worldBox.x) <= 2 ? "WEST" : "EAST";
+}
+__name(stripWorldEdge, "stripWorldEdge");
 function assembleStructureFromPartition(input) {
   const { partition, program, unitTypes } = input;
   const placement = placementFromProgram(program, {
     staggeredBalconies: input.staggeredBalconies,
-    floorVariant: input.floorVariant
+    galleryCoordinationMode: input.galleryCoordinationMode,
+    floorVariant: input.floorVariant,
+    includeStudyRoom: input.includeStudyRoom
   });
   const env = partition.envelope;
   const builtFace = env;
@@ -119310,6 +121841,20 @@ function assembleStructureFromPartition(input) {
   const openings = [];
   const flatsWithoutEntrance = [];
   const interflatOtsShafts = [];
+  const flatExposures = [];
+  const otsShaftBoxes = [];
+  const recessBoxes = [];
+  for (let sIdx = 0; sIdx < partition.shaftBoxes.length; sIdx++) {
+    const sb = partition.shaftBoxes[sIdx];
+    const role = partition.shaftRoles[sIdx];
+    const tags = partition.shaftTags?.[sIdx] ?? [];
+    if (tags.includes("recess:perimeter")) {
+      recessBoxes.push(sb);
+    } else if (role === "OPEN_TO_SKY_VOID") {
+      otsShaftBoxes.push(sb);
+    }
+  }
+  const allOpenVoids = [...otsShaftBoxes, ...recessBoxes];
   const circulation = [
     ...partition.corridorBoxes.map((b, i) => ({ id: `corridor_${i + 1}`, box: b })),
     ...partition.lobbyBoxes.map((b, i) => ({ id: `core_lobby_${i + 1}`, box: b }))
@@ -119321,15 +121866,68 @@ function assembleStructureFromPartition(input) {
     const flatId = `flat_0${i + 1}`;
     const flatLabel = `Flat 0${i + 1}`;
     const unitType = assignedUnitTypes[i] ?? unitTypes[i] ?? "2BHK";
+    const rawExposureProfile = scoreFlatExteriorEdges(worldBox, {
+      flatId,
+      envelope: builtFace,
+      accessEdge,
+      otsShaftBoxes,
+      recessBoxes,
+      roadAccessSides: input.roadAccessSides,
+      setbacksMm: input.setbacksMm,
+      irregularPlotBoundary: input.irregularPlotBoundary
+    });
     const entry = circulation.map((c) => ({ c, shared: sharedEdgeLength(worldBox, c.box) })).sort((a, b) => b.shared - a.shared)[0];
     const frame = frameFor(worldBox, accessEdge);
     const localFlat = { x: 0, y: 0, w: frame.localW, h: frame.localH };
     const localCorridor = entry && entry.shared > 0 ? localCorridorStrip(frame, worldBox, entry.c.box) : { x: localFlat.w, y: 0, w: 1500, h: localFlat.h };
-    const localExteriorFaces = {
-      lowY: onEnvelopeEdge(frame.toWorld({ x: 0, y: 0, w: frame.localW, h: 10 }), builtFace),
-      highY: onEnvelopeEdge(frame.toWorld({ x: 0, y: frame.localH - 10, w: frame.localW, h: 10 }), builtFace)
+    const lowWorldStrip = frame.toWorld({ x: 0, y: 0, w: frame.localW, h: 10 });
+    const highWorldStrip = frame.toWorld({ x: 0, y: frame.localH - 10, w: frame.localW, h: 10 });
+    const westWorldStrip = frame.toWorld({ x: 0, y: 0, w: 10, h: frame.localH });
+    const lowWorldEdge = stripWorldEdge(lowWorldStrip, worldBox);
+    const highWorldEdge = stripWorldEdge(highWorldStrip, worldBox);
+    const westWorldEdge = stripWorldEdge(westWorldStrip, worldBox);
+    const lowEdgeScore = rawExposureProfile.edgeScores.find((e) => e.edge === lowWorldEdge);
+    const highEdgeScore = rawExposureProfile.edgeScores.find((e) => e.edge === highWorldEdge);
+    const westEdgeScore = rawExposureProfile.edgeScores.find((e) => e.edge === westWorldEdge);
+    const lowOnBuilt = onEnvelopeEdge(lowWorldStrip, builtFace);
+    const highOnBuilt = onEnvelopeEdge(highWorldStrip, builtFace);
+    const localExteriorFaces = { lowY: lowOnBuilt, highY: highOnBuilt };
+    const stripTouchesAnyVoid = /* @__PURE__ */ __name((strip) => allOpenVoids.some((v) => sharedEdgeLength(strip, v) >= 1e3), "stripTouchesAnyVoid");
+    const lowHasOts = !lowOnBuilt && (lowEdgeScore.tier === 3 || stripTouchesAnyVoid(lowWorldStrip));
+    const highHasOts = !highOnBuilt && (highEdgeScore.tier === 3 || stripTouchesAnyVoid(highWorldStrip));
+    let primaryLocalY;
+    if (lowOnBuilt && highOnBuilt) {
+      primaryLocalY = highEdgeScore.score > lowEdgeScore.score ? "HIGH_Y" : "LOW_Y";
+    } else if (highOnBuilt) {
+      primaryLocalY = "HIGH_Y";
+    } else {
+      primaryLocalY = "LOW_Y";
+    }
+    const livingExteriorEdge = primaryLocalY === "HIGH_Y" ? highWorldEdge : lowWorldEdge;
+    const livingExposureTier = primaryLocalY === "HIGH_Y" ? highEdgeScore.tier : lowEdgeScore.tier;
+    const exposureProfile = {
+      ...rawExposureProfile,
+      livingExteriorEdge,
+      livingExposureTier
     };
-    const localEnvelope = serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
+    flatExposures.push(exposureProfile);
+    const localExposure = {
+      lowYTier: lowEdgeScore.tier,
+      highYTier: highEdgeScore.tier,
+      lowYIsExterior: lowOnBuilt,
+      highYIsExterior: highOnBuilt,
+      lowYHasOts: lowHasOts,
+      highYHasOts: highHasOts,
+      westIsExterior: westEdgeScore.tier <= 2,
+      lowYScore: lowEdgeScore.score,
+      highYScore: highEdgeScore.score,
+      primaryLocalY,
+      hasExteriorY: lowOnBuilt || highOnBuilt,
+      livingBaySide: exposureProfile.livingBaySide,
+      orientationMode: exposureProfile.orientationMode,
+      preferMasterAtPrimaryY: exposureProfile.orientationMode === "CORNER_L_WRAP" || exposureProfile.orientationMode === "ANGLED_PERIMETER_FIT"
+    };
+    const localEnvelope = primaryLocalY === "HIGH_Y" ? { x: localFlat.x, y: localFlat.y - 1e3, w: localFlat.w, h: localFlat.h + 1e3 } : serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
     const sliced = sliceFlatRooms({
       flatId,
       flatLabel,
@@ -119341,7 +121939,9 @@ function assembleStructureFromPartition(input) {
       envelope: asSnapper(localEnvelope),
       placement,
       archetype: input.archetype,
-      localExteriorFaces
+      localExteriorFaces,
+      exposureProfile,
+      localExposure
     });
     const worldRooms = sliced.rooms.map((room) => ({
       ...room,
@@ -119408,7 +122008,8 @@ function assembleStructureFromPartition(input) {
   }));
   const lobbies = partition.lobbyBoxes.map((b, i) => ({
     id: `core_lobby_${i + 1}`,
-    name: partition.lobbyBoxes.length > 1 ? `Lift Lobby 0${i + 1}` : "Common Lift Lobby",
+    architecturalRole: "LIFT_LOBBY",
+    name: partition.lobbyBoxes.length > 1 ? `Central Lift Lobby 0${i + 1}` : "Central Lift Lobby",
     rect: boxToRect(b),
     assignedFlatId: null
   }));
@@ -119474,9 +122075,11 @@ function assembleStructureFromPartition(input) {
       lobbies,
       corridors,
       shafts,
-      openings
+      openings,
+      flatExposures
     },
-    flatsWithoutEntrance
+    flatsWithoutEntrance,
+    flatExposures
   };
 }
 __name(assembleStructureFromPartition, "assembleStructureFromPartition");
@@ -120602,16 +123205,21 @@ function evaluateArchitecturalComplianceScore(building, options) {
     const onExterior = Math.abs(hRoom.x - fMinX) <= 5 || Math.abs(hRoom.x + hRoom.width - fMaxX) <= 5 || Math.abs(hRoom.y - fMinY) <= 5 || Math.abs(hRoom.y + hRoom.height - fMaxY) <= 5 || typicalFloor.walls.some((w) => w.roomIds.includes(hRoom.id) && w.wallUse === "EXTERNAL");
     const touchesOts = shaftRooms.some((s) => sharesOrthogonalEdge(hRoom, s, 500));
     const hasWindow = typicalFloor.windows.some((w) => w.roomId === hRoom.id);
-    const openPlanDiningDaylight = hRoom.type === RoomType.Living && typicalFloor.doors.some((d) => {
-      if (d.type !== DoorType.OpenPassage || d.width < 1e3 || !d.connectsRooms.includes(hRoom.id)) {
+    const openPlanDiningDaylight = (hRoom.type === RoomType.Living || hRoom.type === RoomType.Dining) && typicalFloor.doors.some((d) => {
+      if (!d.connectsRooms.includes(hRoom.id)) {
         return false;
       }
       const partnerId = d.connectsRooms.find((id) => id !== hRoom.id);
       const partner = partnerId ? typicalFloor.rooms.find((rm) => rm.id === partnerId) : void 0;
-      if (!partner || partner.unitId !== hRoom.unitId || partner.type !== RoomType.Dining) {
+      if (!partner || partner.unitId !== hRoom.unitId) {
         return false;
       }
-      const partnerOnExterior = Math.abs(partner.x - fMinX) <= 5 || Math.abs(partner.x + partner.width - fMaxX) <= 5 || Math.abs(partner.y - fMinY) <= 5 || Math.abs(partner.y + partner.height - fMaxY) <= 5;
+      const isOpenLivingDining = d.type === DoorType.OpenPassage && d.width >= 1e3 && (hRoom.type === RoomType.Living && partner.type === RoomType.Dining || hRoom.type === RoomType.Dining && partner.type === RoomType.Living);
+      const isDirectBalconyAccess = (d.type === DoorType.Sliding || d.type === DoorType.OpenPassage) && d.width >= 1e3 && partner.type === RoomType.Balcony;
+      if (!isOpenLivingDining && !isDirectBalconyAccess) {
+        return false;
+      }
+      const partnerOnExterior = Math.abs(partner.x - fMinX) <= 5 || Math.abs(partner.x + partner.width - fMaxX) <= 5 || Math.abs(partner.y - fMinY) <= 5 || Math.abs(partner.y + partner.height - fMaxY) <= 5 || typicalFloor.walls.some((w) => w.roomIds.includes(partner.id) && w.wallUse === "EXTERNAL");
       const partnerHasWin = typicalFloor.windows.some((w) => w.roomId === partner.id);
       const partnerTouchesOts = shaftRooms.some((s) => sharesOrthogonalEdge(partner, s, 500));
       return partnerHasWin || partnerOnExterior || partnerTouchesOts;
@@ -121256,7 +123864,12 @@ function generateDesignConcepts(input) {
         manifest: input.manifest,
         unitTypes: input.unitTypes,
         rawRooms: input.rawRooms,
-        archetype: effectiveArchetype
+        archetype: effectiveArchetype,
+        roadAccessSides: input.roadAccessSides,
+        setbacksMm: input.setbacksMm,
+        irregularPlotBoundary: input.irregularPlotBoundary,
+        galleryCoordinationMode: input.galleryCoordinationMode,
+        includeStudyRoom: input.includeStudyRoom
       });
     } catch (error2) {
       rejected.push({
@@ -121487,7 +124100,12 @@ function selectProductionTopology(input) {
     conceptLimit: input.conceptLimit ?? 3,
     preferredArchetype: input.preferredArchetype,
     preferredMassingShape: input.preferredMassingShape,
-    rejectedTopologyHashes: input.rejectedTopologyHashes
+    rejectedTopologyHashes: input.rejectedTopologyHashes,
+    roadAccessSides: input.roadAccessSides,
+    setbacksMm: input.setbacksMm,
+    irregularPlotBoundary: input.irregularPlotBoundary,
+    galleryCoordinationMode: input.galleryCoordinationMode,
+    includeStudyRoom: input.includeStudyRoom
   });
   input.onEvaluated?.(result);
   if (input.preferredMassingShape === "PINWHEEL_CLUSTER" && input.allowBestEffort) {
@@ -121611,7 +124229,8 @@ var GeometryValidator = class {
       }
       const measuredFloor = { ...floor, rooms };
       const ledger = measureApartmentAreaLedger(measuredFloor);
-      const floorDelta = Math.abs(ledger.delta);
+      const rawFloorDelta = Math.abs(ledger.delta);
+      const floorDelta = rawFloorDelta < 1e-4 ? 0 : rawFloorDelta;
       totalPlanarDelta += floorDelta;
       for (const [code, area2, description] of [
         ["PLANAR_DELTA_NONZERO", floorDelta, "Disjoint component area differs from gross floor area"],
@@ -121751,11 +124370,11 @@ var GeometryValidator = class {
           const c2 = columns[j];
           if (removedIds.has(c2.id))
             continue;
-          const dist2 = distance(c1.position, c2.position);
+          const dist3 = distance(c1.position, c2.position);
           const dx = Math.abs(c1.position.x - c2.position.x);
           const dy = Math.abs(c1.position.y - c2.position.y);
           const isAlongAxis = dx < 150 || dy < 150;
-          if (dist2 < this.columnMergeThresholdMm && isAlongAxis) {
+          if (dist3 < this.columnMergeThresholdMm && isAlongAxis) {
             errors.push({
               code: "DUPLICATE_COLUMN",
               severity: "CRITICAL",
@@ -121765,7 +124384,7 @@ var GeometryValidator = class {
                 x: Math.round((c1.position.x + c2.position.x) / 2),
                 y: Math.round((c1.position.y + c2.position.y) / 2)
               },
-              description: `Duplicate/proximate columns ${c1.id} and ${c2.id} closer than ${this.columnMergeThresholdMm}mm (${dist2.toFixed(0)}mm)`,
+              description: `Duplicate/proximate columns ${c1.id} and ${c2.id} closer than ${this.columnMergeThresholdMm}mm (${dist3.toFixed(0)}mm)`,
               autoCorrected: autoCorrect
             });
             if (autoCorrect) {
@@ -122743,13 +125362,14 @@ function solveSitePlanSheet(config, envelope) {
     isPlanarConserved: Math.abs(delta) < 1e-3
   };
   const roadFacingSide = config.roadAccessSides?.[0] ?? Direction.South;
+  const irregularPlot = config.irregularPlotBoundary;
   const site = {
     id: "project_site",
-    plotBoundary: rectPolygon(0, 0, plotW, plotD),
+    plotBoundary: irregularPlot?.polygon ?? rectPolygon(0, 0, plotW, plotD),
     plotWidth: plotW,
     plotDepth: plotD,
-    plotArea,
-    plotShape: PlotShape.Rectangular,
+    plotArea: irregularPlot?.areaMm2 && irregularPlot.areaMm2 > 0 ? irregularPlot.areaMm2 : plotArea,
+    plotShape: irregularPlot ? PlotShape.Irregular : PlotShape.Rectangular,
     orientation: 0,
     setbacks: {
       front: config.lotAllotmentMode === "FULL_LOT_100_PERCENT" ? 0 : plotD - (envelope.y + envelope.h),
@@ -122785,97 +125405,7 @@ function solveSitePlanSheet(config, envelope) {
 }
 __name(solveSitePlanSheet, "solveSitePlanSheet");
 function deriveCleanStructuralColumns(floor, envelope) {
-  const indoorRooms = floor.rooms.filter((r) => r.type !== RoomType.Balcony && !/BALCONY|SIT-OUT|UTILITY/i.test(r.name));
-  const balconyRooms = floor.rooms.filter((r) => r.type === RoomType.Balcony || /BALCONY|SIT-OUT|UTILITY/i.test(r.name));
-  const isPointNearIndoorRoom = /* @__PURE__ */ __name((pt) => {
-    return indoorRooms.some((r) => {
-      const minX = r.x - 50;
-      const maxX = r.x + r.width + 50;
-      const minY = r.y - 50;
-      const maxY = r.y + r.height + 50;
-      return pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY;
-    });
-  }, "isPointNearIndoorRoom");
-  const isOuterBalconyCorner = /* @__PURE__ */ __name((pt) => {
-    for (const b of balconyRooms) {
-      const corners = [
-        { x: b.x, y: b.y },
-        { x: b.x + b.width, y: b.y },
-        { x: b.x, y: b.y + b.height },
-        { x: b.x + b.width, y: b.y + b.height }
-      ];
-      for (const c of corners) {
-        if (Math.hypot(pt.x - c.x, pt.y - c.y) < 300) {
-          if (!isPointNearIndoorRoom(c)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }, "isOuterBalconyCorner");
-  const snap = /* @__PURE__ */ __name((v) => Math.round(v / 50) * 50, "snap");
-  const rawPoints = [];
-  const colSpacingX = 5e3;
-  const colSpacingY = 5e3;
-  for (let cx = envelope.x; cx <= envelope.x + envelope.w; cx += colSpacingX) {
-    for (let cy = envelope.y; cy <= envelope.y + envelope.h; cy += colSpacingY) {
-      rawPoints.push({ x: snap(cx), y: snap(cy) });
-    }
-  }
-  for (const w of floor.walls) {
-    if (w.wallUse === "EXTERNAL" || w.wallUse === "UNIT_SEPARATION" || w.wallUse === "CORE" || w.type === "external") {
-      rawPoints.push({ x: snap(w.startPoint.x), y: snap(w.startPoint.y) });
-      rawPoints.push({ x: snap(w.endPoint.x), y: snap(w.endPoint.y) });
-    }
-  }
-  const roomToBox2 = /* @__PURE__ */ __name((r) => r.boundary?.points?.length ? {
-    x: Math.min(...r.boundary.points.map((pt) => pt.x)),
-    y: Math.min(...r.boundary.points.map((pt) => pt.y)),
-    w: Math.max(...r.boundary.points.map((pt) => pt.x)) - Math.min(...r.boundary.points.map((pt) => pt.x)),
-    h: Math.max(...r.boundary.points.map((pt) => pt.y)) - Math.min(...r.boundary.points.map((pt) => pt.y))
-  } : { x: r.x, y: r.y, w: r.width, h: r.height }, "roomToBox");
-  const voidBoxes = floor.rooms.filter((r) => r.architecturalRole === "OPEN_TO_SKY_VOID" && r.tags?.includes("recess:perimeter")).map(roomToBox2);
-  const builtBoxes = floor.rooms.filter((r) => r.architecturalRole !== "OPEN_TO_SKY_VOID").map(roomToBox2);
-  const inVoidOnly = /* @__PURE__ */ __name((pt) => {
-    if (!voidBoxes.length)
-      return false;
-    if (voidBoxes.some((b) => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150)) {
-      return true;
-    }
-    if (!builtBoxes.length)
-      return false;
-    return !builtBoxes.some((b) => pt.x >= b.x - 150 && pt.x <= b.x + b.w + 150 && pt.y >= b.y - 150 && pt.y <= b.y + b.h + 150);
-  }, "inVoidOnly");
-  const aisleBoxes = floor.rooms.filter((r) => r.architecturalRole === "VEHICLE_AISLE").map(roomToBox2);
-  const blocksDriveAisle = /* @__PURE__ */ __name((pt) => aisleBoxes.some((b) => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150) || aisleBoxes.some((b) => {
-    const onHorizontalEdge = (Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150;
-    const onVerticalEdge = (Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150;
-    return onHorizontalEdge || onVerticalEdge;
-  }), "blocksDriveAisle");
-  const nonBalconyPoints = rawPoints.filter((p) => !isOuterBalconyCorner(p) && !inVoidOnly(p) && !blocksDriveAisle(p));
-  const deduplicated = [];
-  for (const p of nonBalconyPoints) {
-    if (!deduplicated.some((d) => Math.hypot(d.x - p.x, d.y - p.y) < 500)) {
-      deduplicated.push(p);
-    }
-  }
-  deduplicated.sort((a, b) => {
-    if (Math.abs(a.y - b.y) > 300) {
-      return a.y - b.y;
-    }
-    return a.x - b.x;
-  });
-  return deduplicated.map((p, idx) => ({
-    id: `col_${idx + 1}`,
-    floorId: floor.id,
-    position: p,
-    width: 450,
-    depth: 450,
-    shape: ColumnShape.Rectangular,
-    isStructural: true,
-    gridReference: `C${idx + 1}`
-  }));
+  return deriveCornerLockedStructuralColumns(floor, envelope);
 }
 __name(deriveCleanStructuralColumns, "deriveCleanStructuralColumns");
 function subtractBoxes(box, blockers) {
@@ -122995,8 +125525,15 @@ function solveStiltParkingSheet(config, envelope, macro, stackParams) {
     rooms.push(shaft);
   }
   const westBox = macro.flatBoxes[0];
-  const amenityH = snap10(westBox.h * 0.42);
-  const westParkH = westBox.h - amenityH;
+  let amenityH = snap10(westBox.h * 0.42);
+  let westParkH = westBox.h - amenityH;
+  const westClearH = westParkH - 230;
+  const nextCarRowTarget = (Math.floor(westClearH / 2500) + 1) * 2500 + 230;
+  const westDeficit = nextCarRowTarget - westParkH;
+  if (westBox.w >= 8830 && westDeficit > 0 && westDeficit <= 600 && amenityH - westDeficit >= 3e3) {
+    amenityH = snap10(amenityH - westDeficit);
+    westParkH = westBox.h - amenityH;
+  }
   const amenityBox = { x: westBox.x, y: westBox.y, w: westBox.w, h: amenityH };
   const amLobbyW = snap10(amenityBox.w * 0.4);
   const amOfficeW = snap10(amenityBox.w * 0.25);
@@ -123402,14 +125939,20 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
     jurisdiction: config.jurisdiction,
     lotAllotmentMode: config.lotAllotmentMode
   });
+  const resolvedGalleryMode = config.galleryCoordinationMode ?? (config.staggeredBalconies === true ? "DOUBLE_HEIGHT_STAGGER" : "STACKED_RIBBON");
   const structure = topology ? assembleStructureFromPartition({
     partition: topology.chosen.partition,
     program: topology.result.program,
     manifest,
     unitTypes: (config.units ?? []).map((u) => u.bhkType),
     archetype: topology.result.archetype ?? config.preferredArchetype,
-    staggeredBalconies: config.staggeredBalconies,
-    floorVariant: options?.floorVariant
+    staggeredBalconies: config.staggeredBalconies ?? false,
+    galleryCoordinationMode: resolvedGalleryMode,
+    floorVariant: options?.floorVariant,
+    includeStudyRoom: config.includeStudyRoom ?? false,
+    roadAccessSides: config.roadAccessSides,
+    setbacksMm: config.setbacksMm,
+    irregularPlotBoundary: config.irregularPlotBoundary
   }).structure : solveOrthogonalSpaceFillingApartment({
     aiPrompt: config.aiPrompt,
     plan: { flats: [], rooms: [] },
@@ -123459,7 +126002,7 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
       const diningR = flatRenamed.find((r) => r.type === "dining");
       const livingR = flatRenamed.find((r) => r.type === "living");
       if (diningR && livingR) {
-        const lPts = unionOrthogonalBoxes({ x: livingR.rect.x, y: livingR.rect.y, w: livingR.rect.width, h: livingR.rect.height }, { x: diningR.rect.x, y: diningR.rect.y, w: diningR.rect.width, h: diningR.rect.height });
+        const lPts = unionOrthogonalBoxes({ x: livingR.rect.x, y: livingR.rect.y, w: livingR.rect.width, h: livingR.rect.height }, { x: diningR.rect.x, y: diningR.rect.y, w: diningR.rect.width, h: diningR.rect.height }) ?? unionOrthogonalBoxes({ x: diningR.rect.x, y: diningR.rect.y, w: diningR.rect.width, h: diningR.rect.height }, { x: livingR.rect.x, y: livingR.rect.y, w: livingR.rect.width, h: livingR.rect.height });
         if (lPts) {
           diningSkippedId = diningR.id;
           diningToLivingRedirect.set(diningR.id, livingR.id);
@@ -123499,7 +126042,7 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
         position: { x: op.rect.x + op.rect.width / 2, y: op.rect.y + op.rect.height / 2 },
         width: Math.max(op.rect.width, op.rect.height),
         height: 2100,
-        type: op.doorType === "sliding" ? DoorType.Sliding : op.doorType === "open_passage" ? DoorType.OpenPassage : DoorType.Single,
+        type: hostWall.boundaryRole === "OPEN_BOUNDARY" ? DoorType.OpenPassage : op.doorType === "sliding" ? DoorType.Sliding : op.doorType === "open_passage" ? DoorType.OpenPassage : DoorType.Single,
         swingDirection: SwingDirection.Inward,
         connectsRooms: [op.connects?.[0] ? `apt-room:${op.connects[0]}` : "", op.connects?.[1] ? `apt-room:${op.connects[1]}` : ""]
       });
@@ -123526,7 +126069,8 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
     }), "hasOutdoorBalconyWall");
     const extWalls = walls.filter((w) => (w.wallUse === "EXTERNAL" || isBath2 && w.wallUse === "SHAFT" || hasOtsShaftWall(w) || !isBath2 && r.spaceUse === "UNIT" && hasOutdoorBalconyWall(w)) && w.boundaryRole !== "OPEN_BOUNDARY" && w.boundaryRole !== "PARAPET" && w.roomIds.includes(r.id));
     const targetWindowArea = Math.max(125e4, polygonArea2(r.boundary) * 0.12);
-    const windowHeight = r.type === RoomType.Dining ? 1350 : 1500;
+    const windowHeight = isBath2 ? 600 : r.type === RoomType.Kitchen ? 1e3 : 1200;
+    const windowSill = isBath2 ? 1500 : r.type === RoomType.Kitchen ? 1100 : 900;
     const availableWindowArea = /* @__PURE__ */ __name(() => windows.reduce((area2, window2) => window2.roomId === r.id ? area2 + window2.width * window2.height : area2, 0), "availableWindowArea");
     for (const hw of extWalls) {
       const remainingWindowArea = targetWindowArea - availableWindowArea();
@@ -123537,13 +126081,14 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
       if (doorIdx >= 0) {
         const doorOnWall = doors[doorIdx];
         const alreadyHasWindow = windows.some((win) => win.roomId === r.id);
-        const effectiveDoorW = doorOnWall.width > 900 && len - doorOnWall.width < 680 ? Math.max(900, Math.floor((len - 680) / 20) * 20) : doorOnWall.width;
-        if (!alreadyHasWindow && !isBath2 && len >= effectiveDoorW + 680) {
+        const minSideAllowance = r.type === RoomType.Kitchen ? 680 : 680;
+        const effectiveDoorW = doorOnWall.width > 900 && len - doorOnWall.width < minSideAllowance ? Math.max(900, Math.floor((len - minSideAllowance) / 20) * 20) : r.type === RoomType.Kitchen && doorOnWall.width > 680 && len - doorOnWall.width < minSideAllowance ? Math.max(680, Math.floor((len - minSideAllowance) / 20) * 20) : doorOnWall.width;
+        if (!alreadyHasWindow && !isBath2 && len >= effectiveDoorW + minSideAllowance) {
           const ux = (hw.endPoint.x - hw.startPoint.x) / len;
           const uy = (hw.endPoint.y - hw.startPoint.y) / len;
-          const sideWinW = Math.min(900, Math.max(400, Math.floor((len - effectiveDoorW - 280) / 20) * 20));
-          const shiftedDoorAlong = Math.ceil((100 + effectiveDoorW / 2) / 10) * 10;
-          const winAlong = Math.floor((len - 100 - sideWinW / 2) / 10) * 10;
+          const sideWinW = Math.min(900, Math.max(400, Math.floor((len - effectiveDoorW - 280) / 10) * 10));
+          const shiftedDoorAlong = 100 + effectiveDoorW / 2;
+          const winAlong = len - 100 - sideWinW / 2;
           const doorPos = {
             x: hw.startPoint.x + ux * shiftedDoorAlong,
             y: hw.startPoint.y + uy * shiftedDoorAlong
@@ -123566,7 +126111,7 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
               position: winPos2,
               width: sideWinW,
               height: windowHeight,
-              sillHeight: 900,
+              sillHeight: windowSill,
               type: WindowType.Sliding,
               roomId: r.id
             });
@@ -123577,11 +126122,11 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
       }
       if (len < 650)
         continue;
-      const winW = isBath2 ? len >= 800 ? 600 : Math.max(350, Math.round(len - 200)) : Math.min(Math.floor(len - 200), Math.max(450, Math.ceil(remainingWindowArea / windowHeight / 10) * 10));
+      const winW = isBath2 ? len >= 850 ? 650 : Math.max(350, Math.round(len - 200)) : Math.min(Math.floor(len - 200), Math.max(450, Math.ceil(remainingWindowArea / windowHeight / 10) * 10));
       if (!isBath2 && winW < 450)
         continue;
-      const winH = isBath2 ? 650 : windowHeight;
-      const sillH = isBath2 ? 1500 : 900;
+      const winH = windowHeight;
+      const sillH = windowSill;
       const winPos = {
         x: (hw.startPoint.x + hw.endPoint.x) / 2,
         y: (hw.startPoint.y + hw.endPoint.y) / 2
@@ -123671,7 +126216,7 @@ function solveTypicalFloorSheet(config, envelope, floorLevel = 1, topology, opti
     unassignedMm2: ledger.unassigned,
     isPlanarConserved: Math.abs(ledger.delta) < 1e-3 && ledger.unassigned === 0
   };
-  const shapeId = morphed.floor !== orthogonalHealedFloor ? morphed.appliedShapeId : topology?.chosen.partition.massingShape ?? "COMPACT_DOUBLE_LOADED";
+  const shapeId = activeShapeId === "IRREGULAR_ANGLED_PLOT" || activeShapeId === "IMPORTED_CAD_LAYOUT" ? activeShapeId : morphed.floor !== orthogonalHealedFloor ? morphed.appliedShapeId : topology?.chosen.partition.massingShape ?? "COMPACT_DOUBLE_LOADED";
   return { floor: repairedFloor, structure, audit, shapeId };
 }
 __name(solveTypicalFloorSheet, "solveTypicalFloorSheet");
@@ -123714,28 +126259,43 @@ function solveRefugeFloorSheet(typicalResult, refugeLevel) {
   const origDining = baseFloor.rooms.find((r) => r.unitId === "flat_01" && (r.id.includes("dining") || r.type === RoomType.Dining));
   const origLiving = baseFloor.rooms.find((r) => r.unitId === "flat_01" && r.type === RoomType.Living);
   const targetBalcony = origBalcony ?? baseFloor.rooms.find((r) => r.unitId === "flat_01" && r.type === RoomType.Balcony);
-  const adjacentX = Boolean(targetBalcony && origDining && Math.abs(targetBalcony.y - origDining.y) <= 1 && Math.abs(targetBalcony.height - origDining.height) <= 1 && (Math.abs(targetBalcony.x + targetBalcony.width - origDining.x) <= 1 || Math.abs(origDining.x + origDining.width - targetBalcony.x) <= 1));
-  const adjacentY = Boolean(targetBalcony && origDining && Math.abs(targetBalcony.x - origDining.x) <= 1 && Math.abs(targetBalcony.width - origDining.width) <= 1 && (Math.abs(targetBalcony.y + targetBalcony.height - origDining.y) <= 1 || Math.abs(origDining.y + origDining.height - targetBalcony.y) <= 1));
-  const shouldMergeDining = adjacentX || adjacentY;
-  const refBox = adjacentX ? {
-    x: Math.min(targetBalcony.x, origDining.x),
-    y: targetBalcony.y,
-    w: targetBalcony.width + origDining.width,
-    h: targetBalcony.height
-  } : adjacentY ? {
-    x: targetBalcony.x,
-    y: Math.min(targetBalcony.y, origDining.y),
-    w: targetBalcony.width,
-    h: targetBalcony.height + origDining.height
-  } : targetBalcony ? {
-    x: targetBalcony.x,
-    y: targetBalcony.y,
-    w: targetBalcony.width,
-    h: targetBalcony.height
-  } : null;
+  const isAdjacentX = /* @__PURE__ */ __name((a, b) => Boolean(a && b && Math.abs(a.y - b.y) <= 1 && Math.abs(a.height - b.height) <= 1 && (Math.abs(a.x + a.width - b.x) <= 1 || Math.abs(b.x + b.width - a.x) <= 1)), "isAdjacentX");
+  const isAdjacentY = /* @__PURE__ */ __name((a, b) => Boolean(a && b && Math.abs(a.x - b.x) <= 1 && Math.abs(a.width - b.width) <= 1 && (Math.abs(a.y + a.height - b.y) <= 1 || Math.abs(b.y + b.height - a.y) <= 1)), "isAdjacentY");
+  const mergeRect = /* @__PURE__ */ __name((a, b) => ({
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    w: Math.max(a.x + a.width, b.x + b.width) - Math.min(a.x, b.x),
+    h: Math.max(a.y + a.height, b.y + b.height) - Math.min(a.y, b.y)
+  }), "mergeRect");
+  const mergedRoomIds = /* @__PURE__ */ new Set();
+  let refBox = targetBalcony ? { x: targetBalcony.x, y: targetBalcony.y, w: targetBalcony.width, h: targetBalcony.height } : null;
+  if (targetBalcony && (isAdjacentX(targetBalcony, origDining) || isAdjacentY(targetBalcony, origDining))) {
+    refBox = mergeRect(targetBalcony, origDining);
+    mergedRoomIds.add(origDining.id);
+  } else if (targetBalcony && refBox && refBox.w * refBox.h < 15e6) {
+    const candidates = [origLiving, ...baseFloor.rooms.filter((r) => r.unitId === "flat_01" && r.id !== targetBalcony.id)];
+    for (const cand of candidates) {
+      if (!cand)
+        continue;
+      if (isAdjacentX(targetBalcony, cand) || isAdjacentY(targetBalcony, cand)) {
+        const union = mergeRect(targetBalcony, cand);
+        if (union.w * union.h >= 15e6) {
+          refBox = union;
+          mergedRoomIds.add(cand.id);
+          break;
+        }
+      }
+    }
+    if (refBox.w * refBox.h < 15e6 && origDining && origDining.width * origDining.height >= 15e6) {
+      refBox = { x: origDining.x, y: origDining.y, w: origDining.width, h: origDining.height };
+      mergedRoomIds.clear();
+      mergedRoomIds.add(origDining.id);
+    }
+  }
   const rooms = [];
+  const replaceByRefugeId = mergedRoomIds.size === 1 && targetBalcony && refBox && Math.abs(refBox.x - targetBalcony.x) > 1 && Math.abs(refBox.y - targetBalcony.y) > 1 ? [...mergedRoomIds][0] : targetBalcony?.id;
   for (const r of baseFloor.rooms) {
-    if (targetBalcony && r.id === targetBalcony.id && refBox) {
+    if (replaceByRefugeId && r.id === replaceByRefugeId && refBox) {
       rooms.push(createBoxRoom({
         id: `refuge_terrace_${refugeLevel}`,
         name: "Statutory Fire Refuge Terrace (>= 15 m\xB2)",
@@ -123749,7 +126309,7 @@ function solveRefugeFloorSheet(typicalResult, refugeLevel) {
       }));
       continue;
     }
-    if (shouldMergeDining && origDining && r.id === origDining.id) {
+    if (mergedRoomIds.has(r.id)) {
       continue;
     }
     rooms.push({ ...r, floorId });
@@ -124140,74 +126700,7 @@ function generateApartmentProjectSchedule(params) {
 }
 __name(generateApartmentProjectSchedule, "generateApartmentProjectSchedule");
 function synthesizeStructuralFraming(building) {
-  let placedStructure = building;
-  const refRes = placedStructure.floors.find((f) => f.floorUse === "RESIDENTIAL");
-  const stiltFl = placedStructure.floors.find((f) => f.floorUse === "STILT_PARKING");
-  const aisleBoxes = (stiltFl?.rooms ?? []).filter((r) => r.architecturalRole === "VEHICLE_AISLE").map((r) => r.boundary?.points?.length ? {
-    x: Math.min(...r.boundary.points.map((p) => p.x)),
-    y: Math.min(...r.boundary.points.map((p) => p.y)),
-    w: Math.max(...r.boundary.points.map((p) => p.x)) - Math.min(...r.boundary.points.map((p) => p.x)),
-    h: Math.max(...r.boundary.points.map((p) => p.y)) - Math.min(...r.boundary.points.map((p) => p.y))
-  } : { x: r.x, y: r.y, w: r.width, h: r.height });
-  const blocksAisle = /* @__PURE__ */ __name((pt) => aisleBoxes.some((b) => pt.x > b.x + 150 && pt.x < b.x + b.w - 150 && pt.y > b.y + 150 && pt.y < b.y + b.h - 150) || aisleBoxes.some((b) => (Math.abs(pt.y - b.y) <= 150 || Math.abs(pt.y - (b.y + b.h)) <= 150) && pt.x > b.x + 150 && pt.x < b.x + b.w - 150 || (Math.abs(pt.x - b.x) <= 150 || Math.abs(pt.x - (b.x + b.w)) <= 150) && pt.y > b.y + 150 && pt.y < b.y + b.h - 150), "blocksAisle");
-  if (refRes) {
-    const bounds = polygonBoundingBox(refRes.boundary);
-    const refWallPolys = refRes.walls.map(wallToPolygon);
-    const refOutdoorRooms = refRes.rooms.filter((r) => ["balcony", "utility"].includes(r.type));
-    const continuous = [];
-    for (const col of deriveCleanStructuralColumns(refRes, { x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height })) {
-      if (blocksAisle(col.position))
-        continue;
-      if (continuous.some((d) => Math.hypot(d.position.x - col.position.x, d.position.y - col.position.y) < 500))
-        continue;
-      let resolvedCol = col;
-      const intrudes = /* @__PURE__ */ __name((c) => refOutdoorRooms.some((r) => uncoveredResidentialOverlap(columnFootprint(c), r.boundary, refWallPolys) >= 1e-3), "intrudes");
-      if (intrudes(resolvedCol)) {
-        const flushCol = { ...col, width: 200, depth: 200 };
-        if (intrudes(flushCol))
-          continue;
-        resolvedCol = flushCol;
-      }
-      const footingOverlaps = continuous.some((d) => Math.abs(d.position.x - resolvedCol.position.x) < (d.width + resolvedCol.width) * 1.5 + 10 && Math.abs(d.position.y - resolvedCol.position.y) < (d.depth + resolvedCol.depth) * 1.5 + 10);
-      if (footingOverlaps)
-        continue;
-      continuous.push(resolvedCol);
-    }
-    placedStructure = {
-      ...placedStructure,
-      floors: placedStructure.floors.map((f) => ({
-        ...f,
-        columns: continuous.map((c, idx) => ({
-          ...c,
-          id: `${f.id}::col_${idx + 1}`,
-          floorId: f.id,
-          gridReference: `C${idx + 1}`
-        }))
-      }))
-    };
-  }
-  const framedFloors = placedStructure.floors.map((floor) => ({ ...floor, slabThicknessMm: floor.slabThicknessMm ?? 150 }));
-  const coordinated = new GeometryValidator().auditAndFixColumnAndBeamGrid({ ...placedStructure, floors: framedFloors }, true).building;
-  const gridKey = /* @__PURE__ */ __name((column) => `${column.position.x}:${column.position.y}:${column.width}:${column.depth}`, "gridKey");
-  const gridByFloor = coordinated.floors.map((floor) => new Set(floor.columns.map(gridKey)));
-  const floors = coordinated.floors.map((floor) => {
-    const columns = floor.columns.filter((column) => gridByFloor.every((grid) => grid.has(gridKey(column))));
-    const ids = new Set(columns.map((column) => column.id));
-    const beams = (floor.beams ?? []).filter((beam) => (!beam.startColumnId || ids.has(beam.startColumnId)) && (!beam.endColumnId || ids.has(beam.endColumnId))).map((beam, index) => ({
-      ...beam,
-      id: `${floor.id}::preliminary-beam_${index + 1}`
-    }));
-    return { ...floor, columns, beams };
-  });
-  return {
-    ...coordinated,
-    floors,
-    beams: floors.flatMap((floor) => floor.beams ?? []),
-    metadata: { ...coordinated.metadata, tags: [
-      ...(coordinated.metadata.tags ?? []).filter((tag) => tag !== "STRUCTURAL_DESIGN_DEFERRED" && tag !== "STRUCTURAL_FRAMING_PRELIMINARY"),
-      "STRUCTURAL_FRAMING_PRELIMINARY"
-    ] }
-  };
+  return synthesizeCornerLockedBuildingFraming(building);
 }
 __name(synthesizeStructuralFraming, "synthesizeStructuralFraming");
 function namespaceFloorEntities(floor) {
@@ -124262,6 +126755,169 @@ function namespaceFloorEntities(floor) {
   };
 }
 __name(namespaceFloorEntities, "namespaceFloorEntities");
+function clipPolygonHalfPlane(poly, a, b, insetMm, ccw) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len <= 1e-6)
+    return [...poly];
+  const nx = ccw ? -dy / len : dy / len;
+  const ny = ccw ? dx / len : -dx / len;
+  const dist3 = /* @__PURE__ */ __name((p) => (p.x - a.x) * nx + (p.y - a.y) * ny - insetMm, "dist");
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p1 = poly[i];
+    const p2 = poly[(i + 1) % poly.length];
+    const d1 = dist3(p1);
+    const d2 = dist3(p2);
+    if (d1 >= -1e-6)
+      out.push(p1);
+    if (d1 >= 0 && d2 < 0 || d1 < 0 && d2 >= 0) {
+      const t = d1 / (d1 - d2);
+      out.push({ x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t });
+    }
+  }
+  return out;
+}
+__name(clipPolygonHalfPlane, "clipPolygonHalfPlane");
+function computeIrregularPlotInscribedEnvelope(plotPolygon, edgeSetbacksMm, fallbackSetbacks, roadEdgeIndex) {
+  const pts = plotPolygon.points;
+  const ccw = polygonSignedArea(plotPolygon) >= 0;
+  let clipped = [...pts];
+  const fb = fallbackSetbacks ?? { front: 4500, rear: 3e3, left: 3e3, right: 3e3 };
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    let inset = edgeSetbacksMm?.[i];
+    if (inset === void 0 || !Number.isFinite(inset)) {
+      if (roadEdgeIndex !== void 0 && i === roadEdgeIndex) {
+        inset = fb.front;
+      } else {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = ccw ? -dy / len : dy / len;
+        const ny = ccw ? dx / len : -dx / len;
+        if (Math.abs(ny) >= Math.abs(nx)) {
+          inset = ny < 0 ? fb.front : fb.rear;
+        } else {
+          inset = nx > 0 ? fb.left : fb.right;
+        }
+      }
+    }
+    clipped = clipPolygonHalfPlane(clipped, a, b, Math.max(0, inset), ccw);
+    if (clipped.length < 3)
+      break;
+  }
+  const buildablePolygon = clipped.length >= 3 ? { points: clipped } : plotPolygon;
+  const bbox = polygonBoundingBox(buildablePolygon);
+  const ySteps = 28;
+  const xSteps = 32;
+  const ys = [];
+  for (let i = 0; i <= ySteps; i++)
+    ys.push(bbox.y + bbox.height * i / ySteps);
+  const xs = [];
+  for (let i = 0; i <= xSteps; i++)
+    xs.push(bbox.x + bbox.width * i / xSteps);
+  const insideGrid = Array.from({ length: ySteps }, (_, r) => Array.from({ length: xSteps }, (_2, c) => {
+    const x1 = xs[c], x2 = xs[c + 1], y1 = ys[r], y2 = ys[r + 1];
+    return pointInPolygon({ x: (x1 + x2) / 2, y: (y1 + y2) / 2 }, buildablePolygon) && pointInPolygon({ x: x1 + 2, y: y1 + 2 }, buildablePolygon) && pointInPolygon({ x: x2 - 2, y: y1 + 2 }, buildablePolygon) && pointInPolygon({ x: x2 - 2, y: y2 - 2 }, buildablePolygon) && pointInPolygon({ x: x1 + 2, y: y2 - 2 }, buildablePolygon);
+  }));
+  let bestArea = 0;
+  let bestBox = {
+    x: snap10(bbox.x + bbox.width * 0.1),
+    y: snap10(bbox.y + bbox.height * 0.1),
+    w: snap10(bbox.width * 0.8),
+    h: snap10(bbox.height * 0.8)
+  };
+  const heights = new Array(xSteps).fill(0);
+  for (let r = 0; r < ySteps; r++) {
+    for (let c = 0; c < xSteps; c++) {
+      heights[c] = insideGrid[r][c] ? heights[c] + 1 : 0;
+    }
+    for (let c1 = 0; c1 < xSteps; c1++) {
+      let minH = heights[c1];
+      if (minH === 0)
+        continue;
+      for (let c2 = c1; c2 < xSteps; c2++) {
+        minH = Math.min(minH, heights[c2]);
+        if (minH === 0)
+          break;
+        const x1 = xs[c1];
+        const x2 = xs[c2 + 1];
+        const y1 = ys[r - minH + 1];
+        const y2 = ys[r + 1];
+        const area2 = (x2 - x1) * (y2 - y1);
+        if (area2 > bestArea) {
+          bestArea = area2;
+          bestBox = {
+            x: snap10(x1),
+            y: snap10(y1),
+            w: snap10(x2 - x1),
+            h: snap10(y2 - y1)
+          };
+        }
+      }
+    }
+  }
+  const rectFitsInside = /* @__PURE__ */ __name((rx1, ry1, rx2, ry2) => {
+    if (rx2 - rx1 < 100 || ry2 - ry1 < 100)
+      return false;
+    return pointInPolygon({ x: rx1 + 1, y: ry1 + 1 }, buildablePolygon) && pointInPolygon({ x: rx2 - 1, y: ry1 + 1 }, buildablePolygon) && pointInPolygon({ x: rx2 - 1, y: ry2 - 1 }, buildablePolygon) && pointInPolygon({ x: rx1 + 1, y: ry2 - 1 }, buildablePolygon) && pointInPolygon({ x: (rx1 + rx2) / 2, y: ry1 + 1 }, buildablePolygon) && pointInPolygon({ x: (rx1 + rx2) / 2, y: ry2 - 1 }, buildablePolygon) && pointInPolygon({ x: rx1 + 1, y: (ry1 + ry2) / 2 }, buildablePolygon) && pointInPolygon({ x: rx2 - 1, y: (ry1 + ry2) / 2 }, buildablePolygon);
+  }, "rectFitsInside");
+  let ex1 = bestBox.x;
+  let ey1 = bestBox.y;
+  let ex2 = bestBox.x + bestBox.w;
+  let ey2 = bestBox.y + bestBox.h;
+  const maxStepX = Math.max(200, bbox.width / xSteps + 200);
+  const maxStepY = Math.max(200, bbox.height / ySteps + 200);
+  for (let pass = 0; pass < 2; pass++) {
+    let lo = 0, hi = maxStepX;
+    for (let it = 0; it < 12; it++) {
+      const mid2 = (lo + hi) / 2;
+      if (rectFitsInside(ex1 - mid2, ey1, ex2, ey2))
+        lo = mid2;
+      else
+        hi = mid2;
+    }
+    ex1 = Math.ceil((ex1 - lo) / 10) * 10;
+    lo = 0;
+    hi = maxStepX;
+    for (let it = 0; it < 12; it++) {
+      const mid2 = (lo + hi) / 2;
+      if (rectFitsInside(ex1, ey1, ex2 + mid2, ey2))
+        lo = mid2;
+      else
+        hi = mid2;
+    }
+    ex2 = Math.floor((ex2 + lo) / 10) * 10;
+    lo = 0;
+    hi = maxStepY;
+    for (let it = 0; it < 12; it++) {
+      const mid2 = (lo + hi) / 2;
+      if (rectFitsInside(ex1, ey1 - mid2, ex2, ey2))
+        lo = mid2;
+      else
+        hi = mid2;
+    }
+    ey1 = Math.ceil((ey1 - lo) / 10) * 10;
+    lo = 0;
+    hi = maxStepY;
+    for (let it = 0; it < 12; it++) {
+      const mid2 = (lo + hi) / 2;
+      if (rectFitsInside(ex1, ey1, ex2, ey2 + mid2))
+        lo = mid2;
+      else
+        hi = mid2;
+    }
+    ey2 = Math.floor((ey2 + lo) / 10) * 10;
+  }
+  if (rectFitsInside(ex1, ey1, ex2, ey2) && (ex2 - ex1) * (ey2 - ey1) >= bestArea) {
+    bestBox = { x: ex1, y: ey1, w: ex2 - ex1, h: ey2 - ey1 };
+  }
+  return { buildablePolygon, inscribedEnvelope: bestBox };
+}
+__name(computeIrregularPlotInscribedEnvelope, "computeIrregularPlotInscribedEnvelope");
 function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
   const resolvedCategory = rawConfig.planCategory ?? inferPlanCategoryFromPrompt(rawConfig.aiPrompt);
   const explicitPromptShape = inferShapeIdFromPrompt(rawConfig.aiPrompt);
@@ -124313,7 +126969,15 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
   };
   const stackParams = computeBuildingStackParameters(config);
   let permissibleEnvelope;
-  if (config.lotAllotmentMode === "FULL_LOT_100_PERCENT") {
+  if (config.irregularPlotBoundary && config.irregularPlotBoundary.polygon.points.length >= 3) {
+    const rawBox = config.irregularPlotBoundary.inscribedEnvelopeMm ?? computeIrregularPlotInscribedEnvelope(config.irregularPlotBoundary.polygon, config.irregularPlotBoundary.edgeSetbacksMm, config.setbacksMm ?? { left: 3e3, rear: 3e3, right: 3e3, front: 4500 }, config.irregularPlotBoundary.roadEdgeIndex).inscribedEnvelope;
+    permissibleEnvelope = {
+      x: rawBox.x,
+      y: rawBox.y,
+      w: Math.max(8500, rawBox.w),
+      h: Math.max(8500, rawBox.h)
+    };
+  } else if (config.lotAllotmentMode === "FULL_LOT_100_PERCENT") {
     permissibleEnvelope = {
       x: 0,
       y: 0,
@@ -124322,12 +126986,11 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
     };
   } else {
     const { left: left2, rear, right, front } = config.setbacksMm ?? { left: 3e3, rear: 3e3, right: 3e3, front: 4500 };
-    const exteriorWallNib = 115;
     permissibleEnvelope = {
-      x: left2 + exteriorWallNib,
-      y: rear + exteriorWallNib,
-      w: config.plotWidthMm - left2 - right - 2 * exteriorWallNib,
-      h: config.plotDepthMm - rear - front - 2 * exteriorWallNib
+      x: left2,
+      y: rear,
+      w: config.plotWidthMm - left2 - right,
+      h: config.plotDepthMm - rear - front
     };
   }
   let envelope = permissibleEnvelope;
@@ -124415,6 +127078,7 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
     }
     return base || void 0;
   })();
+  const resolvedGalleryMode = config.galleryCoordinationMode ?? (config.staggeredBalconies === true ? "DOUBLE_HEIGHT_STAGGER" : "STACKED_RIBBON");
   let topologyEvidence;
   const topology = recovery?.legacyOnly ? void 0 : selectProductionTopology({
     allowBestEffort: !recovery?.legacyOnly,
@@ -124428,7 +127092,12 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
     seed: config.generationSeed,
     preferredArchetype: config.preferredArchetype,
     preferredMassingShape: config.buildingMassingShape,
-    rejectedTopologyHashes: config.rejectedTopologyHashes
+    rejectedTopologyHashes: config.rejectedTopologyHashes,
+    roadAccessSides: config.roadAccessSides,
+    setbacksMm: config.setbacksMm,
+    irregularPlotBoundary: config.irregularPlotBoundary,
+    galleryCoordinationMode: resolvedGalleryMode,
+    includeStudyRoom: config.includeStudyRoom ?? false
   });
   const macro = topology ? topology.macro : partitionMacroFootprint(envelope, config.flatsPerFloor, interpretArchitecturalPlacement(config.aiPrompt));
   onStage?.("WALL_AND_OPENING_TOPOLOGY");
@@ -124553,7 +127222,8 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : void 0,
         units: config.units ?? [],
         includeWindowChajjas: config.includeWindowChajjas ?? true,
-        staggeredBalconies: config.staggeredBalconies ?? false,
+        staggeredBalconies: resolvedGalleryMode === "DOUBLE_HEIGHT_STAGGER",
+        galleryCoordinationMode: resolvedGalleryMode,
         ...config.generationSeed !== void 0 ? { generationSeed: config.generationSeed } : {},
         ...topology?.chosen.fingerprint.digests.canonical ? { topologyHash: topology.chosen.fingerprint.digests.canonical } : {},
         ...topology?.result.archetype ? { archetype: topology.result.archetype } : config.preferredArchetype ? { archetype: config.preferredArchetype } : {},
@@ -124579,7 +127249,7 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
     updatedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
   const buildingWithFurniture = populateCanonicalFurniture(rawBuilding);
-  const deferredStructure = config.structuralLayoutMode === "DEFERRED";
+  const deferredStructure = config.structuralLayoutMode !== "PROVISIONAL_EXISTING_PROFILE";
   const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map((f) => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...buildingWithFurniture.metadata.tags ?? [], "STRUCTURAL_DESIGN_DEFERRED"] } } : buildingWithFurniture;
   const placedStructure = deferredStructure ? architecturalBuilding : synthesizeStructuralFraming(architecturalBuilding);
   const audit = validateAndRepairBuildingGeometry(placedStructure, { autoCorrect: false });
@@ -124603,7 +127273,7 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
   }, "filterFloorBeams");
   const filteredFloors = rawValidatedBuilding.floors.map((f) => f.beams?.length ? { ...f, beams: filterFloorBeams(f, f.beams) } : f);
   const filteredFloorMap = new Map(filteredFloors.map((f) => [f.id, f]));
-  const validatedBuilding = {
+  const uncoordinatedBuilding = {
     ...rawValidatedBuilding,
     floors: filteredFloors,
     ...rawValidatedBuilding.beams?.length ? {
@@ -124613,6 +127283,11 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
       })
     } : {}
   };
+  const validatedBuilding = coordinateBuildingFacade(uncoordinatedBuilding, {
+    galleryCoordinationMode: resolvedGalleryMode,
+    flatExposures: typicalSheet.structure.flatExposures ?? [],
+    includeWindowChajjas: config.includeWindowChajjas ?? true
+  });
   const finalAudit = validateAndRepairBuildingGeometry(validatedBuilding, { autoCorrect: false });
   const validationReport = {
     ...finalAudit.report,
@@ -124656,6 +127331,7 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
       ...validatedBuilding,
       metadata: {
         ...validatedBuilding.metadata,
+        ...config.irregularPlotBoundary ? { irregularPlotBoundary: config.irregularPlotBoundary } : {},
         generationReport,
         bedroomBalconySchedule: bedroomBalconySchedule(validatedBuilding)
       }
@@ -124705,17 +127381,18 @@ function solveMultiSheetApartmentProject(rawConfig, onStage, recovery) {
       rejectedHashes.add(initialVariant);
     }
     const lockedMassingShape = config.buildingMassingShape ?? rawConfig.buildingMassingShape ?? (!promptIntent?.preferences.requestsDifferentShape ? "COMPACT_DOUBLE_LOADED" : void 0);
+    const explicitArchetype = rawConfig.preferredArchetype;
     const archetypeRotation = [
-      rawConfig.preferredArchetype,
+      explicitArchetype,
       "CENTRAL_LIVING_SPLIT_BEDROOMS",
       "CORNER_L_LIVING_REAR_SLEEPING",
       "FRONT_BALCONY_OPEN_KITCHEN",
       "LINEAR_TANDEM_DEEP_PLATE",
       "MIRRORED_WET_CORE_STACK"
     ];
-    for (let attempt = 1; attempt < 16; attempt++) {
+    for (let attempt = 1; attempt < 8; attempt++) {
       try {
-        const altArchetype = attempt >= 4 ? archetypeRotation[attempt % archetypeRotation.length] : rawConfig.preferredArchetype;
+        const altArchetype = explicitArchetype ? explicitArchetype : attempt >= 3 ? archetypeRotation[attempt % archetypeRotation.length] : void 0;
         const nextRaw = solveMultiSheetApartmentProject({
           ...rawConfig,
           generationSeed: baseSeed + attempt,
@@ -124955,7 +127632,7 @@ async function executeAuditedPlanningPipeline(input, onProgress) {
       next("COLUMN_AND_BEAM_GRID");
     }
     next("GEOMETRY_ZERO_ERROR_AUDIT");
-    const validator = new GeometryValidator({ autoCorrect: false });
+    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: 800 });
     const audit = validator.audit(building, false);
     const closureErrors = building.floors.filter((f) => f.apartmentUnits?.length).flatMap((floor) => validateApartmentClosure({ ...building, floors: [floor] }).issues.filter((issue) => issue.severity === "error").map((issue) => ({
       code: issue.code,
@@ -127403,9 +130080,9 @@ function sanitizeProposalWithPromptGuardrails(raw, config, seed2) {
   const explicitlyNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b/.test(prompt);
   const explicitlyCentral = /\bcentral\s+lift|\bcentral\s+core/.test(prompt);
   const family = typeof raw.preferredTopologyFamily === "string" && ["CENTRAL_CORE_SPINE", "DUAL_WING", "SIDE_CORE", "CENTRAL_COURTYARD", "LINEAR_SINGLE_LOADED", "PERIMETER_HABITABLE", "SPLIT_CORE"].includes(raw.preferredTopologyFamily) ? raw.preferredTopologyFamily : base.preferredTopologyFamily;
-  const archetype = typeof raw.preferredArchetype === "string" && ROOM_SLICING_ARCHETYPES2.includes(raw.preferredArchetype) ? raw.preferredArchetype : base.preferredArchetype;
-  const buildingMassingShape = typeof raw.buildingMassingShape === "string" && (BUILDING_MASSING_SHAPES2.includes(raw.buildingMassingShape) || raw.buildingMassingShape.startsWith("PARAM_")) ? raw.buildingMassingShape : base.buildingMassingShape;
-  const planCategory = typeof raw.planCategory === "string" && PLAN_CATEGORIES.includes(raw.planCategory) ? raw.planCategory : base.planCategory;
+  const archetype = config.preferredArchetype && ROOM_SLICING_ARCHETYPES2.includes(config.preferredArchetype) ? config.preferredArchetype : typeof raw.preferredArchetype === "string" && ROOM_SLICING_ARCHETYPES2.includes(raw.preferredArchetype) ? raw.preferredArchetype : base.preferredArchetype;
+  const buildingMassingShape = config.buildingMassingShape ? config.buildingMassingShape : typeof raw.buildingMassingShape === "string" && (BUILDING_MASSING_SHAPES2.includes(raw.buildingMassingShape) || raw.buildingMassingShape.startsWith("PARAM_")) ? raw.buildingMassingShape : base.buildingMassingShape;
+  const planCategory = config.planCategory ? config.planCategory : typeof raw.planCategory === "string" && PLAN_CATEGORIES.includes(raw.planCategory) ? raw.planCategory : base.planCategory;
   const maxOtsRatio = typeof raw.maxOtsRatio === "number" && Number.isFinite(raw.maxOtsRatio) && raw.maxOtsRatio >= 0 && raw.maxOtsRatio <= 0.35 ? raw.maxOtsRatio : base.maxOtsRatio;
   const corePlacement = explicitlyCentral ? "CENTRAL" : typeof raw.corePlacement === "string" && ["CENTRAL", "NORTH", "SOUTH", "EAST", "WEST", "SPLIT"].includes(raw.corePlacement) ? raw.corePlacement : base.corePlacement;
   const noOts = explicitlyNoOts ? true : typeof raw.noOts === "boolean" ? raw.noOts : base.noOts;
@@ -127464,7 +130141,9 @@ async function generateArchitecturalProposal(provider, input) {
   const buildEnriched = /* @__PURE__ */ __name((proposal, telemetry) => {
     const rg = proposal.referenceSpatialGraph;
     const effectiveArchetype = seed2 > 1 && rejected.length > 0 && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES2[0] ? ROOM_SLICING_ARCHETYPES2[(seed2 - 1) % ROOM_SLICING_ARCHETYPES2.length] : rg?.wetCoreClustering === "SHARED_SHAFT" && !input.config.preferredArchetype && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES2[0] ? "MIRRORED_WET_CORE_STACK" : proposal.preferredArchetype;
-    const effectiveMassingShape = input.config.buildingMassingShape ?? (seed2 > 1 && (rejected.length > 0 || proposal.buildingMassingShape === "COMPACT_DOUBLE_LOADED") ? BUILDING_MASSING_SHAPES2[(seed2 - 1) % BUILDING_MASSING_SHAPES2.length] : rg?.detectedCorridorAxis === "RING" && !proposal.noOts && proposal.buildingMassingShape === "COMPACT_DOUBLE_LOADED" ? "U_SHAPE_COURTYARD" : proposal.buildingMassingShape);
+    const promptExplicitlyRequestsNovelShape = /\b(?:cruciform|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|pinwheel|stepped|courtyard|crescent|curved|arc|rotunda|circular|oval|triskele|triang|hex|octa|pentagon|trapezoid|chevron|z[\s-]?shape|t[\s-]?shape)\b/i.test(input.config.aiPrompt ?? "");
+    const allowNovelAutoShape = Boolean(input.config.buildingMassingShape || input.config.autoExploreNovelShape || seed2 > 1 || rejected.length > 0 || imagePart || promptExplicitlyRequestsNovelShape);
+    const effectiveMassingShape = input.config.buildingMassingShape ?? (!allowNovelAutoShape ? "COMPACT_DOUBLE_LOADED" : seed2 > 1 && (rejected.length > 0 || proposal.buildingMassingShape === "COMPACT_DOUBLE_LOADED") ? BUILDING_MASSING_SHAPES2[(seed2 - 1) % BUILDING_MASSING_SHAPES2.length] : rg?.detectedCorridorAxis === "RING" && !proposal.noOts && proposal.buildingMassingShape === "COMPACT_DOUBLE_LOADED" ? "U_SHAPE_COURTYARD" : proposal.buildingMassingShape);
     const finalProposal = {
       ...proposal,
       preferredArchetype: effectiveArchetype,
@@ -127473,7 +130152,7 @@ async function generateArchitecturalProposal(provider, input) {
     const basePrompt = (input.config.aiPrompt ?? "").trim();
     const synthesizedClauses = [];
     if (telemetry.geminiInvoked || rg) {
-      if (!/\b(?:ots|open[\s-]to[\s-]sky|courtyard|perimeter[\s-]only)\b/i.test(basePrompt)) {
+      if (effectiveMassingShape !== "PINWHEEL_CLUSTER" && basePrompt.length > 0 && !/\b(?:ots|open[\s-]to[\s-]sky|courtyard|perimeter[\s-]only)\b/i.test(basePrompt)) {
         if (finalProposal.noOts) {
           synthesizedClauses.push("NO OTS.");
         } else if (finalProposal.ventilationStrategy === "CENTRAL_COURTYARD") {
@@ -127505,6 +130184,7 @@ async function generateArchitecturalProposal(provider, input) {
     const shouldOverrideMixedUnits = Boolean(parsedMixed && parsedMixed.length >= 2 && parsedMixed.length <= 6 && (currentUnitTypes.length !== parsedMixed.length || new Set(currentUnitTypes).size <= 1));
     const resolvedFlatsPerFloor = shouldOverrideMixedUnits ? parsedMixed.length : input.config.flatsPerFloor;
     const resolvedUnits = shouldOverrideMixedUnits ? mixedUnitSpecs(parsedMixed) : input.config.units;
+    const promptMentionsArea = /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|sft|sq\.?\s*m|sqm|m2|m²)\b/i.test(basePrompt);
     const enrichedConfig = {
       ...input.config,
       flatsPerFloor: resolvedFlatsPerFloor,
@@ -127512,11 +130192,11 @@ async function generateArchitecturalProposal(provider, input) {
       ...effectiveAiPrompt ? { aiPrompt: effectiveAiPrompt } : {},
       generationSeed: seed2,
       rejectedTopologyHashes: rejected,
-      preferredArchetype: finalProposal.preferredArchetype,
-      buildingMassingShape: finalProposal.buildingMassingShape,
+      preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
+      buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
       centerBuildingInEnvelope: input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
-      ...finalProposal.targetAreaSqFt !== void 0 && input.config.targetAreaSqFt === void 0 ? { targetAreaSqFt: finalProposal.targetAreaSqFt } : {},
-      ...finalProposal.areaTargetScope !== void 0 && input.config.areaTargetScope === void 0 ? { areaTargetScope: finalProposal.areaTargetScope } : {},
+      ...promptMentionsArea && finalProposal.targetAreaSqFt !== void 0 && input.config.targetAreaSqFt === void 0 ? { targetAreaSqFt: finalProposal.targetAreaSqFt } : {},
+      ...promptMentionsArea && finalProposal.areaTargetScope !== void 0 && input.config.areaTargetScope === void 0 ? { areaTargetScope: finalProposal.areaTargetScope } : {},
       aiProposal: finalProposal,
       aiTelemetryOverride: {
         geminiInvoked: telemetry.geminiInvoked,
@@ -127548,7 +130228,7 @@ async function generateArchitecturalProposal(provider, input) {
     `Generation Seed: ${seed2}. Rejected Prior Topology Hashes: ${rejected.length > 0 ? rejected.join(", ") : "None (first generation)"}.`,
     input.config.targetAreaSqFt ? `Requested Target Area: ${input.config.targetAreaSqFt} sq. ft. (Scope: ${input.config.areaTargetScope ?? "UNSPECIFIED"}).` : "",
     `User Architectural Brief: "${normalizeBriefSpelling2(input.config.aiPrompt ?? "Modern compliant residential apartment tower with daylight, natural ventilation, and Vastu balance.")}"`,
-    `Available buildingMassingShape options: ${BUILDING_MASSING_SHAPES2.join(", ")}. Prefer non-rectangular articulated massing (H_SHAPE_WING, U_SHAPE_COURTYARD, L_SHAPE_CORNER, CRUCIFORM_PLUS, PINWHEEL_CLUSTER, STEPPED_OFFSET_BLOCK) when distinct or varied building geometry is requested, and keep maxOtsRatio <= 0.12 unless a large central courtyard is explicitly mandated.`,
+    input.config.buildingMassingShape ? `Locked buildingMassingShape requested by user: ${input.config.buildingMassingShape} (preserve this exact massing shape).` : `Available buildingMassingShape options: ${BUILDING_MASSING_SHAPES2.join(", ")}. Prefer non-rectangular articulated massing (H_SHAPE_WING, U_SHAPE_COURTYARD, L_SHAPE_CORNER, CRUCIFORM_PLUS, PINWHEEL_CLUSTER, STEPPED_OFFSET_BLOCK) when distinct or varied building geometry is requested, and keep maxOtsRatio <= 0.12 unless a large central courtyard is explicitly mandated.`,
     imagePart ? "A reference sketch or plan image is attached. Extract referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering) to guide spatial zoning." : "",
     seed2 > 1 ? `IMPORTANT REGENERATION DIRECTIVE: This is variant #${seed2}. Propose a genuinely different buildingMassingShape, preferredArchetype, and spatial organization than prior rejected hashes.` : ""
   ].filter(Boolean).join("\n");
@@ -128054,12 +130734,13 @@ async function handleProjectGeneration(body, deps) {
     let complianceReport2 = evaluateArchitecturalComplianceScore(pipelineResult.building, {
       config: proposalResult.enrichedConfig
     });
-    for (let retryIdx = 1; !complianceReport2.passed && retryIdx <= 3; retryIdx++) {
+    const maxOuterRetries = deps.gemini ? 2 : 0;
+    for (let retryIdx = 1; !complianceReport2.passed && retryIdx <= maxOuterRetries; retryIdx++) {
       const priorHash = pipelineResult.building.metadata?.topologyHash;
       const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
       const updatedRejected = typeof priorHash === "string" && priorHash.length > 0 ? [.../* @__PURE__ */ new Set([...parsed.rejectedTopologyHashes, priorHash])] : [...parsed.rejectedTopologyHashes];
       const updatedRejectedShapes = !parsed.config.buildingMassingShape && priorShape ? [.../* @__PURE__ */ new Set([...parsed.config.rejectedShapeIds ?? [], priorShape])] : parsed.config.rejectedShapeIds;
-      const correctiveHint = complianceReport2.violations.slice(0, 3).join(" ");
+      const correctiveHint = complianceReport2.violations.slice(0, 3).map((v) => typeof v === "string" ? v : v.message).join(" ");
       const retryProposal = await generateArchitecturalProposal(deps.gemini, {
         config: {
           ...parsed.config,
@@ -128120,16 +130801,1802 @@ async function handleProjectGeneration(body, deps) {
 }
 __name(handleProjectGeneration, "handleProjectGeneration");
 
+// src/services/cad-layout-importer.ts
+var import_node_fs6 = __toESM(require("node:fs"), 1);
+var import_node_os = __toESM(require("node:os"), 1);
+var import_node_path7 = __toESM(require("node:path"), 1);
+var import_node_child_process4 = require("node:child_process");
+var import_node_crypto16 = require("node:crypto");
+var CadImportError = class extends Error {
+  constructor(code, message, status = 400) {
+    super(message);
+    this.code = code;
+    this.status = status;
+    this.name = "CadImportError";
+  }
+  static {
+    __name(this, "CadImportError");
+  }
+};
+var UNIT_TO_MM = {
+  mm: 1,
+  cm: 10,
+  m: 1e3,
+  in: 25.4,
+  ft: 304.8
+};
+var INSUNITS_MAP = {
+  1: "in",
+  2: "ft",
+  4: "mm",
+  5: "cm",
+  6: "m"
+};
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+__name(round2, "round2");
+function stripMtextFormatting(raw) {
+  return raw.replace(/\\P/gi, " ").replace(/\\~|\\L|\\l|\\O|\\o/g, " ").replace(/\\[A-Za-z][^;]*;/g, "").replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
+}
+__name(stripMtextFormatting, "stripMtextFormatting");
+function classifyLayerRole(layer) {
+  const n = layer.toLowerCase();
+  if (/plot|site|bound|survey|parcel|lot|prop/i.test(n)) return { role: "boundary", defaultSelected: true };
+  if (/wall|struc|col|beam|arch|slab|room|space|floor|part/i.test(n)) return { role: "wall", defaultSelected: true };
+  if (/door|dr\b|opening/i.test(n)) return { role: "door", defaultSelected: true };
+  if (/wind|glaz|fenest|vent|ots|duct|shaft/i.test(n)) return { role: "window", defaultSelected: true };
+  if (/text|label|anno|name|rmname|tag/i.test(n)) return { role: "text", defaultSelected: true };
+  if (/furn|hatch|dim|defpoints|title|border|frame|tree|land|car|veh|grid|center|note/i.test(n)) {
+    return { role: "ignore", defaultSelected: false };
+  }
+  return { role: "other", defaultSelected: true };
+}
+__name(classifyLayerRole, "classifyLayerRole");
+function tessellateBulge(p1, p2, bulge) {
+  if (!Number.isFinite(bulge) || Math.abs(bulge) < 1e-4) return [p2];
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const chord = Math.hypot(dx, dy);
+  if (chord < 1e-6) return [p2];
+  const sweep = 4 * Math.atan(bulge);
+  const radius = Math.abs(chord / (2 * Math.sin(sweep / 2)));
+  const sagitta = Math.abs(bulge * chord * 0.5);
+  const distToCenter = radius - sagitta;
+  const mx = (p1.x + p2.x) / 2;
+  const my = (p1.y + p2.y) / 2;
+  const sign2 = bulge > 0 ? 1 : -1;
+  const dir = Math.abs(sweep) > Math.PI ? -sign2 : sign2;
+  const nx = -dy / chord * dir;
+  const ny = dx / chord * dir;
+  const cx = mx + nx * distToCenter;
+  const cy = my + ny * distToCenter;
+  const startAngle = Math.atan2(p1.y - cy, p1.x - cx);
+  const steps = Math.max(4, Math.min(20, Math.ceil(Math.abs(sweep) / (Math.PI / 12))));
+  const out = [];
+  for (let i = 1; i <= steps; i++) {
+    const a = startAngle + sweep * i / steps;
+    out.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
+  }
+  out[out.length - 1] = p2;
+  return out;
+}
+__name(tessellateBulge, "tessellateBulge");
+function tessellateArc(cx, cy, radius, startDeg, endDeg) {
+  let sweepDeg = endDeg - startDeg;
+  if (sweepDeg <= 0) sweepDeg += 360;
+  const steps = Math.max(6, Math.min(36, Math.ceil(sweepDeg / 15)));
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const rad = (startDeg + sweepDeg * i / steps) * Math.PI / 180;
+    pts.push({ x: cx + Math.cos(rad) * radius, y: cy + Math.sin(rad) * radius });
+  }
+  return pts;
+}
+__name(tessellateArc, "tessellateArc");
+function resolveLocalAutoCadConsole() {
+  const existing = resolveAccoreConsole();
+  if (existing) return existing;
+  if (process.platform !== "win32") return void 0;
+  const autodeskDir = import_node_path7.default.win32.join("C:\\", "Program Files", "Autodesk");
+  try {
+    if (import_node_fs6.default.existsSync(autodeskDir)) {
+      const entries = import_node_fs6.default.readdirSync(autodeskDir).filter((e) => /^AutoCAD/i.test(e)).sort().reverse();
+      for (const entry of entries) {
+        const candidate = import_node_path7.default.win32.join(autodeskDir, entry, "accoreconsole.exe");
+        if (import_node_fs6.default.existsSync(candidate) && import_node_fs6.default.statSync(candidate).isFile()) {
+          return candidate;
+        }
+      }
+    }
+  } catch {
+  }
+  return import_node_fs6.default.existsSync(DEFAULT_ACCORECONSOLE) ? DEFAULT_ACCORECONSOLE : void 0;
+}
+__name(resolveLocalAutoCadConsole, "resolveLocalAutoCadConsole");
+async function convertDwgBufferToDxf(dwgBytes, fileName) {
+  const binary = resolveLocalAutoCadConsole();
+  if (!binary) {
+    throw new CadImportError(
+      "AUTOCAD_NOT_INSTALLED",
+      "Local AutoCAD Core Console (accoreconsole.exe) was not found on this machine. Please save or export your drawing as AutoCAD 2018 ASCII .DXF (in AutoCAD, LibreCAD, or QCAD) and upload the .DXF file.",
+      422
+    );
+  }
+  const jobDir = import_node_fs6.default.mkdtempSync(import_node_path7.default.join(import_node_os.default.tmpdir(), "rh-dwg-import-"));
+  const inputDwg = import_node_path7.default.join(jobDir, "input.dwg");
+  const outputDxf = import_node_path7.default.join(jobDir, "output.dxf");
+  const scriptFile = import_node_path7.default.join(jobDir, "dxfout.scr");
+  try {
+    import_node_fs6.default.writeFileSync(inputDwg, dwgBytes);
+    const outEsc = outputDxf.replace(/\\/g, "/");
+    const scr = [
+      "_FILEDIA",
+      "0",
+      "_CMDECHO",
+      "0",
+      "_DXFOUT",
+      `"${outEsc}"`,
+      "V",
+      "2018",
+      "16",
+      "_QUIT",
+      "_Y",
+      ""
+    ].join("\r\n");
+    import_node_fs6.default.writeFileSync(scriptFile, scr, "ascii");
+    await new Promise((resolve, reject) => {
+      const child = (0, import_node_child_process4.spawn)(binary, ["/i", inputDwg, "/s", scriptFile, "/l", "en-US"], {
+        cwd: jobDir,
+        windowsHide: true
+      });
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new CadImportError("DWG_CONVERSION_TIMEOUT", `AutoCAD Core Console timed out converting ${fileName}.`, 504));
+      }, 9e4);
+      child.on("error", (err) => {
+        clearTimeout(timer);
+        reject(new CadImportError("DWG_CONVERSION_FAILED", `Failed to launch accoreconsole.exe: ${err.message}`, 500));
+      });
+      child.on("close", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+    if (!import_node_fs6.default.existsSync(outputDxf)) {
+      throw new CadImportError(
+        "DWG_CONVERSION_FAILED",
+        `AutoCAD Core Console ran on ${fileName} but did not emit a .DXF file. Please save the file as ASCII .DXF and re-upload.`,
+        422
+      );
+    }
+    return import_node_fs6.default.readFileSync(outputDxf, "utf8");
+  } finally {
+    try {
+      import_node_fs6.default.rmSync(jobDir, { recursive: true, force: true });
+    } catch {
+    }
+  }
+}
+__name(convertDwgBufferToDxf, "convertDwgBufferToDxf");
+function parseDxfContent(dxfText, fileName, unitOverride = "auto", format = "dxf") {
+  const lines = dxfText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const pairs = [];
+  for (let i2 = 0; i2 + 1 < lines.length; i2 += 2) {
+    const code = Number.parseInt(lines[i2].trim(), 10);
+    if (!Number.isFinite(code)) continue;
+    pairs.push({ code, value: lines[i2 + 1].trim() });
+  }
+  if (pairs.length < 4) {
+    throw new CadImportError("INVALID_DXF", `File "${fileName}" does not contain valid ASCII DXF group-code pairs.`, 400);
+  }
+  let insUnitsCode = 0;
+  let section = "";
+  const rawPolylines = [];
+  const rawTexts = [];
+  const rawInserts = [];
+  const warnings = [];
+  let i = 0;
+  while (i < pairs.length) {
+    const p = pairs[i];
+    if (p.code === 0 && p.value === "SECTION" && i + 1 < pairs.length && pairs[i + 1].code === 2) {
+      section = pairs[i + 1].value.toUpperCase();
+      i += 2;
+      continue;
+    }
+    if (p.code === 0 && p.value === "ENDSEC") {
+      section = "";
+      i++;
+      continue;
+    }
+    if (section === "HEADER") {
+      if (p.code === 9 && p.value === "$INSUNITS") {
+        for (let j = i + 1; j < Math.min(pairs.length, i + 4); j++) {
+          if (pairs[j].code === 70) {
+            insUnitsCode = Number.parseInt(pairs[j].value, 10) || 0;
+            break;
+          }
+          if (pairs[j].code === 9 || pairs[j].code === 0) break;
+        }
+      }
+      i++;
+      continue;
+    }
+    if (section === "ENTITIES" && p.code === 0) {
+      const entityType = p.value.toUpperCase();
+      const body = [];
+      i++;
+      while (i < pairs.length && pairs[i].code !== 0) {
+        body.push(pairs[i]);
+        i++;
+      }
+      const getStr = /* @__PURE__ */ __name((code, fallback = "") => body.find((b) => b.code === code)?.value ?? fallback, "getStr");
+      const getNum = /* @__PURE__ */ __name((code, fallback = 0) => {
+        const v = body.find((b) => b.code === code)?.value;
+        const n = v !== void 0 ? Number.parseFloat(v) : Number.NaN;
+        return Number.isFinite(n) ? n : fallback;
+      }, "getNum");
+      const layer = getStr(8, "0") || "0";
+      if (entityType === "LINE") {
+        const x1 = getNum(10, Number.NaN);
+        const y1 = getNum(20, Number.NaN);
+        const x2 = getNum(11, Number.NaN);
+        const y2 = getNum(21, Number.NaN);
+        if ([x1, y1, x2, y2].every(Number.isFinite) && Math.hypot(x2 - x1, y2 - y1) > 1e-6) {
+          rawPolylines.push({ layer, closed: false, points: [{ x: x1, y: y1 }, { x: x2, y: y2 }] });
+        }
+      } else if (entityType === "LWPOLYLINE") {
+        const flags = Math.trunc(getNum(70, 0));
+        const closed = (flags & 1) === 1;
+        const verts = [];
+        for (const item of body) {
+          if (item.code === 10) {
+            verts.push({ x: Number.parseFloat(item.value), y: 0, bulge: 0 });
+          } else if (item.code === 20 && verts.length > 0) {
+            verts[verts.length - 1].y = Number.parseFloat(item.value);
+          } else if (item.code === 42 && verts.length > 0) {
+            verts[verts.length - 1].bulge = Number.parseFloat(item.value) || 0;
+          }
+        }
+        const valid = verts.filter((v) => Number.isFinite(v.x) && Number.isFinite(v.y));
+        if (valid.length >= 2) {
+          const pts = [{ x: valid[0].x, y: valid[0].y }];
+          let hasArc = false;
+          const segCount = closed ? valid.length : valid.length - 1;
+          for (let s = 0; s < segCount; s++) {
+            const a = valid[s];
+            const b = valid[(s + 1) % valid.length];
+            if (Math.abs(a.bulge) > 1e-4) hasArc = true;
+            const segPts = tessellateBulge(a, b, a.bulge);
+            for (const sp of segPts) pts.push(sp);
+          }
+          if (closed && pts.length > 2) {
+            const first = pts[0];
+            const last = pts[pts.length - 1];
+            if (Math.hypot(first.x - last.x, first.y - last.y) < 1e-4) pts.pop();
+          }
+          rawPolylines.push({ layer, closed, points: pts, isArc: hasArc });
+        }
+      } else if (entityType === "POLYLINE") {
+        const flags = Math.trunc(getNum(70, 0));
+        const closed = (flags & 1) === 1;
+        const verts = [];
+        while (i < pairs.length) {
+          if (pairs[i].code === 0 && pairs[i].value.toUpperCase() === "SEQEND") {
+            i++;
+            break;
+          }
+          if (pairs[i].code === 0 && pairs[i].value.toUpperCase() === "VERTEX") {
+            i++;
+            let vx = Number.NaN;
+            let vy = Number.NaN;
+            let bulge = 0;
+            while (i < pairs.length && pairs[i].code !== 0) {
+              if (pairs[i].code === 10) vx = Number.parseFloat(pairs[i].value);
+              else if (pairs[i].code === 20) vy = Number.parseFloat(pairs[i].value);
+              else if (pairs[i].code === 42) bulge = Number.parseFloat(pairs[i].value) || 0;
+              i++;
+            }
+            if (Number.isFinite(vx) && Number.isFinite(vy)) verts.push({ x: vx, y: vy, bulge });
+          } else {
+            i++;
+          }
+        }
+        if (verts.length >= 2) {
+          const pts = [{ x: verts[0].x, y: verts[0].y }];
+          const segCount = closed ? verts.length : verts.length - 1;
+          for (let s = 0; s < segCount; s++) {
+            const a = verts[s];
+            const b = verts[(s + 1) % verts.length];
+            for (const sp of tessellateBulge(a, b, a.bulge)) pts.push(sp);
+          }
+          if (closed && pts.length > 2) {
+            const first = pts[0];
+            const last = pts[pts.length - 1];
+            if (Math.hypot(first.x - last.x, first.y - last.y) < 1e-4) pts.pop();
+          }
+          rawPolylines.push({ layer, closed, points: pts });
+        }
+      } else if (entityType === "ARC") {
+        const cx = getNum(10, Number.NaN);
+        const cy = getNum(20, Number.NaN);
+        const r = getNum(40, Number.NaN);
+        const a0 = getNum(50, 0);
+        const a1 = getNum(51, 90);
+        if ([cx, cy, r].every(Number.isFinite) && r > 1e-6) {
+          rawPolylines.push({ layer, closed: false, points: tessellateArc(cx, cy, r, a0, a1), isArc: true });
+        }
+      } else if (entityType === "CIRCLE") {
+        const cx = getNum(10, Number.NaN);
+        const cy = getNum(20, Number.NaN);
+        const r = getNum(40, Number.NaN);
+        if ([cx, cy, r].every(Number.isFinite) && r > 1e-6) {
+          const pts = tessellateArc(cx, cy, r, 0, 360);
+          pts.pop();
+          rawPolylines.push({ layer, closed: true, points: pts, isArc: true });
+        }
+      } else if (entityType === "TEXT" || entityType === "MTEXT") {
+        const x = getNum(10, Number.NaN);
+        const y = getNum(20, Number.NaN);
+        const textChunks = body.filter((b) => b.code === 3 || b.code === 1).map((b) => b.value);
+        const cleaned = stripMtextFormatting(textChunks.join(""));
+        if (Number.isFinite(x) && Number.isFinite(y) && cleaned.length > 0) {
+          rawTexts.push({ layer, text: cleaned, position: { x, y } });
+        }
+      } else if (entityType === "INSERT") {
+        const x = getNum(10, Number.NaN);
+        const y = getNum(20, Number.NaN);
+        const blockName = getStr(2, "");
+        const sx = Math.abs(getNum(41, 1));
+        if (Number.isFinite(x) && Number.isFinite(y) && blockName) {
+          rawInserts.push({ layer, blockName, position: { x, y }, widthHint: sx > 10 ? sx : void 0 });
+        }
+      }
+      continue;
+    }
+    i++;
+  }
+  if (rawPolylines.length === 0) {
+    throw new CadImportError("EMPTY_CAD", `No geometric entities (LINE, LWPOLYLINE, ARC, CIRCLE) were found in "${fileName}".`, 400);
+  }
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const pl of rawPolylines) {
+    for (const pt of pl.points) {
+      if (pt.x < minX) minX = pt.x;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.y > maxY) maxY = pt.y;
+    }
+  }
+  const rawSpan = Math.max(maxX - minX, maxY - minY);
+  const headerUnit = INSUNITS_MAP[insUnitsCode];
+  let detectedUnit;
+  if (headerUnit) {
+    detectedUnit = headerUnit;
+  } else if (rawSpan > 0 && rawSpan < 140) {
+    detectedUnit = "m";
+    warnings.push("$INSUNITS not set; inferred Meters from drawing extents.");
+  } else if (rawSpan >= 140 && rawSpan < 500) {
+    detectedUnit = "ft";
+    warnings.push("$INSUNITS not set; inferred Feet from drawing extents.");
+  } else {
+    detectedUnit = "mm";
+  }
+  const appliedUnit = unitOverride !== "auto" ? unitOverride : detectedUnit;
+  const scaleToMm = UNIT_TO_MM[appliedUnit];
+  const normPt = /* @__PURE__ */ __name((pt) => ({
+    x: round2((pt.x - minX) * scaleToMm),
+    y: round2((maxY - pt.y) * scaleToMm)
+  }), "normPt");
+  const polylines = rawPolylines.map((pl) => ({
+    layer: pl.layer,
+    closed: pl.closed,
+    isArc: pl.isArc,
+    points: pl.points.map(normPt)
+  }));
+  const texts = rawTexts.map((t) => ({
+    layer: t.layer,
+    text: t.text,
+    position: normPt(t.position)
+  }));
+  const inserts = rawInserts.map((ins) => ({
+    layer: ins.layer,
+    blockName: ins.blockName,
+    position: normPt(ins.position),
+    widthHintMm: ins.widthHint ? round2(ins.widthHint * scaleToMm) : void 0
+  }));
+  const layerStats = /* @__PURE__ */ new Map();
+  const touch = /* @__PURE__ */ __name((name) => {
+    let s = layerStats.get(name);
+    if (!s) {
+      s = { pl: 0, tx: 0, ins: 0 };
+      layerStats.set(name, s);
+    }
+    return s;
+  }, "touch");
+  for (const pl of polylines) touch(pl.layer).pl++;
+  for (const tx of texts) touch(tx.layer).tx++;
+  for (const ins of inserts) touch(ins.layer).ins++;
+  const layers = [...layerStats.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, s]) => {
+    const { role, defaultSelected } = classifyLayerRole(name);
+    return {
+      name,
+      entityCount: s.pl + s.tx + s.ins,
+      polylineCount: s.pl,
+      textCount: s.tx,
+      insertCount: s.ins,
+      suggestedRole: role,
+      defaultSelected
+    };
+  });
+  return {
+    fileName,
+    format,
+    detectedUnit,
+    appliedUnit,
+    scaleToMm,
+    boundsMm: {
+      width: round2((maxX - minX) * scaleToMm),
+      height: round2((maxY - minY) * scaleToMm)
+    },
+    layers,
+    polylines,
+    texts,
+    inserts,
+    warnings
+  };
+}
+__name(parseDxfContent, "parseDxfContent");
+async function parseUploadedCadFile(req) {
+  const ext = import_node_path7.default.extname(req.fileName || "").toLowerCase();
+  const format = ext === ".dwg" ? "dwg" : ext === ".pdf" ? "pdf" : "dxf";
+  if (format === "pdf") {
+    const cal = req.pdfCalibration;
+    const dxPx = cal ? cal.pointB.x - cal.pointA.x : 1e3;
+    const dyPx = cal ? cal.pointB.y - cal.pointA.y : 0;
+    const distPx = Math.max(1, Math.hypot(dxPx, dyPx));
+    const mmPerPixel = cal && cal.knownLengthMm > 0 ? cal.knownLengthMm / distPx : 25;
+    const widthMm = round2((cal?.imageWidthPx ?? 1400) * mmPerPixel);
+    const heightMm = round2((cal?.imageHeightPx ?? 1e3) * mmPerPixel);
+    const pts = cal?.tracedPolygonPx && cal.tracedPolygonPx.length >= 3 ? cal.tracedPolygonPx.map((p) => ({ x: round2(p.x * mmPerPixel), y: round2(p.y * mmPerPixel) })) : [
+      { x: 0, y: 0 },
+      { x: widthMm, y: 0 },
+      { x: widthMm, y: heightMm },
+      { x: 0, y: heightMm }
+    ];
+    const minX = Math.min(...pts.map((p) => p.x));
+    const minY = Math.min(...pts.map((p) => p.y));
+    const normPts = pts.map((p) => ({ x: round2(p.x - minX), y: round2(p.y - minY) }));
+    const bbox = polygonBoundingBox({ points: normPts });
+    const pdfDataUrl = req.contentBase64 ? `data:application/pdf;base64,${req.contentBase64}` : void 0;
+    return {
+      fileName: req.fileName,
+      format: "pdf",
+      detectedUnit: "mm",
+      appliedUnit: "mm",
+      scaleToMm: 1,
+      boundsMm: { width: round2(bbox.width), height: round2(bbox.height) },
+      layers: [
+        {
+          name: "PDF-BOUNDARY",
+          entityCount: 1,
+          polylineCount: 1,
+          textCount: 0,
+          insertCount: 0,
+          suggestedRole: "boundary",
+          defaultSelected: true
+        }
+      ],
+      polylines: [{ layer: "PDF-BOUNDARY", closed: true, points: normPts }],
+      texts: [],
+      inserts: [],
+      warnings: cal ? [] : ["PDF loaded with default 25 mm/px scale. Use 2-point scale calibration to set an exact known wall length."],
+      pdfDataUrl,
+      mmPerPixel
+    };
+  }
+  let dxfText;
+  if (format === "dwg") {
+    if (!req.contentBase64) {
+      throw new CadImportError("MISSING_CONTENT", "Binary .DWG upload requires base64 content.", 400);
+    }
+    const dwgBytes = Buffer.from(req.contentBase64, "base64");
+    dxfText = await convertDwgBufferToDxf(dwgBytes, req.fileName);
+  } else {
+    dxfText = req.contentText ?? (req.contentBase64 ? Buffer.from(req.contentBase64, "base64").toString("utf8") : "");
+    if (!dxfText.trim()) {
+      throw new CadImportError("MISSING_CONTENT", "DXF file content is empty.", 400);
+    }
+  }
+  return parseDxfContent(dxfText, req.fileName, req.unitOverride ?? "auto", format);
+}
+__name(parseUploadedCadFile, "parseUploadedCadFile");
+function polylinesToSegments(polylines) {
+  const segs = [];
+  for (const pl of polylines) {
+    const n = pl.points.length;
+    if (n < 2) continue;
+    const count = pl.closed ? n : n - 1;
+    for (let i = 0; i < count; i++) {
+      const a = pl.points[i];
+      const b = pl.points[(i + 1) % n];
+      if (Math.hypot(b.x - a.x, b.y - a.y) > 5) {
+        segs.push({ a, b });
+      }
+    }
+  }
+  return segs;
+}
+__name(polylinesToSegments, "polylinesToSegments");
+function extractPlanarRoomPolygons(polylines, snapTolMm = 15) {
+  const rawSegs = polylinesToSegments(polylines);
+  if (rawSegs.length < 3) return [];
+  const nodes = [];
+  const snapNode = /* @__PURE__ */ __name((pt) => {
+    for (let i = 0; i < nodes.length; i++) {
+      if (Math.hypot(nodes[i].x - pt.x, nodes[i].y - pt.y) <= snapTolMm) {
+        return i;
+      }
+    }
+    nodes.push({ x: round2(pt.x), y: round2(pt.y) });
+    return nodes.length - 1;
+  }, "snapNode");
+  const snappedSegs = [];
+  for (const seg of rawSegs) {
+    const u = snapNode(seg.a);
+    const v = snapNode(seg.b);
+    if (u !== v) snappedSegs.push({ u, v });
+  }
+  const splits = /* @__PURE__ */ new Map();
+  for (let i = 0; i < snappedSegs.length; i++) splits.set(i, [0, 1]);
+  for (let i = 0; i < snappedSegs.length; i++) {
+    const s1 = snappedSegs[i];
+    const a1 = nodes[s1.u];
+    const b1 = nodes[s1.v];
+    const d1x = b1.x - a1.x;
+    const d1y = b1.y - a1.y;
+    const len1 = Math.hypot(d1x, d1y);
+    if (len1 < 1) continue;
+    for (let nIdx = 0; nIdx < nodes.length; nIdx++) {
+      if (nIdx === s1.u || nIdx === s1.v) continue;
+      const p = nodes[nIdx];
+      const t = ((p.x - a1.x) * d1x + (p.y - a1.y) * d1y) / (len1 * len1);
+      if (t > 1e-4 && t < 1 - 1e-4) {
+        const px2 = a1.x + d1x * t;
+        const py2 = a1.y + d1y * t;
+        if (Math.hypot(p.x - px2, p.y - py2) <= snapTolMm) {
+          splits.get(i).push(t);
+        }
+      }
+    }
+    for (let j = i + 1; j < snappedSegs.length; j++) {
+      const s2 = snappedSegs[j];
+      if (s1.u === s2.u || s1.u === s2.v || s1.v === s2.u || s1.v === s2.v) continue;
+      const a2 = nodes[s2.u];
+      const b2 = nodes[s2.v];
+      const d2x = b2.x - a2.x;
+      const d2y = b2.y - a2.y;
+      const den = d1x * d2y - d1y * d2x;
+      if (Math.abs(den) < 1e-6) continue;
+      const qx = a2.x - a1.x;
+      const qy = a2.y - a1.y;
+      const t = (qx * d2y - qy * d2x) / den;
+      const u = (qx * d1y - qy * d1x) / den;
+      if (t >= -1e-4 && t <= 1 + 1e-4 && u >= -1e-4 && u <= 1 + 1e-4) {
+        const ix = a1.x + d1x * t;
+        const iy = a1.y + d1y * t;
+        snapNode({ x: ix, y: iy });
+        if (t > 1e-4 && t < 1 - 1e-4) splits.get(i).push(t);
+        if (u > 1e-4 && u < 1 - 1e-4) splits.get(j).push(u);
+      }
+    }
+  }
+  const edgeSet = /* @__PURE__ */ new Set();
+  const adj = /* @__PURE__ */ new Map();
+  const addEdge = /* @__PURE__ */ __name((u, v) => {
+    if (u === v) return;
+    const k = u < v ? `${u}:${v}` : `${v}:${u}`;
+    if (edgeSet.has(k)) return;
+    edgeSet.add(k);
+    if (!adj.has(u)) adj.set(u, []);
+    if (!adj.has(v)) adj.set(v, []);
+    adj.get(u).push(v);
+    adj.get(v).push(u);
+  }, "addEdge");
+  for (let i = 0; i < snappedSegs.length; i++) {
+    const s = snappedSegs[i];
+    const a = nodes[s.u];
+    const b = nodes[s.v];
+    const ts = [...splits.get(i)].sort((x, y) => x - y);
+    const dedupTs = [];
+    for (const t of ts) {
+      if (!dedupTs.length || t - dedupTs[dedupTs.length - 1] > 1e-4) dedupTs.push(t);
+    }
+    for (let k = 0; k + 1 < dedupTs.length; k++) {
+      const t0 = dedupTs[k];
+      const t1 = dedupTs[k + 1];
+      const u = t0 === 0 ? s.u : snapNode({ x: a.x + (b.x - a.x) * t0, y: a.y + (b.y - a.y) * t0 });
+      const v = t1 === 1 ? s.v : snapNode({ x: a.x + (b.x - a.x) * t1, y: a.y + (b.y - a.y) * t1 });
+      addEdge(u, v);
+    }
+  }
+  const sortedAdj = /* @__PURE__ */ new Map();
+  for (const [u, nbrs] of adj.entries()) {
+    const pu = nodes[u];
+    const sorted = [...nbrs].sort((a, b) => {
+      const pa = nodes[a];
+      const pb = nodes[b];
+      return Math.atan2(pa.y - pu.y, pa.x - pu.x) - Math.atan2(pb.y - pu.y, pb.x - pu.x);
+    });
+    sortedAdj.set(u, sorted);
+  }
+  const visitedHalf = /* @__PURE__ */ new Set();
+  const faces = [];
+  for (const [u, nbrs] of sortedAdj.entries()) {
+    for (const v of nbrs) {
+      const startKey = `${u}->${v}`;
+      if (visitedHalf.has(startKey)) continue;
+      const ring2 = [u];
+      let currU = u;
+      let currV = v;
+      let guard = 0;
+      let closedLoop = false;
+      while (guard < 500) {
+        guard++;
+        visitedHalf.add(`${currU}->${currV}`);
+        if (currV === u) {
+          closedLoop = true;
+          break;
+        }
+        ring2.push(currV);
+        const list2 = sortedAdj.get(currV);
+        if (!list2 || list2.length === 0) break;
+        const backIdx = list2.indexOf(currU);
+        if (backIdx < 0) break;
+        const nextIdx = (backIdx - 1 + list2.length) % list2.length;
+        currU = currV;
+        currV = list2[nextIdx];
+      }
+      if (!closedLoop || ring2.length < 3) continue;
+      const poly = { points: ring2.map((idx) => nodes[idx]) };
+      const signed = polygonSignedArea(poly);
+      if (signed > 12e5) {
+        faces.push(poly);
+      }
+    }
+  }
+  const cleaned = [];
+  const sortedFaces = [...faces].sort((a, b) => polygonArea2(a) - polygonArea2(b));
+  for (const f of sortedFaces) {
+    const fArea = polygonArea2(f);
+    const enclosedOther = cleaned.some(
+      (other) => polygonIntersectionArea(f, other) > polygonArea2(other) * 0.85 && fArea > polygonArea2(other) * 1.15
+    );
+    if (!enclosedOther) cleaned.push(f);
+  }
+  return cleaned;
+}
+__name(extractPlanarRoomPolygons, "extractPlanarRoomPolygons");
+function extractOuterPlotPolygonWithOffset(doc, selectedLayers) {
+  const allowed = selectedLayers && selectedLayers.length > 0 ? new Set(selectedLayers) : null;
+  const filtered = doc.polylines.filter((pl) => !allowed || allowed.has(pl.layer));
+  if (filtered.length === 0) {
+    throw new CadImportError("NO_SELECTED_GEOMETRY", "No entities remain after layer filtering.", 400);
+  }
+  const boundaryLayerPolys = filtered.filter((pl) => /plot|site|bound|survey|parcel|lot|prop/i.test(pl.layer));
+  const pool = boundaryLayerPolys.length > 0 ? boundaryLayerPolys : filtered;
+  let bestPoly = null;
+  let bestArea = 0;
+  for (const pl of pool) {
+    if (pl.closed && pl.points.length >= 3) {
+      const poly = { points: pl.points };
+      const a = polygonArea2(poly);
+      if (a > bestArea) {
+        bestArea = a;
+        bestPoly = poly;
+      }
+    }
+  }
+  const faces = extractPlanarRoomPolygons(pool, 25);
+  for (const face of faces) {
+    const a = polygonArea2(face);
+    if (a > bestArea) {
+      bestArea = a;
+      bestPoly = face;
+    }
+  }
+  if (!bestPoly) {
+    const allFaces = extractPlanarRoomPolygons(filtered, 25);
+    for (const face of allFaces) {
+      const a = polygonArea2(face);
+      if (a > bestArea) {
+        bestArea = a;
+        bestPoly = face;
+      }
+    }
+  }
+  if (!bestPoly || bestArea < 25e6) {
+    throw new CadImportError(
+      "NO_CLOSED_PLOT_BOUNDARY",
+      "Could not locate a closed site boundary polygon (>= 25 m\xB2) in the selected CAD layers. Verify units (mm/m/ft) or select the site boundary layer.",
+      400
+    );
+  }
+  const pts = polygonSignedArea(bestPoly) < 0 ? [...bestPoly.points].reverse() : [...bestPoly.points];
+  const minX = Math.min(...pts.map((p) => p.x));
+  const minY = Math.min(...pts.map((p) => p.y));
+  return {
+    polygon: {
+      points: pts.map((p) => ({ x: round2(p.x - minX), y: round2(p.y - minY) }))
+    },
+    offset: { x: minX, y: minY }
+  };
+}
+__name(extractOuterPlotPolygonWithOffset, "extractOuterPlotPolygonWithOffset");
+function buildSourceCadUnderlay(doc, importMode, selectedLayers, offset) {
+  const allowed = selectedLayers && selectedLayers.length > 0 ? new Set(selectedLayers) : null;
+  const dx = offset?.x ?? 0;
+  const dy = offset?.y ?? 0;
+  const kept = doc.polylines.filter((pl) => !allowed || allowed.has(pl.layer)).slice(0, 600).map((pl) => ({
+    layer: pl.layer,
+    closed: pl.closed,
+    points: pl.points.map((p) => ({ x: round2(p.x - dx), y: round2(p.y - dy) }))
+  }));
+  return {
+    fileName: doc.fileName,
+    format: doc.format,
+    detectedUnit: doc.appliedUnit,
+    importMode,
+    layers: [...new Set(kept.map((k) => k.layer))],
+    polylines: kept,
+    ...doc.pdfDataUrl ? { pdfDataUrl: doc.pdfDataUrl } : {},
+    ...doc.mmPerPixel ? { mmPerPixel: doc.mmPerPixel } : {}
+  };
+}
+__name(buildSourceCadUnderlay, "buildSourceCadUnderlay");
+function importPlotBoundaryFromCad(doc, req) {
+  const { polygon: poly, offset: offsetPt } = extractOuterPlotPolygonWithOffset(doc, req.selectedLayers);
+  const pts = poly.points;
+  const areaMm2 = round2(polygonArea2(poly));
+  let perimeterMm = 0;
+  const edgeLengthsMm = [];
+  const cornerAnglesDeg = [];
+  for (let i = 0; i < pts.length; i++) {
+    const prev = pts[(i - 1 + pts.length) % pts.length];
+    const curr = pts[i];
+    const next = pts[(i + 1) % pts.length];
+    const len = Math.hypot(next.x - curr.x, next.y - curr.y);
+    edgeLengthsMm.push(round2(len));
+    perimeterMm += len;
+    const v1x = prev.x - curr.x;
+    const v1y = prev.y - curr.y;
+    const v2x = next.x - curr.x;
+    const v2y = next.y - curr.y;
+    const dot2 = v1x * v2x + v1y * v2y;
+    const m = Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y);
+    const angle = m > 1e-6 ? Math.acos(Math.max(-1, Math.min(1, dot2 / m))) * 180 / Math.PI : 90;
+    cornerAnglesDeg.push(round2(angle));
+  }
+  const setbacks = req.setbacksMm ?? { front: 4500, rear: 3e3, left: 3e3, right: 3e3 };
+  const { buildablePolygon, inscribedEnvelope } = computeIrregularPlotInscribedEnvelope(
+    poly,
+    req.edgeSetbacksMm,
+    setbacks,
+    req.roadEdgeIndex
+  );
+  const bbox = polygonBoundingBox(poly);
+  const plotBoundary = {
+    polygon: poly,
+    areaMm2,
+    perimeterMm: round2(perimeterMm),
+    roadEdgeIndex: req.roadEdgeIndex ?? 0,
+    edgeSetbacksMm: req.edgeSetbacksMm,
+    edgeLengthsMm,
+    cornerAnglesDeg,
+    buildablePolygon,
+    inscribedEnvelopeMm: inscribedEnvelope,
+    sourceFileName: doc.fileName,
+    sourceFormat: doc.format
+  };
+  const sourceCadUnderlay = buildSourceCadUnderlay(doc, "plot_boundary", req.selectedLayers, offsetPt);
+  let building;
+  if (req.generateBuilding !== false) {
+    const flatsPerFloor = req.flatsPerFloor ?? (inscribedEnvelope.w >= 2e4 && inscribedEnvelope.h >= 16e3 ? 4 : 2);
+    const requestedShape = req.buildingMassingShape ?? "IRREGULAR_ANGLED_PLOT";
+    const config = {
+      projectId: `cad-plot-${(0, import_node_crypto16.randomUUID)().slice(0, 8)}`,
+      projectName: req.projectName || `CAD Site \u2014 ${import_node_path7.default.parse(doc.fileName).name}`,
+      buildingMassingShape: requestedShape,
+      planCategory: "IRREGULAR_PLOT_CUSTOM",
+      structuralLayoutMode: "PROVISIONAL_EXISTING_PROFILE",
+      irregularPlotBoundary: plotBoundary,
+      plotWidthMm: Math.round(bbox.width),
+      plotDepthMm: Math.round(bbox.height),
+      roadWidthMm: req.roadWidthMm ?? 12e3,
+      roadAccessSides: [Direction.South],
+      lotAllotmentMode: "STATUTORY_SETBACK_100_PERCENT",
+      jurisdiction: "pune_pmc",
+      verticalStackType: req.verticalStackType ?? "STILT_PLUS_N",
+      numTypicalFloors: Math.max(1, Math.min(20, req.numTypicalFloors ?? 4)),
+      floorToFloorHeightMm: req.floorToFloorHeightMm ?? 3150,
+      stiltHeightMm: 3150,
+      flatsPerFloor,
+      units: Array.from({ length: flatsPerFloor }, (_, idx) => ({
+        unitIndex: idx + 1,
+        bhkType: "2BHK",
+        hasUtilityBalcony: true
+      })),
+      setbacksMm: setbacks,
+      siteAmenities: {
+        securityCabin: true,
+        landscapeGardenRos: true,
+        childrenPlayTotLot: true,
+        seniorCitizenSitout: false,
+        transformerDgYard: true,
+        ugwtPumpRoom: true,
+        stpPlant: false,
+        owcWasteYard: false,
+        rainwaterHarvestingPits: true,
+        evChargingBays: true
+      },
+      stiltAmenities: {
+        grandEntranceLobby: true,
+        societyOffice: false,
+        fitnessGymnasium: false,
+        multipurposeHall: false,
+        meterBmsRoom: true,
+        driverStaffToilet: true
+      },
+      terraceAmenities: {
+        stairMumtyHeadroom: true,
+        liftMachineRoom: true,
+        overheadWaterTank: true,
+        solarPvArray: true,
+        terraceYogaDeck: false
+      },
+      parkingMode: "STILT_AND_SURFACE"
+    };
+    const solved = solveMultiSheetApartmentProject(config);
+    building = {
+      ...solved.building,
+      metadata: {
+        ...solved.building.metadata,
+        irregularPlotBoundary: plotBoundary,
+        sourceCadUnderlay
+      }
+    };
+  }
+  return {
+    mode: "plot_boundary",
+    plotBoundary,
+    areaM2: round2(areaMm2 / 1e6),
+    areaSqFt: round2(areaMm2 / 1e6 * 10.7639),
+    perimeterM: round2(perimeterMm / 1e3),
+    sourceCadUnderlay,
+    building
+  };
+}
+__name(importPlotBoundaryFromCad, "importPlotBoundaryFromCad");
+function inferRoomTypeFromLabel(label) {
+  const s = label.toLowerCase();
+  if (/\bots\b|duct|open\s*to\s*sky|light\s*well|void/i.test(s)) {
+    return { type: RoomType.OTS, spaceUse: "VOID", architecturalRole: "OPEN_TO_SKY_VOID", openToSky: true };
+  }
+  if (/shaft|plumb|elec/i.test(s)) {
+    return { type: RoomType.ServiceShaft, spaceUse: "SERVICE", architecturalRole: "SERVICE_SHAFT" };
+  }
+  if (/stair|st\.?\s*case|steps/i.test(s)) {
+    return { type: RoomType.Staircase, spaceUse: "CORE", architecturalRole: "STAIR_ENCLOSURE" };
+  }
+  if (/lift|elev/i.test(s)) {
+    return { type: RoomType.Lift, spaceUse: "CORE", architecturalRole: "LIFT_SHAFT" };
+  }
+  if (/corridor|lobby|passage|hallway/i.test(s)) {
+    return { type: RoomType.Corridor, spaceUse: /common|lobby/i.test(s) ? "COMMON" : "UNIT", architecturalRole: "OPEN_CIRCULATION" };
+  }
+  if (/foyer|entry|vestibule/i.test(s)) {
+    return { type: RoomType.Foyer, spaceUse: "UNIT", architecturalRole: "OPEN_CIRCULATION" };
+  }
+  if (/balc|terrace|sitout|deck|verand/i.test(s)) {
+    return { type: RoomType.Balcony, spaceUse: "OUTDOOR", architecturalRole: "BALCONY_SLAB" };
+  }
+  if (/util|dry\s*balc|wash/i.test(s)) {
+    return { type: RoomType.Utility, spaceUse: "UNIT", architecturalRole: "ENCLOSED_SERVICE" };
+  }
+  if (/toilet|bath|wc|w\.c\.|powder|lav/i.test(s)) {
+    return { type: RoomType.Bathroom, spaceUse: "UNIT", architecturalRole: "ENCLOSED_SERVICE" };
+  }
+  if (/kitchen|kitch|pantry/i.test(s)) {
+    return { type: RoomType.Kitchen, spaceUse: "UNIT", architecturalRole: "ENCLOSED_SERVICE" };
+  }
+  if (/dining|din\b/i.test(s)) {
+    return { type: RoomType.Dining, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+  }
+  if (/living|hall|lounge|drawing/i.test(s)) {
+    return { type: RoomType.Living, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+  }
+  if (/bed|master|m\.?\s*bed|guest|study|kids/i.test(s)) {
+    return { type: RoomType.Bedroom, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+  }
+  return { type: RoomType.Bedroom, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+}
+__name(inferRoomTypeFromLabel, "inferRoomTypeFromLabel");
+function inferRoomTypeFromGeometry(areaM2, aspect, idx) {
+  if (areaM2 < 4.5) {
+    return { name: `Bathroom ${idx + 1}`, type: RoomType.Bathroom, spaceUse: "UNIT", architecturalRole: "ENCLOSED_SERVICE" };
+  }
+  if (aspect > 2.6 && areaM2 < 10) {
+    return { name: `Passage ${idx + 1}`, type: RoomType.Corridor, spaceUse: "UNIT", architecturalRole: "OPEN_CIRCULATION" };
+  }
+  if (areaM2 >= 18) {
+    return { name: `Living Hall ${idx + 1}`, type: RoomType.Living, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+  }
+  if (areaM2 < 9.5) {
+    return { name: `Kitchen ${idx + 1}`, type: RoomType.Kitchen, spaceUse: "UNIT", architecturalRole: "ENCLOSED_SERVICE" };
+  }
+  return { name: `Bedroom ${idx + 1}`, type: RoomType.Bedroom, spaceUse: "UNIT", architecturalRole: "ENCLOSED_HABITABLE" };
+}
+__name(inferRoomTypeFromGeometry, "inferRoomTypeFromGeometry");
+function pointToSegmentDist(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len <= 1e-6) return { dist: Math.hypot(p.x - a.x, p.y - a.y), along: 0, len: 0, closest: a };
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (len * len)));
+  const closest = { x: a.x + dx * t, y: a.y + dy * t };
+  return { dist: Math.hypot(p.x - closest.x, p.y - closest.y), along: t * len, len, closest };
+}
+__name(pointToSegmentDist, "pointToSegmentDist");
+function importFloorPlanLayoutFromCad(doc, req) {
+  const allowed = req.selectedLayers && req.selectedLayers.length > 0 ? new Set(req.selectedLayers) : new Set(doc.layers.filter((l) => l.defaultSelected).map((l) => l.name));
+  const wallPolys = doc.polylines.filter((pl) => {
+    if (!allowed.has(pl.layer)) return false;
+    if (/door|wind|glaz|furn|hatch|dim|text|anno/i.test(pl.layer)) return false;
+    return true;
+  });
+  const effectiveWallPolys = wallPolys.length > 0 ? wallPolys : doc.polylines.filter((pl) => allowed.has(pl.layer));
+  const doorMarkers = [];
+  const windowMarkers = [];
+  for (const pl of doc.polylines) {
+    if (!allowed.has(pl.layer)) continue;
+    const isDoorLayer = /door|dr\b/i.test(pl.layer);
+    const isWinLayer = /wind|glaz|vent/i.test(pl.layer);
+    if (!isDoorLayer && !isWinLayer) continue;
+    const bbox = polygonBoundingBox({ points: pl.points });
+    const pos = { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+    const span = Math.max(bbox.width, bbox.height);
+    if (isDoorLayer) {
+      doorMarkers.push({ pos, widthMm: Math.max(750, Math.min(1200, Math.round(span || 900))) });
+    } else if (isWinLayer) {
+      windowMarkers.push({ pos, widthMm: Math.max(600, Math.min(1800, Math.round(span || 1200))) });
+    }
+  }
+  for (const ins of doc.inserts) {
+    if (!allowed.has(ins.layer)) continue;
+    const tag = `${ins.layer} ${ins.blockName}`;
+    if (/door|dr\b|^d\d/i.test(tag)) {
+      doorMarkers.push({ pos: ins.position, widthMm: Math.max(750, Math.min(1200, ins.widthHintMm ?? 900)) });
+    } else if (/wind|glaz|^w\d/i.test(tag)) {
+      windowMarkers.push({ pos: ins.position, widthMm: Math.max(600, Math.min(1800, ins.widthHintMm ?? 1200)) });
+    }
+  }
+  let roomPolys = extractPlanarRoomPolygons(effectiveWallPolys, 15);
+  if (roomPolys.length === 0) {
+    const closedCandidates = effectiveWallPolys.filter((pl) => pl.closed && pl.points.length >= 3).map((pl) => ({ points: polygonSignedArea({ points: pl.points }) < 0 ? [...pl.points].reverse() : [...pl.points] })).filter((poly) => polygonArea2(poly) >= 12e5).sort((a, b) => polygonArea2(a) - polygonArea2(b));
+    for (const cand of closedCandidates) {
+      const overlaps = roomPolys.some((other) => polygonIntersectionArea(cand, other) > polygonArea2(other) * 0.5);
+      if (!overlaps) roomPolys.push(cand);
+    }
+  }
+  if (roomPolys.length === 0) {
+    throw new CadImportError(
+      "NO_CLOSED_ROOMS",
+      "No closed room loops (>= 1.2 m\xB2) could be reconstructed from the selected CAD layers. Ensure wall segments meet within 15 mm and check drawing units (mm/m/ft).",
+      400
+    );
+  }
+  const allPts = roomPolys.flatMap((p) => p.points);
+  const rMinX = Math.min(...allPts.map((p) => p.x));
+  const rMinY = Math.min(...allPts.map((p) => p.y));
+  const rMaxX = Math.max(...allPts.map((p) => p.x));
+  const rMaxY = Math.max(...allPts.map((p) => p.y));
+  const marginX = 3e3;
+  const marginY = 3e3;
+  const shiftPt = /* @__PURE__ */ __name((p) => ({
+    x: round2(p.x - rMinX + marginX),
+    y: round2(p.y - rMinY + marginY)
+  }), "shiftPt");
+  roomPolys = roomPolys.map((poly) => ({ points: poly.points.map(shiftPt) }));
+  const shiftedTexts = doc.texts.map((t) => ({ ...t, position: shiftPt(t.position) }));
+  const shiftedDoorMarkers = doorMarkers.map((m) => ({ ...m, pos: shiftPt(m.pos) }));
+  const shiftedWinMarkers = windowMarkers.map((m) => ({ ...m, pos: shiftPt(m.pos) }));
+  const projectId = `cad-plan-${(0, import_node_crypto16.randomUUID)().slice(0, 8)}`;
+  const buildingId = `bldg-${projectId}`;
+  const projectName = req.projectName || `Imported CAD \u2014 ${import_node_path7.default.parse(doc.fileName).name}`;
+  const floorHeight = req.floorToFloorHeightMm ?? 3150;
+  const numTypicalFloors = Math.max(1, Math.min(20, req.numTypicalFloors ?? 4));
+  const stackType = req.verticalStackType ?? (req.redevelopmentBase ? "STILT_PLUS_N" : "G_PLUS_N");
+  const usedTextIdx = /* @__PURE__ */ new Set();
+  const baseFloorId = stackType === "STILT_PLUS_N" ? "floor_typical_01" : "floor_level_00";
+  const unitSet = /* @__PURE__ */ new Set();
+  const templateRooms = roomPolys.map((poly, idx) => {
+    const bbox = polygonBoundingBox(poly);
+    const area2 = round2(polygonArea2(poly));
+    const areaM2 = area2 / 1e6;
+    const aspect = Math.max(bbox.width, bbox.height) / Math.max(1, Math.min(bbox.width, bbox.height));
+    const centroid = polygonCentroid(poly);
+    let matchIdx = shiftedTexts.findIndex((t, ti) => !usedTextIdx.has(ti) && pointInPolygon(t.position, poly));
+    if (matchIdx < 0) {
+      let bestDist = 400;
+      shiftedTexts.forEach((t, ti) => {
+        if (usedTextIdx.has(ti)) return;
+        const d = Math.hypot(t.position.x - centroid.x, t.position.y - centroid.y);
+        if (d < bestDist) {
+          bestDist = d;
+          matchIdx = ti;
+        }
+      });
+    }
+    let name;
+    let type;
+    let spaceUse;
+    let architecturalRole;
+    let openToSky = false;
+    if (matchIdx >= 0) {
+      usedTextIdx.add(matchIdx);
+      const label = shiftedTexts[matchIdx].text;
+      const inferred = inferRoomTypeFromLabel(label);
+      name = label;
+      type = inferred.type;
+      spaceUse = inferred.spaceUse;
+      architecturalRole = inferred.architecturalRole;
+      openToSky = Boolean(inferred.openToSky);
+    } else {
+      const fallback = inferRoomTypeFromGeometry(areaM2, aspect, idx);
+      name = fallback.name;
+      type = fallback.type;
+      spaceUse = fallback.spaceUse;
+      architecturalRole = fallback.architecturalRole;
+    }
+    let unitId;
+    if (spaceUse === "UNIT" || spaceUse === "OUTDOOR") {
+      const m = name.match(/(?:flat|unit|apt)[\s#-]*(\d+|[a-z])\b/i);
+      if (m) {
+        const raw = m[1];
+        const num = Number.parseInt(raw, 10);
+        const unitNum = Number.isFinite(num) ? num >= 100 ? num % 100 : num : raw.toLowerCase().charCodeAt(0) - 96;
+        unitId = `flat_${String(Math.max(1, unitNum)).padStart(2, "0")}`;
+      } else {
+        unitId = "flat_01";
+      }
+      unitSet.add(unitId);
+    }
+    const tags = ["imported:cad"];
+    if (type === RoomType.OTS) tags.push("shaft:ots", "shaft:interflat");
+    if (type === RoomType.Staircase) tags.push("core:stair");
+    if (type === RoomType.Lift) tags.push("core:lift");
+    return {
+      id: `${baseFloorId}::cad-room:${idx + 1}`,
+      floorId: baseFloorId,
+      type,
+      name,
+      x: round2(bbox.x),
+      y: round2(bbox.y),
+      width: round2(bbox.width),
+      height: round2(bbox.height),
+      rotation: 0,
+      boundary: poly,
+      area: area2,
+      priority: 1,
+      adjacencyRequirements: [],
+      daylightRequirement: DaylightLevel.Medium,
+      privacyRequirement: type === RoomType.Bedroom || type === RoomType.Bathroom ? PrivacyLevel.High : PrivacyLevel.Low,
+      ventilationRequired: type !== RoomType.Corridor && type !== RoomType.Foyer,
+      isFixed: false,
+      unitId,
+      spaceUse,
+      architecturalRole,
+      openToSky,
+      tags
+    };
+  });
+  const provisionalBbox = {
+    points: [
+      { x: marginX, y: marginY },
+      { x: round2(rMaxX - rMinX + marginX), y: marginY },
+      { x: round2(rMaxX - rMinX + marginX), y: round2(rMaxY - rMinY + marginY) },
+      { x: marginX, y: round2(rMaxY - rMinY + marginY) }
+    ]
+  };
+  const rawWalls = generateApartmentWalls(templateRooms, baseFloorId, provisionalBbox, true);
+  let floorBoundary;
+  try {
+    floorBoundary = apartmentFloorOutline(rawWalls);
+  } catch {
+    floorBoundary = provisionalBbox;
+  }
+  const doors = [];
+  const usedDoorWalls = /* @__PURE__ */ new Set();
+  for (let mIdx = 0; mIdx < shiftedDoorMarkers.length; mIdx++) {
+    const marker = shiftedDoorMarkers[mIdx];
+    let bestWall;
+    let bestHit;
+    for (const w of rawWalls) {
+      if (w.boundaryRole === "PARAPET" || w.boundaryRole === "OPEN_BOUNDARY") continue;
+      const hit = pointToSegmentDist(marker.pos, w.startPoint, w.endPoint);
+      if (hit.len >= 650 && hit.dist <= 450 && (!bestHit || hit.dist < bestHit.dist)) {
+        bestWall = w;
+        bestHit = hit;
+      }
+    }
+    if (!bestWall || !bestHit || usedDoorWalls.has(bestWall.id)) continue;
+    const width = Math.min(marker.widthMm, Math.floor(bestHit.len - 200));
+    if (width < 650) continue;
+    const connectsRooms = bestWall.roomIds.length >= 2 ? [bestWall.roomIds[0], bestWall.roomIds[1]] : [bestWall.roomIds[0], "__outside__"];
+    usedDoorWalls.add(bestWall.id);
+    doors.push({
+      id: `${baseFloorId}::cad-door:${mIdx + 1}`,
+      floorId: baseFloorId,
+      wallId: bestWall.id,
+      position: bestHit.closest,
+      width,
+      height: 2100,
+      type: DoorType.Single,
+      swingDirection: SwingDirection.Inward,
+      connectsRooms,
+      openingGeometryVersion: 1,
+      positionReference: "CENTER"
+    });
+  }
+  const connectedPairs = new Set(doors.map((d) => [...d.connectsRooms].sort().join("|")));
+  for (const w of rawWalls) {
+    if (w.roomIds.length !== 2 || usedDoorWalls.has(w.id)) continue;
+    if (w.boundaryRole === "PARAPET" || w.boundaryRole === "OPEN_BOUNDARY") continue;
+    const rA = templateRooms.find((r) => r.id === w.roomIds[0]);
+    const rB = templateRooms.find((r) => r.id === w.roomIds[1]);
+    if (!rA || !rB) continue;
+    if (rA.openToSky || rB.openToSky || rA.type === RoomType.ServiceShaft || rB.type === RoomType.ServiceShaft) continue;
+    if (rA.unitId && rB.unitId && rA.unitId !== rB.unitId) continue;
+    const pairKey = [rA.id, rB.id].sort().join("|");
+    if (connectedPairs.has(pairKey)) continue;
+    const len = Math.hypot(w.endPoint.x - w.startPoint.x, w.endPoint.y - w.startPoint.y);
+    if (len < 950) continue;
+    const isBath2 = rA.type === RoomType.Bathroom || rB.type === RoomType.Bathroom || rA.type === RoomType.Utility || rB.type === RoomType.Utility;
+    const isEntry = !rA.unitId || !rB.unitId;
+    const doorW = Math.min(isEntry ? 1050 : isBath2 ? 750 : 900, Math.floor(len - 200));
+    if (doorW < 700) continue;
+    connectedPairs.add(pairKey);
+    usedDoorWalls.add(w.id);
+    doors.push({
+      id: `${baseFloorId}::cad-auto-door:${doors.length + 1}`,
+      floorId: baseFloorId,
+      wallId: w.id,
+      position: { x: (w.startPoint.x + w.endPoint.x) / 2, y: (w.startPoint.y + w.endPoint.y) / 2 },
+      width: doorW,
+      height: 2100,
+      type: DoorType.Single,
+      swingDirection: SwingDirection.Inward,
+      connectsRooms: [rA.id, rB.id],
+      openingGeometryVersion: 1,
+      positionReference: "CENTER"
+    });
+  }
+  const windows = [];
+  const roomsWithWindows = /* @__PURE__ */ new Set();
+  const usedWinWalls = /* @__PURE__ */ new Set();
+  for (let wIdx = 0; wIdx < shiftedWinMarkers.length; wIdx++) {
+    const marker = shiftedWinMarkers[wIdx];
+    let bestWall;
+    let bestHit;
+    for (const w of rawWalls) {
+      if (w.wallUse !== "EXTERNAL" && w.wallUse !== "SHAFT") continue;
+      if (w.boundaryRole === "PARAPET" || w.boundaryRole === "OPEN_BOUNDARY") continue;
+      const hit = pointToSegmentDist(marker.pos, w.startPoint, w.endPoint);
+      if (hit.len >= 650 && hit.dist <= 450 && (!bestHit || hit.dist < bestHit.dist)) {
+        bestWall = w;
+        bestHit = hit;
+      }
+    }
+    if (!bestWall || !bestHit || usedDoorWalls.has(bestWall.id)) continue;
+    const ownerRoom = templateRooms.find((r) => bestWall.roomIds.includes(r.id) && !r.openToSky);
+    if (!ownerRoom) continue;
+    const width = Math.min(marker.widthMm, Math.floor(bestHit.len - 200));
+    if (width < 450) continue;
+    usedWinWalls.add(bestWall.id);
+    roomsWithWindows.add(ownerRoom.id);
+    windows.push({
+      id: `${baseFloorId}::cad-win:${wIdx + 1}`,
+      floorId: baseFloorId,
+      wallId: bestWall.id,
+      roomId: ownerRoom.id,
+      position: bestHit.closest,
+      width,
+      height: ownerRoom.type === RoomType.Bathroom ? 650 : 1500,
+      sillHeight: ownerRoom.type === RoomType.Bathroom ? 1500 : 900,
+      type: ownerRoom.type === RoomType.Bathroom ? WindowType.Ventilator : WindowType.Sliding,
+      openingGeometryVersion: 1,
+      positionReference: "CENTER"
+    });
+  }
+  for (const room of templateRooms) {
+    if (roomsWithWindows.has(room.id) || room.openToSky || room.spaceUse === "OUTDOOR" || room.type === RoomType.ServiceShaft) {
+      continue;
+    }
+    const extWall = rawWalls.filter(
+      (w) => w.roomIds.includes(room.id) && (w.wallUse === "EXTERNAL" || w.wallUse === "SHAFT") && w.boundaryRole !== "PARAPET" && w.boundaryRole !== "OPEN_BOUNDARY" && !usedDoorWalls.has(w.id) && !usedWinWalls.has(w.id)
+    ).sort(
+      (a, b) => Math.hypot(b.endPoint.x - b.startPoint.x, b.endPoint.y - b.startPoint.y) - Math.hypot(a.endPoint.x - a.startPoint.x, a.endPoint.y - a.startPoint.y)
+    )[0];
+    if (!extWall) continue;
+    const len = Math.hypot(extWall.endPoint.x - extWall.startPoint.x, extWall.endPoint.y - extWall.startPoint.y);
+    if (len < 700) continue;
+    const isBath2 = room.type === RoomType.Bathroom;
+    const width = Math.min(isBath2 ? 600 : 1500, Math.floor(len - 200));
+    if (width < 450) continue;
+    usedWinWalls.add(extWall.id);
+    roomsWithWindows.add(room.id);
+    windows.push({
+      id: `${baseFloorId}::cad-auto-win:${windows.length + 1}`,
+      floorId: baseFloorId,
+      wallId: extWall.id,
+      roomId: room.id,
+      position: { x: (extWall.startPoint.x + extWall.endPoint.x) / 2, y: (extWall.startPoint.y + extWall.endPoint.y) / 2 },
+      width,
+      height: isBath2 ? 650 : 1500,
+      sillHeight: isBath2 ? 1500 : 900,
+      type: isBath2 ? WindowType.Ventilator : WindowType.Sliding,
+      openingGeometryVersion: 1,
+      positionReference: "CENTER"
+    });
+  }
+  const unitIds = [...unitSet].sort();
+  const apartmentUnits = unitIds.map((uid, uIdx) => {
+    const uRooms = templateRooms.filter((r) => r.unitId === uid);
+    const bedCount = uRooms.filter((r) => r.type === RoomType.Bedroom).length;
+    const bhkType = bedCount >= 4 ? "4BHK" : bedCount === 3 ? "3BHK" : bedCount === 1 ? "1BHK" : "2BHK";
+    let uBoundary = floorBoundary;
+    try {
+      const uWalls = generateApartmentWalls(uRooms, baseFloorId, floorBoundary, true);
+      uBoundary = apartmentFloorOutline(uWalls);
+    } catch {
+      uBoundary = floorBoundary;
+    }
+    return {
+      id: uid,
+      unitType: bhkType,
+      unitIndex: uIdx + 1,
+      flatNumber: `${101 + uIdx}`,
+      bhkType,
+      name: `Flat ${101 + uIdx}`,
+      boundary: uBoundary
+    };
+  });
+  const baseFloor = fitFloorOpeningsInsideWalls({
+    id: baseFloorId,
+    buildingId,
+    level: stackType === "STILT_PLUS_N" ? 1 : 0,
+    elevationMm: stackType === "STILT_PLUS_N" ? floorHeight : 0,
+    name: stackType === "STILT_PLUS_N" ? "1st Floor Plan (Imported CAD)" : "Ground Floor Plan (Imported CAD)",
+    floorUse: "RESIDENTIAL",
+    floorHeight,
+    boundary: floorBoundary,
+    rooms: templateRooms,
+    walls: rawWalls,
+    doors,
+    windows,
+    stairs: [],
+    columns: [],
+    apartmentUnits: apartmentUnits.map((u) => ({ id: u.id, boundary: u.boundary, unitType: u.unitType }))
+  });
+  const floors = [];
+  if (stackType === "STILT_PLUS_N") {
+    const stiltId = "floor_stilt_00";
+    const stiltRoom = {
+      id: `${stiltId}::stilt_parking`,
+      floorId: stiltId,
+      type: RoomType.Parking,
+      name: "Stilt Parking & Entrance Lobby",
+      x: marginX,
+      y: marginY,
+      width: round2(rMaxX - rMinX),
+      height: round2(rMaxY - rMinY),
+      rotation: 0,
+      boundary: floorBoundary,
+      area: round2(polygonArea2(floorBoundary)),
+      priority: 1,
+      adjacencyRequirements: [],
+      daylightRequirement: DaylightLevel.Low,
+      privacyRequirement: PrivacyLevel.None,
+      ventilationRequired: true,
+      isFixed: false,
+      spaceUse: "COMMON",
+      architecturalRole: "PARKING_AREA",
+      tags: ["stilt", "imported:cad"]
+    };
+    const stiltWalls = generateApartmentWalls([stiltRoom], stiltId, floorBoundary, true);
+    floors.push({
+      id: stiltId,
+      buildingId,
+      level: 0,
+      elevationMm: 0,
+      name: "Stilt Parking Level (Imported CAD Base)",
+      floorUse: "STILT_PARKING",
+      floorHeight,
+      boundary: floorBoundary,
+      rooms: [stiltRoom],
+      walls: stiltWalls,
+      doors: [],
+      windows: [],
+      stairs: [],
+      columns: []
+    });
+  }
+  for (let idx = 0; idx < numTypicalFloors; idx++) {
+    const level = stackType === "STILT_PLUS_N" ? idx + 1 : idx;
+    const fId = stackType === "STILT_PLUS_N" ? `floor_typical_${String(idx + 1).padStart(2, "0")}` : `floor_level_${String(idx).padStart(2, "0")}`;
+    const remapId = /* @__PURE__ */ __name((val) => val.replace(baseFloorId, fId), "remapId");
+    const ordinal = level === 0 ? "Ground" : level === 1 ? "1st" : level === 2 ? "2nd" : level === 3 ? "3rd" : `${level}th`;
+    const cloned = {
+      ...baseFloor,
+      id: fId,
+      level,
+      elevationMm: level * floorHeight,
+      name: `${ordinal} Floor Plan (Imported CAD)`,
+      rooms: baseFloor.rooms.map((r) => ({ ...r, id: remapId(r.id), floorId: fId })),
+      walls: baseFloor.walls.map((w) => ({
+        ...w,
+        id: remapId(w.id),
+        floorId: fId,
+        roomIds: w.roomIds.map(remapId),
+        leftRoomId: w.leftRoomId ? remapId(w.leftRoomId) : void 0,
+        rightRoomId: w.rightRoomId ? remapId(w.rightRoomId) : void 0
+      })),
+      doors: baseFloor.doors.map((d) => ({
+        ...d,
+        id: remapId(d.id),
+        floorId: fId,
+        wallId: remapId(d.wallId),
+        connectsRooms: [
+          remapId(d.connectsRooms[0]),
+          d.connectsRooms[1].startsWith("__") ? d.connectsRooms[1] : remapId(d.connectsRooms[1])
+        ]
+      })),
+      windows: baseFloor.windows.map((w) => ({
+        ...w,
+        id: remapId(w.id),
+        floorId: fId,
+        wallId: remapId(w.wallId),
+        roomId: remapId(w.roomId)
+      })),
+      apartmentUnits: baseFloor.apartmentUnits?.map((u) => ({ ...u }))
+    };
+    floors.push(fitFloorOpeningsInsideWalls(cloned));
+  }
+  const plotW = round2(rMaxX - rMinX + 2 * marginX);
+  const plotD = round2(rMaxY - rMinY + 2 * marginY);
+  const plotBoundary = {
+    points: [
+      { x: 0, y: 0 },
+      { x: plotW, y: 0 },
+      { x: plotW, y: plotD },
+      { x: 0, y: plotD }
+    ]
+  };
+  const sourceCadUnderlay = buildSourceCadUnderlay(doc, "floor_plan", req.selectedLayers, {
+    x: rMinX - marginX,
+    y: rMinY - marginY
+  });
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const rawBuilding = {
+    id: buildingId,
+    projectId,
+    name: projectName,
+    site: {
+      id: `${projectId}_site`,
+      plotBoundary,
+      plotWidth: plotW,
+      plotDepth: plotD,
+      plotArea: round2(plotW * plotD),
+      plotShape: PlotShape.Rectangular,
+      orientation: 0,
+      setbacks: { front: marginY, rear: marginY, left: marginX, right: marginX },
+      accessPoints: [{ id: "acc_main", position: { x: plotW / 2, y: plotD }, width: 4500, direction: Direction.South }],
+      roadFacing: Direction.South,
+      roadWidth: req.roadWidthMm ?? 12e3
+    },
+    floors,
+    metadata: {
+      projectId,
+      description: `Imported directly from ${doc.fileName} (${doc.appliedUnit}, ${templateRooms.length} rooms \xD7 ${numTypicalFloors} residential floors).`,
+      tags: ["apartment", "imported_cad_layout", "canonical_model", "STRUCTURAL_FRAMING_PRELIMINARY"],
+      sourceCadUnderlay,
+      generationBrief: {
+        source: "DETERMINISTIC",
+        units: apartmentUnits.map((u) => ({ unitIndex: u.unitIndex, bhkType: u.bhkType })),
+        buildingMassingShape: "IMPORTED_CAD_LAYOUT",
+        requestedMassingShape: "IMPORTED_CAD_LAYOUT",
+        planCategory: req.redevelopmentBase ? "HIGH_RISE_APARTMENT" : "IRREGULAR_PLOT_CUSTOM",
+        includeWindowChajjas: true
+      }
+    },
+    version: 1,
+    createdAt: now,
+    updatedAt: now
+  };
+  const framedBuilding = synthesizeStructuralFraming(rawBuilding);
+  const compliance = evaluateArchitecturalComplianceScore(framedBuilding);
+  const finalBuilding = {
+    ...framedBuilding,
+    complianceRating: compliance
+  };
+  const repFloor = finalBuilding.floors.find((f) => f.floorUse === "RESIDENTIAL") ?? finalBuilding.floors[0];
+  return {
+    mode: "floor_plan",
+    building: finalBuilding,
+    extractedRoomCount: repFloor.rooms.length,
+    extractedWallCount: repFloor.walls.length,
+    extractedDoorCount: repFloor.doors.length,
+    extractedWindowCount: repFloor.windows.length,
+    structuralColumnsCount: repFloor.columns.length,
+    structuralBeamsCount: repFloor.beams?.length ?? finalBuilding.beams?.length ?? 0,
+    complianceScore: compliance.score,
+    sourceCadUnderlay
+  };
+}
+__name(importFloorPlanLayoutFromCad, "importFloorPlanLayoutFromCad");
+
+// src/routes/cad-import-routes.ts
+async function handleCadImportRoute(request, response2, url, readBody2, sendJson2) {
+  const method = request.method ?? "GET";
+  if (method === "GET" && url.pathname === "/api/v1/import/cad-layout/capabilities") {
+    const accore = resolveLocalAutoCadConsole();
+    sendJson2(response2, 200, {
+      formats: ["dxf", "dwg", "pdf"],
+      dwgNativeConversionAvailable: Boolean(accore),
+      maxFileBytes: 25 * 1024 * 1024
+    });
+    return true;
+  }
+  if (method === "POST" && url.pathname === "/api/v1/import/cad-layout") {
+    const raw = await readBody2(request);
+    let body;
+    try {
+      body = raw.length > 0 ? JSON.parse(raw) : {};
+    } catch {
+      sendJson2(response2, 400, {
+        error: { code: "INVALID_JSON", message: "Request body must be valid JSON." }
+      });
+      return true;
+    }
+    if (!body.fileName || typeof body.fileName !== "string") {
+      sendJson2(response2, 400, {
+        error: { code: "MISSING_FILE_NAME", message: "fileName is required." }
+      });
+      return true;
+    }
+    try {
+      const parsed = await parseUploadedCadFile(body);
+      const action = body.action ?? "preview";
+      if (action === "preview") {
+        sendJson2(response2, 200, {
+          ok: true,
+          preview: {
+            fileName: parsed.fileName,
+            format: parsed.format,
+            detectedUnit: parsed.detectedUnit,
+            appliedUnit: parsed.appliedUnit,
+            scaleToMm: parsed.scaleToMm,
+            boundsMm: parsed.boundsMm,
+            layers: parsed.layers,
+            polylines: parsed.polylines.slice(0, 1200),
+            texts: parsed.texts.slice(0, 300),
+            insertCount: parsed.inserts.length,
+            warnings: parsed.warnings,
+            pdfDataUrl: parsed.pdfDataUrl,
+            mmPerPixel: parsed.mmPerPixel
+          }
+        });
+        return true;
+      }
+      if (action === "import_plot") {
+        const result = importPlotBoundaryFromCad(parsed, body);
+        sendJson2(response2, 200, { ok: true, ...result });
+        return true;
+      }
+      if (action === "import_floor_plan") {
+        const result = importFloorPlanLayoutFromCad(parsed, body);
+        sendJson2(response2, 200, { ok: true, ...result });
+        return true;
+      }
+      sendJson2(response2, 400, {
+        error: { code: "INVALID_ACTION", message: `Unsupported CAD import action "${String(action)}".` }
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof CadImportError) {
+        sendJson2(response2, err.status, {
+          error: { code: err.code, message: err.message }
+        });
+        return true;
+      }
+      const message = err instanceof Error ? err.message : "Unexpected CAD import error.";
+      sendJson2(response2, 500, {
+        error: { code: "CAD_IMPORT_ERROR", message }
+      });
+      return true;
+    }
+  }
+  return false;
+}
+__name(handleCadImportRoute, "handleCadImportRoute");
+
+// src/services/local-project-store.ts
+var import_node_fs7 = __toESM(require("node:fs"), 1);
+var import_node_path8 = __toESM(require("node:path"), 1);
+function sanitizeId(raw) {
+  const cleaned = raw.trim().replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 96);
+  return cleaned || `proj_${Date.now()}`;
+}
+__name(sanitizeId, "sanitizeId");
+function resolveProjectDir(root, rawId) {
+  const projectId = sanitizeId(rawId);
+  const absRoot = import_node_path8.default.resolve(root);
+  const projDir = import_node_path8.default.resolve(absRoot, projectId);
+  if (!projDir.startsWith(absRoot + import_node_path8.default.sep)) {
+    throw new Error(`Invalid local project id "${rawId}".`);
+  }
+  return { projectId, projDir };
+}
+__name(resolveProjectDir, "resolveProjectDir");
+function sanitizeFileName(raw) {
+  const base = import_node_path8.default.basename(raw || "source.dxf");
+  const safe = base.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^\.+/, "").slice(0, 128);
+  return safe || "source.dxf";
+}
+__name(sanitizeFileName, "sanitizeFileName");
+function resolveLocalProjectsRoot() {
+  if (process.env.RH_LOCAL_PROJECTS_DIR) {
+    return import_node_path8.default.resolve(process.env.RH_LOCAL_PROJECTS_DIR);
+  }
+  const cwd = process.cwd();
+  const candidates = [
+    import_node_path8.default.join(cwd, "packages", "backend", "data", "local-projects"),
+    import_node_path8.default.join(cwd, "data", "local-projects")
+  ];
+  const backendDir = import_node_path8.default.join(cwd, "packages", "backend");
+  const root = import_node_fs7.default.existsSync(backendDir) ? candidates[0] : candidates[1];
+  return import_node_path8.default.resolve(root);
+}
+__name(resolveLocalProjectsRoot, "resolveLocalProjectsRoot");
+function ensureDir(dir) {
+  if (!import_node_fs7.default.existsSync(dir)) {
+    import_node_fs7.default.mkdirSync(dir, { recursive: true });
+  }
+}
+__name(ensureDir, "ensureDir");
+function listLocalProjects() {
+  const root = resolveLocalProjectsRoot();
+  if (!import_node_fs7.default.existsSync(root)) return [];
+  const manifests = [];
+  for (const entry of import_node_fs7.default.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = import_node_path8.default.join(root, entry.name, "project.json");
+    if (!import_node_fs7.default.existsSync(manifestPath)) continue;
+    try {
+      const parsed = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
+      if (parsed && parsed.projectId) manifests.push(parsed);
+    } catch {
+    }
+  }
+  return manifests.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+}
+__name(listLocalProjects, "listLocalProjects");
+function saveLocalProject(input) {
+  const root = resolveLocalProjectsRoot();
+  ensureDir(root);
+  const { projectId, projDir } = resolveProjectDir(root, input.projectId || input.building.projectId || input.building.id);
+  const revDir = import_node_path8.default.join(projDir, "revisions");
+  ensureDir(revDir);
+  const manifestPath = import_node_path8.default.join(projDir, "project.json");
+  let existing = null;
+  if (import_node_fs7.default.existsSync(manifestPath)) {
+    try {
+      existing = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
+    } catch {
+      existing = null;
+    }
+  }
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const nextRevision = Math.max(
+    (existing?.latestRevision ?? 0) + 1,
+    input.building.version ?? 1
+  );
+  let sourceCadFileName = existing?.sourceCadFileName ?? input.building.metadata.sourceCadUnderlay?.fileName;
+  let hasSourceCad = Boolean(existing?.hasSourceCad);
+  if (input.sourceCad && (input.sourceCad.contentBase64 || input.sourceCad.contentText)) {
+    const cadDir = import_node_path8.default.join(projDir, "source-cad");
+    ensureDir(cadDir);
+    const safeName = sanitizeFileName(input.sourceCad.fileName);
+    const targetPath = import_node_path8.default.join(cadDir, safeName);
+    if (input.sourceCad.contentBase64) {
+      import_node_fs7.default.writeFileSync(targetPath, Buffer.from(input.sourceCad.contentBase64, "base64"));
+    } else if (input.sourceCad.contentText !== void 0) {
+      import_node_fs7.default.writeFileSync(targetPath, input.sourceCad.contentText, "utf8");
+    }
+    sourceCadFileName = safeName;
+    hasSourceCad = true;
+  }
+  const buildingToStore = {
+    ...input.building,
+    projectId,
+    name: input.name || input.building.name || projectId,
+    version: nextRevision,
+    updatedAt: now
+  };
+  const revFile = import_node_path8.default.join(revDir, `rev-${nextRevision}.json`);
+  import_node_fs7.default.writeFileSync(revFile, JSON.stringify(buildingToStore, null, 2), "utf8");
+  const repFloor = buildingToStore.floors.find((f) => f.floorUse === "RESIDENTIAL" && (f.apartmentUnits?.length ?? 0) > 0) ?? buildingToStore.floors[0];
+  const roomCount = buildingToStore.floors.reduce((sum, f) => sum + f.rooms.length, 0);
+  const structuralColumnsCount = repFloor?.columns?.length ?? 0;
+  const structuralBeamsCount = repFloor?.beams?.length ?? buildingToStore.beams?.length ?? 0;
+  const shapeId = buildingToStore.metadata.generationBrief?.buildingMassingShape ?? buildingToStore.metadata.generationBrief?.requestedMassingShape ?? "COMPACT_DOUBLE_LOADED";
+  const complianceScore = buildingToStore.complianceRating?.score;
+  const revisions = [
+    ...(existing?.revisions ?? []).filter((r) => r.version !== nextRevision),
+    {
+      version: nextRevision,
+      savedAt: now,
+      ...input.note ? { note: input.note } : {},
+      ...complianceScore !== void 0 ? { complianceScore } : {}
+    }
+  ].sort((a, b) => a.version - b.version);
+  const manifest = {
+    projectId,
+    name: buildingToStore.name,
+    shapeId,
+    planCategory: buildingToStore.metadata.generationBrief?.planCategory,
+    floorCount: buildingToStore.floors.length,
+    roomCount,
+    structuralColumnsCount,
+    structuralBeamsCount,
+    latestRevision: nextRevision,
+    ...complianceScore !== void 0 ? { complianceScore } : {},
+    ...buildingToStore.metadata.irregularPlotBoundary ? { irregularPlotBoundary: buildingToStore.metadata.irregularPlotBoundary } : existing?.irregularPlotBoundary ? { irregularPlotBoundary: existing.irregularPlotBoundary } : {},
+    hasSourceCad,
+    ...sourceCadFileName ? { sourceCadFileName } : {},
+    createdAt: existing?.createdAt ?? buildingToStore.createdAt ?? now,
+    updatedAt: now,
+    revisions
+  };
+  import_node_fs7.default.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+  return { manifest, building: buildingToStore, revision: nextRevision };
+}
+__name(saveLocalProject, "saveLocalProject");
+function loadLocalProject(rawId, requestedRevision) {
+  const root = resolveLocalProjectsRoot();
+  const { projDir } = resolveProjectDir(root, rawId);
+  const manifestPath = import_node_path8.default.join(projDir, "project.json");
+  if (!import_node_fs7.default.existsSync(manifestPath)) return null;
+  const manifest = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
+  const rev = requestedRevision && Number.isFinite(requestedRevision) ? requestedRevision : manifest.latestRevision;
+  const revFile = import_node_path8.default.join(projDir, "revisions", `rev-${rev}.json`);
+  if (!import_node_fs7.default.existsSync(revFile)) return null;
+  const building = JSON.parse(import_node_fs7.default.readFileSync(revFile, "utf8"));
+  return { manifest, building, revision: rev };
+}
+__name(loadLocalProject, "loadLocalProject");
+function readLocalProjectSourceCad(rawId) {
+  const root = resolveLocalProjectsRoot();
+  const { projDir } = resolveProjectDir(root, rawId);
+  const manifestPath = import_node_path8.default.join(projDir, "project.json");
+  if (!import_node_fs7.default.existsSync(manifestPath)) return null;
+  const manifest = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
+  if (!manifest.sourceCadFileName) return null;
+  const cadFile = import_node_path8.default.join(projDir, "source-cad", sanitizeFileName(manifest.sourceCadFileName));
+  if (!import_node_fs7.default.existsSync(cadFile)) return null;
+  return { fileName: manifest.sourceCadFileName, bytes: import_node_fs7.default.readFileSync(cadFile) };
+}
+__name(readLocalProjectSourceCad, "readLocalProjectSourceCad");
+function deleteLocalProject(rawId) {
+  const root = resolveLocalProjectsRoot();
+  const { projDir } = resolveProjectDir(root, rawId);
+  if (!import_node_fs7.default.existsSync(projDir)) return false;
+  import_node_fs7.default.rmSync(projDir, { recursive: true, force: true });
+  return true;
+}
+__name(deleteLocalProject, "deleteLocalProject");
+
+// src/routes/local-project-routes.ts
+async function handleLocalProjectRoute(request, response2, url, readBody2, sendJson2, corsHeaders) {
+  const method = request.method ?? "GET";
+  const pathname = url.pathname;
+  if (pathname === "/api/v1/local-projects") {
+    if (method === "GET") {
+      const projects = listLocalProjects();
+      sendJson2(response2, 200, { ok: true, projects });
+      return true;
+    }
+    if (method === "POST") {
+      const raw = await readBody2(request);
+      let body;
+      try {
+        body = raw.length > 0 ? JSON.parse(raw) : {};
+      } catch {
+        sendJson2(response2, 400, {
+          error: { code: "INVALID_JSON", message: "Request body must be valid JSON." }
+        });
+        return true;
+      }
+      if (!body.building || !Array.isArray(body.building.floors)) {
+        sendJson2(response2, 400, {
+          error: { code: "INVALID_BUILDING", message: "A canonical building object with floors is required." }
+        });
+        return true;
+      }
+      const saved = saveLocalProject(body);
+      sendJson2(response2, 200, { ok: true, ...saved });
+      return true;
+    }
+  }
+  const sourceCadMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)\/source-cad$/);
+  if (sourceCadMatch && method === "GET") {
+    const id = decodeURIComponent(sourceCadMatch[1]);
+    const cad = readLocalProjectSourceCad(id);
+    if (!cad) {
+      sendJson2(response2, 404, { error: { code: "SOURCE_CAD_NOT_FOUND", message: "No source CAD attachment found." } });
+      return true;
+    }
+    const ext = cad.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : cad.fileName.toLowerCase().endsWith(".dwg") ? "application/acad" : "application/dxf";
+    response2.writeHead(200, {
+      ...corsHeaders,
+      "Content-Type": ext,
+      "Content-Length": String(cad.bytes.length),
+      "Content-Disposition": `attachment; filename="${cad.fileName}"`
+    });
+    response2.end(cad.bytes);
+    return true;
+  }
+  const itemMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)$/);
+  if (itemMatch) {
+    const id = decodeURIComponent(itemMatch[1]);
+    if (method === "GET") {
+      const revParam = url.searchParams.get("revision");
+      const rev = revParam ? Number.parseInt(revParam, 10) : void 0;
+      const loaded = loadLocalProject(id, Number.isFinite(rev) ? rev : void 0);
+      if (!loaded) {
+        sendJson2(response2, 404, { error: { code: "PROJECT_NOT_FOUND", message: `Local project "${id}" not found.` } });
+        return true;
+      }
+      sendJson2(response2, 200, { ok: true, ...loaded });
+      return true;
+    }
+    if (method === "DELETE") {
+      const removed = deleteLocalProject(id);
+      if (!removed) {
+        sendJson2(response2, 404, { error: { code: "PROJECT_NOT_FOUND", message: `Local project "${id}" not found.` } });
+        return true;
+      }
+      sendJson2(response2, 200, { ok: true, deleted: id });
+      return true;
+    }
+  }
+  return false;
+}
+__name(handleLocalProjectRoute, "handleLocalProjectRoute");
+
 // src/server.ts
 if (typeof process.loadEnvFile === "function") {
   for (const candidate of [
     ".env",
-    import_node_path7.default.join(process.cwd(), ".env"),
-    import_node_path7.default.join(process.cwd(), "packages", "backend", ".env"),
-    import_node_path7.default.join(process.cwd(), "..", "..", ".env")
+    import_node_path9.default.join(process.cwd(), ".env"),
+    import_node_path9.default.join(process.cwd(), "packages", "backend", ".env"),
+    import_node_path9.default.join(process.cwd(), "..", "..", ".env")
   ]) {
     try {
-      if (import_node_fs6.default.existsSync(candidate)) {
+      if (import_node_fs8.default.existsSync(candidate)) {
         process.loadEnvFile(candidate);
       }
     } catch {
@@ -128139,7 +132606,7 @@ if (typeof process.loadEnvFile === "function") {
 var MAX_BODY_BYTES = 25 * 1024 * 1024;
 var CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Expose-Headers": "Content-Disposition, Content-Length, X-CAD-Format, X-CAD-Magic, X-CAD-Entities, X-CAD-Layers, X-CAD-Validation, X-CAD-Disk-Path, X-CAD-Download-URL, X-Artifact-Descriptor"
 };
@@ -128285,6 +132752,8 @@ async function route(request, response2, deps) {
       sendJson(response2, result.status, result.json);
       return;
     }
+    if (await handleCadImportRoute(request, response2, url, readBody, sendJson)) return;
+    if (await handleLocalProjectRoute(request, response2, url, readBody, sendJson, CORS_HEADERS)) return;
     if (await handleExportRoute(request, response2, url, readBody, sendJson, CORS_HEADERS)) return;
     sendJson(response2, 404, { error: { code: "NOT_FOUND", message: "Unknown endpoint." } });
   } catch (error2) {
