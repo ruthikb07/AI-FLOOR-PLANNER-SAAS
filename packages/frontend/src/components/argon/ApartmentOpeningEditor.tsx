@@ -43,6 +43,9 @@ function FloorEditPreview({ preview, apply, cancel }: { preview: EditPreview; ap
     return geometry && line({ ...host, id: opening.id, startPoint: geometry.startPoint, endPoint: geometry.endPoint }, color, 4);
   };
   const beforeRooms = new Map(before.rooms.map(room => [room.id, room]));
+  const affectedUnits = new Set(after.rooms.filter(room => affectedRooms.has(room.id)).map(room => room.unitId));
+  const areaAdvisories = preview.building.metadata.generationReport?.floorAreas?.find(report => report.floorId === after.id)
+    ?.units.filter(unit => affectedUnits.has(unit.unitId) && unit.target && unit.target.status !== 'ACHIEVED') ?? [];
   return <section aria-label="Preview local regeneration" className="space-y-2 rounded border border-argon-border bg-argon-surface p-2">
     <p className="text-sm font-semibold">Preview on {before.name}</p>
     <svg role="img" aria-label="Plan showing the original and proposed wall and opening positions" className="h-44 w-full rounded bg-argon-card"
@@ -64,7 +67,10 @@ function FloorEditPreview({ preview, apply, cancel }: { preview: EditPreview; ap
           ` · ${(previousArea / 1e6).toFixed(2)} to ${(room.area / 1e6).toFixed(2)} m² (room boundary)`}</li>;
       })}
     </ul>
-    <p className="text-xs">{changed.length} wall positions and {new Set([...formerOpenings, ...revisedOpenings].map(opening => opening.id)).size} openings affected. Area and closure checks passed.</p>
+    <p className="text-xs">{changed.length} wall positions and {new Set([...formerOpenings, ...revisedOpenings].map(opening => opening.id)).size} openings affected. Geometry and closure checks passed.</p>
+    {areaAdvisories.length > 0 && <ul className="text-xs text-argon-muted" aria-label="Area advisories">
+      {areaAdvisories.map(unit => <li key={unit.unitId}>Flat {unit.unitIndex} · {unit.target?.explanation}</li>)}
+    </ul>}
     <div className="flex gap-2">
       <button type="button" className="rounded bg-argon-btn px-2 py-1 text-xs font-semibold text-argon-card" onClick={apply}>Accept preview</button>
       <button type="button" className="rounded border border-argon-border px-2 py-1 text-xs" onClick={cancel}>Discard preview</button>

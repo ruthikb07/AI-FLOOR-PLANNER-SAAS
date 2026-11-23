@@ -159,6 +159,11 @@ test('edits a hosted window, enforces its floor lock and saves the exact undoabl
   await page.getByRole('button', { name: 'Unlock floor', exact: true }).click();
   await page.getByRole('button', { name: 'Preview opening' }).click();
   await expect(page.getByRole('region', { name: 'Preview local regeneration' })).toContainText('1 openings affected');
+  const editedUnit = floor.rooms.find(room => room.id === window.roomId)?.unitId;
+  const areaTarget = original.metadata.generationReport?.floorAreas?.find(area => area.floorId === floor.id)
+    ?.units.find(unit => unit.unitId === editedUnit)?.target;
+  expect(areaTarget?.status).toBe('TARGET_NOT_MET');
+  await expect(page.getByRole('list', { name: 'Area advisories' })).toContainText('requested 850 sq ft');
   expect((await durableProject(page)).building).toEqual(original);
   await page.getByRole('button', { name: 'Lock floor', exact: true }).click();
   await page.getByRole('button', { name: 'Accept preview' }).click();

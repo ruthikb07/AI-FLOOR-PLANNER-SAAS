@@ -23,7 +23,7 @@ The reporter confirmed using the older port 4177 and normal wizard inputs. A liv
 
 The partition solver moves a full shared straight edge inside one flat. It intersects the shifted axis with both original straight returns and preserves the envelope. It checks touched rooms and hosting, locked elements, other flats, the swept vicinity of columns, closure and recorded area targets. It supports skewed room edges in that domain and refuses a move that would shift a curved return, overwrite a third room boundary, or rotate a return. Topology changes requiring a free-form flat solve and direct curved-wall edits remain open.
 
-Opening updates preserve IDs, ordering and unrelated host flags. New opening IDs are stable for identical revisions and edit parameters. The preview shows both sets of opening and wall positions and room area changes. Acceptance checks the live building and lock digest, then applies one exact snapshot. Advisory misses remain reported. Recorded strict targets and previously achieved targets reject an edit that moves them outside tolerance.
+Opening updates preserve IDs, ordering and unrelated host flags. New opening IDs are stable for identical revisions and edit parameters. The preview shows both sets of opening and wall positions and room area changes. Acceptance checks the live building and lock digest, then applies one exact snapshot. Advisory misses remain reported. Recorded strict targets and previously achieved targets reject an edit that moves them outside tolerance. When a measured advisory target is already unmet, the preview displays the requested and measured values for the affected flat. The hosted-window replay verified the 850 sq ft advisory, stale preview rejection, exact undo and redo, export, and reload.
 
 The backend generated regression measured a 50 mm rectangular shift and then a 25 mm normal shift of an oblique partition derived from the same canonical fixture. It checked unchanged floor outlines, preserved opening IDs, neighbour preservation and room closure. The original strict four-flat 2% fixture measured 703.75, 1,106.29, 1,500.71 and 1,900.80 sq ft against its target schedule in the same run.
 
@@ -57,6 +57,7 @@ The legacy welcome tour passed with the current camera controls, photographic fa
 | Focused adapter contract | 2 passed. |
 | `pnpm exec turbo run test --only --concurrency=2 --continue` | Eight packages reported 1,144 passing and eight pre-existing opt-in skips. The planning-engine benchmark was still running at handoff. |
 | `pnpm --filter @ai-floor-planner/frontend exec playwright test --config playwright.repair.config.ts` | The broad run passed 16 of 18. The passed cases include the 40 mm hosted window edit, 50 mm partition move, revision protection, restore and CAD import. The two extended production cases remain open. |
+| `pnpm --filter @ai-floor-planner/frontend exec playwright test --config playwright.repair.config.ts --grep 'edits a hosted window'` | Passed on the final editor preview, including the area advisory. |
 
 A separate request to the production backend exported a ten-page Unicode PDF with HTTP 200. The native AutoCAD test independently audited 12 files with zero audit errors. Those native fixture results describe the format conversion checks for those fixtures.
 
