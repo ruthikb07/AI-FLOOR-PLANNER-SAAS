@@ -1,0 +1,50 @@
+name: RH Planner verification
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'repair/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rh-planner-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      TURBO_TELEMETRY_DISABLED: '1'
+      GEMINI_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Production build
+        run: pnpm build
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Package unit and HTTP tests
+        run: pnpm exec turbo run test --concurrency=2
+      - name: Monorepo integration tests
+        run: pnpm test:integration
+      - name: Backend integration tests
+        run: pnpm --filter @ai-floor-planner/backend test:integration
+      - name: Install Chromium
+        run: pnpm --filter @ai-floor-planner/frontend exec playwright install --with-deps chromium
+      - name: Built application integration tests
+        run: pnpm --filter @ai-floor-planner/frontend exec playwright test --config playwright.repair.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: packages/frontend/test-results/
+          if-no-files-found: ignore

@@ -7,7 +7,7 @@ import type { ProjectSetupWizardData } from '../components/argon/ProjectSetupWiz
 import { surveyGenerationBlock } from './survey-draft';
 
 /** One conversion at the UI boundary; the solver contract is always millimetres. */
-export function createArgonRequest(data: ProjectSetupWizardData): MultiSheetApartmentConfig {
+export function createArgonRequest(data: ProjectSetupWizardData, projectId: string = crypto.randomUUID()): MultiSheetApartmentConfig {
   const surveyBlock = surveyGenerationBlock(data.siteGeometryMode === 'survey');
   if (surveyBlock) throw new Error(surveyBlock);
   const mm = (value: number) => Math.round(value * 1000);
@@ -53,7 +53,7 @@ export function createArgonRequest(data: ProjectSetupWizardData): MultiSheetApar
       clearRoomHeightMm: data.clearRoomHeightMm,
       stiltClearHeightBelowBeamMm: data.hasStiltParking ? data.stiltClearHeightBelowBeamMm : undefined,
     },
-    projectId: crypto.randomUUID(), projectName: data.projectName.trim(), aiPrompt: promptAnnotations.join(' ').trim(), referenceImage: data.referenceImage,
+    projectId, projectName: data.projectName.trim(), aiPrompt: promptAnnotations.join(' ').trim(), referenceImage: data.referenceImage,
     plotWidthMm: mm(data.plotWidthM), plotDepthMm: mm(data.plotDepthM), roadWidthMm: mm(data.roadWidthM),
     roadAccessSides: [facing[data.roadFacing]],
     setbacksMm: { front: mm(data.frontSetbackM), rear: mm(data.rearSetbackM), left: mm(data.sideSetbackM), right: mm(data.sideSetbackM) },

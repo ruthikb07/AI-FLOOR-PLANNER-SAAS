@@ -54,6 +54,9 @@ importers:
       '@ai-floor-planner/ai-orchestration':
         specifier: workspace:*
         version: link:../ai-orchestration
+      '@ai-floor-planner/constraint-engine':
+        specifier: workspace:^
+        version: link:../constraint-engine
       '@ai-floor-planner/core':
         specifier: workspace:*
         version: link:../core

@@ -151,6 +151,8 @@ export interface EditorState {
 export interface CommandExecutionResult {
   readonly building: Building;
   readonly stateUpdates?: Partial<EditorState>;
+  /** The replacement is already coordinated and audited. Apply these exact bytes. */
+  readonly preserveSnapshot?: boolean;
 }
 
 /**

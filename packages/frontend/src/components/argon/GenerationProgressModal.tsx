@@ -34,7 +34,7 @@ export function GenerationProgressModal({ isOpen, error, progress, onCancel, onR
     return () => window.clearInterval(timer);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !error) return null;
   const failed = Boolean(error) || progress?.status === 'FAILED';
   return (
     <div className="fixed inset-0 z-[200] grid place-items-center bg-black/35 p-4">

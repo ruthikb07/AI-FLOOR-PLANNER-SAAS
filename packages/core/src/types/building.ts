@@ -315,6 +315,8 @@ export interface BuildingMetadata {
   readonly sourceCadUnderlay?: SourceCadUnderlay;
   readonly irregularPlotBoundary?: import('./multi-sheet-apartment').IrregularPlotBoundary;
   readonly facadeCoordination?: import('./multi-sheet-apartment').FacadeCoordinationMetadata;
+  /** Identifies the solver run that produced the generated geometry. */
+  readonly generationRunId?: string;
   readonly generationReport?: import('./multi-sheet-apartment').ApartmentGenerationReport;
   readonly bedroomBalconySchedule?: readonly {
     flatId: string | null; floorId: string; bedroomId: string; balconyId: string | null;

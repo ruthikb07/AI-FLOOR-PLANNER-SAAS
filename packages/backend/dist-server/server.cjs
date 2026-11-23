@@ -28341,6 +28341,34 @@ function mixedUnitSpecs(types) {
 }
 __name(mixedUnitSpecs, "mixedUnitSpecs");
 
+// src/api/http-input.ts
+var RequestBodyTooLarge = class extends Error {
+  static {
+    __name(this, "RequestBodyTooLarge");
+  }
+};
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+__name(isRecord, "isRecord");
+function buildingInputError(value) {
+  if (!isRecord(value) || !isRecord(value.metadata) || !Number.isSafeInteger(value.version) || Number(value.version) < 0 || typeof value.createdAt !== "string" || typeof value.updatedAt !== "string") {
+    return "A canonical building with metadata, timestamps and a nonnegative revision is required.";
+  }
+  const first = validateBuildingSchema(value)[0];
+  return first ? `${first.path}: ${first.message}` : void 0;
+}
+__name(buildingInputError, "buildingInputError");
+function validCadUpload(value) {
+  if (!isRecord(value) || typeof value.fileName !== "string" || value.fileName.length > 255 || !/^[^/\\\x00-\x1f]+\.(?:dxf|dwg|pdf)$/i.test(value.fileName)) return false;
+  if (value.contentText !== void 0) {
+    return value.contentBase64 === void 0 && /\.dxf$/i.test(value.fileName) && typeof value.contentText === "string" && value.contentText.length > 0;
+  }
+  const encoded = value.contentBase64;
+  return typeof encoded === "string" && encoded.length > 0 && encoded.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(encoded);
+}
+__name(validCadUpload, "validCadUpload");
+
 // ../projection-3d/dist/settings.js
 var DEFAULT_PROJECTION_SETTINGS = Object.freeze({
   defaultFloorToFloorHeight: { value: DEFAULTS.FLOOR_HEIGHT, provenance: "DEFAULT" },
@@ -48207,15 +48235,13 @@ __name(generateETABSE2KFromStructuralProject, "generateETABSE2KFromStructuralPro
 // src/api/etabs-export-routes.ts
 function createETABSExportRoute(service = configuredETABSExportService, configuration = () => ({
   token: process.env.RH_ETABS_EXPORT_TOKEN,
-  allowedOrigins: (process.env.RH_ETABS_ALLOWED_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173").split(",")
+  allowedOrigins: (process.env.RH_ETABS_ALLOWED_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173,http://localhost:4177,http://127.0.0.1:4177").split(",").map((origin) => origin.trim())
 })) {
   return async (request, response2, url, readBody2) => {
     if (url.pathname === "/api/v1/export/etabs/e2k" || url.pathname === "/api/export/etabs/e2k") {
-      const origin = request.headers.origin;
       const e2kHeaders = {
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
-        "Access-Control-Allow-Origin": origin ?? "*",
         "Access-Control-Expose-Headers": "Content-Disposition, Content-Length, X-ETABS-Format"
       };
       if (request.method !== "POST") {
@@ -48249,6 +48275,7 @@ function createETABSExportRoute(service = configuredETABSExportService, configur
         });
         response2.end(buf);
       } catch (error2) {
+        if (error2 instanceof RequestBodyTooLarge) throw error2;
         response2.writeHead(400, { "Content-Type": "application/json", ...e2kHeaders });
         response2.end(JSON.stringify({ error: { code: "INVALID_REQUEST", message: error2 instanceof Error ? error2.message : "Invalid JSON payload" } }));
       }
@@ -48300,6 +48327,7 @@ function createETABSExportRoute(service = configuredETABSExportService, configur
       const descriptor = await service().exportStructuralProjectToETABS(body.project);
       json(201, { artifact: descriptor });
     } catch (error2) {
+      if (error2 instanceof RequestBodyTooLarge) throw error2;
       if (error2 instanceof StructuralExportValidationError) json(422, { error: { code: error2.code, message: error2.message } });
       else if (error2 instanceof ExportError) json(error2.status, { error: {
         code: error2.code,
@@ -111226,6 +111254,29 @@ function validateApartmentClosure(building, manifest) {
 }
 __name(validateApartmentClosure, "validateApartmentClosure");
 
+// ../constraint-engine/dist/generation-acceptance.js
+function generationBlockingFindings(building, report) {
+  const schemaError = validateBuildingSchema(building)[0];
+  if (schemaError || !building.metadata || !building.floors.length) {
+    return [{ code: "INVALID_BUILDING", message: schemaError ? `${schemaError.path}: ${schemaError.message}` : "The generated building is missing metadata or physical floors." }];
+  }
+  if (!report || !Array.isArray(report.errors) || !Number.isFinite(report.planarDeltaMm2)) {
+    return [{ code: "MISSING_GEOMETRY_AUDIT", message: "The generated plan is missing a complete geometry audit." }];
+  }
+  const findings = report.errors.filter((issue) => issue?.severity === "CRITICAL" && !issue.autoCorrected).map((issue) => ({ code: issue.code, message: issue.description }));
+  const generationReport = building.metadata.generationReport;
+  for (const issue of generationReport?.violations ?? []) {
+    if (issue.severity === "CRITICAL" && ["GEOMETRY", "CLOSURE", "OPENING"].includes(issue.source)) {
+      findings.push({ code: issue.code, message: issue.description });
+    }
+  }
+  if (report.isValid !== true && findings.length === 0) {
+    findings.push({ code: "GEOMETRY_NOT_VALID", message: "The geometry audit did not pass." });
+  }
+  return [...new Map(findings.map((finding) => [`${finding.code}:${finding.message}`, finding])).values()];
+}
+__name(generationBlockingFindings, "generationBlockingFindings");
+
 // ../planning-engine/dist/multi-floor/planner.js
 var CORE_TYPES = /* @__PURE__ */ new Set([RoomType.Staircase, RoomType.Lift]);
 var GROUND_ANCHOR_TYPES = /* @__PURE__ */ new Set([
@@ -129065,7 +129116,7 @@ __name(serializeSurveyDxf, "serializeSurveyDxf");
 // src/api/export-routes.ts
 var registry = new ArtifactRegistry();
 var blenderService = new BlenderExportService();
-async function handleExportRoute(request, response2, url, readBody2, sendJson2, cors) {
+async function handleExportRoute(request, response2, url, readBody2, sendJson2) {
   if (await handleETABSExportRoute(request, response2, url, readBody2)) return true;
   const match = url.pathname.match(/^\/api(?:\/v1)?\/export\/(.*)$/);
   if (!match) return false;
@@ -129073,7 +129124,7 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
     const blenderDownload = match[1].match(/^blender\/download\/([^/]+)\/([^/]+)$/);
     if (request.method === "GET" && blenderDownload) {
       const artifact2 = blenderService.read(decodeURIComponent(blenderDownload[1]), decodeURIComponent(blenderDownload[2]));
-      response2.writeHead(200, { "Content-Type": artifact2.descriptor.mimeType, "Content-Length": String(artifact2.data.length), "Content-Disposition": `attachment; filename="${artifact2.descriptor.fileName}"`, ...cors });
+      response2.writeHead(200, { "Content-Type": artifact2.descriptor.mimeType, "Content-Length": String(artifact2.data.length), "Content-Disposition": `attachment; filename="${artifact2.descriptor.fileName}"` });
       response2.end(artifact2.data);
       return true;
     }
@@ -129081,20 +129132,19 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
       const data = registry.preview(decodeURIComponent(match[1].slice(8)));
       response2.writeHead(200, {
         "Content-Type": "image/svg+xml",
-        "Content-Length": String(data.length),
-        ...cors
+        "Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+        "Content-Length": String(data.length)
       });
       response2.end(data);
       return true;
     }
-    if (request.method === "GET" && match[1].startsWith("download")) {
+    if (request.method === "GET" && (match[1] === "download" || match[1].startsWith("download/"))) {
       const filename = decodeURIComponent(match[1].slice("download/".length)) || url.searchParams.get("file") || "";
       const artifact2 = registry.read(filename);
       response2.writeHead(200, {
         "Content-Type": artifact2.descriptor.mimeType,
         "Content-Length": String(artifact2.data.length),
-        "Content-Disposition": `attachment; filename="${artifact2.descriptor.fileName}"`,
-        ...cors
+        "Content-Disposition": `attachment; filename="${artifact2.descriptor.fileName}"`
       });
       response2.end(artifact2.data);
       return true;
@@ -129102,8 +129152,9 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
     if (request.method !== "POST")
       throw new ExportError("METHOD_NOT_ALLOWED", "Use POST to generate an artifact", 405);
     let body;
+    const raw = await readBody2(request);
     try {
-      body = JSON.parse(await readBody2(request));
+      body = JSON.parse(raw);
     } catch {
       throw new ExportError("INVALID_JSON", "Request body must be valid JSON", 400);
     }
@@ -129112,14 +129163,18 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
       response2.writeHead(200, {
         "Content-Type": "application/dxf",
         "Content-Length": String(dxf.length),
-        "Content-Disposition": 'attachment; filename="survey-boundary.dxf"',
-        ...cors
+        "Content-Disposition": 'attachment; filename="survey-boundary.dxf"'
       });
       response2.end(dxf);
       return true;
     }
-    if (!body?.building)
-      throw new ExportError("INVALID_REQUEST", "building object is required", 400);
+    const invalidBuilding = buildingInputError(body?.building);
+    if (!body?.building || invalidBuilding)
+      throw new ExportError("INVALID_REQUEST", invalidBuilding ?? "A canonical building is required.", 400);
+    if (body.options !== void 0 && !isRecord(body.options))
+      throw new ExportError("INVALID_OPTIONS", "Options must be an object.", 400);
+    if (body.format !== void 0 && typeof body.format !== "string")
+      throw new ExportError("INVALID_FORMAT", "Format must be a string.", 400);
     if (match[1] === "glb") {
       const glbBytes = exportBuildingToGlb(body.building);
       const safeName = (body.building.name || body.building.id || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -129127,8 +129182,7 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
         "Content-Type": "model/gltf-binary",
         "Content-Length": String(glbBytes.length),
         "Content-Disposition": `attachment; filename="${safeName}.glb"`,
-        "X-CAD-Format": "GLB",
-        ...cors
+        "X-CAD-Format": "GLB"
       });
       response2.end(Buffer.from(glbBytes));
       return true;
@@ -129142,8 +129196,7 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
         "Content-Type": "text/x-python; charset=utf-8",
         "Content-Length": String(buf.length),
         "Content-Disposition": `attachment; filename="${safeName}.py"`,
-        "X-CAD-Format": "BLENDER_SCRIPT",
-        ...cors
+        "X-CAD-Format": "BLENDER_SCRIPT"
       });
       response2.end(buf);
       return true;
@@ -129161,8 +129214,7 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
             "Content-Length": String(glbBytes.length),
             "Content-Disposition": `attachment; filename="${safeName}.glb"`,
             "X-CAD-Format": "GLB",
-            "X-Blender-Fallback": "pure-ts-glb",
-            ...cors
+            "X-Blender-Fallback": "pure-ts-glb"
           });
           response2.end(Buffer.from(glbBytes));
           return true;
@@ -129177,8 +129229,7 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
         "Content-Length": String(pdfResult.data.length),
         "Content-Disposition": `attachment; filename="${pdfResult.filename}"`,
         "X-CAD-Format": "PDF",
-        "X-CAD-Pages": String(pdfResult.pageCount),
-        ...cors
+        "X-CAD-Pages": String(pdfResult.pageCount)
       });
       response2.end(Buffer.from(pdfResult.data));
       return true;
@@ -129235,16 +129286,17 @@ async function handleExportRoute(request, response2, url, readBody2, sendJson2, 
       "X-CAD-Pages": String(artifact.descriptor.verification?.checks.pageCount ?? 0),
       "X-CAD-Disk-Path": artifact.destination,
       "X-CAD-Download-URL": artifact.descriptor.downloadUrl,
-      "X-Artifact-Descriptor": JSON.stringify(body.options?.cadStandard ? { ...artifact.descriptor, metadata: void 0, verification: { isValid: artifact.descriptor.verification?.isValid, errors: artifact.descriptor.verification?.errors } } : artifact.descriptor),
-      ...cors
+      "X-Artifact-Descriptor": JSON.stringify(body.options?.cadStandard ? { ...artifact.descriptor, metadata: void 0, verification: { isValid: artifact.descriptor.verification?.isValid, errors: artifact.descriptor.verification?.errors } } : artifact.descriptor)
     });
     response2.end(Buffer.from(artifact.data));
   } catch (error2) {
+    if (error2 instanceof RequestBodyTooLarge || error2 instanceof URIError) throw error2;
     const known = error2 instanceof ExportError;
+    if (!known) console.error("Artifact export failed:", error2);
     sendJson2(response2, known ? error2.status : 500, {
       error: {
         code: known ? error2.code : "EXPORT_FAILED",
-        message: error2 instanceof Error ? error2.message : String(error2)
+        message: known ? error2.message : "Export failed. Check the local backend logs."
       }
     });
   }
@@ -130618,12 +130670,12 @@ function resolveServiceConfig(env = process.env) {
 __name(resolveServiceConfig, "resolveServiceConfig");
 
 // src/api/evaluation-routes.ts
-function isRecord(value) {
+function isRecord2(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
-__name(isRecord, "isRecord");
+__name(isRecord2, "isRecord");
 async function handleArchitecturalEvaluation(body, deps) {
-  const record3 = isRecord(body) ? body : null;
+  const record3 = isRecord2(body) ? body : null;
   const buildingSummary = record3 && typeof record3.buildingSummary === "string" ? record3.buildingSummary : null;
   const requirementsSummary = record3 && typeof record3.requirementsSummary === "string" ? record3.requirementsSummary : null;
   if (!record3 || !buildingSummary || !requirementsSummary) {
@@ -130671,33 +130723,37 @@ async function handleArchitecturalEvaluation(body, deps) {
 __name(handleArchitecturalEvaluation, "handleArchitecturalEvaluation");
 
 // src/api/generation-routes.ts
-function isRecord2(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-__name(isRecord2, "isRecord");
+var import_node_crypto16 = require("node:crypto");
 function includesSurveyGeometry(value) {
-  return isRecord2(value) && (value.siteGeometryMode === "survey" || value.surveyDraft != null || value.surveyBoundary != null || value.plotBoundary != null || value.buildableEnvelope != null);
+  return isRecord(value) && (value.siteGeometryMode === "survey" || value.surveyDraft != null || value.surveyBoundary != null || value.plotBoundary != null || value.buildableEnvelope != null);
 }
 __name(includesSurveyGeometry, "includesSurveyGeometry");
 function parseGenerationRequest(body) {
-  if (!isRecord2(body)) return null;
-  const rawConfig = isRecord2(body.config) ? body.config : body;
-  const plotWidthMm = Number(rawConfig.plotWidthMm);
-  const plotDepthMm = Number(rawConfig.plotDepthMm);
-  const flatsPerFloor = Number(rawConfig.flatsPerFloor);
-  if (!Number.isFinite(plotWidthMm) || plotWidthMm <= 0 || !Number.isFinite(plotDepthMm) || plotDepthMm <= 0 || !Number.isFinite(flatsPerFloor) || flatsPerFloor < 1) {
-    return null;
-  }
+  if (!isRecord(body)) return null;
+  const rawConfig = isRecord(body.config) ? body.config : body;
+  const positive = /* @__PURE__ */ __name((value) => typeof value === "number" && Number.isFinite(value) && value > 0, "positive");
+  const setbacks = rawConfig.setbacksMm;
+  const flats = Number(rawConfig.flatsPerFloor);
+  const floors = Number(rawConfig.numTypicalFloors);
+  if (![
+    rawConfig.plotWidthMm,
+    rawConfig.plotDepthMm,
+    rawConfig.roadWidthMm,
+    rawConfig.floorToFloorHeightMm,
+    rawConfig.stiltHeightMm
+  ].every(positive) || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40 || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6 || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats || rawConfig.units.some((unit) => !isRecord(unit) || typeof unit.bhkType !== "string" || !/^[1-4]BHK$/.test(unit.bhkType)) || rawConfig.projectId !== void 0 && (typeof rawConfig.projectId !== "string" || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)) || rawConfig.aiPrompt !== void 0 && (typeof rawConfig.aiPrompt !== "string" || rawConfig.aiPrompt.length > 32e3) || setbacks !== void 0 && (!isRecord(setbacks) || ["front", "rear", "left", "right"].some((key) => !Number.isFinite(setbacks[key]) || Number(setbacks[key]) < 0))) return null;
+  const runId = body.generationRunId;
+  if (runId !== void 0 && (typeof runId !== "string" || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(runId) || runId.toLowerCase() === String(rawConfig.projectId).toLowerCase())) return null;
   const config = rawConfig;
   const seedRaw = body.seed ?? config.generationSeed ?? 1;
   const seed2 = Number.isFinite(Number(seedRaw)) ? Math.max(1, Math.floor(Number(seedRaw))) : 1;
   const rejectedRaw = body.rejectedTopologyHashes ?? config.rejectedTopologyHashes ?? [];
-  const rejectedTopologyHashes = Array.isArray(rejectedRaw) ? rejectedRaw.filter((item) => typeof item === "string" && item.trim().length > 0) : [];
-  return { config, seed: seed2, rejectedTopologyHashes };
+  const rejectedTopologyHashes = Array.isArray(rejectedRaw) ? rejectedRaw.slice(0, 128).filter((item) => typeof item === "string" && item.length <= 128 && item.trim().length > 0) : [];
+  return { config, seed: seed2, generationRunId: typeof runId === "string" ? runId : (0, import_node_crypto16.randomUUID)(), rejectedTopologyHashes };
 }
 __name(parseGenerationRequest, "parseGenerationRequest");
 async function handleProjectGeneration(body, deps) {
-  if (includesSurveyGeometry(body) || isRecord2(body) && includesSurveyGeometry(body.config)) {
+  if (includesSurveyGeometry(body) || isRecord(body) && includesSurveyGeometry(body.config)) {
     return {
       status: 422,
       json: { error: { code: "SURVEY_GENERATION_UNSUPPORTED", message: "This route requires a planner that accepts the exact surveyed boundary and buildable envelope." } }
@@ -130710,7 +130766,7 @@ async function handleProjectGeneration(body, deps) {
       json: {
         error: {
           code: "INVALID_REQUEST",
-          message: "plotWidthMm > 0, plotDepthMm > 0, and flatsPerFloor >= 1 are required."
+          message: "Check plot and road dimensions, heights, setbacks, 1 to 40 floors and the matching 1 to 6 unit BHK mix."
         }
       }
     };
@@ -130734,38 +130790,55 @@ async function handleProjectGeneration(body, deps) {
     let complianceReport2 = evaluateArchitecturalComplianceScore(pipelineResult.building, {
       config: proposalResult.enrichedConfig
     });
+    let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
     const maxOuterRetries = deps.gemini ? 2 : 0;
-    for (let retryIdx = 1; !complianceReport2.passed && retryIdx <= maxOuterRetries; retryIdx++) {
-      const priorHash = pipelineResult.building.metadata?.topologyHash;
-      const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
-      const updatedRejected = typeof priorHash === "string" && priorHash.length > 0 ? [.../* @__PURE__ */ new Set([...parsed.rejectedTopologyHashes, priorHash])] : [...parsed.rejectedTopologyHashes];
-      const updatedRejectedShapes = !parsed.config.buildingMassingShape && priorShape ? [.../* @__PURE__ */ new Set([...parsed.config.rejectedShapeIds ?? [], priorShape])] : parsed.config.rejectedShapeIds;
-      const correctiveHint = complianceReport2.violations.slice(0, 3).map((v) => typeof v === "string" ? v : v.message).join(" ");
-      const retryProposal = await generateArchitecturalProposal(deps.gemini, {
-        config: {
-          ...parsed.config,
-          ...updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes } : {},
-          aiPrompt: `${parsed.config.aiPrompt ?? ""} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim()
-        },
-        seed: parsed.seed + retryIdx * 12,
-        rejectedTopologyHashes: updatedRejected
-      });
-      const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
-      const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
-        config: retryProposal.enrichedConfig
-      });
-      const retryIsBetter = retryCompliance.redConflictCount < complianceReport2.redConflictCount || retryCompliance.redConflictCount === complianceReport2.redConflictCount && retryCompliance.score >= complianceReport2.score;
-      if (retryIsBetter) {
-        proposalResult = retryProposal;
-        pipelineResult = retryPipeline;
-        complianceReport2 = retryCompliance;
+    for (let retryIdx = 1; (blockers.length || !complianceReport2.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
+      try {
+        const priorHash = pipelineResult.building.metadata?.topologyHash;
+        const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
+        const updatedRejected = typeof priorHash === "string" && priorHash.length > 0 ? [.../* @__PURE__ */ new Set([...parsed.rejectedTopologyHashes, priorHash])] : [...parsed.rejectedTopologyHashes];
+        const updatedRejectedShapes = !parsed.config.buildingMassingShape && priorShape ? [.../* @__PURE__ */ new Set([...parsed.config.rejectedShapeIds ?? [], priorShape])] : parsed.config.rejectedShapeIds;
+        const correctiveHint = complianceReport2.violations.slice(0, 3).map((v) => typeof v === "string" ? v : v.message).join(" ");
+        const retryProposal = await generateArchitecturalProposal(deps.gemini, {
+          config: {
+            ...parsed.config,
+            ...updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes } : {},
+            aiPrompt: `${parsed.config.aiPrompt ?? ""} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim()
+          },
+          seed: parsed.seed + retryIdx * 12,
+          rejectedTopologyHashes: updatedRejected
+        });
+        const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
+        const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
+          config: retryProposal.enrichedConfig
+        });
+        const retryBlockers = generationBlockingFindings(retryPipeline.building, retryPipeline.validationReport);
+        const retryIsBetter = retryBlockers.length === 0 && (blockers.length > 0 || retryCompliance.redConflictCount < complianceReport2.redConflictCount || retryCompliance.redConflictCount === complianceReport2.redConflictCount && retryCompliance.score >= complianceReport2.score);
+        if (retryIsBetter) {
+          proposalResult = retryProposal;
+          pipelineResult = retryPipeline;
+          complianceReport2 = retryCompliance;
+          blockers = retryBlockers;
+        }
+      } catch {
       }
+    }
+    if (blockers.length) {
+      return {
+        status: 422,
+        json: { generationRunId: parsed.generationRunId, error: {
+          code: "GENERATION_CHECKS_FAILED",
+          message: `Required design checks failed. ${blockers[0].message} Try a different massing or adjust the brief.`,
+          findings: blockers.slice(0, 20)
+        } }
+      };
     }
     const enrichedBuilding = {
       ...pipelineResult.building,
       metadata: {
         ...pipelineResult.building.metadata,
         complianceReport: complianceReport2,
+        generationRunId: parsed.generationRunId,
         generationBrief: {
           ...pipelineResult.building.metadata.generationBrief,
           aiTelemetry: proposalResult.telemetry
@@ -130776,6 +130849,7 @@ async function handleProjectGeneration(body, deps) {
       status: 200,
       json: {
         ...pipelineResult,
+        generationRunId: parsed.generationRunId,
         building: enrichedBuilding,
         complianceReport: complianceReport2,
         proposal: proposalResult.proposal,
@@ -130783,16 +130857,22 @@ async function handleProjectGeneration(body, deps) {
       }
     };
   } catch (error2) {
-    const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
-    const reason = outcome.status === "PLAN" ? error2 instanceof Error ? error2.message : "Pipeline verification failed." : outcome.reason;
+    let failure = { code: "PIPELINE_FAILED", message: error2 instanceof Error ? error2.message : "Pipeline verification failed." };
+    let diagnostic;
+    try {
+      const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
+      if (outcome.status !== "PLAN") {
+        diagnostic = outcome;
+        failure = { code: outcome.status, message: outcome.reason };
+      }
+    } catch {
+    }
     return {
       status: 422,
       json: {
-        error: {
-          code: outcome.status === "PLAN" ? "PIPELINE_FAILED" : outcome.status,
-          message: reason
-        },
-        outcome,
+        generationRunId: parsed.generationRunId,
+        error: failure,
+        ...diagnostic ? { outcome: diagnostic } : {},
         proposal: proposalResult.proposal,
         telemetry: proposalResult.telemetry
       }
@@ -130801,12 +130881,15 @@ async function handleProjectGeneration(body, deps) {
 }
 __name(handleProjectGeneration, "handleProjectGeneration");
 
+// src/routes/cad-import-routes.ts
+var import_node_crypto18 = require("node:crypto");
+
 // src/services/cad-layout-importer.ts
 var import_node_fs6 = __toESM(require("node:fs"), 1);
 var import_node_os = __toESM(require("node:os"), 1);
 var import_node_path7 = __toESM(require("node:path"), 1);
 var import_node_child_process4 = require("node:child_process");
-var import_node_crypto16 = require("node:crypto");
+var import_node_crypto17 = require("node:crypto");
 var CadImportError = class extends Error {
   constructor(code, message, status = 400) {
     super(message);
@@ -131607,7 +131690,7 @@ function importPlotBoundaryFromCad(doc, req) {
     const flatsPerFloor = req.flatsPerFloor ?? (inscribedEnvelope.w >= 2e4 && inscribedEnvelope.h >= 16e3 ? 4 : 2);
     const requestedShape = req.buildingMassingShape ?? "IRREGULAR_ANGLED_PLOT";
     const config = {
-      projectId: `cad-plot-${(0, import_node_crypto16.randomUUID)().slice(0, 8)}`,
+      projectId: `cad-plot-${(0, import_node_crypto17.randomUUID)().slice(0, 8)}`,
       projectName: req.projectName || `CAD Site \u2014 ${import_node_path7.default.parse(doc.fileName).name}`,
       buildingMassingShape: requestedShape,
       planCategory: "IRREGULAR_PLOT_CUSTOM",
@@ -131813,7 +131896,7 @@ function importFloorPlanLayoutFromCad(doc, req) {
   const shiftedTexts = doc.texts.map((t) => ({ ...t, position: shiftPt(t.position) }));
   const shiftedDoorMarkers = doorMarkers.map((m) => ({ ...m, pos: shiftPt(m.pos) }));
   const shiftedWinMarkers = windowMarkers.map((m) => ({ ...m, pos: shiftPt(m.pos) }));
-  const projectId = `cad-plan-${(0, import_node_crypto16.randomUUID)().slice(0, 8)}`;
+  const projectId = `cad-plan-${(0, import_node_crypto17.randomUUID)().slice(0, 8)}`;
   const buildingId = `bldg-${projectId}`;
   const projectName = req.projectName || `Imported CAD \u2014 ${import_node_path7.default.parse(doc.fileName).name}`;
   const floorHeight = req.floorToFloorHeightMm ?? 3150;
@@ -132271,10 +132354,16 @@ async function handleCadImportRoute(request, response2, url, readBody2, sendJson
       });
       return true;
     }
-    if (!body.fileName || typeof body.fileName !== "string") {
+    if (!validCadUpload(body)) {
       sendJson2(response2, 400, {
-        error: { code: "MISSING_FILE_NAME", message: "fileName is required." }
+        error: { code: "INVALID_CAD_UPLOAD", message: "Provide one DXF, DWG or PDF upload with valid file content." }
       });
+      return true;
+    }
+    const calibration = body.pdfCalibration;
+    const point = /* @__PURE__ */ __name((value) => isRecord(value) && Number.isFinite(value.x) && Number.isFinite(value.y), "point");
+    if (body.selectedLayers !== void 0 && (!Array.isArray(body.selectedLayers) || body.selectedLayers.some((layer) => typeof layer !== "string")) || calibration !== void 0 && (!isRecord(calibration) || !point(calibration.pointA) || !point(calibration.pointB) || !Number.isFinite(calibration.knownLengthMm) || calibration.knownLengthMm <= 0 || calibration.tracedPolygonPx !== void 0 && (!Array.isArray(calibration.tracedPolygonPx) || calibration.tracedPolygonPx.length > 2e3 || !calibration.tracedPolygonPx.every(point)))) {
+      sendJson2(response2, 400, { error: { code: "INVALID_CAD_OPTIONS", message: "Check selected layers and PDF calibration points." } });
       return true;
     }
     try {
@@ -132303,7 +132392,23 @@ async function handleCadImportRoute(request, response2, url, readBody2, sendJson
       }
       if (action === "import_plot") {
         const result = importPlotBoundaryFromCad(parsed, body);
-        sendJson2(response2, 200, { ok: true, ...result });
+        if (!result.building) {
+          sendJson2(response2, 200, { ok: true, ...result });
+          return true;
+        }
+        const floors = result.building.floors.filter((floor) => !floor.name.includes("COLUMN_SCHEDULE"));
+        const audited = await executeAuditedPlanningPipeline({ ...result.building, floors });
+        const findings = generationBlockingFindings(audited.building, audited.validationReport);
+        if (findings.length) {
+          sendJson2(response2, 422, { error: {
+            code: "GENERATION_CHECKS_FAILED",
+            message: `The imported plot was read, but the generated design failed checks. ${findings[0].message} Adjust the massing, floor count or setbacks and retry.`,
+            findings: findings.slice(0, 20)
+          } });
+          return true;
+        }
+        const building = { ...audited.building, metadata: { ...audited.building.metadata, generationRunId: (0, import_node_crypto18.randomUUID)() } };
+        sendJson2(response2, 200, { ok: true, ...result, building });
         return true;
       }
       if (action === "import_floor_plan") {
@@ -132322,9 +132427,9 @@ async function handleCadImportRoute(request, response2, url, readBody2, sendJson
         });
         return true;
       }
-      const message = err instanceof Error ? err.message : "Unexpected CAD import error.";
+      console.error("CAD import failed:", err);
       sendJson2(response2, 500, {
-        error: { code: "CAD_IMPORT_ERROR", message }
+        error: { code: "CAD_IMPORT_ERROR", message: "CAD import failed. Check the local backend logs." }
       });
       return true;
     }
@@ -132336,17 +132441,17 @@ __name(handleCadImportRoute, "handleCadImportRoute");
 // src/services/local-project-store.ts
 var import_node_fs7 = __toESM(require("node:fs"), 1);
 var import_node_path8 = __toESM(require("node:path"), 1);
-function sanitizeId(raw) {
-  const cleaned = raw.trim().replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 96);
-  return cleaned || `proj_${Date.now()}`;
+var import_node_crypto19 = require("node:crypto");
+function isLocalProjectId(value) {
+  return typeof value === "string" && /^[a-z0-9_-]{1,96}$/i.test(value) && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(value);
 }
-__name(sanitizeId, "sanitizeId");
-function resolveProjectDir(root, rawId) {
-  const projectId = sanitizeId(rawId);
+__name(isLocalProjectId, "isLocalProjectId");
+function resolveProjectDir(root, projectId) {
+  if (!isLocalProjectId(projectId)) throw new Error("Invalid local project id.");
   const absRoot = import_node_path8.default.resolve(root);
   const projDir = import_node_path8.default.resolve(absRoot, projectId);
   if (!projDir.startsWith(absRoot + import_node_path8.default.sep)) {
-    throw new Error(`Invalid local project id "${rawId}".`);
+    throw new Error("Invalid local project directory.");
   }
   return { projectId, projDir };
 }
@@ -132377,6 +132482,16 @@ function ensureDir(dir) {
   }
 }
 __name(ensureDir, "ensureDir");
+function writeAtomically(target, data) {
+  const temporary = `${target}.${(0, import_node_crypto19.randomUUID)()}.tmp`;
+  try {
+    import_node_fs7.default.writeFileSync(temporary, data, { flag: "wx" });
+    import_node_fs7.default.renameSync(temporary, target);
+  } finally {
+    import_node_fs7.default.rmSync(temporary, { force: true });
+  }
+}
+__name(writeAtomically, "writeAtomically");
 function listLocalProjects() {
   const root = resolveLocalProjectsRoot();
   if (!import_node_fs7.default.existsSync(root)) return [];
@@ -132403,11 +132518,7 @@ function saveLocalProject(input) {
   const manifestPath = import_node_path8.default.join(projDir, "project.json");
   let existing = null;
   if (import_node_fs7.default.existsSync(manifestPath)) {
-    try {
-      existing = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
-    } catch {
-      existing = null;
-    }
+    existing = JSON.parse(import_node_fs7.default.readFileSync(manifestPath, "utf8"));
   }
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const nextRevision = Math.max(
@@ -132422,9 +132533,9 @@ function saveLocalProject(input) {
     const safeName = sanitizeFileName(input.sourceCad.fileName);
     const targetPath = import_node_path8.default.join(cadDir, safeName);
     if (input.sourceCad.contentBase64) {
-      import_node_fs7.default.writeFileSync(targetPath, Buffer.from(input.sourceCad.contentBase64, "base64"));
+      writeAtomically(targetPath, Buffer.from(input.sourceCad.contentBase64, "base64"));
     } else if (input.sourceCad.contentText !== void 0) {
-      import_node_fs7.default.writeFileSync(targetPath, input.sourceCad.contentText, "utf8");
+      writeAtomically(targetPath, input.sourceCad.contentText);
     }
     sourceCadFileName = safeName;
     hasSourceCad = true;
@@ -132434,10 +132545,11 @@ function saveLocalProject(input) {
     projectId,
     name: input.name || input.building.name || projectId,
     version: nextRevision,
-    updatedAt: now
+    updatedAt: now,
+    metadata: { ...input.building.metadata, projectId }
   };
   const revFile = import_node_path8.default.join(revDir, `rev-${nextRevision}.json`);
-  import_node_fs7.default.writeFileSync(revFile, JSON.stringify(buildingToStore, null, 2), "utf8");
+  writeAtomically(revFile, JSON.stringify(buildingToStore, null, 2));
   const repFloor = buildingToStore.floors.find((f) => f.floorUse === "RESIDENTIAL" && (f.apartmentUnits?.length ?? 0) > 0) ?? buildingToStore.floors[0];
   const roomCount = buildingToStore.floors.reduce((sum, f) => sum + f.rooms.length, 0);
   const structuralColumnsCount = repFloor?.columns?.length ?? 0;
@@ -132471,7 +132583,7 @@ function saveLocalProject(input) {
     updatedAt: now,
     revisions
   };
-  import_node_fs7.default.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+  writeAtomically(manifestPath, JSON.stringify(manifest, null, 2));
   return { manifest, building: buildingToStore, revision: nextRevision };
 }
 __name(saveLocalProject, "saveLocalProject");
@@ -132497,7 +132609,7 @@ function readLocalProjectSourceCad(rawId) {
   if (!manifest.sourceCadFileName) return null;
   const cadFile = import_node_path8.default.join(projDir, "source-cad", sanitizeFileName(manifest.sourceCadFileName));
   if (!import_node_fs7.default.existsSync(cadFile)) return null;
-  return { fileName: manifest.sourceCadFileName, bytes: import_node_fs7.default.readFileSync(cadFile) };
+  return { fileName: sanitizeFileName(manifest.sourceCadFileName), bytes: import_node_fs7.default.readFileSync(cadFile) };
 }
 __name(readLocalProjectSourceCad, "readLocalProjectSourceCad");
 function deleteLocalProject(rawId) {
@@ -132510,7 +132622,7 @@ function deleteLocalProject(rawId) {
 __name(deleteLocalProject, "deleteLocalProject");
 
 // src/routes/local-project-routes.ts
-async function handleLocalProjectRoute(request, response2, url, readBody2, sendJson2, corsHeaders) {
+async function handleLocalProjectRoute(request, response2, url, readBody2, sendJson2) {
   const method = request.method ?? "GET";
   const pathname = url.pathname;
   if (pathname === "/api/v1/local-projects") {
@@ -132523,20 +132635,25 @@ async function handleLocalProjectRoute(request, response2, url, readBody2, sendJ
       const raw = await readBody2(request);
       let body;
       try {
-        body = raw.length > 0 ? JSON.parse(raw) : {};
+        body = JSON.parse(raw);
       } catch {
         sendJson2(response2, 400, {
           error: { code: "INVALID_JSON", message: "Request body must be valid JSON." }
         });
         return true;
       }
-      if (!body.building || !Array.isArray(body.building.floors)) {
-        sendJson2(response2, 400, {
-          error: { code: "INVALID_BUILDING", message: "A canonical building object with floors is required." }
-        });
+      const invalid = !isRecord(body) ? "A project object is required." : buildingInputError(body.building);
+      if (invalid || !isRecord(body)) {
+        sendJson2(response2, 400, { error: { code: "INVALID_BUILDING", message: invalid } });
         return true;
       }
-      const saved = saveLocalProject(body);
+      const input = body;
+      const id = input.projectId ?? input.building.projectId;
+      if (!isLocalProjectId(id) || input.name !== void 0 && (typeof input.name !== "string" || input.name.length > 256) || input.note !== void 0 && (typeof input.note !== "string" || input.note.length > 1024) || input.sourceCad !== void 0 && !validCadUpload(input.sourceCad)) {
+        sendJson2(response2, 400, { error: { code: "INVALID_PROJECT", message: "Check the project ID, name, note and source CAD attachment." } });
+        return true;
+      }
+      const saved = saveLocalProject(input);
       sendJson2(response2, 200, { ok: true, ...saved });
       return true;
     }
@@ -132544,6 +132661,10 @@ async function handleLocalProjectRoute(request, response2, url, readBody2, sendJ
   const sourceCadMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)\/source-cad$/);
   if (sourceCadMatch && method === "GET") {
     const id = decodeURIComponent(sourceCadMatch[1]);
+    if (!isLocalProjectId(id)) {
+      sendJson2(response2, 400, { error: { code: "INVALID_PROJECT_ID", message: "Project ID is invalid." } });
+      return true;
+    }
     const cad = readLocalProjectSourceCad(id);
     if (!cad) {
       sendJson2(response2, 404, { error: { code: "SOURCE_CAD_NOT_FOUND", message: "No source CAD attachment found." } });
@@ -132551,7 +132672,6 @@ async function handleLocalProjectRoute(request, response2, url, readBody2, sendJ
     }
     const ext = cad.fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : cad.fileName.toLowerCase().endsWith(".dwg") ? "application/acad" : "application/dxf";
     response2.writeHead(200, {
-      ...corsHeaders,
       "Content-Type": ext,
       "Content-Length": String(cad.bytes.length),
       "Content-Disposition": `attachment; filename="${cad.fileName}"`
@@ -132562,10 +132682,17 @@ async function handleLocalProjectRoute(request, response2, url, readBody2, sendJ
   const itemMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)$/);
   if (itemMatch) {
     const id = decodeURIComponent(itemMatch[1]);
+    if (!isLocalProjectId(id)) {
+      sendJson2(response2, 400, { error: { code: "INVALID_PROJECT_ID", message: "Project ID is invalid." } });
+      return true;
+    }
     if (method === "GET") {
       const revParam = url.searchParams.get("revision");
-      const rev = revParam ? Number.parseInt(revParam, 10) : void 0;
-      const loaded = loadLocalProject(id, Number.isFinite(rev) ? rev : void 0);
+      if (revParam !== null && (!/^[1-9]\d*$/.test(revParam) || !Number.isSafeInteger(Number(revParam)) || url.searchParams.getAll("revision").length !== 1)) {
+        sendJson2(response2, 400, { error: { code: "INVALID_REVISION", message: "Provide a positive integer revision." } });
+        return true;
+      }
+      const loaded = loadLocalProject(id, revParam === null ? void 0 : Number(revParam));
       if (!loaded) {
         sendJson2(response2, 404, { error: { code: "PROJECT_NOT_FOUND", message: `Local project "${id}" not found.` } });
         return true;
@@ -132587,6 +132714,78 @@ async function handleLocalProjectRoute(request, response2, url, readBody2, sendJ
 }
 __name(handleLocalProjectRoute, "handleLocalProjectRoute");
 
+// src/api/http-access.ts
+var import_node_crypto20 = require("node:crypto");
+var localHosts = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+var localOrigins = new Set(
+  ["localhost", "127.0.0.1", "[::1]"].flatMap((host) => [3e3, 4173, 4177, 5173].map((port) => `http://${host}:${port}`))
+);
+var exposedHeaders = "Content-Disposition, Content-Length, X-CAD-Format, X-CAD-Magic, X-CAD-Entities, X-CAD-Layers, X-CAD-Validation, X-CAD-Pages, X-CAD-Disk-Path, X-CAD-Download-URL, X-Artifact-Descriptor, X-ETABS-Format";
+function isLoopbackHost(host) {
+  return localHosts.has(host);
+}
+__name(isLoopbackHost, "isLoopbackHost");
+function resolveApiAccess(env = process.env) {
+  const token = env.RH_API_TOKEN?.trim() || void 0;
+  if (token && (token.length < 32 || !/^[\x21-\x7e]+$/.test(token))) {
+    throw new Error("RH_API_TOKEN must contain at least 32 printable non-space characters.");
+  }
+  const origins = /* @__PURE__ */ __name((value) => new Set(value?.split(",").map((entry) => entry.trim()).filter(Boolean).map((origin) => {
+    const url = new URL(origin);
+    if (url.origin !== origin || !["http:", "https:"].includes(url.protocol)) {
+      throw new Error("API allowed origins must be exact HTTP(S) origins.");
+    }
+    return origin;
+  })), "origins");
+  return {
+    token,
+    origins: origins(env.RH_API_ALLOWED_ORIGINS),
+    etabsOrigins: origins(env.RH_ETABS_ALLOWED_ORIGINS)
+  };
+}
+__name(resolveApiAccess, "resolveApiAccess");
+function requestHost(request) {
+  const host = request.headers.host;
+  if (!host || !/^(?:[a-z0-9.-]+|\[[\da-f:]+\])(?::\d+)?$/i.test(host)) return void 0;
+  try {
+    return new URL(`http://${host}`);
+  } catch {
+    return void 0;
+  }
+}
+__name(requestHost, "requestHost");
+function authorizeApiRequest(request, response2, pathname, access2) {
+  response2.setHeader("Vary", "Origin");
+  response2.setHeader("Cache-Control", "no-store");
+  response2.setHeader("X-Content-Type-Options", "nosniff");
+  const origin = request.headers.origin;
+  const host = requestHost(request);
+  const nativeEtabs = /^\/api(?:\/v1)?\/export\/etabs(?:\/download\/[^/]+)?$/.test(pathname);
+  const allowedOrigin = origin && (access2.origins.has(origin) || localOrigins.has(origin) || nativeEtabs && access2.etabsOrigins.has(origin) || host && isLoopbackHost(host.hostname) && origin === host.origin);
+  if (origin && !allowedOrigin) {
+    return { status: 403, code: "ORIGIN_DENIED", message: "This origin is not allowed to access the studio API." };
+  }
+  if (allowedOrigin) {
+    response2.setHeader("Access-Control-Allow-Origin", origin);
+    response2.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    response2.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    response2.setHeader("Access-Control-Expose-Headers", exposedHeaders);
+  }
+  if (request.method === "OPTIONS") return;
+  const fromLoopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress ?? "") && host && isLoopbackHost(host.hostname);
+  if (access2.token && !nativeEtabs) {
+    const expected = Buffer.from(`Bearer ${access2.token}`);
+    const supplied = Buffer.from(request.headers.authorization ?? "");
+    if (supplied.length === expected.length && (0, import_node_crypto20.timingSafeEqual)(supplied, expected)) return;
+    response2.setHeader("WWW-Authenticate", "Bearer");
+    return { status: 401, code: "UNAUTHORIZED", message: "Studio API authorization is required." };
+  }
+  const trustedBrowser = origin ? nativeEtabs || localOrigins.has(origin) || origin === host?.origin || access2.origins.has(origin) && isLoopbackHost(new URL(origin).hostname) : !["cross-site", "same-site"].includes(request.headers["sec-fetch-site"] ?? "");
+  if (fromLoopback && trustedBrowser) return;
+  return { status: 403, code: "LOCAL_ONLY", message: "This operation requires a trusted local studio connection." };
+}
+__name(authorizeApiRequest, "authorizeApiRequest");
+
 // src/server.ts
 if (typeof process.loadEnvFile === "function") {
   for (const candidate of [
@@ -132604,12 +132803,6 @@ if (typeof process.loadEnvFile === "function") {
   }
 }
 var MAX_BODY_BYTES = 25 * 1024 * 1024;
-var CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Expose-Headers": "Content-Disposition, Content-Length, X-CAD-Format, X-CAD-Magic, X-CAD-Entities, X-CAD-Layers, X-CAD-Validation, X-CAD-Disk-Path, X-CAD-Download-URL, X-Artifact-Descriptor"
-};
 function createGeminiProvider(config) {
   if (config.geminiApiKey.length === 0) return null;
   return new GeminiProvider({
@@ -132682,15 +132875,16 @@ async function checkProviderHealth(config, deps) {
 __name(checkProviderHealth, "checkProviderHealth");
 var REQUEST_TIMEOUT_MS = 15 * 60 * 1e3;
 function createBackendServer(deps) {
+  const access2 = deps.apiAccess ?? resolveApiAccess();
   const server = (0, import_node_http.createServer)((request, response2) => {
-    void route(request, response2, deps);
+    void route(request, response2, deps, access2);
   });
   server.requestTimeout = REQUEST_TIMEOUT_MS;
   return server;
 }
 __name(createBackendServer, "createBackendServer");
 function sendJson(response2, status, json) {
-  response2.writeHead(status, { "Content-Type": "application/json", ...CORS_HEADERS });
+  response2.writeHead(status, { "Content-Type": "application/json" });
   response2.end(JSON.stringify(json));
 }
 __name(sendJson, "sendJson");
@@ -132701,26 +132895,41 @@ function readBody(request) {
     request.on("data", (chunk) => {
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        reject(new Error("Request body too large."));
-        request.destroy();
+        chunks.length = 0;
+        reject(new RequestBodyTooLarge());
         return;
       }
       chunks.push(chunk);
     });
     request.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
     request.on("error", reject);
+    request.on("aborted", () => reject(new Error("Request aborted.")));
   });
 }
 __name(readBody, "readBody");
-async function route(request, response2, deps) {
-  const url = new URL(request.url ?? "/", "http://localhost");
-  const method = request.method ?? "GET";
-  if (method === "OPTIONS") {
-    response2.writeHead(204, CORS_HEADERS);
-    response2.end();
-    return;
-  }
+async function route(request, response2, deps, access2) {
   try {
+    const url = new URL(request.url ?? "/", "http://localhost");
+    const method = request.method ?? "GET";
+    const denied = authorizeApiRequest(request, response2, url.pathname, access2);
+    if (denied) {
+      sendJson(response2, denied.status, { error: { code: denied.code, message: denied.message } });
+      return;
+    }
+    if (method === "OPTIONS") {
+      response2.writeHead(204).end();
+      return;
+    }
+    if (method === "POST") {
+      if (!/^application\/json(?:\s*;|$)/i.test(request.headers["content-type"] ?? "")) {
+        sendJson(response2, 415, { error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Use application/json." } });
+        return;
+      }
+      if (Number(request.headers["content-length"]) > MAX_BODY_BYTES) {
+        sendJson(response2, 413, { error: { code: "BODY_TOO_LARGE", message: "Request body exceeds 25 MiB." } });
+        return;
+      }
+    }
     if (method === "GET" && url.pathname === "/api/v1/health") {
       const config = deps.config ?? resolveServiceConfig();
       sendJson(response2, 200, await checkProviderHealth(config, deps));
@@ -132753,25 +132962,38 @@ async function route(request, response2, deps) {
       return;
     }
     if (await handleCadImportRoute(request, response2, url, readBody, sendJson)) return;
-    if (await handleLocalProjectRoute(request, response2, url, readBody, sendJson, CORS_HEADERS)) return;
-    if (await handleExportRoute(request, response2, url, readBody, sendJson, CORS_HEADERS)) return;
+    if (await handleLocalProjectRoute(request, response2, url, readBody, sendJson)) return;
+    if (await handleExportRoute(request, response2, url, readBody, sendJson)) return;
     sendJson(response2, 404, { error: { code: "NOT_FOUND", message: "Unknown endpoint." } });
   } catch (error2) {
-    const message = error2 instanceof Error ? error2.message : "Unexpected server error.";
-    sendJson(response2, message.includes("too large") ? 413 : 500, { error: { code: "SERVER_ERROR", message } });
+    if (response2.destroyed || response2.headersSent) return;
+    if (error2 instanceof URIError) {
+      sendJson(response2, 400, { error: { code: "INVALID_URL", message: "Request URL is malformed." } });
+    } else if (error2 instanceof RequestBodyTooLarge) {
+      sendJson(response2, 413, { error: { code: "BODY_TOO_LARGE", message: "Request body exceeds 25 MiB." } });
+    } else {
+      console.error("Studio API request failed:", error2);
+      sendJson(response2, 500, { error: { code: "SERVER_ERROR", message: "The request failed. Check the local backend logs." } });
+    }
   }
 }
 __name(route, "route");
 function startBackendServer(port) {
   const config = resolveServiceConfig();
   const gemini = createGeminiProvider(config);
+  const apiAccess = resolveApiAccess();
+  const host = process.env.RH_API_HOST?.trim() || "127.0.0.1";
+  if (!isLoopbackHost(host) && !apiAccess.token) {
+    throw new Error("Configure RH_API_TOKEN before binding the studio backend to a non-loopback address.");
+  }
   const deps = {
     gemini,
     briefInterpreterKind: config.briefInterpreterKind,
-    config
+    config,
+    apiAccess
   };
   const server = createBackendServer(deps);
-  server.listen(port ?? config.port, () => {
+  server.listen(port ?? config.port, host === "[::1]" ? "::1" : host, () => {
     console.log(`AI floor-planner backend listening on port ${port ?? config.port}`);
     console.log("Plan generation: deterministic (planning-engine); no image provider involved");
     console.log(

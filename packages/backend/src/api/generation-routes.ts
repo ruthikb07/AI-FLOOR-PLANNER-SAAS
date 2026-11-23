@@ -10,7 +10,10 @@ import {
   generateArchitecturalProposal,
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
+import { randomUUID } from 'node:crypto';
 import { validateRegulatoryContextSchema, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
+import { isRecord } from './http-input.js';
 import {
   evaluateArchitecturalComplianceScore,
   executeAuditedPlanningPipeline,
@@ -22,10 +25,6 @@ export interface GenerationRouteDeps {
   readonly gemini: BaseAIProvider | null;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
 function includesSurveyGeometry(value: unknown): boolean {
   return isRecord(value) && (value.siteGeometryMode === 'survey' ||
     value.surveyDraft != null || value.surveyBoundary != null ||
@@ -35,25 +34,31 @@ function includesSurveyGeometry(value: unknown): boolean {
 function parseGenerationRequest(body: unknown): {
   config: MultiSheetApartmentConfig;
   seed: number;
+  generationRunId: string;
   rejectedTopologyHashes: readonly string[];
 } | null {
   if (!isRecord(body)) return null;
 
   const rawConfig = isRecord(body.config) ? body.config : body;
-  const plotWidthMm = Number(rawConfig.plotWidthMm);
-  const plotDepthMm = Number(rawConfig.plotDepthMm);
-  const flatsPerFloor = Number(rawConfig.flatsPerFloor);
+  const positive = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value) && value > 0;
+  const setbacks = rawConfig.setbacksMm;
+  const flats = Number(rawConfig.flatsPerFloor);
+  const floors = Number(rawConfig.numTypicalFloors);
+  if (![rawConfig.plotWidthMm, rawConfig.plotDepthMm, rawConfig.roadWidthMm,
+    rawConfig.floorToFloorHeightMm, rawConfig.stiltHeightMm].every(positive)
+    || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40
+    || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6
+    || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats
+    || rawConfig.units.some(unit => !isRecord(unit) || typeof unit.bhkType !== 'string' || !/^[1-4]BHK$/.test(unit.bhkType))
+    || (rawConfig.projectId !== undefined && (typeof rawConfig.projectId !== 'string' || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)))
+    || (rawConfig.aiPrompt !== undefined && (typeof rawConfig.aiPrompt !== 'string' || rawConfig.aiPrompt.length > 32_000))
+    || (setbacks !== undefined && (!isRecord(setbacks) ||
+      ['front', 'rear', 'left', 'right'].some(key => !Number.isFinite(setbacks[key]) || Number(setbacks[key]) < 0)))) return null;
 
-  if (
-    !Number.isFinite(plotWidthMm) ||
-    plotWidthMm <= 0 ||
-    !Number.isFinite(plotDepthMm) ||
-    plotDepthMm <= 0 ||
-    !Number.isFinite(flatsPerFloor) ||
-    flatsPerFloor < 1
-  ) {
-    return null;
-  }
+  const runId = body.generationRunId;
+  if (runId !== undefined && (typeof runId !== 'string'
+    || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(runId)
+    || runId.toLowerCase() === String(rawConfig.projectId).toLowerCase())) return null;
 
   const config = rawConfig as unknown as MultiSheetApartmentConfig;
   const seedRaw = body.seed ?? config.generationSeed ?? 1;
@@ -61,10 +66,10 @@ function parseGenerationRequest(body: unknown): {
 
   const rejectedRaw = body.rejectedTopologyHashes ?? config.rejectedTopologyHashes ?? [];
   const rejectedTopologyHashes = Array.isArray(rejectedRaw)
-    ? rejectedRaw.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    ? rejectedRaw.slice(0, 128).filter((item): item is string => typeof item === 'string' && item.length <= 128 && item.trim().length > 0)
     : [];
 
-  return { config, seed, rejectedTopologyHashes };
+  return { config, seed, generationRunId: typeof runId === 'string' ? runId : randomUUID(), rejectedTopologyHashes };
 }
 
 export async function handleProjectGeneration(
@@ -84,7 +89,7 @@ export async function handleProjectGeneration(
       json: {
         error: {
           code: 'INVALID_REQUEST',
-          message: 'plotWidthMm > 0, plotDepthMm > 0, and flatsPerFloor >= 1 are required.',
+          message: 'Check plot and road dimensions, heights, setbacks, 1 to 40 floors and the matching 1 to 6 unit BHK mix.',
         },
       },
     };
@@ -112,45 +117,63 @@ export async function handleProjectGeneration(
       config: proposalResult.enrichedConfig,
     });
 
+    let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
     // If compliance < 85 after deterministic solver loop and live AI provider is configured,
     // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
     const maxOuterRetries = deps.gemini ? 2 : 0;
-    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= maxOuterRetries; retryIdx++) {
-      const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
-      const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
-      const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
-        ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
-        : [...parsed.rejectedTopologyHashes];
-      const updatedRejectedShapes =
-        !parsed.config.buildingMassingShape && priorShape
-          ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
-          : parsed.config.rejectedShapeIds;
-      const correctiveHint = complianceReport.violations
-        .slice(0, 3)
-        .map(v => (typeof v === 'string' ? v : v.message))
-        .join(' ');
-      const retryProposal = await generateArchitecturalProposal(deps.gemini, {
-        config: {
-          ...parsed.config,
-          ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
-          aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
-        },
-        seed: parsed.seed + retryIdx * 12,
-        rejectedTopologyHashes: updatedRejected,
-      });
-      const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
-      const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
-        config: retryProposal.enrichedConfig,
-      });
-      const retryIsBetter =
-        retryCompliance.redConflictCount < complianceReport.redConflictCount ||
-        (retryCompliance.redConflictCount === complianceReport.redConflictCount &&
-          retryCompliance.score >= complianceReport.score);
-      if (retryIsBetter) {
-        proposalResult = retryProposal;
-        pipelineResult = retryPipeline;
-        complianceReport = retryCompliance;
+    for (let retryIdx = 1; (blockers.length || !complianceReport.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
+      try {
+        const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+        const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
+        const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
+          ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
+          : [...parsed.rejectedTopologyHashes];
+        const updatedRejectedShapes =
+          !parsed.config.buildingMassingShape && priorShape
+            ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
+            : parsed.config.rejectedShapeIds;
+        const correctiveHint = complianceReport.violations
+          .slice(0, 3)
+          .map(v => (typeof v === 'string' ? v : v.message))
+          .join(' ');
+        const retryProposal = await generateArchitecturalProposal(deps.gemini, {
+          config: {
+            ...parsed.config,
+            ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
+            aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
+          },
+          seed: parsed.seed + retryIdx * 12,
+          rejectedTopologyHashes: updatedRejected,
+        });
+        const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
+        const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
+          config: retryProposal.enrichedConfig,
+        });
+        const retryBlockers = generationBlockingFindings(retryPipeline.building, retryPipeline.validationReport);
+        const retryIsBetter = retryBlockers.length === 0 && (blockers.length > 0 ||
+          retryCompliance.redConflictCount < complianceReport.redConflictCount ||
+          (retryCompliance.redConflictCount === complianceReport.redConflictCount &&
+            retryCompliance.score >= complianceReport.score));
+        if (retryIsBetter) {
+          proposalResult = retryProposal;
+          pipelineResult = retryPipeline;
+          complianceReport = retryCompliance;
+          blockers = retryBlockers;
+        }
+      } catch {
+        // A failed optional re-proposal cannot discard the first audited result.
       }
+    }
+
+    if (blockers.length) {
+      return {
+        status: 422,
+        json: { generationRunId: parsed.generationRunId, error: {
+          code: 'GENERATION_CHECKS_FAILED',
+          message: `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
+          findings: blockers.slice(0, 20),
+        } },
+      };
     }
 
     const enrichedBuilding = {
@@ -158,6 +181,7 @@ export async function handleProjectGeneration(
       metadata: {
         ...pipelineResult.building.metadata,
         complianceReport,
+        generationRunId: parsed.generationRunId,
         generationBrief: {
           ...pipelineResult.building.metadata.generationBrief,
           aiTelemetry: proposalResult.telemetry,
@@ -169,6 +193,7 @@ export async function handleProjectGeneration(
       status: 200,
       json: {
         ...pipelineResult,
+        generationRunId: parsed.generationRunId,
         building: enrichedBuilding,
         complianceReport,
         proposal: proposalResult.proposal,
@@ -176,19 +201,23 @@ export async function handleProjectGeneration(
       },
     };
   } catch (error) {
-    const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
-    const reason =
-      outcome.status === 'PLAN'
-        ? (error instanceof Error ? error.message : 'Pipeline verification failed.')
-        : outcome.reason;
+    let failure = { code: 'PIPELINE_FAILED', message: error instanceof Error ? error.message : 'Pipeline verification failed.' };
+    let diagnostic: Exclude<ReturnType<typeof generateApartmentOutcome>, { status: 'PLAN' }> | undefined;
+    try {
+      const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
+      if (outcome.status !== 'PLAN') {
+        diagnostic = outcome;
+        failure = { code: outcome.status, message: outcome.reason };
+      }
+    } catch {
+      // Keep the original failure even when recovery cannot classify it.
+    }
     return {
       status: 422,
       json: {
-        error: {
-          code: outcome.status === 'PLAN' ? 'PIPELINE_FAILED' : outcome.status,
-          message: reason,
-        },
-        outcome,
+        generationRunId: parsed.generationRunId,
+        error: failure,
+        ...(diagnostic ? { outcome: diagnostic } : {}),
         proposal: proposalResult.proposal,
         telemetry: proposalResult.telemetry,
       },

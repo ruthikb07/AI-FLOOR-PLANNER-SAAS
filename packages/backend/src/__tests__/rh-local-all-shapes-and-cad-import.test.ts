@@ -146,6 +146,19 @@ describe('RH Planner Local Web-Use: Real CAD Import, Local Disk Library & All Ca
     fs.rmSync(tempProjectsDir, { recursive: true, force: true });
   });
 
+  it('does not publish failed plot-generated geometry as a CAD import result', async () => {
+    const inputs = {
+      action: 'import_plot', fileName: 'irregular-site-42a.dxf', contentText: IRREGULAR_PLOT_DXF,
+      setbacksMm: { front: 3000, rear: 2000, left: 2000, right: 2000 },
+      numTypicalFloors: 2, flatsPerFloor: 4, buildingMassingShape: 'IRREGULAR_ANGLED_PLOT',
+    };
+    const response = await fetch(serverUrl + '/api/v1/import/cad-layout', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inputs),
+    });
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ error: { code: 'GENERATION_CHECKS_FAILED' } });
+  }, 30_000);
+
   it('imports a real .DXF irregular quadrilateral plot boundary and generates a multi-storey apartment inside setbacks', () => {
     const parsed = parseDxfContent(IRREGULAR_PLOT_DXF, 'irregular-site-42a.dxf');
     expect(parsed.detectedUnit).toBe('mm');

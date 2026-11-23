@@ -22,6 +22,8 @@ import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
 import { handleLocalProjectRoute } from './routes/local-project-routes.js';
+import { RequestBodyTooLarge } from './api/http-input.js';
+import { authorizeApiRequest, isLoopbackHost, resolveApiAccess, type ApiAccess } from './api/http-access.js';
 
 // Auto-load .env file if available in process.env or common locations
 if (typeof process.loadEnvFile === 'function') {
@@ -42,13 +44,6 @@ if (typeof process.loadEnvFile === 'function') {
 }
 
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
-
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Expose-Headers': 'Content-Disposition, Content-Length, X-CAD-Format, X-CAD-Magic, X-CAD-Entities, X-CAD-Layers, X-CAD-Validation, X-CAD-Disk-Path, X-CAD-Download-URL, X-Artifact-Descriptor',
-};
 
 /**
  * Server-side Gemini provider.
@@ -177,21 +172,23 @@ export interface ServerDeps {
   readonly gemini: BaseAIProvider | null;
   readonly briefInterpreterKind: 'gemini' | 'local-stub';
   readonly config?: ServiceConfig;
+  readonly apiAccess?: ApiAccess;
 }
 
 /** Export and structural-report generation can exceed Node's default timeout. */
 export const REQUEST_TIMEOUT_MS = 15 * 60 * 1000;
 
 export function createBackendServer(deps: ServerDeps): Server {
+  const access = deps.apiAccess ?? resolveApiAccess();
   const server = createServer((request: IncomingMessage, response: ServerResponse) => {
-    void route(request, response, deps);
+    void route(request, response, deps, access);
   });
   server.requestTimeout = REQUEST_TIMEOUT_MS;
   return server;
 }
 
 function sendJson(response: ServerResponse, status: number, json: unknown): void {
-  response.writeHead(status, { 'Content-Type': 'application/json', ...CORS_HEADERS });
+  response.writeHead(status, { 'Content-Type': 'application/json' });
   response.end(JSON.stringify(json));
 }
 
@@ -202,28 +199,42 @@ function readBody(request: IncomingMessage): Promise<string> {
     request.on('data', (chunk: Buffer) => {
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        reject(new Error('Request body too large.'));
-        request.destroy();
+        chunks.length = 0;
+        reject(new RequestBodyTooLarge());
         return;
       }
       chunks.push(chunk);
     });
     request.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     request.on('error', reject);
+    request.on('aborted', () => reject(new Error('Request aborted.')));
   });
 }
 
-async function route(request: IncomingMessage, response: ServerResponse, deps: ServerDeps): Promise<void> {
-  const url = new URL(request.url ?? '/', 'http://localhost');
-  const method = request.method ?? 'GET';
-
-  if (method === 'OPTIONS') {
-    response.writeHead(204, CORS_HEADERS);
-    response.end();
-    return;
-  }
-
+async function route(request: IncomingMessage, response: ServerResponse, deps: ServerDeps, access: ApiAccess): Promise<void> {
   try {
+    const url = new URL(request.url ?? '/', 'http://localhost');
+    const method = request.method ?? 'GET';
+    const denied = authorizeApiRequest(request, response, url.pathname, access);
+    if (denied) {
+      sendJson(response, denied.status, { error: { code: denied.code, message: denied.message } });
+      return;
+    }
+    if (method === 'OPTIONS') {
+      response.writeHead(204).end();
+      return;
+    }
+    if (method === 'POST') {
+      if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? '')) {
+        sendJson(response, 415, { error: { code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Use application/json.' } });
+        return;
+      }
+      if (Number(request.headers['content-length']) > MAX_BODY_BYTES) {
+        sendJson(response, 413, { error: { code: 'BODY_TOO_LARGE', message: 'Request body exceeds 25 MiB.' } });
+        return;
+      }
+    }
+
     if (method === 'GET' && url.pathname === '/api/v1/health') {
       const config = deps.config ?? resolveServiceConfig();
       sendJson(response, 200, await checkProviderHealth(config, deps));
@@ -259,26 +270,39 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
     }
 
     if (await handleCadImportRoute(request, response, url, readBody, sendJson)) return;
-    if (await handleLocalProjectRoute(request, response, url, readBody, sendJson, CORS_HEADERS)) return;
-    if (await handleExportRoute(request, response, url, readBody, sendJson, CORS_HEADERS)) return;
+    if (await handleLocalProjectRoute(request, response, url, readBody, sendJson)) return;
+    if (await handleExportRoute(request, response, url, readBody, sendJson)) return;
 
     sendJson(response, 404, { error: { code: 'NOT_FOUND', message: 'Unknown endpoint.' } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected server error.';
-    sendJson(response, message.includes('too large') ? 413 : 500, { error: { code: 'SERVER_ERROR', message } });
+    if (response.destroyed || response.headersSent) return;
+    if (error instanceof URIError) {
+      sendJson(response, 400, { error: { code: 'INVALID_URL', message: 'Request URL is malformed.' } });
+    } else if (error instanceof RequestBodyTooLarge) {
+      sendJson(response, 413, { error: { code: 'BODY_TOO_LARGE', message: 'Request body exceeds 25 MiB.' } });
+    } else {
+      console.error('Studio API request failed:', error);
+      sendJson(response, 500, { error: { code: 'SERVER_ERROR', message: 'The request failed. Check the local backend logs.' } });
+    }
   }
 }
 
 export function startBackendServer(port?: number): { server: Server; config: ServiceConfig } {
   const config = resolveServiceConfig();
   const gemini = createGeminiProvider(config);
+  const apiAccess = resolveApiAccess();
+  const host = process.env.RH_API_HOST?.trim() || '127.0.0.1';
+  if (!isLoopbackHost(host) && !apiAccess.token) {
+    throw new Error('Configure RH_API_TOKEN before binding the studio backend to a non-loopback address.');
+  }
   const deps: ServerDeps = {
     gemini,
     briefInterpreterKind: config.briefInterpreterKind,
     config,
+    apiAccess,
   };
   const server = createBackendServer(deps);
-  server.listen(port ?? config.port, () => {
+  server.listen(port ?? config.port, host === '[::1]' ? '::1' : host, () => {
     // Never log credential values — only their presence.
     console.log(`AI floor-planner backend listening on port ${port ?? config.port}`);
     console.log('Plan generation: deterministic (planning-engine); no image provider involved');

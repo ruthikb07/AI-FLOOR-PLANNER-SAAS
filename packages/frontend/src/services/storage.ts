@@ -431,6 +431,14 @@ export class LocalStorageProjectStorage {
     }
   }
 
+  archiveRevision(projectId: string, version: number): Promise<void> {
+    return projectStore.archive(projectId, version);
+  }
+
+  archivedRevisions(projectId: string): ReturnType<IndexedDbProjectStore['archivedRevisions']> {
+    return projectStore.archivedRevisions(projectId);
+  }
+
   /** Awaits the durable write for a project. */
   flush(projectId: string): Promise<PersistenceResult> {
     return projectStore.flush(projectId);
@@ -492,22 +500,23 @@ export async function hydrateProjectStorage(): Promise<{
       const raw = localStorage.getItem(key);
       if (!raw) continue;
 
-      // A project already in IndexedDB wins: it is the newer store, and
-      // overwriting it with a stale localStorage copy would lose work.
-      if (projectStore.has(projectId)) {
-        localStorage.removeItem(key);
+      const persisted = await projectStore.readDurable(projectId);
+      if (persisted !== undefined) {
+        // Keep differing copies recoverable. A matching copy can be removed
+        // only if another tab has not changed the legacy value meanwhile.
+        if (persisted === raw && localStorage.getItem(key) === raw) localStorage.removeItem(key);
         continue;
       }
 
-      const result = await projectStore.write(projectId, raw);
-      if (result.state === 'SAVED') {
-        localStorage.removeItem(key);
-        migrated++;
-      } else {
-        // Leave the original in place. A legacy project is only removed once
-        // its durable copy is confirmed.
-        failed.push({ projectId, reason: result.reason ?? result.state });
+      // A failed save may have left newer edits in the session mirror.
+      const payload = projectStore.read(projectId) ?? raw;
+      const result = await projectStore.write(projectId, payload);
+      if (result.state !== 'SAVED' || await projectStore.readDurable(projectId) !== payload) {
+        failed.push({ projectId, reason: result.reason ?? 'Could not verify the durable project copy' });
+        continue;
       }
+      if (payload === raw && localStorage.getItem(key) === raw) localStorage.removeItem(key);
+      migrated++;
     } catch (error) {
       failed.push({ projectId, reason: error instanceof Error ? error.message : String(error) });
     }

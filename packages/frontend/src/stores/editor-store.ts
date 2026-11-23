@@ -35,7 +35,7 @@ import {
   createCanonical30x50_2BHK,
   type SaveOutcome,
 } from '../services/storage';
-import type { PersistenceState } from '../services/durable-project-store';
+import type { PersistenceResult, PersistenceState } from '../services/durable-project-store';
 
 export interface EditorContextValue {
   engine: EditorEngine;
@@ -69,7 +69,7 @@ export interface EditorContextValue {
   setRoomLocks: (roomIds: readonly string[], locked: boolean) => void;
   setFloorLock: (floorId: string, locked: boolean) => void;
   setCoreLock: (coreId: string, locked: boolean) => void;
-  applyRefinement: (building: Building, description?: string) => void;
+  applyRefinement: (building: Building, description?: string, preserveSnapshot?: boolean) => void;
   loadProject: (projectId: string) => void;
   setBuilding: (
     building: Building,
@@ -102,11 +102,7 @@ export function useEditorStore() {
     const activeId = projectStorage.getActiveProjectId();
     if (activeId) {
       const loaded = projectStorage.load(activeId);
-      if (loaded) {
-        const isLegacyCanonical = loaded.projectId === 'proj_30x50_2bhk'
-          && loaded.schemaVersion < CURRENT_PROJECT_SCHEMA_VERSION;
-        if (!isLegacyCanonical) return loaded;
-      }
+      if (loaded) return loaded;
     }
     const defaultBuilding = createCanonical30x50_2BHK();
     const env: ProjectEnvelope = {
@@ -126,7 +122,6 @@ export function useEditorStore() {
       category: 'residential',
       status: 'CONCEPT',
     };
-    projectStorage.save(env);
     return env;
   }, []);
 
@@ -168,16 +163,63 @@ export function useEditorStore() {
     initialEnvelope.building,
   ).state;
   const [generationControl, setGenerationControlState] = useState<GenerationControlState>(initialControl);
-  // Durability of the most recent save. Starts SAVED because the project was
-  // just hydrated from durable storage (or freshly created and written).
   const [persistence, setPersistence] = useState<PersistenceStatus>({
-    state: 'SAVED',
+    state: 'PENDING',
     projectId: initialEnvelope.projectId,
   });
   const generationControlRef = useRef(initialControl);
   const requiredRoomCountsRef = useRef<Partial<Record<RoomType, number>>>(
     initialEnvelope.requiredRoomCounts ?? {},
   );
+
+  const saveSequence = useRef(0);
+  const replacingProject = useRef(false);
+
+  const observeDurability = useCallback((id: string, durable: Promise<PersistenceResult>) => {
+    const sequence = ++saveSequence.current;
+    setPersistence({ state: 'PENDING', projectId: id });
+    const publish = (result: PersistenceResult) => {
+      if (sequence === saveSequence.current && id === projectIdentityRef.current.id) {
+        setPersistence({ state: result.state, reason: result.reason, projectId: id });
+      }
+    };
+    void durable.then(publish, error => publish({
+      state: 'FAILED', reason: error instanceof Error ? error.message : String(error), inMemory: false,
+    }));
+  }, []);
+
+  const saveEnvelope = useCallback((envelope: ProjectEnvelope): SaveOutcome => {
+    let outcome: SaveOutcome;
+    try {
+      outcome = projectStorage.save(envelope);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      outcome = { durability: 'FAILED', reason, inMemory: false,
+        durable: Promise.resolve({ state: 'FAILED', reason, inMemory: false }) };
+    }
+    observeDurability(envelope.projectId, outcome.durable);
+    return outcome;
+  }, [observeDurability]);
+
+  const saveBuilding = useCallback((building: Building, control: GenerationControlState, updatedAt = building.updatedAt) =>
+    saveEnvelope({
+      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
+      projectId: projectIdentityRef.current.id,
+      name: projectIdentityRef.current.name,
+      createdAt: building.createdAt,
+      updatedAt,
+      building,
+      requiredRoomCounts: requiredRoomCountsRef.current,
+      category: projectIdentityRef.current.category,
+      status: projectIdentityRef.current.status,
+      generationControl: control,
+    }), [saveEnvelope]);
+
+  useEffect(() => {
+    const id = initialEnvelope.projectId;
+    if (projectStorage.load(id)) observeDurability(id, projectStorage.flush(id));
+    else saveEnvelope(initialEnvelope);
+  }, [initialEnvelope, observeDurability, saveEnvelope]);
 
   // Real-time non-blocking design diagnostics & legacy-compatible validation summary
   const [diagnostics, setDiagnostics] = useState<DesignDiagnostics>(() => {
@@ -198,7 +240,7 @@ export function useEditorStore() {
       setBuildingState(b);
       setEditorState(s);
 
-      if (event.type === 'building_changed' || event.type === 'history_changed') {
+      if (event.type === 'building_changed') {
         const diag = evaluateDesign(b);
         const report = diagnosticsToValidation(b, {
           requiredRoomCounts: requiredRoomCountsRef.current,
@@ -206,45 +248,14 @@ export function useEditorStore() {
         setDiagnostics(diag);
         setValidationSummary(report);
 
-        // Autosave on mutation. A failure here is reported through
-        // `persistence` rather than logged and forgotten: the user needs to
-        // know their edits are not durably stored, and the edits themselves
-        // are never discarded because of it.
-        try {
-          const outcome = projectStorage.save({
-            schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-            projectId: projectIdentityRef.current.id,
-            name: projectIdentityRef.current.name,
-            createdAt: b.createdAt,
-            updatedAt: b.updatedAt,
-            building: b,
-            requiredRoomCounts: requiredRoomCountsRef.current,
-            category: projectIdentityRef.current.category,
-            status: projectIdentityRef.current.status,
-            generationControl: validateGenerationControl(generationControlRef.current, b).state,
-          });
-          void outcome.durable.then(result => {
-            setPersistence({
-              state: result.state,
-              reason: result.reason,
-              projectId: projectIdentityRef.current.id,
-            });
-          });
-        } catch (e) {
-          // Only a genuine serialization defect reaches here; capacity
-          // problems are reported through the outcome above.
-          console.error('Autosave failed to serialize the project:', e);
-          setPersistence({
-            state: 'FAILED',
-            reason: e instanceof Error ? e.message : String(e),
-            projectId: projectIdentityRef.current.id,
-          });
+        if (!replacingProject.current) {
+          saveBuilding(b, validateGenerationControl(generationControlRef.current, b).state);
         }
       }
     });
 
     return () => unsubscribe();
-  }, [engine]);
+  }, [engine, saveBuilding]);
 
   const activeFloor = useMemo(() => {
     const currentFloor = building.floors.find(f => f.id === editorState.activeFloorId);
@@ -297,37 +308,16 @@ export function useEditorStore() {
   }, [engine, editorState.selection]);
 
   const saveProject = useCallback(() => {
-    projectStorage.save({
-      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-      projectId,
-      name: projectName,
-      createdAt: building.createdAt,
-      updatedAt: new Date().toISOString(),
-      building,
-      requiredRoomCounts: requiredRoomCountsRef.current,
-      category: projectCategory,
-      status: projectStatus,
-      generationControl,
-    });
-  }, [projectId, projectName, building, projectCategory, projectStatus, generationControl]);
+    saveBuilding(engine.getBuilding(), generationControlRef.current, new Date().toISOString());
+  }, [engine, saveBuilding]);
 
   const persistControl = useCallback((next: GenerationControlState) => {
-    const validated = validateGenerationControl(next, engine.getBuilding()).state;
+    const current = engine.getBuilding();
+    const validated = validateGenerationControl(next, current).state;
     generationControlRef.current = validated;
     setGenerationControlState(validated);
-    projectStorage.save({
-      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-      projectId: projectIdentityRef.current.id,
-      name: projectIdentityRef.current.name,
-      createdAt: engine.getBuilding().createdAt,
-      updatedAt: new Date().toISOString(),
-      building: engine.getBuilding(),
-      requiredRoomCounts: requiredRoomCountsRef.current,
-      category: projectIdentityRef.current.category,
-      status: projectIdentityRef.current.status,
-      generationControl: validated,
-    });
-  }, [engine]);
+    saveBuilding(current, validated, new Date().toISOString());
+  }, [engine, saveBuilding]);
 
   const setRoomLocks = useCallback((roomIds: readonly string[], locked: boolean) => {
     const current = new Set(generationControlRef.current.lockedEntityIds);
@@ -347,8 +337,8 @@ export function useEditorStore() {
     persistControl(updateGenerationControl(generationControlRef.current, { protectedCoreIds: [...current] }));
   }, [persistControl]);
 
-  const applyRefinement = useCallback((nextBuilding: Building, description = 'Targeted regeneration') => {
-    engine.execute(new ReplaceBuildingCommand(engine.getBuilding(), nextBuilding, description));
+  const applyRefinement = useCallback((nextBuilding: Building, description = 'Targeted regeneration', preserveSnapshot = false) => {
+    engine.execute(new ReplaceBuildingCommand(engine.getBuilding(), nextBuilding, description, preserveSnapshot));
   }, [engine]);
 
   const revalidate = useCallback(() => {
@@ -376,8 +366,14 @@ export function useEditorStore() {
     const loadedControl = validateGenerationControl(loaded.generationControl, loaded.building).state;
     generationControlRef.current = loadedControl;
     setGenerationControlState(loadedControl);
-    engine.setBuilding(loaded.building);
-  }, [engine]);
+    replacingProject.current = true;
+    try {
+      engine.setBuilding(loaded.building);
+    } finally {
+      replacingProject.current = false;
+    }
+    observeDurability(loaded.projectId, projectStorage.flush(loaded.projectId));
+  }, [engine, observeDurability]);
 
   const setBuilding = useCallback((
     newBuilding: Building,
@@ -401,46 +397,14 @@ export function useEditorStore() {
     generationControlRef.current = nextControl;
     setGenerationControlState(nextControl);
 
-    // The completed, validated geometry is handed to the editor FIRST.
-    //
-    // This used to run after the save, so a storage failure threw and the
-    // generated building never reached the editor — the user lost a plan that
-    // had already passed every geometric and regulatory check. Generation
-    // success and persistence success are different facts: the plan exists
-    // either way, and the save reports its own durability separately.
-    engine.setBuilding(newBuilding);
-
-    const outcome = projectStorage.save({
-      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-      projectId: newBuilding.projectId,
-      name: resolvedName,
-      createdAt: newBuilding.createdAt,
-      updatedAt: new Date().toISOString(),
-      building: newBuilding,
-      requiredRoomCounts,
-      category,
-      status: 'CONCEPT',
-      generationControl: nextControl,
-    });
-
-    // Surface the real durability once the write settles, without blocking the
-    // UI on it. A failure is reported, never swallowed and never relabelled as
-    // a success.
-    void outcome.durable.then(result => {
-      setPersistence({
-        state: result.state,
-        reason: result.reason,
-        projectId: newBuilding.projectId,
-      });
-      if (result.state !== 'SAVED') {
-        console.error(
-          `Project ${newBuilding.projectId} is open and complete but NOT durably saved: ${result.reason ?? result.state}`,
-        );
-      }
-    });
-
-    return outcome;
-  }, [engine]);
+    replacingProject.current = true;
+    try {
+      engine.setBuilding(newBuilding);
+    } finally {
+      replacingProject.current = false;
+    }
+    return saveBuilding(newBuilding, nextControl, new Date().toISOString());
+  }, [engine, saveBuilding]);
 
   const updateSite = useCallback((params: UpdateSiteParams) => {
     engine.execute(new UpdateSiteCommand(engine.getBuilding(), params));
@@ -448,20 +412,8 @@ export function useEditorStore() {
 
   const setRequiredRoomCounts = useCallback((counts: Partial<Record<RoomType, number>>) => {
     requiredRoomCountsRef.current = counts;
-    const b = engine.getBuilding();
-    projectStorage.save({
-      schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
-      projectId: projectIdentityRef.current.id,
-      name: projectIdentityRef.current.name,
-      createdAt: b.createdAt,
-      updatedAt: new Date().toISOString(),
-      building: b,
-      requiredRoomCounts: counts,
-      category: projectIdentityRef.current.category,
-      status: projectIdentityRef.current.status,
-      generationControl: generationControlRef.current,
-    });
-  }, [engine]);
+    saveBuilding(engine.getBuilding(), generationControlRef.current, new Date().toISOString());
+  }, [engine, saveBuilding]);
 
   const addFloor = useCallback((name?: string, floorHeight?: number) => {
     engine.addFloor(name, floorHeight);

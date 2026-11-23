@@ -17,7 +17,13 @@ export default defineConfig({
     name: '@ai-floor-planner/backend-integration',
     globals: true,
     environment: 'node',
-    include: ['src/__tests__/real-provider-smoke.test.ts'],
+    fileParallelism: false,
+    include: [
+      'src/__tests__/http-trust-boundary.test.ts',
+      'src/__tests__/generation-acceptance-repair.test.ts',
+      'src/__tests__/live-export-http.test.ts',
+      'src/__tests__/rh-local-all-shapes-and-cad-import.test.ts',
+    ],
   },
 });
 

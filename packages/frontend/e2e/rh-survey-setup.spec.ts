@@ -133,6 +133,14 @@ test('rectangular setup still generates a real concept after visiting the survey
   await page.setViewportSize({ width: 1440, height: 900 });
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
+      plotWidthM: 32, plotDepthM: 36, floorsCount: 2, hasStiltParking: false, roadFacing: 'South',
+      authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
+      bhkCounts: { '1BHK': 0, '2BHK': 4, '3BHK': 0, '4BHK': 0 },
+      buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
+    }));
+  });
   await openSite(page);
   await page.getByRole('button', { name: 'Surveyed boundary' }).click();
   await page.getByLabel('Starting outline').selectOption('trapezoid');
@@ -140,7 +148,7 @@ test('rectangular setup still generates a real concept after visiting the survey
   await page.getByRole('button', { name: 'Reference Upload', exact: true }).click();
   const request = page.waitForRequest(candidate => candidate.url().endsWith('/api/v1/projects/generate'));
   await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
-  expect((await request).postDataJSON().config.plotWidthMm).toBe(30_000);
+  expect((await request).postDataJSON().config.plotWidthMm).toBe(32_000);
   const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
   await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 100_000 });
   await page.screenshot({ path: info.outputPath('rectangular-generated-concept.png') });

@@ -140,8 +140,11 @@ export class EditorEngine {
 
     const buildingChanged = result.building !== prevBuilding;
 
-    const coordinated = buildingChanged ? this.options.coordinateRevision?.(result.building, prevBuilding) ?? result.building : result.building;
-    this.building = buildingChanged && coordinated.floors.some(f => f.architecture) ? withArchitecturalElements(coordinated) : coordinated;
+    this.building = result.building;
+    if (buildingChanged && !result.preserveSnapshot) {
+      const coordinated = this.options.coordinateRevision?.(result.building, prevBuilding) ?? result.building;
+      this.building = coordinated.floors.some(f => f.architecture) ? withArchitecturalElements(coordinated) : coordinated;
+    }
 
     // Apply state updates from command
     if (result.stateUpdates) {
