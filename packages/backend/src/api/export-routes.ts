@@ -4,6 +4,7 @@
  */
 
 import type { Building } from '@ai-floor-planner/core';
+import { buildingInputError, isRecord, RequestBodyTooLarge } from './http-input.js';
 import {
   exportBuildingToGlb,
   generateBlenderScript,
@@ -63,7 +64,6 @@ export async function handleExportRoute(
   url: URL,
   readBody: (request: IncomingMessage) => Promise<string>,
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
-  cors: Record<string, string>,
 ): Promise<boolean> {
   if (await handleETABSExportRoute(request, response, url, readBody)) return true;
   const match = url.pathname.match(/^\/api(?:\/v1)?\/export\/(.*)$/);
@@ -72,20 +72,20 @@ export async function handleExportRoute(
     const blenderDownload=match[1]!.match(/^blender\/download\/([^/]+)\/([^/]+)$/);
     if(request.method==='GET'&&blenderDownload) {
       const artifact=blenderService.read(decodeURIComponent(blenderDownload[1]!),decodeURIComponent(blenderDownload[2]!));
-      response.writeHead(200,{'Content-Type':artifact.descriptor.mimeType,'Content-Length':String(artifact.data.length),'Content-Disposition':`attachment; filename="${artifact.descriptor.fileName}"`,...cors});
+      response.writeHead(200,{'Content-Type':artifact.descriptor.mimeType,'Content-Length':String(artifact.data.length),'Content-Disposition':`attachment; filename="${artifact.descriptor.fileName}"`});
       response.end(artifact.data);return true;
     }
     if (request.method === 'GET' && match[1]!.startsWith('preview/')) {
       const data = registry.preview(decodeURIComponent(match[1]!.slice(8)));
       response.writeHead(200, {
         'Content-Type': 'image/svg+xml',
+        'Content-Security-Policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'",
         'Content-Length': String(data.length),
-        ...cors,
       });
       response.end(data);
       return true;
     }
-    if (request.method === 'GET' && match[1]!.startsWith('download')) {
+    if (request.method === 'GET' && (match[1] === 'download' || match[1]!.startsWith('download/'))) {
       const filename =
         decodeURIComponent(match[1]!.slice('download/'.length)) ||
         url.searchParams.get('file') ||
@@ -95,7 +95,6 @@ export async function handleExportRoute(
         'Content-Type': artifact.descriptor.mimeType,
         'Content-Length': String(artifact.data.length),
         'Content-Disposition': `attachment; filename="${artifact.descriptor.fileName}"`,
-        ...cors,
       });
       response.end(artifact.data);
       return true;
@@ -107,8 +106,9 @@ export async function handleExportRoute(
       format?: ArtifactFormat;
       options?: CadExportOptions & PdfExportOptions & import('@ai-floor-planner/core').ResidentialCadPackageOptions;
     };
+    const raw = await readBody(request);
     try {
-      body = JSON.parse(await readBody(request));
+      body = JSON.parse(raw);
     } catch {
       throw new ExportError('INVALID_JSON', 'Request body must be valid JSON', 400);
     }
@@ -118,13 +118,17 @@ export async function handleExportRoute(
         'Content-Type': 'application/dxf',
         'Content-Length': String(dxf.length),
         'Content-Disposition': 'attachment; filename="survey-boundary.dxf"',
-        ...cors,
       });
       response.end(dxf);
       return true;
     }
-    if (!body?.building)
-      throw new ExportError('INVALID_REQUEST', 'building object is required', 400);
+    const invalidBuilding = buildingInputError(body?.building);
+    if (!body?.building || invalidBuilding)
+      throw new ExportError('INVALID_REQUEST', invalidBuilding ?? 'A canonical building is required.', 400);
+    if (body.options !== undefined && !isRecord(body.options))
+      throw new ExportError('INVALID_OPTIONS', 'Options must be an object.', 400);
+    if (body.format !== undefined && typeof body.format !== 'string')
+      throw new ExportError('INVALID_FORMAT', 'Format must be a string.', 400);
     if (match[1] === 'glb') {
       const glbBytes = exportBuildingToGlb(body.building);
       const safeName = (body.building.name || body.building.id || 'model').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -133,7 +137,6 @@ export async function handleExportRoute(
         'Content-Length': String(glbBytes.length),
         'Content-Disposition': `attachment; filename="${safeName}.glb"`,
         'X-CAD-Format': 'GLB',
-        ...cors,
       });
       response.end(Buffer.from(glbBytes));
       return true;
@@ -148,7 +151,6 @@ export async function handleExportRoute(
         'Content-Length': String(buf.length),
         'Content-Disposition': `attachment; filename="${safeName}.py"`,
         'X-CAD-Format': 'BLENDER_SCRIPT',
-        ...cors,
       });
       response.end(buf);
       return true;
@@ -167,8 +169,7 @@ export async function handleExportRoute(
             'Content-Disposition': `attachment; filename="${safeName}.glb"`,
             'X-CAD-Format': 'GLB',
             'X-Blender-Fallback': 'pure-ts-glb',
-            ...cors,
-          });
+              });
           response.end(Buffer.from(glbBytes));
           return true;
         }
@@ -183,7 +184,6 @@ export async function handleExportRoute(
         'Content-Disposition': `attachment; filename="${pdfResult.filename}"`,
         'X-CAD-Format': 'PDF',
         'X-CAD-Pages': String(pdfResult.pageCount),
-        ...cors,
       });
       response.end(Buffer.from(pdfResult.data));
       return true;
@@ -241,15 +241,16 @@ export async function handleExportRoute(
       'X-CAD-Disk-Path': artifact.destination,
       'X-CAD-Download-URL': artifact.descriptor.downloadUrl!,
       'X-Artifact-Descriptor': JSON.stringify(body.options?.cadStandard?{...artifact.descriptor,metadata:undefined,verification:{isValid:artifact.descriptor.verification?.isValid,errors:artifact.descriptor.verification?.errors}}:artifact.descriptor),
-      ...cors,
     });
     response.end(Buffer.from(artifact.data));
   } catch (error) {
+    if (error instanceof RequestBodyTooLarge || error instanceof URIError) throw error;
     const known = error instanceof ExportError;
+    if (!known) console.error('Artifact export failed:', error);
     sendJson(response, known ? error.status : 500, {
       error: {
         code: known ? error.code : 'EXPORT_FAILED',
-        message: error instanceof Error ? error.message : String(error),
+        message: known ? error.message : 'Export failed. Check the local backend logs.',
       },
     });
   }

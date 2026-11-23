@@ -32,7 +32,7 @@ import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { UdcprEtabsAnalysis } from './UdcprEtabsAnalysis';
 import { GenerationProgressModal } from './GenerationProgressModal';
 import { CommandPalette } from '../workspace/CommandPalette';
-import { projectStorage } from '../../services/storage';
+import { exportProjectAsJsonFile, projectStorage } from '../../services/storage';
 import {
   coordinateBuildingFacade,
   evaluateStudioLayoutScore,
@@ -40,11 +40,11 @@ import {
   generateTargetedRefinements,
   RefinementError,
   synthesizeStructuralFraming,
-  type executeAuditedPlanningPipeline,
   type PipelineStageProgressEvent,
 } from '@ai-floor-planner/planning-engine';
 import type { WorkspaceCommand } from '../../services/workspace-commands';
 import { createArgonRequest } from '../../services/argon-request';
+import { generatedRevision, planInWorker } from '../../services/argon-generation';
 import { ConceptReviewWorkspace, ProjectLibrary, representativeFloor, type GeneratedConcept } from './ProjectPortfolio';
 import { CadImportModal, type CadImportCommittedPayload } from './CadImportModal';
 import {
@@ -114,6 +114,15 @@ function assessComplianceRepair(source: Building, candidate: Building) {
   };
 }
 
+type GenerationTarget = 'edit' | 'intake' | 'compare' | 'repair' | 'building_3d';
+interface GenerationAttempt {
+  readonly data: ProjectSetupWizardData;
+  readonly seed: number;
+  readonly rejectedHashes: readonly string[];
+  readonly target: GenerationTarget;
+  readonly projectId: string;
+}
+
 interface ArgonStudioShellProps {
   onBackToProjects?: () => void;
 }
@@ -135,7 +144,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const [diskProjects, setDiskProjects] = useState<LocalDiskProjectManifest[]>([]);
   const [isSavingDisk, setIsSavingDisk] = useState(false);
   const [saveToast, setSaveToast] = useState('');
-  const pendingSourceCad = useRef<{ fileName: string; contentBase64?: string; contentText?: string } | null>(null);
+  const pendingSourceCad = useRef(new Map<string, NonNullable<CadImportCommittedPayload['sourceCadAttachment']>>());
 
   const projectList = projectStorage.list();
 
@@ -160,7 +169,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const handleCadImportLoaded = (payload: CadImportCommittedPayload) => {
     const nextBuilding = payload.building;
-    pendingSourceCad.current = payload.sourceCadAttachment ?? null;
+    if (payload.sourceCadAttachment) pendingSourceCad.current.set(nextBuilding.projectId, payload.sourceCadAttachment);
     editor.setBuilding(nextBuilding, payload.projectName, {}, 'residential');
     const floor = representativeFloor(nextBuilding);
     if (floor) editor.switchFloor(floor.id);
@@ -177,14 +186,15 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     setSaveWarning('');
     try {
       editor.saveProject();
-      const current = editor.building;
+      const current = editor.engine.getBuilding();
       const saved = await saveLocalDiskProject({
-        projectId: editor.projectId || current.projectId,
+        projectId: current.projectId,
         name: editor.projectName || current.name,
         building: current,
         note: `Studio save (${current.metadata.generationBrief?.buildingMassingShape ?? 'layout'})`,
-        sourceCad: pendingSourceCad.current ?? undefined,
+        sourceCad: pendingSourceCad.current.get(current.projectId),
       });
+      pendingSourceCad.current.delete(current.projectId);
       await refreshDiskProjects();
       setSaveToast(`Saved "${saved.manifest.name}" · Rev. ${saved.revision} to local disk`);
       setTimeout(() => setSaveToast(''), 3500);
@@ -197,11 +207,17 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const handleOpenDiskProject = async (projectId: string, revision?: number) => {
     try {
+      const before = editor.engine.getBuilding();
       const loaded = await loadLocalDiskProject(projectId, revision);
-      pendingSourceCad.current = null;
+      const local = projectStorage.load(projectId);
+      if (local && JSON.stringify(local.building) !== JSON.stringify(loaded.building)) {
+        await projectStorage.archiveRevision(projectId, local.building.version);
+      }
+      if (editor.engine.getBuilding() !== before) throw new Error('The active project changed while opening the disk copy. Try again.');
       const syncedBuilding: Building = {
         ...loaded.building,
         projectId: loaded.manifest.projectId,
+        metadata: { ...loaded.building.metadata, projectId: loaded.manifest.projectId },
       };
       editor.setBuilding(syncedBuilding, loaded.manifest.name, {}, 'residential');
       const floor = representativeFloor(syncedBuilding);
@@ -209,7 +225,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       if (typeof window !== 'undefined') sessionStorage.setItem('rh_welcome_dismissed', 'true');
       setShowWelcome(false);
       setConcepts([{ building: syncedBuilding, seed: 1 }]);
-      lastBrief.current = null;
+      regenerationBrief.current = null;
       setActiveWorkspace('cad_2d');
       setSaveToast(`Loaded "${loaded.manifest.name}" (Rev. ${loaded.revision}) from local disk`);
       setTimeout(() => setSaveToast(''), 3500);
@@ -247,10 +263,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     { id: 'export', label: 'Exports', icon: <Download className="w-3.5 h-3.5" /> },
   ];
 
-  const workerRef = useRef<Worker | null>(null);
-  const lastBrief = useRef<ProjectSetupWizardData | null>(null);
+  const activeRun = useRef<AbortController | null>(null);
+  const lastAttempt = useRef<GenerationAttempt | null>(null);
   const regenerationBrief = useRef<{ projectId: string; data: ProjectSetupWizardData } | null>(null);
-  const generationTarget = useRef<'edit' | 'intake' | 'compare' | 'repair' | 'building_3d'>('edit');
   const rejectedTopologyHashes = useRef<string[]>([]);
   const usedShapeIds = useRef<string[]>([]);
   const usedArchetypeIds = useRef<string[]>([]);
@@ -260,7 +275,13 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const [saveWarning, setSaveWarning] = useState('');
   const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
 
-  useEffect(() => () => workerRef.current?.terminate(), []);
+  useEffect(() => () => {
+    activeRun.current?.abort();
+    activeRun.current = null;
+  }, []);
+
+  const projectBrief = regenerationBrief.current?.projectId === editor.projectId
+    ? regenerationBrief.current.data : undefined;
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -279,135 +300,120 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const runGeneration = (
+  const applyGeneratedRevision = async (before: Building, generated: Building, description: string, signal?: AbortSignal) => {
+    const history = projectStorage.load(before.projectId)?.revisionHistory ?? [];
+    const lastRevision = Math.max(before.version, ...history.map(revision => revision.version));
+    const next = generatedRevision(before, generated, lastRevision);
+    try {
+      await projectStorage.archiveRevision(before.projectId, before.version);
+    } catch (error) {
+      throw new Error(`Could not archive the current revision. Your current design is still open. Free browser storage and retry. ${error instanceof Error ? error.message : ''}`);
+    }
+    signal?.throwIfAborted();
+    if (editor.engine.getBuilding() !== before) throw new Error('The project changed while saving the previous revision. Try again.');
+    const control = editor.getGenerationControl?.() ?? editor.generationControl;
+    if (control.lockedFloorIds.length || control.lockedEntityIds.length || control.protectedCoreIds.length) {
+      throw new Error('Unlock the protected floors, rooms and cores before replacing the layout.');
+    }
+    editor.applyRefinement(next, description, true);
+    return next;
+  };
+
+  const runGeneration = async (
     data: ProjectSetupWizardData,
     seed: number,
     rejectedHashes: readonly string[],
-    target: 'edit' | 'intake' | 'compare' | 'repair' | 'building_3d' = 'edit',
+    target: GenerationTarget = 'edit',
+    retryProjectId?: string,
   ) => {
-    workerRef.current?.terminate();
-    lastBrief.current = data;
-    generationTarget.current = target;
+    activeRun.current?.abort();
+    const controller = new AbortController();
+    activeRun.current = controller;
+    const before = editor.engine.getBuilding();
     setIsGenerating(true);
     setPipelineProgress(null);
     setGenerationError('');
     setGenerationFindings([]);
     setConceptNotice('');
     try {
-      const request = {
-        ...createArgonRequest(data),
-        generationSeed: seed,
-        rejectedTopologyHashes: [...rejectedHashes],
-      };
-      const worker = new Worker(new URL('../../services/argon-planning.worker.ts', import.meta.url), {
-        type: 'module',
-      });
-      workerRef.current = worker;
-      worker.onmessage = (event: MessageEvent<{
-        type: 'progress' | 'complete' | 'error';
-        progress?: PipelineStageProgressEvent;
-        result?: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>>;
-        message?: string;
-      }>) => {
-        if (workerRef.current !== worker) return;
-        if (event.data.progress) setPipelineProgress(event.data.progress);
-        if (event.data.type === 'error') {
-          setGenerationError(event.data.message ?? 'Generation failed. Review the plot and program.');
-          worker.terminate();
+      const projectId = target === 'intake' ? retryProjectId ?? crypto.randomUUID() : before.projectId;
+      lastAttempt.current = { data, seed, rejectedHashes, target, projectId };
+      const assertUnlocked = () => {
+        const control = editor.getGenerationControl?.() ?? editor.generationControl;
+        if (control.lockedFloorIds.length || control.lockedEntityIds.length || control.protectedCoreIds.length) {
+          throw new Error('Unlock the protected floors, rooms and cores before replacing the layout.');
         }
-        if (event.data.type === 'complete' && event.data.result) {
-          try {
-            if (target === 'repair') {
-              const before = editor.building;
-              const next = { ...event.data.result.building, regulatoryContext: before.regulatoryContext };
-              const assessment = assessComplianceRepair(before, next);
-              if (editor.engine.getBuilding() !== before) {
-                setAutoFixStatus('The project changed during regeneration. Run Auto-Fix again on the current revision.');
-              } else if (assessment.improved) {
-                editor.applyRefinement({ ...next, id: before.id, projectId: before.projectId, createdAt: before.createdAt,
-                  metadata: { ...next.metadata, projectId: before.projectId, generationReport: undefined }, version: before.version + 1 }, 'Compliance-guided regeneration');
-                setAutoFixStatus(`Applied improved revision. Layout score ${assessment.next.score}/100. Code review status ${assessment.audit.status}.`);
-              } else {
-                setAutoFixStatus('Regeneration returned no verified improvement. The current revision is still active.');
-              }
-              setIsGenerating(false);
-              workerRef.current = null;
-              worker.terminate();
-              return;
-            }
-            const report = event.data.result.building.metadata?.generationReport;
-            const genBrief = event.data.result.building.metadata?.generationBrief;
-            const emittedShape = report?.selectedShapeId ?? genBrief?.buildingMassingShape;
-            const emittedArchetype = genBrief?.archetype;
-            if (emittedShape && !usedShapeIds.current.includes(emittedShape)) {
-              usedShapeIds.current = [...usedShapeIds.current, emittedShape];
-            }
-            if (emittedArchetype && !usedArchetypeIds.current.includes(emittedArchetype)) {
-              usedArchetypeIds.current = [...usedArchetypeIds.current, emittedArchetype];
-            }
-            studioStoreActions.recordGeneratedHistory(emittedShape, emittedArchetype);
-            setGenerationFindings(
-              Array.isArray(report?.violations)
-                ? report.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`)
-                : [],
-            );
-            const concept = { building: event.data.result.building, seed };
-            if (target === 'compare') {
-              const prior = concepts.length ? concepts : [{ building: editor.building, seed: generationSeed }];
-              if (prior.some(entry => layoutSignature(entry.building) === layoutSignature(concept.building))) {
-                setConceptNotice('The solver returned an existing layout. Adjust the brief or choose a different massing.');
-              } else {
-                setConcepts([...prior.slice(-3), concept]);
-              }
-              setIsGenerating(false);
-              setActiveWorkspace('concepts');
-              workerRef.current = null;
-              worker.terminate();
-              return;
-            }
-            if (target === 'intake') setConcepts([concept]);
-            const outcome = editor.setBuilding(
-              event.data.result.building,
-              data.projectName,
-              {},
-              'residential',
-            );
-            const firstResidential = event.data.result.building.floors.find(
-              floor => floor.apartmentUnits?.length,
-            );
-            regenerationBrief.current = { projectId: event.data.result.building.projectId, data };
-            if (firstResidential) editor.switchFloor(firstResidential.id);
-            setIsGenerating(false);
-            setActiveWorkspace(
-              target === 'intake' ? 'concepts' : target === 'building_3d' ? 'building_3d' : 'cad_2d',
-            );
-            setSaveWarning('');
+      };
+      if (target !== 'intake' && target !== 'compare') assertUnlocked();
+      const result = await planInWorker({
+        generationRunId: crypto.randomUUID(),
+        config: {
+          ...createArgonRequest(data, projectId),
+          generationSeed: seed,
+          rejectedTopologyHashes: [...rejectedHashes],
+        },
+      }, controller.signal, setPipelineProgress);
+      if (activeRun.current !== controller) return;
+      if (editor.engine.getBuilding() !== before) {
+        throw new Error('The active project changed during generation. Run generation again from the current revision.');
+      }
+      if (target !== 'intake' && target !== 'compare') assertUnlocked();
 
-            void outcome.durable.then(result => {
-              if (result.state === 'SAVED') return;
-              setSaveWarning(
-                result.state === 'UNAVAILABLE'
-                  ? 'This plan is open and complete, but durable storage is unavailable, so it will not '
-                  + 'survive a reload. Export the project to keep it.'
-                  : `This plan is open and complete, but it could not be saved durably: ${result.reason ?? result.state} `
-                  + 'Export the project to keep it.',
-              );
-            });
-          } catch (error) {
-            setGenerationError(
-              error instanceof Error ? error.message : 'Could not open the generated project.',
-            );
-          }
-          worker.terminate();
+      const generated = result.building;
+      if (target === 'repair') {
+        const next = { ...generated, regulatoryContext: before.regulatoryContext };
+        const assessment = assessComplianceRepair(before, next);
+        if (assessment.improved) {
+          await applyGeneratedRevision(before, next, 'Compliance-guided regeneration', controller.signal);
+          setAutoFixStatus(`Applied improved revision. Layout score ${assessment.next.score}/100. Code review status ${assessment.audit.status}.`);
+        } else {
+          setAutoFixStatus('Regeneration returned no verified improvement. The current revision is still active.');
         }
-      };
-      worker.onerror = event => {
-        setGenerationError(event.message || 'The planning worker could not start.');
-        worker.terminate();
-      };
-      worker.postMessage(request);
+        return;
+      }
+
+      const report = generated.metadata.generationReport;
+      const brief = generated.metadata.generationBrief;
+      const shape = report?.selectedShapeId ?? brief?.buildingMassingShape;
+      const archetype = brief?.archetype;
+      if (shape && !usedShapeIds.current.includes(shape)) usedShapeIds.current = [...usedShapeIds.current, shape];
+      if (archetype && !usedArchetypeIds.current.includes(archetype)) usedArchetypeIds.current = [...usedArchetypeIds.current, archetype];
+      studioStoreActions.recordGeneratedHistory(shape, archetype);
+
+      if (target === 'compare') {
+        const prior = concepts.filter(concept => concept.building.projectId === projectId);
+        if (prior.length === 0) prior.push({ building: before, seed: generationSeed });
+        if (prior.some(entry => layoutSignature(entry.building) === layoutSignature(generated))) {
+          setConceptNotice('The solver returned an existing layout. Adjust the brief or choose a different massing.');
+        } else {
+          setConcepts([...prior.slice(-3), { building: generated, seed, sourceRevision: before }]);
+        }
+        setActiveWorkspace('concepts');
+        return;
+      }
+
+      let design: Building;
+      if (target === 'intake') {
+        editor.setBuilding(generated, data.projectName, {}, 'residential');
+        design = generated;
+      } else {
+        design = await applyGeneratedRevision(before, generated, 'Regenerate layout', controller.signal);
+      }
+      setConcepts([{ building: design, seed }]);
+      regenerationBrief.current = { projectId, data };
+      const floor = representativeFloor(design);
+      if (floor) editor.switchFloor(floor.id);
+      setGenerationFindings(report?.violations.map(v => `${v.rank}. ${v.severity}: ${v.description}`) ?? []);
+      setActiveWorkspace(target === 'intake' ? 'concepts' : target === 'building_3d' ? 'building_3d' : 'cad_2d');
+      setSaveWarning('');
     } catch (error) {
-      setGenerationError(error instanceof Error ? error.message : String(error));
+      if (activeRun.current !== controller) return;
+      setGenerationError(error instanceof Error ? error.message : 'Generation failed. Review the plot and program.');
+    } finally {
+      if (activeRun.current === controller) {
+        activeRun.current = null;
+        setIsGenerating(false);
+      }
     }
   };
 
@@ -429,7 +435,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   };
 
   const handleRegenerateVariant = (target: 'edit' | 'compare' = 'edit') => {
-    const brief = lastBrief.current ?? studioStoreActions.getProjectSetupWizardData();
+    const brief = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
     const currentHash = editor.building.metadata.generationBrief?.topologyHash;
     const currentShape = editor.building.metadata.generationBrief?.buildingMassingShape;
     const currentArch = editor.building.metadata.generationBrief?.archetype;
@@ -504,7 +510,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const handleSelectMassingVariant = (shape: BuildingMassingShape) => {
     studioStoreActions.updateWizard({ buildingMassingShape: shape, autoExploreNovelShape: false });
     shapeExplicitlyLocked.current = true;
-    const briefBase = lastBrief.current ?? studioStoreActions.getProjectSetupWizardData();
+    const briefBase = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
     const updatedBrief: ProjectSetupWizardData = {
       ...briefBase,
       buildingMassingShape: shape,
@@ -519,7 +525,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const handleSelectPlanCategory = (category: PlanCategory) => {
     studioStoreActions.updateWizard({ planCategory: category });
-    const briefBase = lastBrief.current ?? studioStoreActions.getProjectSetupWizardData();
+    const briefBase = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
     const updatedBrief: ProjectSetupWizardData = {
       ...briefBase,
       planCategory: category,
@@ -548,9 +554,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   };
 
   const cancelGeneration = () => {
-    workerRef.current?.terminate();
-    workerRef.current = null;
+    activeRun.current?.abort();
+    activeRun.current = null;
     setIsGenerating(false);
+    setGenerationError('');
+    setPipelineProgress(null);
   };
 
   const [showWelcome, setShowWelcome] = useState<boolean>(() => {
@@ -722,6 +730,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                           type="button"
                           onClick={() => {
                             editor.loadProject(p.id);
+                            setConcepts([]);
                             setIsProjectSwitcherOpen(false);
                           }}
                           className={`w-full flex items-center justify-between p-2.5 rounded-lg transition-colors mb-1 text-left cursor-pointer ${p.id === editor.projectId
@@ -906,7 +915,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                 onOpen={id => {
                   editor.loadProject(id);
                   setConcepts([]);
-                  lastBrief.current = null;
+                  regenerationBrief.current = null;
                   setActiveWorkspace('cad_2d');
                 }}
                 onOpenDiskProject={(id, rev) => void handleOpenDiskProject(id, rev)}
@@ -915,12 +924,26 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             )}
             {activeWorkspace === 'concepts' && (
               <ConceptReviewWorkspace activeBuilding={editor.building} concepts={concepts}
-                canGenerate={Boolean(lastBrief.current) && !isGenerating} notice={conceptNotice}
-                onGenerate={() => handleRegenerateVariant('compare')} onOpen={({ building }) => {
-                  if (building.id !== editor.building.id) editor.setBuilding(building, building.name, {}, 'residential');
-                  const floor = representativeFloor(building);
-                  if (floor) editor.switchFloor(floor.id);
-                  setActiveWorkspace('cad_2d');
+                canGenerate={Boolean(projectBrief) && !isGenerating} notice={conceptNotice}
+                onGenerate={() => handleRegenerateVariant('compare')} onOpen={async ({ building, sourceRevision }) => {
+                  try {
+                    const before = editor.engine.getBuilding();
+                    let design = before;
+                    if (sourceRevision && building.metadata.generationRunId !== before.metadata.generationRunId) {
+                      if (sourceRevision !== before) throw new Error('The project has changed. Generate an alternative for the current revision.');
+                      const control = editor.getGenerationControl?.() ?? editor.generationControl;
+                      if (control.lockedFloorIds.length || control.lockedEntityIds.length || control.protectedCoreIds.length) {
+                        throw new Error('Unlock protected elements before applying this alternative.');
+                      }
+                      design = await applyGeneratedRevision(before, building, 'Apply massing alternative');
+                      setConcepts([{ building: design, seed: generationSeed }]);
+                    }
+                    const floor = representativeFloor(design);
+                    if (floor) editor.switchFloor(floor.id);
+                    setActiveWorkspace('cad_2d');
+                  } catch (error) {
+                    setConceptNotice(error instanceof Error ? error.message : 'Could not apply this alternative.');
+                  }
                 }} />
             )}
             {activeWorkspace === 'setup' && (
@@ -940,7 +963,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                 onOpenEditPlan={() => setActiveWorkspace('edit_plan')}
                 generationSeed={generationSeed}
                 isGenerating={isGenerating}
-                canRegenerate={Boolean(lastBrief.current) || Boolean(studio.isBhkMixValid)}
+                canRegenerate={Boolean(projectBrief) || Boolean(studio.isBhkMixValid)}
               />
             )}
             {activeWorkspace === 'edit_plan' && (
@@ -967,7 +990,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                       galleryCoordinationMode: mode,
                       staggeredBalconies: mode === 'DOUBLE_HEIGHT_STAGGER',
                     });
-                    const brief = lastBrief.current;
+                    const brief = projectBrief;
                     if (brief) {
                       const nextBrief: ProjectSetupWizardData = {
                         ...brief,
@@ -1020,20 +1043,28 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                   </ol>
                 </details>
               )}
-            {saveWarning && (
+            {(saveWarning || (editor.persistence.projectId === editor.projectId &&
+              (editor.persistence.state === 'FAILED' || editor.persistence.state === 'UNAVAILABLE'))) && (
               <div
                 role="status"
                 className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-2xl px-4 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm shadow-lg flex items-start gap-3"
               >
                 <span className="font-bold shrink-0">NOT SAVED</span>
-                <span className="flex-1">{saveWarning}</span>
-                <button
+                <span className="flex-1">{saveWarning || `Browser save failed: ${editor.persistence.reason ?? editor.persistence.state}. Your work is still open.`}</span>
+                {!saveWarning && <>
+                  <button type="button" onClick={editor.saveProject} className="shrink-0 font-bold underline">Retry browser save</button>
+                  <button type="button" className="shrink-0 font-bold underline" onClick={() => {
+                    const project = projectStorage.load(editor.projectId);
+                    if (project) exportProjectAsJsonFile(project);
+                  }}>Export project</button>
+                </>}
+                {saveWarning && <button
                   onClick={() => setSaveWarning('')}
                   className="shrink-0 font-bold text-amber-700 hover:text-amber-900"
                   aria-label="Dismiss the storage warning"
                 >
                   ×
-                </button>
+                </button>}
               </div>
             )}
 
@@ -1043,7 +1074,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
               error={generationError}
               draft={studio.wizard}
               onRetry={() => {
-                if (lastBrief.current) runGeneration(lastBrief.current, generationSeed, rejectedTopologyHashes.current, generationTarget.current);
+                const attempt = lastAttempt.current;
+                if (attempt) void runGeneration(attempt.data, attempt.seed, attempt.rejectedHashes, attempt.target, attempt.projectId);
               }}
               onCancel={cancelGeneration}
             />

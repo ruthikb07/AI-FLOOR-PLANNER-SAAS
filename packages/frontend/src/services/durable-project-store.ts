@@ -44,8 +44,9 @@
  */
 
 const DB_NAME = 'rh_planner_projects';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_PROJECTS = 'projects';
+const STORE_REVISIONS = 'projectRevisions';
 
 /** Durability of a write, as reported to the caller. Never optimistic. */
 export type PersistenceState = 'SAVED' | 'PENDING' | 'FAILED' | 'UNAVAILABLE';
@@ -68,6 +69,14 @@ export interface StoredRecord {
   readonly byteLength: number;
   /** FNV-1a digest of `payload`, so a readback can be verified. */
   readonly digest: string;
+}
+
+export interface ArchivedProjectRevision {
+  readonly id: string;
+  readonly projectId: string;
+  readonly version: number;
+  readonly savedAt: string;
+  readonly payload: string;
 }
 
 /** Stable digest so a readback can be checked against what was written. */
@@ -117,6 +126,8 @@ function resolveFactory(): IdbFactoryLike | null {
  */
 export class IndexedDbProjectStore {
   private readonly mirror = new Map<string, StoredRecord>();
+  private readonly outcomes = new Map<string, PersistenceResult>();
+  private hydration?: Promise<void>;
   private db: IDBDatabase | null = null;
   private hydrated = false;
   /** Set when IndexedDB cannot be used at all; reads then serve the mirror. */
@@ -145,10 +156,20 @@ export class IndexedDbProjectStore {
         if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
           db.createObjectStore(STORE_PROJECTS, { keyPath: 'projectId' });
         }
+        if (!db.objectStoreNames.contains(STORE_REVISIONS)) {
+          db.createObjectStore(STORE_REVISIONS, { keyPath: 'id' }).createIndex('projectId', 'projectId');
+        }
       };
-      request.onsuccess = () => resolve(request.result);
+      let blocked = false;
+      request.onsuccess = () => {
+        if (blocked) request.result.close();
+        else resolve(request.result);
+      };
       request.onerror = () => reject(request.error ?? new Error('IndexedDB open failed'));
-      request.onblocked = () => reject(new Error('IndexedDB open blocked by another tab'));
+      request.onblocked = () => {
+        blocked = true;
+        reject(new Error('IndexedDB open blocked by another tab'));
+      };
     });
   }
 
@@ -159,9 +180,14 @@ export class IndexedDbProjectStore {
    * the store then serves an empty mirror and reports why, so the app still
    * runs rather than failing to start.
    */
-  public async hydrate(): Promise<void> {
-    if (this.hydrated) return;
+  public hydrate(): Promise<void> {
+    if (this.hydration) return this.hydration;
+    if (this.db) return Promise.resolve();
+    this.hydration ??= this.loadRecords().finally(() => { this.hydration = undefined; });
+    return this.hydration;
+  }
 
+  private async loadRecords(): Promise<void> {
     const factory = resolveFactory();
     if (!factory) {
       this.unavailableReason = 'IndexedDB is not available in this browser context';
@@ -170,19 +196,29 @@ export class IndexedDbProjectStore {
     }
 
     try {
-      this.db = await this.open(factory);
+      const db = await this.open(factory);
+      this.db = db;
+      db.onversionchange = () => {
+        db.close();
+        if (this.db === db) this.db = null;
+      };
       const records = await new Promise<StoredRecord[]>((resolve, reject) => {
-        const tx = this.db!.transaction(STORE_PROJECTS, 'readonly');
+        const tx = db.transaction(STORE_PROJECTS, 'readonly');
         const request = tx.objectStore(STORE_PROJECTS).getAll();
         request.onsuccess = () => resolve(request.result as StoredRecord[]);
         request.onerror = () => reject(request.error ?? new Error('IndexedDB read failed'));
       });
       for (const record of records) {
         if (record && typeof record.projectId === 'string' && typeof record.payload === 'string') {
-          this.mirror.set(record.projectId, record);
+          if (!this.mirror.has(record.projectId)) {
+            this.mirror.set(record.projectId, record);
+            this.outcomes.set(record.projectId, { state: 'SAVED', inMemory: true });
+          }
         }
       }
+      this.unavailableReason = undefined;
     } catch (error) {
+      this.db?.close();
       // A hydration failure must not stop the app. Reads then serve whatever
       // the mirror holds, and writes report UNAVAILABLE rather than claiming
       // a durable save that did not happen.
@@ -229,14 +265,6 @@ export class IndexedDbProjectStore {
     // fails, and the caller is told the truth about durability.
     this.mirror.set(projectId, record);
 
-    if (!this.db) {
-      return Promise.resolve({
-        state: 'UNAVAILABLE',
-        reason: this.unavailableReason ?? 'IndexedDB is not open',
-        inMemory: true,
-      });
-    }
-
     // Writes to one project are serialized, so a retry cannot interleave with
     // the write it is retrying and leave the store holding the older payload.
     const previous = this.pending.get(projectId) ?? Promise.resolve<PersistenceResult>({
@@ -245,7 +273,16 @@ export class IndexedDbProjectStore {
 
     const next = previous
       .catch(() => undefined)
-      .then(() => this.put(record));
+      .then(async (): Promise<PersistenceResult> => {
+        if (!this.db) await this.hydrate();
+        const result: PersistenceResult = this.db ? await this.put(record) : {
+          state: 'UNAVAILABLE',
+          reason: this.unavailableReason ?? 'IndexedDB is not open',
+          inMemory: true,
+        };
+        if (this.mirror.get(projectId) === record) this.outcomes.set(projectId, result);
+        return result;
+      });
 
     this.pending.set(projectId, next);
     void next.finally(() => {
@@ -260,6 +297,7 @@ export class IndexedDbProjectStore {
       let tx: IDBTransaction;
       try {
         tx = this.db!.transaction(STORE_PROJECTS, 'readwrite');
+        tx.objectStore(STORE_PROJECTS).put(record);
       } catch (error) {
         resolve({
           state: 'FAILED',
@@ -268,10 +306,6 @@ export class IndexedDbProjectStore {
         });
         return;
       }
-
-      // `put` is keyed on projectId, so a repeated finalization overwrites its
-      // own record rather than appending a duplicate: retries are idempotent.
-      tx.objectStore(STORE_PROJECTS).put(record);
 
       tx.oncomplete = () => resolve({ state: 'SAVED', inMemory: true });
       tx.onabort = () => resolve({
@@ -294,11 +328,7 @@ export class IndexedDbProjectStore {
   public async flush(projectId: string): Promise<PersistenceResult> {
     const inFlight = this.pending.get(projectId);
     if (inFlight) return inFlight;
-    return {
-      state: this.mirror.has(projectId) ? 'SAVED' : 'FAILED',
-      reason: this.mirror.has(projectId) ? undefined : 'No such project',
-      inMemory: this.mirror.has(projectId),
-    };
+    return this.outcomes.get(projectId) ?? { state: 'FAILED', reason: 'No such project', inMemory: false };
   }
 
   /**
@@ -312,21 +342,60 @@ export class IndexedDbProjectStore {
     if (!this.db) return { ok: false, reason: this.unavailableReason ?? 'IndexedDB is not open' };
 
     try {
-      const stored = await new Promise<StoredRecord | undefined>((resolve, reject) => {
-        const tx = this.db!.transaction(STORE_PROJECTS, 'readonly');
-        const request = tx.objectStore(STORE_PROJECTS).get(projectId);
-        request.onsuccess = () => resolve(request.result as StoredRecord | undefined);
-        request.onerror = () => reject(request.error ?? new Error('IndexedDB read failed'));
-      });
-
-      if (!stored) return { ok: false, reason: 'Project was not found in durable storage' };
-      if (stored.digest !== expected.digest) {
-        return { ok: false, reason: `Digest mismatch: stored ${stored.digest}, expected ${expected.digest}` };
-      }
+      const stored = await this.readDurable(projectId);
+      if (stored !== expected.payload) return { ok: false, reason: 'Stored project differs from current work' };
       return { ok: true };
     } catch (error) {
       return { ok: false, reason: error instanceof Error ? error.message : String(error) };
     }
+  }
+
+  /** Reads the database itself, without consulting the in-memory mirror. */
+  public async readDurable(projectId: string): Promise<string | undefined> {
+    const db = this.db;
+    if (!db) return undefined;
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE_PROJECTS, 'readonly').objectStore(STORE_PROJECTS).get(projectId);
+      request.onsuccess = () => {
+        const stored = request.result as StoredRecord | undefined;
+        if (stored && (typeof stored.payload !== 'string' || digestOf(stored.payload) !== stored.digest)) {
+          reject(new Error('Stored project failed integrity verification'));
+        } else {
+          resolve(stored?.payload);
+        }
+      };
+      request.onerror = () => reject(request.error ?? new Error('IndexedDB read failed'));
+    });
+  }
+
+  /** Keep the exact pre-regeneration state even after reload. */
+  public async archive(projectId: string, version: number): Promise<void> {
+    const current = this.mirror.get(projectId);
+    if (!current) throw new Error('Save the current project before regenerating.');
+    if (!this.db) await this.hydrate();
+    const db = this.db;
+    if (!db) throw new Error(this.unavailableReason ?? 'The browser project store is unavailable.');
+    const revision: ArchivedProjectRevision = {
+      id: crypto.randomUUID(), projectId, version, savedAt: current.updatedAt, payload: current.payload,
+    };
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_REVISIONS, 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error ?? new Error('Could not save the previous revision.'));
+      tx.objectStore(STORE_REVISIONS).add(revision);
+    });
+  }
+
+  public async archivedRevisions(projectId: string): Promise<readonly ArchivedProjectRevision[]> {
+    const db = this.db;
+    if (!db) throw new Error(this.unavailableReason ?? 'The browser project store is unavailable.');
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_REVISIONS, 'readonly');
+      const request = tx.objectStore(STORE_REVISIONS).index('projectId').getAll(projectId);
+      request.onsuccess = () => resolve((request.result as ArchivedProjectRevision[])
+        .sort((a, b) => b.version - a.version || b.savedAt.localeCompare(a.savedAt)));
+      tx.onabort = () => reject(tx.error ?? new Error('Could not read the previous revisions.'));
+    });
   }
 
   /**
@@ -335,11 +404,21 @@ export class IndexedDbProjectStore {
    * make room would be worse than reporting that storage is full.
    */
   public async remove(projectId: string): Promise<void> {
+    const previous = this.pending.get(projectId);
+    if (previous) await previous;
     this.mirror.delete(projectId);
+    this.outcomes.delete(projectId);
     if (!this.db) return;
     await new Promise<void>(resolve => {
-      const tx = this.db!.transaction(STORE_PROJECTS, 'readwrite');
+      const tx = this.db!.transaction([STORE_PROJECTS, STORE_REVISIONS], 'readwrite');
       tx.objectStore(STORE_PROJECTS).delete(projectId);
+      const revisions = tx.objectStore(STORE_REVISIONS).index('projectId').openKeyCursor(projectId);
+      revisions.onsuccess = () => {
+        const cursor = revisions.result;
+        if (!cursor) return;
+        tx.objectStore(STORE_REVISIONS).delete(cursor.primaryKey);
+        cursor.continue();
+      };
       tx.oncomplete = () => resolve();
       tx.onabort = () => resolve();
       tx.onerror = () => resolve();
@@ -372,6 +451,7 @@ export class IndexedDbProjectStore {
   public reset(): void {
     this.mirror.clear();
     this.pending.clear();
+    this.outcomes.clear();
     this.db?.close();
     this.db = null;
     this.hydrated = false;

@@ -161,6 +161,7 @@ function buildDatabase(owner: FakeIdb): IDBDatabase {
           },
           get: (key: string) => makeRequest(() => owner.data.get(key)),
           getAll: () => makeRequest(() => [...owner.data.values()]),
+          index: () => ({ openKeyCursor: () => makeRequest(() => null) }),
           delete(key: string) {
             operations.push(() => { owner.data.delete(key); return null; });
             return makeRequest(() => undefined as unknown as undefined);

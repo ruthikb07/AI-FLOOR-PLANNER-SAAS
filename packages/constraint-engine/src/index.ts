@@ -118,3 +118,4 @@ export {
 export { validateApartmentClosure } from './apartment-closure';
 
 export * from './raw-planar-conservation';
+export * from './generation-acceptance';

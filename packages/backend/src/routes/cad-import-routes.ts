@@ -1,4 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { randomUUID } from 'node:crypto';
+import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
+import { executeAuditedPlanningPipeline } from '@ai-floor-planner/planning-engine';
+import { isRecord, validCadUpload } from '../api/http-input.js';
 import {
   CadImportError,
   importFloorPlanLayoutFromCad,
@@ -42,10 +46,22 @@ export async function handleCadImportRoute(
       return true;
     }
 
-    if (!body.fileName || typeof body.fileName !== 'string') {
+    if (!validCadUpload(body)) {
       sendJson(response, 400, {
-        error: { code: 'MISSING_FILE_NAME', message: 'fileName is required.' },
+        error: { code: 'INVALID_CAD_UPLOAD', message: 'Provide one DXF, DWG or PDF upload with valid file content.' },
       });
+      return true;
+    }
+
+    const calibration = body.pdfCalibration;
+    const point = (value: unknown): boolean => isRecord(value) && Number.isFinite(value.x) && Number.isFinite(value.y);
+    if ((body.selectedLayers !== undefined && (!Array.isArray(body.selectedLayers)
+        || body.selectedLayers.some(layer => typeof layer !== 'string')))
+      || (calibration !== undefined && (!isRecord(calibration) || !point(calibration.pointA) || !point(calibration.pointB)
+        || !Number.isFinite(calibration.knownLengthMm) || calibration.knownLengthMm <= 0
+        || (calibration.tracedPolygonPx !== undefined && (!Array.isArray(calibration.tracedPolygonPx)
+          || calibration.tracedPolygonPx.length > 2000 || !calibration.tracedPolygonPx.every(point)))))) {
+      sendJson(response, 400, { error: { code: 'INVALID_CAD_OPTIONS', message: 'Check selected layers and PDF calibration points.' } });
       return true;
     }
 
@@ -77,7 +93,21 @@ export async function handleCadImportRoute(
 
       if (action === 'import_plot') {
         const result = importPlotBoundaryFromCad(parsed, body);
-        sendJson(response, 200, { ok: true, ...result });
+        if (!result.building) {
+          sendJson(response, 200, { ok: true, ...result });
+          return true;
+        }
+        const floors = result.building.floors.filter(floor => !floor.name.includes('COLUMN_SCHEDULE'));
+        const audited = await executeAuditedPlanningPipeline({ ...result.building, floors });
+        const findings = generationBlockingFindings(audited.building, audited.validationReport);
+        if (findings.length) {
+          sendJson(response, 422, { error: { code: 'GENERATION_CHECKS_FAILED',
+            message: `The imported plot was read, but the generated design failed checks. ${findings[0]!.message} Adjust the massing, floor count or setbacks and retry.`,
+            findings: findings.slice(0, 20) } });
+          return true;
+        }
+        const building = { ...audited.building, metadata: { ...audited.building.metadata, generationRunId: randomUUID() } };
+        sendJson(response, 200, { ok: true, ...result, building });
         return true;
       }
 
@@ -98,9 +128,9 @@ export async function handleCadImportRoute(
         });
         return true;
       }
-      const message = err instanceof Error ? err.message : 'Unexpected CAD import error.';
+      console.error('CAD import failed:', err);
       sendJson(response, 500, {
-        error: { code: 'CAD_IMPORT_ERROR', message },
+        error: { code: 'CAD_IMPORT_ERROR', message: 'CAD import failed. Check the local backend logs.' },
       });
       return true;
     }

@@ -143,7 +143,6 @@ it("mounts the package/download API and rejects invalid options, stale revisions
         response.writeHead(status, { "Content-Type": "application/json" });
         response.end(JSON.stringify(body));
       },
-      {},
     );
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));

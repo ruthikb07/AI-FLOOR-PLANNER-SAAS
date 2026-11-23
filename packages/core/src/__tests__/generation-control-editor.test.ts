@@ -18,4 +18,20 @@ describe('generation control editor history', () => {
     expect(editor.undo()).toBe(true); expect(editor.getBuilding()).toBe(before);
     expect(editor.redo()).toBe(true); expect(editor.getBuilding()).toBe(after);
   });
+
+  it('applies an accepted replacement exactly and keeps it undoable', () => {
+    const before = fixture();
+    const after = { ...before, version: before.version + 1,
+      floors: [{ ...before.floors[0]!, id: 'generated-floor' }] };
+    const editor = new EditorEngine(before, {
+      coordinateRevision: candidate => ({ ...candidate, name: 'Unverified post-audit transformation' }),
+    });
+    editor.execute(new ReplaceBuildingCommand(before, after, 'Apply generated revision', true));
+    expect(editor.getBuilding()).toBe(after);
+    expect(editor.getActiveFloor()?.id).toBe('generated-floor');
+    expect(editor.undo()).toBe(true);
+    expect(editor.getBuilding()).toBe(before);
+    expect(editor.redo()).toBe(true);
+    expect(editor.getBuilding()).toBe(after);
+  });
 });

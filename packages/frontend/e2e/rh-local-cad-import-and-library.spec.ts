@@ -86,7 +86,8 @@ test('local CAD .DXF upload -> layer calibration -> 2D CAD -> 3D views -> Struct
   await expect(page.locator('.three-building-scene canvas')).toBeVisible({ timeout: 45_000 });
 
   await page.getByTestId('nav-structural_cad').click();
-  await expect(page.getByText(/[1-9]\d* columns · [1-9]\d* beams/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^[1-9]\d* corner-locked columns$/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^[1-9]\d* beams$/)).toBeVisible();
   await expect(page.getByText('150 mm', { exact: true })).toBeVisible();
 
   // 5. Save active revision to local disk library
@@ -111,7 +112,8 @@ test('local CAD .DXF upload -> layer calibration -> 2D CAD -> 3D views -> Struct
   await page.getByTestId('nav-building_3d').click();
   await expect(page.locator('.three-building-scene canvas')).toBeVisible({ timeout: 45_000 });
   await page.getByTestId('nav-structural_cad').click();
-  await expect(page.getByText(/[1-9]\d* columns · [1-9]\d* beams/)).toBeVisible();
+  await expect(page.getByText(/^[1-9]\d* corner-locked columns$/)).toBeVisible();
+  await expect(page.getByText(/^[1-9]\d* beams$/)).toBeVisible();
 
   // Verify responsive desktop (1440x900) and mobile (390x844) studio header never overflows horizontally
   const desktopTopbarOverflow = await page.locator('header.rh-obsidian-topbar').evaluate(el => el.scrollWidth - el.clientWidth);
@@ -145,17 +147,14 @@ const SAMPLE_PLOT_BOUNDARY_DXF = [
   '',
 ].join('\n');
 
-test('local CAD .DXF Plot Boundary import (Mode A, meters) synthesizes building inside irregular setbacks with 0 errors', async ({ page }, info) => {
+test('a plot DXF is measured but rejected when the generated plan fails mandatory checks', async ({ page }, info) => {
   test.setTimeout(180_000);
   const dxfPath = info.outputPath('e2e-irregular-plot.dxf');
   await writeFile(dxfPath, SAMPLE_PLOT_BOUNDARY_DXF, 'utf8');
 
   const pageErrors: string[] = [];
-  const consoleErrors: string[] = [];
   page.on('pageerror', err => pageErrors.push(err.message));
-  page.on('console', msg => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
-  });
+
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.addInitScript(() => {
@@ -171,14 +170,16 @@ test('local CAD .DXF Plot Boundary import (Mode A, meters) synthesizes building 
   await expect(page.getByTestId('cad-preview-dimensions')).toContainText('44.00 m × 36.00 m');
   await expect(page.getByTestId('cad-preview-dimensions')).toContainText('M');
 
+  const activeId = await page.evaluate(() => localStorage.getItem('ai_floor_planner_active_id'));
   await page.getByTestId('cad-mode-plot-boundary').click();
+  const response = page.waitForResponse(answer => answer.url().endsWith('/api/v1/import/cad-layout')
+    && answer.request().postDataJSON()?.action === 'import_plot');
   await page.getByTestId('cad-load-into-studio').click();
-  await expect(page.getByTestId('cad-import-modal')).toBeHidden({ timeout: 45_000 });
-  await expect(page.getByTestId('toggle-cad-underlay')).toBeVisible();
-
-  await page.getByTestId('nav-structural_cad').click();
-  await expect(page.getByText(/[1-9]\d* columns · [1-9]\d* beams/)).toBeVisible({ timeout: 20_000 });
-
+  const rejected = await response;
+  expect(rejected.status()).toBe(422);
+  expect(await rejected.json()).toMatchObject({ error: { code: 'GENERATION_CHECKS_FAILED' } });
+  const dialog = page.getByTestId('cad-import-modal');
+  await expect(dialog.getByRole('alert')).toContainText('the generated design failed checks');
+  expect(await page.evaluate(() => localStorage.getItem('ai_floor_planner_active_id'))).toBe(activeId);
   expect(pageErrors).toEqual([]);
-  expect(consoleErrors).toEqual([]);
 });

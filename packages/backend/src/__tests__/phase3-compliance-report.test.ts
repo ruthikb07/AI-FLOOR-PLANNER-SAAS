@@ -166,7 +166,6 @@ describe("Phase 3 independent report artifacts", () => {
           new URL(`http://localhost/api/v1/export/${alias}`),
           async () => JSON.stringify({ building }),
           json,
-          {},
         ),
       ).toBe(true);
       expect(code).toBe(200);

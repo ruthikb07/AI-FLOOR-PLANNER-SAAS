@@ -3,7 +3,8 @@ import { ArrowRight, Box, FilePlus2, FileUp, HardDrive, LayoutTemplate, Trash2 }
 import type { Building } from '@ai-floor-planner/core';
 import { polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
 import { fitToView, renderFloor } from '@ai-floor-planner/renderer';
-import { projectStorage, type ProjectHeader } from '../../services/storage';
+import { exportProjectAsJsonFile, projectStorage, type ProjectHeader } from '../../services/storage';
+import type { ArchivedProjectRevision } from '../../services/durable-project-store';
 import type { LocalDiskProjectManifest } from '../../services/local-project-api';
 
 const ConceptModel = lazy(() => import('./ConceptModel'));
@@ -29,6 +30,11 @@ export function PlanThumbnail({ building }: { building: Building }) {
 export interface GeneratedConcept {
   readonly building: Building;
   readonly seed: number;
+  readonly sourceRevision?: Building;
+}
+
+function conceptId(building: Building): string {
+  return building.metadata.generationRunId ?? `${building.id}:${building.version}`;
 }
 
 function conceptFacts(building: Building) {
@@ -51,7 +57,7 @@ export function ConceptReviewWorkspace({ concepts, activeBuilding, canGenerate, 
   const [selectedId, setSelectedId] = useState<string>();
   const [preview, setPreview] = useState<'plan' | '3d'>('plan');
   const collection = concepts.length ? concepts : [{ building: activeBuilding, seed: 1 }];
-  const selected = collection.find(concept => concept.building.id === selectedId) ?? collection.at(-1)!;
+  const selected = collection.find(concept => conceptId(concept.building) === selectedId) ?? collection.at(-1)!;
   const { building } = selected;
   const title = building.metadata.generationBrief?.buildingMassingShape?.replaceAll('_', ' ') ?? building.name;
 
@@ -68,23 +74,43 @@ export function ConceptReviewWorkspace({ concepts, activeBuilding, canGenerate, 
           <button type="button" aria-pressed={preview === '3d'} onClick={() => setPreview('3d')}><Box size={16} /> Building</button>
         </div>
         {preview === 'plan' ? <PlanThumbnail building={building} /> :
-          <Suspense fallback={<p role="status">Opening building preview…</p>}><ConceptModel key={building.id} building={building} /></Suspense>}
+          <Suspense fallback={<p role="status">Opening building preview…</p>}><ConceptModel key={conceptId(building)} building={building} /></Suspense>}
       </div>
       <div className="rh-concept-description">
         <h2>{title}</h2>
         <dl>{conceptFacts(building).map(fact => <div key={fact.name}><dt>{fact.name}</dt><dd>{fact.value}</dd></div>)}</dl>
         <button type="button" className="rh-solid-action" onClick={() => onOpen(selected)}>Open in CAD <ArrowRight size={17} /></button>
-        {selected.building.id !== activeBuilding.id && <p className="rh-concept-note">Opening this alternative saves it as a separate project.</p>}
+        {selected.sourceRevision && <p className="rh-concept-note">Opening this alternative creates a revision of the current project.</p>}
       </div>
     </div>
     <div className="rh-concept-strip" aria-label="Available concepts">
-      {collection.map((concept, index) => <button key={concept.building.id} type="button"
-        aria-pressed={concept.building.id === building.id} onClick={() => setSelectedId(concept.building.id)}>
+      {collection.map((concept, index) => <button key={conceptId(concept.building)} type="button"
+        aria-pressed={conceptId(concept.building) === conceptId(building)} onClick={() => setSelectedId(conceptId(concept.building))}>
         <PlanThumbnail building={concept.building} />
         <span>Study {index + 1} · {concept.building.metadata.generationBrief?.buildingMassingShape?.replaceAll('_', ' ') ?? 'Massing Study'}</span>
       </button>)}
     </div>
   </section>;
+}
+
+function BrowserRevisionArchive({ projectId }: { projectId: string }) {
+  const [entries, setEntries] = useState<readonly ArchivedProjectRevision[]>();
+  const [error, setError] = useState('');
+  return <details className="rh-library-revisions" onToggle={event => {
+    if (!event.currentTarget.open) return;
+    setError('');
+    void projectStorage.archivedRevisions(projectId).then(setEntries, reason => {
+      setError(reason instanceof Error ? reason.message : 'Could not open archived browser revisions.');
+    });
+  }}>
+    <summary>Archived browser revisions</summary>
+    {error ? <p role="alert">{error}</p> : !entries ? <p role="status">Reading archive�</p> :
+      entries.length === 0 ? <p>No browser revisions have been archived.</p> :
+        <ol>{entries.map(entry => <li key={entry.id}>
+          <time dateTime={entry.savedAt}>{new Date(entry.savedAt).toLocaleString()}</time>
+          <button type="button" onClick={() => exportProjectAsJsonFile(JSON.parse(entry.payload))}>Export revision {entry.version}</button>
+        </li>)}</ol>}
+  </details>;
 }
 
 export function ProjectLibrary({
@@ -168,6 +194,7 @@ export function ProjectLibrary({
               <time dateTime={revision.savedAt}>{new Date(revision.savedAt).toLocaleString()}</time>
             </li>)}</ol>
           </details>}
+          {localCached && <BrowserRevisionArchive projectId={project.projectId} />}
           <div className="flex items-center gap-2 mt-2">
             <button
               className="rh-outline-action flex-1"
@@ -204,6 +231,7 @@ export function ProjectLibrary({
               <time dateTime={revision.savedAt}>{new Date(revision.savedAt).toLocaleString()}</time>
             </li>)}</ol>
           </details>}
+          {envelope && <BrowserRevisionArchive projectId={project.id} />}
           <button className="rh-outline-action" type="button" onClick={() => onOpen(project.id)}>Open project <ArrowRight size={16} /></button>
         </article>;
       })}

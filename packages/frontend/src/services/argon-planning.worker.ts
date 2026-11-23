@@ -1,81 +1,53 @@
-import type { MultiSheetApartmentConfig } from '@ai-floor-planner/core';
-import {
-  executeAuditedPlanningPipeline,
-  generateApartmentOutcome,
-} from '@ai-floor-planner/planning-engine';
+import { executeAuditedPlanningPipeline } from '@ai-floor-planner/planning-engine';
+import type { PlanningRequest, PlanningResult } from './argon-generation';
+import { requireAcceptedGeneration } from '@ai-floor-planner/constraint-engine';
 
-async function tryBackendHybridGeneration(config: MultiSheetApartmentConfig) {
-  if (typeof fetch !== 'function') return null;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeout = controller ? setTimeout(() => controller.abort(), 45_000) : null;
+async function tryBackendHybridGeneration(request: PlanningRequest): Promise<PlanningResult | undefined> {
+  const { config, generationRunId } = request;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45_000);
   try {
-    const response = await fetch('/api/v1/projects/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        config,
-        seed: config.generationSeed ?? 1,
-        rejectedTopologyHashes: config.rejectedTopologyHashes ?? [],
-      }),
-      ...(controller ? { signal: controller.signal } : {}),
-    });
-    if (!response.ok) return null;
-    const payload = (await response.json()) as {
-      building?: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>>['building'];
-      validationReport?: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>>['validationReport'];
-      regulatoryStatus?: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>>['regulatoryStatus'];
-      udcprReport?: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>>['udcprReport'];
-      complianceReport?: unknown;
-      telemetry?: Record<string, unknown>;
-    };
-    if (!payload || !payload.building || !Array.isArray(payload.building.floors)) {
-      return null;
+    let response: Response;
+    try {
+      response = await fetch('/api/v1/projects/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config, generationRunId, seed: config.generationSeed ?? 1,
+          rejectedTopologyHashes: config.rejectedTopologyHashes ?? [] }),
+        signal: controller.signal,
+      });
+    } catch {
+      return undefined;
     }
-    const buildingWithMeta = {
-      ...payload.building,
-      metadata: {
-        ...payload.building.metadata,
-        ...(payload.complianceReport ? { complianceReport: payload.complianceReport } : {}),
-        ...(payload.telemetry
-          ? {
-              generationBrief: {
-                ...payload.building.metadata?.generationBrief,
-                aiTelemetry: payload.telemetry,
-              },
-            }
-          : {}),
-      },
-    };
-    return {
-      building: buildingWithMeta,
-      validationReport: payload.validationReport,
-      regulatoryStatus: payload.regulatoryStatus,
-      udcprReport: payload.udcprReport,
-    };
-  } catch {
-    return null;
+    if (response.status === 404 || response.status >= 500) return undefined;
+
+    const payload = await response.json().catch(() => undefined) as
+      (PlanningResult & { generationRunId?: string; error?: { message?: string } }) | undefined;
+    if (!response.ok) throw new Error(payload?.error?.message || `The planning service rejected the request (HTTP ${response.status}).`);
+    if (!payload?.building || (payload.generationRunId && payload.generationRunId !== generationRunId)
+      || payload.building.projectId !== config.projectId) {
+      throw new Error('The planning service returned an invalid or mismatched building. Try again.');
+    }
+    requireAcceptedGeneration(payload);
+    // Audit the received canonical model as well as the claimed report.
+    return await executeAuditedPlanningPipeline(payload.building);
   } finally {
-    if (timeout) clearTimeout(timeout);
+    clearTimeout(timeout);
   }
 }
 
-self.onmessage = async (event: MessageEvent<MultiSheetApartmentConfig>) => {
+self.onmessage = async (event: MessageEvent<PlanningRequest>) => {
+  const { generationRunId, config } = event.data;
   try {
-    const backendResult = await tryBackendHybridGeneration(event.data);
-    if (backendResult) {
-      self.postMessage({ type: 'complete', result: backendResult });
-      return;
-    }
-    const result = await executeAuditedPlanningPipeline(event.data, progress => self.postMessage({ type: 'progress', progress }));
-    self.postMessage({ type: 'complete', result });
+    const result = await tryBackendHybridGeneration(event.data)
+      ?? await executeAuditedPlanningPipeline(config, progress => {
+        self.postMessage({ type: 'progress', generationRunId, progress });
+      });
+    requireAcceptedGeneration(result);
+    const building = { ...result.building, metadata: { ...result.building.metadata, generationRunId } };
+    self.postMessage({ type: 'complete', generationRunId, result: { ...result, building } });
   } catch (error) {
-    const outcome = generateApartmentOutcome(event.data);
-    if (outcome.status === 'PLAN') {
-      // Preserve any plan produced despite a later orchestration failure.
-      self.postMessage({ type: 'error', outcome, message: `A reviewable plan was generated, but pipeline processing failed: ${error instanceof Error ? error.message : String(error)}` });
-    } else {
-      self.postMessage({ type: 'error', outcome, message: `${outcome.status}: ${outcome.reason}`
-        + (outcome.alternative ? ` Generated alternative (requires review): ${outcome.alternativeChanges.join(' ')}` : ' No verified alternative was found in the bounded search.') });
-    }
+    self.postMessage({ type: 'error', generationRunId,
+      message: error instanceof Error ? error.message : String(error) });
   }
 };

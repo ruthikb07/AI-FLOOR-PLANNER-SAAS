@@ -490,9 +490,9 @@ describe('generation storage: legacy migration', () => {
     setIdbFactoryForTests(idb);
     await hydrateProjectStorage();
 
-    // The durable copy wins; the stale legacy entry is discarded.
+    // The durable copy stays active and the different legacy copy remains recoverable.
     expect(new LocalStorageProjectStorage().load('proj-both')?.name).toBe('Current name');
-    expect(store[PROJECT_PREFIX + 'proj-both']).toBeUndefined();
+    expect(store[PROJECT_PREFIX + 'proj-both']).toContain('Stale name');
   });
 });
 
@@ -518,5 +518,27 @@ describe('generation storage: usage reporting', () => {
     const usage = await storage.usage();
     expect(usage.projectCount).toBe(2);
     expect(usage.totalBytes).toBeGreaterThan(0);
+  });
+});
+
+describe('durable migration retry', () => {
+  afterEach(() => {
+    projectStore.reset();
+    setIdbFactoryForTests(undefined);
+  });
+
+  it('retains the legacy source on repeated migration failures and reports failed flush', async () => {
+    installLocalStorage();
+    setIdbFactoryForTests(new FakeIdb({ quotaBytes: 100 }));
+    const building = largeBuilding('legacy-retry', 1);
+    const key = PROJECT_PREFIX + building.projectId;
+    localStorage.setItem(key, JSON.stringify(envelopeFor(building)));
+
+    expect((await hydrateProjectStorage()).failed).toHaveLength(1);
+    const flush = await projectStore.flush(building.projectId);
+    const retry = await hydrateProjectStorage();
+    expect(localStorage.getItem(key)).not.toBeNull();
+    expect(flush.state).toBe('FAILED');
+    expect(retry.failed).toHaveLength(1);
   });
 });

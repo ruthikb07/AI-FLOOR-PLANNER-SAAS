@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import type { Building, IrregularPlotBoundary } from '@ai-floor-planner/core';
 
 export interface LocalRevisionSummary {
@@ -46,21 +47,17 @@ export interface LoadedLocalProject {
   readonly revision: number;
 }
 
-function sanitizeId(raw: string): string {
-  const cleaned = raw
-    .trim()
-    .replace(/[^a-zA-Z0-9_-]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 96);
-  return cleaned || `proj_${Date.now()}`;
+export function isLocalProjectId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z0-9_-]{1,96}$/i.test(value)
+    && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(value);
 }
 
-function resolveProjectDir(root: string, rawId: string): { projectId: string; projDir: string } {
-  const projectId = sanitizeId(rawId);
+function resolveProjectDir(root: string, projectId: string): { projectId: string; projDir: string } {
+  if (!isLocalProjectId(projectId)) throw new Error('Invalid local project id.');
   const absRoot = path.resolve(root);
   const projDir = path.resolve(absRoot, projectId);
   if (!projDir.startsWith(absRoot + path.sep)) {
-    throw new Error(`Invalid local project id "${rawId}".`);
+    throw new Error('Invalid local project directory.');
   }
   return { projectId, projDir };
 }
@@ -92,6 +89,16 @@ function ensureDir(dir: string): void {
   }
 }
 
+function writeAtomically(target: string, data: string | Buffer): void {
+  const temporary = `${target}.${randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporary, data, { flag: 'wx' });
+    fs.renameSync(temporary, target);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+  }
+}
+
 export function listLocalProjects(): LocalProjectManifest[] {
   const root = resolveLocalProjectsRoot();
   if (!fs.existsSync(root)) return [];
@@ -120,11 +127,7 @@ export function saveLocalProject(input: SaveLocalProjectInput): LoadedLocalProje
   const manifestPath = path.join(projDir, 'project.json');
   let existing: LocalProjectManifest | null = null;
   if (fs.existsSync(manifestPath)) {
-    try {
-      existing = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as LocalProjectManifest;
-    } catch {
-      existing = null;
-    }
+    existing = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as LocalProjectManifest;
   }
 
   const now = new Date().toISOString();
@@ -142,9 +145,9 @@ export function saveLocalProject(input: SaveLocalProjectInput): LoadedLocalProje
     const safeName = sanitizeFileName(input.sourceCad.fileName);
     const targetPath = path.join(cadDir, safeName);
     if (input.sourceCad.contentBase64) {
-      fs.writeFileSync(targetPath, Buffer.from(input.sourceCad.contentBase64, 'base64'));
+      writeAtomically(targetPath, Buffer.from(input.sourceCad.contentBase64, 'base64'));
     } else if (input.sourceCad.contentText !== undefined) {
-      fs.writeFileSync(targetPath, input.sourceCad.contentText, 'utf8');
+      writeAtomically(targetPath, input.sourceCad.contentText);
     }
     sourceCadFileName = safeName;
     hasSourceCad = true;
@@ -156,11 +159,12 @@ export function saveLocalProject(input: SaveLocalProjectInput): LoadedLocalProje
     name: input.name || input.building.name || projectId,
     version: nextRevision,
     updatedAt: now,
+    metadata: { ...input.building.metadata, projectId },
   };
 
   // Write canonical Building JSON to revisions/rev-{n}.json
   const revFile = path.join(revDir, `rev-${nextRevision}.json`);
-  fs.writeFileSync(revFile, JSON.stringify(buildingToStore, null, 2), 'utf8');
+  writeAtomically(revFile, JSON.stringify(buildingToStore, null, 2));
 
   const repFloor =
     buildingToStore.floors.find(f => f.floorUse === 'RESIDENTIAL' && (f.apartmentUnits?.length ?? 0) > 0) ??
@@ -207,7 +211,7 @@ export function saveLocalProject(input: SaveLocalProjectInput): LoadedLocalProje
     revisions,
   };
 
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+  writeAtomically(manifestPath, JSON.stringify(manifest, null, 2));
   return { manifest, building: buildingToStore, revision: nextRevision };
 }
 
@@ -235,7 +239,7 @@ export function readLocalProjectSourceCad(rawId: string): { fileName: string; by
   if (!manifest.sourceCadFileName) return null;
   const cadFile = path.join(projDir, 'source-cad', sanitizeFileName(manifest.sourceCadFileName));
   if (!fs.existsSync(cadFile)) return null;
-  return { fileName: manifest.sourceCadFileName, bytes: fs.readFileSync(cadFile) };
+  return { fileName: sanitizeFileName(manifest.sourceCadFileName), bytes: fs.readFileSync(cadFile) };
 }
 
 export function deleteLocalProject(rawId: string): boolean {

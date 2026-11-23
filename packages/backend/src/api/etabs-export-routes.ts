@@ -6,6 +6,7 @@ import {
   generateETABSE2KFromBuilding,
   generateETABSE2KFromStructuralProject,
 } from '../services/etabs-e2k-generator.js';
+import { RequestBodyTooLarge } from './http-input.js';
 import { ExportError } from '../services/export-selection.js';
 
 interface RouteConfig { token?: string; allowedOrigins: readonly string[] }
@@ -13,15 +14,13 @@ type Service = Pick<ETABSStructuralExportService,'exportStructuralProjectToETABS
 export function createETABSExportRoute(
   service:()=>Service=configuredETABSExportService,
   configuration:()=>RouteConfig=()=>({token:process.env.RH_ETABS_EXPORT_TOKEN,
-    allowedOrigins:(process.env.RH_ETABS_ALLOWED_ORIGINS??'http://localhost:5173,http://127.0.0.1:5173').split(',')}),
+    allowedOrigins:(process.env.RH_ETABS_ALLOWED_ORIGINS??'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173,http://localhost:4177,http://127.0.0.1:4177').split(',').map(origin => origin.trim())}),
 ) {
   return async(request:IncomingMessage,response:ServerResponse,url:URL,readBody:(request:IncomingMessage)=>Promise<string>):Promise<boolean>=>{
     if (url.pathname === '/api/v1/export/etabs/e2k' || url.pathname === '/api/export/etabs/e2k') {
-      const origin = request.headers.origin;
       const e2kHeaders: Record<string, string> = {
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
-        'Access-Control-Allow-Origin': origin ?? '*',
         'Access-Control-Expose-Headers': 'Content-Disposition, Content-Length, X-ETABS-Format',
       };
       if (request.method !== 'POST') {
@@ -55,6 +54,7 @@ export function createETABSExportRoute(
         });
         response.end(buf);
       } catch (error) {
+        if (error instanceof RequestBodyTooLarge) throw error;
         response.writeHead(400, { 'Content-Type': 'application/json', ...e2kHeaders });
         response.end(JSON.stringify({ error: { code: 'INVALID_REQUEST', message: error instanceof Error ? error.message : 'Invalid JSON payload' } }));
       }
@@ -90,6 +90,7 @@ export function createETABSExportRoute(
       const descriptor=await service().exportStructuralProjectToETABS(body.project);
       json(201,{artifact:descriptor});
     }catch(error){
+      if(error instanceof RequestBodyTooLarge) throw error;
       if(error instanceof StructuralExportValidationError)json(422,{error:{code:error.code,message:error.message}});
       else if(error instanceof ExportError)json(error.status,{error:{code:error.code,
         message:error.status===502?'Native ETABS export failed; inspect local verification evidence.':error.message}});
