@@ -1,0 +1,169 @@
+{
+  "readyMs": 1153.5,
+  "devicePixelRatio": 1,
+  "viewport": [
+    1280,
+    800
+  ],
+  "drawingBuffer": [
+    1280,
+    800
+  ],
+  "adapter": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "resources": [
+    {
+      "path": "/assets/index-CJRhADIX.css",
+      "startMs": 10,
+      "endMs": 25.399999998509884,
+      "transferBytes": 46828,
+      "encodedBytes": 46528
+    },
+    {
+      "path": "/assets/index-X3H24jdz.js",
+      "startMs": 10,
+      "endMs": 39.5,
+      "transferBytes": 249530,
+      "encodedBytes": 249230
+    },
+    {
+      "path": "/favicon.ico",
+      "startMs": 281.6000000014901,
+      "endMs": 284.1000000014901,
+      "transferBytes": 300,
+      "encodedBytes": 0
+    },
+    {
+      "path": "/assets/ResidenceShowcase-C7kOVr2N.js",
+      "startMs": 297.1000000014901,
+      "endMs": 304.3999999985099,
+      "transferBytes": 7168,
+      "encodedBytes": 6868
+    },
+    {
+      "path": "/assets/OrbitControls-B4CXDdBT.js",
+      "startMs": 297.29999999701977,
+      "endMs": 312,
+      "transferBytes": 90730,
+      "encodedBytes": 90430
+    },
+    {
+      "path": "/assets/HDRLoader-BJjcZk8O.js",
+      "startMs": 297.3999999985099,
+      "endMs": 306.79999999701977,
+      "transferBytes": 1936,
+      "encodedBytes": 1636
+    },
+    {
+      "path": "/assets/three.core-BU8V9jwQ.js",
+      "startMs": 297.3999999985099,
+      "endMs": 309.79999999701977,
+      "transferBytes": 64638,
+      "encodedBytes": 64338
+    },
+    {
+      "path": "/architecture/residence.webp",
+      "startMs": 300.1000000014901,
+      "endMs": 307.79999999701977,
+      "transferBytes": 290206,
+      "encodedBytes": 289906
+    },
+    {
+      "path": "/architecture/daylight.hdr",
+      "startMs": 438.3999999985099,
+      "endMs": 1336.6000000014901,
+      "transferBytes": 789321,
+      "encodedBytes": 789021
+    },
+    {
+      "path": "/architecture/cast-stone.webp",
+      "startMs": 1144.5,
+      "endMs": 1148.2000000029802,
+      "transferBytes": 117184,
+      "encodedBytes": 116884
+    },
+    {
+      "path": "/architecture/cast-stone-normal.webp",
+      "startMs": 1144.6000000014901,
+      "endMs": 1148,
+      "transferBytes": 28864,
+      "encodedBytes": 28564
+    },
+    {
+      "path": "/architecture/cast-stone-roughness.webp",
+      "startMs": 1144.6000000014901,
+      "endMs": 1148.1000000014901,
+      "transferBytes": 6224,
+      "encodedBytes": 5924
+    },
+    {
+      "path": "/architecture/arrival.webp",
+      "startMs": 5616.5,
+      "endMs": 5620.20000000298,
+      "transferBytes": 116920,
+      "encodedBytes": 116620
+    },
+    {
+      "path": "/architecture/balcony-reference.webp",
+      "startMs": 5616.5,
+      "endMs": 5620.20000000298,
+      "transferBytes": 116004,
+      "encodedBytes": 115704
+    },
+    {
+      "path": "/architecture/interior.webp",
+      "startMs": 5642,
+      "endMs": 5646.10000000149,
+      "transferBytes": 89042,
+      "encodedBytes": 88742
+    },
+    {
+      "path": "/architecture/roof.webp",
+      "startMs": 5642.10000000149,
+      "endMs": 5645.89999999851,
+      "transferBytes": 57118,
+      "encodedBytes": 56818
+    },
+    {
+      "path": "/architecture/construction.webp",
+      "startMs": 6465.39999999851,
+      "endMs": 6467.89999999851,
+      "transferBytes": 129862,
+      "encodedBytes": 129562
+    }
+  ],
+  "chrome": "158.0.8127.36",
+  "pageErrors": [],
+  "traceLoss": false,
+  "jsChunks": [
+    {
+      "file": "index-X3H24jdz.js",
+      "rawBytes": 846456,
+      "gzipBytes": 249230,
+      "sha256": "870c8301c8c8f98d038f24bc9748685f3f96c409e0d337808362b19e1de38c32"
+    },
+    {
+      "file": "ResidenceShowcase-C7kOVr2N.js",
+      "rawBytes": 14651,
+      "gzipBytes": 6868,
+      "sha256": "46f7357323a0fbb19803368782452a2c74d2a0f69204e8b281d7b8c76ecade04"
+    },
+    {
+      "file": "OrbitControls-B4CXDdBT.js",
+      "rawBytes": 369662,
+      "gzipBytes": 90430,
+      "sha256": "c1177b7715433e9389067a013cc95ea082ae586d902c136c8b9274081dd32372"
+    },
+    {
+      "file": "HDRLoader-BJjcZk8O.js",
+      "rawBytes": 3402,
+      "gzipBytes": 1636,
+      "sha256": "f51ecbdd73a3658570a7e0e8da22e205cb1c7f164a87cde86edf7105f7615665"
+    },
+    {
+      "file": "three.core-BU8V9jwQ.js",
+      "rawBytes": 229294,
+      "gzipBytes": 64338,
+      "sha256": "4f597810d4ce63ac630f6d29689470d37dde0502d54b890a280c374472c395d8"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
-import { architecturalBoundaryRole, architecturalSpaceRole, WallType, type Room, type Wall, type Polygon } from '@ai-floor-planner/core';
+import { architecturalBoundaryRole, architecturalSpaceRole, WallType, type Room, type Wall, type Polygon, type Point } from '@ai-floor-planner/core';
 import { polygonSignedArea, containsPolygon } from './polygon';
+import { matchEdgeToArcSpec } from './curves';
 
 /** Millimetres. Numerical coincidence is separate from opening corner clearance. */
 export const APARTMENT_GEOMETRY_TOLERANCES = { coincidence: 1, openingHost: 1, openingCorner: 100, areaDelta: 0.001 } as const;
@@ -12,50 +13,132 @@ export const ARCHITECTURAL_STANDARDS_PROFILE = {
 /** Room polygons denote wall centreline cells, NOT finished-face carpet polygons.
  * Partition all collinear edges at every endpoint. A shared interval is emitted once.
  * IDs depend on coordinates/owners, not randomness. T/L/X joins share exact endpoints.
- * Unsupported diagonal geometry is rejected; it is never projected onto axes.
+ * Supports orthogonal, angled/polygonal, and chorded arc boundaries natively.
  */
 export function generateApartmentWalls(rooms: readonly Room[], floorId: string, _boundary: Polygon, semantic = rooms.some(r => r.architecturalRole !== undefined), guardHeightMm = 1100): Wall[] {
-  type Edge = {axis:'x'|'y'; line:number; lo:number; hi:number; room:Room; side:'left'|'right'};
-  const groups = new Map<string,Edge[]>();
+  type Edge = {
+    kind: 'ortho' | 'general';
+    axis?: 'x' | 'y';
+    line?: number;
+    ux: number;
+    uy: number;
+    originX: number;
+    originY: number;
+    lo: number;
+    hi: number;
+    loPt: Point;
+    hiPt: Point;
+    room: Room;
+    side: 'left' | 'right';
+  };
+  const groups = new Map<string, Edge[]>();
   for (const room of rooms) {
     const p = room.boundary.points;
-    for(let i=0;i<p.length;i++) {
-      const a=p[i]!, b=p[(i+1)%p.length]!;
-      const axis = Math.abs(a.y-b.y)<=1 ? 'x' : Math.abs(a.x-b.x)<=1 ? 'y' : null;
-      if(!axis) throw new Error('WALL_TOPOLOGY_INVALID: apartment walls require orthogonal room boundaries');
-      const line=Math.round(axis==='x'?a.y:a.x);
-      const lo=Math.round(Math.min(axis==='x'?a.x:a.y,axis==='x'?b.x:b.y));
-      const hi=Math.round(Math.max(axis==='x'?a.x:a.y,axis==='x'?b.x:b.y));
-      if(hi<=lo) continue;
-      const center=axis==='x'?room.y+room.height/2:room.x+room.width/2;
-      const side = (axis==='x'?center>line:center<line) ? 'left' : 'right';
-      const key=`${axis}:${line}`;
-      groups.set(key,[...(groups.get(key)??[]),{axis,line,lo,hi,room,side}]);
+    const ccw = polygonSignedArea(room.boundary) >= 0;
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i]!, b = p[(i + 1) % p.length]!;
+      const r3 = (v: number) => Math.round(v * 1000) / 1000;
+      const axis =
+        Math.abs(a.y - b.y) <= 0.01 ? 'x' :
+        Math.abs(a.x - b.x) <= 0.01 ? 'y' :
+        null;
+      if (axis) {
+        const line = r3(axis === 'x' ? a.y : a.x);
+        const aCoord = axis === 'x' ? a.x : a.y;
+        const bCoord = axis === 'x' ? b.x : b.y;
+        const lo = r3(Math.min(aCoord, bCoord));
+        const hi = r3(Math.max(aCoord, bCoord));
+        if (hi - lo <= 0.01) continue;
+        const side: 'left' | 'right' = (ccw === (aCoord <= bCoord)) ? 'left' : 'right';
+        const key = `${axis}:${Math.round(line * 100) / 100}`;
+        groups.set(key, [
+          ...(groups.get(key) ?? []),
+          {
+            kind: 'ortho',
+            axis,
+            line,
+            ux: axis === 'x' ? 1 : 0,
+            uy: axis === 'x' ? 0 : 1,
+            originX: axis === 'x' ? 0 : line,
+            originY: axis === 'x' ? line : 0,
+            lo,
+            hi,
+            loPt: axis === 'x' ? { x: lo, y: line } : { x: line, y: lo },
+            hiPt: axis === 'x' ? { x: hi, y: line } : { x: line, y: hi },
+            room,
+            side,
+          },
+        ]);
+      } else {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        if (len <= 1) continue;
+        let ux = dx / len, uy = dy / len;
+        if (ux < -1e-6 || (Math.abs(ux) <= 1e-6 && uy < 0)) {
+          ux = -ux;
+          uy = -uy;
+        }
+        const perp = -a.x * uy + a.y * ux;
+        const angKey = Math.round(Math.atan2(uy, ux) * 10000);
+        const perpKey = Math.round(perp * 2);
+        const key = `diag:${angKey}:${perpKey}`;
+        const originX = -uy * perp;
+        const originY = ux * perp;
+        const pa = a.x * ux + a.y * uy;
+        const pb = b.x * ux + b.y * uy;
+        const lo = Math.min(pa, pb);
+        const hi = Math.max(pa, pb);
+        if (hi - lo <= 1) continue;
+        const loPt = pa <= pb ? a : b;
+        const hiPt = pa <= pb ? b : a;
+        const side: 'left' | 'right' = (ccw === (pa <= pb)) ? 'left' : 'right';
+        groups.set(key, [
+          ...(groups.get(key) ?? []),
+          { kind: 'general', ux, uy, originX, originY, lo, hi, loPt, hiPt, room, side },
+        ]);
+      }
     }
   }
-  const walls:Wall[]=[];
-  for(const [key,edges] of [...groups].sort(([a],[b])=>a.localeCompare(b))) {
-    const { axis, line } = edges[0]!;
-    const cuts=[...new Set(edges.flatMap(e=>[e.lo,e.hi]))].sort((a,b)=>a-b);
-    for(let i=1;i<cuts.length;i++) {
-      const lo=cuts[i-1]!,hi=cuts[i]!;
-      const owners=edges.filter(e=>e.lo<=lo&&e.hi>=hi);
-      if(!owners.length) continue;
-      const ids=[...new Set(owners.map(e=>e.room.id))].sort();
-      const unitIds=[...new Set(owners.flatMap(e=>e.room.unitId?[e.room.unitId]:[]))].sort();
+  const walls: Wall[] = [];
+  for (const [key, edges] of [...groups].sort(([a], [b]) => a.localeCompare(b))) {
+    const ref = edges[0]!;
+    const pointAtCut = (t: number): Point => {
+      if (ref.kind === 'ortho') {
+        return ref.axis === 'x' ? { x: t, y: ref.line! } : { x: ref.line!, y: t };
+      }
+      for (const e of edges) {
+        if (Math.abs(e.lo - t) <= 0.05) return e.loPt;
+        if (Math.abs(e.hi - t) <= 0.05) return e.hiPt;
+      }
+      return {
+        x: Math.round((ref.originX + ref.ux * t) * 1000) / 1000,
+        y: Math.round((ref.originY + ref.uy * t) * 1000) / 1000,
+      };
+    };
+    const rawCuts = edges.flatMap(e => [e.lo, e.hi]).sort((a, b) => a - b);
+    const cuts: number[] = [];
+    for (const c of rawCuts) {
+      if (!cuts.length || c - cuts[cuts.length - 1]! > 0.05) cuts.push(c);
+    }
+    for (let i = 1; i < cuts.length; i++) {
+      const lo = cuts[i - 1]!, hi = cuts[i]!;
+      const owners = edges.filter(e => e.lo <= lo + 0.05 && e.hi >= hi - 0.05);
+      if (!owners.length) continue;
+      const startPoint = pointAtCut(lo);
+      const endPoint = pointAtCut(hi);
+      if (Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y) <= 1) continue;
+      const ids = [...new Set(owners.map(e => e.room.id))].sort();
+      const unitIds = [...new Set(owners.flatMap(e => e.room.unitId ? [e.room.unitId] : []))].sort();
       const uniqueRooms = [...new Map(owners.map(e => [e.room.id, e.room])).values()];
-      const uses=owners.map(e=>e.room.spaceUse);
+      const uses = owners.map(e => e.room.spaceUse);
       const nonVoidOwners = uniqueRooms.filter(r => architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID');
       const hasPerimeterRecess = uniqueRooms.some(r => architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' && r.tags?.includes('recess:perimeter'));
       const external = ids.length === 1 || (nonVoidOwners.length === 1 && hasPerimeterRecess);
       const isUnitSeparation = unitIds.length > 1;
-      // A wall onto an explicit open-to-sky void is a shaft wall, like one onto
-      // a service duct: it can carry a bathroom ventilator. Exterior building
-      // shape recesses (`recess:perimeter`) behave as exterior facade boundaries.
       const isInternalShaftRoom = (r: Room) => !r.tags?.includes('recess:perimeter') && (r.spaceUse === 'SERVICE' || r.spaceUse === 'VOID' || architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' || architecturalSpaceRole(r) === 'SERVICE_SHAFT');
       const ventilates = owners.some(e => isInternalShaftRoom(e.room));
       const effectiveUses = hasPerimeterRecess ? nonVoidOwners.map(r => r.spaceUse) : uses;
-      const use:NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : effectiveUses.includes('OUTDOOR') ? 'BALCONY' : effectiveUses.includes('CORE') ? 'CORE' : effectiveUses.includes('COMMON')&&unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
+      const use: NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : effectiveUses.includes('OUTDOOR') ? 'BALCONY' : effectiveUses.includes('CORE') ? 'CORE' : effectiveUses.includes('COMMON') && unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';
       const boundaryRole = semantic ? architecturalBoundaryRole(uniqueRooms, external) : undefined;
       const thickness =
         use === 'EXTERNAL' || use === 'UNIT_SEPARATION' ? 230 :
@@ -63,22 +146,45 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
         use === 'SHAFT' ? 100 :
         use === 'BALCONY' ? (external ? 230 : 115) :
         115;
-      walls.push({id:`${floorId}::apt-wall:${key}:${lo}:${hi}`,floorId,startPoint:axis==='x'?{x:lo,y:line}:{x:line,y:lo},endPoint:axis==='x'?{x:hi,y:line}:{x:line,y:hi},thickness,type:external?WallType.External:WallType.Internal,roomIds:ids,unitIds,wallUse: boundaryRole === 'PARAPET' ? 'PARAPET' : use, boundaryRole, ...(boundaryRole === 'OPEN_BOUNDARY' ? { heightMm: 0 } : boundaryRole === 'PARAPET' ? { heightMm: guardHeightMm } : {}), leftRoomId:owners.find(o=>o.side==='left')?.room.id,rightRoomId:owners.find(o=>o.side==='right')?.room.id,hasOpening:false,loadBearing:false,provenance:'PROVISIONAL_HEURISTIC'});
+      const allCurveSpecs = uniqueRooms.flatMap(r => r.curvedEdges ?? []);
+      const arc = matchEdgeToArcSpec(startPoint, endPoint, allCurveSpecs);
+      walls.push({
+        id: `${floorId}::apt-wall:${key}:${Math.round(lo)}:${Math.round(hi)}`,
+        floorId,
+        startPoint,
+        endPoint,
+        thickness,
+        type: external ? WallType.External : WallType.Internal,
+        roomIds: ids,
+        unitIds,
+        wallUse: boundaryRole === 'PARAPET' ? 'PARAPET' : use,
+        boundaryRole,
+        ...(boundaryRole === 'OPEN_BOUNDARY' ? { heightMm: 0 } : boundaryRole === 'PARAPET' ? { heightMm: guardHeightMm } : {}),
+        leftRoomId: owners.find(o => o.side === 'left')?.room.id,
+        rightRoomId: owners.find(o => o.side === 'right')?.room.id,
+        hasOpening: false,
+        loadBearing: false,
+        provenance: 'PROVISIONAL_HEURISTIC',
+        ...(arc ? { arc, ...(arc.arcGroupId ? { arcGroupId: arc.arcGroupId } : {}) } : {}),
+      });
     }
   }
   return walls;
 }
 
 export function openingFitsApartmentWall(wall: Wall, position: { x: number; y: number }, width: number): boolean {
-  const horizontal = Math.abs(wall.startPoint.y - wall.endPoint.y) <= 1;
-  const on = Math.abs(horizontal ? position.y - wall.startPoint.y : position.x - wall.startPoint.x) <= 25;
-  const s = horizontal ? wall.startPoint.x : wall.startPoint.y;
-  const e = horizontal ? wall.endPoint.x : wall.endPoint.y;
-  const p = horizontal ? position.x : position.y;
-  return on && width > 0 && p - width / 2 >= Math.min(s, e) + 100 && p + width / 2 <= Math.max(s, e) - 100;
+  const dx = wall.endPoint.x - wall.startPoint.x;
+  const dy = wall.endPoint.y - wall.startPoint.y;
+  const len = Math.hypot(dx, dy);
+  if (!Number.isFinite(len) || len <= 0 || !Number.isFinite(width) || width <= 0) return false;
+  const ux = dx / len, uy = dy / len;
+  const px = position.x - wall.startPoint.x, py = position.y - wall.startPoint.y;
+  const across = Math.abs(px * uy - py * ux);
+  const along = px * ux + py * uy;
+  return across <= 25 && along - width / 2 >= 100 - 1e-3 && along + width / 2 <= len - 100 + 1e-3;
 }
 
-/** Exterior of an orthogonal, connected partition, retaining actual recesses.
+/** Exterior of an orthogonal or polygonal/curved connected partition, retaining actual recesses.
  * A bounding rectangle is not a measured built floor plate. Multiple rings
  * (holes/disconnected components) require an explicit void model, so reject them.
  */
@@ -90,7 +196,7 @@ export function apartmentFloorRegions(walls:readonly Wall[]):{boundary:Polygon;v
   const edges=walls.filter(w=>w.roomIds.length===1).map(w=>({a:w.leftRoomId?w.startPoint:w.endPoint,b:w.leftRoomId?w.endPoint:w.startPoint}));
   if(!edges.length)throw new Error('WALL_TOPOLOGY_INVALID: missing exterior');
   const remaining=[...edges];const rings:Polygon[]=[];
-  const equal=(a:{x:number;y:number},b:{x:number;y:number})=>a.x===b.x&&a.y===b.y;
+  const equal=(a:{x:number;y:number},b:{x:number;y:number})=>Math.hypot(a.x-b.x,a.y-b.y)<=0.5;
   while(remaining.length) {
   const first=remaining.shift()!;const points=[first.a];let next=first.b;
   while(!equal(next,points[0]!)) {

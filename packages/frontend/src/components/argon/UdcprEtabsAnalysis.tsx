@@ -11,12 +11,18 @@ import {
   fetchVerifiedBytes,
   downloadVerifiedExport,
 } from "../../services/export-client";
+import { ETABSExportPanel } from "./ETABSExportPanel";
+import { StructuralAnalysisPanel } from "./StructuralAnalysisPanel";
+
 const fmt = (v: number | null | undefined, d = 2) =>
   v == null ? "Not verified" : v.toFixed(d);
 export const UdcprEtabsAnalysis: React.FC<{
   editor: EditorContextValue;
   onHighlight?: () => void;
-}> = ({ editor, onHighlight }) => {
+  onOpenExports?: () => void;
+  onAutoFix?: () => void;
+  autoFixStatus?: string;
+}> = ({ editor, onHighlight, onOpenExports, onAutoFix, autoFixStatus }) => {
   const { building } = editor;
   const report = useMemo(() => evaluateUDCPRCompliance(building), [building]);
   const [tab, setTab] = useState<"UDCPR" | "ETABS">("UDCPR"),
@@ -60,7 +66,7 @@ export const UdcprEtabsAnalysis: React.FC<{
         aria-label={label}
         value={String(report.regulatoryContext[key] ?? "")}
         onChange={(e) => update({ [key]: e.target.value || undefined })}
-        className="mt-1 block w-full rounded bg-slate-800 p-2"
+        className="mt-1 block w-full rounded bg-argon-surface p-2"
       >
         <option value="">Not provided</option>
         {choices.map(([v, t]) => (
@@ -95,7 +101,7 @@ export const UdcprEtabsAnalysis: React.FC<{
             [key]: e.target.value === "" ? undefined : Number(e.target.value),
           })
         }
-        className="mt-1 block w-full rounded bg-slate-800 p-2"
+        className="mt-1 block w-full rounded bg-argon-surface p-2"
       />
     </label>
   );
@@ -140,7 +146,7 @@ export const UdcprEtabsAnalysis: React.FC<{
     }
   };
   const exportReport = async (
-    format: "udcpr-pdf" | "udcpr-json",
+    format: "udcpr-pdf" | "udcpr-json" | "udcpr-fix-pdf",
     action: "preview" | "download",
   ) => {
     const snapshot = building,
@@ -155,7 +161,10 @@ export const UdcprEtabsAnalysis: React.FC<{
         signal,
       );
       if (signal.aborted || current.current !== snapshot) return;
-      if (action === "download") await downloadVerifiedExport(artifact, signal);
+      if (action === "download") {
+        if (format === "udcpr-fix-pdf") await downloadVerifiedExport(artifact, signal, "Compliance_Audit_and_Fix_Plan.pdf");
+        else await downloadVerifiedExport(artifact, signal);
+      }
       else {
         const bytes = await fetchVerifiedBytes(artifact, signal);
         if (!signal.aborted && current.current === snapshot)
@@ -200,6 +209,9 @@ export const UdcprEtabsAnalysis: React.FC<{
     Passed: "PASS",
     "Not Verified": "NOT_VERIFIED",
   };
+  const ruleSummary = Object.entries(statuses).map(([label, status]) => ({
+    label, status, count: report.rulesChecked.filter(rule => rule.status === status).length,
+  }));
   const rows = report.rulesChecked.filter(
     (r) =>
       (filter === "All" || r.status === statuses[filter]) &&
@@ -209,13 +221,39 @@ export const UdcprEtabsAnalysis: React.FC<{
   );
   return (
     <section
-      className="h-full overflow-auto bg-slate-950 p-6 text-slate-100"
+      className="rh-engineering h-full overflow-auto bg-argon-bg p-4 text-argon-text sm:p-6"
       aria-label="Engineering status"
     >
-      <h2 className="text-xl font-bold">Engineering · {building.name}</h2>
-      <p className="mt-2 break-all text-sm text-slate-400">
-        Revision {building.version} · SHA-256 {report.canonicalHash}
-      </p>
+      <header className="rh-engineering-cover">
+        <div>
+          <h2 className="font-display text-4xl font-semibold">Code Compliance</h2>
+          <p className="mt-2 text-sm">{building.name} · Revision {building.version}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" className="rh-button" disabled={busy} onClick={() => void exportReport("udcpr-fix-pdf", "download")}>Download Violation &amp; Fix Guide (PDF)</button>
+            <button type="button" className="rh-button" disabled={busy || !onAutoFix} onClick={onAutoFix}>Auto-Fix All Violations &amp; Regenerate</button>
+          </div>
+          {autoFixStatus && <p className="mt-2 text-sm" role="status">{autoFixStatus}</p>}
+          <details><summary className="text-xs font-mono text-slate-400 cursor-pointer">Revision Checksum</summary><p className="break-all font-mono text-xs text-slate-400">SHA-256 {report.canonicalHash}</p></details>
+        </div>
+        <div className="rh-rule-summary">
+          <p>{report.rulesChecked.length} regulatory checks</p>
+          <div className="rh-rule-bar" aria-hidden="true">
+            {ruleSummary.map(item => item.count > 0 &&
+              <span key={item.status} data-status={item.status} style={{ flexGrow: item.count }} />)}
+          </div>
+          <ul>
+            {ruleSummary.map(item => <li key={item.status}>
+              <button type="button" aria-pressed={tab === "UDCPR" && filter === item.label} onClick={() => {
+                setTab("UDCPR");
+                setGroup("");
+                setFilter(current => tab === "UDCPR" && current === item.label ? "All" : item.label);
+              }}>
+                <i data-status={item.status} aria-hidden="true" /><span>{item.label.toLowerCase()} checks</span><strong>{item.count}</strong>
+              </button>
+            </li>)}
+          </ul>
+        </div>
+      </header>
       <div
         className="my-4 flex gap-4"
         role="tablist"
@@ -223,6 +261,7 @@ export const UdcprEtabsAnalysis: React.FC<{
       >
         <button
           role="tab"
+          className="rh-button"
           aria-selected={tab === "UDCPR"}
           onClick={() => setTab("UDCPR")}
         >
@@ -230,218 +269,33 @@ export const UdcprEtabsAnalysis: React.FC<{
         </button>
         <button
           role="tab"
+          className="rh-button"
           aria-selected={tab === "ETABS"}
           onClick={() => setTab("ETABS")}
         >
           ETABS Structural Analysis
         </button>
       </div>
-      <p className="mb-5 rounded border border-amber-500/30 p-4 text-sm text-amber-200">
+      <p className="mb-5 border border-argon-border bg-argon-surface p-4 text-sm text-argon-text">
         PROFESSIONAL REVIEW REQUIRED — NOT A MUNICIPAL COMPLIANCE CERTIFICATE.{" "}
         {report.disclaimer}
       </p>
       {tab === "ETABS" ? (
-        <div className="space-y-6">
-          {/* Header Banner */}
-          <article className="rounded-xl border border-slate-700 bg-slate-900/90 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-100">
-                  CSI ETABS v23.3.2 OAPI — STRUCTURAL FEM ANALYSIS & IS CODE AUDIT
-                </h3>
-                <p className="mt-1 text-xs text-slate-400">
-                  {building.name} · Rev {building.version} · IS 456:2000 / IS 1893:2016 / IS 13920:2016
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded border border-emerald-500/50 bg-emerald-950/80 px-2.5 py-1 text-xs font-bold text-emerald-400">
-                  FEM STATUS: PASS
-                </span>
-                <span className="rounded border border-rose-500/50 bg-rose-950/80 px-2.5 py-1 text-xs font-bold text-rose-300">
-                  CONSTRUCTION: BLOCKED (SE-1 REVIEW REQUIRED)
-                </span>
-              </div>
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-700/80 overflow-hidden">
+            <StructuralAnalysisPanel building={building} />
+          </div>
+          {onOpenExports && (
+            <div className="flex justify-end">
+              <button type="button" className="rh-button" onClick={onOpenExports}>Open Export Center</button>
             </div>
-
-            {/* Design & Material Specifications */}
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Concrete Grades</span>
-                <p className="mt-1 text-sm font-semibold text-slate-200">M30 (Cols) / M25 (Beams/Slabs)</p>
-                <p className="text-[11px] text-slate-400">fck = 30 / 25 N/mm²</p>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Steel Reinforcement</span>
-                <p className="mt-1 text-sm font-semibold text-slate-200">Fe500 High-Yield TMT</p>
-                <p className="text-[11px] text-slate-400">IS 1786:2008 (fy = 500 N/mm²)</p>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Seismic Parameters</span>
-                <p className="mt-1 text-sm font-semibold text-slate-200">Zone III (Z = 0.16)</p>
-                <p className="text-[11px] text-slate-400">R = 5.0 (SMRF), I = 1.2, Soil Type II</p>
-              </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Geotechnical Foundation</span>
-                <p className="mt-1 text-sm font-semibold text-slate-200">SBC: 200 kN/m²</p>
-                <p className="text-[11px] text-slate-400">Depth = 2.0m below ground</p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-800 pt-4">
-              <button
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const artifact = await requestVerifiedExport(
-                      building,
-                      "structural-report-pdf",
-                      { drawingKind: "STRUCTURAL", exportScope: "all_floors" },
-                      controller.current.signal,
-                    );
-                    const bytes = await fetchVerifiedBytes(artifact, controller.current.signal);
-                    setPreview(URL.createObjectURL(bytes));
-                  } catch (e) {
-                    setError(String(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-              >
-                Preview Analysis Report (PDF)
-              </button>
-              <button
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const artifact = await requestVerifiedExport(
-                      building,
-                      "structural-report-pdf",
-                      { drawingKind: "STRUCTURAL", exportScope: "all_floors" },
-                      controller.current.signal,
-                    );
-                    await downloadVerifiedExport(artifact, controller.current.signal);
-                  } catch (e) {
-                    setError(String(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-500 disabled:opacity-50"
-              >
-                Download Analysis Report (PDF)
-              </button>
-              <button
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const artifact = await requestVerifiedExport(
-                      building,
-                      "structural-drawings-pdf",
-                      { drawingKind: "STRUCTURAL", exportScope: "all_floors" },
-                      controller.current.signal,
-                    );
-                    await downloadVerifiedExport(artifact, controller.current.signal);
-                  } catch (e) {
-                    setError(String(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-                className="rounded-lg border border-indigo-500/70 bg-indigo-900/50 px-4 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/80 disabled:opacity-50"
-              >
-                Download Structural Drawings (ISO A3 PDF)
-              </button>
-              <button
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const artifact = await requestVerifiedExport(
-                      building,
-                      "structural-report-json",
-                      { drawingKind: "STRUCTURAL", exportScope: "all_floors" },
-                      controller.current.signal,
-                    );
-                    await downloadVerifiedExport(artifact, controller.current.signal);
-                  } catch (e) {
-                    setError(String(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-                className="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 disabled:opacity-50"
-              >
-                Export JSON FEM Model
-              </button>
-            </div>
-          </article>
-
-          {/* Section: Storey Drift Table */}
-          <article className="rounded-xl border border-slate-700 bg-slate-900/90 p-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h4 className="text-sm font-bold text-slate-100">
-                  STOREY DISPLACEMENT & INTER-STOREY DRIFT CHECK (IS 1893:2016 CL 7.11.1)
-                </h4>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Permissible drift ratio: 0.004h (Max allowable = 12.20 mm for 3.05m storey height)
-                </p>
-              </div>
-              <span className="rounded bg-emerald-950/80 border border-emerald-600/50 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
-                ALL STOREYS COMPLIANT
-              </span>
-            </div>
-
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="py-2">Storey Level</th>
-                    <th className="py-2">Height (mm)</th>
-                    <th className="py-2">Disp X (mm)</th>
-                    <th className="py-2">Disp Y (mm)</th>
-                    <th className="py-2">Drift Ratio X</th>
-                    <th className="py-2">Permissible</th>
-                    <th className="py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                  {building.floors.map((fl, i) => {
-                    const numStoreys = building.floors.length;
-                    const factor = Math.sin(((i + 1) / (numStoreys + 1)) * Math.PI);
-                    const driftX = Number((1.8 + factor * 2.2).toFixed(2));
-                    const driftRatio = (driftX / 3050).toFixed(5);
-                    return (
-                      <tr key={fl.id} className="hover:bg-slate-800/40">
-                        <td className="py-2 text-slate-300 font-sans">{fl.name || `Floor ${i + 1}`}</td>
-                        <td className="py-2 text-slate-400">3050</td>
-                        <td className="py-2 text-white font-bold">{driftX}</td>
-                        <td className="py-2 text-slate-300">{(driftX * 0.92).toFixed(2)}</td>
-                        <td className="py-2 text-indigo-300">{driftRatio}</td>
-                        <td className="py-2 text-slate-400">0.00400</td>
-                        <td className="py-2 text-emerald-400 font-bold">PASS</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </article>
+          )}
+          <ETABSExportPanel building={building} />
         </div>
       ) : (
         <>
-          <p className="mb-4 font-mono text-amber-300">
-            INTERNAL_ENGINEERING_GATE · {report.status} ·
-            PROFESSIONAL_REVIEW_REQUIRED
+          <p className="mb-4 font-mono text-xs tracking-wider uppercase text-amber-300/90">
+            CODE COMPLIANCE AUDIT · {report.status} · LICENSED ARCHITECT REVIEW REQUIRED
           </p>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {choose("authorityType", "Planning authority", [
@@ -479,7 +333,7 @@ export const UdcprEtabsAnalysis: React.FC<{
               ["TWO_WAY", "Two way"],
             ])}
           </div>
-          <p className="my-4 text-xs text-slate-400">
+          <p className="my-4 text-xs text-argon-muted">
             Rules pinned to UDCPR consolidation 30 January 2025. Scheme/local
             amendments, NBC original clauses, statutory exemptions and fire
             strategy require professional review. Changes create an undoable
@@ -489,14 +343,14 @@ export const UdcprEtabsAnalysis: React.FC<{
             {cards.map(([title, prefix, text]) => (
               <button
                 key={title}
-                className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-left"
+                className="rounded-xl border border-argon-border bg-argon-card p-4 text-left"
                 onClick={() => {
                   setGroup(group === prefix ? "" : prefix!);
                   setFilter("All");
                 }}
               >
                 <strong>{title}</strong>
-                <p className="mt-2 text-sm text-slate-300">{text}</p>
+                <p className="mt-2 text-sm text-argon-muted">{text}</p>
               </button>
             ))}
           </div>
@@ -507,7 +361,7 @@ export const UdcprEtabsAnalysis: React.FC<{
                   key={f}
                   aria-pressed={filter === f}
                   onClick={() => setFilter(f)}
-                  className="rounded bg-slate-800 px-3 py-2"
+                  className="rounded bg-argon-surface px-3 py-2"
                 >
                   {f}
                 </button>
@@ -536,10 +390,10 @@ export const UdcprEtabsAnalysis: React.FC<{
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-t border-slate-800">
+                  <tr key={r.id} className="border-t border-argon-border">
                     <td className="min-w-48 p-3">
                       <strong>{r.status}</strong>
-                      <p className="mt-1 text-xs text-slate-400">{r.clause}</p>
+                      <p className="mt-1 text-xs text-argon-muted">{r.clause}</p>
                     </td>
                     <td className="min-w-64 p-3">{r.description}</td>
                     <td className="max-w-80 break-words p-3">
@@ -557,7 +411,7 @@ export const UdcprEtabsAnalysis: React.FC<{
                       <button
                         disabled={!r.elementIds.length}
                         onClick={() => highlight(r)}
-                        className="mt-2 rounded bg-slate-800 px-3 py-2"
+                        className="mt-2 rounded bg-argon-surface px-3 py-2"
                       >
                         Highlight affected elements
                       </button>
@@ -598,7 +452,7 @@ export const UdcprEtabsAnalysis: React.FC<{
         <div
           role="dialog"
           aria-label="UDCPR report preview"
-          className="fixed inset-6 z-50 flex flex-col rounded bg-slate-900 p-4"
+          className="fixed inset-6 z-50 flex flex-col rounded bg-argon-card p-4"
         >
           <button className="mb-3" onClick={() => setPreview(null)}>
             Close preview

@@ -21,12 +21,47 @@ function pointInPolygon(point: Point, polygon: Polygon): boolean {
   return inside;
 }
 
+interface IndexedPoly {
+  readonly poly: Polygon;
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minY: number;
+  readonly maxY: number;
+}
+
+function indexPoly(poly: Polygon): IndexedPoly {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const pt of poly.points) {
+    if (pt.x < minX) minX = pt.x;
+    if (pt.x > maxX) maxX = pt.x;
+    if (pt.y < minY) minY = pt.y;
+    if (pt.y > maxY) maxY = pt.y;
+  }
+  return { poly, minX, maxX, minY, maxY };
+}
+
+function pointInIndexedPoly(point: Point, indexed: IndexedPoly): boolean {
+  if (
+    point.x < indexed.minX ||
+    point.x > indexed.maxX ||
+    point.y < indexed.minY ||
+    point.y > indexed.maxY
+  ) {
+    return false;
+  }
+  return pointInPolygon(point, indexed.poly);
+}
+
 /** Disjoint, clipped planar cells measure the union of walls exactly once.
  * Orthogonal cells retain their historical accounting; skewed simple polygons use an exact straight-edge arrangement.
  * Areas are mm2; boundaries are centreline cells, usable area excludes wall solids.
  */
 export function measureApartmentAreaLedger(floor: Floor) {
   const wallPolygons = floor.walls.filter(isPhysicalBoundary).map((w) => wallToPolygon(w));
+  const indexedBoundary = indexPoly(floor.boundary);
+  const indexedRooms = floor.rooms.map((r) => ({ room: r, box: indexPoly(r.boundary) }));
+  const indexedWalls = wallPolygons.map(indexPoly);
+  const indexedVoids = (floor.voidBoundaries ?? []).map(indexPoly);
   const polys = [
     floor.boundary,
     ...(floor.voidBoundaries ?? []),
@@ -81,23 +116,28 @@ export function measureApartmentAreaLedger(floor: Floor) {
     })();
   for (const { area: a, point: pt } of cells) {
     if (a <= 0) continue;
-    if (!pointInPolygon(pt, floor.boundary)) continue;
-    const owners = floor.rooms.filter((r) => pointInPolygon(pt, r.boundary));
-    if (
-      owners.length &&
-      floor.voidBoundaries?.some((p) => pointInPolygon(pt, p))
-    )
-      totals.roomVoidOverlap += a;
-    if (owners.length > 1) totals.overlap += a;
-    if (wallPolygons.some((p) => pointInPolygon(pt, p))) {
+    if (!pointInIndexedPoly(pt, indexedBoundary)) continue;
+    let firstOwner: Room | undefined;
+    let ownerCount = 0;
+    for (let i = 0; i < indexedRooms.length; i++) {
+      const entry = indexedRooms[i]!;
+      if (pointInIndexedPoly(pt, entry.box)) {
+        if (!firstOwner) firstOwner = entry.room;
+        ownerCount++;
+      }
+    }
+    const inVoid = indexedVoids.length > 0 && indexedVoids.some((v) => pointInIndexedPoly(pt, v));
+    if (ownerCount > 0 && inVoid) totals.roomVoidOverlap += a;
+    if (ownerCount > 1) totals.overlap += a;
+    if (indexedWalls.some((w) => pointInIndexedPoly(pt, w))) {
       totals.wall += a;
       continue;
     }
-    if (floor.voidBoundaries?.some((p) => pointInPolygon(pt, p))) {
+    if (inVoid) {
       totals.void += a;
       continue;
     }
-    const r = owners[0];
+    const r = firstOwner;
     if (!r) {
       totals.unassigned += a;
       continue;

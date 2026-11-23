@@ -9,6 +9,8 @@ export interface RegulatoryContext {
   readonly buildingHeightM: number;
   readonly numFloors: number;
   readonly parkingFloorHeightM?: number;
+  readonly clearRoomHeightMm?: number;
+  readonly stiltClearHeightBelowBeamMm?: number;
   readonly roofFsiReviewed?: boolean;
   readonly stiltParkingEnabled: boolean;
   readonly buildingUsage: "RESIDENTIAL_APARTMENT";

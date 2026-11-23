@@ -2058,7 +2058,7 @@ export function regenerateWithPreservedRatios(
     const out = [coords[0]!];
     for (let i = 0; i < coords.length - 1; i++) {
       const span = coords[i + 1]! - coords[i]!;
-      const nextSpan = fixedBand[i] ? span : Math.max(100, Math.round(span * factor));
+      const nextSpan = fixedBand[i] ? span : Math.max(1, Math.round(span * factor));
       out.push(out[out.length - 1]! + nextSpan);
     }
     return out;

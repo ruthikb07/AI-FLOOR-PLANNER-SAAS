@@ -94,7 +94,7 @@ describe('RH Planner Phase 4 — Chajja Projections (SVG / DXF / 3D), 3D Balustr
     expect(chajjaMeshes.length).toBeGreaterThan(0);
     for (const m of chajjaMeshes) {
       const zs = m.geometry.vertices.map((v) => v[2]!);
-      expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(75, 0);
+      expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo(100, 0);
     }
     expect(sceneOff.meshes.filter((m) => m.kind === 'chajja')).toHaveLength(0);
     expect(sceneOn.meshes.some((m) => m.kind === 'stair-balustrade')).toBe(true);

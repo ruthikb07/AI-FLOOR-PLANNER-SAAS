@@ -2,8 +2,10 @@ import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from
 import { isPhysicalBoundary, architecturalWallHeight, architecturalSpaceRole } from '@ai-floor-planner/core';
 import { MEP_MATERIALS } from "@ai-floor-planner/core";
 import { appendMepScene } from './mep-scene-projector';
+import { deriveBuiltFloorPlate } from './project-building';
 import type {
   Building,
+  Point,
   Polygon,
   Floor,
   Room,
@@ -231,8 +233,9 @@ export function projectBuildingScene(building: Building): BuildingScene {
       ...stairs.map((s) => s.polygon),
       ...f.stairs.map((s) => s.boundary),
     ];
-    add(f, f.id, "slab", "MAT_Concrete_Structural", f.boundary, z - slab, z, [
-      ...voids,
+    const builtSlab = deriveBuiltFloorPlate(f, voids);
+    add(f, f.id, "slab", "MAT_Concrete_Structural", builtSlab.boundary, z - slab, z, [
+      ...builtSlab.cutouts,
       ...f.rooms.filter(isBalcony).map((r) => r.boundary),
     ]);
     for (const room of f.rooms) {
@@ -413,8 +416,15 @@ export function projectBuildingScene(building: Building): BuildingScene {
           [],
           true,
         );
+        const floorCoordinatedBands = (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter(
+          (b) => b.floorId === f.id,
+        );
+        const coveredByCoordinatedBand = floorCoordinatedBands.some((b) =>
+          b.windowIds.includes(o.id),
+        );
         if (
           o.isWindow &&
+          !coveredByCoordinatedBand &&
           (exterior || wall.wallUse === "SHAFT") &&
           building.metadata?.generationBrief?.includeWindowChajjas !== false
         ) {
@@ -431,7 +441,7 @@ export function projectBuildingScene(building: Building): BuildingScene {
           const normal = (posIsInside ? -1 : 1) * (wall.thickness / 2 + 300);
           const chajjaBottom = Math.min(
             Math.max(z + o.sill + h, z + 2100),
-            z + Math.max(0, wallHeight - 75),
+            z + Math.max(0, wallHeight - 100),
           );
           add(
             f,
@@ -440,25 +450,43 @@ export function projectBuildingScene(building: Building): BuildingScene {
             "MAT_Concrete_Structural",
             segment(point(start - 150, normal), point(end + 150, normal), 600),
             chajjaBottom,
-            chajjaBottom + 75,
+            chajjaBottom + 100,
             [],
             true,
           );
         }
       }
       // Subtract in wall-local (along, height) plane, then map the triangulated prism into world coordinates.
-      const local = prism(
-        rect(0, 0, length, wallHeight),
-        -wall.thickness / 2,
-        wall.thickness / 2,
-        cuts,
-      );
-      local.vertices = local.vertices.map(([along, up, normal]) => {
-        const p = point(along!, normal!);
-        return [p.x, p.y, z + up!];
-      });
-      // (along, up, normal) -> world is orientation reversing.
-      local.faces = local.faces.map((face) => [...face].reverse());
+      const geometry = (() => {
+        if (wall.arc && wall.arc.radiusMm > 0 && cuts.length === 0) {
+          const arc = wall.arc;
+          const halfT = wall.thickness / 2;
+          const steps = 6;
+          const outP: Point[] = [];
+          const inP: Point[] = [];
+          for (let k = 0; k <= steps; k++) {
+            const th = arc.startAngleRad + ((arc.endAngleRad - arc.startAngleRad) * k) / steps;
+            const cosT = Math.cos(th);
+            const sinT = Math.sin(th);
+            outP.push({ x: arc.center.x + (arc.radiusMm + halfT) * cosT, y: arc.center.y + (arc.radiusMm + halfT) * sinT });
+            inP.unshift({ x: arc.center.x + Math.max(50, arc.radiusMm - halfT) * cosT, y: arc.center.y + Math.max(50, arc.radiusMm - halfT) * sinT });
+          }
+          return prism({ points: [...outP, ...inP] }, z, z + wallHeight);
+        }
+        const local = prism(
+          rect(0, 0, length, wallHeight),
+          -wall.thickness / 2,
+          wall.thickness / 2,
+          cuts,
+        );
+        local.vertices = local.vertices.map(([along, up, normal]) => {
+          const p = point(along!, normal!);
+          return [p.x, p.y, z + up!];
+        });
+        // (along, up, normal) -> world is orientation reversing.
+        local.faces = local.faces.map((face) => [...face].reverse());
+        return local;
+      })();
       const m: SceneMesh = {
         id: wall.id,
         sourceEntityId: wall.id,
@@ -467,7 +495,7 @@ export function projectBuildingScene(building: Building): BuildingScene {
         canonicalRevision: building.version,
         kind: "wall",
         material,
-        geometry: local,
+        geometry,
         provenance: "CANONICAL",
       };
       if (cutters.length)
@@ -476,6 +504,43 @@ export function projectBuildingScene(building: Building): BuildingScene {
           cutters,
         };
       scene.meshes.push(m);
+    }
+    if (building.metadata?.generationBrief?.includeWindowChajjas !== false) {
+      const floorChajjaBands = (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter(
+        (b) => b.floorId === f.id,
+      );
+      for (const band of floorChajjaBands) {
+        const proj = band.projectionMm || 600;
+        const fascia = band.fasciaThicknessMm || 100;
+        const n = band.outwardNormal;
+        const chajjaPoly: Polygon = {
+          points: [
+            band.startPoint,
+            band.endPoint,
+            { x: band.endPoint.x + n.x * proj, y: band.endPoint.y + n.y * proj },
+            { x: band.startPoint.x + n.x * proj, y: band.startPoint.y + n.y * proj },
+          ],
+        };
+        const floorClearH = Math.max(
+          2100,
+          (next !== undefined ? next - z : f.floorHeight) - (f.slabThicknessMm ?? 150),
+        );
+        const chajjaBottom = Math.min(
+          z + (band.lintelHeightMm || 2100),
+          z + Math.max(0, floorClearH - fascia),
+        );
+        add(
+          f,
+          band.id,
+          "chajja",
+          "MAT_Concrete_Structural",
+          chajjaPoly,
+          chajjaBottom,
+          chajjaBottom + fascia,
+          [],
+          true,
+        );
+      }
     }
     for (const col of f.columns)
       if (next !== undefined) {

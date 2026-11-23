@@ -111,8 +111,8 @@ describe('Phase 2 live export controls', () => {
       'VERIFIED · 12345 bytes · SHA-256 aaaaaaaaaaaaaaaa · revision 4',
     );
     expect(host.textContent).toContain('UDCPR 2020 Statutory Compliance Report');
-    expect(host.textContent).toContain('Blender 5.2 Native (.blend / .glb)');
-    expect(host.textContent).toContain('ETABS v23.3.2 Structural Analysis & CAD Set');
+    expect(host.textContent).toContain('Native Blender package');
+    expect(host.textContent).toContain('Export to ETABS (.edb / .e2k)');
   });
   it('invalidates generated artifacts and rejects an in-flight old revision', async () => {
     await mount();

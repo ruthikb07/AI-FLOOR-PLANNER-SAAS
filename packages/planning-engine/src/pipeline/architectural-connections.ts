@@ -174,17 +174,20 @@ export function coordinateArchitecturalStairs(building: Building): Building {
         : [...doors, door];
       const old = f.canonicalStaircases?.[index];
       const id = old?.id ?? `${r.id}:stair`;
+      const horizontal = Math.abs(host.startPoint.y - host.endPoint.y) < 0.001;
+      const clearWidth = (horizontal ? r.width : r.height) - host.thickness;
+      const clearDepth = (horizontal ? r.height : r.width) - host.thickness;
+      const useWideFlight = clearWidth >= 3200 && clearDepth >= 5600;
       const canonical = proposeArchitecturalStair(
         r,
         host,
         rise,
         id,
-        1200,
-        175,
+        useWideFlight ? 1500 : 1200,
+        useWideFlight ? 158 : 175,
         position,
       );
       canonicalStaircases.push(canonical);
-      const horizontal = Math.abs(host.startPoint.y - host.endPoint.y) < 0.001;
       return {
         id,
         floorId: f.id,

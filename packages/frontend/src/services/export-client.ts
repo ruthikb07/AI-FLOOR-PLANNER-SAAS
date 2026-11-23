@@ -63,12 +63,13 @@ export async function fetchVerifiedBytes(
 export async function downloadVerifiedExport(
   artifact: ExportFileDescriptor,
   signal?: AbortSignal,
+  fileName = artifact.fileName,
 ): Promise<void> {
   const blob = await fetchVerifiedBytes(artifact, signal);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = artifact.fileName;
+  link.download = fileName;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

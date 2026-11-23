@@ -10,7 +10,7 @@ import {
   generateArchitecturalProposal,
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
-import type { MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { validateRegulatoryContextSchema, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
 import {
   evaluateArchitecturalComplianceScore,
   executeAuditedPlanningPipeline,
@@ -24,6 +24,12 @@ export interface GenerationRouteDeps {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function includesSurveyGeometry(value: unknown): boolean {
+  return isRecord(value) && (value.siteGeometryMode === 'survey' ||
+    value.surveyDraft != null || value.surveyBoundary != null ||
+    value.plotBoundary != null || value.buildableEnvelope != null);
 }
 
 function parseGenerationRequest(body: unknown): {
@@ -65,6 +71,12 @@ export async function handleProjectGeneration(
   body: unknown,
   deps: GenerationRouteDeps,
 ): Promise<RouteResponse> {
+  if (includesSurveyGeometry(body) || (isRecord(body) && includesSurveyGeometry(body.config))) {
+    return {
+      status: 422,
+      json: { error: { code: 'SURVEY_GENERATION_UNSUPPORTED', message: 'This route requires a planner that accepts the exact surveyed boundary and buildable envelope.' } },
+    };
+  }
   const parsed = parseGenerationRequest(body);
   if (!parsed) {
     return {
@@ -76,6 +88,16 @@ export async function handleProjectGeneration(
         },
       },
     };
+  }
+
+  if (parsed.config.regulatoryContext !== undefined) {
+    const errors = validateRegulatoryContextSchema(parsed.config.regulatoryContext);
+    if (errors.length) {
+      return {
+        status: 400,
+        json: { error: { code: 'INVALID_REGULATORY_CONTEXT', message: errors.map(error => error.path).join(', ') } },
+      };
+    }
   }
 
   let proposalResult = await generateArchitecturalProposal(deps.gemini, {
@@ -90,16 +112,27 @@ export async function handleProjectGeneration(
       config: proposalResult.enrichedConfig,
     });
 
-    // If compliance < 85 after deterministic solver loop, escalate up to 3 corrective re-proposals
-    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= 3; retryIdx++) {
+    // If compliance < 85 after deterministic solver loop and live AI provider is configured,
+    // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
+    const maxOuterRetries = deps.gemini ? 2 : 0;
+    for (let retryIdx = 1; !complianceReport.passed && retryIdx <= maxOuterRetries; retryIdx++) {
       const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
+      const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
       const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
         ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
         : [...parsed.rejectedTopologyHashes];
-      const correctiveHint = complianceReport.violations.slice(0, 3).join(' ');
+      const updatedRejectedShapes =
+        !parsed.config.buildingMassingShape && priorShape
+          ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
+          : parsed.config.rejectedShapeIds;
+      const correctiveHint = complianceReport.violations
+        .slice(0, 3)
+        .map(v => (typeof v === 'string' ? v : v.message))
+        .join(' ');
       const retryProposal = await generateArchitecturalProposal(deps.gemini, {
         config: {
           ...parsed.config,
+          ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
           aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
         },
         seed: parsed.seed + retryIdx * 12,
@@ -120,10 +153,23 @@ export async function handleProjectGeneration(
       }
     }
 
+    const enrichedBuilding = {
+      ...pipelineResult.building,
+      metadata: {
+        ...pipelineResult.building.metadata,
+        complianceReport,
+        generationBrief: {
+          ...pipelineResult.building.metadata.generationBrief,
+          aiTelemetry: proposalResult.telemetry,
+        },
+      },
+    };
+
     return {
       status: 200,
       json: {
         ...pipelineResult,
+        building: enrichedBuilding,
         complianceReport,
         proposal: proposalResult.proposal,
         telemetry: proposalResult.telemetry,

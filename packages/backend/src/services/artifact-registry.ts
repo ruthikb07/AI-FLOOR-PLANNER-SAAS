@@ -33,7 +33,7 @@ export class ArtifactRegistry {
     format: ArtifactFormat,
     options: VerifiedArtifactOptions = {},
   ) {
-    if (!['dwg', 'dxf', 'pdf', 'svg', 'geometry-json', 'geometry-pdf', 'udcpr-json', 'udcpr-pdf', 'structural-drawings-pdf', 'structural-report-pdf', 'structural-report-json'].includes(format))
+    if (!['dwg', 'dxf', 'pdf', 'svg', 'geometry-json', 'geometry-pdf', 'udcpr-json', 'udcpr-pdf', 'udcpr-fix-pdf', 'structural-drawings-pdf', 'structural-report-pdf', 'structural-report-json'].includes(format))
       throw new ExportError('UNSUPPORTED_FORMAT', 'Unsupported artifact format', 400);
     if (
       options.paperSize &&
@@ -84,6 +84,9 @@ export class ArtifactRegistry {
         const result = new PdfExportService().exportPdf(building, options);
         data = result.data;
         mimeType = result.mimeType;
+      } else if (format === 'udcpr-fix-pdf') {
+        data = new PdfExportService().exportComplianceActionPlan(building);
+        mimeType = 'application/pdf';
       } else if (format === 'udcpr-json' || format === 'udcpr-pdf') {
         const report = complianceReport(building);
         data = format === 'udcpr-json' ? complianceReportJson(report) : complianceReportPdf(report);
@@ -115,7 +118,7 @@ export class ArtifactRegistry {
       const extension = format.startsWith('geometry-')
         ? format.slice(9)
         : format.startsWith('udcpr-')
-          ? format.slice(6)
+          ? (format.endsWith('-json') ? 'json' : 'pdf')
           : format.startsWith('structural-')
             ? (format.endsWith('-json') ? 'json' : 'pdf')
             : format;

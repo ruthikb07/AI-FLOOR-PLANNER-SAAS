@@ -40,6 +40,7 @@ export interface EditorEngineOptions {
   initialTool?: EditorTool;
   initialSnapConfig?: Partial<SnapConfiguration>;
   initialViewport?: Partial<ViewportState>;
+  coordinateRevision?: (next: Building, previous: Building) => Building;
 }
 
 export class EditorEngine {
@@ -48,7 +49,7 @@ export class EditorEngine {
   private history: CommandHistory;
   private listeners = new Set<EditorListener>();
 
-  constructor(building: Building, options: EditorEngineOptions = {}) {
+  constructor(building: Building, private readonly options: EditorEngineOptions = {}) {
     this.building = building;
     this.history = new CommandHistory(options.historyDepth ?? 50);
 
@@ -139,7 +140,8 @@ export class EditorEngine {
 
     const buildingChanged = result.building !== prevBuilding;
 
-    this.building = result.building !== prevBuilding && result.building.floors.some(f => f.architecture) ? withArchitecturalElements(result.building) : result.building;
+    const coordinated = buildingChanged ? this.options.coordinateRevision?.(result.building, prevBuilding) ?? result.building : result.building;
+    this.building = buildingChanged && coordinated.floors.some(f => f.architecture) ? withArchitecturalElements(coordinated) : coordinated;
 
     // Apply state updates from command
     if (result.stateUpdates) {

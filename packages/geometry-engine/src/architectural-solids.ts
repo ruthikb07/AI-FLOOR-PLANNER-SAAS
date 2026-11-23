@@ -144,10 +144,18 @@ export function proposeArchitecturalStair(
     y = Math.min(...points.map((p) => p.y));
   const w = Math.max(...points.map((p) => p.x)) - x,
     h = Math.max(...points.map((p) => p.y)) - y;
-  if (
-    points.length !== 4 ||
-    points.some((p) => ![x, x + w].includes(p.x) || ![y, y + h].includes(p.y))
-  )
+  const onRectEdge = points.every(
+    (p) =>
+      Math.abs(p.x - x) <= 0.5 ||
+      Math.abs(p.x - (x + w)) <= 0.5 ||
+      Math.abs(p.y - y) <= 0.5 ||
+      Math.abs(p.y - (y + h)) <= 0.5,
+  );
+  const signedArea = points.reduce((acc, p, i) => {
+    const q = points[(i + 1) % points.length]!;
+    return acc + (p.x * q.y - q.x * p.y);
+  }, 0) / 2;
+  if (points.length < 4 || !onRectEdge || Math.abs(Math.abs(signedArea) - w * h) > 10)
     throw new Error(`Unsupported stair enclosure: ${room.id}`);
   const horizontal = Math.abs(host.startPoint.y - host.endPoint.y) < 0.001;
   const inset = host.thickness / 2,
@@ -174,7 +182,7 @@ export function proposeArchitecturalStair(
   );
   const riserCount = 2 * Math.ceil(rise / (2 * targetRiser)),
     count = riserCount / 2,
-    nominalLanding = Math.min(targetFlightWidth, flightWidth),
+    nominalLanding = targetFlightWidth >= 1500 ? flightWidth : Math.min(targetFlightWidth, flightWidth),
     landing =
       depth - 2 * nominalLanding >= (count - 1) * 200
         ? nominalLanding

@@ -1,13 +1,17 @@
 import {
+  DoorType,
   RoomType,
+  WindowType,
+  architecturalSpaceRole,
   isPhysicalBoundary,
   type Building,
   type Floor,
   type MultiSheetApartmentConfig,
   type Room,
 } from '@ai-floor-planner/core';
-import { polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
+import { architecturalSlabCutouts, containsPolygon, openingFitsApartmentWall, polygonBoundingBox, polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
 
 export interface ComplianceViolationItem {
   readonly category:
@@ -51,6 +55,94 @@ export interface EvaluateComplianceOptions {
   };
   readonly requireFullEnvelopeUtilization?: boolean;
   readonly attemptCount?: number;
+}
+
+export interface LayoutScoreFinding {
+  readonly id: string;
+  readonly elementIds: readonly string[];
+  readonly actual: string;
+  readonly required: string;
+  readonly action: string;
+}
+
+export function evaluateStudioLayoutScore(building: Building, regulatory = evaluateUDCPRCompliance(building)) {
+  const geometry: LayoutScoreFinding[] = [];
+  const ventilation: LayoutScoreFinding[] = [];
+  const clearance: LayoutScoreFinding[] = [];
+  const massing: LayoutScoreFinding[] = [];
+  for (const issue of validateApartmentClosure(building).issues) {
+    if (issue.severity !== 'error') continue;
+    if (/DOOR_WIDTH/.test(issue.code)) {
+      clearance.push({ id: issue.code, elementIds: [], actual: issue.message, required: 'Applicable clear door width',
+        action: 'Locate the referenced door, extend its host wall where needed, and verify the clear width and swing.' });
+    } else if (/GEOMETRY|OPENING|OVERLAP|AREA_|BOUNDARY|OUTSIDE|INVALID/.test(issue.code)) {
+      geometry.push({ id: issue.code, elementIds: [], actual: issue.message, required: 'Valid, conserved canonical geometry',
+        action: 'Locate the referenced entities in CAD, correct their boundaries or openings, and rerun the geometry audit.' });
+    }
+  }
+  for (const floor of building.floors) {
+    const rooms = new Map(floor.rooms.map(room => [room.id, room]));
+    const walls = new Map(floor.walls.map(wall => [wall.id, wall]));
+    const validWindows = new Set<string>();
+    for (const opening of [...floor.doors, ...floor.windows]) {
+      const wall = walls.get(opening.wallId);
+      if (!wall || !openingFitsApartmentWall(wall, opening.position, opening.width)) {
+        geometry.push({ id: 'OPENING_INTERVAL', elementIds: [opening.id, opening.wallId], actual: `${opening.width} mm opening at (${opening.position.x}, ${opening.position.y})`,
+          required: 'Valid host with 100 mm clear at both ends', action: 'Select the host wall and move or resize the opening. Verify its clearance and adjacent openings.' });
+      } else if ('roomId' in opening && opening.type !== WindowType.Fixed && opening.type !== WindowType.Ventilator && wall.roomIds.includes(opening.roomId)) {
+        validWindows.add(opening.roomId);
+      }
+    }
+    const pairs = (owners: readonly string[]) => [...new Set(owners.map(id => rooms.get(id)?.unitId).filter((id): id is string => Boolean(id)))].sort();
+    const served = new Set<string>();
+    for (const room of floor.rooms) {
+      if (architecturalSpaceRole(room) !== 'OPEN_TO_SKY_VOID') continue;
+      const bounds = polygonBoundingBox(room.boundary);
+      const width = Math.min(bounds.width, bounds.height), depth = Math.max(bounds.width, bounds.height);
+      if (width < 1525 || width > 1830 || depth < 3000 || depth > 4500) continue;
+      if (building.floors.some(upper => upper.level > floor.level &&
+        polygonIntersectionArea(upper.boundary, room.boundary) > 0.001 &&
+        !architecturalSlabCutouts(upper).some(cutout => containsPolygon(cutout, room.boundary)))) continue;
+      const units = pairs(floor.walls.filter(wall => wall.roomIds.includes(room.id)).flatMap(wall => wall.roomIds));
+      for (const [index, unit] of units.entries()) for (const other of units.slice(index + 1)) served.add(`${unit}|${other}`);
+    }
+    const flaggedPairs = new Set<string>();
+    for (const wall of floor.walls) {
+      const units = pairs(wall.roomIds);
+      if (units.length !== 2) continue;
+      const key = units.join('|');
+      if (served.has(key) || flaggedPairs.has(key)) continue;
+      flaggedPairs.add(key);
+      ventilation.push({ id: 'INTER_FLAT_OTS', elementIds: [wall.id, ...wall.roomIds], actual: `${units.join(' / ')} has no qualifying shared duct`,
+        required: '1525–1830 mm wide × 3000–4500 mm deep, continuous to open sky',
+        action: 'Reserve the duct at the shared wall, carry it through the floor stack, and host operable windows on the rooms facing it.' });
+    }
+    for (const room of floor.rooms) {
+      if (!room.unitId || ![RoomType.Living, RoomType.Dining, RoomType.Kitchen, RoomType.Bedroom].includes(room.type) || validWindows.has(room.id)) continue;
+      ventilation.push({ id: 'HABITABLE_WINDOW', elementIds: [room.id], actual: '0 operable hosted windows', required: 'At least one operable window',
+        action: 'Place the room against an exterior wall or qualifying OTS duct. Add a hosted operable window and recheck ventilation area.' });
+    }
+  }
+  const clearanceRules = regulatory.rulesChecked.filter(rule => /^(setback\.|stairs\..*\.(?:missing|brief|width)$|doors?\.)/.test(rule.id));
+  for (const rule of clearanceRules.filter(rule => rule.status === 'VIOLATION')) {
+    const unit = rule.unit ? ` ${rule.unit}` : '';
+    clearance.push({ id: rule.id, elementIds: rule.elementIds, actual: `${rule.actual ?? 'Unverified'}${unit}`,
+      required: `${rule.required ?? 'Review applicability'}${unit}`, action: rule.remediation });
+  }
+  const brief = building.metadata.generationBrief;
+  if (brief?.requestedMassingShape && brief.requestedMassingShape !== brief.buildingMassingShape) {
+    massing.push({ id: 'MASSING_MISMATCH', elementIds: [], actual: brief.buildingMassingShape ?? 'Unverified', required: brief.requestedMassingShape,
+      action: 'Review plot and unit-count constraints, then generate and inspect a candidate with the requested massing.' });
+  }
+  const criteria = [
+    { label: 'Canonical geometry and openings', points: 25, findings: geometry, unresolved: !building.floors.length },
+    { label: 'Inter-flat OTS and operable windows', points: 20, findings: ventilation, unresolved: false },
+    { label: 'Setbacks, stairs and door clearance', points: 15, findings: clearance,
+      unresolved: !clearanceRules.length || clearanceRules.some(rule => rule.status === 'NOT_VERIFIED') },
+    { label: 'Requested massing', points: 15, findings: massing, unresolved: false },
+  ].map(criterion => ({ ...criterion, earned: criterion.findings.length || criterion.unresolved ? 0 : criterion.points }));
+  return { score: 25 + criteria.reduce((sum, criterion) => sum + criterion.earned, 0), criteria,
+    passed: criteria.every(criterion => criterion.earned === criterion.points), basePoints: 25 };
 }
 
 function sharesOrthogonalEdge(a: Room, b: Room, minOverlapMm = 100): boolean {
@@ -173,7 +265,8 @@ export function evaluateArchitecturalComplianceScore(
       Math.abs(bath.x - fMinX) <= 5 ||
       Math.abs(bath.x + bath.width - fMaxX) <= 5 ||
       Math.abs(bath.y - fMinY) <= 5 ||
-      Math.abs(bath.y + bath.height - fMaxY) <= 5;
+      Math.abs(bath.y + bath.height - fMaxY) <= 5 ||
+      typicalFloor.walls.some(w => w.roomIds.includes(bath.id) && w.wallUse === 'EXTERNAL');
     const touchesShaft = shaftRooms.some(s => sharesOrthogonalEdge(bath, s, 500));
     const hasWindow = typicalFloor.windows.some(w => w.roomId === bath.id);
     if (!onExterior && !touchesShaft && !hasWindow) {
@@ -189,6 +282,74 @@ export function evaluateArchitecturalComplianceScore(
     }
   }
 
+  // Habitable Room Daylight & Cross-Ventilation Check (-30 pts per unventilated Living/Dining/Kitchen/Bedroom)
+  const habitableVentRooms = typicalFloor.rooms.filter(
+    r =>
+      r.unitId &&
+      (r.type === RoomType.Living ||
+        r.type === RoomType.Dining ||
+        r.type === RoomType.Kitchen ||
+        r.type === RoomType.Bedroom) &&
+      !/PASSAGE|CORRIDOR|BALCONY|FOYER|LOBBY/i.test(r.name),
+  );
+  for (const hRoom of habitableVentRooms) {
+    const onExterior =
+      Math.abs(hRoom.x - fMinX) <= 5 ||
+      Math.abs(hRoom.x + hRoom.width - fMaxX) <= 5 ||
+      Math.abs(hRoom.y - fMinY) <= 5 ||
+      Math.abs(hRoom.y + hRoom.height - fMaxY) <= 5 ||
+      typicalFloor.walls.some(w => w.roomIds.includes(hRoom.id) && w.wallUse === 'EXTERNAL');
+    const touchesOts = shaftRooms.some(s => sharesOrthogonalEdge(hRoom, s, 500));
+    const hasWindow = typicalFloor.windows.some(w => w.roomId === hRoom.id);
+    // Open-plan / L-shaped Living–Dining connected directly (>= 1000 mm OpenPassage arch)
+    // to a naturally ventilated Living/Dining partner or exterior Balcony forms one continuous
+    // naturally lit & cross-ventilated hall (NBC / RERA open-plan standard).
+    const openPlanDiningDaylight =
+      (hRoom.type === RoomType.Living || hRoom.type === RoomType.Dining) &&
+      typicalFloor.doors.some(d => {
+        if (!d.connectsRooms.includes(hRoom.id)) {
+          return false;
+        }
+        const partnerId = d.connectsRooms.find(id => id !== hRoom.id);
+        const partner = partnerId ? typicalFloor.rooms.find(rm => rm.id === partnerId) : undefined;
+        if (!partner || partner.unitId !== hRoom.unitId) {
+          return false;
+        }
+        const isOpenLivingDining =
+          d.type === DoorType.OpenPassage &&
+          d.width >= 1000 &&
+          ((hRoom.type === RoomType.Living && partner.type === RoomType.Dining) ||
+            (hRoom.type === RoomType.Dining && partner.type === RoomType.Living));
+        const isDirectBalconyAccess =
+          (d.type === DoorType.Sliding || d.type === DoorType.OpenPassage) &&
+          d.width >= 1000 &&
+          partner.type === RoomType.Balcony;
+        if (!isOpenLivingDining && !isDirectBalconyAccess) {
+          return false;
+        }
+        const partnerOnExterior =
+          Math.abs(partner.x - fMinX) <= 5 ||
+          Math.abs(partner.x + partner.width - fMaxX) <= 5 ||
+          Math.abs(partner.y - fMinY) <= 5 ||
+          Math.abs(partner.y + partner.height - fMaxY) <= 5 ||
+          typicalFloor.walls.some(w => w.roomIds.includes(partner.id) && w.wallUse === 'EXTERNAL');
+        const partnerHasWin = typicalFloor.windows.some(w => w.roomId === partner.id);
+        const partnerTouchesOts = shaftRooms.some(s => sharesOrthogonalEdge(partner, s, 500));
+        return partnerHasWin || partnerOnExterior || partnerTouchesOts;
+      });
+    if (!onExterior && !touchesOts && !hasWindow && !openPlanDiningDaylight) {
+      redConflictCount++;
+      violations.push({
+        category: 'RED_CONFLICT',
+        penalty: 30,
+        hardReject: true,
+        roomId: hRoom.id,
+        unitId: hRoom.unitId,
+        message: `Unventilated habitable room: ${hRoom.name} has 0 exterior or OTS-duct windows.`,
+      });
+    }
+  }
+
   // ─── 2. Habitable Bedroom Proportions (-20 pts per violation) ─────────────
   const bedrooms = typicalFloor.rooms.filter(
     r =>
@@ -197,8 +358,10 @@ export function evaluateArchitecturalComplianceScore(
       !/PASSAGE|CORRIDOR|BALCONY|TOILET|BATH/i.test(r.name),
   );
   for (const bed of bedrooms) {
-    const shortDim = Math.min(bed.width, bed.height);
+    const isNonOrtho = bed.boundary.points.length > 4;
+    const rawShort = Math.min(bed.width, bed.height);
     const longDim = Math.max(bed.width, bed.height);
+    const shortDim = isNonOrtho && longDim > 0 ? Math.max(rawShort, bed.area / longDim) : rawShort;
     const aspectRatio = shortDim > 0 ? longDim / shortDim : 99;
 
     if (shortDim < 2850 || aspectRatio > 2.4) {
@@ -375,7 +538,7 @@ export function evaluateArchitecturalComplianceScore(
   const configMassing = options?.config?.buildingMassingShape;
   const explicitShapeRequested =
     (configMassing !== undefined && configMassing !== 'COMPACT_DOUBLE_LOADED') ||
-    /\b(h[- ]?shape|u[- ]?shape|l[- ]?shape|courtyard|cruciform|pinwheel|stepped)\b/i.test(promptText);
+    /\b(h[- ]?shape|u[- ]?shape|l[- ]?shape|t[- ]?shape|o[- ]?shape|y[- ]?shape|courtyard|cruciform|pinwheel|stepped|crescent|serpentine|rotunda|elliptical|lotus|bowfront|triangular|triskele|butterfly|hexagonal|trapezoid|zigzag)\b/i.test(promptText);
   const fullUtilRequested =
     options?.requireFullEnvelopeUtilization ??
     (/\b(utili[sz]e\s+(the\s+)?(full|entire|maximum)\s+(plot|floor|setback|envelope)|proper\s+space\s+utili[sz]ation)\b/i.test(
@@ -408,7 +571,7 @@ export function evaluateArchitecturalComplianceScore(
         (r.id.endsWith('stilt__grand_lobby') ||
           r.tags?.includes('core:lobby') ||
           (r.type === RoomType.Foyer &&
-            !/open\s*parking|remainder/i.test(r.name) &&
+            !/parking|remainder|clearance|driveway|ramp|aisle/i.test(r.name) &&
             !r.id.includes('open_remainder'))) &&
         r.architecturalRole !== 'VEHICLE_AISLE' &&
         r.architecturalRole !== 'PARKING_BAY' &&

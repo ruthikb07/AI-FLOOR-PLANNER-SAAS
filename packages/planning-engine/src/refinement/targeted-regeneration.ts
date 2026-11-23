@@ -1,6 +1,6 @@
 import type { Building, Door, Floor, GenerationControlState, Polygon, RefinementIntent, Room, Wall } from '@ai-floor-planner/core';
-import { DoorType, SwingDirection, WallType, stableValueHash } from '@ai-floor-planner/core';
-import { containsPolygon, generateApartmentWalls } from '@ai-floor-planner/geometry-engine';
+import { createRoom, DoorType, RoomType, SwingDirection, WallType, WindowType, stableValueHash } from '@ai-floor-planner/core';
+import { architecturalSlabCutouts, containsPolygon, fitFloorOpeningsInsideWalls, generateApartmentWalls, polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
 import { evaluateDesign } from '../diagnostics/design-evaluator';
 import { diagnosticsToValidation, type ValidationSummary } from '../repair/engine';
 
@@ -279,6 +279,50 @@ function assertProtectedEquality(before: Building, after: Building, selected: Se
   });
 }
 
+function carveSelectedInterflatDuct(floor: Floor, selectedRooms: readonly Room[], building: Building): Floor {
+  const [a, b] = selectedRooms;
+  const edge = a && b ? sharedEdge(a, b) : undefined;
+  if (selectedRooms.length !== 2 || !edge || !a?.unitId || !b?.unitId || a.unitId === b.unitId ||
+      !floor.walls.some(wall => wall.id.includes('apt-wall:'))) {
+    throw new RefinementError('REGENERATION_SCOPE_CONFLICT', 'Select two rooms in adjacent flats on the same apartment floor.');
+  }
+  const vertical = edge.startPoint.x === edge.endPoint.x;
+  const depth = vertical ? edge.endPoint.y - edge.startPoint.y : edge.endPoint.x - edge.startPoint.x;
+  const width = 1600;
+  for (const donor of [a, b]) {
+    if (depth < 3000 || depth > 4500 || (vertical ? donor.height : donor.width) !== depth ||
+      (vertical ? donor.width : donor.height) - width < 1000 || donor.boundary.points.length !== 4) continue;
+    const high = vertical ? donor.x < edge.startPoint.x : donor.y < edge.startPoint.y;
+    const x = edge.startPoint.x - (vertical && high ? width : 0);
+    const y = edge.startPoint.y - (!vertical && high ? width : 0);
+    const w = vertical ? width : depth, h = vertical ? depth : width;
+    const opening = rectPolygon(x, y, w, h);
+    if (!containsPolygon(donor.boundary, opening) || building.floors.some(upper => upper.level > floor.level &&
+      polygonIntersectionArea(upper.boundary, opening) > 0.001 && !architecturalSlabCutouts(upper).some(voidBoundary => containsPolygon(voidBoundary, opening)))) continue;
+    const updatedX = donor.x + (vertical && !high ? width : 0);
+    const updatedY = donor.y + (!vertical && !high ? width : 0);
+    const updatedWidth = donor.width - (vertical ? width : 0);
+    const updatedHeight = donor.height - (vertical ? 0 : width);
+    const trimmed = { ...donor, x: updatedX, y: updatedY, width: updatedWidth, height: updatedHeight,
+      area: updatedWidth * updatedHeight, boundary: rectPolygon(updatedX, updatedY, updatedWidth, updatedHeight) };
+    const ductId = `${floor.id}::ots-refinement-${a.id}-${b.id}`;
+    const duct: Room = { ...createRoom({ floorId: floor.id, x, y, width: w, height: h,
+      name: 'Inter-Flat Ventilation OTS Duct', type: RoomType.ServiceShaft }), id: ductId, architecturalRole: 'OPEN_TO_SKY_VOID',
+      tags: ['shaft:ots', 'shaft:interflat'], spaceUse: 'VOID', openToSky: true };
+    const rebuilt = rebuildDependencies({ ...floor, rooms: [...floor.rooms, duct] }, [trimmed], new Set([a.id, b.id]), 0);
+    const windows = [...rebuilt.windows];
+    for (const room of [a, b]) {
+      const wall = rebuilt.walls.find(wall => wall.roomIds.includes(room.id) && wall.roomIds.includes(duct.id));
+      if (!wall || rebuilt.doors.some(door => door.wallId === wall.id) || windows.some(window => window.wallId === wall.id)) continue;
+      windows.push({ id: `${ductId}::window-${room.id}`, floorId: floor.id, wallId: wall.id, roomId: room.id,
+        position: { x: (wall.startPoint.x + wall.endPoint.x) / 2, y: (wall.startPoint.y + wall.endPoint.y) / 2 },
+        width: 1200, height: 1200, sillHeight: 900, type: WindowType.Sliding, openingGeometryVersion: 1, positionReference: 'CENTER' });
+    }
+    return fitFloorOpeningsInsideWalls({ ...rebuilt, windows });
+  }
+  throw new RefinementError('NO_VALID_REFINEMENT', 'The selected party wall cannot fit the duct while preserving the room, footprint and open sky above.');
+}
+
 export function generateTargetedRefinements(input: TargetedRegenerationInput): readonly RefinementCandidate[] {
   const selected = new Set(input.selectedRoomIds); if (!selected.size) throw new RefinementError('INVALID_REGENERATION_SELECTION', 'Select at least one unlocked room to regenerate.');
   const allRooms = input.building.floors.flatMap(floor => floor.rooms); const selectedRooms = allRooms.filter(room => selected.has(room.id));
@@ -287,6 +331,24 @@ export function generateTargetedRefinements(input: TargetedRegenerationInput): r
   if (selectedRooms.some(room => locked.has(room.id) || lockedFloors.has(room.floorId) || room.type === 'staircase')) throw new RefinementError('REGENERATION_SCOPE_CONFLICT', 'Unlock the selected room or floor. Stair/core geometry remains protected during room refinement.');
   const baseRevision = buildingRefinementRevision(input.building, input.control);
   const baseline = diagnosticsToValidation(input.building);
+  if (input.intent === 'carve_interflat_ots') {
+    const floor = input.building.floors.find(value => selectedRooms.every(room => room.floorId === value.id));
+    if (!floor) throw new RefinementError('REGENERATION_SCOPE_CONFLICT', 'Select both rooms on the same floor.');
+    const refined = carveSelectedInterflatDuct(floor, selectedRooms, input.building);
+    const building = { ...input.building, floors: input.building.floors.map(value => value.id === floor.id ? refined : value), version: input.building.version + 1 };
+    assertProtectedEquality(input.building, building, selected);
+    const beforeErrors = new Set(evaluateDesign(input.building).warnings.filter(issue => issue.severity === 'error').map(issue => `${issue.code}:${issue.affectedEntityIds?.join(',')}`));
+    if (evaluateDesign(building).warnings.some(issue => issue.severity === 'error' && !beforeErrors.has(`${issue.code}:${issue.affectedEntityIds?.join(',')}`) && !/^GEOMETRY_SUB_MINIMUM/.test(issue.code))) {
+      throw new RefinementError('NO_VALID_REFINEMENT', 'Carving the duct creates a new geometry or access error. Select a different pair.');
+    }
+    const validation = diagnosticsToValidation(building);
+    return [{ id: 'interflat-ots', name: 'Inter-flat OTS duct', intent: input.intent, building, validation,
+      changedRoomIds: [...selected], preservedRoomIds: allRooms.filter(room => !selected.has(room.id)).map(room => room.id),
+      changes: selectedRooms.flatMap(room => {
+        const after = refined.rooms.find(value => value.id === room.id)!;
+        return after.area === room.area ? [] : [{ roomId: room.id, roomName: room.name, beforeAreaMm2: room.area, afterAreaMm2: after.area, deltaAreaMm2: after.area - room.area }];
+      }), scoreDelta: validation.overallScore - baseline.overallScore, baseRevision, rank: 1 }];
+  }
   const raw: RefinementCandidate[] = [];
   for (let variant = 0; variant < 8 && raw.length < 4; variant += 1) {
     try {

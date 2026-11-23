@@ -1,3 +1,5 @@
+import type { GalleryCoordinationMode } from '@ai-floor-planner/core';
+
 /** Deterministic supported placement clauses; no inferred engineering approval. */
 export interface ArchitecturalPlacement {
   liftSide: 'EAST' | 'WEST';
@@ -9,7 +11,9 @@ export interface ArchitecturalPlacement {
   entranceStyle: 'LIVING_FIRST';
   bedroomBalconies: 'STANDARD' | 'ALL_BEDROOMS';
   staggeredBalconies?: boolean;
+  galleryCoordinationMode?: GalleryCoordinationMode;
   floorVariant?: 'ODD' | 'EVEN';
+  includeStudyRoom?: boolean;
 }
 
 export function interpretArchitecturalPlacement(prompt = ''): ArchitecturalPlacement {

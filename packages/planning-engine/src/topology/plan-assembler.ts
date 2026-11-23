@@ -18,12 +18,23 @@
  * coordinates, which is what the area ledger requires.
  */
 
-import type { DynamicApartmentManifest, ApartmentBhkType } from '@ai-floor-planner/core';
+import type {
+  DynamicApartmentManifest,
+  ApartmentBhkType,
+  Direction,
+  Setbacks,
+  IrregularPlotBoundary,
+  GalleryCoordinationMode,
+  FlatExposureProfile,
+} from '@ai-floor-planner/core';
 import {
   createConnectingDoor,
+  scoreFlatExteriorEdges,
   sliceFlatRooms,
   type Box2D as SnapperBox,
+  type LocalFlatExposure,
   type RoomSlicingArchetypeId,
+  type WorldEdgeSide,
 } from '../interpretation/space-filling-snapper';
 import type { ArchitecturalPlacement } from '../interpretation/architectural-placement';
 import type {
@@ -55,7 +66,12 @@ const boxToRect = (b: Box2D) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
  */
 export function placementFromProgram(
   program: ArchitecturalProgram,
-  opts?: { staggeredBalconies?: boolean; floorVariant?: 'ODD' | 'EVEN' },
+  opts?: {
+    staggeredBalconies?: boolean;
+    galleryCoordinationMode?: GalleryCoordinationMode;
+    floorVariant?: 'ODD' | 'EVEN';
+    includeStudyRoom?: boolean;
+  },
 ): ArchitecturalPlacement {
   const p = program.preferences;
   return {
@@ -67,8 +83,10 @@ export function placementFromProgram(
     sitoutSize: p.sitoutSize,
     entranceStyle: 'LIVING_FIRST',
     bedroomBalconies: p.bedroomBalconies === 'NONE_REQUESTED' ? 'STANDARD' : 'ALL_BEDROOMS',
-    ...(opts?.staggeredBalconies ? { staggeredBalconies: true } : {}),
+    ...(opts?.staggeredBalconies !== undefined ? { staggeredBalconies: opts.staggeredBalconies } : {}),
+    ...(opts?.galleryCoordinationMode ? { galleryCoordinationMode: opts.galleryCoordinationMode } : {}),
     ...(opts?.floorVariant ? { floorVariant: opts.floorVariant } : {}),
+    includeStudyRoom: opts?.includeStudyRoom ?? false,
   };
 }
 
@@ -80,13 +98,26 @@ export interface AssembleInput {
   readonly rawRooms?: readonly ExtractedRoom[];
   readonly archetype?: RoomSlicingArchetypeId;
   readonly staggeredBalconies?: boolean;
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly floorVariant?: 'ODD' | 'EVEN';
+  readonly includeStudyRoom?: boolean;
+  readonly roadAccessSides?: readonly Direction[];
+  readonly setbacksMm?: Setbacks;
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
 }
 
 export interface AssembledPlan {
   readonly structure: ApartmentPlanStructure;
   /** Flats for which no entrance door could be hosted, by flat id. */
   readonly flatsWithoutEntrance: readonly string[];
+  readonly flatExposures: readonly FlatExposureProfile[];
+}
+
+function stripWorldEdge(strip: Box2D, worldBox: Box2D): WorldEdgeSide {
+  if (strip.w >= strip.h) {
+    return Math.abs(strip.y - worldBox.y) <= 2 ? 'NORTH' : 'SOUTH';
+  }
+  return Math.abs(strip.x - worldBox.x) <= 2 ? 'WEST' : 'EAST';
 }
 
 /**
@@ -100,23 +131,32 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
   const { partition, program, unitTypes } = input;
   const placement = placementFromProgram(program, {
     staggeredBalconies: input.staggeredBalconies,
+    galleryCoordinationMode: input.galleryCoordinationMode,
     floorVariant: input.floorVariant,
+    includeStudyRoom: input.includeStudyRoom,
   });
   const env = partition.envelope;
-  // Balconies are tested against the FLOOR ENVELOPE, not the built outline.
-  //
-  // The canonical floor boundary is the envelope, and `generateApartmentWalls`
-  // derives an exterior wall from a segment with exactly one owning room. A
-  // balcony away from the envelope edge therefore cannot own an exterior wall
-  // however the built form is outlined, and `validateApartmentClosure` rejects
-  // it. Testing against a tightened outline would let such a balcony through
-  // and fail later, at the point where the error is far harder to read.
   const builtFace = env;
 
   const flats: ApartmentPlanFlat[] = [];
   const openings: ApartmentPlanOpening[] = [];
   const flatsWithoutEntrance: string[] = [];
   const interflatOtsShafts: ApartmentCoreElement[] = [];
+  const flatExposures: FlatExposureProfile[] = [];
+
+  const otsShaftBoxes: Box2D[] = [];
+  const recessBoxes: Box2D[] = [];
+  for (let sIdx = 0; sIdx < partition.shaftBoxes.length; sIdx++) {
+    const sb = partition.shaftBoxes[sIdx]!;
+    const role = partition.shaftRoles[sIdx];
+    const tags = partition.shaftTags?.[sIdx] ?? [];
+    if (tags.includes('recess:perimeter')) {
+      recessBoxes.push(sb);
+    } else if (role === 'OPEN_TO_SKY_VOID') {
+      otsShaftBoxes.push(sb);
+    }
+  }
+  const allOpenVoids: Box2D[] = [...otsShaftBoxes, ...recessBoxes];
 
   // Spaces a flat may legitimately be entered from.
   const circulation: Array<{ id: string; box: Box2D }> = [
@@ -131,6 +171,18 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     const flatId = `flat_0${i + 1}`;
     const flatLabel = `Flat 0${i + 1}`;
     const unitType = (assignedUnitTypes[i] ?? unitTypes[i] ?? '2BHK') as ApartmentBhkType;
+
+    // Score all four perimeter edges of THIS flat independently (no blind copy-paste).
+    const rawExposureProfile = scoreFlatExteriorEdges(worldBox, {
+      flatId,
+      envelope: builtFace,
+      accessEdge,
+      otsShaftBoxes,
+      recessBoxes,
+      roadAccessSides: input.roadAccessSides,
+      setbacksMm: input.setbacksMm,
+      irregularPlotBoundary: input.irregularPlotBoundary,
+    });
 
     // The circulation space this flat actually shares the most wall with; that
     // is the one its entrance can be hosted on.
@@ -149,15 +201,69 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       ? localCorridorStrip(frame, worldBox, entry.c.box)
       : { x: localFlat.w, y: 0, w: 1500, h: localFlat.h };
 
-    // The slicer puts the service band — sit-out, utility, kitchen — at one end
-    // of the flat, choosing the end from `box.y > envelope.y`. It must land on
-    // an end that is genuinely on the building's exterior face, or the sit-out
-    // it contains has no exterior wall and is not a balcony at all.
-    //
-    // So the local envelope is extended past whichever local end is NOT
-    // exterior in world terms. That makes the slicer see the flat as sitting
-    // against the exterior end, and the band goes where the facade is.
-    const localEnvelope = serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
+    const lowWorldStrip = frame.toWorld({ x: 0, y: 0, w: frame.localW, h: 10 });
+    const highWorldStrip = frame.toWorld({ x: 0, y: frame.localH - 10, w: frame.localW, h: 10 });
+    const westWorldStrip = frame.toWorld({ x: 0, y: 0, w: 10, h: frame.localH });
+
+    const lowWorldEdge = stripWorldEdge(lowWorldStrip, worldBox);
+    const highWorldEdge = stripWorldEdge(highWorldStrip, worldBox);
+    const westWorldEdge = stripWorldEdge(westWorldStrip, worldBox);
+
+    const lowEdgeScore = rawExposureProfile.edgeScores.find(e => e.edge === lowWorldEdge)!;
+    const highEdgeScore = rawExposureProfile.edgeScores.find(e => e.edge === highWorldEdge)!;
+    const westEdgeScore = rawExposureProfile.edgeScores.find(e => e.edge === westWorldEdge)!;
+
+    const lowOnBuilt = onEnvelopeEdge(lowWorldStrip, builtFace);
+    const highOnBuilt = onEnvelopeEdge(highWorldStrip, builtFace);
+    const localExteriorFaces = { lowY: lowOnBuilt, highY: highOnBuilt };
+
+    const stripTouchesAnyVoid = (strip: Box2D): boolean =>
+      allOpenVoids.some(v => sharedEdgeLength(strip, v) >= 1000);
+    const lowHasOts = !lowOnBuilt && (lowEdgeScore.tier === 3 || stripTouchesAnyVoid(lowWorldStrip));
+    const highHasOts = !highOnBuilt && (highEdgeScore.tier === 3 || stripTouchesAnyVoid(highWorldStrip));
+
+    // Anchor Living Room + Sit-out Gallery on whichever Y-edge has higher
+    // exterior exposure score (Tier 1 Road / Corner beats Tier 2 Rear/Side).
+    let primaryLocalY: 'LOW_Y' | 'HIGH_Y';
+    if (lowOnBuilt && highOnBuilt) {
+      primaryLocalY = highEdgeScore.score > lowEdgeScore.score ? 'HIGH_Y' : 'LOW_Y';
+    } else if (highOnBuilt) {
+      primaryLocalY = 'HIGH_Y';
+    } else {
+      primaryLocalY = 'LOW_Y';
+    }
+    const livingExteriorEdge = primaryLocalY === 'HIGH_Y' ? highWorldEdge : lowWorldEdge;
+    const livingExposureTier = primaryLocalY === 'HIGH_Y' ? highEdgeScore.tier : lowEdgeScore.tier;
+
+    const exposureProfile: FlatExposureProfile = {
+      ...rawExposureProfile,
+      livingExteriorEdge,
+      livingExposureTier,
+    };
+    flatExposures.push(exposureProfile);
+
+    const localExposure: LocalFlatExposure = {
+      lowYTier: lowEdgeScore.tier,
+      highYTier: highEdgeScore.tier,
+      lowYIsExterior: lowOnBuilt,
+      highYIsExterior: highOnBuilt,
+      lowYHasOts: lowHasOts,
+      highYHasOts: highHasOts,
+      westIsExterior: westEdgeScore.tier <= 2,
+      lowYScore: lowEdgeScore.score,
+      highYScore: highEdgeScore.score,
+      primaryLocalY,
+      hasExteriorY: lowOnBuilt || highOnBuilt,
+      livingBaySide: exposureProfile.livingBaySide,
+      orientationMode: exposureProfile.orientationMode,
+      preferMasterAtPrimaryY:
+        exposureProfile.orientationMode === 'CORNER_L_WRAP' ||
+        exposureProfile.orientationMode === 'ANGLED_PERIMETER_FIT',
+    };
+
+    const localEnvelope = primaryLocalY === 'HIGH_Y'
+      ? { x: localFlat.x, y: localFlat.y - 1000, w: localFlat.w, h: localFlat.h + 1000 }
+      : serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
 
     const sliced = sliceFlatRooms({
       flatId,
@@ -170,6 +276,9 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       envelope: asSnapper(localEnvelope),
       placement,
       archetype: input.archetype,
+      localExteriorFaces,
+      exposureProfile,
+      localExposure,
     });
 
     // Carry rooms back into world coordinates.
@@ -220,9 +329,12 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
 
     // Re-absorb any dropped balcony into its bedroom so the flat still tiles
     // exactly; an unassigned sliver would fail the area ledger.
-    const finalRooms = carvedInterflat.droppedRemaining.length
+    const retainedRooms = carvedInterflat.droppedRemaining.length
       ? reabsorbDropped(carvedInterflat.keptRooms, carvedInterflat.droppedRemaining)
       : carvedInterflat.keptRooms;
+    const finalRooms = partition.massingShape === 'PINWHEEL_CLUSTER'
+      ? integrateDiningSitOut(retainedRooms, flatId, partition)
+      : retainedRooms;
 
     // Rebuild in-flat openings in world space AFTER finalRooms are settled so
     // kept Sit-out Balconies preserve their wide sliding doors and dropped rooms
@@ -292,7 +404,8 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
 
   const lobbies: ApartmentCoreElement[] = partition.lobbyBoxes.map((b, i) => ({
     id: `core_lobby_${i + 1}`,
-    name: partition.lobbyBoxes.length > 1 ? `Lift Lobby 0${i + 1}` : 'Common Lift Lobby',
+    architecturalRole: 'LIFT_LOBBY',
+    name: partition.lobbyBoxes.length > 1 ? `Central Lift Lobby 0${i + 1}` : 'Central Lift Lobby',
     rect: boxToRect(b),
     assignedFlatId: null,
   }));
@@ -388,8 +501,10 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       corridors,
       shafts,
       openings,
+      flatExposures,
     },
     flatsWithoutEntrance,
+    flatExposures,
   };
 }
 
@@ -552,24 +667,41 @@ function carveInterflatOtsForDroppedSitout(
 
   const bandLen = horiz ? bandBox.w : bandBox.h;
   const bandDep = horiz ? bandBox.h : bandBox.w;
-  if (bandLen < 4100 || bandDep < 1500) {
+  if (bandLen < 3350 || bandDep < 1500) {
     return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
   }
 
-  const otsLen = Math.min(1800, Math.max(1550, Math.min(1600, bandLen - 2550)));
+  const minOtsLen = bandLen >= 4100 ? 1800 : 1520;
+  const otsLen = Math.min(2400, Math.max(minOtsLen, bandLen - 2550));
   const uLen = utilAdjacent && uBox ? (horiz ? uBox.w : uBox.h) : 0;
   const utilRemLen = utilAdjacent && uLen >= otsLen + 100 ? uLen - otsLen : 0;
   const sitoutLen = bandLen - utilRemLen - otsLen;
-  if (sitoutLen < 2500) {
+  if (sitoutLen < 1800) {
     return { keptRooms: [...keptRooms], droppedRemaining: [...dropped] };
   }
+
+  const touchesBandEnd = (room: ApartmentPlanRoom, atLow: boolean): boolean => {
+    const rb = rectToBox(room.rect);
+    if (horiz) {
+      const targetX = atLow ? bandBox.x : bandBox.x + bandBox.w;
+      const touchesX = atLow ? Math.abs(rb.x + rb.w - targetX) <= 10 : Math.abs(rb.x - targetX) <= 10;
+      const overlapY = Math.min(rb.y + rb.h, bandBox.y + bandBox.h) - Math.max(rb.y, bandBox.y);
+      return touchesX && overlapY >= 600;
+    }
+    const targetY = atLow ? bandBox.y : bandBox.y + bandBox.h;
+    const touchesY = atLow ? Math.abs(rb.y + rb.h - targetY) <= 10 : Math.abs(rb.y - targetY) <= 10;
+    const overlapX = Math.min(rb.x + rb.w, bandBox.x + bandBox.w) - Math.max(rb.x, bandBox.x);
+    return touchesY && overlapX >= 600;
+  };
+  const bedTouchesLow = keptRooms.some(r => r.type === 'bedroom' && touchesBandEnd(r, true));
+  const bedTouchesHigh = keptRooms.some(r => r.type === 'bedroom' && touchesBandEnd(r, false));
 
   const utilAtLowSide =
     utilAdjacent && uBox
       ? horiz
         ? uBox.x < sBox.x
         : uBox.y < sBox.y
-      : true;
+      : !(bedTouchesHigh && !bedTouchesLow);
   const bandStart = horiz ? bandBox.x : bandBox.y;
   const makeSpanBox = (offset: number, span: number): Box2D =>
     horiz
@@ -602,6 +734,43 @@ function carveInterflatOtsForDroppedSitout(
       assignedFlatId: null,
     },
   };
+}
+
+/**
+ * Use a combined dining and family seating area where an enclosed sit-out is
+ * the viable ventilation frontage. Keep open balconies and separated rooms
+ * whose dining area already has sufficient opening frontage.
+ */
+function integrateDiningSitOut(
+  rooms: readonly ApartmentPlanRoom[],
+  flatId: string,
+  partition: TopologyPartition,
+): readonly ApartmentPlanRoom[] {
+  const dining = rooms.find(room => room.type === 'dining');
+  const sitOut = rooms.find(room => room.id === `${flatId}__balcony` && room.type === 'living');
+  if (!dining || !sitOut) return rooms;
+  const a = rectToBox(dining.rect);
+  const b = rectToBox(sitOut.rect);
+  if (sharedEdgeLength(a, b) <= 0) return rooms;
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  const merged = { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+  if (Math.abs(merged.w * merged.h - a.w * a.h - b.w * b.h) >= 0.001) return rooms;
+
+  const openFrontages = partition.shaftBoxes.filter((_, index) => {
+    const tags = partition.shaftTags?.[index];
+    return tags?.includes('shaft:interflat') || tags?.includes('recess:perimeter');
+  });
+  const windowCapacity = (box: Box2D) => openFrontages.reduce((area, frontage) => {
+    const length = sharedEdgeLength(box, frontage);
+    return length >= 650 ? area + (length - 200) * 1350 : area;
+  }, 0);
+  const targetArea = (box: Box2D) => Math.max(1_250_000, box.w * box.h * 0.12);
+  if (windowCapacity(a) >= targetArea(a) || windowCapacity(merged) < targetArea(merged)) return rooms;
+
+  return rooms.filter(room => room !== sitOut).map(room =>
+    room === dining ? { ...room, rect: boxToRect(merged) } : room,
+  );
 }
 
 function reabsorbDropped(

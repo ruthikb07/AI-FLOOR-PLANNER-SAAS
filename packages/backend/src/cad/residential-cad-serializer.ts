@@ -49,6 +49,7 @@ export const RESIDENTIAL_CAD_LAYERS = {
   "A-WIND": 2,
   "A-CHAJJA": 8,
   "A-FLOR-BALC": 3,
+  "A-BALC": 3,
   "A-ANNO-TEXT": 1,
   "A-ANNO-DIMS": 7,
   "A-PARK-STAL": 6,
@@ -349,8 +350,36 @@ export class ResidentialCadSerializer {
         text(s, { x: (left + right) / 2, y: bottom - 5500 - i * 500 }, 120),
       );
       if (options.standard === "A") {
+        const arcCenterByGroup = (w: Floor["walls"][number]) => {
+          if (!w.arc || !(w.arc.radiusMm > 0)) return undefined;
+          const cadCenter = cad(w.arc.center);
+          const cadStart = cad(w.startPoint);
+          const cadEnd = cad(w.endPoint);
+          if (![cadCenter.x, cadCenter.y, cadStart.x, cadStart.y, cadEnd.x, cadEnd.y].every(Number.isFinite)) return undefined;
+          const a0 = Math.atan2(cadStart.y - cadCenter.y, cadStart.x - cadCenter.x);
+          const a1 = Math.atan2(cadEnd.y - cadCenter.y, cadEnd.x - cadCenter.x);
+          let startRad = a0;
+          let endRad = a1;
+          if ((endRad - startRad + 2 * Math.PI) % (2 * Math.PI) > Math.PI) {
+            startRad = a1;
+            endRad = a0;
+          }
+          return { center: cadCenter, radius: w.arc.radiusMm, startRad, endRad };
+        };
         for (const wall of floor.walls.filter(isPhysicalBoundary)) {
-          if (wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL") { line(cad(wall.startPoint), cad(wall.endPoint), "A-GUARD"); continue; }
+          const wallArc = arcCenterByGroup(wall);
+          const isBalconyWall = wall.wallUse === "BALCONY" || wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL";
+          if (wall.boundaryRole === "PARAPET" || wall.boundaryRole === "GUARDRAIL") {
+            if (wallArc) {
+              add(new acad.Arc(new acad.XYZ(wallArc.center.x, wallArc.center.y, 0), wallArc.radius, wallArc.startRad, wallArc.endRad), "A-BALC");
+            }
+            line(cad(wall.startPoint), cad(wall.endPoint), "A-GUARD");
+            continue;
+          }
+          if (wallArc) {
+            const arcLayer = isBalconyWall ? "A-BALC" : "A-WALL-EXTR";
+            add(new acad.Arc(new acad.XYZ(wallArc.center.x, wallArc.center.y, 0), wallArc.radius, wallArc.startRad, wallArc.endRad), arcLayer);
+          }
           const q = projectOnSegment(
             wall.startPoint,
             wall.startPoint,
@@ -395,8 +424,12 @@ export class ResidentialCadSerializer {
               );
         }
         for (const r of floor.rooms) {
-          if (["balcony", "utility"].includes(r.type))
+          if (["balcony", "utility"].includes(r.type)) {
             poly(r.boundary.points.map(cad), "A-FLOR-BALC");
+            if (r.curvedEdges?.length) {
+              poly(r.boundary.points.map(cad), "A-BALC");
+            }
+          }
           const stall = r.type === "parking" && /^C[- ]?\d+/i.test(r.name);
           if (stall) {
             poly(r.boundary.points.map(cad), "A-PARK-STAL");
@@ -463,7 +496,67 @@ export class ResidentialCadSerializer {
             }
           }
           if (!chosen) {
-            if (["living", "bedroom", "kitchen", "bathroom"].includes(r.type))
+            const xsR = r.boundary.points.map((p) => p.x);
+            const ysR = r.boundary.points.map((p) => p.y);
+            const minXR = Math.min(...xsR), maxXR = Math.max(...xsR);
+            const minYR = Math.min(...ysR), maxYR = Math.max(...ysR);
+            const midR = { x: (minXR + maxXR) / 2, y: (minYR + maxYR) / 2 };
+            const dxR = (maxXR - minXR) * 0.22;
+            const dyR = (maxYR - minYR) * 0.22;
+            const anchors: Point[] = [
+              midR,
+              { x: centerPoint.x - dxR, y: centerPoint.y },
+              { x: centerPoint.x + dxR, y: centerPoint.y },
+              { x: centerPoint.x, y: centerPoint.y - dyR },
+              { x: centerPoint.x, y: centerPoint.y + dyR },
+              { x: midR.x - dxR, y: midR.y - dyR },
+              { x: midR.x + dxR, y: midR.y + dyR },
+            ];
+            const candLabels = [
+              label,
+              roomName,
+              r.type === "bathroom" ? "WC" : roomName.slice(0, 6),
+            ];
+            outerFallback: for (const candLabel of candLabels) {
+              for (const anchor of anchors) {
+                let hf = Math.min(
+                  90,
+                  (widths * 0.65) / (candLabel.length * 0.7),
+                  heights / 4,
+                );
+                for (let attempt = 0; attempt < 25 && hf >= 2; attempt++, hf *= 0.8) {
+                  const wf = candLabel.length * hf * 0.7;
+                  const df = hf * 1.2;
+                  const box = {
+                    points: [
+                      { x: anchor.x - wf / 2, y: anchor.y - df / 2 },
+                      { x: anchor.x + wf / 2, y: anchor.y - df / 2 },
+                      { x: anchor.x + wf / 2, y: anchor.y + df / 2 },
+                      { x: anchor.x - wf / 2, y: anchor.y + df / 2 },
+                    ],
+                  };
+                  if (
+                    containsPolygon(r.boundary, box) &&
+                    !floor.walls.some(
+                      (w) => hardeningOverlapArea(box, wallToPolygon(w)) >= 0.001,
+                    ) &&
+                    !floor.columns.some(
+                      (c) => hardeningOverlapArea(box, columnFootprint(c)) >= 0.001,
+                    )
+                  ) {
+                    text(candLabel, cad(anchor), hf);
+                    chosen = true;
+                    break outerFallback;
+                  }
+                }
+              }
+            }
+          }
+          if (!chosen) {
+            if (
+              r.unitId &&
+              ["living", "bedroom", "kitchen", "bathroom"].includes(r.type)
+            )
               throw new ExportError("CAD_LABEL_INFEASIBLE", r.id);
             omissions.push({
               roomId: r.id,
@@ -471,6 +564,27 @@ export class ResidentialCadSerializer {
                 "No clear centroid annotation envelope; nonhabitable boundary is retained",
             });
           }
+        }
+        const floorCoordinatedChajjas =
+          building.metadata?.generationBrief?.includeWindowChajjas !== false
+            ? (building.metadata?.facadeCoordination?.chajjaBands ?? []).filter(
+                (b) => b.floorId === floor.id,
+              )
+            : [];
+        const coveredChajjaWindowIds = new Set<string>();
+        for (const band of floorCoordinatedChajjas) {
+          for (const wid of band.windowIds) coveredChajjaWindowIds.add(wid);
+          const proj = band.projectionMm || 600;
+          const n = band.outwardNormal;
+          poly(
+            [
+              band.startPoint,
+              band.endPoint,
+              { x: band.endPoint.x + n.x * proj, y: band.endPoint.y + n.y * proj },
+              { x: band.startPoint.x + n.x * proj, y: band.startPoint.y + n.y * proj },
+            ].map(cad),
+            "A-CHAJJA",
+          );
         }
         for (const opening of [...floor.doors, ...floor.windows].filter(o => floor.walls.some(w => w.id === o.wallId && isPhysicalBoundary(w)))) {
           const wall = floor.walls.find((w) => w.id === opening.wallId);
@@ -494,7 +608,11 @@ export class ResidentialCadSerializer {
           poly(segmentFootprint(a, b, wall.thickness).points.map(cad), name);
           if (!isDoor) {
             line(cad(a), cad(b), name);
-            if (building.metadata?.generationBrief?.includeWindowChajjas !== false && p.length > 0) {
+            if (
+              building.metadata?.generationBrief?.includeWindowChajjas !== false &&
+              !coveredChajjaWindowIds.has(opening.id) &&
+              p.length > 0
+            ) {
               const ux = (wall.endPoint.x - wall.startPoint.x) / p.length,
                 uy = (wall.endPoint.y - wall.startPoint.y) / p.length;
               const nA = { x: -uy, y: ux },
@@ -774,6 +892,7 @@ export class ResidentialCadSerializer {
         const insert = new acad.Insert(block);
         insert.insertPoint = new acad.XYZ(0, 0, 0);
         add(insert, "A-ANNO-TEXT");
+        const emittedFootingOutlines: { points: Point[] }[] = [];
         for (const [i, c] of columns.entries()) {
           const tag = `C${i + 1}`,
             grid = `${axisName(xs.indexOf(c.position.x))}/${ys.indexOf(c.position.y) + 1}`;
@@ -788,37 +907,59 @@ export class ResidentialCadSerializer {
           });
           const p = cad(c.position);
           text(tag, { x: p.x + 650, y: p.y + 650 }, 110);
-          if (floor.floorUse === "STILT_PARKING")
+          if (floor.floorUse === "STILT_PARKING") {
+            let maxHalfX = c.width * 1.5;
+            let maxHalfY = c.depth * 1.5;
+            for (const o of columns) {
+              if (o.id === c.id) continue;
+              const dx = Math.abs(o.position.x - c.position.x);
+              const dy = Math.abs(o.position.y - c.position.y);
+              if (dy < maxHalfY + o.depth * 1.5 && dx > 0) {
+                maxHalfX = Math.min(maxHalfX, Math.max(c.width * 0.52, dx / 2 - 25));
+              }
+              if (dx < maxHalfX + o.width * 1.5 && dy > 0) {
+                maxHalfY = Math.min(maxHalfY, Math.max(c.depth * 0.52, dy / 2 - 25));
+              }
+            }
             for (const [factor, name] of [
               [2, "S-PEDESTAL-DIAG"],
               [3, "S-FOOT-DIAG"],
             ] as const) {
-              const w = c.width * factor,
-                h = c.depth * factor;
-              const outline = {
+              const scaleCap = factor === 2 ? 0.72 : 1.0;
+              let w = Math.min(c.width * factor, maxHalfX * 2 * scaleCap);
+              let h = Math.min(c.depth * factor, maxHalfY * 2 * scaleCap);
+              const makeOutline = (ow: number, oh: number) => ({
                 points: [
-                  { x: c.position.x - w / 2, y: c.position.y - h / 2 },
-                  { x: c.position.x + w / 2, y: c.position.y - h / 2 },
-                  { x: c.position.x + w / 2, y: c.position.y + h / 2 },
-                  { x: c.position.x - w / 2, y: c.position.y + h / 2 },
+                  { x: c.position.x - ow / 2, y: c.position.y - oh / 2 },
+                  { x: c.position.x + ow / 2, y: c.position.y - oh / 2 },
+                  { x: c.position.x + ow / 2, y: c.position.y + oh / 2 },
+                  { x: c.position.x - ow / 2, y: c.position.y + oh / 2 },
                 ],
-              };
-              if (
-                columns.some(
-                  (o) =>
-                    o.id !== c.id &&
-                    hardeningOverlapArea(outline, {
-                      points: columnFootprint({
-                        ...o,
-                        width: o.width * 3,
-                        depth: o.depth * 3,
-                      }).points,
-                    }) >= 0.001,
+              });
+              let outline = makeOutline(w, h);
+              if (factor === 3) {
+                for (let shrink = 0; shrink < 8; shrink++) {
+                  if (
+                    !emittedFootingOutlines.some(
+                      (prev) => hardeningOverlapArea(outline, prev) >= 0.001,
+                    )
+                  )
+                    break;
+                  w = Math.max(c.width * 1.05, w * 0.85);
+                  h = Math.max(c.depth * 1.05, h * 0.85);
+                  outline = makeOutline(w, h);
+                }
+                if (
+                  emittedFootingOutlines.some(
+                    (prev) => hardeningOverlapArea(outline, prev) >= 0.001,
+                  )
                 )
-              )
-                throw new ExportError("FOOTING_DIAGRAM_COLLISION", c.id);
+                  continue;
+                emittedFootingOutlines.push(outline);
+              }
               poly(outline.points.map(cad), name);
             }
+          }
         }
         text(
           "FOOTING DIAGRAMS ONLY / NOT TO SCALE / FOUNDATION SIZING NOT PROVIDED",
@@ -829,8 +970,6 @@ export class ResidentialCadSerializer {
       // Editable line/text architectural dimensions and cumulative grid offsets, with ticks.
       const axis = (values: readonly number[], horizontal: boolean) => {
         const base = values[0]!;
-        let tier = 0;
-        let lastVal = -Infinity;
         for (const [i, value] of values.entries()) {
           const p = horizontal
             ? { x: value + shift.x, y: bottom - 2000 }
@@ -840,15 +979,25 @@ export class ResidentialCadSerializer {
             { x: p.x + 100, y: p.y + 100 },
             "A-ANNO-DIMS",
           );
-          const minGap = horizontal ? 750 : 220;
-          if (value - lastVal < minGap) tier = (tier + 1) % 4;
-          else tier = 0;
-          lastVal = value;
-          text(
-            residentialImperial(value - base),
-            horizontal
+          const label = residentialImperial(value - base);
+          const labelW = label.length * 100 * 0.7;
+          const labelH = 100 * 1.2;
+          let labelPos = horizontal
+            ? { x: p.x, y: p.y - 350 }
+            : { x: p.x - 1000, y: p.y };
+          for (let tier = 0; tier < 10; tier++) {
+            const cand = horizontal
               ? { x: p.x, y: p.y - 350 - tier * 240 }
-              : { x: p.x - 1000 - tier * 800, y: p.y },
+              : { x: p.x - 1000 - tier * 800, y: p.y };
+            const candBox = { x: cand.x, y: cand.y, width: labelW, height: labelH, text: label };
+            if (!boxes.some((b) => textBoxesOverlap(b, candBox))) {
+              labelPos = cand;
+              break;
+            }
+          }
+          text(
+            label,
+            labelPos,
             100,
             "A-ANNO-DIMS",
           );

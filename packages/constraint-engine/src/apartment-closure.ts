@@ -12,21 +12,30 @@ function sharesBoundarySegment(
   for (let i = 0; i < ptsA.length; i++) {
     const a1 = ptsA[i]!;
     const a2 = ptsA[(i + 1) % ptsA.length]!;
-    const isHorizA = Math.abs(a1.y - a2.y) <= 2;
-    const isVertA = Math.abs(a1.x - a2.x) <= 2;
-    if (!isHorizA && !isVertA) continue;
+    const dx = a2.x - a1.x;
+    const dy = a2.y - a1.y;
+    const lenA = Math.hypot(dx, dy);
+    if (lenA < minOverlap - 2) continue;
+    const ux = dx / lenA;
+    const uy = dy / lenA;
 
     for (let j = 0; j < ptsB.length; j++) {
       const b1 = ptsB[j]!;
       const b2 = ptsB[(j + 1) % ptsB.length]!;
-
-      if (isHorizA && Math.abs(b1.y - b2.y) <= 2 && Math.abs(a1.y - b1.y) <= 5) {
-        const overlap = Math.min(Math.max(a1.x, a2.x), Math.max(b1.x, b2.x)) - Math.max(Math.min(a1.x, a2.x), Math.min(b1.x, b2.x));
-        if (overlap >= minOverlap - 2) return true;
-      } else if (isVertA && Math.abs(b1.x - b2.x) <= 2 && Math.abs(a1.x - b1.x) <= 5) {
-        const overlap = Math.min(Math.max(a1.y, a2.y), Math.max(b1.y, b2.y)) - Math.max(Math.min(a1.y, a2.y), Math.min(b1.y, b2.y));
-        if (overlap >= minOverlap - 2) return true;
-      }
+      const bdx = b2.x - b1.x;
+      const bdy = b2.y - b1.y;
+      const lenB = Math.hypot(bdx, bdy);
+      if (lenB < minOverlap - 2) continue;
+      // Collinear check via cross product & perpendicular distance <= 5 mm
+      const crossDir = Math.abs(ux * (bdy / lenB) - uy * (bdx / lenB));
+      if (crossDir > 0.05) continue;
+      const perp1 = Math.abs((b1.x - a1.x) * uy - (b1.y - a1.y) * ux);
+      const perp2 = Math.abs((b2.x - a1.x) * uy - (b2.y - a1.y) * ux);
+      if (perp1 > 5 || perp2 > 5) continue;
+      const t1 = (b1.x - a1.x) * ux + (b1.y - a1.y) * uy;
+      const t2 = (b2.x - a1.x) * ux + (b2.y - a1.y) * uy;
+      const overlap = Math.min(lenA, Math.max(t1, t2)) - Math.max(0, Math.min(t1, t2));
+      if (overlap >= minOverlap - 2) return true;
     }
   }
   return false;
@@ -122,11 +131,26 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
         });
         if (!onEdge(wall.startPoint) || !onEdge(wall.endPoint)) add('WALL_ROOM_BOUNDARY_MISMATCH', `${wall.id}/${id}`);
       }
+      if (wall.boundaryRole === 'OPEN_BOUNDARY' && wall.roomIds.length === 2) {
+        const ra = rooms.find(r => r.id === wall.roomIds[0]);
+        const rb = rooms.find(r => r.id === wall.roomIds[1]);
+        if (ra?.spaceUse === 'COMMON' && rb?.spaceUse === 'COMMON' &&
+            Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 800) {
+          graph.get(ra.id)?.add(rb.id);
+          graph.get(rb.id)?.add(ra.id);
+        }
+      }
     }
     const validDoors = new Set<string>();
     for (const door of floor.doors) {
       const host = floor.walls.find(w => w.id === door.wallId);
       const a = rooms.find(r => r.id === door.connectsRooms[0]), b = rooms.find(r => r.id === door.connectsRooms[1]);
+      const exteriorRoom = door.connectsRooms[0] === '__outside__' ? b : door.connectsRooms[1] === '__outside__' ? a : undefined;
+      if (exteriorRoom && host?.wallUse === 'EXTERNAL' && host.roomIds.length === 1 &&
+          host.roomIds[0] === exteriorRoom.id && openingFitsApartmentWall(host, door.position, door.width)) {
+        validDoors.add(door.id);
+        continue;
+      }
       if (!host || !openingFitsApartmentWall(host, door.position, door.width) || !a || !b || !host.roomIds.includes(a.id) || !host.roomIds.includes(b.id)) {
         add('OPENING_HOST_INVALID', door.id);
         continue;
@@ -172,7 +196,28 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
     }
     for (const window of floor.windows) {
       const host = floor.walls.find(w => w.id === window.wallId);
-      if (!host || !openingFitsApartmentWall(host, window.position, window.width) || !host.roomIds.includes(window.roomId) || (host.wallUse !== 'EXTERNAL' && host.wallUse !== 'SHAFT')) add('WINDOW_HOST_INVALID', window.id);
+      const winRoom = rooms.find(r => r.id === window.roomId);
+      const otherRoomId = host?.roomIds.find(id => id !== window.roomId);
+      const otherRoom = otherRoomId ? rooms.find(r => r.id === otherRoomId) : undefined;
+      const isBalconyEnclosure =
+        host?.wallUse === 'BALCONY' &&
+        host.boundaryRole !== 'PARAPET' &&
+        host.boundaryRole !== 'OPEN_BOUNDARY' &&
+        winRoom?.spaceUse !== 'OUTDOOR';
+      const isKitchenUtilityWindow =
+        host?.wallUse === 'INTERNAL_PARTITION' &&
+        host.boundaryRole !== 'OPEN_BOUNDARY' &&
+        winRoom?.type === 'kitchen' &&
+        otherRoom?.type === 'utility';
+      const hostValid =
+        Boolean(host) &&
+        openingFitsApartmentWall(host!, window.position, window.width) &&
+        host!.roomIds.includes(window.roomId) &&
+        (host!.wallUse === 'EXTERNAL' ||
+          host!.wallUse === 'SHAFT' ||
+          isBalconyEnclosure ||
+          isKitchenUtilityWindow);
+      if (!hostValid) add('WINDOW_HOST_INVALID', window.id);
     }
     const openings = [...floor.doors, ...floor.windows];
     for (let i = 0; i < openings.length; i++) {

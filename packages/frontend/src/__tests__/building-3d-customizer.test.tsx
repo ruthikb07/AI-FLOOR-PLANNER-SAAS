@@ -233,22 +233,24 @@ describe('Building3DCustomizer Component', () => {
     const btnDay = host.querySelector('[data-testid="btn-lighting-day"]') as HTMLButtonElement;
     const btnNight = host.querySelector('[data-testid="btn-lighting-night"]') as HTMLButtonElement;
 
-    // Day is initially active
-    expect(btnDay.className).toContain('bg-amber-500');
+    expect(host.querySelector('[data-testid="btn-lighting-golden"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(btnDay.getAttribute('aria-pressed')).toBe('false');
 
     // Click Night button
     act(() => {
       btnNight.click();
     });
 
-    expect(btnNight.className).toContain('bg-indigo-500');
+    expect(btnNight.getAttribute('aria-pressed')).toBe('true');
+    expect(btnDay.getAttribute('aria-pressed')).toBe('false');
 
     // Click Day button
     act(() => {
       btnDay.click();
     });
 
-    expect(btnDay.className).toContain('bg-amber-500');
+    expect(btnDay.getAttribute('aria-pressed')).toBe('true');
+    expect(btnNight.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('dispatches typed UpdateWindowPropertiesCommand when window fixture is clicked with selected window', async () => {
@@ -324,7 +326,7 @@ describe('Building3DCustomizer Component', () => {
     });
   });
 
-  it('disables unsupported furniture items and flags them with Pending Phase 8 badges', async () => {
+  it('disables unsupported furniture items and identifies them as preview only', async () => {
     const editor = createMockEditor();
     await act(async () => {
       root.render(<Building3DCustomizer editor={editor} />);
@@ -346,7 +348,7 @@ describe('Building3DCustomizer Component', () => {
 
     const badges = host.querySelectorAll('[data-testid="badge-pending-phase8"]');
     expect(badges.length).toBeGreaterThanOrEqual(6);
-    expect(badges[0]?.textContent).toContain('Pending Phase 8');
+    expect(host.textContent).toContain('scheduled for Phase 8 (preview only)');
   });
 
   it('dispatches Apply Global 3D Skin BatchCommand across all building openings', async () => {

@@ -5538,8 +5538,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:2"
           ],
@@ -5591,8 +5590,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:2"
           ],
@@ -5668,8 +5666,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:1"
           ],
@@ -5721,8 +5718,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:1"
           ],
@@ -5846,8 +5842,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:2"
           ],
@@ -6021,8 +6016,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:2"
           ],
@@ -6072,8 +6066,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:1:unit:1"
           ],
@@ -9343,9 +9336,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:1:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:1:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:1"
@@ -9363,9 +9356,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:3:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:3:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:3"
@@ -9393,9 +9386,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:6:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:6:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:6"
@@ -9413,9 +9406,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:8:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:8:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:8"
@@ -9463,9 +9456,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:13:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:13:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:13"
@@ -9533,9 +9526,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:20:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:20:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:20"
@@ -9553,9 +9546,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:1:wall:22:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:1:wall:22:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:1",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:1:wall:22"
@@ -11547,8 +11540,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:2"
           ],
@@ -11600,8 +11592,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:2"
           ],
@@ -11677,8 +11668,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:1"
           ],
@@ -11730,8 +11720,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:1"
           ],
@@ -11855,8 +11844,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:2"
           ],
@@ -12030,8 +12018,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:2"
           ],
@@ -12081,8 +12068,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:2:unit:1"
           ],
@@ -15352,9 +15338,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:1:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:1:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:1"
@@ -15372,9 +15358,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:3:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:3:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:3"
@@ -15402,9 +15388,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:6:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:6:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:6"
@@ -15422,9 +15408,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:8:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:8:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:8"
@@ -15472,9 +15458,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:13:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:13:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:13"
@@ -15542,9 +15528,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:20:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:20:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:20"
@@ -15562,9 +15548,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:2:wall:22:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:2:wall:22:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:2",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:2:wall:22"
@@ -17556,8 +17542,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:2"
           ],
@@ -17609,8 +17594,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:2"
           ],
@@ -17686,8 +17670,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "EXTERNAL",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:1"
           ],
@@ -17739,8 +17722,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:1"
           ],
@@ -17864,8 +17846,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:2"
           ],
@@ -18039,8 +18020,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:2"
           ],
@@ -18090,8 +18070,7 @@
           "hasOpening": false,
           "loadBearing": true,
           "wallUse": "UNIT_SEPARATION",
-          "boundaryRole": "OPEN_BOUNDARY",
-          "heightMm": 0,
+          "boundaryRole": "FULL_HEIGHT_WALL",
           "unitIds": [
             "synthesis:p1-elements:floor:3:unit:1"
           ],
@@ -21361,9 +21340,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:1:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:1:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:1"
@@ -21381,9 +21360,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:3:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:3:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:3"
@@ -21411,9 +21390,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:6:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:6:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:6"
@@ -21431,9 +21410,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:8:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:8:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:8"
@@ -21481,9 +21460,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:13:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:13:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:13"
@@ -21551,9 +21530,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:20:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:20:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:20"
@@ -21571,9 +21550,9 @@
             "reviewStatus": "DESIGN_PROPOSAL"
           },
           {
-            "id": "synthesis:p1-elements:floor:3:wall:22:architecture:OPEN_BOUNDARY",
+            "id": "synthesis:p1-elements:floor:3:wall:22:architecture:FULL_HEIGHT_WALL",
             "floorId": "synthesis:p1-elements:floor:3",
-            "role": "OPEN_BOUNDARY",
+            "role": "FULL_HEIGHT_WALL",
             "source": {
               "collection": "walls",
               "id": "synthesis:p1-elements:floor:3:wall:22"
@@ -25068,8 +25047,8 @@
     }
   },
   "version": 2,
-  "createdAt": "2026-11-15T15:20:27.935Z",
-  "updatedAt": "2026-11-15T15:20:28.011Z",
+  "createdAt": "2026-11-22T21:48:19.193Z",
+  "updatedAt": "2026-11-22T21:48:19.766Z",
   "beams": [
     {
       "id": "hardening:synthesis:p1-elements:floor:0:beam:0",

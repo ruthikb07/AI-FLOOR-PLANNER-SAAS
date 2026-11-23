@@ -31,6 +31,7 @@ import {
 import {
   generateApartmentWalls,
   openingFitsApartmentWall,
+  fitFloorOpeningsInsideWalls,
   measureApartmentAreaLedger,
   roomSpaceUse,
   pointInPolygon,
@@ -279,6 +280,7 @@ export function repairApartmentPlan(
     }
   }
 
+  currentBuilding = { ...currentBuilding, floors: currentBuilding.floors.map(fitFloorOpeningsInsideWalls) };
   const finalClosure = validateApartmentClosure(currentBuilding, manifest);
   const ledger = currentBuilding.floors[0] ? measureApartmentAreaLedger(currentBuilding.floors[0]) : null;
   const deltaMm2 = ledger ? Math.abs(ledger.delta) : 0;
@@ -784,12 +786,14 @@ function repairMinDimensions(params: MinDimRepairParams): {
     const minDimA = Math.min(rA.w, rA.h);
 
     if (minDimA < standardLimit) {
+      if (roomA.boundary.points.length !== 4) continue;
       // Find an adjacent room in the same unit with surplus clearance
       let slackShifted = false;
 
       for (let j = 0; j < rooms.length; j++) {
         if (i === j) continue;
         const roomB = rooms[j]!;
+        if (roomB.boundary.points.length !== 4) continue;
         if (roomA.unitId && roomA.unitId !== roomB.unitId) continue;
 
         const shared = findSharedWallSegment(roomA, roomB);
@@ -1211,8 +1215,15 @@ function repairDoorHostsAndClearance(params: DoorRepairParams): {
       continue;
     }
 
-    // 2. Position door strictly centered on host wall to guarantee >= 100mm corner clearance
+    // 2. Position door strictly centered on host wall (supports both orthogonal and angled walls)
     const horizontal = Math.abs(matchingWall.startPoint.y - matchingWall.endPoint.y) <= 1;
+    const vertical = Math.abs(matchingWall.startPoint.x - matchingWall.endPoint.x) <= 1;
+    const winsOnWall = (params.windows ?? []).filter(win => win.wallId === matchingWall.id);
+    const hitsAnyWindowOnWall = (candidatePos: Point): boolean =>
+      winsOnWall.some(
+        win => Math.hypot(win.position.x - candidatePos.x, win.position.y - candidatePos.y) < (win.width + doorWidth) / 2 + 20,
+      );
+
     let centerPos: Point;
     if (horizontal) {
       const minX = Math.min(matchingWall.startPoint.x, matchingWall.endPoint.x);
@@ -1222,7 +1233,7 @@ function repairDoorHostsAndClearance(params: DoorRepairParams): {
       const maxValidX = maxX - 100 - doorWidth / 2;
       const x = Math.min(maxValidX, Math.max(minValidX, Math.round(exactX)));
       centerPos = { x, y: matchingWall.startPoint.y };
-    } else {
+    } else if (vertical) {
       const minY = Math.min(matchingWall.startPoint.y, matchingWall.endPoint.y);
       const maxY = Math.max(matchingWall.startPoint.y, matchingWall.endPoint.y);
       const exactY = (minY + maxY) / 2;
@@ -1230,6 +1241,42 @@ function repairDoorHostsAndClearance(params: DoorRepairParams): {
       const maxValidY = maxY - 100 - doorWidth / 2;
       const y = Math.min(maxValidY, Math.max(minValidY, Math.round(exactY)));
       centerPos = { x: matchingWall.startPoint.x, y };
+    } else {
+      const dx = matchingWall.endPoint.x - matchingWall.startPoint.x;
+      const dy = matchingWall.endPoint.y - matchingWall.startPoint.y;
+      const along = Math.max(100 + doorWidth / 2, Math.min(wallLen - 100 - doorWidth / 2, wallLen / 2));
+      const frac = along / wallLen;
+      centerPos = {
+        x: Math.round((matchingWall.startPoint.x + dx * frac) * 1000) / 1000,
+        y: Math.round((matchingWall.startPoint.y + dy * frac) * 1000) / 1000,
+      };
+    }
+
+    if (winsOnWall.length > 0) {
+      if (
+        door.wallId === matchingWall.id &&
+        openingFitsApartmentWall(matchingWall, door.position, doorWidth) &&
+        !hitsAnyWindowOnWall(door.position)
+      ) {
+        centerPos = door.position;
+      } else if (hitsAnyWindowOnWall(centerPos)) {
+        const dx = matchingWall.endPoint.x - matchingWall.startPoint.x;
+        const dy = matchingWall.endPoint.y - matchingWall.startPoint.y;
+        const minT = 100 + doorWidth / 2;
+        const maxT = wallLen - 100 - doorWidth / 2;
+        const ux = dx / wallLen;
+        const uy = dy / wallLen;
+        for (let t = Math.ceil(minT / 10) * 10; t <= Math.floor(maxT / 10) * 10; t += 20) {
+          const cand = {
+            x: Math.round((matchingWall.startPoint.x + ux * t) / 10) * 10,
+            y: Math.round((matchingWall.startPoint.y + uy * t) / 10) * 10,
+          };
+          if (openingFitsApartmentWall(matchingWall, cand, doorWidth) && !hitsAnyWindowOnWall(cand)) {
+            centerPos = cand;
+            break;
+          }
+        }
+      }
     }
 
     // 3. Swing collision & clearance:
@@ -1456,8 +1503,8 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
 
           const winWidth = Math.min(1500, Math.max(700, Math.min(len - 200, Math.round(len * 0.40))));
           const pos: Point = {
-            x: snap10((hostWall.startPoint.x + hostWall.endPoint.x) / 2),
-            y: snap10((hostWall.startPoint.y + hostWall.endPoint.y) / 2),
+            x: (hostWall.startPoint.x + hostWall.endPoint.x) / 2,
+            y: (hostWall.startPoint.y + hostWall.endPoint.y) / 2,
           };
 
           if (openingFitsApartmentWall(hostWall, pos, winWidth)) {
@@ -1498,10 +1545,10 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
         for (const extWall of candWalls) {
           const len = Math.hypot(extWall.endPoint.x - extWall.startPoint.x, extWall.endPoint.y - extWall.startPoint.y);
           if (len >= 600) {
-            const ventWidth = Math.min(600, Math.max(350, Math.round(len - 200)));
+            const ventWidth = Math.min(650, Math.max(350, Math.round(len - 200)));
             const pos: Point = {
-              x: snap10((extWall.startPoint.x + extWall.endPoint.x) / 2),
-              y: snap10((extWall.startPoint.y + extWall.endPoint.y) / 2),
+              x: (extWall.startPoint.x + extWall.endPoint.x) / 2,
+              y: (extWall.startPoint.y + extWall.endPoint.y) / 2,
             };
             if (openingFitsApartmentWall(extWall, pos, ventWidth)) {
               const newVent: Window = {
@@ -1511,7 +1558,7 @@ function repairDaylightAndVentilation(params: DaylightRepairParams): {
                 position: pos,
                 width: ventWidth,
                 height: 600,
-                sillHeight: 1800,
+                sillHeight: 1500,
                 type: WindowType.Ventilator,
                 roomId: r.id,
               };
@@ -1544,7 +1591,7 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
   let rooms = floor.rooms.map(r => ({ ...r }));
   let walls = floor.walls.map(w => ({ ...w }));
   let doors = floor.doors.map(d => ({ ...d }));
-  let windows = floor.windows.map(w => ({ ...w }));
+  const windows = floor.windows.map(w => ({ ...w }));
   let healed = false;
 
   // 1. Ensure party walls dividing units meet 230 mm minimum thickness
@@ -1569,7 +1616,7 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
     );
     if (!hostWall) continue;
     const wallLen = Math.hypot(hostWall.endPoint.x - hostWall.startPoint.x, hostWall.endPoint.y - hostWall.startPoint.y);
-    const ventW = Math.min(600, Math.max(350, Math.floor(wallLen - 200)));
+    const ventW = Math.min(650, Math.max(350, Math.floor(wallLen - 200)));
     const mid = {
       x: Math.round((hostWall.startPoint.x + hostWall.endPoint.x) / 2),
       y: Math.round((hostWall.startPoint.y + hostWall.endPoint.y) / 2),
@@ -1611,44 +1658,36 @@ export function healFloorGeometryForCompliance(floor: Floor): { floor: Floor; he
     const stacked = Math.abs(living.x - foyer.x) <= 2 && Math.abs(living.width - foyer.width) <= 2;
     let nextFoyer = foyer;
     let nextLiving = living;
+    const resizeRectRoom = (r: Room, nx: number, ny: number, nw: number, nh: number): Room => ({
+      ...r,
+      x: nx,
+      y: ny,
+      width: nw,
+      height: nh,
+      area: nw * nh,
+      boundary: {
+        points: [
+          { x: nx, y: ny },
+          { x: nx + nw, y: ny },
+          { x: nx + nw, y: ny + nh },
+          { x: nx, y: ny + nh },
+        ],
+      },
+    });
     if (stacked) {
       const targetH = Math.max(1200, Math.floor(11_000_000 / Math.max(1, foyer.width) / 10) * 10);
       const trim = foyer.height - targetH;
       if (trim <= 50) continue;
       const foyerOnTop = Math.abs(foyer.y + foyer.height - living.y) <= 2;
-      nextFoyer = createRoom({
-        ...foyer,
-        tags: [...foyer.tags],
-        adjacencyRequirements: foyer.adjacencyRequirements ? [...foyer.adjacencyRequirements] : undefined,
-        y: foyerOnTop ? foyer.y : foyer.y + trim,
-        height: targetH,
-      });
-      nextLiving = createRoom({
-        ...living,
-        tags: [...living.tags],
-        adjacencyRequirements: living.adjacencyRequirements ? [...living.adjacencyRequirements] : undefined,
-        y: foyerOnTop ? living.y - trim : living.y,
-        height: living.height + trim,
-      });
+      nextFoyer = resizeRectRoom(foyer, foyer.x, foyerOnTop ? foyer.y : foyer.y + trim, foyer.width, targetH);
+      nextLiving = resizeRectRoom(living, living.x, foyerOnTop ? living.y - trim : living.y, living.width, living.height + trim);
     } else {
       const targetW = Math.max(1200, Math.floor(11_000_000 / Math.max(1, foyer.height) / 10) * 10);
       const trim = foyer.width - targetW;
       if (trim <= 50) continue;
       const foyerAtLeft = Math.abs(foyer.x + foyer.width - living.x) <= 2;
-      nextFoyer = createRoom({
-        ...foyer,
-        tags: [...foyer.tags],
-        adjacencyRequirements: foyer.adjacencyRequirements ? [...foyer.adjacencyRequirements] : undefined,
-        x: foyerAtLeft ? foyer.x : foyer.x + trim,
-        width: targetW,
-      });
-      nextLiving = createRoom({
-        ...living,
-        tags: [...living.tags],
-        adjacencyRequirements: living.adjacencyRequirements ? [...living.adjacencyRequirements] : undefined,
-        x: foyerAtLeft ? living.x - trim : living.x,
-        width: living.width + trim,
-      });
+      nextFoyer = resizeRectRoom(foyer, foyerAtLeft ? foyer.x : foyer.x + trim, foyer.y, targetW, foyer.height);
+      nextLiving = resizeRectRoom(living, foyerAtLeft ? living.x - trim : living.x, living.y, living.width + trim, living.height);
     }
 
     const candidateRooms = rooms.map(r =>

@@ -58,15 +58,23 @@ export function architecturalBoundaryRole(
 ): ArchitecturalBoundaryRole {
   if (
     owners.length > 0 &&
-    owners.every(
-      (r) =>
-        architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID" &&
-        r.tags?.includes("recess:perimeter"),
-    )
+    owners.every((r) => architecturalSpaceRole(r) === "OPEN_TO_SKY_VOID")
   )
     return "OPEN_BOUNDARY";
   const distinctUnits = new Set(owners.map((r) => r.unitId).filter(Boolean));
   if (distinctUnits.size > 1) return "FULL_HEIGHT_WALL";
+  const hasUnitRoom = distinctUnits.size > 0;
+  const hasPublicSpace = owners.some(
+    (r) => !r.unitId && (r.spaceUse === "COMMON" || r.spaceUse === "CORE"),
+  );
+  if (hasUnitRoom && hasPublicSpace) return "FULL_HEIGHT_WALL";
+  const hasUnitIndoorCirc = owners.some(
+    (r) => r.unitId && architecturalSpaceRole(r) === "OPEN_CIRCULATION",
+  );
+  const hasBalcony = owners.some(
+    (r) => architecturalSpaceRole(r) === "BALCONY_SLAB",
+  );
+  if (hasUnitIndoorCirc && hasBalcony) return "FULL_HEIGHT_WALL";
   if (owners.some((r) => requiresEnclosure(architecturalSpaceRole(r))))
     return "FULL_HEIGHT_WALL";
   if (

@@ -59,6 +59,16 @@ function createThreeFloorBuilding(boundaries?: readonly Polygon[]): Building {
 }
 
 describe('canonical Building 3D projection', () => {
+  it('projects an out-of-bounds versioned window without mutating its source', () => {
+    const source = createThreeFloorBuilding();
+    const floor = source.floors[0]!;
+    const window = { ...floor.windows[0]!, position: { x: 10, y: 0 }, openingGeometryVersion: 1 as const,
+      positionReference: 'CENTER' as const };
+    const building = { ...source, floors: [{ ...floor, windows: [window] }, ...source.floors.slice(1)] };
+    const view = projectBuildingTo3D(building);
+    expect(view.openings.find(opening => opening.sourceEntityId === window.id)).toMatchObject({ alongWall: 100, width: 1000 });
+    expect(window.position).toEqual({ x: 10, y: 0 });
+  });
   it.each([false, true])('cuts hosted openings from their canonical start edge, reversed=%s', reversed => {
     let building = createThreeFloorBuilding();
     const floor = building.floors[0]!;

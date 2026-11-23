@@ -3,14 +3,16 @@
   "histogram": {
     "TYPE_LIMIT_FLATS_NOT_2_3_4": 144,
     "WING_TOO_NARROW": 304,
-    "CORE_NOT_ADJOINING": 2704,
+    "CIRCULATION_DISCONNECTED": 272,
     "CORE_BAND_TOO_SMALL": 72,
     "COURT_INFEASIBLE": 192,
+    "CORE_NOT_ADJOINING": 384,
     "FAMILY_PRECONDITION": 48,
     "FLAT_RUN_BELOW_MIN": 1388,
-    "OTHER: These layouts are identical up to mirroring or r": 76,
-    "OTHER: beyond the requested number of concepts": 7,
-    "FLAT_OVERSIZED": 488
+    "OTHER: These layouts are identical up to mirroring or r": 94,
+    "OTHER: beyond the requested number of concepts": 212,
+    "FLAT_OVERSIZED": 488,
+    "EVERY_FLAT_REACHES_FACADE": 80
   },
   "rows": [
     {
@@ -21,11 +23,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 25.632,
+      "kitchenSqm": 6.762,
+      "livingSqm": 24.66,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.4824516129032258
+      "carpetRatio": 0.535241935483871
     },
     {
       "label": "15x20 1x3BHK",
@@ -35,11 +37,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 23.832,
+      "kitchenSqm": 6.762,
+      "livingSqm": 24.66,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.5333725806451612
+      "carpetRatio": 0.5149193548387097
     },
     {
       "label": "15x20 1x4BHK",
@@ -49,11 +51,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 23.832,
+      "kitchenSqm": 6.762,
+      "livingSqm": 24.66,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.5333725806451612
+      "carpetRatio": 0.535241935483871
     },
     {
       "label": "15x20 1xMIXED",
@@ -63,11 +65,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 25.632,
+      "kitchenSqm": 6.762,
+      "livingSqm": 24.66,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.4824516129032258
+      "carpetRatio": 0.535241935483871
     },
     {
       "label": "15x20 2x2BHK",
@@ -77,11 +79,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.853,
-      "livingSqm": 9.99,
+      "kitchenSqm": 6.228,
+      "livingSqm": 10.62,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5200645161290323
+      "carpetRatio": 0.5208440860215053
     },
     {
       "label": "15x20 2x3BHK",
@@ -91,11 +93,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.3535,
-      "livingSqm": 9.72,
+      "kitchenSqm": 6.228,
+      "livingSqm": 10.62,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5236505376344086
+      "carpetRatio": 0.5208440860215053
     },
     {
       "label": "15x20 2x4BHK",
@@ -105,11 +107,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.3535,
-      "livingSqm": 9.72,
+      "kitchenSqm": 6.228,
+      "livingSqm": 10.62,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.5236505376344086
+      "carpetRatio": 0.5208440860215053
     },
     {
       "label": "15x20 2xMIXED",
@@ -119,11 +121,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.853,
-      "livingSqm": 9.99,
+      "kitchenSqm": 6.228,
+      "livingSqm": 10.62,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5200645161290323
+      "carpetRatio": 0.5208440860215053
     },
     {
       "label": "15x20 3x2BHK",
@@ -133,11 +135,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 16.182,
+      "kitchenSqm": 4.619,
+      "livingSqm": 25.947,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.8080333333333334
+      "carpetRatio": 0.7611220430107527
     },
     {
       "label": "15x20 3x3BHK",
@@ -147,11 +149,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 16.182,
+      "kitchenSqm": 4.619,
+      "livingSqm": 34.007,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.7722268817204301
+      "carpetRatio": 0.7684123655913978
     },
     {
       "label": "15x20 3x4BHK",
@@ -161,11 +163,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 16.182,
+      "kitchenSqm": 4.619,
+      "livingSqm": 34.007,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.7608075268817204
+      "carpetRatio": 0.7569930107526882
     },
     {
       "label": "15x20 3xMIXED",
@@ -175,11 +177,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 16.182,
+      "kitchenSqm": 4.619,
+      "livingSqm": 25.947,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.7751301075268817
+      "carpetRatio": 0.7936811827956989
     },
     {
       "label": "15x20 4x2BHK",
@@ -189,11 +191,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.8480215053763441
+      "carpetRatio": 0.7124193548387097
     },
     {
       "label": "15x20 4x3BHK",
@@ -203,11 +205,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7860860215053763
+      "carpetRatio": 0.7814086021505376
     },
     {
       "label": "15x20 4x4BHK",
@@ -217,11 +219,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7783440860215054
+      "carpetRatio": 0.7736666666666666
     },
     {
       "label": "15x20 4xMIXED",
@@ -231,11 +233,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.8151182795698925
+      "carpetRatio": 0.744978494623656
     },
     {
       "label": "15x20 5x2BHK",
@@ -245,11 +247,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.8850268817204301
+      "carpetRatio": 0.7155241935483871
     },
     {
       "label": "15x20 5x3BHK",
@@ -259,11 +261,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.8076075268817204
+      "carpetRatio": 0.801760752688172
     },
     {
       "label": "15x20 5x4BHK",
@@ -273,11 +275,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.7979301075268818
+      "carpetRatio": 0.7920833333333334
     },
     {
       "label": "15x20 5xMIXED",
@@ -287,11 +289,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.314,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 10.695,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.8366397849462366
+      "carpetRatio": 0.7653306451612903
     },
     {
       "label": "15x20 6x2BHK",
@@ -301,11 +303,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 2.4108,
+      "kitchenSqm": 2.1903,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.9220322580645162
+      "carpetRatio": 0.7186290322580645
     },
     {
       "label": "15x20 6x3BHK",
@@ -315,11 +317,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 2.4108,
+      "kitchenSqm": 2.1903,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.8291290322580646
+      "carpetRatio": 0.8221129032258064
     },
     {
       "label": "15x20 6x4BHK",
@@ -329,11 +331,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 2.4108,
+      "kitchenSqm": 2.1903,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.817516129032258
+      "carpetRatio": 0.8105
     },
     {
       "label": "15x20 6xMIXED",
@@ -343,11 +345,11 @@
       "maxStairW": 2600,
       "maxStairH": 3200,
       "floorStairsEmpty": false,
-      "kitchenSqm": 2.4108,
+      "kitchenSqm": 2.1903,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.856225806451613
+      "carpetRatio": 0.783747311827957
     },
     {
       "label": "18x25 1x2BHK",
@@ -357,11 +359,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.0011,
-      "livingSqm": 42.1354,
+      "kitchenSqm": 36.9685,
+      "livingSqm": 21.8764,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5385040650406504
+      "carpetRatio": 0.5651151219512195
     },
     {
       "label": "18x25 1x3BHK",
@@ -371,11 +373,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.0058,
-      "livingSqm": 38.484,
+      "kitchenSqm": 8.61,
+      "livingSqm": 39.492,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.6006741463414634
+      "carpetRatio": 0.5530243902439025
     },
     {
       "label": "18x25 1x4BHK",
@@ -385,11 +387,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.0058,
-      "livingSqm": 38.484,
+      "kitchenSqm": 8.61,
+      "livingSqm": 39.492,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5714058536585366
+      "carpetRatio": 0.6310731707317073
     },
     {
       "label": "18x25 1xMIXED",
@@ -399,123 +401,123 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.0011,
-      "livingSqm": 42.1354,
+      "kitchenSqm": 36.9685,
+      "livingSqm": 21.8764,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5385040650406504
+      "carpetRatio": 0.5651151219512195
     },
     {
       "label": "18x25 2x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.9888,
-      "livingSqm": 19.68,
+      "kitchenSqm": 14.5215,
+      "livingSqm": 19.17,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5423687804878049
+      "carpetRatio": 0.5183268292682927
     },
     {
       "label": "18x25 2x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.9702,
-      "livingSqm": 12.96,
+      "kitchenSqm": 6.228,
+      "livingSqm": 13.86,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5613482926829269
+      "carpetRatio": 0.5723040650406505
     },
     {
       "label": "18x25 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.9702,
-      "livingSqm": 12.96,
+      "kitchenSqm": 6.228,
+      "livingSqm": 13.86,
       "bathsNoVent": 0,
-      "bathsTotal": 7,
-      "carpetRatio": 0.6101287804878048
+      "bathsTotal": 6,
+      "carpetRatio": 0.5996211382113821
     },
     {
       "label": "18x25 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5105,
-      "livingSqm": 17.28,
+      "kitchenSqm": 7.6958,
+      "livingSqm": 15.624,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5607489430894309
+      "carpetRatio": 0.5689560975609756
     },
     {
       "label": "18x25 3x2BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.28309,
+      "kitchenSqm": 10.24984,
       "livingSqm": 13.932,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6170829268292682
+      "carpetRatio": 0.6147252032520325
     },
     {
       "label": "18x25 3x3BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.89403,
+      "kitchenSqm": 7.15009,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6240617886178862
+      "carpetRatio": 0.6223642276422764
     },
     {
       "label": "18x25 3x4BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.89403,
+      "kitchenSqm": 7.15009,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6240617886178862
+      "carpetRatio": 0.6223642276422764
     },
     {
       "label": "18x25 3xMIXED",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.55309,
+      "kitchenSqm": 7.76984,
       "livingSqm": 13.932,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.6205723577235772
+      "carpetRatio": 0.6185447154471545
     },
     {
       "label": "18x25 4x2BHK",
@@ -525,11 +527,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.7408,
-      "livingSqm": 12.71,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7252448780487805
+      "carpetRatio": 0.7216741463414634
     },
     {
       "label": "18x25 4x3BHK",
@@ -539,11 +541,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7252448780487805
+      "carpetRatio": 0.7216741463414634
     },
     {
       "label": "18x25 4x4BHK",
@@ -553,11 +555,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7252448780487805
+      "carpetRatio": 0.7216741463414634
     },
     {
       "label": "18x25 4xMIXED",
@@ -567,11 +569,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 12.71,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.7252448780487805
+      "carpetRatio": 0.7216741463414634
     },
     {
       "label": "18x25 5x2BHK",
@@ -581,11 +583,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.7408,
-      "livingSqm": 12.71,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.7219687804878049
+      "carpetRatio": 0.7180614634146342
     },
     {
       "label": "18x25 5x3BHK",
@@ -595,11 +597,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.7219687804878049
+      "carpetRatio": 0.7180614634146342
     },
     {
       "label": "18x25 5x4BHK",
@@ -609,11 +611,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.7219687804878049
+      "carpetRatio": 0.7180614634146342
     },
     {
       "label": "18x25 5xMIXED",
@@ -623,11 +625,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.5608,
-      "livingSqm": 12.71,
+      "kitchenSqm": 4.619,
+      "livingSqm": 17.732,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.7219687804878049
+      "carpetRatio": 0.7180614634146342
     },
     {
       "label": "18x25 6x2BHK",
@@ -637,11 +639,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.1496,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 8.494,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7186926829268293
+      "carpetRatio": 0.7144487804878049
     },
     {
       "label": "18x25 6x3BHK",
@@ -651,11 +653,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.1496,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 8.494,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7186926829268293
+      "carpetRatio": 0.7144487804878049
     },
     {
       "label": "18x25 6x4BHK",
@@ -665,11 +667,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.1496,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 8.494,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7186926829268293
+      "carpetRatio": 0.7144487804878049
     },
     {
       "label": "18x25 6xMIXED",
@@ -679,11 +681,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.1496,
-      "livingSqm": 8.37,
+      "kitchenSqm": 4.619,
+      "livingSqm": 8.494,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.7186926829268293
+      "carpetRatio": 0.7144487804878049
     },
     {
       "label": "18.4x22.5 1x2BHK",
@@ -693,11 +695,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.0184,
-      "livingSqm": 40.8,
+      "kitchenSqm": 24.752,
+      "livingSqm": 23.9649,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5491341991341991
+      "carpetRatio": 0.5611143578643578
     },
     {
       "label": "18.4x22.5 1x3BHK",
@@ -707,11 +709,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.0132,
-      "livingSqm": 39.84,
+      "kitchenSqm": 9.528,
+      "livingSqm": 34.4,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.6044718614718615
+      "carpetRatio": 0.5657359307359308
     },
     {
       "label": "18.4x22.5 1x4BHK",
@@ -721,11 +723,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.0132,
-      "livingSqm": 39.84,
+      "kitchenSqm": 9.528,
+      "livingSqm": 34.4,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.572004329004329
+      "carpetRatio": 0.6387878787878788
     },
     {
       "label": "18.4x22.5 1xMIXED",
@@ -735,67 +737,67 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.0184,
-      "livingSqm": 40.8,
+      "kitchenSqm": 24.752,
+      "livingSqm": 23.9649,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5491341991341991
+      "carpetRatio": 0.5611143578643578
     },
     {
       "label": "18.4x22.5 2x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.5205,
-      "livingSqm": 18,
+      "kitchenSqm": 14.5,
+      "livingSqm": 17.08,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5533874458874459
+      "carpetRatio": 0.5629834054834055
     },
     {
       "label": "18.4x22.5 2x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.4164,
+      "kitchenSqm": 7.6224,
       "livingSqm": 14.4,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.6245281385281385
+      "carpetRatio": 0.567018759018759
     },
     {
       "label": "18.4x22.5 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.4164,
+      "kitchenSqm": 7.6224,
       "livingSqm": 14.4,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6342683982683983
+      "carpetRatio": 0.592992784992785
     },
     {
       "label": "18.4x22.5 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.2572,
+      "kitchenSqm": 14.056,
       "livingSqm": 14.4,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5921269841269842
+      "carpetRatio": 0.5691901154401154
     },
     {
       "label": "18.4x22.5 3x2BHK",
@@ -805,11 +807,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 23.932,
+      "kitchenSqm": 4.619,
+      "livingSqm": 33.697,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7278538961038961
     },
     {
       "label": "18.4x22.5 3x3BHK",
@@ -819,11 +821,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 23.932,
+      "kitchenSqm": 4.619,
+      "livingSqm": 41.757,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7129729437229437
     },
     {
       "label": "18.4x22.5 3x4BHK",
@@ -833,11 +835,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 23.932,
+      "kitchenSqm": 4.619,
+      "livingSqm": 41.757,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7166435786435786
     },
     {
       "label": "18.4x22.5 3xMIXED",
@@ -847,11 +849,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.514,
-      "livingSqm": 23.932,
+      "kitchenSqm": 4.619,
+      "livingSqm": 33.697,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7278538961038961
     },
     {
       "label": "18.4x22.5 4x2BHK",
@@ -861,11 +863,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7211861471861472
+      "carpetRatio": 0.7172251082251082
     },
     {
       "label": "18.4x22.5 4x3BHK",
@@ -875,11 +877,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7211861471861472
+      "carpetRatio": 0.7172251082251082
     },
     {
       "label": "18.4x22.5 4x4BHK",
@@ -889,11 +891,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7211861471861472
+      "carpetRatio": 0.7172251082251082
     },
     {
       "label": "18.4x22.5 4xMIXED",
@@ -903,11 +905,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.7211861471861472
+      "carpetRatio": 0.7172251082251082
     },
     {
       "label": "18.4x22.5 5x2BHK",
@@ -917,11 +919,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.717551948051948
+      "carpetRatio": 0.7132175324675325
     },
     {
       "label": "18.4x22.5 5x3BHK",
@@ -931,11 +933,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.717551948051948
+      "carpetRatio": 0.7132175324675325
     },
     {
       "label": "18.4x22.5 5x4BHK",
@@ -945,11 +947,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.717551948051948
+      "carpetRatio": 0.7132175324675325
     },
     {
       "label": "18.4x22.5 5xMIXED",
@@ -959,11 +961,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.5108,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 13.857,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.717551948051948
+      "carpetRatio": 0.7132175324675325
     },
     {
       "label": "18.4x22.5 6x2BHK",
@@ -973,11 +975,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 3.772,
+      "kitchenSqm": 3.427,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.713917748917749
+      "carpetRatio": 0.7092099567099567
     },
     {
       "label": "18.4x22.5 6x3BHK",
@@ -987,11 +989,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 3.772,
+      "kitchenSqm": 3.427,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.713917748917749
+      "carpetRatio": 0.7092099567099567
     },
     {
       "label": "18.4x22.5 6x4BHK",
@@ -1001,11 +1003,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 3.772,
+      "kitchenSqm": 3.427,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.713917748917749
+      "carpetRatio": 0.7092099567099567
     },
     {
       "label": "18.4x22.5 6xMIXED",
@@ -1015,11 +1017,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 3.772,
+      "kitchenSqm": 3.427,
       "livingSqm": 8.37,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.713917748917749
+      "carpetRatio": 0.7092099567099567
     },
     {
       "label": "18.4x28.5 1x2BHK",
@@ -1029,11 +1031,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.0005,
-      "livingSqm": 66,
+      "kitchenSqm": 55.104,
+      "livingSqm": 23.9649,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5549228896103896
+      "carpetRatio": 0.5831734307359308
     },
     {
       "label": "18.4x28.5 1x3BHK",
@@ -1043,11 +1045,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.0164,
-      "livingSqm": 54.4,
+      "kitchenSqm": 11.232,
+      "livingSqm": 55.56,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.6156915584415584
+      "carpetRatio": 0.5635064935064935
     },
     {
       "label": "18.4x28.5 1x4BHK",
@@ -1057,11 +1059,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.0164,
-      "livingSqm": 54.4,
+      "kitchenSqm": 11.232,
+      "livingSqm": 55.56,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5913409090909091
+      "carpetRatio": 0.6414285714285715
     },
     {
       "label": "18.4x28.5 1xMIXED",
@@ -1071,123 +1073,123 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.0005,
-      "livingSqm": 66,
+      "kitchenSqm": 55.104,
+      "livingSqm": 23.9649,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.5549228896103896
+      "carpetRatio": 0.5831734307359308
     },
     {
       "label": "18.4x28.5 2x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.508,
-      "livingSqm": 36.45,
+      "kitchenSqm": 19.968,
+      "livingSqm": 15.552,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5530275974025974
+      "carpetRatio": 0.5046103896103896
     },
     {
       "label": "18.4x28.5 2x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.508,
-      "livingSqm": 18.68,
+      "kitchenSqm": 6.24,
+      "livingSqm": 17.84,
       "bathsNoVent": 0,
-      "bathsTotal": 4,
-      "carpetRatio": 0.5675438311688311
+      "bathsTotal": 5,
+      "carpetRatio": 0.5902164502164502
     },
     {
       "label": "18.4x28.5 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.508,
-      "livingSqm": 18.68,
+      "kitchenSqm": 6.24,
+      "livingSqm": 17.84,
       "bathsNoVent": 0,
-      "bathsTotal": 7,
-      "carpetRatio": 0.5925844155844155
+      "bathsTotal": 6,
+      "carpetRatio": 0.5658658008658008
     },
     {
       "label": "18.4x28.5 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.508,
-      "livingSqm": 25.84,
+      "kitchenSqm": 14.5,
+      "livingSqm": 22.6,
       "bathsNoVent": 0,
-      "bathsTotal": 4,
-      "carpetRatio": 0.5747946428571429
+      "bathsTotal": 5,
+      "carpetRatio": 0.5635335497835497
     },
     {
       "label": "18.4x28.5 3x2BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.66,
+      "kitchenSqm": 10.56,
       "livingSqm": 18,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6309117965367965
+      "carpetRatio": 0.5916937229437229
     },
     {
       "label": "18.4x28.5 3x3BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.328,
+      "kitchenSqm": 8.448,
       "livingSqm": 14.4,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6345995670995671
+      "carpetRatio": 0.633030303030303
     },
     {
       "label": "18.4x28.5 3x4BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.328,
+      "kitchenSqm": 8.448,
       "livingSqm": 14.4,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6743722943722944
+      "carpetRatio": 0.7369264069264069
     },
     {
       "label": "18.4x28.5 3xMIXED",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.328,
+      "kitchenSqm": 8.448,
       "livingSqm": 18,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.672528409090909
+      "carpetRatio": 0.6705194805194805
     },
     {
       "label": "18.4x28.5 4x2BHK",
@@ -1197,11 +1199,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 15.469,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7064253246753247
     },
     {
       "label": "18.4x28.5 4x3BHK",
@@ -1211,11 +1213,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7278538961038961
     },
     {
       "label": "18.4x28.5 4x4BHK",
@@ -1225,11 +1227,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7278538961038961
     },
     {
       "label": "18.4x28.5 4xMIXED",
@@ -1239,11 +1241,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.7308246753246753
+      "carpetRatio": 0.7171396103896104
     },
     {
       "label": "18.4x28.5 5x2BHK",
@@ -1253,11 +1255,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 15.469,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.728099025974026
+      "carpetRatio": 0.7141339285714285
     },
     {
       "label": "18.4x28.5 5x3BHK",
@@ -1267,11 +1269,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.728099025974026
+      "carpetRatio": 0.7248482142857143
     },
     {
       "label": "18.4x28.5 5x4BHK",
@@ -1281,11 +1283,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.728099025974026
+      "carpetRatio": 0.7248482142857143
     },
     {
       "label": "18.4x28.5 5xMIXED",
@@ -1295,11 +1297,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.4308,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 23.157,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.728099025974026
+      "carpetRatio": 0.7248482142857143
     },
     {
       "label": "18.4x28.5 6x2BHK",
@@ -1309,11 +1311,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.248,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 11.47,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7253733766233766
+      "carpetRatio": 0.7218425324675325
     },
     {
       "label": "18.4x28.5 6x3BHK",
@@ -1323,11 +1325,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.248,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 11.47,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7253733766233766
+      "carpetRatio": 0.7218425324675325
     },
     {
       "label": "18.4x28.5 6x4BHK",
@@ -1337,11 +1339,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.248,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 11.47,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7253733766233766
+      "carpetRatio": 0.7218425324675325
     },
     {
       "label": "18.4x28.5 6xMIXED",
@@ -1351,179 +1353,179 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.248,
-      "livingSqm": 11.16,
+      "kitchenSqm": 4.619,
+      "livingSqm": 11.47,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.7253733766233766
+      "carpetRatio": 0.7218425324675325
     },
     {
       "label": "24x28.5 1x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 34.632,
+      "kitchenSqm": 26.714,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.28104761904761905
+      "carpetRatio": 0.6146428571428572
     },
     {
       "label": "24x28.5 1x3BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.0092,
-      "livingSqm": 59.805,
+      "kitchenSqm": 31.5168,
+      "livingSqm": 30.5762,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.4452611111111111
+      "carpetRatio": 0.6659944444444444
     },
     {
       "label": "24x28.5 1x4BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.0092,
-      "livingSqm": 59.805,
+      "kitchenSqm": 31.5168,
+      "livingSqm": 30.5762,
       "bathsNoVent": 0,
-      "bathsTotal": 3,
-      "carpetRatio": 0.45700714285714283
+      "bathsTotal": 4,
+      "carpetRatio": 0.6602007936507936
     },
     {
       "label": "24x28.5 1xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 34.632,
+      "kitchenSqm": 26.714,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.28104761904761905
+      "carpetRatio": 0.6146428571428572
     },
     {
       "label": "24x28.5 2x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 34.632,
+      "kitchenSqm": 12.21,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.5620952380952381
+      "carpetRatio": 0.5662037037037037
     },
     {
       "label": "24x28.5 2x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 32.832,
+      "kitchenSqm": 18.144,
+      "livingSqm": 18.422,
       "bathsNoVent": 0,
-      "bathsTotal": 6,
-      "carpetRatio": 0.5674460317460317
+      "bathsTotal": 4,
+      "carpetRatio": 0.6004751322751323
     },
     {
       "label": "24x28.5 2x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 32.832,
+      "kitchenSqm": 8.337,
+      "livingSqm": 30.96,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6122079365079365
+      "carpetRatio": 0.594920634920635
     },
     {
       "label": "24x28.5 2xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.513,
-      "livingSqm": 18.0576,
+      "kitchenSqm": 13.0245,
+      "livingSqm": 38.3382,
       "bathsNoVent": 0,
-      "bathsTotal": 5,
-      "carpetRatio": 0.4663730158730159
+      "bathsTotal": 4,
+      "carpetRatio": 0.6924296296296296
     },
     {
       "label": "24x28.5 3x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.51,
-      "livingSqm": 34.632,
+      "kitchenSqm": 8.337,
+      "livingSqm": 30.96,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.5764761904761905
+      "carpetRatio": 0.5744444444444444
     },
     {
       "label": "24x28.5 3x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 32.832,
+      "kitchenSqm": 8.337,
+      "livingSqm": 30.96,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.581645238095238
+      "carpetRatio": 0.5652417989417989
     },
     {
       "label": "24x28.5 3x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.2295,
-      "livingSqm": 32.832,
+      "kitchenSqm": 8.337,
+      "livingSqm": 30.96,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6040261904761904
+      "carpetRatio": 0.5681783068783068
     },
     {
       "label": "24x28.5 3xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.277,
-      "livingSqm": 12.15,
+      "kitchenSqm": 5.328,
+      "livingSqm": 32.984,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.4838121693121693
+      "carpetRatio": 0.573968253968254
     },
     {
       "label": "24x28.5 4x2BHK",
@@ -1533,11 +1535,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.146,
-      "livingSqm": 12.96,
+      "kitchenSqm": 6.228,
+      "livingSqm": 14.292,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.5908571428571429
+      "carpetRatio": 0.5402455026455026
     },
     {
       "label": "24x28.5 4x3BHK",
@@ -1547,11 +1549,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.5827,
-      "livingSqm": 12.96,
+      "kitchenSqm": 6.228,
+      "livingSqm": 14.292,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.5958444444444444
+      "carpetRatio": 0.5402455026455026
     },
     {
       "label": "24x28.5 4x4BHK",
@@ -1561,11 +1563,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.5827,
-      "livingSqm": 12.96,
+      "kitchenSqm": 6.228,
+      "livingSqm": 14.292,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.5958444444444444
+      "carpetRatio": 0.5402455026455026
     },
     {
       "label": "24x28.5 4xMIXED",
@@ -1575,11 +1577,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.543,
-      "livingSqm": 14.22,
+      "kitchenSqm": 6.228,
+      "livingSqm": 14.292,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.5913904761904762
+      "carpetRatio": 0.5418074074074074
     },
     {
       "label": "24x28.5 5x2BHK",
@@ -1589,11 +1591,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.4477,
+      "kitchenSqm": 5.363,
       "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6984738095238096
+      "carpetRatio": 0.6982420634920635
     },
     {
       "label": "24x28.5 5x3BHK",
@@ -1603,11 +1605,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.4477,
+      "kitchenSqm": 5.363,
       "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.7241880952380952
+      "carpetRatio": 0.7239563492063492
     },
     {
       "label": "24x28.5 5x4BHK",
@@ -1617,11 +1619,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.4477,
+      "kitchenSqm": 5.363,
       "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.7241880952380952
+      "carpetRatio": 0.7239563492063492
     },
     {
       "label": "24x28.5 5xMIXED",
@@ -1631,11 +1633,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.4477,
+      "kitchenSqm": 5.363,
       "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.7113309523809523
+      "carpetRatio": 0.7110992063492063
     },
     {
       "label": "24x28.5 6x2BHK",
@@ -1645,11 +1647,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.921,
+      "kitchenSqm": 5.363,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7211031746031746
+      "carpetRatio": 0.7169603174603174
     },
     {
       "label": "24x28.5 6x3BHK",
@@ -1659,11 +1661,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.921,
+      "kitchenSqm": 5.363,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7211031746031746
+      "carpetRatio": 0.7169603174603174
     },
     {
       "label": "24x28.5 6x4BHK",
@@ -1673,11 +1675,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.921,
+      "kitchenSqm": 5.363,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7211031746031746
+      "carpetRatio": 0.7169603174603174
     },
     {
       "label": "24x28.5 6xMIXED",
@@ -1687,179 +1689,179 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 5.921,
+      "kitchenSqm": 5.363,
       "livingSqm": 9.72,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.7211031746031746
+      "carpetRatio": 0.7169603174603174
     },
     {
       "label": "25x30 1x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 31.28,
+      "kitchenSqm": 35.4006,
+      "livingSqm": 34.2792,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.2935066666666667
+      "carpetRatio": 0.6340308771929825
     },
     {
       "label": "25x30 1x3BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.013,
-      "livingSqm": 64.665,
+      "kitchenSqm": 37.926,
+      "livingSqm": 36.8082,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.42170456140350876
+      "carpetRatio": 0.6878680701754386
     },
     {
       "label": "25x30 1x4BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.013,
-      "livingSqm": 64.665,
+      "kitchenSqm": 37.926,
+      "livingSqm": 36.8082,
       "bathsNoVent": 0,
-      "bathsTotal": 3,
-      "carpetRatio": 0.43300280701754384
+      "bathsTotal": 4,
+      "carpetRatio": 0.6724294736842106
     },
     {
       "label": "25x30 1xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 31.28,
+      "kitchenSqm": 35.4006,
+      "livingSqm": 34.2792,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.2935066666666667
+      "carpetRatio": 0.6340308771929825
     },
     {
       "label": "25x30 2x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.513,
-      "livingSqm": 17.5392,
+      "kitchenSqm": 12.142,
+      "livingSqm": 56.05,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.4145730994152047
+      "carpetRatio": 0.6921263157894737
     },
     {
       "label": "25x30 2x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 37.9776,
+      "kitchenSqm": 10.274,
+      "livingSqm": 32.965,
       "bathsNoVent": 0,
-      "bathsTotal": 6,
-      "carpetRatio": 0.5870133333333334
+      "bathsTotal": 4,
+      "carpetRatio": 0.6904982456140351
     },
     {
       "label": "25x30 2x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 37.9776,
+      "kitchenSqm": 8.61,
+      "livingSqm": 34.092,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6385221052631579
+      "carpetRatio": 0.6157894736842106
     },
     {
       "label": "25x30 2xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5236,
-      "livingSqm": 28.17,
+      "kitchenSqm": 25.9164,
+      "livingSqm": 23.7303,
       "bathsNoVent": 0,
-      "bathsTotal": 5,
-      "carpetRatio": 0.44309333333333334
+      "bathsTotal": 4,
+      "carpetRatio": 0.6081087719298246
     },
     {
       "label": "25x30 3x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 31.28,
+      "kitchenSqm": 9.265,
+      "livingSqm": 34.2976,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6053621052631579
+      "carpetRatio": 0.5807497076023391
     },
     {
       "label": "25x30 3x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 37.9776,
+      "kitchenSqm": 9.265,
+      "livingSqm": 34.2976,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.6053621052631579
+      "carpetRatio": 0.5807497076023391
     },
     {
       "label": "25x30 3x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 37.9776,
+      "kitchenSqm": 9.265,
+      "livingSqm": 34.2976,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6311164912280701
+      "carpetRatio": 0.5950004678362573
     },
     {
       "label": "25x30 3xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.312,
-      "livingSqm": 11.664,
+      "kitchenSqm": 6.144,
+      "livingSqm": 36.084,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.4575391812865497
+      "carpetRatio": 0.5958456140350877
     },
     {
       "label": "25x30 4x2BHK",
@@ -1869,11 +1871,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 7.7415,
-      "livingSqm": 15.088,
+      "kitchenSqm": 6.5136,
+      "livingSqm": 13.248,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.6237108771929825
+      "carpetRatio": 0.5725169590643275
     },
     {
       "label": "25x30 4x3BHK",
@@ -1883,11 +1885,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.7165,
+      "kitchenSqm": 6.5136,
       "livingSqm": 13.248,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.6237108771929825
+      "carpetRatio": 0.5725169590643275
     },
     {
       "label": "25x30 4x4BHK",
@@ -1897,11 +1899,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 8.7165,
+      "kitchenSqm": 6.5136,
       "livingSqm": 13.248,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6237108771929825
+      "carpetRatio": 0.5725169590643275
     },
     {
       "label": "25x30 4xMIXED",
@@ -1911,11 +1913,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.1968,
-      "livingSqm": 13.788,
+      "kitchenSqm": 6.228,
+      "livingSqm": 15.408,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6234872514619884
+      "carpetRatio": 0.5711705263157895
     },
     {
       "label": "25x30 5x2BHK",
@@ -1925,11 +1927,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.9424,
-      "livingSqm": 13.068,
+      "kitchenSqm": 6.264,
+      "livingSqm": 14.6652,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.7057143859649123
+      "carpetRatio": 0.705680701754386
     },
     {
       "label": "25x30 5x3BHK",
@@ -1939,11 +1941,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.9424,
-      "livingSqm": 13.068,
+      "kitchenSqm": 6.264,
+      "livingSqm": 14.6652,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.7311178947368421
+      "carpetRatio": 0.7310842105263158
     },
     {
       "label": "25x30 5x4BHK",
@@ -1953,11 +1955,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.9424,
-      "livingSqm": 13.068,
+      "kitchenSqm": 6.264,
+      "livingSqm": 14.6652,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.7311178947368421
+      "carpetRatio": 0.7310842105263158
     },
     {
       "label": "25x30 5xMIXED",
@@ -1967,11 +1969,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.9424,
-      "livingSqm": 13.068,
+      "kitchenSqm": 6.264,
+      "livingSqm": 14.6652,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.7184161403508772
+      "carpetRatio": 0.7183824561403509
     },
     {
       "label": "25x30 6x2BHK",
@@ -1981,11 +1983,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.912,
+      "kitchenSqm": 6.264,
       "livingSqm": 9.801,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7283578947368421
+      "carpetRatio": 0.7246947368421053
     },
     {
       "label": "25x30 6x3BHK",
@@ -1995,11 +1997,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.912,
+      "kitchenSqm": 6.264,
       "livingSqm": 9.801,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.7283578947368421
+      "carpetRatio": 0.7246947368421053
     },
     {
       "label": "25x30 6x4BHK",
@@ -2009,11 +2011,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.912,
+      "kitchenSqm": 6.264,
       "livingSqm": 9.801,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7283578947368421
+      "carpetRatio": 0.7246947368421053
     },
     {
       "label": "25x30 6xMIXED",
@@ -2023,11 +2025,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 6.912,
+      "kitchenSqm": 6.264,
       "livingSqm": 9.801,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.7283578947368421
+      "carpetRatio": 0.7246947368421053
     },
     {
       "label": "30x30 1x2BHK",
@@ -2037,11 +2039,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.947,
-      "livingSqm": 45.264,
+      "kitchenSqm": 75.0754,
+      "livingSqm": 72.1765,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.3009233333333333
+      "carpetRatio": 0.6898861111111111
     },
     {
       "label": "30x30 1x3BHK",
@@ -2051,11 +2053,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.01,
-      "livingSqm": 37.455,
+      "kitchenSqm": 44.7386,
+      "livingSqm": 43.6178,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.3655805555555556
+      "carpetRatio": 0.7076505555555556
     },
     {
       "label": "30x30 1x4BHK",
@@ -2065,11 +2067,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.0168,
-      "livingSqm": 69.525,
+      "kitchenSqm": 37.926,
+      "livingSqm": 36.8082,
       "bathsNoVent": 0,
-      "bathsTotal": 3,
-      "carpetRatio": 0.365655
+      "bathsTotal": 4,
+      "carpetRatio": 0.69659
     },
     {
       "label": "30x30 1xMIXED",
@@ -2079,11 +2081,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.947,
-      "livingSqm": 45.264,
+      "kitchenSqm": 75.0754,
+      "livingSqm": 72.1765,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.3009233333333333
+      "carpetRatio": 0.6898861111111111
     },
     {
       "label": "30x30 2x2BHK",
@@ -2093,11 +2095,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5159,
-      "livingSqm": 32.13,
+      "kitchenSqm": 18.642,
+      "livingSqm": 70.8,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.36019666666666666
+      "carpetRatio": 0.6923777777777778
     },
     {
       "label": "30x30 2x3BHK",
@@ -2107,11 +2109,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.013,
-      "livingSqm": 50.112,
+      "kitchenSqm": 9.265,
+      "livingSqm": 52.6976,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.597
+      "carpetRatio": 0.6023888888888889
     },
     {
       "label": "30x30 2x4BHK",
@@ -2121,11 +2123,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.013,
-      "livingSqm": 50.112,
+      "kitchenSqm": 8.61,
+      "livingSqm": 52.092,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.59825
+      "carpetRatio": 0.6005555555555555
     },
     {
       "label": "30x30 2xMIXED",
@@ -2135,11 +2137,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5236,
-      "livingSqm": 32.04,
+      "kitchenSqm": 19.712,
+      "livingSqm": 60.239,
       "bathsNoVent": 0,
-      "bathsTotal": 5,
-      "carpetRatio": 0.3740044444444444
+      "bathsTotal": 4,
+      "carpetRatio": 0.6817888888888889
     },
     {
       "label": "30x30 3x2BHK",
@@ -2149,11 +2151,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.947,
-      "livingSqm": 45.264,
+      "kitchenSqm": 9.265,
+      "livingSqm": 52.6976,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.5964922222222222
+      "carpetRatio": 0.5755277777777777
     },
     {
       "label": "30x30 3x3BHK",
@@ -2163,11 +2165,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.013,
-      "livingSqm": 50.112,
+      "kitchenSqm": 8.61,
+      "livingSqm": 52.092,
       "bathsNoVent": 0,
-      "bathsTotal": 9,
-      "carpetRatio": 0.6105
+      "bathsTotal": 8,
+      "carpetRatio": 0.5940555555555556
     },
     {
       "label": "30x30 3x4BHK",
@@ -2177,11 +2179,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.1375,
-      "livingSqm": 56.3776,
+      "kitchenSqm": 9.265,
+      "livingSqm": 52.6976,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.6159677777777778
+      "carpetRatio": 0.5959166666666667
     },
     {
       "label": "30x30 3xMIXED",
@@ -2191,11 +2193,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.408,
-      "livingSqm": 32.8337,
+      "kitchenSqm": 6.648,
+      "livingSqm": 46.934,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.6271455555555555
+      "carpetRatio": 0.6149305555555555
     },
     {
       "label": "30x30 4x2BHK",
@@ -2205,53 +2207,53 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.2914,
-      "livingSqm": 12.96,
+      "kitchenSqm": 5.817,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.5823333333333334
+      "carpetRatio": 0.5458888888888889
     },
     {
       "label": "30x30 4x3BHK",
       "concepts": 2,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5028,
-      "livingSqm": 14.742,
+      "kitchenSqm": 5.817,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
-      "bathsTotal": 8,
-      "carpetRatio": 0.6501933333333333
+      "bathsTotal": 10,
+      "carpetRatio": 0.5875555555555556
     },
     {
       "label": "30x30 4x4BHK",
       "concepts": 2,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5028,
-      "livingSqm": 14.742,
+      "kitchenSqm": 5.817,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6501933333333333
+      "carpetRatio": 0.5875555555555556
     },
     {
       "label": "30x30 4xMIXED",
       "concepts": 2,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5103,
-      "livingSqm": 25.168,
+      "kitchenSqm": 6.3143,
+      "livingSqm": 21.6395,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6205731481481481
+      "carpetRatio": 0.563387962962963
     },
     {
       "label": "30x30 5x2BHK",
@@ -2261,39 +2263,39 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 11.2914,
-      "livingSqm": 12.96,
+      "kitchenSqm": 7.04,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6072
+      "carpetRatio": 0.5888703703703704
     },
     {
       "label": "30x30 5x3BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5028,
-      "livingSqm": 14.742,
+      "kitchenSqm": 7.04,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
-      "bathsTotal": 10,
-      "carpetRatio": 0.6527688888888888
+      "bathsTotal": 11,
+      "carpetRatio": 0.6097037037037037
     },
     {
       "label": "30x30 5x4BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5028,
-      "livingSqm": 14.742,
+      "kitchenSqm": 7.04,
+      "livingSqm": 15.732,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.6527688888888888
+      "carpetRatio": 0.6097037037037037
     },
     {
       "label": "30x30 5xMIXED",
@@ -2303,25 +2305,25 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.248,
-      "livingSqm": 15.498,
+      "kitchenSqm": 10.848,
+      "livingSqm": 25.327,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.6514059259259259
+      "carpetRatio": 0.6345759259259259
     },
     {
       "label": "30x30 6x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.936,
-      "livingSqm": 10.53,
+      "kitchenSqm": 7.04,
+      "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6553444444444444
+      "carpetRatio": 0.6318518518518519
     },
     {
       "label": "30x30 6x3BHK",
@@ -2331,11 +2333,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.936,
-      "livingSqm": 10.53,
+      "kitchenSqm": 8.88,
+      "livingSqm": 10.395,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6553444444444444
+      "carpetRatio": 0.6535185185185185
     },
     {
       "label": "30x30 6x4BHK",
@@ -2345,25 +2347,25 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.936,
-      "livingSqm": 10.53,
+      "kitchenSqm": 8.88,
+      "livingSqm": 10.395,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.6553444444444444
+      "carpetRatio": 0.6535185185185185
     },
     {
       "label": "30x30 6xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 9.936,
-      "livingSqm": 10.53,
+      "kitchenSqm": 7.04,
+      "livingSqm": 12.96,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.6553444444444444
+      "carpetRatio": 0.6318518518518519
     },
     {
       "label": "36x40 1x2BHK",
@@ -2373,11 +2375,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 81.8317,
+      "kitchenSqm": 74.1103,
       "livingSqm": 479.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.8176926153846154
+      "carpetRatio": 0.830732
     },
     {
       "label": "36x40 1x3BHK",
@@ -2387,11 +2389,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 48.6751,
+      "kitchenSqm": 44.1331,
       "livingSqm": 285.29,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.8188212307692307
+      "carpetRatio": 0.8272643076923077
     },
     {
       "label": "36x40 1x4BHK",
@@ -2401,11 +2403,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 48.6751,
+      "kitchenSqm": 44.1331,
       "livingSqm": 285.29,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.8053443076923077
+      "carpetRatio": 0.8242796923076923
     },
     {
       "label": "36x40 1xMIXED",
@@ -2415,123 +2417,123 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 81.8317,
+      "kitchenSqm": 74.1103,
       "livingSqm": 479.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.8176926153846154
+      "carpetRatio": 0.830732
     },
     {
       "label": "36x40 2x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5236,
-      "livingSqm": 17.505,
+      "kitchenSqm": 6.1479,
+      "livingSqm": 16.2,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.17300246153846155
+      "carpetRatio": 0.17330646153846155
     },
     {
       "label": "36x40 2x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 46.755,
+      "kitchenSqm": 9.2826,
+      "livingSqm": 37.125,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.279864
+      "carpetRatio": 0.2661372307692308
     },
     {
       "label": "36x40 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 42.255,
+      "kitchenSqm": 8.5536,
+      "livingSqm": 33.975,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.28684861538461537
+      "carpetRatio": 0.26832184615384613
     },
     {
       "label": "36x40 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 52.02,
+      "kitchenSqm": 10.1331,
+      "livingSqm": 40.815,
       "bathsNoVent": 0,
       "bathsTotal": 5,
-      "carpetRatio": 0.27609476923076925
+      "carpetRatio": 0.26164492307692305
     },
     {
       "label": "36x40 3x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 21.195,
+      "kitchenSqm": 11.5776,
+      "livingSqm": 18.54,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.27772553846153847
+      "carpetRatio": 0.25014246153846154
     },
     {
       "label": "36x40 3x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 18.738,
+      "kitchenSqm": 12.16728,
+      "livingSqm": 16.668,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.29207938461538463
+      "carpetRatio": 0.2621843076923077
     },
     {
       "label": "36x40 3x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 18.738,
+      "kitchenSqm": 12.16728,
+      "livingSqm": 16.668,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.29207938461538463
+      "carpetRatio": 0.2621843076923077
     },
     {
       "label": "36x40 3xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 31.41,
+      "kitchenSqm": 10.6488,
+      "livingSqm": 24.975,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.2929017435897436
+      "carpetRatio": 0.25869630769230767
     },
     {
       "label": "36x40 4x2BHK",
@@ -2541,81 +2543,81 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5027,
-      "livingSqm": 34.417,
+      "kitchenSqm": 12.432,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.466144
+      "carpetRatio": 0.46599384615384615
     },
     {
       "label": "36x40 4x3BHK",
       "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.015,
-      "livingSqm": 41.5605,
+      "kitchenSqm": 9.168,
+      "livingSqm": 32.175,
       "bathsNoVent": 0,
-      "bathsTotal": 12,
-      "carpetRatio": 0.6624467692307693
+      "bathsTotal": 10,
+      "carpetRatio": 0.6135692307692308
     },
     {
       "label": "36x40 4x4BHK",
       "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.015,
-      "livingSqm": 41.5605,
+      "kitchenSqm": 8.448,
+      "livingSqm": 29.445,
       "bathsNoVent": 0,
-      "bathsTotal": 14,
-      "carpetRatio": 0.6864467692307692
+      "bathsTotal": 12,
+      "carpetRatio": 0.6362276923076923
     },
     {
       "label": "36x40 4xMIXED",
       "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 20.0013,
-      "livingSqm": 67.2519,
+      "kitchenSqm": 20.2147,
+      "livingSqm": 42.552,
       "bathsNoVent": 0,
-      "bathsTotal": 11,
-      "carpetRatio": 0.6738083076923077
+      "bathsTotal": 10,
+      "carpetRatio": 0.6155794871794872
     },
     {
       "label": "36x40 5x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.3218,
-      "livingSqm": 34.417,
+      "kitchenSqm": 16.3255,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.5695778461538461
+      "carpetRatio": 0.4976123076923077
     },
     {
       "label": "36x40 5x3BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.4073,
-      "livingSqm": 41.5605,
+      "kitchenSqm": 9.168,
+      "livingSqm": 32.175,
       "bathsNoVent": 0,
-      "bathsTotal": 12,
-      "carpetRatio": 0.6744467692307692
+      "bathsTotal": 11,
+      "carpetRatio": 0.6213025641025641
     },
     {
       "label": "36x40 5x4BHK",
@@ -2625,11 +2627,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.0128,
-      "livingSqm": 25.779,
+      "kitchenSqm": 8.448,
+      "livingSqm": 29.445,
       "bathsNoVent": 0,
-      "bathsTotal": 18,
-      "carpetRatio": 0.6889641025641026
+      "bathsTotal": 15,
+      "carpetRatio": 0.6438809230769231
     },
     {
       "label": "36x40 5xMIXED",
@@ -2639,25 +2641,25 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.5968,
-      "livingSqm": 52.02,
+      "kitchenSqm": 23.1,
+      "livingSqm": 40.815,
       "bathsNoVent": 0,
-      "bathsTotal": 13,
-      "carpetRatio": 0.659832
+      "bathsTotal": 12,
+      "carpetRatio": 0.6149673846153846
     },
     {
       "label": "36x40 6x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.3218,
-      "livingSqm": 30.861,
+      "kitchenSqm": 16.3255,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6730116923076923
+      "carpetRatio": 0.5833846153846154
     },
     {
       "label": "36x40 6x3BHK",
@@ -2667,11 +2669,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.4073,
-      "livingSqm": 20.5485,
+      "kitchenSqm": 16.48,
+      "livingSqm": 18.54,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6864467692307692
+      "carpetRatio": 0.6465815384615384
     },
     {
       "label": "36x40 6x4BHK",
@@ -2681,11 +2683,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.73008,
-      "livingSqm": 14.04,
+      "kitchenSqm": 7.9376,
+      "livingSqm": 17.1327,
       "bathsNoVent": 0,
-      "bathsTotal": 22,
-      "carpetRatio": 0.7119794871794872
+      "bathsTotal": 18,
+      "carpetRatio": 0.6490266666666666
     },
     {
       "label": "36x40 6xMIXED",
@@ -2695,11 +2697,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.7248,
-      "livingSqm": 21.204,
+      "kitchenSqm": 11.452,
+      "livingSqm": 21.255,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.6997066666666667
+      "carpetRatio": 0.6123507692307693
     },
     {
       "label": "40x50 1x2BHK",
@@ -2709,11 +2711,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 97.8801,
+      "kitchenSqm": 88.6447,
       "livingSqm": 817.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.8393148096885813
+      "carpetRatio": 0.8582403460207613
     },
     {
       "label": "40x50 1x3BHK",
@@ -2723,11 +2725,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 56.0937,
+      "kitchenSqm": 50.7947,
       "livingSqm": 468.33,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.8465895501730104
+      "carpetRatio": 0.8531355709342561
     },
     {
       "label": "40x50 1x4BHK",
@@ -2737,11 +2739,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 56.0937,
+      "kitchenSqm": 50.7947,
       "livingSqm": 468.33,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.8380670588235294
+      "carpetRatio": 0.844613079584775
     },
     {
       "label": "40x50 1xMIXED",
@@ -2751,123 +2753,123 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 97.8801,
+      "kitchenSqm": 88.6447,
       "livingSqm": 817.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.8393148096885813
+      "carpetRatio": 0.8582403460207613
     },
     {
       "label": "40x50 2x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5236,
-      "livingSqm": 17.505,
+      "kitchenSqm": 6.1479,
+      "livingSqm": 16.2,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.11673176470588235
+      "carpetRatio": 0.11693688581314879
     },
     {
       "label": "40x50 2x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 35.505,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.17409508650519032
+      "carpetRatio": 0.17419640138408304
     },
     {
       "label": "40x50 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 40.005,
+      "kitchenSqm": 9.6471,
+      "livingSqm": 38.7,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.19043418685121108
+      "carpetRatio": 0.19010989619377164
     },
     {
       "label": "40x50 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 35.505,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 5,
-      "carpetRatio": 0.17129231833910036
+      "carpetRatio": 0.17140401384083045
     },
     {
       "label": "40x50 3x2BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 17.505,
+      "kitchenSqm": 11.5776,
+      "livingSqm": 22.32,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.18250339100346022
+      "carpetRatio": 0.17740754325259517
     },
     {
       "label": "40x50 3x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 31.761,
+      "kitchenSqm": 9.7929,
+      "livingSqm": 26.631,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.25253314878892735
+      "carpetRatio": 0.23330574394463668
     },
     {
       "label": "40x50 3x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 31.761,
+      "kitchenSqm": 9.7929,
+      "livingSqm": 26.631,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.25623695501730104
+      "carpetRatio": 0.23953204152249136
     },
     {
       "label": "40x50 3xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 48.285,
+      "kitchenSqm": 9.7929,
+      "livingSqm": 38.205,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.2514618685121107
+      "carpetRatio": 0.23339024221453286
     },
     {
       "label": "40x50 4x2BHK",
@@ -2877,11 +2879,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5208,
-      "livingSqm": 41.18,
+      "kitchenSqm": 12.32,
+      "livingSqm": 30.0312,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.33462643598615915
+      "carpetRatio": 0.3351836678200692
     },
     {
       "label": "40x50 4x3BHK",
@@ -2891,11 +2893,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.0256,
-      "livingSqm": 49.855,
+      "kitchenSqm": 7.368,
+      "livingSqm": 28.08,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.47634851211072665
+      "carpetRatio": 0.3482491349480969
     },
     {
       "label": "40x50 4x4BHK",
@@ -2905,11 +2907,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.0272,
-      "livingSqm": 53.867,
+      "kitchenSqm": 9.528,
+      "livingSqm": 37.152,
       "bathsNoVent": 0,
-      "bathsTotal": 14,
-      "carpetRatio": 0.5283069896193772
+      "bathsTotal": 12,
+      "carpetRatio": 0.380076124567474
     },
     {
       "label": "40x50 4xMIXED",
@@ -2919,11 +2921,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.0156,
-      "livingSqm": 52.8768,
+      "kitchenSqm": 10.9593,
+      "livingSqm": 44.415,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.3881176470588235
+      "carpetRatio": 0.37136512110726644
     },
     {
       "label": "40x50 5x2BHK",
@@ -2933,11 +2935,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.8976,
-      "livingSqm": 41.18,
+      "kitchenSqm": 17.391,
+      "livingSqm": 38.766,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.4225129411764706
+      "carpetRatio": 0.4183970242214533
     },
     {
       "label": "40x50 5x3BHK",
@@ -2947,11 +2949,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.4999,
-      "livingSqm": 49.855,
+      "kitchenSqm": 28.32,
+      "livingSqm": 38.5624,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.5812287889273356
+      "carpetRatio": 0.5435069896193772
     },
     {
       "label": "40x50 5x4BHK",
@@ -2961,25 +2963,25 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.4999,
-      "livingSqm": 53.867,
+      "kitchenSqm": 30.208,
+      "livingSqm": 38.5624,
       "bathsNoVent": 0,
-      "bathsTotal": 18,
-      "carpetRatio": 0.616520276816609
+      "bathsTotal": 16,
+      "carpetRatio": 0.5789130795847751
     },
     {
       "label": "40x50 5xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.6748,
-      "livingSqm": 59.112,
+      "kitchenSqm": 14.4875,
+      "livingSqm": 44.496,
       "bathsNoVent": 0,
-      "bathsTotal": 13,
-      "carpetRatio": 0.5520691349480968
+      "bathsTotal": 12,
+      "carpetRatio": 0.37333494809688583
     },
     {
       "label": "40x50 6x2BHK",
@@ -2989,11 +2991,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.8976,
-      "livingSqm": 41.18,
+      "kitchenSqm": 17.391,
+      "livingSqm": 38.766,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.510399446366782
+      "carpetRatio": 0.5016103806228374
     },
     {
       "label": "40x50 6x3BHK",
@@ -3003,11 +3005,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.4999,
-      "livingSqm": 46.8342,
+      "kitchenSqm": 26.7742,
+      "livingSqm": 38.5624,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6861090657439446
+      "carpetRatio": 0.6306984083044983
     },
     {
       "label": "40x50 6x4BHK",
@@ -3017,11 +3019,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.4999,
-      "livingSqm": 46.8342,
+      "kitchenSqm": 26.7742,
+      "livingSqm": 38.5624,
       "bathsNoVent": 0,
-      "bathsTotal": 22,
-      "carpetRatio": 0.7047335640138408
+      "bathsTotal": 20,
+      "carpetRatio": 0.650405813148789
     },
     {
       "label": "40x50 6xMIXED",
@@ -3031,11 +3033,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.4999,
-      "livingSqm": 60.947,
+      "kitchenSqm": 33.689,
+      "livingSqm": 38.586,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.69772
+      "carpetRatio": 0.6355885121107266
     },
     {
       "label": "50x30 1x2BHK",
@@ -3045,11 +3047,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.03,
-      "livingSqm": 120.708,
+      "kitchenSqm": 43.099,
+      "livingSqm": 41.9528,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.1580439393939394
+      "carpetRatio": 0.29130242424242425
     },
     {
       "label": "50x30 1x3BHK",
@@ -3059,11 +3061,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.0084,
-      "livingSqm": 94.2026,
+      "kitchenSqm": 26.8233,
+      "livingSqm": 26.0642,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.3097360606060606
+      "carpetRatio": 0.3099209090909091
     },
     {
       "label": "50x30 1x4BHK",
@@ -3073,11 +3075,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.0084,
-      "livingSqm": 94.2026,
+      "kitchenSqm": 26.8233,
+      "livingSqm": 26.0642,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.29794818181818183
+      "carpetRatio": 0.2981330303030303
     },
     {
       "label": "50x30 1xMIXED",
@@ -3087,123 +3089,123 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.03,
-      "livingSqm": 120.708,
+      "kitchenSqm": 43.099,
+      "livingSqm": 41.9528,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.1580439393939394
+      "carpetRatio": 0.29130242424242425
     },
     {
       "label": "50x30 2x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.7282,
-      "livingSqm": 15.552,
+      "kitchenSqm": 43.099,
+      "livingSqm": 41.9528,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.16856565656565656
+      "carpetRatio": 0.5826048484848485
     },
     {
       "label": "50x30 2x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.0084,
-      "livingSqm": 94.2026,
+      "kitchenSqm": 7.368,
+      "livingSqm": 28.08,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.6194721212121213
+      "carpetRatio": 0.25415151515151513
     },
     {
       "label": "50x30 2x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 24.0084,
-      "livingSqm": 94.2026,
+      "kitchenSqm": 26.8233,
+      "livingSqm": 26.0642,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.5958963636363637
+      "carpetRatio": 0.5962660606060606
     },
     {
       "label": "50x30 2xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 35.505,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 5,
-      "carpetRatio": 0.25001757575757577
+      "carpetRatio": 0.25018060606060605
     },
     {
       "label": "50x30 3x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 17.505,
+      "kitchenSqm": 43.099,
+      "livingSqm": 44.178,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.26638121212121213
+      "carpetRatio": 0.5983872727272728
     },
     {
       "label": "50x30 3x3BHK",
-      "concepts": 2,
-      "usedFallback": false,
-      "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
-      "floorStairsEmpty": false,
-      "kitchenSqm": 24.0084,
-      "livingSqm": 94.2026,
-      "bathsNoVent": 0,
-      "bathsTotal": 7,
-      "carpetRatio": 0.6141162626262626
-    },
-    {
-      "label": "50x30 3x4BHK",
-      "concepts": 2,
-      "usedFallback": false,
-      "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
-      "floorStairsEmpty": false,
-      "kitchenSqm": 24.0124,
-      "livingSqm": 101.736,
-      "bathsNoVent": 0,
-      "bathsTotal": 11,
-      "carpetRatio": 0.6119872727272727
-    },
-    {
-      "label": "50x30 3xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 51.12,
+      "kitchenSqm": 10.08,
+      "livingSqm": 27.07776,
+      "bathsNoVent": 0,
+      "bathsTotal": 9,
+      "carpetRatio": 0.35354848484848483
+    },
+    {
+      "label": "50x30 3x4BHK",
+      "concepts": 3,
+      "usedFallback": false,
+      "planned": true,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
+      "floorStairsEmpty": false,
+      "kitchenSqm": 26.8233,
+      "livingSqm": 37.9326,
+      "bathsNoVent": 0,
+      "bathsTotal": 10,
+      "carpetRatio": 0.6126881818181819
+    },
+    {
+      "label": "50x30 3xMIXED",
+      "concepts": 3,
+      "usedFallback": false,
+      "planned": true,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
+      "floorStairsEmpty": false,
+      "kitchenSqm": 10.08,
+      "livingSqm": 38.5776,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.3800781818181818
+      "carpetRatio": 0.3522020202020202
     },
     {
       "label": "50x30 4x2BHK",
@@ -3213,25 +3215,25 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.9965,
-      "livingSqm": 59.976,
+      "kitchenSqm": 16.7085,
+      "livingSqm": 44.178,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.6005212121212121
+      "carpetRatio": 0.6141696969696969
     },
     {
       "label": "50x30 4x3BHK",
       "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.0221,
-      "livingSqm": 40.4482,
+      "kitchenSqm": 7.077,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
-      "bathsTotal": 8,
-      "carpetRatio": 0.608760404040404
+      "bathsTotal": 12,
+      "carpetRatio": 0.45212121212121215
     },
     {
       "label": "50x30 4x4BHK",
@@ -3241,25 +3243,25 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.947,
-      "livingSqm": 23.92,
+      "kitchenSqm": 7.077,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.4634690909090909
+      "carpetRatio": 0.463030303030303
     },
     {
       "label": "50x30 4xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 34.65,
+      "kitchenSqm": 7.1107,
+      "livingSqm": 25.992,
       "bathsNoVent": 0,
-      "bathsTotal": 9,
-      "carpetRatio": 0.3847282828282828
+      "bathsTotal": 10,
+      "carpetRatio": 0.42937878787878786
     },
     {
       "label": "50x30 5x2BHK",
@@ -3269,11 +3271,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.428,
-      "livingSqm": 16.2,
+      "kitchenSqm": 8.82,
+      "livingSqm": 31.32,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.3847282828282828
+      "carpetRatio": 0.454369696969697
     },
     {
       "label": "50x30 5x3BHK",
@@ -3283,11 +3285,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.823,
-      "livingSqm": 24.66,
+      "kitchenSqm": 8.82,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.5482424242424242
+      "carpetRatio": 0.5229090909090909
     },
     {
       "label": "50x30 5x4BHK",
@@ -3297,25 +3299,25 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.823,
-      "livingSqm": 24.66,
+      "kitchenSqm": 8.82,
+      "livingSqm": 25.92,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.5482424242424242
+      "carpetRatio": 0.5283636363636364
     },
     {
       "label": "50x30 5xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 20.4525,
-      "livingSqm": 43.6044,
+      "kitchenSqm": 9.2185,
+      "livingSqm": 34.844,
       "bathsNoVent": 0,
-      "bathsTotal": 11,
-      "carpetRatio": 0.5799750505050505
+      "bathsTotal": 12,
+      "carpetRatio": 0.5007828282828283
     },
     {
       "label": "50x30 6x2BHK",
@@ -3325,11 +3327,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.084,
-      "livingSqm": 31.875,
+      "kitchenSqm": 8.7854,
+      "livingSqm": 32.016,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6061878787878788
+      "carpetRatio": 0.5613636363636364
     },
     {
       "label": "50x30 6x3BHK",
@@ -3339,11 +3341,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.926,
-      "livingSqm": 22.03584,
+      "kitchenSqm": 9.405,
+      "livingSqm": 23.505,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.6405418181818182
+      "carpetRatio": 0.5938181818181818
     },
     {
       "label": "50x30 6x4BHK",
@@ -3353,11 +3355,11 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.95,
-      "livingSqm": 19.01824,
+      "kitchenSqm": 9.405,
+      "livingSqm": 23.505,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.641650909090909
+      "carpetRatio": 0.5938181818181818
     },
     {
       "label": "50x30 6xMIXED",
@@ -3367,109 +3369,109 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.926,
-      "livingSqm": 36.0272,
+      "kitchenSqm": 9.405,
+      "livingSqm": 33.4875,
       "bathsNoVent": 0,
       "bathsTotal": 16,
-      "carpetRatio": 0.629420606060606
+      "carpetRatio": 0.5915781818181818
     },
     {
       "label": "20x45 1x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.513,
-      "livingSqm": 39.3984,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.1848075526506899
+      "carpetRatio": 0.1885285403050109
     },
     {
       "label": "20x45 1x3BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 44.505,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.1980954248366013
+      "carpetRatio": 0.19820174291938997
     },
     {
       "label": "20x45 1x4BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 44.505,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.2087272331154684
+      "carpetRatio": 0.20236296296296297
     },
     {
       "label": "20x45 1xMIXED",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 3000,
-      "maxStairH": 4500,
+      "maxStairW": 4500,
+      "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.513,
-      "livingSqm": 39.3984,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.1848075526506899
+      "carpetRatio": 0.1885285403050109
     },
     {
       "label": "20x45 2x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5256,
-      "livingSqm": 29.29,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.30838082788671023
+      "carpetRatio": 0.3770570806100218
     },
     {
       "label": "20x45 2x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 14.0033,
-      "livingSqm": 33.264,
+      "kitchenSqm": 7.368,
+      "livingSqm": 28.6,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.4382335511982571
+      "carpetRatio": 0.43991285403050107
     },
     {
       "label": "20x45 2x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.0052,
-      "livingSqm": 35.772,
+      "kitchenSqm": 8.9181,
+      "livingSqm": 35.55,
       "bathsNoVent": 0,
-      "bathsTotal": 7,
-      "carpetRatio": 0.48840058097313
+      "bathsTotal": 6,
+      "carpetRatio": 0.40472592592592593
     },
     {
       "label": "20x45 2xMIXED",
@@ -3479,53 +3481,53 @@
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 20.112,
-      "livingSqm": 73.7212,
+      "kitchenSqm": 37.1234,
+      "livingSqm": 37.1522,
       "bathsNoVent": 0,
       "bathsTotal": 5,
-      "carpetRatio": 0.6198999273783588
+      "carpetRatio": 0.6191774872912128
     },
     {
       "label": "20x45 3x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9157,
-      "livingSqm": 29.29,
+      "kitchenSqm": 17.0546,
+      "livingSqm": 34.188,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.46982745098039214
+      "carpetRatio": 0.45927538126361656
     },
     {
       "label": "20x45 3x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.3333,
-      "livingSqm": 28.556,
+      "kitchenSqm": 9.672,
+      "livingSqm": 23.98,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.5990614379084968
+      "carpetRatio": 0.569114015976761
     },
     {
       "label": "20x45 3x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.3333,
-      "livingSqm": 28.556,
+      "kitchenSqm": 9.672,
+      "livingSqm": 23.98,
       "bathsNoVent": 0,
-      "bathsTotal": 11,
-      "carpetRatio": 0.6244862745098039
+      "bathsTotal": 10,
+      "carpetRatio": 0.587924473493101
     },
     {
       "label": "20x45 3xMIXED",
@@ -3535,67 +3537,67 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.3333,
-      "livingSqm": 38.28,
+      "kitchenSqm": 11.452,
+      "livingSqm": 34.76,
       "bathsNoVent": 0,
       "bathsTotal": 7,
-      "carpetRatio": 0.6190501089324619
+      "carpetRatio": 0.5777719680464779
     },
     {
       "label": "20x45 4x2BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9157,
-      "livingSqm": 26.767,
+      "kitchenSqm": 15.61225,
+      "livingSqm": 26.37,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.6057490196078431
+      "carpetRatio": 0.5650108932461874
     },
     {
       "label": "20x45 4x3BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.20325,
+      "kitchenSqm": 10.39175,
       "livingSqm": 15.84,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.6242901960784314
+      "carpetRatio": 0.5756564996368918
     },
     {
       "label": "20x45 4x4BHK",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.20325,
-      "livingSqm": 15.84,
+      "kitchenSqm": 6.697,
+      "livingSqm": 15.552,
       "bathsNoVent": 0,
-      "bathsTotal": 15,
-      "carpetRatio": 0.6689089324618737
+      "bathsTotal": 12,
+      "carpetRatio": 0.3814698620188816
     },
     {
       "label": "20x45 4xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.3333,
-      "livingSqm": 29.128,
+      "kitchenSqm": 11.452,
+      "livingSqm": 19.712,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6461873638344227
+      "carpetRatio": 0.5675816993464052
     },
     {
       "label": "20x45 5x2BHK",
@@ -3605,11 +3607,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.075,
-      "livingSqm": 22.788,
+      "kitchenSqm": 14.265,
+      "livingSqm": 23.76,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6698010167029775
+      "carpetRatio": 0.6339186637618011
     },
     {
       "label": "20x45 5x3BHK",
@@ -3619,11 +3621,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.485,
+      "kitchenSqm": 9.495,
       "livingSqm": 15.84,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.6736339869281046
+      "carpetRatio": 0.6727073347857662
     },
     {
       "label": "20x45 5x4BHK",
@@ -3633,11 +3635,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 10.485,
+      "kitchenSqm": 9.495,
       "livingSqm": 15.84,
       "bathsNoVent": 0,
       "bathsTotal": 15,
-      "carpetRatio": 0.6984705882352941
+      "carpetRatio": 0.7354524328249818
     },
     {
       "label": "20x45 5xMIXED",
@@ -3647,11 +3649,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.075,
-      "livingSqm": 22.788,
+      "kitchenSqm": 14.265,
+      "livingSqm": 23.76,
       "bathsNoVent": 0,
       "bathsTotal": 11,
-      "carpetRatio": 0.671717501815541
+      "carpetRatio": 0.6567116920842411
     },
     {
       "label": "20x45 6x2BHK",
@@ -3661,11 +3663,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5071,
-      "livingSqm": 17.6472,
+      "kitchenSqm": 5.5924,
+      "livingSqm": 20.7252,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.707831808278867
+      "carpetRatio": 0.7316130718954248
     },
     {
       "label": "20x45 6x3BHK",
@@ -3675,11 +3677,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5071,
-      "livingSqm": 17.6472,
+      "kitchenSqm": 5.5924,
+      "livingSqm": 29.6172,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7343241830065359
+      "carpetRatio": 0.7316130718954248
     },
     {
       "label": "20x45 6x4BHK",
@@ -3689,11 +3691,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5071,
-      "livingSqm": 17.6472,
+      "kitchenSqm": 5.5924,
+      "livingSqm": 29.6172,
       "bathsNoVent": 0,
       "bathsTotal": 18,
-      "carpetRatio": 0.7343241830065359
+      "carpetRatio": 0.7316130718954248
     },
     {
       "label": "20x45 6xMIXED",
@@ -3703,11 +3705,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5071,
-      "livingSqm": 17.6472,
+      "kitchenSqm": 5.5924,
+      "livingSqm": 29.6172,
       "bathsNoVent": 0,
       "bathsTotal": 16,
-      "carpetRatio": 0.7210779956427015
+      "carpetRatio": 0.7316130718954248
     },
     {
       "label": "50x50 1x2BHK",
@@ -3717,11 +3719,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 138.0011,
+      "kitchenSqm": 124.9807,
       "livingSqm": 1152.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.871234705882353
+      "carpetRatio": 0.885369679144385
     },
     {
       "label": "50x50 1x3BHK",
@@ -3731,11 +3733,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 74.5645,
+      "kitchenSqm": 67.5244,
       "livingSqm": 622.43,
       "bathsNoVent": 0,
       "bathsTotal": 3,
-      "carpetRatio": 0.870646577540107
+      "carpetRatio": 0.8697364705882353
     },
     {
       "label": "50x50 1x4BHK",
@@ -3745,11 +3747,11 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 74.5645,
+      "kitchenSqm": 67.5244,
       "livingSqm": 622.43,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.8622160962566845
+      "carpetRatio": 0.8613059893048128
     },
     {
       "label": "50x50 1xMIXED",
@@ -3759,123 +3761,123 @@
       "maxStairW": 2600,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 138.0011,
+      "kitchenSqm": 124.9807,
       "livingSqm": 1152.4,
       "bathsNoVent": 0,
       "bathsTotal": 2,
-      "carpetRatio": 0.871234705882353
+      "carpetRatio": 0.885369679144385
     },
     {
       "label": "50x50 2x2BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.5236,
-      "livingSqm": 17.505,
+      "kitchenSqm": 6.1479,
+      "livingSqm": 16.2,
       "bathsNoVent": 0,
       "bathsTotal": 4,
-      "carpetRatio": 0.09020181818181819
+      "carpetRatio": 0.09036032085561498
     },
     {
       "label": "50x50 2x3BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 35.505,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.13452802139037434
+      "carpetRatio": 0.13460631016042782
     },
     {
       "label": "50x50 2x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 40.005,
+      "kitchenSqm": 8.1891,
+      "livingSqm": 32.4,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.1471536898395722
+      "carpetRatio": 0.14498598930481282
     },
     {
       "label": "50x50 2xMIXED",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.5752,
-      "livingSqm": 35.505,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 5,
-      "carpetRatio": 0.13236224598930482
+      "carpetRatio": 0.1324485561497326
     },
     {
       "label": "50x50 3x2BHK",
-      "concepts": 1,
+      "concepts": 2,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 15.9413,
-      "livingSqm": 17.505,
+      "kitchenSqm": 9.6228,
+      "livingSqm": 16.2,
       "bathsNoVent": 0,
       "bathsTotal": 6,
-      "carpetRatio": 0.1410253475935829
+      "carpetRatio": 0.14118385026737967
     },
     {
       "label": "50x50 3x3BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 34.011,
+      "kitchenSqm": 9.7929,
+      "livingSqm": 28.206,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.2020857754010695
+      "carpetRatio": 0.18722823529411764
     },
     {
       "label": "50x50 3x4BHK",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 34.011,
+      "kitchenSqm": 9.7929,
+      "livingSqm": 28.206,
       "bathsNoVent": 0,
       "bathsTotal": 9,
-      "carpetRatio": 0.20513229946524064
+      "carpetRatio": 0.19009828877005347
     },
     {
       "label": "50x50 3xMIXED",
-      "concepts": 1,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
       "maxStairW": 4500,
       "maxStairH": 3000,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 51.12,
+      "kitchenSqm": 9.9873,
+      "livingSqm": 40.185,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.20121786096256686
+      "carpetRatio": 0.186882192513369
     },
     {
       "label": "50x50 4x2BHK",
@@ -3885,11 +3887,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 13.35,
-      "livingSqm": 51.492,
+      "kitchenSqm": 14.588,
+      "livingSqm": 35.5408,
       "bathsNoVent": 0,
       "bathsTotal": 8,
-      "carpetRatio": 0.29768021390374333
+      "carpetRatio": 0.2991516577540107
     },
     {
       "label": "50x50 4x3BHK",
@@ -3899,11 +3901,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 17.0235,
-      "livingSqm": 57.7264,
+      "kitchenSqm": 7.4601,
+      "livingSqm": 29.25,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.42489561497326206
+      "carpetRatio": 0.26921262032085563
     },
     {
       "label": "50x50 4x4BHK",
@@ -3913,39 +3915,39 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 18.0063,
-      "livingSqm": 62.4928,
+      "kitchenSqm": 8.088,
+      "livingSqm": 31.104,
       "bathsNoVent": 0,
-      "bathsTotal": 14,
-      "carpetRatio": 0.46193839572192513
+      "bathsTotal": 12,
+      "carpetRatio": 0.2943529411764706
     },
     {
       "label": "50x50 4xMIXED",
-      "concepts": 2,
+      "concepts": 3,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 16.9929,
-      "livingSqm": 34.65,
+      "kitchenSqm": 14.4875,
+      "livingSqm": 34.965,
       "bathsNoVent": 0,
-      "bathsTotal": 9,
-      "carpetRatio": 0.20367967914438503
+      "bathsTotal": 10,
+      "carpetRatio": 0.28749946524064174
     },
     {
       "label": "50x50 5x2BHK",
       "concepts": 0,
       "usedFallback": false,
       "planned": true,
-      "maxStairW": 4500,
-      "maxStairH": 3000,
+      "maxStairW": 3000,
+      "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 12.428,
-      "livingSqm": 16.2,
+      "kitchenSqm": 19.0216,
+      "livingSqm": 49.056,
       "bathsNoVent": 0,
       "bathsTotal": 10,
-      "carpetRatio": 0.20367967914438503
+      "carpetRatio": 0.3761927807486631
     },
     {
       "label": "50x50 5x3BHK",
@@ -3955,11 +3957,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 21.0249,
-      "livingSqm": 57.7264,
+      "kitchenSqm": 28.8548,
+      "livingSqm": 54.4752,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.5211522994652407
+      "carpetRatio": 0.5208016042780749
     },
     {
       "label": "50x50 5x4BHK",
@@ -3969,11 +3971,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 20.9676,
-      "livingSqm": 67.392,
+      "kitchenSqm": 26.8233,
+      "livingSqm": 50.96076,
       "bathsNoVent": 0,
-      "bathsTotal": 18,
-      "carpetRatio": 0.5418429946524064
+      "bathsTotal": 16,
+      "carpetRatio": 0.5408811443850268
     },
     {
       "label": "50x50 5xMIXED",
@@ -3983,11 +3985,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 21.0022,
-      "livingSqm": 74.448,
+      "kitchenSqm": 12.2256,
+      "livingSqm": 35.145,
       "bathsNoVent": 0,
       "bathsTotal": 13,
-      "carpetRatio": 0.4902867914438503
+      "carpetRatio": 0.32863508021390375
     },
     {
       "label": "50x50 6x2BHK",
@@ -3997,11 +3999,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 19.7135,
-      "livingSqm": 51.492,
+      "kitchenSqm": 19.0216,
+      "livingSqm": 49.056,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.4603155080213904
+      "carpetRatio": 0.4532339037433155
     },
     {
       "label": "50x50 6x3BHK",
@@ -4011,11 +4013,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 21.0249,
-      "livingSqm": 54.13836,
+      "kitchenSqm": 20.46,
+      "livingSqm": 54.4752,
       "bathsNoVent": 0,
       "bathsTotal": 12,
-      "carpetRatio": 0.6174089839572192
+      "carpetRatio": 0.6155120855614973
     },
     {
       "label": "50x50 6x4BHK",
@@ -4025,11 +4027,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 20.9676,
-      "livingSqm": 58.3776,
+      "kitchenSqm": 20.46,
+      "livingSqm": 54.4752,
       "bathsNoVent": 0,
-      "bathsTotal": 22,
-      "carpetRatio": 0.6228179679144386
+      "bathsTotal": 20,
+      "carpetRatio": 0.6270628877005348
     },
     {
       "label": "50x50 6xMIXED",
@@ -4039,11 +4041,11 @@
       "maxStairW": 3000,
       "maxStairH": 4500,
       "floorStairsEmpty": false,
-      "kitchenSqm": 21.0249,
-      "livingSqm": 68.9804,
+      "kitchenSqm": 26.2802,
+      "livingSqm": 56.3744,
       "bathsNoVent": 0,
       "bathsTotal": 14,
-      "carpetRatio": 0.6219313368983957
+      "carpetRatio": 0.6206416042780749
     }
   ]
 }

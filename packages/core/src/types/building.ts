@@ -7,7 +7,7 @@ import type { CanonicalMepSystems } from '../mep/mep-contracts';
  * Every entity has a stable UUID. The rendered SVG is a projection of this model.
  */
 
-import type { Point, Polygon } from './geometry';
+import type { Point, Polygon, WallArcSpec } from './geometry';
 import type {
   AdjacencyStrength,
   ChangeSource,
@@ -146,6 +146,7 @@ export interface Room {
   readonly privacyRequirement: PrivacyLevel;
   readonly ventilationRequired: boolean;
   readonly isFixed: boolean;
+  readonly curvedEdges?: readonly WallArcSpec[];
 }
 
 // ─── Wall ───────────────────────────────────────────────────────────────────
@@ -159,6 +160,8 @@ export interface Wall {
   readonly rightRoomId?: string;
   readonly unitIds?: readonly string[];
   readonly provenance?: 'PROVISIONAL_HEURISTIC' | 'USER_PROVIDED';
+  readonly arc?: WallArcSpec;
+  readonly arcGroupId?: string;
   readonly id: string;
   readonly floorId: string;
   readonly startPoint: Point;
@@ -290,8 +293,28 @@ export interface Floor {
 
 // ─── Building ───────────────────────────────────────────────────────────────
 
+export interface SourceCadUnderlay {
+  readonly fileName: string;
+  readonly format: 'dxf' | 'dwg' | 'pdf';
+  readonly detectedUnit: 'mm' | 'cm' | 'm' | 'in' | 'ft';
+  readonly importMode: 'plot_boundary' | 'floor_plan';
+  readonly layers: readonly string[];
+  /** Normalized mm polylines for lightweight 2D CAD underlay toggle. */
+  readonly polylines: readonly {
+    readonly layer: string;
+    readonly closed?: boolean;
+    readonly points: readonly Point[];
+  }[];
+  /** Optional PDF data URL + scale calibration when imported from PDF. */
+  readonly pdfDataUrl?: string;
+  readonly mmPerPixel?: number;
+}
+
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
+  readonly sourceCadUnderlay?: SourceCadUnderlay;
+  readonly irregularPlotBoundary?: import('./multi-sheet-apartment').IrregularPlotBoundary;
+  readonly facadeCoordination?: import('./multi-sheet-apartment').FacadeCoordinationMetadata;
   readonly generationReport?: import('./multi-sheet-apartment').ApartmentGenerationReport;
   readonly bedroomBalconySchedule?: readonly {
     flatId: string | null; floorId: string; bedroomId: string; balconyId: string | null;
@@ -310,8 +333,14 @@ export interface BuildingMetadata {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly requestedMassingShape?: string;
+    readonly planCategory?: string;
+    readonly usedShapeIds?: readonly string[];
+    readonly usedArchetypeIds?: readonly string[];
     readonly includeWindowChajjas?: boolean;
     readonly staggeredBalconies?: boolean;
+    readonly galleryCoordinationMode?: import('./multi-sheet-apartment').GalleryCoordinationMode;
+    readonly includeStudyRoom?: boolean;
     readonly aiProposal?: Record<string, unknown>;
     readonly aiTelemetry?: {
       readonly geminiInvoked: boolean;
@@ -372,8 +401,13 @@ export interface Project {
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
+    readonly planCategory?: string;
+    readonly usedShapeIds?: readonly string[];
+    readonly usedArchetypeIds?: readonly string[];
     readonly includeWindowChajjas?: boolean;
     readonly staggeredBalconies?: boolean;
+    readonly galleryCoordinationMode?: import('./multi-sheet-apartment').GalleryCoordinationMode;
+    readonly includeStudyRoom?: boolean;
     readonly aiProposal?: Record<string, unknown>;
     readonly aiTelemetry?: {
       readonly geminiInvoked: boolean;

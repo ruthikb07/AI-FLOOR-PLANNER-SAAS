@@ -23,7 +23,14 @@
  * an alternative, and never presents a mirror image as a second design.
  */
 
-import type { ApartmentBhkType, DynamicApartmentManifest } from '@ai-floor-planner/core';
+import type {
+  ApartmentBhkType,
+  Direction,
+  DynamicApartmentManifest,
+  GalleryCoordinationMode,
+  IrregularPlotBoundary,
+  Setbacks,
+} from '@ai-floor-planner/core';
 import type { ExtractedRoom } from '../interpretation/extraction';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { fnv1a, mulberry32, type Box2D } from './rect-frame';
@@ -41,6 +48,7 @@ import {
   type TopologyPartition,
   type TopologyRejection,
 } from './topology-families';
+import { getShapeCatalogEntry } from '../catalog/shape-catalog';
 import { assembleStructureFromPartition } from './plan-assembler';
 import {
   ROOM_SLICING_ARCHETYPES,
@@ -98,6 +106,11 @@ export interface GenerateConceptsInput {
   readonly preferredMassingShape?: BuildingMassingShape;
   /** Canonical topology digests or variant IDs rejected from prior generations. */
   readonly rejectedTopologyHashes?: readonly string[];
+  readonly roadAccessSides?: readonly Direction[];
+  readonly setbacksMm?: Setbacks;
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
+  readonly includeStudyRoom?: boolean;
 }
 
 export interface RejectedCandidate {
@@ -173,7 +186,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     (input.seed && input.seed > 1
       ? ROOM_SLICING_ARCHETYPES[(input.seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
       : 'CENTRAL_LIVING_SPLIT_BEDROOMS');
-  const effectiveMassingShape: BuildingMassingShape | undefined =
+  const requestedShapeId: BuildingMassingShape | undefined =
     input.preferredMassingShape ??
     program.preferences.preferredMassingShape ??
     (program.preferences.requestsDifferentShape
@@ -181,6 +194,9 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       : input.seed && input.seed > 1
         ? BUILDING_MASSING_SHAPES[(input.seed - 1) % BUILDING_MASSING_SHAPES.length]
         : undefined);
+  const effectiveMassingShape: BuildingMassingShape | undefined = requestedShapeId
+    ? getShapeCatalogEntry(requestedShapeId).baseTopologyShape
+    : undefined;
 
   const { candidates: topologies, rejections } = generateTopologyCandidates({
     envelope: input.envelope,
@@ -198,9 +214,13 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
 
   // Explore in an order biased toward the brief's stated priority, with a
   // deterministic tiebreak. Ordering affects only exploration, never validity.
-  const ordered = [...topologies]
-    .map(t => ({ t, key: explorationKey(t, program, random()) }))
-    .sort((a, b) => a.key - b.key)
+  const ordered = topologies
+    .map(t => ({
+      t,
+      key: explorationKey(t, program, random()),
+      priority: input.preferredMassingShape && t.partition.massingShape === effectiveMassingShape ? 0 : 1,
+    }))
+    .sort((a, b) => a.priority - b.priority || a.key - b.key)
     .map(x => x.t);
   const rejectedHashSet = new Set(input.rejectedTopologyHashes ?? []);
 
@@ -240,6 +260,11 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         unitTypes: input.unitTypes,
         rawRooms: input.rawRooms,
         archetype: effectiveArchetype,
+        roadAccessSides: input.roadAccessSides,
+        setbacksMm: input.setbacksMm,
+        irregularPlotBoundary: input.irregularPlotBoundary,
+        galleryCoordinationMode: input.galleryCoordinationMode,
+        includeStudyRoom: input.includeStudyRoom,
       });
     } catch (error) {
       rejected.push({
@@ -355,7 +380,9 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
 
   // Failed candidates remain failed. Choose the fewest hard violations first,
   // then measured utility, with a stable identity tie-break for review/repair.
-  const leastBad = [...failed].sort((a, b) =>
+  const preferredFailed = requestedShapeId === 'PINWHEEL_CLUSTER'
+    ? failed.filter(candidate => candidate.partition.massingShape === requestedShapeId) : [];
+  const leastBad = [...(preferredFailed.length ? preferredFailed : failed)].sort((a, b) =>
     a.score.hardConstraints.filter(c => !c.satisfied).length - b.score.hardConstraints.filter(c => !c.satisfied).length
     || b.score.weightedTotal - a.score.weightedTotal
     || a.topology.variantId.localeCompare(b.topology.variantId))[0];
@@ -372,7 +399,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     concepts,
     rejected,
     archetype: effectiveArchetype,
-    massingShape: concepts[0]?.partition.massingShape ?? effectiveMassingShape,
+    massingShape: concepts[0]?.partition.massingShape ?? bestEffort?.partition.massingShape,
     shortfallExplanation,
     diagnostics: {
       engineVersion: TOPOLOGY_ENGINE_VERSION,

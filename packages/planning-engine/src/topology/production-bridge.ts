@@ -18,7 +18,14 @@
  * shaft present on one floor but not another would put a slab through a duct.
  */
 
-import type { ApartmentBhkType, BuildingMassingShape } from '@ai-floor-planner/core';
+import type {
+  ApartmentBhkType,
+  BuildingMassingShape,
+  Direction,
+  GalleryCoordinationMode,
+  IrregularPlotBoundary,
+  Setbacks,
+} from '@ai-floor-planner/core';
 import type {
   Box2D as SnapperBox,
   MacroPartition,
@@ -100,6 +107,11 @@ export interface SelectTopologyInput {
   readonly preferredArchetype?: RoomSlicingArchetypeId;
   readonly preferredMassingShape?: BuildingMassingShape;
   readonly rejectedTopologyHashes?: readonly string[];
+  readonly roadAccessSides?: readonly Direction[];
+  readonly setbacksMm?: Setbacks;
+  readonly irregularPlotBoundary?: IrregularPlotBoundary;
+  readonly galleryCoordinationMode?: GalleryCoordinationMode;
+  readonly includeStudyRoom?: boolean;
 }
 
 export interface SelectedTopology {
@@ -134,9 +146,19 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     preferredArchetype: input.preferredArchetype,
     preferredMassingShape: input.preferredMassingShape,
     rejectedTopologyHashes: input.rejectedTopologyHashes,
+    roadAccessSides: input.roadAccessSides,
+    setbacksMm: input.setbacksMm,
+    irregularPlotBoundary: input.irregularPlotBoundary,
+    galleryCoordinationMode: input.galleryCoordinationMode,
+    includeStudyRoom: input.includeStudyRoom,
   });
 
   input.onEvaluated?.(result);
+  if (input.preferredMassingShape === 'PINWHEEL_CLUSTER' && input.allowBestEffort) {
+    const matching = result.concepts.find(concept => concept.partition.massingShape === 'PINWHEEL_CLUSTER')
+      ?? (result.bestEffort?.partition.massingShape === 'PINWHEEL_CLUSTER' ? result.bestEffort : undefined);
+    if (matching) return { macro: macroFromTopology(matching.partition), chosen: matching, result };
+  }
   const rejectedSet = new Set(input.rejectedTopologyHashes ?? []);
   const chosen =
     (rejectedSet.size > 0

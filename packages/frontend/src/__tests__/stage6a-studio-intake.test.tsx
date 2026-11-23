@@ -130,7 +130,7 @@ describe('STAGE 6A: Design Tokens, Atomic System, State Store & Intake Stages', 
     it('initializes with default wizard dimensions and metrics', () => {
       studioStoreActions.resetWizard();
       const data = studioStoreActions.getProjectSetupWizardData();
-      expect(data.projectName).toBe('ARGON Residence Towers');
+      expect(data.projectName).toBe('Manu Residences Towers');
       expect(data.plotWidthM).toBe(30);
       expect(data.plotDepthM).toBe(40);
       expect(data.roadWidthM).toBe(12);
@@ -257,7 +257,7 @@ describe('STAGE 6A: Design Tokens, Atomic System, State Store & Intake Stages', 
       );
       expect(html).toContain('bg-argon-bg');
       expect(html).toContain('bg-argon-card');
-      expect(html).toContain('Stage 01 of 04 • Architectural Intake');
+      expect(html).toContain('Step 1 of 4');
       expect(html).toContain('Continue to Step 02');
     });
   });

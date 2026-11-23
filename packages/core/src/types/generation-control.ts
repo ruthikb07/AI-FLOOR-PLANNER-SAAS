@@ -3,7 +3,8 @@ export type RefinementIntent =
   | 'better_circulation'
   | 'better_privacy'
   | 'better_adjacency'
-  | 'better_space_utilization';
+  | 'better_space_utilization'
+  | 'carve_interflat_ots';
 
 /** Project-level generation permissions. Geometry remains in the Building model. */
 export interface GenerationControlState {

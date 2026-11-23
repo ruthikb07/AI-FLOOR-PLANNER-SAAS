@@ -78,6 +78,7 @@ describe('Repro post-generation render across all workspaces', () => {
   });
 
   it('mounts ArgonStudioShell cleanly', async () => {
+    studioStoreActions.resetWizard();
     const host = document.createElement('div');
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -85,8 +86,12 @@ describe('Repro post-generation render across all workspaces', () => {
     await act(async () => {
       root.render(<ArgonStudioShell />);
     });
-    expect(host.innerHTML).toContain('ARGON');
-    expect(host.innerHTML).toContain('Stage 01');
+    expect(host.querySelector('[data-testid="welcome-scroll-container"]')?.textContent).toContain('RH PLANNER');
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('[data-testid="cta-new-construction"]')?.click();
+      await import('../components/argon/ProjectSetupWizard');
+    });
+    expect(host.textContent).toContain('Project type and site');
   });
 
   it('generates wizard requests and mounts every post-generation workspace without throwing', async () => {
@@ -126,7 +131,7 @@ describe('Repro post-generation render across all workspaces', () => {
         if (firstResidential) capturedEditor!.switchFloor(firstResidential.id);
       });
 
-      expect(host.innerHTML).toContain('2D CAD Studio');
+      expect(host.querySelector('h1')?.textContent).toBe('2D Architectural CAD');
 
       const disciplineButtons = Array.from(host.querySelectorAll('[aria-label="Engineering discipline overlay switcher"] button'));
       for (const btn of disciplineButtons) {

@@ -87,8 +87,12 @@ describe('Post-generation rendering regression suite', () => {
     await act(async () => {
       root.render(<ArgonStudioShell />);
     });
-    expect(host.innerHTML).toContain('ARGON');
-    expect(host.innerHTML).toContain('Stage 01');
+    expect(host.querySelector('[data-testid="welcome-scroll-container"]')?.textContent).toContain('RH PLANNER');
+    await act(async () => {
+      host.querySelector<HTMLButtonElement>('[data-testid="cta-new-construction"]')?.click();
+      await import('../components/argon/ProjectSetupWizard');
+    });
+    expect(host.textContent).toContain('Project type and site');
   });
 
   it('renders chajjas in SVG and mounts every post-generation workspace without throwing', async () => {
@@ -129,7 +133,7 @@ describe('Post-generation rendering regression suite', () => {
         capturedEditor!.switchFloor(typicalFloor.id);
       });
 
-      expect(host.innerHTML).toContain('2D CAD Studio');
+      expect(host.querySelector('h1')?.textContent).toBe('2D Architectural CAD');
 
       for (const btn of Array.from(host.querySelectorAll('[aria-label="Engineering discipline overlay switcher"] button'))) {
         await act(async () => {

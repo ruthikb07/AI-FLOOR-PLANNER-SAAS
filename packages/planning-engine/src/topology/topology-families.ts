@@ -369,6 +369,8 @@ export type CorridorSides = 'NONE' | 'LOW' | 'HIGH' | 'BOTH';
 interface CoreBandOptions {
   readonly stairCount: 1 | 2;
   readonly compact: boolean;
+  /** Stair room dimensions, including the allowance for both wall faces. */
+  readonly stairBay?: { alongMm: number; acrossMm: number };
   /** Put the lift cars at the low-coordinate side of the stack. */
   readonly liftsAtLowSide: boolean;
   /** Prefer leftover band area to read as an open-to-sky void. */
@@ -428,8 +430,9 @@ export function requiredCoreBandLength(opts: {
   stairCount: 1 | 2;
   corridorSides?: CorridorSides;
   liftCount?: 1 | 2;
+  stairBay?: { alongMm: number };
 }): number {
-  const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
+  const stairRun = opts.stairBay?.alongMm ?? (opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard);
   const crossLink = opts.corridorSides === 'BOTH' ? corridorWidth(opts.compact) : 0;
   const liftCount = opts.liftCount ?? CORE_BOUNDS.liftCount;
   return stairRun * opts.stairCount + CORE_BOUNDS.liftDepth * liftCount + crossLink;
@@ -464,10 +467,11 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const corridorCount = sides === 'BOTH' ? 2 : sides === 'NONE' ? 0 : 1;
 
   const stackW = band.w - corridorCount * corrW;
-  if (stackW < CORE_BOUNDS.stairWidthMin) {
+  const minStackWidth = opts.stairBay?.acrossMm ?? CORE_BOUNDS.stairWidthMin;
+  if (stackW < minStackWidth) {
     reasons.push(
       `core band is ${Math.round(band.w)} mm across; after ${corridorCount} corridor(s) of ${corrW} mm the ` +
-      `stair stack would be ${Math.round(stackW)} mm, below the ${CORE_BOUNDS.stairWidthMin} mm minimum`,
+      `stair stack would be ${Math.round(stackW)} mm, below the ${minStackWidth} mm minimum`,
     );
   }
 
@@ -477,6 +481,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     stairCount: opts.stairCount,
     corridorSides: sides,
     liftCount,
+    stairBay: opts.stairBay,
   });
   if (band.h < requiredLength) {
     reasons.push(
@@ -523,7 +528,7 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   // The cross-link spans the full band width, so it meets both side runs.
   if (crossLink) corridorBoxes.push(out(crossLink));
 
-  const stairRun = opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard;
+  const stairRun = opts.stairBay?.alongMm ?? (opts.compact ? CORE_BOUNDS.stairRunCompact : CORE_BOUNDS.stairRunStandard);
   const liftBankRun = CORE_BOUNDS.liftDepth * liftCount;
 
   const stairBoxes: Box2D[] = [];
@@ -533,6 +538,100 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
   const shaftRoles: ShaftRole[] = [];
   const shaftTags: (readonly string[])[] = [];
 
+  // Indian engineering MEP/plumbing shaft cap: <= 1,200 x 1,800 mm (<= 2.16 m²) per duct.
+  // Excess core spine volume is returned to usable Central Lift Lobby (connected to both
+  // flanking corridors) or compact OTS light/air void — NEVER giant 12–25 m² dead service shafts.
+  const MAX_MEP_SHORT_MM = 1200;
+  const MAX_MEP_LONG_MM = 1800;
+
+  const pushSizedMepStrip = (strip: Box2D): void => {
+    if (strip.w <= 0 || strip.h <= 0) return;
+    if (
+      (strip.w <= MAX_MEP_SHORT_MM && strip.h <= MAX_MEP_LONG_MM) ||
+      (strip.h <= MAX_MEP_SHORT_MM && strip.w <= MAX_MEP_LONG_MM)
+    ) {
+      shaftBoxes.push(out(strip));
+      shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
+      return;
+    }
+    if (strip.w <= MAX_MEP_SHORT_MM && strip.h > MAX_MEP_LONG_MM) {
+      const count = Math.ceil(strip.h / MAX_MEP_LONG_MM);
+      const chunkH = snap10(strip.h / count);
+      const sizes = Array.from({ length: count }, (_, idx) => (idx === count - 1 ? 0 : chunkH));
+      for (const piece of splitY(strip, sizes)) {
+        if (piece.w > 0 && piece.h > 0) {
+          shaftBoxes.push(out(piece));
+          shaftRoles.push('SERVICE_SHAFT');
+          shaftTags.push([]);
+        }
+      }
+      return;
+    }
+    if (strip.h <= MAX_MEP_SHORT_MM && strip.w > MAX_MEP_LONG_MM) {
+      const count = Math.ceil(strip.w / MAX_MEP_LONG_MM);
+      const chunkW = snap10(strip.w / count);
+      const sizes = Array.from({ length: count }, (_, idx) => (idx === count - 1 ? 0 : chunkW));
+      for (const piece of splitX(strip, sizes)) {
+        if (piece.w > 0 && piece.h > 0) {
+          shaftBoxes.push(out(piece));
+          shaftRoles.push('SERVICE_SHAFT');
+          shaftTags.push([]);
+        }
+      }
+      return;
+    }
+    // Wide remainder (> 1,200 mm x > 1,800 mm): carve one realistic <= 1,200 x 1,800 mm MEP duct
+    // and assign the remaining accessible core width/length to Central Lift Lobby (touching corridors).
+    const mepW = Math.min(MAX_MEP_SHORT_MM, strip.w);
+    const lobbyRemW = strip.w - mepW;
+    if (corridorCount > 0 && lobbyRemW >= 1500) {
+      const [colA, colB] = opts.liftsAtLowSide
+        ? splitX(strip, [lobbyRemW, 0])
+        : splitX(strip, [mepW, 0]);
+      const lobbyCol = opts.liftsAtLowSide ? colA! : colB!;
+      const mepCol = opts.liftsAtLowSide ? colB! : colA!;
+      lobbyBoxes.push(out(lobbyCol));
+      if (mepCol.h <= MAX_MEP_LONG_MM) {
+        shaftBoxes.push(out(mepCol));
+        shaftRoles.push('SERVICE_SHAFT');
+        shaftTags.push([]);
+      } else {
+        const [mepBox, extraLobby] = splitY(mepCol, [MAX_MEP_LONG_MM, 0]) as [Box2D, Box2D];
+        shaftBoxes.push(out(mepBox));
+        shaftRoles.push('SERVICE_SHAFT');
+        shaftTags.push([]);
+        if (extraLobby.h >= 1200) lobbyBoxes.push(out(extraLobby));
+        else pushSizedMepStrip(extraLobby);
+      }
+      return;
+    }
+    // Fallback when corridor is absent or stack is too narrow for side-by-side split:
+    if (strip.h > MAX_MEP_LONG_MM) {
+      const [mepEnd, openLobby] = splitY(strip, [MAX_MEP_LONG_MM, 0]) as [Box2D, Box2D];
+      if (corridorCount > 0 && openLobby.h >= 1500) {
+        lobbyBoxes.push(out(openLobby));
+      } else {
+        pushSizedMepStrip(openLobby);
+      }
+      if (mepEnd.w > MAX_MEP_SHORT_MM && corridorCount > 0 && mepEnd.w - MAX_MEP_SHORT_MM >= 1200) {
+        const [mepBox, sideVestibule] = splitX(mepEnd, [MAX_MEP_SHORT_MM, 0]) as [Box2D, Box2D];
+        shaftBoxes.push(out(mepBox));
+        shaftRoles.push('SERVICE_SHAFT');
+        shaftTags.push([]);
+        lobbyBoxes.push(out(sideVestibule));
+      } else {
+        shaftBoxes.push(out(mepEnd));
+        shaftRoles.push('SERVICE_SHAFT');
+        shaftTags.push([]);
+      }
+    } else {
+      shaftBoxes.push(out(strip));
+      shaftRoles.push('SERVICE_SHAFT');
+      shaftTags.push([]);
+    }
+  };
+
   let firstStairSeg: Box2D;
   let liftSeg: Box2D;
   let secondStairSeg: Box2D | undefined;
@@ -540,7 +639,8 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
 
   if (opts.noOts && opts.stairCount === 2) {
     // Position the two staircases at opposite ends of the stack with the lift
-    // centered in the middle segment, and any middle remainder as SERVICE_SHAFT.
+    // centered in the middle segment, returning generous middle space to Central Lift Lobby
+    // plus compact <= 1,200 x 1,800 mm MEP risers (never giant dead shafts).
     const middleH = stack.h - 2 * stairRun;
     const [topStair, midZone, botStair] = splitY(stack, [stairRun, middleH, 0]) as [Box2D, Box2D, Box2D];
     firstStairSeg = topStair;
@@ -550,19 +650,13 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     const botPad = remMidH - topPad;
     if (topPad > 0 && botPad > 0) {
       const [padTop, liftCenter, padBot] = splitY(midZone, [topPad, liftBankRun, 0]) as [Box2D, Box2D, Box2D];
-      shaftBoxes.push(out(padTop));
-      shaftRoles.push('SERVICE_SHAFT');
-      shaftTags.push([]);
+      pushSizedMepStrip(padTop);
       liftSeg = liftCenter;
-      shaftBoxes.push(out(padBot));
-      shaftRoles.push('SERVICE_SHAFT');
-      shaftTags.push([]);
+      pushSizedMepStrip(padBot);
     } else if (remMidH > 0) {
       const [liftCenter, padBot] = splitY(midZone, [liftBankRun, 0]) as [Box2D, Box2D];
       liftSeg = liftCenter;
-      shaftBoxes.push(out(padBot));
-      shaftRoles.push('SERVICE_SHAFT');
-      shaftTags.push([]);
+      pushSizedMepStrip(padBot);
     } else {
       liftSeg = midZone;
     }
@@ -577,34 +671,30 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     tailSeg = segments[segments.length - 1]!;
   }
 
-  // Primary stair: bounded to catalogue maximum (3000 mm) to prevent oversized 5.8m stairrooms
-  const stairW = Math.min(stack.w, CORE_BOUNDS.stairWidthMax);
+  const stairW = Math.min(stack.w, opts.stairBay?.acrossMm ?? CORE_BOUNDS.stairWidthMax);
   const stairSurplusW = stack.w - stairW;
   if (stairSurplusW >= CORE_BOUNDS.shaftMinSpan) {
     const [stairCol, shaftCol] = opts.liftsAtLowSide
       ? splitX(firstStairSeg, [stairW, 0])
       : splitX(firstStairSeg, [stairSurplusW, 0]);
     stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
-    shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
-    shaftRoles.push('SERVICE_SHAFT');
-    shaftTags.push([]);
+    pushSizedMepStrip(opts.liftsAtLowSide ? shaftCol! : stairCol!);
   } else {
     stairBoxes.push(out(firstStairSeg));
   }
 
-  // Lift bank: cars stacked along the band beside a lobby landing that spans
-  // the whole lift segment, so the lobby reaches both cars and the corridor.
+  // Lift bank: orient lift doors directly onto the open corridor/lobby (>= 2,400 mm clear).
+  // Never place a service shaft between lift doors and the sole served corridor.
+  const effectiveLiftsAtLow =
+    sides === 'LOW' ? true : sides === 'HIGH' ? false : opts.liftsAtLowSide;
   const carDepth = Math.min(CORE_BOUNDS.liftDepth, Math.floor(liftSeg.h / liftCount));
-  // The car width is clamped to the catalogue range and snapped to 10 mm, so on
-  // a narrow stack the clamp's lower bound can exceed the stack itself and the
-  // car would hang over whatever lies beyond. Bound it by the stack as well.
   const liftW = Math.min(
     stack.w,
     clamp(snap10(stack.w * 0.55), CORE_BOUNDS.liftWidthMin, CORE_BOUNDS.liftWidthMax),
   );
   const lobbyW = stack.w - liftW;
 
-  /** Stacks `liftCount` cars in `column`, with any remainder as shaft. */
+  /** Stacks `liftCount` cars in `column`, with any remainder as compact shaft. */
   const stackCars = (column: Box2D): void => {
     const depths = Array.from({ length: liftCount }, () => carDepth);
     const pieces = splitY(column, [...depths, 0]);
@@ -612,23 +702,23 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     const tail = pieces[pieces.length - 1]!;
     if (tail.h > 0) {
       const carTailRole = roleFor(tail, opts.preferOts, opts.noOts, opts.preferCompactOts);
-      shaftBoxes.push(out(tail));
-      shaftRoles.push(carTailRole);
-      shaftTags.push(carTailRole === 'OPEN_TO_SKY_VOID' ? ['shaft:ots'] : []);
+      if (carTailRole === 'OPEN_TO_SKY_VOID') {
+        shaftBoxes.push(out(tail));
+        shaftRoles.push('OPEN_TO_SKY_VOID');
+        shaftTags.push(['shaft:ots']);
+      } else {
+        pushSizedMepStrip(tail);
+      }
     }
   };
 
   if (lobbyW >= CORE_BOUNDS.lobbyClearMin) {
-    const [a, b] = opts.liftsAtLowSide ? splitX(liftSeg, [liftW, 0]) : splitX(liftSeg, [lobbyW, 0]);
-    const liftCol = opts.liftsAtLowSide ? a! : b!;
-    const lobbyCol = opts.liftsAtLowSide ? b! : a!;
+    const [a, b] = effectiveLiftsAtLow ? splitX(liftSeg, [lobbyW, 0]) : splitX(liftSeg, [liftW, 0]);
+    const lobbyCol = effectiveLiftsAtLow ? a! : b!;
+    const liftCol = effectiveLiftsAtLow ? b! : a!;
     stackCars(liftCol);
     lobbyBoxes.push(out(lobbyCol));
   } else {
-    // Too narrow for a landing beside the cars. The cars open straight onto a
-    // corridor, which serves as the landing. Bound car width to manufacturer
-    // standard (1.9–2.2 m); any surplus becomes a MEP/service shaft rather
-    // than a giant non-standard 3m car.
     if (corridorCount === 0 && !opts.landingSuppliedExternally) {
       return {
         ...empty,
@@ -641,13 +731,11 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     const carW = Math.min(stack.w, CORE_BOUNDS.liftWidthMax);
     const surplusShaftW = stack.w - carW;
     if (surplusShaftW >= CORE_BOUNDS.shaftMinSpan) {
-      const [carCol, shaftCol] = opts.liftsAtLowSide
+      const [carCol, shaftCol] = effectiveLiftsAtLow
         ? splitX(liftSeg, [carW, 0])
         : splitX(liftSeg, [surplusShaftW, 0]);
-      stackCars(opts.liftsAtLowSide ? carCol! : shaftCol!);
-      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : carCol!));
-      shaftRoles.push('SERVICE_SHAFT');
-      shaftTags.push([]);
+      stackCars(effectiveLiftsAtLow ? carCol! : shaftCol!);
+      pushSizedMepStrip(effectiveLiftsAtLow ? shaftCol! : carCol!);
     } else {
       stackCars(liftSeg);
     }
@@ -660,16 +748,14 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
         ? splitX(secondStairSeg, [stairW, 0])
         : splitX(secondStairSeg, [stairSurplusW, 0]);
       stairBoxes.push(out(opts.liftsAtLowSide ? stairCol! : shaftCol!));
-      shaftBoxes.push(out(opts.liftsAtLowSide ? shaftCol! : stairCol!));
-      shaftRoles.push('SERVICE_SHAFT');
-      shaftTags.push([]);
+      pushSizedMepStrip(opts.liftsAtLowSide ? shaftCol! : stairCol!);
     } else {
       stairBoxes.push(out(secondStairSeg));
     }
   }
 
-  // Tail absorbs remaining spine length: cap compact OTS shafts to 2,400–3,200 mm
-  // along the spine and convert any surplus (>= 1,200 mm) into a service shaft.
+  // Tail absorbs remaining spine length: cap OTS shafts to 2,400–3,200 mm and convert
+  // usable surplus into Central Lift Lobby + realistic <= 1,200 x 1,800 mm MEP duct.
   if (tailSeg && tailSeg.h > 0) {
     const tailRole = roleFor(tailSeg, opts.preferOts, opts.noOts, opts.preferCompactOts);
     const maxCompactOtsH = 3200;
@@ -677,13 +763,22 @@ function dissectCoreBand(bandWorld: Box2D, opts: CoreBandOptions): CoreBandResul
     if ((opts.preferOts || opts.preferCompactOts) && tailRole === 'OPEN_TO_SKY_VOID' && tailSeg.h > maxCompactOtsH && tailSeg.h - minCompactOtsH >= 1200) {
       const compactOtsH = snap10(Math.min(maxCompactOtsH, tailSeg.h - 1200));
       const [otsPiece, serviceSurplus] = splitY(tailSeg, [compactOtsH, 0]) as [Box2D, Box2D];
-      shaftBoxes.push(out(otsPiece), out(serviceSurplus));
-      shaftRoles.push('OPEN_TO_SKY_VOID', 'SERVICE_SHAFT');
-      shaftTags.push(['shaft:ots'], []);
-    } else {
+      shaftBoxes.push(out(otsPiece));
+      shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push(['shaft:ots']);
+      pushSizedMepStrip(serviceSurplus);
+    } else if (tailRole === 'OPEN_TO_SKY_VOID' && tailSeg.h <= 4500) {
       shaftBoxes.push(out(tailSeg));
-      shaftRoles.push(tailRole);
-      shaftTags.push(tailRole === 'OPEN_TO_SKY_VOID' ? ['shaft:ots'] : []);
+      shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push(['shaft:ots']);
+    } else if (tailRole === 'OPEN_TO_SKY_VOID' && tailSeg.h > 4500) {
+      const [otsPiece, remainder] = splitY(tailSeg, [3200, 0]) as [Box2D, Box2D];
+      shaftBoxes.push(out(otsPiece));
+      shaftRoles.push('OPEN_TO_SKY_VOID');
+      shaftTags.push(['shaft:ots']);
+      pushSizedMepStrip(remainder);
+    } else {
+      pushSizedMepStrip(tailSeg);
     }
   }
 
@@ -901,7 +996,7 @@ function flatFootprintTarget(
   return { spanMm, runMm };
 }
 
-function resolveWingFillMode(program: ArchitecturalProgram): {
+function resolveWingFillMode(program: ArchitecturalProgram, envelope?: Box2D): {
   noOts: boolean;
   hasAreaTarget: boolean;
   fillWings: boolean;
@@ -910,9 +1005,18 @@ function resolveWingFillMode(program: ArchitecturalProgram): {
   const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
   const targetAreaSqFt = program.mandatory.targetAreaSqFt;
   const hasAreaTarget = targetAreaSqFt !== undefined && targetAreaSqFt > 0;
+  // Utilize full permissible statutory setback boundary (>= 90%) on standard urban plots
+  // (up to ~33m x 42m, i.e., buildable envelope <= 27m x 35m), while keeping oversized
+  // mega-plots (e.g., 40m x 50m with 4x 2BHK) bounded to realistic residential flat proportions.
+  const isUrbanFillEnvelope = Boolean(
+    envelope &&
+    Math.min(envelope.w, envelope.h) <= 27_000 &&
+    Math.max(envelope.w, envelope.h) <= 35_000,
+  );
   const fillWings =
     !hasAreaTarget &&
     (noOts ||
+      isUrbanFillEnvelope ||
       Boolean(program.preferences.properSpaceUtilization) ||
       Boolean(program.preferences.ventilatedCentralOtsShafts));
   return { noOts, hasAreaTarget, fillWings, targetAreaSqFt };
@@ -1224,12 +1328,13 @@ export function partitionDefects(partition: TopologyPartition, program?: Archite
     // unusable, because the room slicer allocates proportionally and simply
     // stretches the same rooms — a 28 m wide 2BHK gets a 100 m2 living room
     // beside a 7 m2 kitchen. Only the latter is rejected.
+    const maxEnvelopeDim = Math.max(envelope.w, envelope.h);
     const fullFill =
+      (Math.min(envelope.w, envelope.h) <= 27_000 && Math.max(envelope.w, envelope.h) <= 35_000) ||
       program?.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
       (program?.mandatory.targetAreaSqFt !== undefined && program.mandatory.targetAreaSqFt > 0) ||
       Boolean(program?.preferences.properSpaceUtilization) ||
       Boolean(program?.preferences.ventilatedCentralOtsShafts);
-    const maxEnvelopeDim = Math.max(envelope.w, envelope.h);
     const spanLimit = fullFill
       ? Math.max(FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE, maxEnvelopeDim)
       : FLAT_BOUNDS.maxSpanMm * OVERSIZE_TOLERANCE;
@@ -1329,7 +1434,7 @@ const centralCoreSpine: FamilyBuilder = ctx => {
 
     // Fill wings cleanly when space utilization or OTS shafts are requested or
     // wing dimensions remain within oversize sanity limits (eliminates giant side voids).
-    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const westTarget = flatFootprintTarget(westTypes, leftW, targetAreaSqFt, Math.ceil(left.h / westCount));
     const eastTarget = flatFootprintTarget(eastTypes, right.w, targetAreaSqFt, Math.ceil(right.h / eastCount));
     let spanCapW = fillWings
@@ -1458,7 +1563,7 @@ const dualWing: FamilyBuilder = ctx => {
 
     // Entered from their long side, so each flat's span is the wing depth and
     // its run is measured across the plot. Fill wings cleanly when requested.
-    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const northTarget = flatFootprintTarget(northTypes, northH, targetAreaSqFt, Math.ceil(north.w / northCount));
     const southTarget = flatFootprintTarget(southTypes, south.h, targetAreaSqFt, Math.ceil(south.w / southCount));
     let maxSpanN = fillWings
@@ -1592,7 +1697,7 @@ const sideCore: FamilyBuilder = ctx => {
 
     // Flats stack along the core's length so each meets the corridor, expanding to
     // utilize the wing cleanly when plot utilization is enabled or area-targeted.
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const alongY = vertical;
     const availRun = alongY ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
@@ -1715,7 +1820,7 @@ const splitCore: FamilyBuilder = ctx => {
 
     const flatsRegion = middle;
 
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const availRun = axis === 'ns' ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
     const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
@@ -1832,7 +1937,7 @@ const centralCourtyard: FamilyBuilder = ctx => {
 
     // Ring flats are entered from the wing's inner face, so each flat's span is
     // the wing depth and its run is measured across the plot.
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const northCount = flatsPerFloor === 1 ? 1 : flatsPerFloor === 2 ? 1 : flatsPerFloor === 3 ? 1 : Math.floor(flatsPerFloor / 2);
     const southCount = flatsPerFloor - northCount;
     const minCourtyardWingW = Math.min(Math.ceil(northWing.w / Math.max(1, northCount)), Math.ceil(southWing.w / Math.max(1, southCount)));
@@ -1970,7 +2075,7 @@ const linearSingleLoaded: FamilyBuilder = ctx => {
       continue;
     }
 
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const availRun = alongY ? flatsRegion.h : flatsRegion.w;
     const target = flatFootprintTarget(program.mandatory.unitTypes, flatsSpan, targetAreaSqFt, Math.ceil(availRun / flatsPerFloor));
     const runCap = fillWings ? Math.ceil(availRun / flatsPerFloor) : Math.min(Math.ceil(availRun / flatsPerFloor), target.runMm);
@@ -2106,7 +2211,7 @@ const perimeterHabitable: FamilyBuilder = ctx => {
     const wingEdge: AccessEdge = atWest ? 'WEST' : 'EAST';
     const wrapEdge: AccessEdge = atWest ? 'EAST' : 'WEST';
     const wingCount = flatsPerFloor - 1;
-    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program);
+    const { fillWings, hasAreaTarget, targetAreaSqFt } = resolveWingFillMode(program, ctx.envelope);
     const target = flatFootprintTarget(program.mandatory.unitTypes, wingSpan, targetAreaSqFt, Math.ceil(wing.h / wingCount));
     const wingRun = fillWings ? Math.ceil(wing.h / wingCount) : Math.min(Math.ceil(wing.h / wingCount), target.runMm);
     const wingRow = sliceFlatRow(wing, wingCount, wingRun, true, fillWings ? wingSpan : target.spanMm, wingEdge === 'WEST');
@@ -2314,7 +2419,7 @@ const uShapeCourtyard: FamilyBuilder = ctx => {
             shaftBoxes: [...band.shaftBoxes, northCourt],
             shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID'],
             shaftTags: [...band.shaftTags, ['recess:perimeter']],
-            coreBoxes: [linkCorr, coreCol],
+            coreBoxes: [coreCol],
           },
         });
       }
@@ -2611,80 +2716,129 @@ const cruciformPlus: FamilyBuilder = ctx => {
   }];
 };
 
-/**
- * PINWHEEL_CLUSTER — diagonally staggered wing blades with north-west and south-east open corner cutouts.
- */
-const pinwheelCluster: FamilyBuilder = ctx => {
-  const { envelope: env, flatsPerFloor, program } = ctx;
+/** Reserve a rectangular OTS duct where two unit footprints share a party wall. */
+function reserveInterflatDucts(initial: TopologyPartition, program: ArchitecturalProgram): TopologyPartition {
+  if (program.mandatory.ventilationStrategy === 'PERIMETER_ONLY') return initial;
+  let partition = initial;
+  for (const [left, original] of initial.flatBoxes.entries()) {
+    for (let right = left + 1; right < initial.flatBoxes.length; right++) {
+      if (sharedEdgeLength(original, initial.flatBoxes[right]!) <= 0.001) continue;
+      const a = partition.flatBoxes[left]!, b = partition.flatBoxes[right]!;
+      if (partition.shaftBoxes.some((box, index) => partition.shaftTags?.[index]?.includes('shaft:interflat') &&
+        sharedEdgeLength(box, a) >= 650 && sharedEdgeLength(box, b) >= 650)) continue;
+      for (const [donor, other] of [[left, right], [right, left]] as const) {
+        const from = partition.flatBoxes[donor]!, to = partition.flatBoxes[other]!;
+        if (sharedEdgeLength(from, to) < 3000) continue;
+        const vertical = Math.abs(from.x + from.w - to.x) <= 0.001 || Math.abs(to.x + to.w - from.x) <= 0.001;
+        const high = vertical ? from.x < to.x : from.y < to.y;
+        const width = 1600;
+        if ((vertical ? from.w : from.h) <= width) continue;
+        const slices = vertical ? splitX(from, [high ? from.w - width : width, 0]) : splitY(from, [high ? from.h - width : width, 0]);
+        const remaining = slices[high ? 0 : 1]!, strip = slices[high ? 1 : 0]!;
+        const stripStart = vertical ? strip.y : strip.x;
+        const stripSpan = vertical ? strip.h : strip.w;
+        const targetStart = vertical ? to.y : to.x;
+        const targetEnd = targetStart + (vertical ? to.h : to.w);
+        const overlapStart = Math.max(stripStart, targetStart);
+        const overlapEnd = Math.min(stripStart + stripSpan, targetEnd);
+        const depth = Math.min(3600, overlapEnd - overlapStart);
+        // Never turn a huge party wall (>= 14m) into a giant dead OTS strip (>= 10.4m) along the whole flat;
+        // room-level carveInterflatOtsForDroppedSitout handles compact pockets on deep plates.
+        if (stripSpan >= 14_000) continue;
+        const leading = overlapStart - stripStart;
+        const pieces = [leading, depth, stripSpan - leading - depth];
+        const voids = (vertical ? splitY(strip, pieces) : splitX(strip, pieces))
+          .map((box, index) => ({ box, isDuct: index === 1 })).filter(({ box }) => box.w > 0.001 && box.h > 0.001);
+        const candidate: TopologyPartition = { ...partition,
+          flatBoxes: partition.flatBoxes.map((box, index) => index === donor ? remaining : box),
+          shaftBoxes: [...partition.shaftBoxes, ...voids.map(({ box }) => box)],
+          shaftRoles: [...partition.shaftRoles, ...voids.map(() => 'OPEN_TO_SKY_VOID' as const)],
+          shaftTags: [...partition.shaftBoxes.map((_, index) => partition.shaftTags?.[index] ?? []),
+            ...voids.map(({ isDuct }) => isDuct ? ['shaft:ots', 'shaft:interflat'] : ['shaft:ots'])],
+        };
+        if (!partitionDefects(candidate, program).length) { partition = candidate; break; }
+      }
+    }
+  }
+  return partition;
+}
+
+/** Four congruent blades rotated about a square circulation core. */
+const pinwheelCluster: FamilyBuilder = ({ envelope: env, flatsPerFloor, program }) => {
   const variantId = 'massing:pinwheel';
-  const label = 'Pinwheel diagonally staggered wing massing';
-  if (flatsPerFloor < 2) {
-    return [{ variantId, label, rationale: '', reasons: ['Pinwheel massing requires at least 2 flats per floor'] }];
-  }
-  const compact = program.preferences.coreCompactness === 'COMPACT' || program.preferences.minimizeCorridor || Boolean(program.preferences.properSpaceUtilization);
+  const label = 'Four-wing rotational pinwheel';
+  const reject = (reason: string): BuildAttempt[] => [{ variantId, label, rationale: '', reasons: [reason] }];
+  if (flatsPerFloor !== 4) return reject('A rotational pinwheel requires four flats, one per wing.');
+
   const stairCount: 1 | 2 = program.mandatory.stairCount >= 2 ? 2 : 1;
-  const noOts = program.mandatory.ventilationStrategy === 'PERIMETER_ONLY';
-  const preferOts = !noOts && (program.preferences.ventilationStrategy === 'CENTRAL_COURTYARD' || Boolean(program.preferences.ventilatedCentralOtsShafts));
-  const liftCountOverride: 1 | 2 | undefined = program.mandatory.singleLift ? 1 : undefined;
-  const corridorSides: CorridorSides = 'BOTH';
-  const coreW = requiredCoreBandWidth({ compact, corridorSides });
-  const leftW = snap10((env.w - coreW) / 2);
-  if (leftW < FLAT_BOUNDS.minSpanMm) {
-    return [{ variantId, label, rationale: '', reasons: [`Pinwheel wing span ${Math.round(leftW)} mm is below ${FLAT_BOUNDS.minSpanMm} mm`] }];
+  let liftCount: 1 | 2 = program.mandatory.singleLift ? 1 : 2;
+  let corridor: number = CORE_BOUNDS.corridorCompact;
+  let stairBay = { alongMm: 3200 + 230, acrossMm: 5600 + 230 };
+  const computeCoreAndDepth = () => {
+    const cs = requiredCoreBandLength({ compact: true, stairCount, liftCount, stairBay }) + 2 * corridor;
+    const d = Math.min(10_000, Math.floor((Math.min(env.w, env.h) - cs) / 20) * 10);
+    return { coreSide: cs, depth: d };
+  };
+  let { coreSide, depth } = computeCoreAndDepth();
+  if (depth < FLAT_BOUNDS.minSpanMm) {
+    corridor = 1500;
+    ({ coreSide, depth } = computeCoreAndDepth());
   }
-
-  const westCount = flatsPerFloor <= 3 ? 1 : Math.floor(flatsPerFloor / 2);
-  const eastCount = flatsPerFloor - westCount;
-  const maxRecessW = env.h - westCount * FLAT_BOUNDS.minRunMm;
-  const maxRecessE = env.h - eastCount * FLAT_BOUNDS.minRunMm;
-  const recessH = snap10(Math.min(Math.max(3000, env.h * 0.18), 4800, maxRecessW, maxRecessE));
-  if (recessH < 2400) {
-    return [{ variantId, label, rationale: '', reasons: ['envelope height too tight for pinwheel diagonal setbacks'] }];
+  if (depth < FLAT_BOUNDS.minSpanMm && liftCount === 2) {
+    liftCount = 1;
+    ({ coreSide, depth } = computeCoreAndDepth());
   }
+  if (depth < FLAT_BOUNDS.minSpanMm) {
+    stairBay = { alongMm: 2800 + 230, acrossMm: 4800 + 230 };
+    ({ coreSide, depth } = computeCoreAndDepth());
+  }
+  if (depth < FLAT_BOUNDS.minSpanMm) return reject('The envelope cannot fit four usable wings around the square stair and lift core.');
+  const side = 2 * depth + coreSide;
+  const x = env.x + (env.w - side) / 2;
+  const y = env.y + (env.h - side) / 2;
+  const ductDepth = 4000;
+  const ductWidth = 1600;
+  const coreEnd = depth + coreSide;
+  const rotate = (box: Box2D): Box2D => ({ x: side - box.y - box.h, y: box.x, w: box.h, h: box.w });
+  const world = (box: Box2D): Box2D => ({ ...box, x: x + box.x, y: y + box.y });
+  const four = (box: Box2D): Box2D[] => {
+    const quarter = rotate(box);
+    const half = rotate(quarter);
+    return [box, quarter, half, rotate(half)].map(world);
+  };
 
-  const [left, core, right] = splitX(env, [leftW, coreW, 0]) as [Box2D, Box2D, Box2D];
-  const band = dissectCoreBand(core, {
-    stairCount,
-    compact,
-    liftsAtLowSide: false,
-    preferOts,
-    noOts,
-    liftCountOverride,
-    corridorSides,
+  const flatBoxes = four({ x: depth - ductDepth, y: 0, w: coreSide + ductDepth - ductWidth, h: depth });
+  const ducts = four({ x: coreEnd - ductWidth, y: depth - ductDepth, w: ductWidth, h: ductDepth });
+  const recesses = [
+    ...four({ x: 0, y: 0, w: depth - ductDepth, h: depth }),
+    ...four({ x: coreEnd - ductWidth, y: 0, w: ductWidth, h: depth - ductDepth }),
+    { x: env.x, y: env.y, w: env.w, h: y - env.y },
+    { x: env.x, y: y + side, w: env.w, h: env.y + env.h - y - side },
+    { x: env.x, y, w: x - env.x, h: side },
+    { x: x + side, y, w: env.x + env.w - x - side, h: side },
+  ].filter(box => box.w > 0.001 && box.h > 0.001);
+
+  const core = world({ x: depth, y: depth, w: coreSide, h: coreSide });
+  const [north, middle, south] = splitY(core, [corridor, coreSide - 2 * corridor, 0]);
+  const [stack, east] = splitX(middle!, [coreSide - corridor, 0]);
+  const band = dissectCoreBand(stack!, {
+    compact: true, stairCount, stairBay, liftCountOverride: liftCount, corridorSides: 'LOW',
+    liftsAtLowSide: false, preferOts: false, noOts: true,
   });
-  if (band.reasons.length) {
-    return [{ variantId, label, rationale: '', reasons: band.reasons }];
-  }
-
-  const [nwRecess, leftBuilt] = splitY(left, [recessH, 0]) as [Box2D, Box2D];
-  const [rightBuilt, seRecess] = splitY(right, [env.h - recessH, 0]) as [Box2D, Box2D];
-  const westRow = sliceFlatRow(leftBuilt, westCount, Math.ceil(leftBuilt.h / westCount), true, leftBuilt.w, false);
-  const eastRow = sliceFlatRow(rightBuilt, eastCount, Math.ceil(rightBuilt.h / eastCount), true, rightBuilt.w, true);
-  const flatBoxes: Box2D[] = [];
-  const edges: AccessEdge[] = [];
-  for (const b of westRow.flats) { flatBoxes.push(b); edges.push('EAST'); }
-  for (const b of eastRow.flats) { flatBoxes.push(b); edges.push('WEST'); }
+  if (band.reasons.length) return reject(band.reasons.join('. '));
 
   return [{
-    variantId,
-    label,
-    rationale: `Diagonally offset pinwheel wings with recessed north-west and south-east exterior terraces (${Math.round(leftW)} x ${Math.round(recessH)} mm) optimizing oblique daylight and solar exposure.`,
+    variantId, label,
+    rationale: 'Four rotated wings share a square circulation core and four inter-flat open-to-sky ducts.',
     partition: {
-      familyId: 'CENTRAL_CORE_SPINE',
-      variantId,
-      massingShape: 'PINWHEEL_CLUSTER',
-      envelope: env,
-      builtOutline: env,
-      flatBoxes,
-      accessEdgeForFlat: edges,
-      corridorBoxes: band.corridorBoxes,
-      lobbyBoxes: band.lobbyBoxes,
-      liftBoxes: band.liftBoxes,
-      stairBoxes: band.stairBoxes,
-      shaftBoxes: [...band.shaftBoxes, nwRecess, seRecess],
-      shaftRoles: [...band.shaftRoles, 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
-      shaftTags: [...band.shaftTags, ['recess:perimeter'], ['recess:perimeter']],
-      coreBoxes: [core],
+      familyId: 'CENTRAL_CORE_SPINE', variantId, massingShape: 'PINWHEEL_CLUSTER', envelope: env,
+      builtOutline: { x, y, w: side, h: side }, flatBoxes,
+      accessEdgeForFlat: ['SOUTH', 'WEST', 'NORTH', 'EAST'],
+      coreBoxes: [core], stairBoxes: band.stairBoxes, liftBoxes: band.liftBoxes, lobbyBoxes: band.lobbyBoxes,
+      corridorBoxes: [north!, south!, east!, ...band.corridorBoxes],
+      shaftBoxes: [...band.shaftBoxes, ...ducts, ...recesses],
+      shaftRoles: [...band.shaftRoles, ...[...ducts, ...recesses].map(() => 'OPEN_TO_SKY_VOID' as const)],
+      shaftTags: [...band.shaftTags, ...ducts.map(() => ['shaft:ots', 'shaft:interflat']), ...recesses.map(() => ['recess:perimeter'])],
     },
   }];
 };
@@ -2879,9 +3033,10 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       // its BHK weight (2BHK : 3BHK : 4BHK = 1.0 : 1.35 : 1.70). The rebalanced
       // dissection is only kept when it passes every partition defect check.
       const unweighted = withTightBuiltOutline(partition);
-      const weightedPartition = rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes);
+      const weightedPartition = partition.massingShape === 'PINWHEEL_CLUSTER' ? partition : rebalanceFlatRowsByBhkWeight(partition, ctx.program.mandatory.unitTypes);
       const weighted = weightedPartition !== partition ? withTightBuiltOutline(weightedPartition) : undefined;
-      const tightened = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
+      const balanced = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
+      const tightened = withTightBuiltOutline(reserveInterflatDucts(balanced, ctx.program));
       const defects = partitionDefects(tightened, ctx.program);
       if (defects.length) {
         rejections.push({ familyId: family.id, variantId: attempt.variantId, reasons: defects });

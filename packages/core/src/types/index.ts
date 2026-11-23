@@ -5,6 +5,8 @@
 // Geometric primitives
 export type {
   Point,
+  Point2D,
+  WallArcSpec,
   LineSegment,
   Polygon,
   BoundingBox,
@@ -78,6 +80,7 @@ export type {
   Stair,
   Column,
   Floor,
+  SourceCadUnderlay,
   BuildingMetadata,
   Building,
   Project,

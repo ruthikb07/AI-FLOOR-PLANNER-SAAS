@@ -1,0 +1,184 @@
+{
+  "startup": {
+    "texImage2D": {
+      "count": 10,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "texStorage2D": {
+      "count": 6,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "compileShader": {
+      "count": 36,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "linkProgram": {
+      "count": 18,
+      "sumMs": 0.20000000298023224,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "getProgramParameter:35714": {
+      "count": 18,
+      "sumMs": 3.299999989569187,
+      "worstMs": 0.5,
+      "longCalls": 0
+    },
+    "getProgramParameter:35718": {
+      "count": 18,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "getActiveUniform": {
+      "count": 488,
+      "sumMs": 0.7000000029802322,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "getUniformLocation": {
+      "count": 488,
+      "sumMs": 0.9000000059604645,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "getProgramParameter:35721": {
+      "count": 18,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "getActiveAttrib": {
+      "count": 57,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "drawElementsInstanced": {
+      "count": 707,
+      "sumMs": 1,
+      "worstMs": 0.20000000298023224,
+      "longCalls": 0
+    },
+    "drawElements": {
+      "count": 5,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "texSubImage2D": {
+      "count": 5,
+      "sumMs": 33.00000000745058,
+      "worstMs": 14.200000002980232,
+      "longCalls": 0
+    },
+    "generateMipmap": {
+      "count": 3,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "drawArrays": {
+      "count": 21,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    }
+  },
+  "first-evening": {
+    "drawElements": {
+      "count": 24,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "compileShader": {
+      "count": 12,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "linkProgram": {
+      "count": 6,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "getProgramParameter:35714": {
+      "count": 6,
+      "sumMs": 0.9999999925494194,
+      "worstMs": 0.29999999701976776,
+      "longCalls": 0
+    },
+    "getProgramParameter:35718": {
+      "count": 6,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "getActiveUniform": {
+      "count": 401,
+      "sumMs": 0.29999999701976776,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "getUniformLocation": {
+      "count": 401,
+      "sumMs": 0.6000000089406967,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "getProgramParameter:35721": {
+      "count": 6,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "getActiveAttrib": {
+      "count": 21,
+      "sumMs": 0,
+      "worstMs": 0,
+      "longCalls": 0
+    },
+    "drawElementsInstanced": {
+      "count": 2952,
+      "sumMs": 1.5,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    }
+  },
+  "return-to-daylight": {
+    "drawElements": {
+      "count": 24,
+      "sumMs": 0.5000000074505806,
+      "worstMs": 0.30000000447034836,
+      "longCalls": 0
+    },
+    "drawElementsInstanced": {
+      "count": 2952,
+      "sumMs": 2.6000000089406967,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    }
+  },
+  "repeat-evening": {
+    "drawElements": {
+      "count": 24,
+      "sumMs": 0.20000000298023224,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    },
+    "drawElementsInstanced": {
+      "count": 2952,
+      "sumMs": 2,
+      "worstMs": 0.10000000149011612,
+      "longCalls": 0
+    }
+  }
+}

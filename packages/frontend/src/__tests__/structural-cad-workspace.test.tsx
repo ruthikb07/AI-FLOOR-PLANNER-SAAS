@@ -74,40 +74,41 @@ describe('StructuralCADWorkspace Component', () => {
     });
   };
 
-  it('renders structural workspace header with engineering badges and discipline title', async () => {
+  it('renders the active project and preliminary framing status', async () => {
     await mount();
-    expect(host.textContent).toContain('05 • STRUCTURAL CAD & FRAMING');
-    expect(host.textContent).toContain('IS 456 / IS 1893:2016');
-    expect(host.textContent).toContain('ETABS v23.3.2 OAPI');
+    expect(host.querySelector('h1')?.textContent).toBe('Structural CAD & RCC Framing');
+    expect(host.textContent).toContain('IS 456:2000 & IS 1893:2016');
     expect(host.textContent).toContain('RH Skyview Heights');
   });
 
   it('renders view mode switcher buttons and switches active view', async () => {
     await mount();
-    const fndBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Foundation & Columns'));
+    const fndBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Columns');
     expect(fndBtn).toBeDefined();
 
     const beamBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Beam Framing'));
     expect(beamBtn).toBeDefined();
 
-    const slabBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Slab Detailing'));
+    const slabBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Slab Outline'));
     expect(slabBtn).toBeDefined();
 
-    const etabsBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('ETABS Drift & Stress'));
-    expect(etabsBtn).toBeDefined();
+    const analysisBtn = Array.from(host.querySelectorAll('button')).find(b => b.textContent?.includes('Structural Analysis'));
+    expect(analysisBtn).toBeDefined();
 
     // Click Beam Framing
     await act(async () => beamBtn?.click());
     expect(host.querySelector('#beams-layer')).not.toBeNull();
+
+    // Click Structural Analysis tab
+    await act(async () => analysisBtn?.click());
+    expect(host.querySelector('[data-testid="structural-analysis-panel"]')).not.toBeNull();
   });
 
-  it('displays structural analysis ledger with IS 1893 drift check and SE-1 BLOCKED status', async () => {
+  it('displays canonical framing with built-in IS 456/1893 engineering disclaimer', async () => {
     await mount();
-    expect(host.textContent).toContain('IS 1893:2016 Drift Check');
-    expect(host.textContent).toContain('Column Schedule (IS 456)');
-    expect(host.textContent).toContain('Beam Framing (IS 13920)');
-    expect(host.textContent).toContain('CONSTRUCTION STATUS: BLOCKED');
-    expect(host.textContent).toContain('Registered Structural Engineer (SE-1)');
+    expect(host.textContent).toContain('IS 456:2000 & IS 1893:2016');
+    expect(host.textContent).not.toContain('verified ETABS results are unavailable');
+    expect(host.querySelectorAll('#columns-layer rect')).toHaveLength(building.floors[0]!.columns.length);
   });
 
   it('triggers verified export on clicking download drawings and analysis report buttons', async () => {

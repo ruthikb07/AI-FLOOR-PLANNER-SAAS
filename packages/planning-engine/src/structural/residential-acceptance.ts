@@ -25,7 +25,7 @@ export function residentialAcceptanceErrors(candidate: Building) {
         .issues.filter((i) => i.severity === "error")
         .map((i) => infeasible(i.message, [floor.id], floor.id)),
     );
-  const audit = new GeometryValidator({ autoCorrect: false }).audit(
+  const audit = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: 800 }).audit(
     candidate,
     false,
   ).report;

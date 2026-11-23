@@ -195,11 +195,13 @@ describe("Phase 3 measured dashboard and wizard", () => {
     expect(fetchVerifiedBytes).not.toHaveBeenCalled();
     expect(host.querySelector("iframe")).toBeNull();
   });
-  it("ETABS presents verified structural analysis with SE-1 review gate", async () => {
+  it("ETABS tab renders built-in IS 456/1893 preliminary analysis while withholding native ETABS verification claims", async () => {
     await click("ETABS Structural Analysis");
-    expect(host.textContent).toContain("CSI ETABS v23.3.2 OAPI");
-    expect(host.textContent).toContain("CONSTRUCTION: BLOCKED");
-    expect(host.textContent).toContain("STOREY DISPLACEMENT & INTER-STOREY DRIFT CHECK");
+    expect(host.textContent).toContain("Built-In IS 456:2000 & IS 1893:2016 Structural Analysis");
+    expect(host.textContent).toContain("PROFESSIONAL REVIEW REQUIRED");
+    expect(host.textContent).not.toContain("FEM STATUS: PASS");
+    expect(host.textContent).not.toContain("ALL STOREYS COMPLIANT");
+    expect(Array.from(host.querySelectorAll("button")).find(button => button.textContent === "Export to ETABS (.edb)")?.disabled).toBe(true);
     expect(host.textContent).not.toContain("Structural Integrity Validated");
   });
   it("passes explicit wizard jurisdiction and road values through the millimetre request boundary", async () => {

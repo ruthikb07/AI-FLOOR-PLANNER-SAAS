@@ -15,6 +15,30 @@ export const Stage2FloorsAndParking: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      <ArgonCard className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="flex flex-col gap-2 text-sm text-argon-text">
+          Clear habitable room height below slab or beam (mm, optional)
+          <input className="rounded-lg border border-argon-border bg-argon-surface px-3 py-2"
+            type="number" min={1} step={1} value={wizard.clearRoomHeightMm ?? ''}
+            onChange={event => {
+              const height = event.currentTarget.valueAsNumber;
+              updateWizard({ clearRoomHeightMm: height > 0 ? height : undefined });
+            }}
+          />
+        </label>
+        {wizard.hasStiltParking && (
+          <label className="flex flex-col gap-2 text-sm text-argon-text">
+            Clear stilt height below beam (mm, optional)
+            <input className="rounded-lg border border-argon-border bg-argon-surface px-3 py-2"
+              type="number" min={1} step={1} value={wizard.stiltClearHeightBelowBeamMm ?? ''}
+              onChange={event => {
+                const height = event.currentTarget.valueAsNumber;
+                updateWizard({ stiltClearHeightBelowBeamMm: height > 0 ? height : undefined });
+              }}
+            />
+          </label>
+        )}
+      </ArgonCard>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Residential Floors Count */}
         <ArgonCard className="space-y-4">
@@ -171,6 +195,80 @@ export const Stage2FloorsAndParking: React.FC = () => {
         </ArgonCard>
       </div>
 
+      {/* Linked Multi-Storey Units (Duplex & Triplex Program) */}
+      <ArgonCard className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-argon-border/70">
+          <div>
+            <h3 className="text-sm font-bold text-argon-text">
+              Linked Multi-Storey Residences (Duplex &amp; Triplex)
+            </h3>
+            <p className="text-xs text-argon-muted mt-0.5">
+              Declare duplex (2-storey) or triplex (3-storey) stacks to highlight vertically aligned floors and canonical internal stair linkages in 3D review.
+            </p>
+          </div>
+          <ArgonBadge variant="leather" size="sm">
+            Multi-Level Linking
+          </ArgonBadge>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="text-xs">
+              <strong className="block text-argon-text">Duplex Stacks (2-Storey)</strong>
+              <span className="text-argon-muted">Links upper floors N &amp; N+1 cleanly</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Decrease duplex count"
+                onClick={() => updateWizard({ duplexCount: Math.max(0, (wizard.duplexCount ?? 0) - 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                -
+              </button>
+              <span className="w-6 text-center font-mono text-sm font-bold" data-testid="duplex-count-value">
+                {wizard.duplexCount ?? 0}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase duplex count"
+                onClick={() => updateWizard({ duplexCount: Math.min(8, (wizard.duplexCount ?? 0) + 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="text-xs">
+              <strong className="block text-argon-text">Triplex Stacks (3-Storey)</strong>
+              <span className="text-argon-muted">Links 3 consecutive upper floors via vertical core</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Decrease triplex count"
+                onClick={() => updateWizard({ triplexCount: Math.max(0, (wizard.triplexCount ?? 0) - 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                -
+              </button>
+              <span className="w-6 text-center font-mono text-sm font-bold" data-testid="triplex-count-value">
+                {wizard.triplexCount ?? 0}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase triplex count"
+                onClick={() => updateWizard({ triplexCount: Math.min(4, (wizard.triplexCount ?? 0) + 1) })}
+                className="w-7 h-7 rounded-lg border border-argon-border bg-argon-card font-bold text-xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </ArgonCard>
+
       {/* Facade Projections: Window Chajjas & Multi-Floor Staggered Balconies */}
       <ArgonCard className="space-y-3">
         <div className="flex items-center justify-between pb-2.5 border-b border-argon-border/70">
@@ -196,20 +294,72 @@ export const Stage2FloorsAndParking: React.FC = () => {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer hover:bg-argon-surface/70">
+          <label className="flex items-start gap-3 p-3 rounded-xl border border-argon-border bg-argon-surface/40 cursor-pointer">
             <input
               type="checkbox"
-              checked={wizard.staggeredBalconies ?? false}
-              onChange={(e) => updateWizard({ staggeredBalconies: e.target.checked })}
-              className="mt-1 accent-amber-500"
+              data-testid="brief-include-study-toggle"
+              checked={wizard.includeStudyRoom ?? false}
+              onChange={(e) => updateWizard({ includeStudyRoom: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-amber-500"
             />
             <span className="text-xs">
-              <strong className="block text-argon-text">Staggered Balconies (Odd vs Even Floors)</strong>
+              <strong className="block text-argon-text">Include Study / Home Office</strong>
               <span className="text-argon-muted">
-                Alternate double-height balcony bays between Odd and Even upper floors while locking columns &amp; wet shafts.
+                Optional dedicated study alcove per flat (off by default — keeps extra area in Living, Bedrooms &amp; Galleries).
               </span>
             </span>
           </label>
+          <div className="flex flex-col gap-2 p-3 rounded-xl border border-argon-border bg-argon-surface/40">
+            <div className="flex items-center justify-between gap-2">
+              <strong className="text-xs text-argon-text">Gallery / Balcony Rhythm</strong>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-argon-muted">
+                Multi-Floor
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Gallery coordination rhythm">
+              <button
+                type="button"
+                data-testid="brief-gallery-stagger"
+                aria-pressed={(wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'}
+                onClick={() =>
+                  updateWizard({
+                    galleryCoordinationMode: 'DOUBLE_HEIGHT_STAGGER',
+                    staggeredBalconies: true,
+                  })
+                }
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  (wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'
+                    ? 'bg-amber-500/20 border-amber-500 text-argon-text shadow-sm'
+                    : 'border-argon-border bg-argon-card/60 text-argon-muted hover:text-argon-text'
+                }`}
+              >
+                Double-Height Stagger
+              </button>
+              <button
+                type="button"
+                data-testid="brief-gallery-stacked"
+                aria-pressed={wizard.galleryCoordinationMode === 'STACKED_RIBBON'}
+                onClick={() =>
+                  updateWizard({
+                    galleryCoordinationMode: 'STACKED_RIBBON',
+                    staggeredBalconies: false,
+                  })
+                }
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                  wizard.galleryCoordinationMode === 'STACKED_RIBBON'
+                    ? 'bg-amber-500/20 border-amber-500 text-argon-text shadow-sm'
+                    : 'border-argon-border bg-argon-card/60 text-argon-muted hover:text-argon-text'
+                }`}
+              >
+                Stacked Ribbon
+              </button>
+            </div>
+            <span className="text-[11px] text-argon-muted">
+              {(wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER'
+                ? 'Alternates primary sky-deck bays across odd/even floors for 6,300 mm double-height open volume.'
+                : 'Aligns galleries vertically across every storey in continuous recessed ribbon bands.'}
+            </span>
+          </div>
         </div>
       </ArgonCard>
 

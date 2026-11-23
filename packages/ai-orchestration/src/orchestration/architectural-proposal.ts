@@ -3,6 +3,7 @@ import {
   type AIProvider,
   type BuildingMassingShape,
   type MultiSheetApartmentConfig,
+  type PlanCategory,
   AITaskType,
   mixedUnitSpecs,
   parseMixedUnitProgram,
@@ -10,6 +11,18 @@ import {
 import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES } from '../providers/gemini';
 
 export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
+  'CURVED_CRESCENT',
+  'WAVE_SERPENTINE',
+  'ROTUNDA_COURTYARD',
+  'ELLIPTICAL_TOWER',
+  'LOTUS_PETAL_RADIAL',
+  'BOWFRONT_CHAMFERED',
+  'TRIANGULAR_ATRIUM',
+  'Y_SHAPE_TRISKELE',
+  'BUTTERFLY_V_WING',
+  'HEXAGONAL_HONEYCOMB',
+  'TRAPEZOIDAL_TAPERED',
+  'DIAGONAL_ZIGZAG',
   'COMPACT_DOUBLE_LOADED',
   'H_SHAPE_WING',
   'U_SHAPE_COURTYARD',
@@ -17,6 +30,17 @@ export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
   'CRUCIFORM_PLUS',
   'PINWHEEL_CLUSTER',
   'STEPPED_OFFSET_BLOCK',
+  'T_SHAPE_SPINE',
+  'O_SHAPE_PERIMETER_COURT',
+];
+
+export const PLAN_CATEGORIES: readonly PlanCategory[] = [
+  'HIGH_RISE_APARTMENT',
+  'LUXURY_VILLA_BUNGALOW',
+  'DUPLEX_TRIPLEX_SKY_VILLA',
+  'ROW_HOUSE_TOWNHOUSE',
+  'COURTYARD_CLUSTER_HOUSING',
+  'IRREGULAR_PLOT_CUSTOM',
 ];
 
 function normalizeBriefSpelling(raw?: string): string {
@@ -71,6 +95,7 @@ export interface ArchitecturalProposal {
   readonly preferredTopologyFamily: ProposalTopologyFamilyId;
   readonly preferredArchetype: RoomSlicingArchetypeId;
   readonly buildingMassingShape: BuildingMassingShape;
+  readonly planCategory?: PlanCategory;
   readonly maxOtsRatio?: number;
   readonly corePlacement: 'CENTRAL' | 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' | 'SPLIT';
   readonly ventilationStrategy: 'PERIMETER_ONLY' | 'SIDE_SHAFTS' | 'CENTRAL_COURTYARD';
@@ -238,26 +263,52 @@ function defaultProposalForConfig(
   const ventilatedOtsShafts = !explicitlyNoOts && /\bventilated\s+(?:central\s+)?ots\s+shafts?\b|\bots\s+shafts?\b|\bcentral\s+ots\b/.test(prompt);
   const requestsDifferentShape = /\bdifferent\s+(?:building\s+)?(?:shape|shapes|massing|footprint)|\bunique\s+shape|\bnon[- ]?rectang|\bvaried\s+massing\b/.test(prompt);
   const explicitShape: BuildingMassingShape | undefined =
-    /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
-    : /\bu[- ]?shape\b|\bu[- ]?courtyard\b/.test(prompt) ? 'U_SHAPE_COURTYARD'
-    : /\bl[- ]?shape\b|\bl[- ]?wing\b/.test(prompt) ? 'L_SHAPE_CORNER'
-    : /\bcruciform\b|\bplus[- ]?shape\b/.test(prompt) ? 'CRUCIFORM_PLUS'
-    : /\bpinwheel\b/.test(prompt) ? 'PINWHEEL_CLUSTER'
-    : /\bstepped\b|\boffset\s+block\b/.test(prompt) ? 'STEPPED_OFFSET_BLOCK'
-    : undefined;
+    /\bcurved\s+crescent|\bcrescent|\bc[- ]?arc\b/.test(prompt) ? 'CURVED_CRESCENT'
+      : /\bserpentine|\bs[- ]?curve|\bundulating\b/.test(prompt) ? 'WAVE_SERPENTINE'
+        : /\brotunda|\bcircular\s+courtyard\b/.test(prompt) ? 'ROTUNDA_COURTYARD'
+          : /\belliptical|\boval\s+tower\b/.test(prompt) ? 'ELLIPTICAL_TOWER'
+            : /\blotus\s+petal|\bradial\s+petal\b/.test(prompt) ? 'LOTUS_PETAL_RADIAL'
+              : /\bbow[- ]?front|\bchamfered\b/.test(prompt) ? 'BOWFRONT_CHAMFERED'
+                : /\btriangular\s+atrium|\btriangular\b/.test(prompt) ? 'TRIANGULAR_ATRIUM'
+                  : /\by[- ]?shape|\btriskele\b/.test(prompt) ? 'Y_SHAPE_TRISKELE'
+                    : /\bbutterfly|\bv[- ]?wing\b/.test(prompt) ? 'BUTTERFLY_V_WING'
+                      : /\bhexagonal|\bhoneycomb\b/.test(prompt) ? 'HEXAGONAL_HONEYCOMB'
+                        : /\btrapezoid(?:al)?|\btapered\b/.test(prompt) ? 'TRAPEZOIDAL_TAPERED'
+                          : /\bzigzag|\bsawtooth|\bchevron\b/.test(prompt) ? 'DIAGONAL_ZIGZAG'
+                            : /\bt[- ]?shape|\bt[- ]?wing\b/.test(prompt) ? 'T_SHAPE_SPINE'
+                              : /\bo[- ]?shape|\bperimeter\s+court\b/.test(prompt) ? 'O_SHAPE_PERIMETER_COURT'
+                                : /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
+                                  : /\bu[- ]?shape\b|\bu[- ]?courtyard\b/.test(prompt) ? 'U_SHAPE_COURTYARD'
+                                    : /\bl[- ]?shape\b|\bl[- ]?wing\b/.test(prompt) ? 'L_SHAPE_CORNER'
+                                      : /\bcruciform\b|\bplus[- ]?shape\b/.test(prompt) ? 'CRUCIFORM_PLUS'
+                                        : /\bpinwheel\b/.test(prompt) ? 'PINWHEEL_CLUSTER'
+                                          : /\bstepped\b|\boffset\s+block\b/.test(prompt) ? 'STEPPED_OFFSET_BLOCK'
+                                            : undefined;
+  const inferredCategory: PlanCategory | undefined =
+    config.planCategory
+    ?? (/\bluxury\s+villa|\bbungalow|\bindependent\s+villa\b/.test(prompt) ? 'LUXURY_VILLA_BUNGALOW'
+      : /\bduplex|\btriplex|\bsky\s+villa\b/.test(prompt) ? 'DUPLEX_TRIPLEX_SKY_VILLA'
+        : /\brow[- ]?house|\btown[- ]?house\b/.test(prompt) ? 'ROW_HOUSE_TOWNHOUSE'
+          : /\bcourtyard\s+cluster|\bcluster\s+housing\b/.test(prompt) ? 'COURTYARD_CLUSTER_HOUSING'
+            : /\birregular\s+plot|\btrapezoid(?:al)?\s+plot\b/.test(prompt) ? 'IRREGULAR_PLOT_CUSTOM'
+              : /\bhigh[- ]?rise|\bapartment\s+tower\b/.test(prompt) ? 'HIGH_RISE_APARTMENT'
+                : undefined);
   const centerBuilding = Boolean(
     config.centerBuildingInEnvelope || /\bcenter(?:ed)?\s+(?:the\s+)?building\b|\bcenter\b/.test(prompt),
   );
   const archetypeIndex = Math.max(0, seed - 1) % ROOM_SLICING_ARCHETYPES.length;
   const preferredArchetype = (config.preferredArchetype as RoomSlicingArchetypeId | undefined)
     ?? ROOM_SLICING_ARCHETYPES[archetypeIndex]!;
+  const rejectedShapeSet = new Set<string>(config.rejectedShapeIds ?? []);
+  const unrejectedPool = BUILDING_MASSING_SHAPES.filter(s => !rejectedShapeSet.has(s));
+  const shapePool = unrejectedPool.length > 0 ? unrejectedPool : BUILDING_MASSING_SHAPES;
   const buildingMassingShape: BuildingMassingShape =
     config.buildingMassingShape
     ?? explicitShape
-    ?? (requestsDifferentShape
-      ? BUILDING_MASSING_SHAPES[seed % BUILDING_MASSING_SHAPES.length]!
+    ?? ((requestsDifferentShape || config.autoExploreNovelShape || rejectedShapeSet.size > 0)
+      ? shapePool[(seed - 1) % shapePool.length]!
       : seed > 1
-        ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
+        ? shapePool[(seed - 1) % shapePool.length]!
         : 'COMPACT_DOUBLE_LOADED');
   const preferredTopologyFamily: ProposalTopologyFamilyId = explicitlyOts && !ventilatedOtsShafts && !properSpaceUtilization
     ? 'CENTRAL_COURTYARD'
@@ -269,6 +320,7 @@ function defaultProposalForConfig(
     preferredTopologyFamily,
     preferredArchetype,
     buildingMassingShape,
+    ...(inferredCategory ? { planCategory: inferredCategory } : {}),
     maxOtsRatio: explicitlyNoOts ? 0 : (properSpaceUtilization || ventilatedOtsShafts) ? 0.12 : undefined,
     corePlacement: 'CENTRAL',
     ventilationStrategy: explicitlyOts ? 'CENTRAL_COURTYARD' : 'PERIMETER_ONLY',
@@ -312,15 +364,29 @@ function sanitizeProposalWithPromptGuardrails(
     ? (raw.preferredTopologyFamily as ProposalTopologyFamilyId)
     : base.preferredTopologyFamily;
 
-  const archetype = typeof raw.preferredArchetype === 'string'
-    && ROOM_SLICING_ARCHETYPES.includes(raw.preferredArchetype as RoomSlicingArchetypeId)
-    ? (raw.preferredArchetype as RoomSlicingArchetypeId)
-    : base.preferredArchetype;
+  const archetype =
+    config.preferredArchetype && ROOM_SLICING_ARCHETYPES.includes(config.preferredArchetype as RoomSlicingArchetypeId)
+      ? (config.preferredArchetype as RoomSlicingArchetypeId)
+      : typeof raw.preferredArchetype === 'string'
+        && ROOM_SLICING_ARCHETYPES.includes(raw.preferredArchetype as RoomSlicingArchetypeId)
+        ? (raw.preferredArchetype as RoomSlicingArchetypeId)
+        : base.preferredArchetype;
 
-  const buildingMassingShape = typeof raw.buildingMassingShape === 'string'
-    && BUILDING_MASSING_SHAPES.includes(raw.buildingMassingShape as BuildingMassingShape)
-    ? (raw.buildingMassingShape as BuildingMassingShape)
-    : base.buildingMassingShape;
+  const buildingMassingShape =
+    config.buildingMassingShape
+      ? config.buildingMassingShape
+      : typeof raw.buildingMassingShape === 'string'
+        && (BUILDING_MASSING_SHAPES.includes(raw.buildingMassingShape as BuildingMassingShape) || raw.buildingMassingShape.startsWith('PARAM_'))
+        ? (raw.buildingMassingShape as BuildingMassingShape)
+        : base.buildingMassingShape;
+
+  const planCategory =
+    config.planCategory
+      ? config.planCategory
+      : typeof raw.planCategory === 'string'
+        && PLAN_CATEGORIES.includes(raw.planCategory as PlanCategory)
+        ? (raw.planCategory as PlanCategory)
+        : base.planCategory;
 
   const maxOtsRatio = typeof raw.maxOtsRatio === 'number' && Number.isFinite(raw.maxOtsRatio) && raw.maxOtsRatio >= 0 && raw.maxOtsRatio <= 0.35
     ? raw.maxOtsRatio
@@ -356,12 +422,12 @@ function sanitizeProposalWithPromptGuardrails(
     const rg = raw.referenceSpatialGraph as Record<string, unknown>;
     const centroids = Array.isArray(rg.relativeRoomCentroids)
       ? rg.relativeRoomCentroids
-          .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
-          .map(item => ({
-            roomType: String(item.roomType ?? 'room'),
-            nx: Math.max(0, Math.min(1, Number(item.nx ?? 0.5))),
-            ny: Math.max(0, Math.min(1, Number(item.ny ?? 0.5))),
-          }))
+        .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+        .map(item => ({
+          roomType: String(item.roomType ?? 'room'),
+          nx: Math.max(0, Math.min(1, Number(item.nx ?? 0.5))),
+          ny: Math.max(0, Math.min(1, Number(item.ny ?? 0.5))),
+        }))
       : [];
     const balconyEdges = Array.isArray(rg.balconyEdges)
       ? rg.balconyEdges.filter((e): e is 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' => ['NORTH', 'SOUTH', 'EAST', 'WEST'].includes(String(e)))
@@ -385,6 +451,7 @@ function sanitizeProposalWithPromptGuardrails(
     preferredTopologyFamily: noOts && family === 'CENTRAL_COURTYARD' ? 'CENTRAL_CORE_SPINE' : family,
     preferredArchetype: archetype,
     buildingMassingShape,
+    ...(planCategory ? { planCategory } : {}),
     ...(maxOtsRatio !== undefined ? { maxOtsRatio } : {}),
     corePlacement,
     ventilationStrategy,
@@ -445,13 +512,27 @@ export async function generateArchitecturalProposal(
       : rg?.wetCoreClustering === 'SHARED_SHAFT' && !input.config.preferredArchetype && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
         ? 'MIRRORED_WET_CORE_STACK'
         : proposal.preferredArchetype;
+    const promptExplicitlyRequestsNovelShape =
+      /\b(?:cruciform|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|pinwheel|stepped|courtyard|crescent|curved|arc|rotunda|circular|oval|triskele|triang|hex|octa|pentagon|trapezoid|chevron|z[\s-]?shape|t[\s-]?shape)\b/i.test(
+        input.config.aiPrompt ?? '',
+      );
+    const allowNovelAutoShape = Boolean(
+      input.config.buildingMassingShape ||
+      input.config.autoExploreNovelShape ||
+      seed > 1 ||
+      rejected.length > 0 ||
+      imagePart ||
+      promptExplicitlyRequestsNovelShape,
+    );
     const effectiveMassingShape: BuildingMassingShape =
       input.config.buildingMassingShape
-      ?? (seed > 1 && (rejected.length > 0 || proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED')
-        ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
-        : rg?.detectedCorridorAxis === 'RING' && !proposal.noOts && proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
-          ? 'U_SHAPE_COURTYARD'
-          : proposal.buildingMassingShape);
+      ?? (!allowNovelAutoShape
+        ? 'COMPACT_DOUBLE_LOADED'
+        : seed > 1 && (rejected.length > 0 || proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED')
+          ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
+          : rg?.detectedCorridorAxis === 'RING' && !proposal.noOts && proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
+            ? 'U_SHAPE_COURTYARD'
+            : proposal.buildingMassingShape);
 
     const finalProposal: ArchitecturalProposal = {
       ...proposal,
@@ -462,7 +543,11 @@ export async function generateArchitecturalProposal(
     const basePrompt = (input.config.aiPrompt ?? '').trim();
     const synthesizedClauses: string[] = [];
     if (telemetry.geminiInvoked || rg) {
-      if (!/\b(?:ots|open[\s-]to[\s-]sky|courtyard|perimeter[\s-]only)\b/i.test(basePrompt)) {
+      if (
+        effectiveMassingShape !== 'PINWHEEL_CLUSTER' &&
+        basePrompt.length > 0 &&
+        !/\b(?:ots|open[\s-]to[\s-]sky|courtyard|perimeter[\s-]only)\b/i.test(basePrompt)
+      ) {
         if (finalProposal.noOts) {
           synthesizedClauses.push('NO OTS.');
         } else if (finalProposal.ventilationStrategy === 'CENTRAL_COURTYARD') {
@@ -503,6 +588,7 @@ export async function generateArchitecturalProposal(
       : input.config.flatsPerFloor;
     const resolvedUnits = shouldOverrideMixedUnits ? mixedUnitSpecs(parsedMixed!) : input.config.units;
 
+    const promptMentionsArea = /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|sft|sq\.?\s*m|sqm|m2|m²)\b/i.test(basePrompt);
     const enrichedConfig: MultiSheetApartmentConfig = {
       ...input.config,
       flatsPerFloor: resolvedFlatsPerFloor,
@@ -510,13 +596,13 @@ export async function generateArchitecturalProposal(
       ...(effectiveAiPrompt ? { aiPrompt: effectiveAiPrompt } : {}),
       generationSeed: seed,
       rejectedTopologyHashes: rejected,
-      preferredArchetype: finalProposal.preferredArchetype,
-      buildingMassingShape: finalProposal.buildingMassingShape,
+      preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
+      buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
       centerBuildingInEnvelope: input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
-      ...(finalProposal.targetAreaSqFt !== undefined && input.config.targetAreaSqFt === undefined
+      ...(promptMentionsArea && finalProposal.targetAreaSqFt !== undefined && input.config.targetAreaSqFt === undefined
         ? { targetAreaSqFt: finalProposal.targetAreaSqFt }
         : {}),
-      ...(finalProposal.areaTargetScope !== undefined && input.config.areaTargetScope === undefined
+      ...(promptMentionsArea && finalProposal.areaTargetScope !== undefined && input.config.areaTargetScope === undefined
         ? { areaTargetScope: finalProposal.areaTargetScope }
         : {}),
       aiProposal: finalProposal as unknown as Record<string, unknown>,
@@ -555,7 +641,9 @@ export async function generateArchitecturalProposal(
     `Generation Seed: ${seed}. Rejected Prior Topology Hashes: ${rejected.length > 0 ? rejected.join(', ') : 'None (first generation)'}.`,
     input.config.targetAreaSqFt ? `Requested Target Area: ${input.config.targetAreaSqFt} sq. ft. (Scope: ${input.config.areaTargetScope ?? 'UNSPECIFIED'}).` : '',
     `User Architectural Brief: "${normalizeBriefSpelling(input.config.aiPrompt ?? 'Modern compliant residential apartment tower with daylight, natural ventilation, and Vastu balance.')}"`,
-    `Available buildingMassingShape options: ${BUILDING_MASSING_SHAPES.join(', ')}. Prefer non-rectangular articulated massing (H_SHAPE_WING, U_SHAPE_COURTYARD, L_SHAPE_CORNER, CRUCIFORM_PLUS, PINWHEEL_CLUSTER, STEPPED_OFFSET_BLOCK) when distinct or varied building geometry is requested, and keep maxOtsRatio <= 0.12 unless a large central courtyard is explicitly mandated.`,
+    input.config.buildingMassingShape
+      ? `Locked buildingMassingShape requested by user: ${input.config.buildingMassingShape} (preserve this exact massing shape).`
+      : `Available buildingMassingShape options: ${BUILDING_MASSING_SHAPES.join(', ')}. Prefer non-rectangular articulated massing (H_SHAPE_WING, U_SHAPE_COURTYARD, L_SHAPE_CORNER, CRUCIFORM_PLUS, PINWHEEL_CLUSTER, STEPPED_OFFSET_BLOCK) when distinct or varied building geometry is requested, and keep maxOtsRatio <= 0.12 unless a large central courtyard is explicitly mandated.`,
     imagePart
       ? 'A reference sketch or plan image is attached. Extract referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering) to guide spatial zoning.'
       : '',
