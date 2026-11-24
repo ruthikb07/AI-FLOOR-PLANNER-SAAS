@@ -54,11 +54,12 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
       : BUILDING_SHAPE_CATALOG.filter(s => s.family === shapeFamilyFilter);
 
     const strategies: Array<{
-      count: 2 | 3 | 4;
+      count: 1 | 2 | 3 | 4 | 5 | 6;
       title: string;
       description: string;
       tag: string;
     }> = [
+        { count: 1, title: 'Single Flat Layout', description: 'One flat per typical residential floor.', tag: '1 Unit/Floor' },
         {
           count: 2,
           title: 'Double Flat Layout',
@@ -77,6 +78,8 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
           description: '4 Quadrant Flats with corner cross-ventilation and central core spine.',
           tag: '4 Units/Floor',
         },
+        { count: 5, title: 'Five Flat Layout', description: 'Five flats organized around common circulation.', tag: '5 Units/Floor' },
+        { count: 6, title: 'Six Flat Layout', description: 'Six flats organized around common circulation.', tag: '6 Units/Floor' },
       ];
 
     const bhkTypes: Array<{

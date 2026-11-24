@@ -130,6 +130,7 @@ export function RHWelcomeScreen({
           <span className="rh-monogram-word">PLANNER</span>
         </button>
         <nav aria-label="Studio Navigation">
+          <a className="rh-quiet-action" href="#rh-showcase-credits">References &amp; credits</a>
           <button type="button" className="rh-quiet-action" onClick={onOpenExisting}>
             <FolderOpen size={15} /> Recent Projects
           </button>
@@ -140,7 +141,7 @@ export function RHWelcomeScreen({
       </header>
 
       <main>
-        <section ref={track} className="rh-atelier-track" aria-label="Architectural 3D Viewport">
+        <section ref={track} id="rh-architectural-showcase" className="rh-atelier-track" aria-label="Architectural 3D Viewport">
           <div
             className="rh-atelier-viewport"
             data-orbit={orbit}
@@ -162,7 +163,7 @@ export function RHWelcomeScreen({
             <div className="rh-atelier-story" aria-live="off">
               {chapter === 0 ? (
                 <>
-                  <p className="rh-atelier-kicker">ARCHITECTURAL BIM &amp; REAL-TIME VISUALIZATION STUDIO</p>
+                  <p className="rh-atelier-kicker">Demonstration model, inspired by Mumbai luxury residential</p>
                   <h1>
                     Architectural precision.<br />
                     <i>Photorealistic clarity.</i>
@@ -368,6 +369,18 @@ export function RHWelcomeScreen({
               </div>
             </button>
           </div>
+        </section>
+        <section id="rh-showcase-credits" className="rh-atelier-entry" aria-labelledby="rh-showcase-credits-title">
+          <div className="rh-atelier-section-title">
+            <h2 id="rh-showcase-credits-title">References &amp; credits</h2>
+            <a className="rh-quiet-action" href="#rh-architectural-showcase">Back to showcase</a>
+          </div>
+          <img src={`${import.meta.env.BASE_URL}architecture/mumbai-reference-view.jpg`}
+            alt="Elevated view of the demonstration model" loading="lazy" width="640" />
+          <p>Visual reference for the demonstration.
+            {' '}<a href="https://commons.wikimedia.org/wiki/File:Raheja_Vivarea_Aerial_View.jpg">Raheja Vivarea Aerial View by Sawarijoshi</a>
+            {' '}· <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
+          </p>
         </section>
       </main>
     </div>

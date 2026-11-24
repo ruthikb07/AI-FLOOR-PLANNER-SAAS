@@ -22,9 +22,14 @@ export function generationBlockingFindings(
   const findings: GenerationBlockingFinding[] = report.errors
     .filter(issue => issue?.severity === 'CRITICAL' && !issue.autoCorrected)
     .map(issue => ({ code: issue.code, message: issue.description }));
+  const brief = building.metadata.generationBrief;
+  if (brief?.lockedMassingShape && brief.buildingMassingShape !== brief.lockedMassingShape) {
+    findings.push({ code: 'LOCKED_MASSING_UNREALIZED',
+      message: `The search did not find a valid ${brief.lockedMassingShape} layout for this envelope and program. The evaluated geometry used ${brief.buildingMassingShape ?? 'an unidentified massing'}. Adjust the program or unlock the shape.` });
+  }
   const generationReport = building.metadata.generationReport;
   for (const issue of generationReport?.violations ?? []) {
-    if (issue.severity === 'CRITICAL' && ['GEOMETRY', 'CLOSURE', 'OPENING'].includes(issue.source)) {
+    if (issue.severity === 'CRITICAL' && (['GEOMETRY', 'CLOSURE', 'OPENING'].includes(issue.source) || ['AREA_TARGET_UNMET', 'MANDATORY_BRIEF_UNMET', 'DUPLICATE_FINAL_LAYOUT'].includes(issue.code))) {
       findings.push({ code: issue.code, message: issue.description });
     }
   }

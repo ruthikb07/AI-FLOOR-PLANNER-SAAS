@@ -579,7 +579,7 @@ export function optimizeRoomArea(
 
   // 3. Check Lock Status
   const isRoomLocked = room.isFixed ||
-    control.protectedCoreIds.includes(room.id) || control.lockedEntityIds.includes(room.id) ||
+    control.protectedCoreIds.includes(room.id) || control.lockedEntityIds.includes(room.id) || control.lockedEntityIds.includes(room.unitId ?? '') ||
     control.lockedFloorIds.includes(floor.id);
   if (isRoomLocked) {
     return {
@@ -646,6 +646,7 @@ export function optimizeRoomArea(
   const lockedNeighbors = adjacentEdges.filter(
     (e) =>
       e.neighbor.isFixed || control.protectedCoreIds.includes(e.neighbor.id) || control.lockedEntityIds.includes(e.neighbor.id) ||
+      control.lockedEntityIds.includes(e.neighbor.unitId ?? '') ||
       e.neighbor.type === RoomType.Staircase ||
       e.neighbor.type === RoomType.Lift ||
       isCrossFlatProtected(e.neighbor)
@@ -653,6 +654,7 @@ export function optimizeRoomArea(
   const unlockedNeighbors = adjacentEdges.filter(
     (e) =>
       !e.neighbor.isFixed && !control.protectedCoreIds.includes(e.neighbor.id) && !control.lockedEntityIds.includes(e.neighbor.id) &&
+      !control.lockedEntityIds.includes(e.neighbor.unitId ?? '') &&
       e.neighbor.type !== RoomType.Staircase &&
       e.neighbor.type !== RoomType.Lift &&
       !isCrossFlatProtected(e.neighbor)

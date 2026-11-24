@@ -9,6 +9,17 @@ export interface HttpProviderOptions {
   readonly endpoint: string;
   readonly timeoutMs: number;
   readonly fetchImplementation: ProviderFetch;
+  readonly signal?: AbortSignal;
+}
+
+export function redactSecret(text: string, secret?: string): string {
+  if (!text) return text;
+  let sanitized = text;
+  if (secret && secret.trim().length >= 4) {
+    sanitized = sanitized.split(secret.trim()).join('[REDACTED]');
+  }
+  sanitized = sanitized.replace(/(?:AIza|AQ\.)[A-Za-z0-9_-]{12,}/g, '[REDACTED_KEY]');
+  return sanitized;
 }
 
 export function asRecord(value: unknown): Record<string, unknown> {
@@ -83,13 +94,20 @@ function repairTruncatedJson(str: string): string {
   return trimmed;
 }
 
-export function usage(promptTokens: unknown, completionTokens: unknown, totalTokens: unknown): TokenUsage {
+export function usage(
+  promptTokens: unknown,
+  completionTokens: unknown,
+  totalTokens: unknown,
+  thoughtsTokens?: unknown,
+): TokenUsage {
   const prompt = typeof promptTokens === 'number' ? promptTokens : 0;
   const completion = typeof completionTokens === 'number' ? completionTokens : 0;
+  const thoughts = typeof thoughtsTokens === 'number' && thoughtsTokens > 0 ? thoughtsTokens : undefined;
   return {
     promptTokens: prompt,
     completionTokens: completion,
-    totalTokens: typeof totalTokens === 'number' ? totalTokens : prompt + completion,
+    totalTokens: typeof totalTokens === 'number' ? totalTokens : prompt + completion + (thoughts ?? 0),
+    ...(thoughts !== undefined ? { thoughtsTokens: thoughts } : {}),
   };
 }
 
@@ -116,19 +134,22 @@ export async function postJson(
 ): Promise<{ body: Record<string, unknown>; latencyMs: number }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
+  const combinedSignal = options.signal
+    ? AbortSignal.any([controller.signal, options.signal])
+    : controller.signal;
   const startedAt = Date.now();
   try {
     const response = await options.fetchImplementation(options.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify(body),
-      signal: controller.signal,
+      signal: combinedSignal,
     });
     if (!response.ok) {
       let detail = '';
       try {
         const errText = await response.text();
-        detail = errText.slice(0, 500);
+        detail = redactSecret(errText.slice(0, 500), options.apiKey);
       } catch {
         // Ignore read errors
       }
@@ -159,8 +180,11 @@ export async function postJson(
     return { body: parsed as Record<string, unknown>, latencyMs: Date.now() - startedAt };
   } catch (error) {
     if (error instanceof AISafetyError || error instanceof HttpProviderError) throw error;
+    if (options.signal?.aborted) throw new Error('Provider request cancelled.');
     if (error instanceof Error && error.name === 'AbortError') throw new Error('Provider request timed out.');
-    throw error instanceof Error ? error : new Error('Provider request failed.');
+    throw error instanceof Error
+      ? new Error(redactSecret(error.message, options.apiKey))
+      : new Error('Provider request failed.');
   } finally {
     clearTimeout(timeout);
   }

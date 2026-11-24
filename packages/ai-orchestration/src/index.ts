@@ -100,8 +100,14 @@ export {
 } from './orchestration/architectural-evaluation';
 export {
   generateArchitecturalProposal,
+  clearArchitecturalProposalCache,
+  classifyReferenceAttachment,
+  interpretStructuredBriefRequirements,
+  defaultProposalForConfig,
   ARCHITECTURAL_PROPOSAL_SCHEMA,
+  ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
   ROOM_SLICING_ARCHETYPES,
+  type ClassifiedReferenceAttachment,
   type RoomSlicingArchetypeId,
   type ProposalTopologyFamilyId,
   type ReferenceSpatialGraph,

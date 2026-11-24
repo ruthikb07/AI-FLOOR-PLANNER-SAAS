@@ -148,7 +148,7 @@ function columnFootprintPoly(col: Column): { points: Point[] } {
   };
 }
 
-function lockResidentialColumnsToReference(floors: readonly Floor[]): {
+function lockResidentialColumnsToReference(floors: readonly Floor[], hasCoordinatedFraming: boolean): {
   readonly floors: Floor[];
   readonly coreAlignmentDriftMaxMm: number;
 } {
@@ -168,7 +168,7 @@ function lockResidentialColumnsToReference(floors: readonly Floor[]): {
   // Lock primary RCC column grid across ALL storeys (stilt, residential, roof)
   // to a single continuous structural grid that never punches through an
   // alternating staggered cantilevered balcony on ANY residential floor.
-  if (refFloor.columns.length > 0) {
+  if (!hasCoordinatedFraming && refFloor.columns.length > 0) {
     const allBalconies = floors.flatMap(fl =>
       fl.rooms.filter(
         r => r.type === RoomType.Balcony || r.type === RoomType.Utility,
@@ -738,7 +738,7 @@ export function coordinateBuildingFacade(
       : 'STACKED_RIBBON');
 
   const { floors: lockedFloors, coreAlignmentDriftMaxMm } = lockResidentialColumnsToReference(
-    building.floors,
+    building.floors, building.metadata.tags?.includes('STRUCTURAL_FRAMING_PRELIMINARY') ?? false,
   );
   const { floors: coordinatedFloors, verticalJambDriftMaxMm } =
     coordinateVerticalWindowDatum(lockedFloors);

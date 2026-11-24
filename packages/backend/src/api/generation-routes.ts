@@ -49,7 +49,11 @@ function parseGenerationRequest(body: unknown): {
     || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40
     || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6
     || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats
-    || rawConfig.units.some(unit => !isRecord(unit) || typeof unit.bhkType !== 'string' || !/^[1-4]BHK$/.test(unit.bhkType))
+    || rawConfig.units.some((unit, index) => !isRecord(unit) || typeof unit.bhkType !== 'string' || !/^[1-4]BHK$/.test(unit.bhkType)
+      || unit.unitIndex !== index + 1 || (unit.targetCarpetSqFt !== undefined && !positive(unit.targetCarpetSqFt)))
+    || (rawConfig.requireAreaTargets !== undefined && typeof rawConfig.requireAreaTargets !== 'boolean')
+    || (rawConfig.areaAcceptanceTolerancePercent !== undefined && (!Number.isFinite(rawConfig.areaAcceptanceTolerancePercent)
+      || Number(rawConfig.areaAcceptanceTolerancePercent) < 0 || Number(rawConfig.areaAcceptanceTolerancePercent) >= 100))
     || (rawConfig.projectId !== undefined && (typeof rawConfig.projectId !== 'string' || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)))
     || (rawConfig.aiPrompt !== undefined && (typeof rawConfig.aiPrompt !== 'string' || rawConfig.aiPrompt.length > 32_000))
     || (setbacks !== undefined && (!isRecord(setbacks) ||
@@ -105,6 +109,7 @@ export async function handleProjectGeneration(
     }
   }
 
+  const routeStartedAt = Date.now();
   let proposalResult = await generateArchitecturalProposal(deps.gemini, {
     config: parsed.config,
     seed: parsed.seed,
@@ -112,63 +117,103 @@ export async function handleProjectGeneration(
   });
 
   try {
+    const solverStartedAt = Date.now();
     let pipelineResult = await executeAuditedPlanningPipeline(proposalResult.enrichedConfig);
     let complianceReport = evaluateArchitecturalComplianceScore(pipelineResult.building, {
       config: proposalResult.enrichedConfig,
     });
 
     let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
-    // If compliance < 85 after deterministic solver loop and live AI provider is configured,
-    // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
-    const maxOuterRetries = deps.gemini ? 2 : 0;
-    for (let retryIdx = 1; (blockers.length || !complianceReport.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
+    if (blockers.length && proposalResult.telemetry.interpretationSource === 'GEMINI') {
+      // The user brief and exclusions stay in force when optional AI guidance fails the geometry gate.
+      const rules = await generateArchitecturalProposal(null, {
+        config: parsed.config, seed: parsed.seed, rejectedTopologyHashes: parsed.rejectedTopologyHashes,
+      });
       try {
-        const priorHash = (pipelineResult.building.metadata as unknown as Record<string, unknown>)?.topologyHash;
-        const priorShape = pipelineResult.building.metadata.generationBrief?.buildingMassingShape;
-        const updatedRejected = typeof priorHash === 'string' && priorHash.length > 0
-          ? [...new Set([...parsed.rejectedTopologyHashes, priorHash])]
-          : [...parsed.rejectedTopologyHashes];
-        const updatedRejectedShapes =
-          !parsed.config.buildingMassingShape && priorShape
-            ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
-            : parsed.config.rejectedShapeIds;
-        const correctiveHint = complianceReport.violations
-          .slice(0, 3)
-          .map(v => (typeof v === 'string' ? v : v.message))
-          .join(' ');
-        const retryProposal = await generateArchitecturalProposal(deps.gemini, {
+        const candidate = await executeAuditedPlanningPipeline(rules.enrichedConfig);
+        if (!generationBlockingFindings(candidate.building, candidate.validationReport).length) {
+          const telemetry = {
+            ...rules.telemetry,
+            geminiInvoked: true,
+            requestedModel: proposalResult.telemetry.requestedModel,
+            modelUsed: proposalResult.telemetry.modelUsed,
+            attemptedModels: proposalResult.telemetry.attemptedModels,
+            apiCallCount: proposalResult.telemetry.apiCallCount,
+            tokenUsage: proposalResult.telemetry.tokenUsage,
+            providerErrorCode: proposalResult.telemetry.providerErrorCode,
+            latencyMs: proposalResult.telemetry.latencyMs + rules.telemetry.latencyMs,
+            influencedGeometry: false,
+            fallbackReason: `Gemini guidance did not pass the required plan checks (${blockers[0]!.code}). The geometry engine used the original brief.`,
+          };
+          const candidateCompliance = evaluateArchitecturalComplianceScore(candidate.building, { config: rules.enrichedConfig });
+          pipelineResult = candidate;
+          proposalResult = { ...rules, telemetry };
+          complianceReport = candidateCompliance;
+          blockers = [];
+        }
+      } catch {
+        // Keep the first failed audit if the same brief also fails the deterministic solve.
+      }
+    }
+
+    // Token-free bounded deterministic recovery: only run when mandatory blockers remain AND massing is unlocked.
+    // Never re-invokes the external AI provider or re-transmits reference images.
+    if (blockers.length > 0 && !parsed.config.buildingMassingShape && !parsed.config.lockedMassingShape && !parsed.config.requireAreaTargets) {
+      try {
+        const prior = pipelineResult.building.metadata.generationBrief;
+        const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
+        if (prior?.topologyHash) attemptedLayouts.add(prior.topologyHash);
+        if (prior?.physicalLayoutHash) attemptedLayouts.add(prior.physicalLayoutHash);
+        const priorShape = prior?.buildingMassingShape;
+        const updatedRejectedShapes = priorShape
+          ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
+          : parsed.config.rejectedShapeIds;
+        const retryProposal = await generateArchitecturalProposal(null, {
           config: {
             ...parsed.config,
             ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
-            aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
           },
-          seed: parsed.seed + retryIdx * 12,
-          rejectedTopologyHashes: updatedRejected,
+          seed: parsed.seed + 12,
+          rejectedTopologyHashes: [...attemptedLayouts],
         });
         const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
-        const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
-          config: retryProposal.enrichedConfig,
-        });
         const retryBlockers = generationBlockingFindings(retryPipeline.building, retryPipeline.validationReport);
-        const retryIsBetter = retryBlockers.length === 0 && (blockers.length > 0 ||
-          retryCompliance.redConflictCount < complianceReport.redConflictCount ||
-          (retryCompliance.redConflictCount === complianceReport.redConflictCount &&
-            retryCompliance.score >= complianceReport.score));
-        if (retryIsBetter) {
-          proposalResult = retryProposal;
+        if (retryBlockers.length === 0) {
+          const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
+            config: retryProposal.enrichedConfig,
+          });
+          proposalResult = {
+            ...retryProposal,
+            telemetry: {
+              ...proposalResult.telemetry,
+              interpretationSource: 'DETERMINISTIC',
+              fallbackTriggered: true,
+              influencedGeometry: false,
+              fallbackReason: proposalResult.telemetry.fallbackReason
+                ?? `Initial seed failed mandatory checks (${blockers[0]!.code}); recovered via deterministic variant search.`,
+            },
+          };
           pipelineResult = retryPipeline;
           complianceReport = retryCompliance;
-          blockers = retryBlockers;
+          blockers = [];
         }
       } catch {
-        // A failed optional re-proposal cannot discard the first audited result.
+        // Retain original blockers if deterministic variant search cannot recover.
       }
     }
+
+    const solverLatencyMs = Date.now() - solverStartedAt;
+    const totalLatencyMs = Date.now() - routeStartedAt;
+    const enrichedTelemetry = {
+      ...proposalResult.telemetry,
+      solverLatencyMs,
+      totalLatencyMs,
+    };
 
     if (blockers.length) {
       return {
         status: 422,
-        json: { generationRunId: parsed.generationRunId, error: {
+        json: { generationRunId: parsed.generationRunId, telemetry: enrichedTelemetry, error: {
           code: 'GENERATION_CHECKS_FAILED',
           message: `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
           findings: blockers.slice(0, 20),
@@ -184,7 +229,7 @@ export async function handleProjectGeneration(
         generationRunId: parsed.generationRunId,
         generationBrief: {
           ...pipelineResult.building.metadata.generationBrief,
-          aiTelemetry: proposalResult.telemetry,
+          aiTelemetry: enrichedTelemetry,
         },
       },
     };
@@ -197,7 +242,7 @@ export async function handleProjectGeneration(
         building: enrichedBuilding,
         complianceReport,
         proposal: proposalResult.proposal,
-        telemetry: proposalResult.telemetry,
+        telemetry: enrichedTelemetry,
       },
     };
   } catch (error) {

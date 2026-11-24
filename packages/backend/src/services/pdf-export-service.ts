@@ -9,6 +9,7 @@ import type { Building, Floor } from '@ai-floor-planner/core';
 import { AnnotationLayout, roomAnnotation, polygonCentroid, getFloorContentBounds } from '@ai-floor-planner/geometry-engine';
 import { selectExportFloors, resolveExportScope, ExportError } from './export-selection.js';
 import { verifyPdfArtifact } from './artifact-verifier.js';
+import { PdfDrawingText, pdfTextString } from './pdf-drawing-text.js';
 import { evaluateStudioLayoutScore } from '@ai-floor-planner/planning-engine';
 import { complianceReport, complianceReportPdf } from './compliance-report-service.js';
 
@@ -52,13 +53,6 @@ const PAPER_POINTS: Record<string, { width: number; height: number }> = {
   letter: { width: 612, height: 792 },
   tabloid: { width: 792, height: 1224 },
 };
-
-function ascii(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[^\x20-\x7E]/g, '')
-    .replace(/([\\()])/g, '\\$1');
-}
 
 function byteLength(value: string): number {
   return Buffer.byteLength(value, 'utf-8');
@@ -178,7 +172,9 @@ export class PdfExportService {
       '<< /Type /Catalog /Pages 2 0 R >>',
       '', // Placeholder for Pages object
       '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      '', // Shared page font resources, populated once labels are laid out.
     ];
+    const drawingText = new PdfDrawingText();
 
     const pageRefs: string[] = [];
 
@@ -212,8 +208,8 @@ export class PdfExportService {
         const center=polygonCentroid(zone.boundary),width=Math.max(...zone.boundary.points.map(p=>p.x))-Math.min(...zone.boundary.points.map(p=>p.x));
         const label=zone.name.replace(/6000 MM TWO.WAY PAVED ACCESS/i,'6.0M DRIVEWAY').replace(/MAIN ENTRY GATEWAY PAVED APRON/i,'MAIN ENTRY GATE');
         const font=Math.min(350,width*.75/(label.length*.7))*fitScale;
-        const box=annotationLayout.place(label,px(center.x),py(center.y),font);
-        commands.push('0.12 0.15 0.19 rg',`BT /F1 ${font.toFixed(4)} Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-font*.35).toFixed(4)} Td (${ascii(label)}) Tj ET`);
+        const box=annotationLayout.place(label,px(center.x),py(center.y),font,undefined,false,drawingText.width(label,font));
+        commands.push('0.12 0.15 0.19 rg',drawingText.draw(label,font,box.x-box.width/2,box.y-font*.35));
       }
       // Rooms
       for (const room of floor.rooms) {
@@ -240,8 +236,9 @@ export class PdfExportService {
           annotation.lines.forEach((line,index)=>{
             if(index===2 && options.includeRoomAreas===false)return;
             const font=annotation.height*fitScale;
-            const box=annotationLayout.place(line,px(annotation.center.x),py(annotation.center.y)+((annotation.lines.length-1)/2-index)*1.65*font,font);
-            commands.push('0.12 0.15 0.19 rg',`BT /F1 ${font.toFixed(4)} Tf ${(box.x-box.width/2).toFixed(4)} ${(box.y-font*0.35).toFixed(4)} Td (${ascii(line)}) Tj ET`);
+            const box=annotationLayout.place(line,px(annotation.center.x),py(annotation.center.y)+((annotation.lines.length-1)/2-index)*1.65*font,font,
+              undefined,false,drawingText.width(line,font));
+            commands.push('0.12 0.15 0.19 rg',drawingText.draw(line,font,box.x-box.width/2,box.y-font*.35));
           });
         }
       }
@@ -273,7 +270,7 @@ export class PdfExportService {
           else line(a,{x:a.x-uy*op.width,y:a.y+ux*op.width});
         }
       }
-      if(options.includeStructural!==false) {
+      if (options.includeStructural ?? options.drawingKind === 'STRUCTURAL') {
         commands.push('0.7 0.2 0.2 RG','0.5 w');
         for(const col of floor.columns)polygon([{x:col.position.x-col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y-col.depth/2},{x:col.position.x+col.width/2,y:col.position.y+col.depth/2},{x:col.position.x-col.width/2,y:col.position.y+col.depth/2}]);
         for(const beam of floor.beams??[]) {commands.push(`${(beam.widthMm*fitScale).toFixed(4)} w`);line(beam.startPoint,beam.endPoint);}
@@ -304,11 +301,11 @@ export class PdfExportService {
       // Scale bar and Title Block
       if (options.includeTitleBlock !== false) {
         commands.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
-        commands.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
-        const sheetTitle = `Sheet ${pIdx + 1}: ${ascii(floor.name)} | ${ascii(scaleLabel)} ISO ${options.paperSize??'A3'} | Rev ${building.version}`;
-        commands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (${sheetTitle}) Tj ET`);
-        commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 29} Td (Drawn by ${ascii(options.drawnBy ?? 'FORMA AI Planner')}) Tj ET`);
-        commands.push(`BT /F1 8 Tf ${(pageWidth - 220).toFixed(2)} ${margin + 3} Td (Project ${ascii(options.projectNumber ?? 'FP-001')}) Tj ET`);
+        commands.push('0.08 0.1 0.13 rg', drawingText.draw(building.name,13,margin+10,margin+29));
+        const sheetTitle = `Sheet ${pIdx + 1}: ${floor.name} | ${scaleLabel} ISO ${options.paperSize??'A3'} | Rev ${building.version}`;
+        commands.push(drawingText.draw(sheetTitle,8,margin+10,margin+14));
+        commands.push(drawingText.draw(`Drawn by ${options.drawnBy ?? 'FORMA AI Planner'}`,8,pageWidth-220,margin+29));
+        commands.push(drawingText.draw(`Project ${options.projectNumber ?? 'FP-001'}`,8,pageWidth-220,margin+3));
         commands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 46} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION - PROFESSIONAL REVIEW REQUIRED) Tj ET`);
       }
 
@@ -317,7 +314,7 @@ export class PdfExportService {
       const contentObjIndex = pageObjIndex + 1;
 
       objects.push(
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjIndex} 0 R >>`,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font 4 0 R >> /Contents ${contentObjIndex} 0 R >>`,
       );
       objects.push(`<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`);
       pageRefs.push(`${pageObjIndex} 0 R`);
@@ -329,7 +326,7 @@ export class PdfExportService {
         '0.8 w',
         `${margin} ${margin} ${pageWidth - margin * 2} ${pageHeight - margin * 2} re S`,
         '0.08 0.1 0.13 rg',
-        `BT /F1 15 Tf ${margin + 14} ${pageHeight - margin - 28} Td (Sheet A-901: RERA Carpet Area & Compliance Schedule - ${ascii(building.name)}) Tj ET`,
+        drawingText.draw(`Sheet A-901: RERA Carpet Area & Compliance Schedule - ${building.name}`,15,margin+14,pageHeight-margin-28),
         `BT /F1 9 Tf ${margin + 14} ${pageHeight - margin - 46} Td (Plot: ${Math.round(building.site.plotWidth)} x ${Math.round(building.site.plotDepth)} mm | Rev ${building.version} | ISO ${options.paperSize ?? 'A3'} Landscape) Tj ET`,
       ];
 
@@ -351,7 +348,7 @@ export class PdfExportService {
         schedCommands.push('0.08 0.1 0.13 rg');
         cells.forEach((cell, idx) => {
           const cx = tableX + cols[idx]! + 6;
-          schedCommands.push(`BT /F1 ${isHeader ? 9 : 8} Tf ${cx} ${rowY + 6} Td (${ascii(cell)}) Tj ET`);
+          schedCommands.push(drawingText.draw(cell,isHeader?9:8,cx,rowY+6));
         });
         rowY -= rowH;
       };
@@ -425,7 +422,7 @@ export class PdfExportService {
 
       if (options.includeTitleBlock !== false) {
         schedCommands.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
-        schedCommands.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
+        schedCommands.push('0.08 0.1 0.13 rg', drawingText.draw(building.name,13,margin+10,margin+29));
         schedCommands.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (Sheet A-901: Statutory RERA Carpet Area Schedule | ISO ${options.paperSize ?? 'A3'} | Rev ${building.version}) Tj ET`);
         schedCommands.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 46} Td (CONCEPT / SCHEMATIC DESIGN - NOT FOR CONSTRUCTION - PROFESSIONAL REVIEW REQUIRED) Tj ET`);
       }
@@ -434,7 +431,7 @@ export class PdfExportService {
       const sPageObjIndex = objects.length + 1;
       const sContentObjIndex = sPageObjIndex + 1;
       objects.push(
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${sContentObjIndex} 0 R >>`,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font 4 0 R >> /Contents ${sContentObjIndex} 0 R >>`,
       );
       objects.push(`<< /Length ${byteLength(schedStream)} >>\nstream\n${schedStream}endstream`);
       pageRefs.push(`${sPageObjIndex} 0 R`);
@@ -512,7 +509,7 @@ export class PdfExportService {
               if (sym.kind === 'DB' || sym.kind === 'FAN' || sym.kind === 'AC_IDU' || sym.kind === 'AC_ODU') {
                 cmds.push(
                   '0.55 0.25 0.02 rg',
-                  `BT /F1 5.5 Tf ${(sx - 4).toFixed(3)} ${(sy + 4.5).toFixed(3)} Td (${ascii(sym.kind)}) Tj ET`,
+                  drawingText.draw(sym.kind,5.5,sx-4,sy+4.5),
                 );
               }
             }
@@ -551,7 +548,7 @@ export class PdfExportService {
               }
               cmds.push(
                 sym.discipline === 'PLUMBING' ? '0.01 0.42 0.65 rg' : '0.68 0.08 0.08 rg',
-                `BT /F1 5.5 Tf ${(sx - 4).toFixed(3)} ${(sy + hd + 2).toFixed(3)} Td (${ascii(sym.kind)}) Tj ET`,
+                drawingText.draw(sym.kind,5.5,sx-4,sy+hd+2),
               );
             }
           }
@@ -559,7 +556,7 @@ export class PdfExportService {
 
         // Header + summary bar
         cmds.push('0.08 0.1 0.13 rg');
-        cmds.push(`BT /F1 12 Tf ${margin} ${pageHeight - margin + 6} Td (${ascii(sheetTitle)} - ${ascii(floor.name)}) Tj ET`);
+        cmds.push(drawingText.draw(`${sheetTitle} - ${floor.name}`,12,margin,pageHeight-margin+6));
         const stiltSprinklerCount = stiltFloor
           ? (building.mepEngineering?.floors.find((m) => m.floorId === stiltFloor.id)?.symbols.filter((s) => s.kind === 'SPRINKLER').length ?? 0)
           : 0;
@@ -568,12 +565,12 @@ export class PdfExportService {
           mode === 'ELEC_CEIL'
             ? `Layers: M-ELEC-SYMB, M-ELEC-WIRE, A-CEIL-GRID | DB/FAN/DL/SB/16A/AC/GY + Cove & 600x600 RCP`
             : `Layers: M-PLUMB-PIPE, M-PLUMB-FIXT, F-FIRE-SYMB | Vertical Stacks: ${stackCount} | Stilt Sprinklers: ${stiltSprinklerCount}`;
-        cmds.push(`BT /F1 8 Tf ${margin} ${margin + titleHeight + 4} Td (${ascii(summaryNote)}) Tj ET`);
+        cmds.push(drawingText.draw(summaryNote,8,margin,margin+titleHeight+4));
 
         if (options.includeTitleBlock !== false) {
           cmds.push('0.08 0.1 0.13 RG', '0.8 w', `${margin} ${margin} ${pageWidth - margin * 2} ${titleHeight - 8} re S`);
-          cmds.push('0.08 0.1 0.13 rg', `BT /F1 13 Tf ${margin + 10} ${margin + 29} Td (${ascii(building.name)}) Tj ET`);
-          cmds.push(`BT /F1 8 Tf ${margin + 10} ${margin + 14} Td (${ascii(sheetTitle)} | ISO ${options.paperSize ?? 'A3'} | Rev ${building.version}) Tj ET`);
+          cmds.push('0.08 0.1 0.13 rg', drawingText.draw(building.name,13,margin+10,margin+29));
+          cmds.push(drawingText.draw(`${sheetTitle} | ISO ${options.paperSize ?? 'A3'} | Rev ${building.version}`,8,margin+10,margin+14));
           cmds.push('0.75 0.12 0.12 rg', `BT /F1 8 Tf ${margin + 10} ${margin + 46} Td (CONCEPT / SCHEMATIC MEP COORDINATION - NOT FOR CONSTRUCTION) Tj ET`);
         }
 
@@ -581,7 +578,7 @@ export class PdfExportService {
         const mPageObjIndex = objects.length + 1;
         const mContentObjIndex = mPageObjIndex + 1;
         objects.push(
-          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${mContentObjIndex} 0 R >>`,
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font 4 0 R >> /Contents ${mContentObjIndex} 0 R >>`,
         );
         objects.push(`<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`);
         pageRefs.push(`${mPageObjIndex} 0 R`);
@@ -594,9 +591,9 @@ export class PdfExportService {
     // Set Pages dictionary
     objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(' ')}] /Count ${pageCount} >>`;
 
-    // Add info dict
+    objects[3] = drawingText.embedFonts(objects);
     objects.push(
-      `<< /Title (${ascii(building.name)}) /Author (${ascii(options.drawnBy ?? 'FORMA AI Planner')}) /Subject (Multi-Sheet Apartment CAD Drawing Set) /Creator (AI Floor Planner Studio) >>`,
+      `<< /Title ${pdfTextString(building.name)} /Author ${pdfTextString(options.drawnBy ?? 'FORMA AI Planner')} /Subject (Multi-Sheet Apartment CAD Drawing Set) /Creator (AI Floor Planner Studio) >>`,
     );
 
     let pdf = '%PDF-1.4\n%FORMA\n';

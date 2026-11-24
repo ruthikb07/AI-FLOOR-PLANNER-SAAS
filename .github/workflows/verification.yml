@@ -41,7 +41,9 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter @ai-floor-planner/frontend exec playwright install --with-deps chromium
       - name: Built application integration tests
-        run: pnpm --filter @ai-floor-planner/frontend exec playwright test --config playwright.repair.config.ts
+        run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair
+      - name: Real Chromium WebGL recovery
+        run: pnpm --filter @ai-floor-planner/frontend run test:e2e:webgl
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

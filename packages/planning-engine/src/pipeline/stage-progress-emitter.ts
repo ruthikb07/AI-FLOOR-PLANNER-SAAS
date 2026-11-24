@@ -1,3 +1,4 @@
+import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
 /**
  * Pipeline Stage Progress Emitter & Observable Coordinator (§1A).
@@ -9,6 +10,7 @@ import { evaluateUDCPRCompliance } from '../validator/udcpr-engine';
  */
 
 import {
+  type ApartmentGenerationViolation,
   type Building,
   type MultiSheetApartmentConfig,
   type GeometryValidationReport,
@@ -18,7 +20,9 @@ import {
 import { GeometryValidator } from '../validator/geometry-validator';
 import { solveMultiSheetApartmentProject } from '../apartment/multi-sheet-apartment-solver';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { containsPolygon } from '@ai-floor-planner/geometry-engine';
 import { createGenerationReport } from '../apartment/generation-report';
+import { physicalLayoutHash } from '../topology/physical-layout-fingerprint';
 
 export type PipelineStageId =
   | 'PLOT_BOUNDARY_SOLVE'
@@ -214,7 +218,9 @@ export async function executeAuditedPlanningPipeline(
         || !Number.isInteger(config.numTypicalFloors) || config.numTypicalFloors < 1 || config.numTypicalFloors > 40
         || ![1, 2, 3, 4, 5, 6].includes(config.flatsPerFloor)
         || config.units?.length !== config.flatsPerFloor
-        || config.units.some(unit => !/^[1-4]BHK$/.test(unit.bhkType))
+        || config.units.some((unit, index) => !/^[1-4]BHK$/.test(unit.bhkType) || unit.unitIndex !== index + 1
+          || (unit.targetCarpetSqFt !== undefined && (!Number.isFinite(unit.targetCarpetSqFt) || unit.targetCarpetSqFt <= 0)))
+        || (config.areaAcceptanceTolerancePercent !== undefined && !(config.areaAcceptanceTolerancePercent >= 0 && config.areaAcceptanceTolerancePercent < 100))
         || (config.setbacksMm && Object.values(config.setbacksMm).some(value => !Number.isFinite(value) || value < 0))) {
         throw new Error('Provide positive plot/road dimensions, 1–40 floors, valid setbacks and an exact 1–6 unit BHK mix.');
       }
@@ -229,20 +235,37 @@ export async function executeAuditedPlanningPipeline(
       next('COLUMN_AND_BEAM_GRID');
     }
     next('GEOMETRY_ZERO_ERROR_AUDIT');
-    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: 800 });
+    const validator = new GeometryValidator({ autoCorrect: false, columnMergeThresholdMm: MIN_PROVISIONAL_COLUMN_SPACING_MM });
     const audit = validator.audit(building, false);
     const closureErrors = building.floors.filter(f => f.apartmentUnits?.length).flatMap(floor =>
       validateApartmentClosure({ ...building, floors: [floor] }).issues.filter(issue => issue.severity === 'error')
         .map(issue => ({ code: issue.code, severity: 'CRITICAL' as const, elementIds: [floor.id], floorId: floor.id,
           locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 }, description: issue.message, autoCorrected: false })));
-    const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length,
-      errors: [...audit.report.errors, ...closureErrors] };
+    const envelope = building.metadata.irregularPlotBoundary?.buildablePolygon;
+    const boundaryErrors: GeometryValidationError[] = envelope ? building.floors.filter(floor =>
+      floor.apartmentUnits?.length && !containsPolygon(envelope, floor.boundary)).map(floor => ({
+        code: 'SETBACK_ENVELOPE_EXCEEDED', severity: 'CRITICAL', floorId: floor.id, elementIds: [floor.id],
+        locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 },
+        description: 'The residential floor outline exceeds the measured buildable envelope. Reduce the footprint or adjust the brief.',
+        autoCorrected: false,
+      })) : [];
+    const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length && !boundaryErrors.length,
+      errors: [...audit.report.errors, ...closureErrors, ...boundaryErrors] };
     emitter.completeStage(stage, validationReport.errors, validationReport);
     const prior = building.metadata.generationReport;
     if (prior) {
-      const generationReport = createGenerationReport(building, validationReport, prior,
-        prior.violations.filter(v => v.source === 'TOPOLOGY' || v.source === 'GENERATION'));
-      building = { ...building, metadata: { ...building.metadata, generationReport } };
+      const findings: Omit<ApartmentGenerationViolation, 'rank'>[] = prior.violations.filter(v => v.source === 'TOPOLOGY' || v.source === 'GENERATION');
+      const brief = building.metadata.generationBrief;
+      const layoutHash = isRequest && brief ? physicalLayoutHash(building) : undefined;
+      if (isRequest && layoutHash && input.rejectedTopologyHashes?.includes(layoutHash)) {
+        findings.push({ code: 'DUPLICATE_FINAL_LAYOUT', source: 'GENERATION', severity: 'CRITICAL',
+          description: 'The final footprint, walls and access graph reproduce an excluded design. Try another variant or change the brief.',
+          elementIds: [] });
+      }
+      const generationReport = createGenerationReport(building, validationReport, prior, findings);
+      building = { ...building, metadata: { ...building.metadata, generationReport,
+        ...(brief && layoutHash ? { generationBrief: { ...brief, physicalLayoutHash: layoutHash } } : {}),
+      } };
     }
     stage = 'UDCPR_CHECK'; emitter.startStage(stage);
     const udcprReport = evaluateUDCPRCompliance(building);

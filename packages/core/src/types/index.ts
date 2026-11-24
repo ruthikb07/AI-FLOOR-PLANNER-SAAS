@@ -110,6 +110,12 @@ export type {
 // AI
 export type {
   TokenUsage,
+  BriefRequirementCategory,
+  StructuredBriefRequirementItem,
+  BriefRequirementConflict,
+  StructuredBriefInterpretation,
+  ReferenceAttachmentDisposition,
+  AIProposalTelemetry,
   ModelInfo,
   AIImageInput,
   AIRequest,

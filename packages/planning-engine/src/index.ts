@@ -76,6 +76,20 @@ export {
   type RoomAreaOptimizationResult,
   type ModifiedRoomDetail,
 } from './refinement/room-area-optimizer';
+export { editApartmentOpening, type OpeningEdit } from './refinement/apartment-opening-edit';
+export { moveApartmentPartition } from './refinement/apartment-partition-edit';
+export {
+  proposeControlledCadEdit,
+  parseCadEditInstructionDeterministically,
+  type CadEditAction,
+  type CadEditIntent,
+  type CadAiEditProposalStatus,
+  type CadRoomAreaDelta,
+  type CadOpeningEditSummary,
+  type CadAiEditValidationSummary,
+  type CadAiEditProposalRequest,
+  type CadAiEditProposalResult,
+} from './refinement/cad-ai-edit-proposal';
 export { coordinateStairAccess, stairModelIssues } from './generator/stair-coordination';
 export { evaluateDesign, type DesignEvaluationOptions } from './diagnostics/design-evaluator';
 export { diagnosticsToValidation, type ValidationSummary } from './repair/engine';

@@ -32,6 +32,8 @@ await esbuild.build({
   bundle: true,
   platform: 'node',
   format: 'cjs',
+  define: { 'import.meta.url': 'backendBundleUrl' },
+  banner: { js: 'const backendBundleUrl = require("node:url").pathToFileURL(__filename).href;' },
   target: 'node22',
   keepNames: true,
   outfile: path.join(backend, 'dist-server', 'server.cjs'),

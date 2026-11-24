@@ -101,6 +101,8 @@ export interface SelectTopologyInput {
   readonly envelope: Box2D;
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly unitTypes: readonly ApartmentBhkType[];
+  readonly unitCarpetTargetsSqFt?: readonly (number | undefined)[];
+  readonly unitGrossAreasMm2?: readonly number[];
   readonly aiPrompt?: string;
   readonly seed?: number;
   readonly conceptLimit?: number;
@@ -140,6 +142,8 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     envelope: input.envelope,
     flatsPerFloor: input.flatsPerFloor,
     unitTypes,
+    unitCarpetTargetsSqFt: input.unitCarpetTargetsSqFt,
+    unitGrossAreasMm2: input.unitGrossAreasMm2,
     aiPrompt: input.aiPrompt,
     seed: input.seed,
     conceptLimit: input.conceptLimit ?? 3,
@@ -159,18 +163,7 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
       ?? (result.bestEffort?.partition.massingShape === 'PINWHEEL_CLUSTER' ? result.bestEffort : undefined);
     if (matching) return { macro: macroFromTopology(matching.partition), chosen: matching, result };
   }
-  const rejectedSet = new Set(input.rejectedTopologyHashes ?? []);
-  const chosen =
-    (rejectedSet.size > 0
-      ? result.concepts.find(
-          c =>
-            !rejectedSet.has(c.fingerprint.digests.canonical) &&
-            !rejectedSet.has(c.fingerprint.canonical) &&
-            !rejectedSet.has(c.variantId),
-        )
-      : undefined)
-    ?? result.concepts[0]
-    ?? (input.allowBestEffort ? result.bestEffort : undefined);
+  const chosen = result.concepts[0] ?? (input.allowBestEffort ? result.bestEffort : undefined);
   if (!chosen) return undefined;
 
   return { macro: macroFromTopology(chosen.partition), chosen, result };

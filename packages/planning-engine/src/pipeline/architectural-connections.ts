@@ -14,6 +14,7 @@ import {
   projectOnSegment,
   computeDoorSwingPolygon,
   containsPolygon,
+  openingFitsApartmentWall,
 } from "@ai-floor-planner/geometry-engine";
 const stairRoom = (r: Room) =>
   ["STAIR_ENCLOSURE", "PROTECTED_STAIR_ENCLOSURE", "STAIR_MUMTY"].includes(
@@ -97,13 +98,14 @@ export function coordinateArchitecturalStairs(building: Building): Building {
       const hit = projectOnSegment(w.startPoint, w.startPoint, w.endPoint)!;
       return [
         hit.pointAt(hit.length / 2),
+        hit.pointAt(700),
+        hit.pointAt(hit.length - 700),
         hit.pointAt(600),
         hit.pointAt(hit.length - 600),
       ];
     });
-    const point = candidates.find((p) =>
-      group.every((g) => g.hosts.some((w) => hostFits(w, p))),
-    );
+    const point = candidates.find(p => group.every(g => g.hosts.some(w => openingFitsApartmentWall(w, p, 1200))))
+      ?? candidates.find(p => group.every(g => g.hosts.some(w => hostFits(w, p))));
     if (!point) throw new Error(`STAIR_ACCESS_NOT_ALIGNED: ${room.id}`);
     templates.set(key, point);
   }
@@ -121,7 +123,9 @@ export function coordinateArchitecturalStairs(building: Building): Building {
     const stairs = f.rooms.filter(stairRoom).map((r, index) => {
       const key = coreKey(r),
         position = templates.get(key)!;
-      const host = accessHosts(f, r).find((w) => hostFits(w, position));
+      const hosts = accessHosts(f, r);
+      const host = hosts.find(w => openingFitsApartmentWall(w, position, 1200))
+        ?? hosts.find(w => hostFits(w, position));
       if (!host) throw new Error(`STAIR_ACCESS_HOST_MISSING: ${r.id}`);
       const role = r.architecturalRole;
       if (
@@ -132,6 +136,12 @@ export function coordinateArchitecturalStairs(building: Building): Building {
         openStairHostWallIds.add(host.id);
       }
       const existing = doors.find((d) => d.connectsRooms.includes(r.id));
+      const desiredWidth = existing?.width ?? 1200;
+      const access = projectOnSegment(position, host.startPoint, host.endPoint)!;
+      const availableWidth = Math.floor(2 * (Math.min(access.along, access.length - access.along) - 100) + 1e-6);
+      // An unenclosed stair uses a full open boundary. The hosted passage marker
+      // remains within that span independently of the stair landing's clear width.
+      const width = openStairHostWallIds.has(host.id) ? Math.min(desiredWidth, availableWidth) : desiredWidth;
       let door = {
         ...(existing ?? {}),
         id: existing?.id ?? `${r.id}:access`,
@@ -140,7 +150,7 @@ export function coordinateArchitecturalStairs(building: Building): Building {
         position,
         openingGeometryVersion: 1 as const,
         positionReference: "CENTER" as const,
-        width: existing?.width ?? 1200,
+        width,
         height: existing?.height ?? 2100,
         type: existing?.type ?? DoorType.OpenPassage,
         swingDirection: existing?.swingDirection ?? SwingDirection.Inward,

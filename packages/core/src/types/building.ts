@@ -313,6 +313,10 @@ export interface SourceCadUnderlay {
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
   readonly sourceCadUnderlay?: SourceCadUnderlay;
+  /** Non-canonical 2D CAD drafting annotations (layers D-DRAFT, D-DIM, D-ANNO) keyed by floorId. */
+  readonly cadDraftingAnnotations?: Readonly<
+    Record<string, readonly import('../interchange/cota-cad-kernel').CadEntity[]>
+  >;
   readonly irregularPlotBoundary?: import('./multi-sheet-apartment').IrregularPlotBoundary;
   readonly facadeCoordination?: import('./multi-sheet-apartment').FacadeCoordinationMetadata;
   /** Identifies the solver run that produced the generated geometry. */
@@ -332,10 +336,13 @@ export interface BuildingMetadata {
     readonly referenceImage?: { readonly name: string; readonly mimeType: string };
     readonly units: readonly { readonly unitIndex: number; readonly bhkType: string; readonly targetCarpetSqFt?: number }[];
     readonly generationSeed?: number;
+    readonly requireAreaTargets?: boolean;
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;
     readonly requestedMassingShape?: string;
+    readonly lockedMassingShape?: string;
+    readonly physicalLayoutHash?: string;
     readonly planCategory?: string;
     readonly usedShapeIds?: readonly string[];
     readonly usedArchetypeIds?: readonly string[];
@@ -344,13 +351,7 @@ export interface BuildingMetadata {
     readonly galleryCoordinationMode?: import('./multi-sheet-apartment').GalleryCoordinationMode;
     readonly includeStudyRoom?: boolean;
     readonly aiProposal?: Record<string, unknown>;
-    readonly aiTelemetry?: {
-      readonly geminiInvoked: boolean;
-      readonly provider: string;
-      readonly modelUsed?: string;
-      readonly fallbackReason?: string;
-      readonly referenceImageUsedForGeometry: boolean;
-    };
+    readonly aiTelemetry?: import('./ai').AIProposalTelemetry;
   };
   readonly description?: string;
   readonly tags?: readonly string[];

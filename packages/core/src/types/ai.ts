@@ -16,6 +16,74 @@ export interface TokenUsage {
   readonly promptTokens: number;
   readonly completionTokens: number;
   readonly totalTokens: number;
+  readonly thoughtsTokens?: number;
+}
+
+/** Classification of interpreted architectural brief requirements. */
+export type BriefRequirementCategory =
+  | 'MANDATORY'
+  | 'USER_PREFERENCE'
+  | 'AI_SUGGESTION'
+  | 'DEFAULT'
+  | 'INFERRED_CONSTRAINT'
+  | 'JURISDICTION_VERIFICATION_REQUIRED';
+
+export interface StructuredBriefRequirementItem {
+  readonly key: string;
+  readonly category: BriefRequirementCategory;
+  readonly value: string | number | boolean | readonly string[];
+  readonly source: 'USER_CONFIG' | 'USER_PROMPT' | 'REFERENCE_IMAGE' | 'AI_PROPOSAL' | 'SYSTEM_DEFAULT' | 'REGULATORY_RULE';
+  readonly summary: string;
+}
+
+export interface BriefRequirementConflict {
+  readonly code:
+    | 'CONFLICTING_UNIT_COUNT'
+    | 'CONFLICTING_OTS_DIRECTIVE'
+    | 'CONFLICTING_LOCKED_MASSING'
+    | 'CONFLICTING_BALCONY_DIRECTIVE'
+    | 'REFERENCE_OVERRIDDEN_BY_BRIEF';
+  readonly resolution: 'USER_CONFIG_PRECEDENCE' | 'EXPLICIT_BRIEF_PRECEDENCE' | 'BLOCKS_PUBLICATION';
+  readonly message: string;
+}
+
+export interface StructuredBriefInterpretation {
+  readonly schemaVersion: 1;
+  readonly items: readonly StructuredBriefRequirementItem[];
+  readonly conflicts: readonly BriefRequirementConflict[];
+}
+
+export type ReferenceAttachmentDisposition =
+  | 'NONE'
+  | 'VISION_INLINE_ATTACHED'
+  | 'ADVISORY_METADATA_ONLY'
+  | 'UNSUPPORTED_FORMAT'
+  | 'MALFORMED_DATA';
+
+/** Sanitized generation telemetry shared across backend, canonical metadata, and UI. */
+export interface AIProposalTelemetry {
+  readonly geminiInvoked: boolean;
+  readonly provider: string;
+  readonly requestedModel?: string;
+  readonly modelUsed?: string;
+  readonly attemptedModels?: readonly string[];
+  readonly apiCallCount?: number;
+  readonly cacheHit?: boolean;
+  readonly latencyMs?: number;
+  readonly solverLatencyMs?: number;
+  readonly totalLatencyMs?: number;
+  readonly tokenUsage?: TokenUsage;
+  readonly fallbackReason?: string;
+  readonly fallbackTriggered?: boolean;
+  readonly providerErrorCode?: string;
+  readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
+  readonly influencedGeometry?: boolean;
+  readonly referenceDisposition?: ReferenceAttachmentDisposition;
+  readonly referenceGuidanceApplied?: readonly string[];
+  readonly referenceGuidanceRejected?: readonly string[];
+  readonly referenceImageUsedForGeometry: boolean;
+  readonly conflictsDetected?: readonly BriefRequirementConflict[];
+  readonly interpretedRequirements?: StructuredBriefInterpretation;
 }
 
 /** Information about a model. */
@@ -52,6 +120,10 @@ export interface AIRequest {
   readonly responseSchemaName?: string;
   readonly temperature?: number;
   readonly maxTokens?: number;
+  /** Optional Gemini 2.5/3.x thinking token budget (0 disables thinking overhead for deterministic schema extraction). */
+  readonly thinkingBudget?: number;
+  /** Optional cancellation signal propagated to network fetch. */
+  readonly signal?: AbortSignal;
 }
 
 /** An AI response. */
@@ -61,6 +133,9 @@ export interface AIResponse {
   readonly usage: TokenUsage;
   readonly model: string;
   readonly latencyMs: number;
+  readonly fallbackFromErrorCode?: string;
+  readonly attemptedModels?: readonly string[];
+  readonly apiCallCount?: number;
 }
 
 /** A streaming AI response chunk. */

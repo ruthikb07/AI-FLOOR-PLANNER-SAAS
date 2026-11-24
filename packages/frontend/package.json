@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "preview:current": "pnpm run build && vite preview",
     "test": "vitest run --passWithNoTests",
+    "test:e2e:repair": "node ./node_modules/@playwright/test/cli.js test --config playwright.repair.config.ts",
+    "test:e2e:webgl": "node ./node_modules/@playwright/test/cli.js test --config playwright.webgl.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --no-error-on-unmatched-pattern"
   },

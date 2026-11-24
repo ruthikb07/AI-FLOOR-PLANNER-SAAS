@@ -140,7 +140,7 @@ describe('RH Planner Phase 4 — Edit Plan Studio, Top Discipline Bar & ETABS Im
     expect(onOpenEditPlan).toHaveBeenCalledTimes(1);
   });
 
-  it('2. renders InteractivePlanEditorPage with Mode A checkbox and runs Mode B "Regenerate Similar (Keep Edited Ratios)" to call editor.applyRefinement', async () => {
+  it('2. renders the room edit controls and blocks ratio scaling that would reshape other floors', async () => {
     const building = createSampleApartmentBuilding();
     const applyRefinement = vi.fn();
     const onBackToCad = vi.fn();
@@ -180,10 +180,8 @@ describe('RH Planner Phase 4 — Edit Plan Studio, Top Discipline Bar & ETABS Im
     expect(regenBtn).toBeDefined();
     await act(async () => regenBtn!.click());
 
-    expect(applyRefinement).toHaveBeenCalledTimes(1);
-    const [updatedBuilding, reason] = applyRefinement.mock.calls[0]!;
-    expect(updatedBuilding).toBeDefined();
-    expect(String(reason)).toContain('Keep Edited Ratios');
+    expect(applyRefinement).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="alert"]')?.textContent).toMatch(/other floors|neighbouring flat|core/);
 
     const backBtn = Array.from(host.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Done Editing'),

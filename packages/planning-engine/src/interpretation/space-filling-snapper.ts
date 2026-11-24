@@ -1,3 +1,4 @@
+import { APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM } from '@ai-floor-planner/core';
 /**
  * Orthogonal Space-Filling Elastic Snapper & Exact Metric Solver (Phase 1B).
  *
@@ -3595,6 +3596,15 @@ export function sliceFlatRooms(params: {
   // When staggeredBalconies is enabled across multi-floor stacks, Odd floors favor
   // primary/odd bedroom bays while Even floors favor alternate even-indexed bays
   // with columns, lifts, stairs, and wet shafts remaining identically stacked.
+  if (placement?.noBalconies) {
+    // Preserve the tiled footprint and access; convert the reserved exterior
+    // cells to enclosed space before canonical walls and windows are built.
+    return { rooms: rooms.map(room => room.type === 'balcony' || room.planningZone === 'OUTDOOR'
+      ? { ...room, type: room.type === 'utility' ? 'utility' : 'living',
+        name: room.name.replace(/balcon(?:y|ies)|sit[- ]?out/gi, 'alcove'),
+        planningZone: room.type === 'utility' ? 'SERVICE' : 'PUBLIC' }
+      : room), flatOpenings };
+  }
   const allBedrooms = [...rooms].filter(r => r.type === 'bedroom');
   // When DOUBLE_HEIGHT_STAGGER is active (and ALL_BEDROOMS private balconies are not
   // explicitly forced), alternate Odd vs Even bedroom inset balconies cleanly across floors
@@ -3626,8 +3636,9 @@ export function sliceFlatRooms(params: {
       ((r.width < 4550 && r.width >= 3800) || (r.height < 4550 && r.height >= 3800));
     const minRemW = forceBedBalc ? 2700 : 3050;
     const minRemH = forceBedBalc ? 2700 : 3050;
-    const depthX = forceBedBalc && r.width < 4550 ? Math.min(1500, Math.max(1100, r.width - minRemW)) : 1500;
-    const depthY = forceBedBalc && r.height < 4550 ? Math.min(1500, Math.max(1100, r.height - minRemH)) : 1500;
+    const minimumBalconyDepth = APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM + APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM;
+    const depthX = forceBedBalc ? Math.min(1500, Math.max(minimumBalconyDepth, r.width - minRemW)) : 1500;
+    const depthY = forceBedBalc ? Math.min(1500, Math.max(minimumBalconyDepth, r.height - minRemH)) : 1500;
     const west = Math.abs(r.x - envelope.x) < 0.001;
     const east = Math.abs(r.x + r.width - envelope.x - envelope.w) < 0.001;
     const north = Math.abs(r.y - envelope.y) < 0.001;

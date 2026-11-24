@@ -32,9 +32,11 @@
     "@ai-floor-planner/renderer": "workspace:^",
     "@node-projects/acad-ts": "^3.2.0",
     "fast-xml-parser": "5.3.6",
+    "fontkit": "2.0.4",
     "pdf-lib": "1.17.1"
   },
   "devDependencies": {
+    "@types/fontkit": "2.0.8",
     "typescript": "5.5.4",
     "vitest": "2.0.5"
   }

@@ -52,7 +52,7 @@ export interface WizardState {
   hasStiltParking: boolean;
   duplexCount?: number;
   triplexCount?: number;
-  flatsPerFloor: 1 | 2 | 3 | 4;
+  flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   bhkCounts: Record<BhkType, number>;
   bhkCarpetAreas: Record<BhkType, number>;
   buildingMassingShape?: BuildingMassingShape | 'AUTO';
@@ -346,7 +346,7 @@ export const studioStoreActions = {
     }
   },
 
-    setFlatsPerFloor(flatsPerFloor: 1 | 2 | 3 | 4) {
+    setFlatsPerFloor(flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6) {
       storeState = {
         ...storeState,
         wizard: { ...storeState.wizard, flatsPerFloor },

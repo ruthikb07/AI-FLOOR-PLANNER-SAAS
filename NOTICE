@@ -1,0 +1,33 @@
+RH Planner (AI-FLOOR-PLANNER-SAAS)
+Copyright 2026 RH Planner Contributors
+
+-------------------------------------------------------------------------------
+Third-Party Software Attributions
+-------------------------------------------------------------------------------
+
+1. Cota (Selectively Adapted 2D Pure-TypeScript CAD Geometry, Snapping, Editing
+   and DXF Exchange Algorithms in `packages/core/src/interchange/cota-cad-kernel.ts`)
+   Version: 2.49.3 (2026-11-18)
+   Upstream Repository: https://github.com/mxchristian17/cota
+   Copyright 2026 Christian Orengia (https://github.com/mxchristian17)
+   Licensed under the Apache License, Version 2.0.
+
+   Original Cota NOTICE preserved per Apache License 2.0 Section 4(d):
+     Cota
+     Copyright 2026 Christian Orengia
+     This product was created and is maintained by Christian Orengia
+     (https://github.com/mxchristian17).
+     Licensed under the Apache License, Version 2.0. Redistributions must
+     retain the attribution notices in this file, as required by section 4(d)
+     of the License.
+     "Cota" and the Cota logo identify the upstream project; the License does
+     not grant permission to use them. RH Planner is an independent product
+     and is not endorsed by or affiliated with Cota or its author.
+
+   Note on Excluded Components:
+     RH Planner does NOT bundle or distribute Cota's optional LGPL-2.1
+     OpenCascade WebAssembly modules (`occt-wasm`, `occt-import-js`), GPL-3.0
+     `LibreDWG` external tools, or Cota's React 19 / Three.js 0.169 UI shell.
+
+2. Embedded Noto Sans Fonts (`packages/backend/src/assets/fonts/`)
+   Copyright Google LLC — Licensed under the SIL Open Font License 1.1.

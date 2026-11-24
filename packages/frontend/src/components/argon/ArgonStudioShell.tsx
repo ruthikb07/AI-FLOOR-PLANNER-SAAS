@@ -18,6 +18,7 @@ import {
   Save,
   FileUp,
   Library,
+  Sparkles,
 } from 'lucide-react';
 import type { Building, BuildingMassingShape, GalleryCoordinationMode, PlanCategory } from '@ai-floor-planner/core';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
@@ -31,6 +32,7 @@ import { InteractivePlanEditorPage } from './InteractivePlanEditorPage';
 import { FloorIsometricEditor } from './FloorIsometricEditor';
 import { UdcprEtabsAnalysis } from './UdcprEtabsAnalysis';
 import { GenerationProgressModal } from './GenerationProgressModal';
+import { DesignAssistant } from './DesignAssistant';
 import { CommandPalette } from '../workspace/CommandPalette';
 import { exportProjectAsJsonFile, projectStorage } from '../../services/storage';
 import {
@@ -226,7 +228,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       setShowWelcome(false);
       setConcepts([{ building: syncedBuilding, seed: 1 }]);
       regenerationBrief.current = null;
-      setActiveWorkspace('cad_2d');
+      setActiveWorkspace(current => (current === 'library' ? 'cad_2d' : current));
       setSaveToast(`Loaded "${loaded.manifest.name}" (Rev. ${loaded.revision}) from local disk`);
       setTimeout(() => setSaveToast(''), 3500);
     } catch (err) {
@@ -272,6 +274,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const shapeExplicitlyLocked = useRef<boolean>(false);
   const [generationSeed, setGenerationSeed] = useState(1);
   const [generationError, setGenerationError] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const canOpenReview = activeWorkspace === 'cad_2d' || activeWorkspace === 'edit_plan';
   const [saveWarning, setSaveWarning] = useState('');
   const [generationFindings, setGenerationFindings] = useState<readonly string[]>([]);
 
@@ -436,12 +440,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
   const handleRegenerateVariant = (target: 'edit' | 'compare' = 'edit') => {
     const brief = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
-    const currentHash = editor.building.metadata.generationBrief?.topologyHash;
+    const currentBrief = editor.building.metadata.generationBrief;
     const currentShape = editor.building.metadata.generationBrief?.buildingMassingShape;
     const currentArch = editor.building.metadata.generationBrief?.archetype;
-    if (currentHash && !rejectedTopologyHashes.current.includes(currentHash)) {
-      rejectedTopologyHashes.current = [...rejectedTopologyHashes.current, currentHash];
-    }
+    rejectedTopologyHashes.current = [...new Set([...rejectedTopologyHashes.current,
+      currentBrief?.topologyHash, currentBrief?.physicalLayoutHash].filter((hash): hash is string => Boolean(hash)))];
     if (currentShape && !usedShapeIds.current.includes(currentShape)) {
       usedShapeIds.current = [...usedShapeIds.current, currentShape];
     }
@@ -500,8 +503,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       return;
     }
     const nextSeed = generationSeed + 1;
-    const topologyHash = editor.building.metadata.generationBrief?.topologyHash;
-    rejectedTopologyHashes.current = topologyHash ? [topologyHash] : [];
+    const generated = editor.building.metadata.generationBrief;
+    rejectedTopologyHashes.current = [generated?.topologyHash, generated?.physicalLayoutHash]
+      .filter((hash): hash is string => Boolean(hash));
     setAutoFixStatus('');
     setGenerationSeed(nextSeed);
     runGeneration(brief.data, nextSeed, rejectedTopologyHashes.current, 'repair');
@@ -799,6 +803,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 
           {/* Right: Import CAD + Save + Library + FT/M Toggle + Lighting Switch + Live Compliance Pill */}
           <div className="rh-topbar-right">
+            {canOpenReview && <button type="button" aria-label="Architectural design review" aria-expanded={reviewOpen}
+              title="Architectural design review" className="rh-topbar-tab"
+              onClick={() => setReviewOpen(open => !open)}>
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>}
             <button
               type="button"
               data-testid="topbar-import-cad"
@@ -1030,8 +1039,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             )}
 
             {generationFindings.length > 0 &&
-              (activeWorkspace === 'cad_2d' || activeWorkspace === 'engineering') &&
-              complianceSummary && !complianceSummary.passed && (
+              (activeWorkspace === 'cad_2d' || activeWorkspace === 'engineering' || activeWorkspace === 'concepts') && (
                 <details className="fixed bottom-4 right-4 z-30 max-w-md max-h-60 overflow-auto rounded-lg border border-amber-300 bg-amber-50/95 p-3 text-xs text-amber-950 shadow-lg backdrop-blur">
                   <summary>
                     {generationFindings.length} generation findings · Professional review required
@@ -1068,6 +1076,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
               </div>
             )}
 
+            {canOpenReview && reviewOpen && <DesignAssistant key={editor.projectId} editor={editor}
+              onClose={() => setReviewOpen(false)} onEdit={() => { setReviewOpen(false); setActiveWorkspace('edit_plan'); }} />}
             <GenerationProgressModal
               isOpen={isGenerating}
               progress={pipelineProgress}

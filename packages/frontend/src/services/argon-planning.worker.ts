@@ -1,11 +1,20 @@
-import { executeAuditedPlanningPipeline } from '@ai-floor-planner/planning-engine';
+import { executeAuditedPlanningPipeline, PipelineProgressEmitter } from '@ai-floor-planner/planning-engine';
 import type { PlanningRequest, PlanningResult } from './argon-generation';
 import { requireAcceptedGeneration } from '@ai-floor-planner/constraint-engine';
 
-async function tryBackendHybridGeneration(request: PlanningRequest): Promise<PlanningResult | undefined> {
+type BackendGeneration = { result: PlanningResult } | { fallbackReason: string; providerErrorCode: string };
+const BACKEND_GENERATION_TIMEOUT_MS = 120_000;
+
+async function tryBackendHybridGeneration(
+  request: PlanningRequest,
+  onProgress: (progress: Parameters<NonNullable<Parameters<typeof executeAuditedPlanningPipeline>[1]>>[0]) => void,
+): Promise<BackendGeneration> {
   const { config, generationRunId } = request;
+  const emitter = new PipelineProgressEmitter();
+  emitter.subscribe(onProgress);
+  emitter.startStage('PLOT_BOUNDARY_SOLVE');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45_000);
+  const timeout = setTimeout(() => controller.abort(), BACKEND_GENERATION_TIMEOUT_MS);
   try {
     let response: Response;
     try {
@@ -17,9 +26,15 @@ async function tryBackendHybridGeneration(request: PlanningRequest): Promise<Pla
         signal: controller.signal,
       });
     } catch {
-      return undefined;
+      if (controller.signal.aborted) return { providerErrorCode: 'BACKEND_TIMEOUT',
+        fallbackReason: 'The planning backend did not respond within two minutes. The browser used its local planner.' };
+      return { providerErrorCode: 'BACKEND_NETWORK_ERROR',
+        fallbackReason: 'The browser could not connect to the planning backend and used its local planner.' };
     }
-    if (response.status === 404 || response.status >= 500) return undefined;
+    if ([404, 502, 503, 504].includes(response.status)) {
+      return { providerErrorCode: `BACKEND_HTTP_${response.status}`,
+        fallbackReason: `The planning backend returned HTTP ${response.status}. The browser used its local planner.` };
+    }
 
     const payload = await response.json().catch(() => undefined) as
       (PlanningResult & { generationRunId?: string; error?: { message?: string } }) | undefined;
@@ -29,8 +44,22 @@ async function tryBackendHybridGeneration(request: PlanningRequest): Promise<Pla
       throw new Error('The planning service returned an invalid or mismatched building. Try again.');
     }
     requireAcceptedGeneration(payload);
-    // Audit the received canonical model as well as the claimed report.
-    return await executeAuditedPlanningPipeline(payload.building);
+    // Audit the received canonical model as well as the claimed report, streaming real audit stages.
+    const verified = await executeAuditedPlanningPipeline(payload.building, onProgress);
+    return {
+      result: {
+        ...verified,
+        building: {
+          ...verified.building,
+          metadata: {
+            ...verified.building.metadata,
+            ...(payload.building.metadata?.generationBrief
+              ? { generationBrief: payload.building.metadata.generationBrief }
+              : {}),
+          },
+        },
+      },
+    };
   } finally {
     clearTimeout(timeout);
   }
@@ -38,11 +67,18 @@ async function tryBackendHybridGeneration(request: PlanningRequest): Promise<Pla
 
 self.onmessage = async (event: MessageEvent<PlanningRequest>) => {
   const { generationRunId, config } = event.data;
+  const postProgress = (progress: Parameters<NonNullable<Parameters<typeof executeAuditedPlanningPipeline>[1]>>[0]) => {
+    self.postMessage({ type: 'progress', generationRunId, progress });
+  };
   try {
-    const result = await tryBackendHybridGeneration(event.data)
-      ?? await executeAuditedPlanningPipeline(config, progress => {
-        self.postMessage({ type: 'progress', generationRunId, progress });
-      });
+    const backend = await tryBackendHybridGeneration(event.data, postProgress);
+    const result = 'result' in backend ? backend.result
+      : await executeAuditedPlanningPipeline({ ...config,
+        aiTelemetryOverride: { geminiInvoked: false, provider: 'deterministic-rule-engine',
+          interpretationSource: 'DETERMINISTIC', fallbackTriggered: true,
+          fallbackReason: backend.fallbackReason, providerErrorCode: backend.providerErrorCode,
+          referenceImageUsedForGeometry: false },
+      }, postProgress);
     requireAcceptedGeneration(result);
     const building = { ...result.building, metadata: { ...result.building.metadata, generationRunId } };
     self.postMessage({ type: 'complete', generationRunId, result: { ...result, building } });

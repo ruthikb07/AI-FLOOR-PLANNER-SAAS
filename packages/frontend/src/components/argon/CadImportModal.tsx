@@ -70,7 +70,7 @@ export const CadImportModal: React.FC<CadImportModalProps> = ({ isOpen, onClose,
   const [numFloors, setNumFloors] = useState(4);
   const [stackType, setStackType] = useState<'STILT_PLUS_N' | 'G_PLUS_N'>('STILT_PLUS_N');
   const [redevelopmentBase, setRedevelopmentBase] = useState(false);
-  const [flatsPerFloor, setFlatsPerFloor] = useState<1 | 2 | 3 | 4>(4);
+  const [flatsPerFloor, setFlatsPerFloor] = useState<1 | 2 | 3 | 4 | 5 | 6>(4);
   const [massingShape, setMassingShape] = useState<BuildingMassingShape>('IRREGULAR_ANGLED_PLOT');
   const [frontSetbackM, setFrontSetbackM] = useState(4.5);
   const [rearSetbackM, setRearSetbackM] = useState(3.0);
@@ -483,13 +483,15 @@ export const CadImportModal: React.FC<CadImportModalProps> = ({ isOpen, onClose,
                     <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Flats / Floor</label>
                     <select
                       value={flatsPerFloor}
-                      onChange={e => setFlatsPerFloor(Number(e.target.value) as 1 | 2 | 3 | 4)}
+                      onChange={e => setFlatsPerFloor(Number(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6)}
                       className="w-full px-2 py-1.5 rounded bg-slate-900 border border-white/10 text-xs font-mono text-slate-100"
                     >
                       <option value={1}>1 (Villa)</option>
                       <option value={2}>2 Flats</option>
                       <option value={3}>3 Flats</option>
                       <option value={4}>4 Flats</option>
+                      <option value={5}>5 Flats</option>
+                      <option value={6}>6 Flats</option>
                     </select>
                   </div>
                 </div>

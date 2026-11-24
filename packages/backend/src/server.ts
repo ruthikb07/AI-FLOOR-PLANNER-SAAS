@@ -17,8 +17,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { handleExportRoute } from './api/export-routes.js';
 import { GeminiProvider, type BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
-import { resolveServiceConfig, type ServiceConfig } from './env.js';
+import {
+  buildSanitizedProviderAudit,
+  resolveServiceConfig,
+  type SanitizedProviderAuditEntry,
+  type ServiceConfig,
+} from './env.js';
 import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
+import { handleCadEditProposal } from './api/cad-edit-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
 import { handleLocalProjectRoute } from './routes/local-project-routes.js';
@@ -54,11 +60,18 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
  */
 export function createGeminiProvider(config: ServiceConfig): GeminiProvider | null {
   if (config.geminiApiKey.length === 0) return null;
+  const fallbackList = config.geminiFallbackModels ?? [
+    config.geminiFallbackModel,
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3-flash-preview',
+    'gemini-flash-lite-latest',
+  ];
   return new GeminiProvider({
     apiKey: config.geminiApiKey,
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
-    fallbackModels: [config.geminiFallbackModel, 'gemini-3-flash-preview', 'gemini-flash-lite-latest'],
+    fallbackModels: fallbackList,
     maxRetriesOn503: 1,
     retryPolicy: {
       maxRetries: 1,
@@ -89,6 +102,8 @@ export interface ProviderStatusInfo {
   readonly status: GeminiStatus | string;
   readonly model: string;
   readonly fallbackModel?: string;
+  readonly fallbackModels?: readonly string[];
+  readonly credentialSource?: string;
   readonly detail?: string;
 }
 
@@ -97,6 +112,7 @@ export interface BackendHealthResponse {
   /** Plan generation mode: hybrid-gemini when live Gemini key is configured, else deterministic. */
   readonly planGeneration: 'deterministic' | 'hybrid-gemini';
   readonly gemini: ProviderStatusInfo;
+  readonly providers?: readonly SanitizedProviderAuditEntry[];
 }
 
 /**
@@ -131,23 +147,21 @@ export async function checkProviderHealth(
     };
   } else {
     try {
-      // `isAvailable` is the provider contract's own reachability probe.
-      const reachable = await deps.gemini.isAvailable();
-      geminiStatus = {
-        configured: true,
-        reachable,
-        status: reachable ? 'REACHABLE' : 'TEMPORARILY_UNAVAILABLE',
-        model: config.geminiModel,
-        detail: reachable ? undefined : 'Provider did not report itself available',
-      };
+      const provider = deps.gemini;
+      const code = provider instanceof GeminiProvider ? await provider.probeCredentials()
+        : await provider.isAvailable() ? 200 : 503;
+      const reachable = code >= 200 && code < 300;
+      let status: GeminiStatus = 'REQUEST_ERROR';
+      if (reachable) status = 'REACHABLE';
+      else if ([400, 401, 403].includes(code)) status = 'AUTH_FAILED';
+      else if (code === 429) status = 'RATE_LIMITED';
+      else if (code >= 500) status = 'TEMPORARILY_UNAVAILABLE';
+      geminiStatus = { configured: true, reachable, status, model: config.geminiModel,
+        detail: reachable ? undefined : `Gemini credential probe returned HTTP ${code}.` };
     } catch (error) {
-      geminiStatus = {
-        configured: true,
-        reachable: false,
-        status: 'NETWORK_ERROR',
-        model: config.geminiModel,
-        detail: error instanceof Error ? error.message : 'Provider probe failed',
-      };
+      const timedOut = error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name);
+      geminiStatus = { configured: true, reachable: false, status: timedOut ? 'TIMEOUT' : 'NETWORK_ERROR',
+        model: config.geminiModel, detail: timedOut ? 'Gemini credential probe timed out.' : 'Could not contact Gemini.' };
     }
   }
 
@@ -164,7 +178,10 @@ export async function checkProviderHealth(
     gemini: {
       ...geminiStatus,
       fallbackModel: config.geminiFallbackModel,
+      ...(config.geminiFallbackModels ? { fallbackModels: config.geminiFallbackModels } : {}),
+      ...(config.credentialSource ? { credentialSource: config.credentialSource } : {}),
     },
+    providers: buildSanitizedProviderAudit(config),
   };
 }
 
@@ -265,6 +282,20 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
         return;
       }
       const result = await handleArchitecturalEvaluation(body, deps);
+      sendJson(response, result.status, result.json);
+      return;
+    }
+
+    if (method === 'POST' && url.pathname === '/api/v1/cad/edit-proposal') {
+      const raw = await readBody(request);
+      let body: unknown = null;
+      try {
+        body = raw.length > 0 ? JSON.parse(raw) : null;
+      } catch {
+        sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+        return;
+      }
+      const result = await handleCadEditProposal(body, deps);
       sendJson(response, result.status, result.json);
       return;
     }

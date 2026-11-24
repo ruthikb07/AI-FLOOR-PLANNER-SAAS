@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PlanThumbnail } from './ProjectPortfolio';
 import { ETABSExportPanel } from './ETABSExportPanel';
-import type { BlenderExportManifest, ExportFileDescriptor } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, type BlenderExportManifest, type ExportFileDescriptor } from '@ai-floor-planner/core';
 import type { EditorContextValue } from '../../stores/editor-store';
 import {
   requestVerifiedExport,
@@ -164,10 +164,14 @@ export const ExportCenterWorkspace: React.FC<{ editor: EditorContextValue }> = (
       const response = await fetch('/api/v1/export/glb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ building }),
+        body: JSON.stringify({ building, options: { expectedRevision: building.version } }),
         signal,
       });
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error?.message ?? `GLB export failed (${response.status}).`);
+      if (response.headers.get('x-building-revision') !== String(building.version) ||
+        response.headers.get('x-building-sha256') !== canonicalBuildingHash(building)) {
+        throw new Error('The GLB response belongs to a different building revision.');
+      }
       const bytes = await response.arrayBuffer();
       if (signal.aborted || current.current !== building) return;
       const header = new DataView(bytes);
