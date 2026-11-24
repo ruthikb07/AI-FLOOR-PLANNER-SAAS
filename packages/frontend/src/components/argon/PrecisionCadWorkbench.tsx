@@ -185,8 +185,10 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
   );
 
   const selectedEntity = useMemo(
-    () => (activeSheet?.entities ?? []).find(e => e.id === selectedCadId) ?? null,
-    [activeSheet, selectedCadId],
+    () => (activeSheet?.entities ?? []).find(entity => entity.id === selectedCadId) ??
+      (editor.selection?.floorId === activeFloorId ? activeSheet?.entities.find(entity =>
+        entity.canonicalId === editor.selection?.entityId && entity.canonicalKind === editor.selection?.entityType) : undefined) ?? null,
+    [activeSheet, activeFloorId, selectedCadId, editor.selection],
   );
 
   // Compute initial model bounding box in screen-SVG space `(cadX, -cadY)`
@@ -1184,7 +1186,7 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
             {/* Render CAD Entities */}
             {visibleEntities.map(ent => {
               const layerMeta = cadDoc.layers.find(l => l.id === ent.layer);
-              const isSel = ent.id === selectedCadId;
+              const isSel = ent.id === selectedEntity?.id;
               const stroke = isSel ? '#C2410C' : (layerMeta?.color ?? '#1F2937');
               const weight =
                 strokeScale *

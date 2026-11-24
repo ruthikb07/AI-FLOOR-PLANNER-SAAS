@@ -1,0 +1,35 @@
+.rh-bim {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(.8rem, 2vw, 1.5rem);
+  overflow: auto;
+  color: #32271d;
+  background: #f4eee4;
+}
+.rh-bim-header, .rh-bim-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.rh-bim-header { justify-content: space-between; }
+.rh-bim h1, .rh-bim h2 { font-family: var(--font-display, Georgia, serif); font-weight: 650; }
+.rh-bim h1 { font-size: clamp(1.35rem, 3vw, 2.15rem); }
+.rh-bim h2 { font-size: 1.2rem; margin-bottom: .45rem; }
+.rh-bim button, .rh-bim input, .rh-bim select {
+  background: #fffaf0; border: 1px solid #c9baaa; border-radius: .35rem; padding: .4rem .55rem;
+  color: inherit; max-width: 100%; min-width: 0;
+}
+.rh-bim button[aria-pressed="true"] { background: #e0ccad; border-color: #856143; }
+.rh-bim button:disabled { opacity: .5; }
+.rh-bim label { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.rh-bim-grid, .rh-bim-totals { display: grid; gap: .75rem; }
+.rh-bim-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.rh-bim-totals { grid-template-columns: repeat(auto-fit, minmax(8.25rem, 1fr)); }
+.rh-bim-card, .rh-bim-totals div { background: #fbf7ef; border: 1px solid #d9c9b5; border-radius: .5rem; padding: .8rem; min-width: 0; }
+.rh-bim-totals dd { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.rh-bim-scroll { max-height: 19rem; overflow: auto; margin-top: .6rem; }
+.rh-bim table { width: 100%; border-collapse: collapse; }
+.rh-bim th, .rh-bim td { padding: .25rem; text-align: left; border-bottom: 1px solid #e9dfd0; }
+.rh-bim-properties { display: grid; grid-template-columns: auto minmax(0,1fr); gap: .3rem .6rem; margin-bottom: .7rem; }
+.rh-bim-properties dd, .rh-bim code { overflow-wrap: anywhere; }
+.rh-bim-viewport { position: relative; height: clamp(300px, 52vh, 640px); overflow: hidden; border-radius: .45rem; }
+.rh-bim-overlay { display: block; width: min(100%, 640px); height: min(44vh, 360px); margin-top: .65rem; }
+.rh-bim [role="alert"] { color: #8c2a1f; }
+.rh-bim-review { font-size: .87rem; }
+@media (max-width: 680px) { .rh-bim-grid { grid-template-columns: minmax(0, 1fr); } }

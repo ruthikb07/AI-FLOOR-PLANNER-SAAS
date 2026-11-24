@@ -12,6 +12,7 @@ export default defineConfig({
     'rh-survey-setup.spec.ts',
     'rh-studio-workflow.spec.ts',
     'rh-phase4a-cad-workflow.spec.ts',
+    'rh-phase4b-bim-workflow.spec.ts',
   ],
   timeout: 90_000,
   workers: 1,

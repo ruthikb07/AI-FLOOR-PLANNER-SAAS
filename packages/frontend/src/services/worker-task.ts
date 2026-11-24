@@ -1,6 +1,7 @@
 interface WorkerTask<T> {
   readonly start: () => Worker;
   readonly input: unknown;
+  readonly transfer?: Transferable[];
   readonly signal: AbortSignal;
   readonly timeoutMs: number;
   readonly label: string;
@@ -47,7 +48,8 @@ export function runWorkerTask<T>(task: WorkerTask<T>): Promise<T> {
       worker.onerror = event => fail(new Error(event.message || `${task.label} worker stopped. Try again.`));
       worker.onmessageerror = () => fail(new Error(`${task.label} returned unreadable data. Try again.`));
       timer = setTimeout(() => fail(new Error(`${task.label} timed out. Try a smaller brief or run again.`)), task.timeoutMs);
-      worker.postMessage(task.input);
+      if (task.transfer?.length) worker.postMessage(task.input, task.transfer);
+      else worker.postMessage(task.input);
     } catch (error) {
       fail(error);
     }

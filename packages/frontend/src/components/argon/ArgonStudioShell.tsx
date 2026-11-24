@@ -58,6 +58,7 @@ import {
 } from '../../services/local-project-api';
 
 const LazyBuilding3DCustomizer = lazy(() => import('./Building3DCustomizer'));
+const BimStudio = lazy(() => import('./BimStudio'));
 const ProjectSetupWizard = lazy(async () => ({ default: (await import('./ProjectSetupWizard')).ProjectSetupWizard }));
 const StructuralCADWorkspace = lazy(async () => ({ default: (await import('./StructuralCADWorkspace')).StructuralCADWorkspace }));
 const ExportCenterWorkspace = lazy(async () => ({ default: (await import('./ExportCenterWorkspace')).ExportCenterWorkspace }));
@@ -70,6 +71,7 @@ export type ArgonWorkspaceId =
   | 'edit_plan'
   | 'isometric'
   | 'building_3d'
+  | 'bim'
   | 'structural_cad'
   | 'engineering'
   | 'export';
@@ -82,6 +84,7 @@ const workspaceTitles: Record<ArgonWorkspaceId, string> = {
   edit_plan: 'Wall & Room Editor',
   isometric: 'Floor Cutaway 3D',
   building_3d: 'Tower 3D',
+  bim: 'BIM Studio',
   structural_cad: 'Structural Framing',
   engineering: 'Code Compliance',
   export: 'Drawings & BIM Exports',
@@ -134,6 +137,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
 }) => {
   const editor = useEditorStore();
   const studio = useStudioStore();
+  const [precisionFromBim, setPrecisionFromBim] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<ArgonWorkspaceId>('setup');
   const [isProjectSwitcherOpen, setIsProjectSwitcherOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -260,6 +264,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     { id: 'edit_plan', label: 'Edit Plan', icon: <Edit3 className="w-3.5 h-3.5" /> },
     { id: 'isometric', label: 'Floor 3D', icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'building_3d', label: 'Tower 3D', icon: <Box className="w-3.5 h-3.5" /> },
+    { id: 'bim', label: 'BIM Studio', icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'structural_cad', label: 'Structural', icon: <Building2 className="w-3.5 h-3.5" /> },
     { id: 'engineering', label: 'Compliance', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
     { id: 'export', label: 'Exports', icon: <Download className="w-3.5 h-3.5" /> },
@@ -963,6 +968,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             )}
             {activeWorkspace === 'cad_2d' && (
               <ArchitecturalCADWorkspace
+                initialPrecisionCadOpen={precisionFromBim}
                 editor={editor}
                 onRegeneratePlan={() => handleRegenerateVariant()}
                 onSelectMassingVariant={handleSelectMassingVariant}
@@ -1021,6 +1027,13 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                     }
                   }}
                 />
+              </Suspense>
+            )}
+            {activeWorkspace === 'bim' && (
+              <Suspense fallback={<p role="status" className="p-4">Opening BIM Studio…</p>}>
+                {editor.activeFloor ? <BimStudio key={editor.building.projectId} editor={editor}
+                  onOpenCad={() => { setPrecisionFromBim(true); setActiveWorkspace('cad_2d'); }} />
+                  : <p>Open an accepted building to inspect BIM quantities.</p>}
               </Suspense>
             )}
             {activeWorkspace === 'structural_cad' && (

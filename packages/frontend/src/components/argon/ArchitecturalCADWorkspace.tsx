@@ -18,6 +18,7 @@ const LazyPrecisionCadWorkbench = React.lazy(() => import('./PrecisionCadWorkben
 export interface ArchitecturalCADWorkspaceProps {
   editor: EditorContextValue;
   onRegeneratePlan?: () => void;
+  initialPrecisionCadOpen?: boolean;
   onSelectMassingVariant?: (shape: BuildingMassingShape) => void;
   onSelectPlanCategory?: (category: PlanCategory) => void;
   onToggleAutoExplore?: (enabled: boolean) => void;
@@ -40,6 +41,7 @@ const VARIANT_MASSING_CHOICES: ReadonlyArray<{ id: BuildingMassingShape; label: 
 export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps> = ({
   editor,
   onRegeneratePlan,
+  initialPrecisionCadOpen = false,
   onSelectMassingVariant,
   onSelectPlanCategory,
   onToggleAutoExplore,
@@ -54,7 +56,7 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
   const activePlanCategory = editor.building.metadata.generationBrief?.planCategory as PlanCategory | undefined;
   const [shapeDrawerOpen, setShapeDrawerOpen] = useState(false);
   const [scoreDrawerOpen, setScoreDrawerOpen] = useState(false);
-  const [precisionCadOpen, setPrecisionCadOpen] = useState(false);
+  const [precisionCadOpen, setPrecisionCadOpen] = useState(initialPrecisionCadOpen);
   const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [disciplines, setDisciplines] = useState<Record<EngineeringOverlay, boolean>>({
     ARCHITECTURAL: true,
