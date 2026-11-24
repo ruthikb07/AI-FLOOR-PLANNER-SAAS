@@ -13,6 +13,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { handleExportRoute } from './api/export-routes.js';
@@ -72,7 +73,9 @@ export function createGeminiProvider(config: ServiceConfig): GeminiProvider | nu
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
     fallbackModels: fallbackList,
-    maxRetriesOn503: 1,
+    maxRetriesOn503: 0,
+    maxTotalAttempts: config.maxProviderAttempts ?? Math.max(6, 1 + fallbackList.length),
+    modelCooldownMs: config.modelCooldownMs ?? 30_000,
     retryPolicy: {
       maxRetries: 1,
       initialDelayMs: 350,
@@ -80,7 +83,7 @@ export function createGeminiProvider(config: ServiceConfig): GeminiProvider | nu
       backoffFactor: 2,
       jitterRatio: 0.15,
     },
-    timeoutMs: Math.min(config.providerTimeoutMs, 12_000),
+    timeoutMs: config.providerTimeoutMs,
   });
 }
 
@@ -259,16 +262,35 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
     }
 
     if (method === 'POST' && (url.pathname === '/api/projects/generate' || url.pathname === '/api/v1/projects/generate')) {
-      const raw = await readBody(request);
-      let body: unknown = null;
+      const reqAbort = new AbortController();
+      const onDisconnect = () => {
+        if (!response.writableEnded) reqAbort.abort();
+      };
+      request.on('aborted', onDisconnect);
+      response.on('close', onDisconnect);
       try {
-        body = raw.length > 0 ? JSON.parse(raw) : null;
-      } catch {
-        sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
-        return;
+        const raw = await readBody(request);
+        let body: unknown = null;
+        try {
+          body = raw.length > 0 ? JSON.parse(raw) : null;
+        } catch {
+          sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+          return;
+        }
+        const rawAuth = `${request.headers.authorization ?? ''}|${request.headers.origin ?? 'loopback'}`;
+        const authContextDigest = createHash('sha256').update(rawAuth).digest('hex').slice(0, 16);
+        const result = await handleProjectGeneration(body, deps, {
+          signal: reqAbort.signal,
+          authContextDigest,
+          reasoningModeOverride: deps.config?.reasoningModeOverride,
+        });
+        if (!response.writableEnded && !response.destroyed) {
+          sendJson(response, result.status, result.json);
+        }
+      } finally {
+        request.off('aborted', onDisconnect);
+        response.off('close', onDisconnect);
       }
-      const result = await handleProjectGeneration(body, deps);
-      sendJson(response, result.status, result.json);
       return;
     }
 
@@ -287,16 +309,29 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
     }
 
     if (method === 'POST' && url.pathname === '/api/v1/cad/edit-proposal') {
-      const raw = await readBody(request);
-      let body: unknown = null;
+      const reqAbort = new AbortController();
+      const onDisconnect = () => {
+        if (!response.writableEnded) reqAbort.abort();
+      };
+      request.on('aborted', onDisconnect);
+      response.on('close', onDisconnect);
       try {
-        body = raw.length > 0 ? JSON.parse(raw) : null;
-      } catch {
-        sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
-        return;
+        const raw = await readBody(request);
+        let body: unknown = null;
+        try {
+          body = raw.length > 0 ? JSON.parse(raw) : null;
+        } catch {
+          sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+          return;
+        }
+        const result = await handleCadEditProposal(body, deps, { signal: reqAbort.signal });
+        if (!response.writableEnded && !response.destroyed) {
+          sendJson(response, result.status, result.json);
+        }
+      } finally {
+        request.off('aborted', onDisconnect);
+        response.off('close', onDisconnect);
       }
-      const result = await handleCadEditProposal(body, deps);
-      sendJson(response, result.status, result.json);
       return;
     }
 

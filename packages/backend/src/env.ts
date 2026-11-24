@@ -11,6 +11,8 @@
  * deterministically before it can influence geometry.
  */
 
+import type { AIReasoningMode } from '@ai-floor-planner/core';
+
 export type GeminiCredentialSource = 'GEMINI_API_KEY' | 'GOOGLE_API_KEY' | 'NONE';
 
 export interface ServiceConfig {
@@ -22,6 +24,9 @@ export interface ServiceConfig {
   readonly geminiFallbackModel: string;
   readonly geminiFallbackModels?: readonly string[];
   readonly providerTimeoutMs: number;
+  readonly maxProviderAttempts?: number;
+  readonly modelCooldownMs?: number;
+  readonly reasoningModeOverride?: AIReasoningMode;
   readonly port: number;
 }
 
@@ -64,15 +69,21 @@ export function resolveServiceConfig(env: NodeJS.ProcessEnv = process.env): Serv
   for (const candidate of [
     fallbackModel,
     ...extraFallbacks,
-    'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
-    'gemini-3-flash-preview',
     'gemini-flash-lite-latest',
+    'gemini-3.6-flash',
+    'gemini-3-flash-preview',
   ]) {
     if (candidate && candidate !== primaryModel && !dedupedFallbacks.includes(candidate)) {
       dedupedFallbacks.push(candidate);
     }
   }
+
+  const rawReasoningMode = (env.AI_REASONING_MODE ?? '').trim().toUpperCase();
+  const reasoningModeOverride: AIReasoningMode | undefined =
+    rawReasoningMode === 'FAST' || rawReasoningMode === 'BALANCED' || rawReasoningMode === 'DEEP'
+      ? rawReasoningMode
+      : undefined;
 
   return {
     briefInterpreterKind: interpreterKind === 'local-stub' ? 'local-stub' : 'gemini',
@@ -81,7 +92,10 @@ export function resolveServiceConfig(env: NodeJS.ProcessEnv = process.env): Serv
     geminiModel: primaryModel,
     geminiFallbackModel: fallbackModel,
     geminiFallbackModels: dedupedFallbacks,
-    providerTimeoutMs: positiveInt(env.PROVIDER_TIMEOUT_MS, 20_000),
+    providerTimeoutMs: positiveInt(env.AI_PROVIDER_TIMEOUT_MS ?? env.PROVIDER_TIMEOUT_MS, 24_000),
+    maxProviderAttempts: positiveInt(env.AI_MAX_PROVIDER_ATTEMPTS, 7),
+    modelCooldownMs: positiveInt(env.AI_MODEL_COOLDOWN_MS, 30_000),
+    ...(reasoningModeOverride ? { reasoningModeOverride } : {}),
     port: positiveInt(env.PORT, 4200),
   };
 }

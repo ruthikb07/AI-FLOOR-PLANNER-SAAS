@@ -110,6 +110,10 @@ export type {
 // AI
 export type {
   TokenUsage,
+  AIReasoningMode,
+  AIInvocationMode,
+  GeminiFailureClass,
+  FailedAttemptTelemetry,
   BriefRequirementCategory,
   StructuredBriefRequirementItem,
   BriefRequirementConflict,

@@ -1,9 +1,15 @@
-import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
+import {
+  GeminiExecutionError,
+  resolveModelThinkingParameters,
+  type BaseAIProvider,
+} from '@ai-floor-planner/ai-orchestration';
 import {
   AITaskType,
   validateBuildingSchema,
+  type AIInvocationMode,
   type Building,
   type GenerationControlState,
+  type TokenUsage,
 } from '@ai-floor-planner/core';
 import {
   parseCadEditInstructionDeterministically,
@@ -44,16 +50,15 @@ export interface CadEditProposalApiResponse {
   readonly proposal: CadAiEditProposalResult;
   readonly aiTelemetry: {
     readonly geminiInvoked: boolean;
+    readonly invocationMode: AIInvocationMode;
+    readonly reasoningMode: 'FAST';
     readonly interpretationSource: 'GEMINI_ASSISTED' | 'DETERMINISTIC';
     readonly modelUsed?: string;
+    readonly apiCallCount: number;
     readonly fallbackReason?: string;
     readonly latencyMs: number;
-    readonly tokenUsage?: {
-      readonly promptTokens: number;
-      readonly completionTokens: number;
-      readonly totalTokens: number;
-      readonly thoughtsTokens?: number;
-    };
+    readonly tokenUsage?: TokenUsage;
+    readonly currentRequestTokenUsage: TokenUsage | 'UNKNOWN';
   };
 }
 
@@ -69,14 +74,19 @@ const VALID_ACTIONS = new Set<CadEditAction>([
   'LOCALIZED_FLAT_REGENERATION',
 ]);
 
+const ZERO_USAGE: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+
 export async function handleCadEditProposal(
   body: unknown,
   deps: { readonly gemini: BaseAIProvider | null; readonly briefInterpreterKind: 'gemini' | 'local-stub' },
+  runtimeOptions: { readonly signal?: AbortSignal } = {},
 ): Promise<{ status: number; json: CadEditProposalApiResponse | { error: { code: string; message: string } } }> {
   if (!isRecord(body)) {
     return {
       status: 400,
-      json: { error: { code: 'INVALID_REQUEST', message: 'Expected JSON object with building, floorId, and instruction.' } },
+      json: {
+        error: { code: 'INVALID_REQUEST', message: 'Expected JSON object with building, floorId, and instruction.' },
+      },
     };
   }
 
@@ -85,7 +95,8 @@ export async function handleCadEditProposal(
   const instruction = typeof body.instruction === 'string' ? body.instruction.trim() : '';
   const selectedEntityId = typeof body.selectedEntityId === 'string' ? body.selectedEntityId.trim() : undefined;
   const expectedRevision = typeof body.expectedRevision === 'number' ? body.expectedRevision : undefined;
-  const expectedRevisionDigest = typeof body.expectedRevisionDigest === 'string' ? body.expectedRevisionDigest : undefined;
+  const expectedRevisionDigest =
+    typeof body.expectedRevisionDigest === 'string' ? body.expectedRevisionDigest : undefined;
   const control = isRecord(body.control) ? (body.control as unknown as GenerationControlState) : undefined;
 
   if (!building || !isRecord(building) || validateBuildingSchema(building).length > 0) {
@@ -107,18 +118,32 @@ export async function handleCadEditProposal(
     };
   }
 
+  if (runtimeOptions.signal?.aborted) {
+    return {
+      status: 499,
+      json: { error: { code: 'REQUEST_CANCELLED', message: 'CAD edit proposal cancelled.' } },
+    };
+  }
+
   const startedAt = Date.now();
   let parsedIntent: CadEditIntent | undefined =
     isRecord(body.parsedIntent) && VALID_ACTIONS.has(body.parsedIntent.action as CadEditAction)
       ? (body.parsedIntent as unknown as CadEditIntent)
       : undefined;
   let intentSource: 'GEMINI_ASSISTED' | 'DETERMINISTIC' = 'DETERMINISTIC';
+  let invocationMode: AIInvocationMode = 'DETERMINISTIC_FALLBACK';
   let geminiInvoked = false;
+  let apiCallCount = 0;
   let modelUsed: string | undefined;
   let fallbackReason: string | undefined;
-  let tokenUsage: CadEditProposalApiResponse['aiTelemetry']['tokenUsage'];
+  let tokenUsage: TokenUsage | undefined = ZERO_USAGE;
+  let currentRequestTokenUsage: TokenUsage | 'UNKNOWN' = ZERO_USAGE;
 
   if (!parsedIntent && deps.gemini && deps.briefInterpreterKind === 'gemini') {
+    const modelInfo = deps.gemini.getModelInfo();
+    const resolvedReasoning = resolveModelThinkingParameters(modelInfo.model, 'FAST', {
+      taskKind: 'CAD_EDIT_INTENT',
+    });
     geminiInvoked = true;
     try {
       const response = await deps.gemini.complete({
@@ -130,9 +155,14 @@ export async function handleCadEditProposal(
         responseSchema: CAD_EDIT_INTENT_SCHEMA,
         responseSchemaName: 'cad_edit_intent',
         temperature: 0,
-        maxTokens: 220,
-        thinkingBudget: 0,
+        maxTokens: resolvedReasoning.maxOutputTokens,
+        reasoningMode: 'FAST',
+        ...(resolvedReasoning.includeThinkingConfig && resolvedReasoning.thinkingBudget !== undefined
+          ? { thinkingBudget: resolvedReasoning.thinkingBudget }
+          : {}),
+        signal: runtimeOptions.signal,
       });
+      apiCallCount = response.apiCallCount ?? 1;
       const decoded: unknown =
         response.parsed ??
         (response.content.trim().startsWith('{') ? JSON.parse(response.content) : null);
@@ -160,23 +190,32 @@ export async function handleCadEditProposal(
           ...(typeof raw.targetAreaSqFt === 'number' ? { targetAreaSqFt: raw.targetAreaSqFt } : {}),
         };
         intentSource = 'GEMINI_ASSISTED';
+        invocationMode = 'LIVE_PROVIDER';
         modelUsed = response.model;
-        tokenUsage = {
-          promptTokens: response.usage.promptTokens,
-          completionTokens: response.usage.completionTokens,
-          totalTokens: response.usage.totalTokens,
-          ...(response.usage.thoughtsTokens !== undefined
-            ? { thoughtsTokens: response.usage.thoughtsTokens }
-            : {}),
-        };
+        tokenUsage = response.usage;
+        currentRequestTokenUsage = response.usage;
       } else {
+        invocationMode = 'PROVIDER_FAILURE';
+        tokenUsage = response.usage;
+        currentRequestTokenUsage = response.usage;
         fallbackReason = 'INVALID_STRUCTURED_EDIT_INTENT';
       }
     } catch (err) {
+      invocationMode = runtimeOptions.signal?.aborted ? 'CANCELLED' : 'PROVIDER_FAILURE';
+      apiCallCount = err instanceof GeminiExecutionError ? err.apiCallCount : 1;
+      tokenUsage = undefined;
+      currentRequestTokenUsage = 'UNKNOWN';
       fallbackReason = err instanceof Error ? err.message.slice(0, 120) : 'GEMINI_EDIT_PARSE_FAILED';
     }
   } else if (!parsedIntent && !deps.gemini) {
     fallbackReason = 'GEMINI_NOT_CONFIGURED';
+  }
+
+  if (runtimeOptions.signal?.aborted) {
+    return {
+      status: 499,
+      json: { error: { code: 'REQUEST_CANCELLED', message: 'CAD edit proposal cancelled.' } },
+    };
   }
 
   if (!parsedIntent) {
@@ -202,11 +241,15 @@ export async function handleCadEditProposal(
       proposal,
       aiTelemetry: {
         geminiInvoked,
+        invocationMode,
+        reasoningMode: 'FAST',
         interpretationSource: intentSource,
         ...(modelUsed ? { modelUsed } : {}),
+        apiCallCount,
         ...(fallbackReason ? { fallbackReason } : {}),
         latencyMs: Date.now() - startedAt,
         ...(tokenUsage ? { tokenUsage } : {}),
+        currentRequestTokenUsage,
       },
     },
   };

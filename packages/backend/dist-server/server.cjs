@@ -152692,6 +152692,7 @@ __export(server_exports, {
 });
 module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
+var import_node_crypto21 = require("node:crypto");
 var import_node_fs9 = __toESM(require("node:fs"), 1);
 var import_node_path9 = __toESM(require("node:path"), 1);
 
@@ -274122,6 +274123,24 @@ var REQUIREMENT_RESPONSE_SCHEMA = {
 };
 
 // ../ai-orchestration/dist/providers/http.js
+var ProviderCancelledError = class extends Error {
+  static {
+    __name(this, "ProviderCancelledError");
+  }
+  constructor(message = "Provider request cancelled.") {
+    super(message);
+    this.name = "ProviderCancelledError";
+  }
+};
+var ProviderTimeoutError = class extends Error {
+  static {
+    __name(this, "ProviderTimeoutError");
+  }
+  constructor(message = "Provider request timed out.") {
+    super(message);
+    this.name = "ProviderTimeoutError";
+  }
+};
 function redactSecret(text2, secret) {
   if (!text2)
     return text2;
@@ -274130,6 +274149,8 @@ function redactSecret(text2, secret) {
     sanitized = sanitized.split(secret.trim()).join("[REDACTED]");
   }
   sanitized = sanitized.replace(/(?:AIza|AQ\.)[A-Za-z0-9_-]{12,}/g, "[REDACTED_KEY]");
+  sanitized = sanitized.replace(/([?&]key=)[^&\s]+/gi, "$1[REDACTED_KEY]");
+  sanitized = sanitized.replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, "$1[REDACTED_TOKEN]");
   return sanitized;
 }
 __name(redactSecret, "redactSecret");
@@ -274137,36 +274158,51 @@ function asRecord(value) {
   return value !== null && typeof value === "object" ? value : {};
 }
 __name(asRecord, "asRecord");
-function parseJsonContent(content) {
+function parseJsonContent(content, options = {}) {
+  const allowRepair = options.allowTruncatedRepair ?? true;
+  const requiredFields = options.requiredFields ?? [];
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  try {
-    const parsed = JSON.parse(cleaned);
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error("Expected an object.");
+  const validateParsedObject = /* @__PURE__ */ __name((candidate, wasRepaired) => {
+    if (candidate === null || typeof candidate !== "object" || Array.isArray(candidate)) {
+      throw new AISafetyError("Provider returned non-object structured JSON.");
     }
-    return parsed;
-  } catch {
+    const obj = candidate;
+    if (requiredFields.length > 0) {
+      const missing = requiredFields.filter((key) => !(key in obj) || obj[key] === void 0);
+      if (missing.length > 0) {
+        throw new AISafetyError(`${wasRepaired ? "TRUNCATED_JSON" : "MISSING_REQUIRED_FIELDS"}: missing [${missing.join(", ")}]`, content);
+      }
+    }
+    return obj;
+  }, "validateParsedObject");
+  try {
+    return validateParsedObject(JSON.parse(cleaned), false);
+  } catch (directErr) {
+    if (directErr instanceof AISafetyError && directErr.message.includes("MISSING_REQUIRED_FIELDS")) {
+      throw directErr;
+    }
     const firstBrace = content.indexOf("{");
     const lastBrace = content.lastIndexOf("}");
     if (firstBrace !== -1 && lastBrace > firstBrace) {
       try {
         const sub = content.slice(firstBrace, lastBrace + 1);
-        const parsed = JSON.parse(sub);
-        if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed;
+        return validateParsedObject(JSON.parse(sub), false);
+      } catch (subErr) {
+        if (subErr instanceof AISafetyError && subErr.message.includes("MISSING_REQUIRED_FIELDS")) {
+          throw subErr;
         }
-      } catch {
       }
     }
-    try {
-      const repaired = repairTruncatedJson(cleaned);
-      const parsed = JSON.parse(repaired);
-      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed;
+    if (allowRepair) {
+      try {
+        const repaired = repairTruncatedJson(cleaned);
+        return validateParsedObject(JSON.parse(repaired), true);
+      } catch (repairErr) {
+        if (repairErr instanceof AISafetyError)
+          throw repairErr;
       }
-    } catch {
     }
-    throw new AISafetyError("Provider returned invalid structured JSON.");
+    throw new AISafetyError("TRUNCATED_OR_INVALID_JSON: Provider returned invalid structured JSON.", content);
   }
 }
 __name(parseJsonContent, "parseJsonContent");
@@ -274216,15 +274252,24 @@ __name(repairTruncatedJson, "repairTruncatedJson");
 function usage(promptTokens, completionTokens, totalTokens, thoughtsTokens) {
   const prompt = typeof promptTokens === "number" ? promptTokens : 0;
   const completion = typeof completionTokens === "number" ? completionTokens : 0;
-  const thoughts = typeof thoughtsTokens === "number" && thoughtsTokens > 0 ? thoughtsTokens : void 0;
+  const thoughts = typeof thoughtsTokens === "number" && thoughtsTokens >= 0 ? thoughtsTokens : void 0;
   return {
     promptTokens: prompt,
     completionTokens: completion,
     totalTokens: typeof totalTokens === "number" ? totalTokens : prompt + completion + (thoughts ?? 0),
-    ...thoughts !== void 0 ? { thoughtsTokens: thoughts } : {}
+    ...thoughts !== void 0 && thoughts > 0 ? { thoughtsTokens: thoughts } : {}
   };
 }
 __name(usage, "usage");
+function extractOptionalTokenUsage(envelope) {
+  const rec = asRecord(envelope);
+  const meta = asRecord(rec.usageMetadata);
+  if (typeof meta.promptTokenCount === "number" || typeof meta.candidatesTokenCount === "number" || typeof meta.totalTokenCount === "number") {
+    return usage(meta.promptTokenCount, meta.candidatesTokenCount, meta.totalTokenCount, meta.thoughtsTokenCount);
+  }
+  return void 0;
+}
+__name(extractOptionalTokenUsage, "extractOptionalTokenUsage");
 var HttpProviderError = class extends Error {
   static {
     __name(this, "HttpProviderError");
@@ -274233,36 +274278,52 @@ var HttpProviderError = class extends Error {
   detail;
   retryAfterMs;
   isTransient;
-  constructor(status, message, detail, retryAfterMs) {
+  latencyMs;
+  partialUsage;
+  constructor(status, message, detail, retryAfterMs, latencyMs = 0, partialUsage) {
     super(message);
     this.name = "HttpProviderError";
     this.status = status;
     this.detail = detail;
     this.retryAfterMs = retryAfterMs;
+    this.latencyMs = latencyMs;
+    this.partialUsage = partialUsage;
     this.isTransient = status === 503 || status === 429 || status === 408 || status >= 500 && status < 600;
   }
 };
 async function postJson(options, headers, body) {
+  if (options.signal?.aborted) {
+    throw new ProviderCancelledError();
+  }
+  if (options.timeoutMs <= 0) {
+    throw new ProviderTimeoutError();
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
   const combinedSignal = options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal;
   const startedAt = Date.now();
   try {
-    const response2 = await options.fetchImplementation(options.endpoint, {
+    const res = await options.fetchImplementation(options.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
       signal: combinedSignal
     });
-    if (!response2.ok) {
+    const elapsed = Date.now() - startedAt;
+    if (!res.ok) {
       let detail = "";
+      let partialUsage;
       try {
-        const errText = await response2.text();
-        detail = redactSecret(errText.slice(0, 500), options.apiKey);
+        const errText = await res.text();
+        try {
+          partialUsage = extractOptionalTokenUsage(JSON.parse(errText));
+        } catch {
+        }
+        detail = redactSecret(errText.slice(0, 600), options.apiKey);
       } catch {
       }
       let retryAfterMs;
-      const retryHeader = response2.headers.get("retry-after");
+      const retryHeader = res.headers.get("retry-after");
       if (retryHeader) {
         const parsedSec = Number.parseFloat(retryHeader);
         if (Number.isFinite(parsedSec) && parsedSec > 0) {
@@ -274274,20 +274335,21 @@ async function postJson(options, headers, body) {
           }
         }
       }
-      throw new HttpProviderError(response2.status, `Provider request failed with HTTP ${response2.status}.${detail ? " " + detail : ""}`.trim(), detail, retryAfterMs);
+      throw new HttpProviderError(res.status, `Provider request failed with HTTP ${res.status}.${detail ? " " + detail : ""}`.trim(), detail, retryAfterMs, elapsed, partialUsage);
     }
-    const parsed = await response2.json();
+    const parsed = await res.json();
     if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new AISafetyError("Provider returned a non-object response envelope.");
     }
     return { body: parsed, latencyMs: Date.now() - startedAt };
   } catch (error2) {
-    if (error2 instanceof AISafetyError || error2 instanceof HttpProviderError)
+    if (error2 instanceof AISafetyError || error2 instanceof HttpProviderError || error2 instanceof ProviderCancelledError || error2 instanceof ProviderTimeoutError) {
       throw error2;
+    }
     if (options.signal?.aborted)
-      throw new Error("Provider request cancelled.");
+      throw new ProviderCancelledError();
     if (error2 instanceof Error && error2.name === "AbortError")
-      throw new Error("Provider request timed out.");
+      throw new ProviderTimeoutError();
     throw error2 instanceof Error ? new Error(redactSecret(error2.message, options.apiKey)) : new Error("Provider request failed.");
   } finally {
     clearTimeout(timeout);
@@ -274299,33 +274361,463 @@ function response(content, parsed, responseUsage, model, latencyMs) {
 }
 __name(response, "response");
 
+// ../ai-orchestration/dist/orchestration/reasoning-policy.js
+var runtimeUnsupportedThinkingModels = /* @__PURE__ */ new Set();
+function recordModelUnsupportedThinking(modelId) {
+  const key = modelId.trim().toLowerCase();
+  if (key)
+    runtimeUnsupportedThinkingModels.add(key);
+}
+__name(recordModelUnsupportedThinking, "recordModelUnsupportedThinking");
+function inspectModelThinkingCapabilities(modelId) {
+  const normalized = modelId.trim().toLowerCase();
+  if (!normalized || runtimeUnsupportedThinkingModels.has(normalized)) {
+    return {
+      supportsThinkingConfig: false,
+      supportsZeroThinking: false,
+      minThinkingBudget: 0,
+      maxThinkingBudget: 0
+    };
+  }
+  if (normalized.startsWith("gemini-1.") || normalized.startsWith("gemini-2.0") || normalized.startsWith("gpt-") || normalized.startsWith("o1-") || normalized.startsWith("o3-") || normalized.startsWith("claude-")) {
+    return {
+      supportsThinkingConfig: false,
+      supportsZeroThinking: false,
+      minThinkingBudget: 0,
+      maxThinkingBudget: 0
+    };
+  }
+  if (normalized.includes("-pro") || normalized.includes("thinking")) {
+    return {
+      supportsThinkingConfig: true,
+      supportsZeroThinking: false,
+      minThinkingBudget: 128,
+      maxThinkingBudget: 2048
+    };
+  }
+  if (normalized.startsWith("gemini-3.5-flash-lite") || normalized === "gemini-flash-lite-latest") {
+    return {
+      supportsThinkingConfig: true,
+      supportsZeroThinking: false,
+      omitThinkingWhenZero: true,
+      minThinkingBudget: 128,
+      maxThinkingBudget: 1024
+    };
+  }
+  return {
+    supportsThinkingConfig: true,
+    supportsZeroThinking: true,
+    minThinkingBudget: 0,
+    maxThinkingBudget: 1024
+  };
+}
+__name(inspectModelThinkingCapabilities, "inspectModelThinkingCapabilities");
+function selectArchitecturalReasoningMode(config, seed2, hasReferenceImage, overrideMode) {
+  if (overrideMode === "FAST" || overrideMode === "BALANCED" || overrideMode === "DEEP") {
+    return overrideMode;
+  }
+  const prompt = (config.aiPrompt ?? "").trim().toLowerCase();
+  const hasIrregularSite = Boolean(config.irregularPlotBoundary && config.irregularPlotBoundary.polygon.points.length >= 3);
+  const sizedTargets = (config.units ?? []).map((u) => u.targetCarpetSqFt).filter((v) => typeof v === "number" && v > 0);
+  const hasUnequalTargets = new Set(sizedTargets).size >= 2;
+  const hasStrictTargets = Boolean(config.requireAreaTargets && sizedTargets.length > 0);
+  const hasPromptConflict = /\bno\s+ots\b|\bwithout\s+ots\b/.test(prompt) && /\bcourtyard\b|\bots\s+shaft/.test(prompt) || /\bno\s+balcon|\bwithout\s+balcon/.test(prompt) && /\ball\s+bedroom.*balcon|\bcantilevered\s+balcon/.test(prompt);
+  const directiveMatches = [
+    /\bvastu|\bsoutheast|\bsouthwest\b/.test(prompt),
+    /\bno\s+ots|\bcourtyard|\bventilat/.test(prompt),
+    /\bbalcon/.test(prompt),
+    /\bcenter(?:ed)?\b/.test(prompt),
+    /\bcrescent|\brotunda|\bpinwheel|\bstepped|\btriskele|\bh[- ]?shape|\bu[- ]?shape|\bl[- ]?shape|\birregular/.test(prompt),
+    /\bopen\s+kitchen|\blarge[r]?\s+kitchen/.test(prompt)
+  ].filter(Boolean).length;
+  if (hasIrregularSite || hasUnequalTargets || hasStrictTargets || hasPromptConflict || config.flatsPerFloor >= 5 || prompt.length >= 180 && directiveMatches >= 3) {
+    return "DEEP";
+  }
+  const distinctBhkCount = new Set((config.units ?? []).map((u) => u.bhkType)).size;
+  if (hasReferenceImage || distinctBhkCount > 1 || seed2 > 1 || Boolean(config.autoExploreNovelShape) || directiveMatches >= 2 || prompt.length >= 90) {
+    return "BALANCED";
+  }
+  return "FAST";
+}
+__name(selectArchitecturalReasoningMode, "selectArchitecturalReasoningMode");
+var MODE_THINKING_BUDGETS = {
+  FAST: 0,
+  BALANCED: 192,
+  DEEP: 512
+};
+function resolveModelThinkingParameters(modelId, mode, options = {}) {
+  const caps = inspectModelThinkingCapabilities(modelId);
+  const taskKind = options.taskKind ?? "ARCHITECTURAL_PROPOSAL";
+  const baseOutputTokens = taskKind === "CAD_EDIT_INTENT" ? 240 : mode === "DEEP" ? options.hasVisionImage ? 1450 : 1100 : mode === "BALANCED" ? options.hasVisionImage ? 1150 : 850 : options.hasVisionImage ? 950 : 650;
+  if (!caps.supportsThinkingConfig) {
+    return {
+      mode,
+      includeThinkingConfig: false,
+      maxOutputTokens: options.explicitMaxTokens ?? baseOutputTokens
+    };
+  }
+  const rawDesired = typeof options.explicitThinkingBudget === "number" ? options.explicitThinkingBudget : MODE_THINKING_BUDGETS[mode];
+  if (rawDesired === 0 && !caps.supportsZeroThinking && caps.omitThinkingWhenZero) {
+    return {
+      mode,
+      includeThinkingConfig: false,
+      maxOutputTokens: options.explicitMaxTokens ?? baseOutputTokens
+    };
+  }
+  const clampedBudget = rawDesired === 0 && !caps.supportsZeroThinking ? caps.minThinkingBudget : Math.max(caps.minThinkingBudget, Math.min(caps.maxThinkingBudget, Math.round(rawDesired)));
+  return {
+    mode,
+    includeThinkingConfig: true,
+    thinkingBudget: clampedBudget,
+    maxOutputTokens: options.explicitMaxTokens ?? baseOutputTokens + Math.min(384, Math.round(clampedBudget * 0.5))
+  };
+}
+__name(resolveModelThinkingParameters, "resolveModelThinkingParameters");
+
+// ../ai-orchestration/dist/orchestration/lru-proposal-cache.js
+function canonicalJsonStringify(value) {
+  if (value === null || value === void 0)
+    return "null";
+  if (typeof value === "number")
+    return Number.isFinite(value) ? JSON.stringify(value) : "null";
+  if (typeof value === "boolean" || typeof value === "string")
+    return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJsonStringify(item)).join(",")}]`;
+  }
+  if (typeof value === "object") {
+    const record3 = value;
+    const keys2 = Object.keys(record3).filter((k) => record3[k] !== void 0).sort();
+    return `{${keys2.map((k) => `${JSON.stringify(k)}:${canonicalJsonStringify(record3[k])}`).join(",")}}`;
+  }
+  return "null";
+}
+__name(canonicalJsonStringify, "canonicalJsonStringify");
+var BoundedLruCache = class {
+  static {
+    __name(this, "BoundedLruCache");
+  }
+  store = /* @__PURE__ */ new Map();
+  maxEntries;
+  ttlMs;
+  nowFn;
+  constructor(options = {}) {
+    this.maxEntries = Math.max(1, options.maxEntries ?? 64);
+    this.ttlMs = Math.max(1, options.ttlMs ?? 5 * 60 * 1e3);
+    this.nowFn = options.nowFn ?? Date.now;
+  }
+  configure(options) {
+    if (options.maxEntries !== void 0) {
+      this.maxEntries = Math.max(1, options.maxEntries);
+    }
+    if (options.ttlMs !== void 0) {
+      this.ttlMs = Math.max(1, options.ttlMs);
+    }
+    this.pruneExpired();
+    while (this.store.size > this.maxEntries) {
+      const lruKey = this.store.keys().next().value;
+      if (lruKey === void 0)
+        break;
+      this.store.delete(lruKey);
+    }
+  }
+  pruneExpired() {
+    const now = this.nowFn();
+    let removed = 0;
+    for (const [key, entry] of this.store.entries()) {
+      if (now >= entry.expiresAt) {
+        this.store.delete(key);
+        removed++;
+      }
+    }
+    return removed;
+  }
+  get(key) {
+    const entry = this.store.get(key);
+    if (!entry)
+      return void 0;
+    const now = this.nowFn();
+    if (now >= entry.expiresAt) {
+      this.store.delete(key);
+      return void 0;
+    }
+    this.store.delete(key);
+    this.store.set(key, entry);
+    return entry.value;
+  }
+  set(key, value, customTtlMs) {
+    this.pruneExpired();
+    if (this.store.has(key)) {
+      this.store.delete(key);
+    }
+    while (this.store.size >= this.maxEntries) {
+      const lruKey = this.store.keys().next().value;
+      if (lruKey === void 0)
+        break;
+      this.store.delete(lruKey);
+    }
+    const now = this.nowFn();
+    const effectiveTtl = Math.max(1, customTtlMs ?? this.ttlMs);
+    this.store.set(key, {
+      value,
+      createdAt: now,
+      expiresAt: now + effectiveTtl
+    });
+  }
+  invalidate(key) {
+    return this.store.delete(key);
+  }
+  invalidateWhere(predicate) {
+    let removed = 0;
+    for (const [key, entry] of this.store.entries()) {
+      if (predicate(key, entry.value)) {
+        this.store.delete(key);
+        removed++;
+      }
+    }
+    return removed;
+  }
+  clear() {
+    this.store.clear();
+  }
+  get size() {
+    this.pruneExpired();
+    return this.store.size;
+  }
+  /** Returns unexpired keys ordered from Least Recently Used (index 0) to Most Recently Used. */
+  keysInLruOrder() {
+    this.pruneExpired();
+    return [...this.store.keys()];
+  }
+};
+var ProposalCancelledError = class extends Error {
+  static {
+    __name(this, "ProposalCancelledError");
+  }
+  constructor(message = "Provider request cancelled.") {
+    super(message);
+    this.name = "ProposalCancelledError";
+  }
+};
+var InFlightRequestDeduplicator = class {
+  static {
+    __name(this, "InFlightRequestDeduplicator");
+  }
+  active = /* @__PURE__ */ new Map();
+  maxInFlightAgeMs;
+  nowFn;
+  constructor(options = {}) {
+    this.maxInFlightAgeMs = Math.max(500, options.maxInFlightAgeMs ?? 45e3);
+    this.nowFn = options.nowFn ?? Date.now;
+  }
+  async execute(key, factory, options = {}) {
+    if (options.signal?.aborted) {
+      throw new ProposalCancelledError();
+    }
+    if (options.bypassDeduplication) {
+      const isolatedController = new AbortController();
+      const onCallerAbort = /* @__PURE__ */ __name(() => isolatedController.abort(), "onCallerAbort");
+      options.signal?.addEventListener("abort", onCallerAbort, { once: true });
+      try {
+        const value = await factory(isolatedController.signal);
+        return { value, sharedInFlight: false };
+      } finally {
+        options.signal?.removeEventListener("abort", onCallerAbort);
+      }
+    }
+    const now = this.nowFn();
+    let existing = this.active.get(key);
+    if (existing && now - existing.startedAt > this.maxInFlightAgeMs) {
+      this.active.delete(key);
+      existing = void 0;
+    }
+    const sharedInFlight = Boolean(existing);
+    let entry;
+    if (existing) {
+      entry = existing;
+    } else {
+      const upstreamController = new AbortController();
+      const subscribers = /* @__PURE__ */ new Set();
+      let rawPromise;
+      try {
+        rawPromise = Promise.resolve(factory(upstreamController.signal));
+      } catch (syncError) {
+        rawPromise = Promise.reject(syncError);
+      }
+      const promise = rawPromise.finally(() => {
+        if (this.active.get(key)?.promise === promise) {
+          this.active.delete(key);
+        }
+      });
+      promise.catch(() => {
+      });
+      const createdEntry = {
+        promise,
+        upstreamController,
+        subscribers,
+        startedAt: now
+      };
+      this.active.set(key, createdEntry);
+      entry = createdEntry;
+    }
+    const subId = Symbol("subscriber");
+    entry.subscribers.add(subId);
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const cleanup = /* @__PURE__ */ __name(() => {
+        options.signal?.removeEventListener("abort", onAbort);
+      }, "cleanup");
+      const onAbort = /* @__PURE__ */ __name(() => {
+        if (settled)
+          return;
+        settled = true;
+        entry.subscribers.delete(subId);
+        if (entry.subscribers.size === 0) {
+          if (this.active.get(key) === entry) {
+            this.active.delete(key);
+          }
+          entry.upstreamController.abort();
+        }
+        cleanup();
+        reject(new ProposalCancelledError());
+      }, "onAbort");
+      if (options.signal) {
+        if (options.signal.aborted) {
+          onAbort();
+          return;
+        }
+        options.signal.addEventListener("abort", onAbort, { once: true });
+      }
+      entry.promise.then((value) => {
+        if (settled)
+          return;
+        settled = true;
+        entry.subscribers.delete(subId);
+        cleanup();
+        resolve({ value, sharedInFlight });
+      }, (err) => {
+        if (settled)
+          return;
+        settled = true;
+        entry.subscribers.delete(subId);
+        cleanup();
+        reject(err);
+      });
+    });
+  }
+  clear() {
+    this.active.clear();
+  }
+  get size() {
+    return this.active.size;
+  }
+};
+
 // ../ai-orchestration/dist/providers/gemini.js
 var DEFAULT_GEMINI_RETRY_POLICY = {
-  maxRetries: 3,
-  initialDelayMs: 1e3,
-  maxDelayMs: 8e3,
+  maxRetries: 2,
+  initialDelayMs: 600,
+  maxDelayMs: 4e3,
   backoffFactor: 2,
   jitterRatio: 0.2
-  // +/- 20% random jitter
+};
+var GeminiExecutionError = class extends Error {
+  static {
+    __name(this, "GeminiExecutionError");
+  }
+  errorCode;
+  failureClass;
+  attemptedModels;
+  apiCallCount;
+  failedAttempts;
+  constructor(params) {
+    super(params.message, params.cause !== void 0 ? { cause: params.cause } : void 0);
+    this.name = "GeminiExecutionError";
+    this.errorCode = params.errorCode;
+    this.failureClass = params.failureClass;
+    this.attemptedModels = params.attemptedModels;
+    this.apiCallCount = params.apiCallCount;
+    this.failedAttempts = params.failedAttempts;
+  }
 };
 function extractHttpStatus(error2) {
   if (error2 instanceof HttpProviderError)
     return error2.status;
+  if (error2 instanceof GeminiExecutionError && /^HTTP_\d{3}$/.test(error2.errorCode)) {
+    return Number.parseInt(error2.errorCode.slice(5), 10);
+  }
   if (error2 instanceof Error) {
     const match = error2.message.match(/HTTP (\d{3})/i);
     if (match && match[1]) {
-      const code = parseInt(match[1], 10);
-      if (!isNaN(code))
+      const code = Number.parseInt(match[1], 10);
+      if (!Number.isNaN(code))
         return code;
     }
   }
   return null;
 }
 __name(extractHttpStatus, "extractHttpStatus");
-function geminiErrorCode(error2) {
+function isProjectWideQuotaError(error2) {
   const status = extractHttpStatus(error2);
-  if (status !== null)
+  if (status !== 429)
+    return false;
+  const text2 = error2 instanceof HttpProviderError ? `${error2.message} ${error2.detail ?? ""}` : error2 instanceof Error ? error2.message : String(error2);
+  if (/per[_\s-]model|generate_content_free_tier_requests|limit.*for\s+model/i.test(text2) && !/per[_\s-]project|account[_\s-]wide|billing/i.test(text2)) {
+    return false;
+  }
+  return /per[_\s-]project|project[_\s-]quota|account[_\s-]quota|account[_\s-]wide|plan\s+and\s+billing|billing\s+account|spending\s+cap|consumer[_\s-]quota/i.test(text2);
+}
+__name(isProjectWideQuotaError, "isProjectWideQuotaError");
+function classifyGeminiFailure(error2) {
+  if (error2 instanceof GeminiExecutionError)
+    return error2.failureClass;
+  if (error2 instanceof ProviderCancelledError)
+    return "CANCELLED";
+  if (error2 instanceof ProviderTimeoutError)
+    return "TIMEOUT";
+  const status = extractHttpStatus(error2);
+  const msg = error2 instanceof Error ? `${error2.name} ${error2.message}` : String(error2);
+  if (/cancel/i.test(msg))
+    return "CANCELLED";
+  if (status === 401 || status === 403)
+    return "AUTH_FAILED";
+  if (status === 404)
+    return "MODEL_UNAVAILABLE";
+  if (status === 429) {
+    return isProjectWideQuotaError(error2) ? "PROJECT_QUOTA_EXHAUSTED" : "MODEL_QUOTA_EXHAUSTED";
+  }
+  if (status === 400 && /thinkingConfig|thinking_config|thinkingBudget|Request contains an invalid argument/i.test(msg)) {
+    return "UNSUPPORTED_THINKING_CONFIG";
+  }
+  if (status !== null && (status === 503 || status === 408 || status >= 500 && status < 600)) {
+    return "TEMPORARILY_UNAVAILABLE";
+  }
+  if (error2 instanceof AISafetyError) {
+    if (/OUTPUT_TOKEN_EXHAUSTED|MAX_TOKENS/i.test(msg))
+      return "OUTPUT_TOKEN_EXHAUSTED";
+    return "TRUNCATED_OR_INVALID_STRUCTURED_OUTPUT";
+  }
+  if (/timed out|timeout|AbortError/i.test(msg))
+    return "TIMEOUT";
+  if (/ECONNRESET|ETIMEDOUT|ENOTFOUND|ECONNREFUSED|fetch failed|network/i.test(msg)) {
+    return "NETWORK_ERROR";
+  }
+  return "REQUEST_ERROR";
+}
+__name(classifyGeminiFailure, "classifyGeminiFailure");
+function geminiErrorCode(error2) {
+  if (error2 instanceof GeminiExecutionError)
+    return error2.errorCode;
+  if (error2 instanceof ProviderCancelledError)
+    return "CANCELLED";
+  if (error2 instanceof ProviderTimeoutError)
+    return "TIMEOUT";
+  const status = extractHttpStatus(error2);
+  if (status !== null) {
+    if (status === 429 && isProjectWideQuotaError(error2))
+      return "HTTP_429_PROJECT_QUOTA";
     return `HTTP_${status}`;
+  }
   if (error2 instanceof Error && /cancel/i.test(`${error2.name} ${error2.message}`))
     return "CANCELLED";
   if (error2 instanceof Error && /abort|timeout|timed out/i.test(`${error2.name} ${error2.message}`))
@@ -274346,12 +274838,6 @@ function isTransientHttpError(status, error2) {
   return false;
 }
 __name(isTransientHttpError, "isTransientHttpError");
-function isAuthHttpError(status) {
-  if (status === null)
-    return false;
-  return status === 401 || status === 403;
-}
-__name(isAuthHttpError, "isAuthHttpError");
 function calculateDelayWithJitter(attempt, policy, retryAfterMs) {
   if (typeof retryAfterMs === "number" && retryAfterMs > 0) {
     return Math.min(policy.maxDelayMs, Math.max(50, Math.round(retryAfterMs)));
@@ -274372,7 +274858,9 @@ var ConcurrencyLimiter = class {
   constructor(limit) {
     this.limit = limit;
   }
-  async acquire() {
+  async acquire(signal) {
+    if (signal?.aborted)
+      throw new ProviderCancelledError();
     if (this.active < this.limit) {
       this.active++;
       let released = false;
@@ -274382,24 +274870,38 @@ var ConcurrencyLimiter = class {
           this.active--;
           const next = this.queue.shift();
           if (next)
-            next();
+            next.grant();
         }
       };
     }
-    return new Promise((resolve) => {
-      this.queue.push(() => {
-        this.active++;
-        let released = false;
-        resolve(() => {
-          if (!released) {
-            released = true;
-            this.active--;
-            const next = this.queue.shift();
-            if (next)
-              next();
-          }
-        });
-      });
+    return new Promise((resolve, reject) => {
+      const item = {
+        grant: /* @__PURE__ */ __name(() => {
+          signal?.removeEventListener("abort", onAbort);
+          this.active++;
+          let released = false;
+          resolve(() => {
+            if (!released) {
+              released = true;
+              this.active--;
+              const next = this.queue.shift();
+              if (next)
+                next.grant();
+            }
+          });
+        }, "grant"),
+        cancel: /* @__PURE__ */ __name(() => {
+          reject(new ProviderCancelledError());
+        }, "cancel")
+      };
+      const onAbort = /* @__PURE__ */ __name(() => {
+        const idx = this.queue.indexOf(item);
+        if (idx >= 0)
+          this.queue.splice(idx, 1);
+        item.cancel();
+      }, "onAbort");
+      signal?.addEventListener("abort", onAbort, { once: true });
+      this.queue.push(item);
     });
   }
 };
@@ -274411,6 +274913,10 @@ var GeminiProvider = class extends BaseAIProvider {
   name = "gemini";
   options;
   endpointBase;
+  configFingerprint;
+  nowFn;
+  modelCooldownUntil = /* @__PURE__ */ new Map();
+  projectQuotaCooldownUntil = 0;
   retryPolicy;
   sleepFn;
   constructor(options) {
@@ -274418,6 +274924,7 @@ var GeminiProvider = class extends BaseAIProvider {
     const model = options.model ?? "gemini-3.6-flash";
     const endpointBase = options.endpointBase ?? "https://generativelanguage.googleapis.com/v1beta/models";
     this.endpointBase = endpointBase;
+    this.nowFn = options.nowFn ?? Date.now;
     const rawFallbacks = [
       ...options.fallbackModels ?? [],
       ...options.fallbackModel ? [options.fallbackModel] : []
@@ -274431,13 +274938,19 @@ var GeminiProvider = class extends BaseAIProvider {
         fallbackModels.push(trimmed);
       }
     }
+    const timeoutMs = options.timeoutMs ?? 24e3;
+    const perModelFactor = 1 + Math.min(1, Math.max(0, options.maxRetriesOn503 ?? 1));
+    const maxTotalAttempts = Math.max(1, options.maxTotalAttempts ?? Math.min(8, Math.max(4, (1 + fallbackModels.length) * perModelFactor)));
     this.options = {
       apiKey: options.apiKey,
       model,
       fallbackModel: fallbackModels[0],
       fallbackModels,
       maxRetriesOn503: options.maxRetriesOn503,
-      timeoutMs: options.timeoutMs ?? 15e3,
+      maxTotalAttempts,
+      modelCooldownMs: Math.max(0, options.modelCooldownMs ?? 3e4),
+      projectQuotaCooldownMs: Math.max(0, options.projectQuotaCooldownMs ?? 6e4),
+      timeoutMs,
       fetchImplementation: options.fetchImplementation ?? fetch
     };
     this.retryPolicy = {
@@ -274445,60 +274958,161 @@ var GeminiProvider = class extends BaseAIProvider {
       ...options.retryPolicy ?? {}
     };
     this.sleepFn = options.sleepFn ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.configFingerprint = exchangeArtifactDigest(new TextEncoder().encode(canonicalJsonStringify({
+      endpointBase,
+      model,
+      fallbackModels,
+      timeoutMs,
+      maxTotalAttempts,
+      retryPolicy: this.retryPolicy
+    }))).slice(0, 16);
+  }
+  clearCooldowns() {
+    this.modelCooldownUntil.clear();
+    this.projectQuotaCooldownUntil = 0;
+  }
+  getActiveModelCooldowns() {
+    const now = this.nowFn();
+    const out = {};
+    for (const [m, until] of this.modelCooldownUntil.entries()) {
+      if (until > now)
+        out[m] = until - now;
+    }
+    return out;
   }
   async complete(request) {
-    const releaseConcurrency = await geminiLimiter.acquire();
+    const totalBudgetMs = Math.max(50, request.totalDeadlineMs ?? this.options.timeoutMs);
+    const deadlineAt = this.nowFn() + totalBudgetMs;
+    const releaseConcurrency = await geminiLimiter.acquire(request.signal);
     try {
-      return await this.executeComplete(request);
+      return await this.executeComplete(request, deadlineAt);
     } finally {
       releaseConcurrency();
     }
   }
-  async executeComplete(request) {
+  async sleepWithCancellationAndDeadline(delayMs, deadlineAt, signal) {
+    if (signal?.aborted)
+      throw new ProviderCancelledError();
+    const remaining = deadlineAt - this.nowFn();
+    if (remaining <= delayMs + 25) {
+      throw new ProviderTimeoutError("Provider total deadline exceeded before retry delay.");
+    }
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const onAbort = /* @__PURE__ */ __name(() => {
+        if (settled)
+          return;
+        settled = true;
+        reject(new ProviderCancelledError());
+      }, "onAbort");
+      signal?.addEventListener("abort", onAbort, { once: true });
+      this.sleepFn(delayMs).then(() => {
+        signal?.removeEventListener("abort", onAbort);
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      }, (err) => {
+        signal?.removeEventListener("abort", onAbort);
+        if (!settled) {
+          settled = true;
+          reject(err);
+        }
+      });
+    });
+  }
+  async executeComplete(request, deadlineAt) {
     if (!this.options.apiKey.trim())
       throw new Error("Gemini API key is not configured.");
+    const nowStart = this.nowFn();
+    if (this.projectQuotaCooldownUntil > nowStart) {
+      throw new GeminiExecutionError({
+        message: "Gemini project-wide quota is currently in cooldown.",
+        errorCode: "HTTP_429_PROJECT_QUOTA",
+        failureClass: "PROJECT_QUOTA_EXHAUSTED",
+        attemptedModels: [],
+        apiCallCount: 0,
+        failedAttempts: []
+      });
+    }
     const wantsJson = request.responseFormat === "json";
     const extractsRequirements = request.taskType === AITaskType.RequirementExtraction;
     const rawSchema = request.responseSchema ?? (extractsRequirements ? REQUIREMENT_RESPONSE_SCHEMA : void 0);
+    const requiredSchemaFields = wantsJson && rawSchema && Array.isArray(rawSchema.required) ? rawSchema.required : [];
     const responseSchema = wantsJson && rawSchema ? cleanGeminiSchema(rawSchema) : void 0;
     const parts = buildGeminiParts(request);
-    const buildPayload = /* @__PURE__ */ __name((includeThinkingBudget) => ({
-      systemInstruction: { parts: [{ text: request.systemPrompt }] },
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        ...request.temperature !== void 0 ? { temperature: request.temperature } : {},
-        ...request.maxTokens ? { maxOutputTokens: request.maxTokens } : {},
-        ...includeThinkingBudget && typeof request.thinkingBudget === "number" ? { thinkingConfig: { thinkingBudget: request.thinkingBudget } } : {},
-        ...wantsJson ? {
-          responseMimeType: "application/json",
-          ...responseSchema ? { responseSchema } : {}
-        } : {}
-      }
-    }), "buildPayload");
     const primaryModel = this.options.model;
-    const modelsToExecute = [primaryModel, ...this.options.fallbackModels];
+    const allConfiguredModels = [primaryModel, ...this.options.fallbackModels];
+    const readyModels = allConfiguredModels.filter((m) => (this.modelCooldownUntil.get(m) ?? 0) <= this.nowFn());
+    const modelsToExecute = readyModels.length > 0 ? readyModels : [primaryModel];
+    const effectiveMaxAttempts = Math.max(1, request.maxTotalAttempts ?? this.options.maxTotalAttempts);
     let lastError;
     let fallbackFromErrorCode;
     const attemptedModels = [];
+    const failedAttempts = [];
     let apiCallCount = 0;
+    if (modelsToExecute[0] !== primaryModel) {
+      fallbackFromErrorCode = "MODEL_COOLDOWN_SKIPPED";
+    }
     for (let mIdx = 0; mIdx < modelsToExecute.length; mIdx++) {
       const currentModel = modelsToExecute[mIdx];
       const hasNextFallback = mIdx < modelsToExecute.length - 1;
       let nextDelayMs;
-      let allowThinkingConfig = typeof request.thinkingBudget === "number";
+      const resolvedReasoning = resolveModelThinkingParameters(currentModel, request.reasoningMode ?? "FAST", {
+        hasVisionImage: Boolean(request.images && request.images.length > 0),
+        explicitThinkingBudget: request.thinkingBudget,
+        explicitMaxTokens: request.maxTokens
+      });
+      let allowThinkingConfig = resolvedReasoning.includeThinkingConfig;
+      let currentThinkingBudget = resolvedReasoning.thinkingBudget;
+      let currentMaxTokens = resolvedReasoning.maxOutputTokens;
+      let truncationRecoveredOnce = false;
       for (let attempt = 0; attempt <= this.retryPolicy.maxRetries; attempt++) {
         if (request.signal?.aborted) {
-          throw new Error("Provider request cancelled.");
+          throw new ProviderCancelledError();
         }
-        if (attempt > 0) {
-          const delayMs = nextDelayMs ?? calculateDelayWithJitter(attempt, this.retryPolicy);
-          console.warn(`[GeminiProvider] Transient error on model "${currentModel}" (attempt ${attempt}/${this.retryPolicy.maxRetries}). Retrying in ${delayMs}ms...`);
-          await this.sleepFn(delayMs);
+        if (apiCallCount >= effectiveMaxAttempts) {
+          break;
+        }
+        const remainingBeforeSleep = deadlineAt - this.nowFn();
+        if (remainingBeforeSleep <= 25) {
+          lastError = new ProviderTimeoutError("Provider total deadline exhausted.");
+          break;
+        }
+        if (attempt > 0 && nextDelayMs !== void 0) {
+          if (remainingBeforeSleep <= nextDelayMs + 60) {
+            lastError = new ProviderTimeoutError("Insufficient deadline budget remaining for retry backoff.");
+            break;
+          }
+          console.warn(`[GeminiProvider] Transient error on model "${currentModel}" (attempt ${attempt}/${this.retryPolicy.maxRetries}). Retrying in ${nextDelayMs}ms...`);
+          await this.sleepWithCancellationAndDeadline(nextDelayMs, deadlineAt, request.signal);
           nextDelayMs = void 0;
         }
+        const remainingForCall = deadlineAt - this.nowFn();
+        if (remainingForCall <= 25) {
+          lastError = new ProviderTimeoutError("Provider total deadline exhausted.");
+          break;
+        }
+        const attemptStartedAt = this.nowFn();
+        let lastPartialUsage;
         try {
           const endpoint = `${this.endpointBase}/${encodeURIComponent(currentModel)}:generateContent`;
-          const perAttemptTimeout = hasNextFallback ? Math.min(this.options.timeoutMs, 5500) : this.options.timeoutMs;
+          const singleAttemptCapMs = allowThinkingConfig && typeof currentThinkingBudget === "number" && currentThinkingBudget > 0 ? 8500 : 6e3;
+          const fallbackShareCap = hasNextFallback ? remainingForCall < 2e3 ? Math.max(25, Math.floor(remainingForCall * 0.6)) : Math.min(remainingForCall, singleAttemptCapMs) : remainingForCall;
+          const perAttemptTimeout = Math.max(25, Math.min(remainingForCall, fallbackShareCap));
+          const payload = {
+            systemInstruction: { parts: [{ text: request.systemPrompt }] },
+            contents: [{ role: "user", parts }],
+            generationConfig: {
+              ...request.temperature !== void 0 ? { temperature: request.temperature } : {},
+              ...currentMaxTokens ? { maxOutputTokens: currentMaxTokens } : {},
+              ...allowThinkingConfig && typeof currentThinkingBudget === "number" ? { thinkingConfig: { thinkingBudget: currentThinkingBudget } } : {},
+              ...wantsJson ? {
+                responseMimeType: "application/json",
+                ...responseSchema ? { responseSchema } : {}
+              } : {}
+            }
+          };
           apiCallCount++;
           if (!attemptedModels.includes(currentModel))
             attemptedModels.push(currentModel);
@@ -274509,66 +275123,179 @@ var GeminiProvider = class extends BaseAIProvider {
             timeoutMs: perAttemptTimeout,
             fetchImplementation: this.options.fetchImplementation,
             signal: request.signal
-          }, { "x-goog-api-key": this.options.apiKey }, buildPayload(allowThinkingConfig));
-          const content = this.extractOutputText(result.body);
-          const parsed = wantsJson ? parseJsonContent(content) : void 0;
+          }, { "x-goog-api-key": this.options.apiKey }, payload);
+          lastPartialUsage = extractOptionalTokenUsage(result.body);
+          const { text: content, finishReason } = this.extractOutputAndFinishReason(result.body);
+          const parsed = wantsJson ? parseJsonContent(content, {
+            allowTruncatedRepair: finishReason !== "MAX_TOKENS",
+            ...finishReason === "MAX_TOKENS" ? { requiredFields: requiredSchemaFields } : {}
+          }) : void 0;
           const rawUsage = asRecord(result.body.usageMetadata);
           const completed = response(content, parsed, usage(rawUsage.promptTokenCount, rawUsage.candidatesTokenCount, rawUsage.totalTokenCount, rawUsage.thoughtsTokenCount), currentModel, result.latencyMs);
           return {
             ...completed,
+            ...finishReason ? { finishReason } : {},
+            ...request.reasoningMode ? { reasoningMode: request.reasoningMode } : {},
+            ...allowThinkingConfig && typeof currentThinkingBudget === "number" ? { appliedThinkingBudget: currentThinkingBudget } : {},
             ...fallbackFromErrorCode ? { fallbackFromErrorCode } : {},
             attemptedModels,
-            apiCallCount
+            apiCallCount,
+            ...failedAttempts.length > 0 ? { failedAttempts } : {}
           };
         } catch (err) {
           lastError = err;
-          if (request.signal?.aborted)
-            throw err;
+          if (request.signal?.aborted || err instanceof ProviderCancelledError) {
+            throw new ProviderCancelledError();
+          }
           const status = extractHttpStatus(err);
-          if (status === 400 && allowThinkingConfig && err instanceof Error && /thinkingConfig|thinking_config|thinkingBudget/i.test(err.message)) {
+          const failureClass = classifyGeminiFailure(err);
+          const errCode = geminiErrorCode(err);
+          const callElapsed = err instanceof HttpProviderError ? err.latencyMs : Math.max(0, this.nowFn() - attemptStartedAt);
+          const reportedErrUsage = err instanceof HttpProviderError ? err.partialUsage : lastPartialUsage;
+          failedAttempts.push({
+            model: currentModel,
+            errorCode: errCode,
+            failureClass,
+            latencyMs: callElapsed,
+            tokenUsage: reportedErrUsage ?? "UNKNOWN"
+          });
+          if (failureClass === "UNSUPPORTED_THINKING_CONFIG" && allowThinkingConfig) {
+            recordModelUnsupportedThinking(currentModel);
             allowThinkingConfig = false;
+            currentThinkingBudget = void 0;
+            if (apiCallCount < effectiveMaxAttempts && deadlineAt - this.nowFn() > 80) {
+              attempt--;
+              continue;
+            }
+            break;
+          }
+          if ((failureClass === "OUTPUT_TOKEN_EXHAUSTED" || failureClass === "TRUNCATED_OR_INVALID_STRUCTURED_OUTPUT") && !truncationRecoveredOnce && apiCallCount < effectiveMaxAttempts && deadlineAt - this.nowFn() > 150) {
+            truncationRecoveredOnce = true;
+            currentMaxTokens = Math.min(2048, currentMaxTokens + 500);
+            if (allowThinkingConfig && currentThinkingBudget && currentThinkingBudget > 0) {
+              currentThinkingBudget = 0;
+            }
             attempt--;
             continue;
           }
-          if (isAuthHttpError(status)) {
-            throw err;
+          if (failureClass === "AUTH_FAILED") {
+            throw new GeminiExecutionError({
+              message: err instanceof Error ? err.message : "Gemini authentication failed.",
+              errorCode: errCode,
+              failureClass,
+              attemptedModels,
+              apiCallCount,
+              failedAttempts,
+              cause: err
+            });
           }
-          if (status === 404 && hasNextFallback) {
-            console.warn(`[GeminiProvider] Model "${currentModel}" returned 404. Cascading immediately to "${modelsToExecute[mIdx + 1]}"...`);
-            break;
+          if (failureClass === "PROJECT_QUOTA_EXHAUSTED") {
+            const retryAfter = err instanceof HttpProviderError ? err.retryAfterMs : void 0;
+            this.projectQuotaCooldownUntil = this.nowFn() + (retryAfter ?? this.options.projectQuotaCooldownMs);
+            throw new GeminiExecutionError({
+              message: err instanceof Error ? err.message : "Gemini project quota exhausted.",
+              errorCode: errCode,
+              failureClass,
+              attemptedModels,
+              apiCallCount,
+              failedAttempts,
+              cause: err
+            });
           }
-          if (status === 400 || status === 404) {
-            throw err;
+          if (failureClass === "MODEL_QUOTA_EXHAUSTED") {
+            const retryAfter = err instanceof HttpProviderError ? err.retryAfterMs : void 0;
+            if (this.options.modelCooldownMs > 0) {
+              this.modelCooldownUntil.set(currentModel, this.nowFn() + (retryAfter ?? this.options.modelCooldownMs));
+            }
+            if (hasNextFallback) {
+              console.warn(`[GeminiProvider] Model "${currentModel}" hit model quota (${errCode}); entering cooldown and cascading to "${modelsToExecute[mIdx + 1]}"...`);
+              break;
+            }
           }
-          const isTimeout = err instanceof Error && (err.message.includes("timed out") || err.name === "AbortError");
+          if (status === 404) {
+            if (this.options.modelCooldownMs > 0) {
+              this.modelCooldownUntil.set(currentModel, this.nowFn() + this.options.modelCooldownMs);
+            }
+            if (hasNextFallback) {
+              console.warn(`[GeminiProvider] Model "${currentModel}" returned 404. Cascading immediately to "${modelsToExecute[mIdx + 1]}"...`);
+              break;
+            }
+            throw new GeminiExecutionError({
+              message: err instanceof Error ? err.message : "Gemini model not found.",
+              errorCode: errCode,
+              failureClass,
+              attemptedModels,
+              apiCallCount,
+              failedAttempts,
+              cause: err
+            });
+          }
+          if (status === 400) {
+            throw new GeminiExecutionError({
+              message: err instanceof Error ? err.message : "Gemini invalid request.",
+              errorCode: errCode,
+              failureClass,
+              attemptedModels,
+              apiCallCount,
+              failedAttempts,
+              cause: err
+            });
+          }
+          const isTimeout = failureClass === "TIMEOUT";
+          if (isTimeout && hasNextFallback && this.options.modelCooldownMs > 0) {
+            this.modelCooldownUntil.set(currentModel, this.nowFn() + Math.min(this.options.modelCooldownMs, 3e4));
+          }
           const isTransient = isTransientHttpError(status, err);
           const isSafetyOrParseError = err instanceof AISafetyError;
           if (!isTransient && !isTimeout && !isSafetyOrParseError) {
-            throw err;
+            throw new GeminiExecutionError({
+              message: err instanceof Error ? err.message : "Gemini request failed.",
+              errorCode: errCode,
+              failureClass,
+              attemptedModels,
+              apiCallCount,
+              failedAttempts,
+              cause: err
+            });
           }
-          const isQuotaOrRateLimit = status === 429;
           const isServiceUnavailable = status === 503 || err instanceof Error && /503|UNAVAILABLE|high demand|overloaded/i.test(err.message);
-          const maxRetriesForError = (isTimeout || isSafetyOrParseError || isQuotaOrRateLimit) && hasNextFallback ? 0 : isServiceUnavailable && hasNextFallback ? Math.min(this.retryPolicy.maxRetries, this.options.maxRetriesOn503 ?? 1) : this.retryPolicy.maxRetries;
-          if (attempt >= maxRetriesForError) {
-            console.warn(`[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (${geminiErrorCode(err)}).`);
+          const maxRetriesForError = (isTimeout || isSafetyOrParseError || status === 429) && hasNextFallback ? 0 : isServiceUnavailable && hasNextFallback ? Math.min(this.retryPolicy.maxRetries, this.options.maxRetriesOn503 ?? 1) : this.retryPolicy.maxRetries;
+          if (attempt >= maxRetriesForError || apiCallCount >= effectiveMaxAttempts) {
+            if (isServiceUnavailable && hasNextFallback && this.options.modelCooldownMs > 0) {
+              this.modelCooldownUntil.set(currentModel, this.nowFn() + Math.min(this.options.modelCooldownMs, 15e3));
+            }
+            console.warn(`[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (${errCode}).`);
             break;
           }
           const retryAfterMs = err instanceof HttpProviderError ? err.retryAfterMs : void 0;
           if (isServiceUnavailable && hasNextFallback) {
-            const cappedBase = Math.min(this.retryPolicy.initialDelayMs, 500);
+            const cappedBase = Math.min(this.retryPolicy.initialDelayMs, 450);
             const jitter = Math.round(cappedBase * this.retryPolicy.jitterRatio * (Math.random() * 2 - 1));
-            nextDelayMs = retryAfterMs !== void 0 ? Math.min(1e3, Math.max(50, retryAfterMs)) : Math.max(20, cappedBase + jitter);
+            nextDelayMs = retryAfterMs !== void 0 ? Math.min(900, Math.max(40, retryAfterMs)) : Math.max(20, cappedBase + jitter);
           } else {
             nextDelayMs = calculateDelayWithJitter(attempt + 1, this.retryPolicy, retryAfterMs);
           }
         }
       }
+      if (apiCallCount >= effectiveMaxAttempts || deadlineAt - this.nowFn() <= 25) {
+        break;
+      }
       if (hasNextFallback) {
         fallbackFromErrorCode = geminiErrorCode(lastError);
-        console.warn(`[GeminiProvider] Model "${currentModel}" temporarily unavailable (503/transient). Falling back to "${modelsToExecute[mIdx + 1]}"...`);
+        console.warn(`[GeminiProvider] Model "${currentModel}" unavailable (${fallbackFromErrorCode}). Falling back to "${modelsToExecute[mIdx + 1]}"...`);
       }
     }
-    throw lastError ?? new Error("Gemini completion failed across all models.");
+    const finalClass = classifyGeminiFailure(lastError);
+    const finalCode = geminiErrorCode(lastError);
+    throw new GeminiExecutionError({
+      message: lastError instanceof Error ? lastError.message : "Gemini completion failed across all configured models.",
+      errorCode: finalCode,
+      failureClass: finalClass,
+      attemptedModels,
+      apiCallCount,
+      failedAttempts,
+      cause: lastError
+    });
   }
   async *stream(request) {
     const completed = await this.complete(request);
@@ -274587,21 +275314,35 @@ var GeminiProvider = class extends BaseAIProvider {
     return this.options.apiKey.trim().length > 0;
   }
   getModelInfo() {
-    return { provider: this.name, model: this.options.model, contextWindow: 1e6, supportsJson: true, supportsStreaming: false };
+    return {
+      provider: this.name,
+      model: this.options.model,
+      fallbackModels: this.options.fallbackModels,
+      configFingerprint: this.configFingerprint,
+      contextWindow: 1e6,
+      supportsJson: true,
+      supportsStreaming: false
+    };
   }
-  extractOutputText(envelope) {
+  extractOutputAndFinishReason(envelope) {
     const candidates = Array.isArray(envelope.candidates) ? envelope.candidates : [];
     for (const candidate of candidates) {
-      const parts = asRecord(asRecord(candidate).content).parts;
+      const candRec = asRecord(candidate);
+      const finishReason = typeof candRec.finishReason === "string" ? candRec.finishReason : void 0;
+      const parts = asRecord(candRec.content).parts;
       const arr = Array.isArray(parts) ? parts : [];
       const answerParts = arr.map((p) => asRecord(p)).filter((p) => !p.thought && typeof p.text === "string" && p.text.trim());
       if (answerParts.length > 0) {
-        return answerParts.map((p) => p.text).join("\n");
+        return { text: answerParts.map((p) => p.text).join("\n"), finishReason };
       }
       for (const part of arr) {
-        const text2 = asRecord(part).text;
-        if (typeof text2 === "string" && text2.trim())
-          return text2;
+        const pRec = asRecord(part);
+        if (!pRec.thought && typeof pRec.text === "string" && pRec.text.trim()) {
+          return { text: pRec.text, finishReason };
+        }
+      }
+      if (finishReason === "MAX_TOKENS") {
+        throw new AISafetyError("OUTPUT_TOKEN_EXHAUSTED: Gemini candidate exhausted maxOutputTokens inside thought tokens.");
       }
     }
     throw new AISafetyError("Gemini response contained no output text.");
@@ -275167,39 +275908,145 @@ function interpretStructuredBriefRequirements(config, proposal, interpretationSo
   };
 }
 __name(interpretStructuredBriefRequirements, "interpretStructuredBriefRequirements");
-var PROPOSAL_CACHE_TTL_MS = 5 * 60 * 1e3;
-var MAX_CACHE_ENTRIES_PER_PROVIDER = 64;
+var PROPOSAL_SYSTEM_PROMPT = "Principal Indian Residential Architect (NBC 2016 / UDCPR). Convert brief, site, and optional reference image into ArchitecturalProposal JSON. Strictly obey mandatory user rules (NO OTS, no balconies, center building, locked shape, core placement). Keep designRationale <= 180 chars.";
+var PROPOSAL_SCHEMA_VERSION = "phase4a1-v2";
+var TEXT_SCHEMA_DIGEST = exchangeArtifactDigest(new TextEncoder().encode(canonicalJsonStringify(ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA))).slice(0, 16);
+var VISION_SCHEMA_DIGEST = exchangeArtifactDigest(new TextEncoder().encode(canonicalJsonStringify(ARCHITECTURAL_PROPOSAL_SCHEMA))).slice(0, 16);
+var ZERO_TOKEN_USAGE = {
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0
+};
+var defaultCacheOptions = {
+  maxEntries: 64,
+  ttlMs: 5 * 60 * 1e3
+};
 var providerResponseCache = /* @__PURE__ */ new WeakMap();
 var providerInFlightMap = /* @__PURE__ */ new WeakMap();
-function buildProposalCacheKey(provider, config, seed2, rejected, imageDigest) {
-  const payload = JSON.stringify({
-    provider: provider.name,
-    model: provider.getModelInfo().model,
-    plotW: config.plotWidthMm,
-    plotD: config.plotDepthMm,
-    roadW: config.roadWidthMm,
-    stack: config.verticalStackType,
-    floors: config.numTypicalFloors,
-    flats: config.flatsPerFloor,
-    units: (config.units ?? []).map((u) => [u.unitIndex, u.bhkType, u.targetCarpetSqFt ?? null]),
-    area: config.targetAreaSqFt ?? null,
-    scope: config.areaTargetScope ?? null,
-    shape: config.buildingMassingShape ?? null,
-    cat: config.planCategory ?? null,
-    prompt: normalizeBriefSpelling2(config.aiPrompt ?? "").trim(),
-    seed: seed2,
-    rejected: [...rejected].sort(),
-    img: imageDigest ?? null
+function buildProposalCacheKey(params) {
+  const { provider, config, seed: seed2, rejected, classifiedRef } = params;
+  const modelInfo = provider.getModelInfo();
+  const hasVision = Boolean(classifiedRef.imagePart);
+  const serialized = canonicalJsonStringify({
+    schemaVersion: PROPOSAL_SCHEMA_VERSION,
+    isolationScope: {
+      projectId: config.projectId ?? "default-local-project",
+      authContextDigest: params.authContextDigest ?? null
+    },
+    provider: {
+      name: provider.name,
+      model: modelInfo.model,
+      fallbackModels: modelInfo.fallbackModels ?? [],
+      configFingerprint: modelInfo.configFingerprint ?? null
+    },
+    requestParameters: {
+      systemPrompt: params.systemPrompt ?? PROPOSAL_SYSTEM_PROMPT,
+      userPrompt: params.userPrompt ?? null,
+      responseSchemaName: "architectural_proposal",
+      responseSchemaDigest: hasVision ? VISION_SCHEMA_DIGEST : TEXT_SCHEMA_DIGEST,
+      reasoningMode: params.reasoningMode,
+      thinkingBudget: params.thinkingBudget ?? null,
+      maxOutputTokens: params.maxOutputTokens,
+      temperature: params.temperature
+    },
+    siteAndEnvelope: {
+      plotWidthMm: config.plotWidthMm,
+      plotDepthMm: config.plotDepthMm,
+      roadWidthMm: config.roadWidthMm,
+      roadAccessSides: [...config.roadAccessSides],
+      setbacksMm: config.setbacksMm ?? null,
+      lotAllotmentMode: config.lotAllotmentMode,
+      jurisdiction: config.jurisdiction,
+      irregularPlotBoundary: config.irregularPlotBoundary ?? null,
+      centerBuildingInEnvelope: config.centerBuildingInEnvelope ?? null
+    },
+    programAndRequirements: {
+      aiPromptNormalized: normalizeBriefSpelling2(config.aiPrompt ?? "").trim(),
+      verticalStackType: config.verticalStackType,
+      numTypicalFloors: config.numTypicalFloors,
+      floorToFloorHeightMm: config.floorToFloorHeightMm ?? null,
+      stiltHeightMm: config.stiltHeightMm ?? null,
+      basementHeightMm: config.basementHeightMm ?? null,
+      flatsPerFloor: config.flatsPerFloor,
+      units: (config.units ?? []).map((u) => ({
+        unitIndex: u.unitIndex,
+        bhkType: u.bhkType,
+        targetCarpetSqFt: u.targetCarpetSqFt ?? null,
+        hasUtilityBalcony: u.hasUtilityBalcony ?? null,
+        hasServantRoom: u.hasServantRoom ?? null,
+        hasPoojaRoom: u.hasPoojaRoom ?? null
+      })),
+      targetAreaSqFt: config.targetAreaSqFt ?? null,
+      areaTargetScope: config.areaTargetScope ?? null,
+      areaAcceptanceTolerancePercent: config.areaAcceptanceTolerancePercent ?? null,
+      requireAreaTargets: config.requireAreaTargets ?? null,
+      parkingMode: config.parkingMode,
+      visitorParkingPercent: config.visitorParkingPercent ?? null,
+      includeDiningHall: config.includeDiningHall ?? null,
+      includeStudyRoom: config.includeStudyRoom ?? null,
+      includeWindowChajjas: config.includeWindowChajjas ?? null,
+      staggeredBalconies: config.staggeredBalconies ?? null,
+      galleryCoordinationMode: config.galleryCoordinationMode ?? null,
+      structuralLayoutMode: config.structuralLayoutMode ?? null,
+      architectureOptions: config.architectureOptions ?? null,
+      regulatoryContext: config.regulatoryContext ?? null,
+      siteAmenities: config.siteAmenities,
+      stiltAmenities: config.stiltAmenities,
+      terraceAmenities: config.terraceAmenities
+    },
+    massingAndExploration: {
+      seed: seed2,
+      buildingMassingShape: config.buildingMassingShape ?? null,
+      lockedMassingShape: config.lockedMassingShape ?? null,
+      planCategory: config.planCategory ?? null,
+      preferredArchetype: config.preferredArchetype ?? null,
+      autoExploreNovelShape: config.autoExploreNovelShape ?? null,
+      shapeParams: config.shapeParams ?? null,
+      rejectedTopologyHashes: [...rejected].sort(),
+      rejectedShapeIds: [...config.rejectedShapeIds ?? []].sort(),
+      rejectedArchetypeIds: [...config.rejectedArchetypeIds ?? []].sort()
+    },
+    referenceAttachment: {
+      disposition: classifiedRef.disposition,
+      mimeType: classifiedRef.imagePart?.mimeType ?? config.referenceImage?.mimeType ?? null,
+      imageDigest: classifiedRef.imageDigest ?? null
+    }
   });
-  return exchangeArtifactDigest(new TextEncoder().encode(payload));
+  return exchangeArtifactDigest(new TextEncoder().encode(serialized));
 }
 __name(buildProposalCacheKey, "buildProposalCacheKey");
+function summarizeFailedAttemptTokens(attempts) {
+  if (attempts.length === 0)
+    return "UNKNOWN";
+  if (attempts.some((a) => a.tokenUsage === "UNKNOWN"))
+    return "UNKNOWN";
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let totalTokens = 0;
+  let thoughtsTokens = 0;
+  for (const att of attempts) {
+    if (att.tokenUsage !== "UNKNOWN") {
+      promptTokens += att.tokenUsage.promptTokens;
+      completionTokens += att.tokenUsage.completionTokens;
+      totalTokens += att.tokenUsage.totalTokens;
+      thoughtsTokens += att.tokenUsage.thoughtsTokens ?? 0;
+    }
+  }
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...thoughtsTokens > 0 ? { thoughtsTokens } : {}
+  };
+}
+__name(summarizeFailedAttemptTokens, "summarizeFailedAttemptTokens");
 async function generateArchitecturalProposal(provider, input) {
   const startedAt = Date.now();
   const seed2 = input.seed ?? input.config.generationSeed ?? 1;
   const rejected = input.rejectedTopologyHashes ?? input.config.rejectedTopologyHashes ?? [];
   const classifiedRef = classifyReferenceAttachment(input.config.referenceImage);
   const imagePart = classifiedRef.imagePart;
+  const reasoningMode = selectArchitecturalReasoningMode(input.config, seed2, Boolean(imagePart), input.reasoningMode);
   const buildEnriched = /* @__PURE__ */ __name((proposal, telemetryBase, rejectedReferenceGuidance = []) => {
     const rg = proposal.referenceSpatialGraph;
     const effectiveArchetype = seed2 > 1 && rejected.length > 0 && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES2[0] ? ROOM_SLICING_ARCHETYPES2[(seed2 - 1) % ROOM_SLICING_ARCHETYPES2.length] : rg?.wetCoreClustering === "SHARED_SHAFT" && !input.config.preferredArchetype && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES2[0] ? "MIRRORED_WET_CORE_STACK" : proposal.preferredArchetype;
@@ -275250,6 +276097,7 @@ async function generateArchitecturalProposal(provider, input) {
     const interpretedRequirements = interpretStructuredBriefRequirements(input.config, finalProposal, telemetryBase.interpretationSource ?? "DETERMINISTIC");
     const finalTelemetry = {
       ...telemetryBase,
+      reasoningMode,
       referenceDisposition: classifiedRef.disposition,
       referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0,
       referenceGuidanceApplied,
@@ -275290,6 +276138,30 @@ async function generateArchitecturalProposal(provider, input) {
     };
     return { proposal: finalProposal, telemetry: finalTelemetry, enrichedConfig };
   }, "buildEnriched");
+  if (input.signal?.aborted) {
+    const proposal = defaultProposalForConfig(input.config, seed2);
+    return buildEnriched(proposal, {
+      geminiInvoked: false,
+      invocationMode: "CANCELLED",
+      provider: "deterministic-rule-engine",
+      requestedModel: provider ? provider.getModelInfo().model : "none",
+      modelUsed: "none",
+      apiCallCount: 0,
+      cacheHit: false,
+      sharedInFlight: false,
+      providerExecutionMs: 0,
+      tokenUsage: ZERO_TOKEN_USAGE,
+      currentRequestTokenUsage: ZERO_TOKEN_USAGE,
+      proposalTokenUsage: "UNKNOWN",
+      latencyMs: Date.now() - startedAt,
+      fallbackTriggered: true,
+      providerErrorCode: "CANCELLED",
+      failureClass: "CANCELLED",
+      fallbackReason: "Generation cancelled before provider invocation.",
+      interpretationSource: "DETERMINISTIC",
+      referenceImageUsedForGeometry: false
+    });
+  }
   let available = false;
   let availabilityError = false;
   try {
@@ -275301,11 +276173,17 @@ async function generateArchitecturalProposal(provider, input) {
     const proposal = defaultProposalForConfig(input.config, seed2);
     return buildEnriched(proposal, {
       geminiInvoked: false,
+      invocationMode: "DETERMINISTIC_FALLBACK",
       provider: "deterministic-rule-engine",
       requestedModel: provider ? provider.getModelInfo().model : "none",
       modelUsed: "none",
       apiCallCount: 0,
       cacheHit: false,
+      sharedInFlight: false,
+      providerExecutionMs: 0,
+      tokenUsage: ZERO_TOKEN_USAGE,
+      currentRequestTokenUsage: ZERO_TOKEN_USAGE,
+      proposalTokenUsage: ZERO_TOKEN_USAGE,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       fallbackReason: provider ? "Gemini provider is unavailable." : "No Gemini provider is configured.",
@@ -275317,8 +276195,12 @@ async function generateArchitecturalProposal(provider, input) {
   const requestedModel = provider.getModelInfo().model;
   const unitSummary = (input.config.units ?? []).map((u) => `F${u.unitIndex}:${u.bhkType}${u.targetCarpetSqFt ? `@${u.targetCarpetSqFt}sqft` : ""}`).join(",");
   const boundedPrompt = normalizeBriefSpelling2((input.config.aiPrompt ?? "Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.").slice(0, 4e3));
+  const setbackLine = input.config.setbacksMm ? `Setbacks:${input.config.setbacksMm.front}/${input.config.setbacksMm.rear}/${input.config.setbacksMm.left}/${input.config.setbacksMm.right}mm` : "";
+  const irregularLine = input.config.irregularPlotBoundary ? `IrregularSite:${input.config.irregularPlotBoundary.polygon.points.length}pts,${Math.round(input.config.irregularPlotBoundary.areaMm2 / 1e6)}m2` : "";
   const userPromptLines = [
     `Plot:${(input.config.plotWidthMm / 1e3).toFixed(1)}x${(input.config.plotDepthMm / 1e3).toFixed(1)}m Road:${(input.config.roadWidthMm / 1e3).toFixed(1)}m(${input.config.roadAccessSides.join(",")})`,
+    setbackLine,
+    irregularLine,
     `Stack:${input.config.verticalStackType} Floors:${input.config.numTypicalFloors} Flats/Floor:${input.config.flatsPerFloor} Mix:${unitSummary || "2BHK"}`,
     `Seed:${seed2}${rejected.length > 0 ? ` Excluded:${rejected.slice(0, 8).join(",")}` : ""}`,
     input.config.targetAreaSqFt ? `TargetArea:${input.config.targetAreaSqFt}sqft(${input.config.areaTargetScope ?? "UNSPECIFIED"})` : "",
@@ -275327,74 +276209,93 @@ async function generateArchitecturalProposal(provider, input) {
     imagePart ? "Reference image attached: populate referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering)." : "",
     seed2 > 1 ? `Variant #${seed2}: choose distinct archetype/massing from excluded layouts.` : ""
   ].filter(Boolean).join("\n");
-  const cacheKey = buildProposalCacheKey(provider, input.config, seed2, rejected, classifiedRef.imageDigest);
+  const resolvedReasoning = resolveModelThinkingParameters(requestedModel, reasoningMode, {
+    hasVisionImage: Boolean(imagePart),
+    taskKind: "ARCHITECTURAL_PROPOSAL"
+  });
+  const temperature = seed2 > 1 ? 0.35 : 0.1;
+  const cacheKey = buildProposalCacheKey({
+    provider,
+    config: input.config,
+    seed: seed2,
+    rejected,
+    classifiedRef,
+    reasoningMode,
+    thinkingBudget: resolvedReasoning.thinkingBudget,
+    maxOutputTokens: resolvedReasoning.maxOutputTokens,
+    temperature,
+    systemPrompt: PROPOSAL_SYSTEM_PROMPT,
+    userPrompt: userPromptLines,
+    authContextDigest: input.authContextDigest
+  });
   let cacheStore = providerResponseCache.get(provider);
   if (!cacheStore) {
-    cacheStore = /* @__PURE__ */ new Map();
+    cacheStore = new BoundedLruCache(defaultCacheOptions);
     providerResponseCache.set(provider, cacheStore);
   }
   let inFlightStore = providerInFlightMap.get(provider);
   if (!inFlightStore) {
-    inFlightStore = /* @__PURE__ */ new Map();
+    inFlightStore = new InFlightRequestDeduplicator();
     providerInFlightMap.set(provider, inFlightStore);
   }
+  let initiatedNewProviderCall = false;
+  let sharedInFlight = false;
   try {
     let response2;
     let cacheHit = false;
     const cached = !input.bypassCache ? cacheStore.get(cacheKey) : void 0;
-    if (cached && cached.expiresAt > Date.now()) {
-      response2 = cached.response;
+    if (cached) {
+      response2 = cached;
       cacheHit = true;
     } else {
-      let pending = !input.bypassCache ? inFlightStore.get(cacheKey) : void 0;
-      if (!pending) {
-        const requestPromise = provider.complete({
+      const dedup = await inFlightStore.execute(cacheKey, (upstreamSignal) => {
+        initiatedNewProviderCall = true;
+        return provider.complete({
           taskType: AITaskType.RequirementExtraction,
-          systemPrompt: "Principal Indian Residential Architect (NBC 2016 / UDCPR). Convert brief, site, and optional reference image into ArchitecturalProposal JSON. Strictly obey mandatory user rules (NO OTS, no balconies, center building, locked shape, core placement). Keep designRationale <= 180 chars.",
+          systemPrompt: PROPOSAL_SYSTEM_PROMPT,
           userPrompt: userPromptLines,
           ...imagePart ? { images: [imagePart] } : {},
           responseFormat: "json",
           responseSchema: imagePart ? ARCHITECTURAL_PROPOSAL_SCHEMA : ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
           responseSchemaName: "architectural_proposal",
-          temperature: seed2 > 1 ? 0.35 : 0.1,
-          maxTokens: imagePart ? 1100 : 750,
-          thinkingBudget: 0,
-          signal: input.signal
+          temperature,
+          maxTokens: resolvedReasoning.maxOutputTokens,
+          reasoningMode,
+          ...resolvedReasoning.includeThinkingConfig && resolvedReasoning.thinkingBudget !== void 0 ? { thinkingBudget: resolvedReasoning.thinkingBudget } : {},
+          signal: upstreamSignal
         });
-        if (!input.bypassCache) {
-          inFlightStore.set(cacheKey, requestPromise);
-        }
-        pending = requestPromise;
-      } else {
-        cacheHit = true;
-      }
-      try {
-        response2 = await pending;
-      } finally {
-        inFlightStore.delete(cacheKey);
-      }
-      if (!input.bypassCache && response2.parsed && Object.keys(response2.parsed).length > 0) {
-        if (cacheStore.size >= MAX_CACHE_ENTRIES_PER_PROVIDER) {
-          const oldestKey = cacheStore.keys().next().value;
-          if (oldestKey !== void 0)
-            cacheStore.delete(oldestKey);
-        }
-        cacheStore.set(cacheKey, { response: response2, expiresAt: Date.now() + PROPOSAL_CACHE_TTL_MS });
+      }, {
+        signal: input.signal,
+        bypassDeduplication: Boolean(input.bypassCache)
+      });
+      response2 = dedup.value;
+      sharedInFlight = dedup.sharedInFlight;
+      if (!input.bypassCache && !sharedInFlight && response2.parsed && Object.keys(response2.parsed).length > 0) {
+        cacheStore.set(cacheKey, response2);
       }
     }
     if (!response2.parsed || Object.keys(response2.parsed).length === 0) {
       throw new Error("Gemini returned no structured architectural proposal.");
     }
     const { proposal, rejectedReferenceGuidance } = sanitizeProposalWithPromptGuardrails(response2.parsed, input.config, seed2, Boolean(imagePart));
+    const invocationMode = cacheHit ? "CACHED_PROVIDER_RESPONSE" : sharedInFlight ? "SHARED_IN_FLIGHT_REQUEST" : "LIVE_PROVIDER";
+    const currentRequestUsage = invocationMode === "LIVE_PROVIDER" ? response2.usage : ZERO_TOKEN_USAGE;
     return buildEnriched(proposal, {
-      geminiInvoked: !cacheHit || true,
+      geminiInvoked: invocationMode === "LIVE_PROVIDER",
+      invocationMode,
+      ...response2.appliedThinkingBudget !== void 0 ? { appliedThinkingBudget: response2.appliedThinkingBudget } : resolvedReasoning.thinkingBudget !== void 0 ? { appliedThinkingBudget: resolvedReasoning.thinkingBudget } : {},
       provider: "google-genai",
       requestedModel,
       modelUsed: response2.model,
       ...response2.attemptedModels ? { attemptedModels: response2.attemptedModels } : {},
-      apiCallCount: cacheHit ? 0 : response2.apiCallCount ?? 1,
+      apiCallCount: invocationMode === "LIVE_PROVIDER" ? response2.apiCallCount ?? 1 : 0,
       cacheHit,
-      tokenUsage: response2.usage,
+      sharedInFlight,
+      providerExecutionMs: cacheHit ? 0 : response2.latencyMs,
+      tokenUsage: currentRequestUsage,
+      currentRequestTokenUsage: currentRequestUsage,
+      proposalTokenUsage: response2.usage,
+      ...response2.failedAttempts ? { failedAttempts: response2.failedAttempts } : {},
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: response2.model !== requestedModel,
       ...response2.fallbackFromErrorCode ? {
@@ -275406,19 +276307,35 @@ async function generateArchitecturalProposal(provider, input) {
     }, rejectedReferenceGuidance);
   } catch (error2) {
     const proposal = defaultProposalForConfig(input.config, seed2);
-    const providerErrorCode = geminiErrorCode(error2);
+    const isCancelled = error2 instanceof ProposalCancelledError || error2 instanceof ProviderCancelledError || Boolean(input.signal?.aborted) || geminiErrorCode(error2) === "CANCELLED";
+    const execErr = error2 instanceof GeminiExecutionError ? error2 : void 0;
+    const failedAttempts = execErr?.failedAttempts ?? [];
+    const attemptedModels = execErr?.attemptedModels ?? (initiatedNewProviderCall ? [requestedModel] : []);
+    const apiCallCount = execErr ? execErr.apiCallCount : initiatedNewProviderCall ? 1 : 0;
+    const providerErrorCode = isCancelled ? "CANCELLED" : geminiErrorCode(error2);
+    const failureClass = isCancelled ? "CANCELLED" : classifyGeminiFailure(error2);
+    const currentRequestTokenUsage = apiCallCount === 0 ? ZERO_TOKEN_USAGE : summarizeFailedAttemptTokens(failedAttempts);
     return buildEnriched(proposal, {
-      geminiInvoked: true,
+      geminiInvoked: apiCallCount > 0,
+      invocationMode: isCancelled ? "CANCELLED" : "PROVIDER_FAILURE",
       provider: "deterministic-rule-engine",
       requestedModel,
-      modelUsed: requestedModel,
-      apiCallCount: 1,
+      modelUsed: "none",
+      ...attemptedModels.length > 0 ? { attemptedModels } : {},
+      apiCallCount,
       cacheHit: false,
+      sharedInFlight,
+      providerExecutionMs: failedAttempts.reduce((sum, item) => sum + item.latencyMs, 0),
+      ...currentRequestTokenUsage !== "UNKNOWN" ? { tokenUsage: currentRequestTokenUsage } : {},
+      currentRequestTokenUsage,
+      proposalTokenUsage: "UNKNOWN",
+      ...failedAttempts.length > 0 ? { failedAttempts } : {},
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       interpretationSource: "DETERMINISTIC",
       providerErrorCode,
-      fallbackReason: `Gemini interpretation failed (${providerErrorCode}).`,
+      failureClass,
+      fallbackReason: isCancelled ? "Gemini interpretation was cancelled by caller." : `Gemini interpretation failed (${providerErrorCode}).`,
       referenceImageUsedForGeometry: false
     });
   }
@@ -275772,15 +276689,17 @@ function resolveServiceConfig(env = process.env) {
   for (const candidate of [
     fallbackModel,
     ...extraFallbacks,
-    "gemini-3.6-flash",
     "gemini-3.5-flash-lite",
-    "gemini-3-flash-preview",
-    "gemini-flash-lite-latest"
+    "gemini-flash-lite-latest",
+    "gemini-3.6-flash",
+    "gemini-3-flash-preview"
   ]) {
     if (candidate && candidate !== primaryModel && !dedupedFallbacks.includes(candidate)) {
       dedupedFallbacks.push(candidate);
     }
   }
+  const rawReasoningMode = (env.AI_REASONING_MODE ?? "").trim().toUpperCase();
+  const reasoningModeOverride = rawReasoningMode === "FAST" || rawReasoningMode === "BALANCED" || rawReasoningMode === "DEEP" ? rawReasoningMode : void 0;
   return {
     briefInterpreterKind: interpreterKind === "local-stub" ? "local-stub" : "gemini",
     geminiApiKey,
@@ -275788,7 +276707,10 @@ function resolveServiceConfig(env = process.env) {
     geminiModel: primaryModel,
     geminiFallbackModel: fallbackModel,
     geminiFallbackModels: dedupedFallbacks,
-    providerTimeoutMs: positiveInt(env.PROVIDER_TIMEOUT_MS, 2e4),
+    providerTimeoutMs: positiveInt(env.AI_PROVIDER_TIMEOUT_MS ?? env.PROVIDER_TIMEOUT_MS, 24e3),
+    maxProviderAttempts: positiveInt(env.AI_MAX_PROVIDER_ATTEMPTS, 7),
+    modelCooldownMs: positiveInt(env.AI_MODEL_COOLDOWN_MS, 3e4),
+    ...reasoningModeOverride ? { reasoningModeOverride } : {},
     port: positiveInt(env.PORT, 4200)
   };
 }
@@ -275918,11 +276840,14 @@ var VALID_ACTIONS = /* @__PURE__ */ new Set([
   "RESIZE_OPENING",
   "LOCALIZED_FLAT_REGENERATION"
 ]);
-async function handleCadEditProposal(body, deps) {
+var ZERO_USAGE = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+async function handleCadEditProposal(body, deps, runtimeOptions = {}) {
   if (!isRecord3(body)) {
     return {
       status: 400,
-      json: { error: { code: "INVALID_REQUEST", message: "Expected JSON object with building, floorId, and instruction." } }
+      json: {
+        error: { code: "INVALID_REQUEST", message: "Expected JSON object with building, floorId, and instruction." }
+      }
     };
   }
   const building = body.building;
@@ -275950,14 +276875,27 @@ async function handleCadEditProposal(body, deps) {
       json: { error: { code: "MISSING_INSTRUCTION", message: "instruction or parsedIntent is required." } }
     };
   }
+  if (runtimeOptions.signal?.aborted) {
+    return {
+      status: 499,
+      json: { error: { code: "REQUEST_CANCELLED", message: "CAD edit proposal cancelled." } }
+    };
+  }
   const startedAt = Date.now();
   let parsedIntent = isRecord3(body.parsedIntent) && VALID_ACTIONS.has(body.parsedIntent.action) ? body.parsedIntent : void 0;
   let intentSource = "DETERMINISTIC";
+  let invocationMode = "DETERMINISTIC_FALLBACK";
   let geminiInvoked = false;
+  let apiCallCount = 0;
   let modelUsed;
   let fallbackReason;
-  let tokenUsage;
+  let tokenUsage = ZERO_USAGE;
+  let currentRequestTokenUsage = ZERO_USAGE;
   if (!parsedIntent && deps.gemini && deps.briefInterpreterKind === "gemini") {
+    const modelInfo = deps.gemini.getModelInfo();
+    const resolvedReasoning = resolveModelThinkingParameters(modelInfo.model, "FAST", {
+      taskKind: "CAD_EDIT_INTENT"
+    });
     geminiInvoked = true;
     try {
       const response2 = await deps.gemini.complete({
@@ -275969,9 +276907,12 @@ Instruction: ${instruction}`,
         responseSchema: CAD_EDIT_INTENT_SCHEMA,
         responseSchemaName: "cad_edit_intent",
         temperature: 0,
-        maxTokens: 220,
-        thinkingBudget: 0
+        maxTokens: resolvedReasoning.maxOutputTokens,
+        reasoningMode: "FAST",
+        ...resolvedReasoning.includeThinkingConfig && resolvedReasoning.thinkingBudget !== void 0 ? { thinkingBudget: resolvedReasoning.thinkingBudget } : {},
+        signal: runtimeOptions.signal
       });
+      apiCallCount = response2.apiCallCount ?? 1;
       const decoded = response2.parsed ?? (response2.content.trim().startsWith("{") ? JSON.parse(response2.content) : null);
       if (isRecord3(decoded) && VALID_ACTIONS.has(decoded.action)) {
         const raw = decoded;
@@ -275989,21 +276930,31 @@ Instruction: ${instruction}`,
           ...typeof raw.targetAreaSqFt === "number" ? { targetAreaSqFt: raw.targetAreaSqFt } : {}
         };
         intentSource = "GEMINI_ASSISTED";
+        invocationMode = "LIVE_PROVIDER";
         modelUsed = response2.model;
-        tokenUsage = {
-          promptTokens: response2.usage.promptTokens,
-          completionTokens: response2.usage.completionTokens,
-          totalTokens: response2.usage.totalTokens,
-          ...response2.usage.thoughtsTokens !== void 0 ? { thoughtsTokens: response2.usage.thoughtsTokens } : {}
-        };
+        tokenUsage = response2.usage;
+        currentRequestTokenUsage = response2.usage;
       } else {
+        invocationMode = "PROVIDER_FAILURE";
+        tokenUsage = response2.usage;
+        currentRequestTokenUsage = response2.usage;
         fallbackReason = "INVALID_STRUCTURED_EDIT_INTENT";
       }
     } catch (err) {
+      invocationMode = runtimeOptions.signal?.aborted ? "CANCELLED" : "PROVIDER_FAILURE";
+      apiCallCount = err instanceof GeminiExecutionError ? err.apiCallCount : 1;
+      tokenUsage = void 0;
+      currentRequestTokenUsage = "UNKNOWN";
       fallbackReason = err instanceof Error ? err.message.slice(0, 120) : "GEMINI_EDIT_PARSE_FAILED";
     }
   } else if (!parsedIntent && !deps.gemini) {
     fallbackReason = "GEMINI_NOT_CONFIGURED";
+  }
+  if (runtimeOptions.signal?.aborted) {
+    return {
+      status: 499,
+      json: { error: { code: "REQUEST_CANCELLED", message: "CAD edit proposal cancelled." } }
+    };
   }
   if (!parsedIntent) {
     parsedIntent = parseCadEditInstructionDeterministically(instruction, selectedEntityId);
@@ -276026,11 +276977,15 @@ Instruction: ${instruction}`,
       proposal,
       aiTelemetry: {
         geminiInvoked,
+        invocationMode,
+        reasoningMode: "FAST",
         interpretationSource: intentSource,
         ...modelUsed ? { modelUsed } : {},
+        apiCallCount,
         ...fallbackReason ? { fallbackReason } : {},
         latencyMs: Date.now() - startedAt,
-        ...tokenUsage ? { tokenUsage } : {}
+        ...tokenUsage ? { tokenUsage } : {},
+        currentRequestTokenUsage
       }
     }
   };
@@ -276056,22 +277011,43 @@ function parseGenerationRequest(body) {
     rawConfig.roadWidthMm,
     rawConfig.floorToFloorHeightMm,
     rawConfig.stiltHeightMm
-  ].every(positive) || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40 || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6 || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats || rawConfig.units.some((unit, index) => !isRecord(unit) || typeof unit.bhkType !== "string" || !/^[1-4]BHK$/.test(unit.bhkType) || unit.unitIndex !== index + 1 || unit.targetCarpetSqFt !== void 0 && !positive(unit.targetCarpetSqFt)) || rawConfig.requireAreaTargets !== void 0 && typeof rawConfig.requireAreaTargets !== "boolean" || rawConfig.areaAcceptanceTolerancePercent !== void 0 && (!Number.isFinite(rawConfig.areaAcceptanceTolerancePercent) || Number(rawConfig.areaAcceptanceTolerancePercent) < 0 || Number(rawConfig.areaAcceptanceTolerancePercent) >= 100) || rawConfig.projectId !== void 0 && (typeof rawConfig.projectId !== "string" || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)) || rawConfig.aiPrompt !== void 0 && (typeof rawConfig.aiPrompt !== "string" || rawConfig.aiPrompt.length > 32e3) || setbacks !== void 0 && (!isRecord(setbacks) || ["front", "rear", "left", "right"].some((key) => !Number.isFinite(setbacks[key]) || Number(setbacks[key]) < 0))) return null;
+  ].every(positive) || !Number.isInteger(rawConfig.numTypicalFloors) || floors < 1 || floors > 40 || !Number.isInteger(rawConfig.flatsPerFloor) || flats < 1 || flats > 6 || !Array.isArray(rawConfig.units) || rawConfig.units.length !== flats || rawConfig.units.some(
+    (unit, index) => !isRecord(unit) || typeof unit.bhkType !== "string" || !/^[1-4]BHK$/.test(unit.bhkType) || unit.unitIndex !== index + 1 || unit.targetCarpetSqFt !== void 0 && !positive(unit.targetCarpetSqFt)
+  ) || rawConfig.requireAreaTargets !== void 0 && typeof rawConfig.requireAreaTargets !== "boolean" || rawConfig.areaAcceptanceTolerancePercent !== void 0 && (!Number.isFinite(rawConfig.areaAcceptanceTolerancePercent) || Number(rawConfig.areaAcceptanceTolerancePercent) < 0 || Number(rawConfig.areaAcceptanceTolerancePercent) >= 100) || rawConfig.projectId !== void 0 && (typeof rawConfig.projectId !== "string" || !/^[a-z0-9_-]{1,96}$/i.test(rawConfig.projectId)) || rawConfig.aiPrompt !== void 0 && (typeof rawConfig.aiPrompt !== "string" || rawConfig.aiPrompt.length > 32e3) || setbacks !== void 0 && (!isRecord(setbacks) || ["front", "rear", "left", "right"].some(
+    (key) => !Number.isFinite(setbacks[key]) || Number(setbacks[key]) < 0
+  ))) {
+    return null;
+  }
   const runId = body.generationRunId;
-  if (runId !== void 0 && (typeof runId !== "string" || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(runId) || runId.toLowerCase() === String(rawConfig.projectId).toLowerCase())) return null;
+  if (runId !== void 0 && (typeof runId !== "string" || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(runId) || runId.toLowerCase() === String(rawConfig.projectId).toLowerCase())) {
+    return null;
+  }
   const config = rawConfig;
   const seedRaw = body.seed ?? config.generationSeed ?? 1;
   const seed2 = Number.isFinite(Number(seedRaw)) ? Math.max(1, Math.floor(Number(seedRaw))) : 1;
   const rejectedRaw = body.rejectedTopologyHashes ?? config.rejectedTopologyHashes ?? [];
   const rejectedTopologyHashes = Array.isArray(rejectedRaw) ? rejectedRaw.slice(0, 128).filter((item) => typeof item === "string" && item.length <= 128 && item.trim().length > 0) : [];
-  return { config, seed: seed2, generationRunId: typeof runId === "string" ? runId : (0, import_node_crypto16.randomUUID)(), rejectedTopologyHashes };
+  const rawMode = typeof body.reasoningMode === "string" ? body.reasoningMode.toUpperCase() : void 0;
+  const reasoningMode = rawMode === "FAST" || rawMode === "BALANCED" || rawMode === "DEEP" ? rawMode : void 0;
+  return {
+    config,
+    seed: seed2,
+    generationRunId: typeof runId === "string" ? runId : (0, import_node_crypto16.randomUUID)(),
+    rejectedTopologyHashes,
+    ...reasoningMode ? { reasoningMode } : {}
+  };
 }
 __name(parseGenerationRequest, "parseGenerationRequest");
-async function handleProjectGeneration(body, deps) {
+async function handleProjectGeneration(body, deps, runtimeOptions = {}) {
   if (includesSurveyGeometry(body) || isRecord(body) && includesSurveyGeometry(body.config)) {
     return {
       status: 422,
-      json: { error: { code: "SURVEY_GENERATION_UNSUPPORTED", message: "This route requires a planner that accepts the exact surveyed boundary and buildable envelope." } }
+      json: {
+        error: {
+          code: "SURVEY_GENERATION_UNSUPPORTED",
+          message: "This route requires a planner that accepts the exact surveyed boundary and buildable envelope."
+        }
+      }
     };
   }
   const parsed = parseGenerationRequest(body);
@@ -276091,24 +277067,77 @@ async function handleProjectGeneration(body, deps) {
     if (errors.length) {
       return {
         status: 400,
-        json: { error: { code: "INVALID_REGULATORY_CONTEXT", message: errors.map((error2) => error2.path).join(", ") } }
+        json: {
+          error: {
+            code: "INVALID_REGULATORY_CONTEXT",
+            message: errors.map((error2) => error2.path).join(", ")
+          }
+        }
       };
     }
+  }
+  const signal = runtimeOptions.signal;
+  if (signal?.aborted) {
+    return {
+      status: 499,
+      json: {
+        generationRunId: parsed.generationRunId,
+        error: { code: "REQUEST_CANCELLED", message: "Generation cancelled before execution." }
+      }
+    };
   }
   const routeStartedAt = Date.now();
   let proposalResult = await generateArchitecturalProposal(deps.gemini, {
     config: parsed.config,
     seed: parsed.seed,
-    rejectedTopologyHashes: parsed.rejectedTopologyHashes
+    rejectedTopologyHashes: parsed.rejectedTopologyHashes,
+    signal,
+    authContextDigest: runtimeOptions.authContextDigest,
+    reasoningMode: parsed.reasoningMode ?? runtimeOptions.reasoningModeOverride
   });
+  if (signal?.aborted || proposalResult.telemetry.invocationMode === "CANCELLED") {
+    return {
+      status: 499,
+      json: {
+        generationRunId: parsed.generationRunId,
+        telemetry: {
+          ...proposalResult.telemetry,
+          solverLatencyMs: 0,
+          totalLatencyMs: Date.now() - routeStartedAt
+        },
+        error: {
+          code: "REQUEST_CANCELLED",
+          message: "Generation was cancelled; geometry synthesis skipped."
+        }
+      }
+    };
+  }
   try {
     const solverStartedAt = Date.now();
     let pipelineResult = await executeAuditedPlanningPipeline(proposalResult.enrichedConfig);
+    if (signal?.aborted) {
+      return {
+        status: 499,
+        json: {
+          generationRunId: parsed.generationRunId,
+          telemetry: {
+            ...proposalResult.telemetry,
+            invocationMode: "CANCELLED",
+            solverLatencyMs: Date.now() - solverStartedAt,
+            totalLatencyMs: Date.now() - routeStartedAt
+          },
+          error: {
+            code: "REQUEST_CANCELLED",
+            message: "Generation cancelled before publication."
+          }
+        }
+      };
+    }
     let complianceReport2 = evaluateArchitecturalComplianceScore(pipelineResult.building, {
       config: proposalResult.enrichedConfig
     });
     let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
-    if (blockers.length && proposalResult.telemetry.interpretationSource === "GEMINI") {
+    if (blockers.length && proposalResult.telemetry.interpretationSource === "GEMINI" && !signal?.aborted) {
       const rules = await generateArchitecturalProposal(null, {
         config: parsed.config,
         seed: parsed.seed,
@@ -276119,18 +277148,28 @@ async function handleProjectGeneration(body, deps) {
         if (!generationBlockingFindings(candidate.building, candidate.validationReport).length) {
           const telemetry = {
             ...rules.telemetry,
-            geminiInvoked: true,
+            geminiInvoked: proposalResult.telemetry.geminiInvoked,
+            invocationMode: proposalResult.telemetry.invocationMode,
+            reasoningMode: proposalResult.telemetry.reasoningMode,
+            cacheHit: proposalResult.telemetry.cacheHit,
+            sharedInFlight: proposalResult.telemetry.sharedInFlight,
             requestedModel: proposalResult.telemetry.requestedModel,
             modelUsed: proposalResult.telemetry.modelUsed,
             attemptedModels: proposalResult.telemetry.attemptedModels,
             apiCallCount: proposalResult.telemetry.apiCallCount,
+            providerExecutionMs: proposalResult.telemetry.providerExecutionMs,
             tokenUsage: proposalResult.telemetry.tokenUsage,
+            currentRequestTokenUsage: proposalResult.telemetry.currentRequestTokenUsage,
+            proposalTokenUsage: proposalResult.telemetry.proposalTokenUsage,
+            failedAttempts: proposalResult.telemetry.failedAttempts,
             providerErrorCode: proposalResult.telemetry.providerErrorCode,
             latencyMs: proposalResult.telemetry.latencyMs + rules.telemetry.latencyMs,
             influencedGeometry: false,
             fallbackReason: `Gemini guidance did not pass the required plan checks (${blockers[0].code}). The geometry engine used the original brief.`
           };
-          const candidateCompliance = evaluateArchitecturalComplianceScore(candidate.building, { config: rules.enrichedConfig });
+          const candidateCompliance = evaluateArchitecturalComplianceScore(candidate.building, {
+            config: rules.enrichedConfig
+          });
           pipelineResult = candidate;
           proposalResult = { ...rules, telemetry };
           complianceReport2 = candidateCompliance;
@@ -276139,7 +277178,7 @@ async function handleProjectGeneration(body, deps) {
       } catch {
       }
     }
-    if (blockers.length > 0 && !parsed.config.buildingMassingShape && !parsed.config.lockedMassingShape && !parsed.config.requireAreaTargets) {
+    if (blockers.length > 0 && !signal?.aborted && !parsed.config.buildingMassingShape && !parsed.config.lockedMassingShape && !parsed.config.requireAreaTargets) {
       try {
         const prior = pipelineResult.building.metadata.generationBrief;
         const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
@@ -276178,6 +277217,15 @@ async function handleProjectGeneration(body, deps) {
       } catch {
       }
     }
+    if (signal?.aborted) {
+      return {
+        status: 499,
+        json: {
+          generationRunId: parsed.generationRunId,
+          error: { code: "REQUEST_CANCELLED", message: "Generation cancelled before publishing response." }
+        }
+      };
+    }
     const solverLatencyMs = Date.now() - solverStartedAt;
     const totalLatencyMs = Date.now() - routeStartedAt;
     const enrichedTelemetry = {
@@ -276188,11 +277236,15 @@ async function handleProjectGeneration(body, deps) {
     if (blockers.length) {
       return {
         status: 422,
-        json: { generationRunId: parsed.generationRunId, telemetry: enrichedTelemetry, error: {
-          code: "GENERATION_CHECKS_FAILED",
-          message: `Required design checks failed. ${blockers[0].message} Try a different massing or adjust the brief.`,
-          findings: blockers.slice(0, 20)
-        } }
+        json: {
+          generationRunId: parsed.generationRunId,
+          telemetry: enrichedTelemetry,
+          error: {
+            code: "GENERATION_CHECKS_FAILED",
+            message: `Required design checks failed. ${blockers[0].message} Try a different massing or adjust the brief.`,
+            findings: blockers.slice(0, 20)
+          }
+        }
       };
     }
     const enrichedBuilding = {
@@ -276219,7 +277271,10 @@ async function handleProjectGeneration(body, deps) {
       }
     };
   } catch (error2) {
-    let failure = { code: "PIPELINE_FAILED", message: error2 instanceof Error ? error2.message : "Pipeline verification failed." };
+    let failure = {
+      code: "PIPELINE_FAILED",
+      message: error2 instanceof Error ? error2.message : "Pipeline verification failed."
+    };
     let diagnostic;
     try {
       const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
@@ -278180,7 +279235,9 @@ function createGeminiProvider(config) {
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
     fallbackModels: fallbackList,
-    maxRetriesOn503: 1,
+    maxRetriesOn503: 0,
+    maxTotalAttempts: config.maxProviderAttempts ?? Math.max(6, 1 + fallbackList.length),
+    modelCooldownMs: config.modelCooldownMs ?? 3e4,
     retryPolicy: {
       maxRetries: 1,
       initialDelayMs: 350,
@@ -278188,7 +279245,7 @@ function createGeminiProvider(config) {
       backoffFactor: 2,
       jitterRatio: 0.15
     },
-    timeoutMs: Math.min(config.providerTimeoutMs, 12e3)
+    timeoutMs: config.providerTimeoutMs
   });
 }
 __name(createGeminiProvider, "createGeminiProvider");
@@ -278317,16 +279374,35 @@ async function route(request, response2, deps, access2) {
       return;
     }
     if (method === "POST" && (url.pathname === "/api/projects/generate" || url.pathname === "/api/v1/projects/generate")) {
-      const raw = await readBody(request);
-      let body = null;
+      const reqAbort = new AbortController();
+      const onDisconnect = /* @__PURE__ */ __name(() => {
+        if (!response2.writableEnded) reqAbort.abort();
+      }, "onDisconnect");
+      request.on("aborted", onDisconnect);
+      response2.on("close", onDisconnect);
       try {
-        body = raw.length > 0 ? JSON.parse(raw) : null;
-      } catch {
-        sendJson(response2, 400, { error: { code: "INVALID_JSON", message: "Request body must be valid JSON." } });
-        return;
+        const raw = await readBody(request);
+        let body = null;
+        try {
+          body = raw.length > 0 ? JSON.parse(raw) : null;
+        } catch {
+          sendJson(response2, 400, { error: { code: "INVALID_JSON", message: "Request body must be valid JSON." } });
+          return;
+        }
+        const rawAuth = `${request.headers.authorization ?? ""}|${request.headers.origin ?? "loopback"}`;
+        const authContextDigest = (0, import_node_crypto21.createHash)("sha256").update(rawAuth).digest("hex").slice(0, 16);
+        const result = await handleProjectGeneration(body, deps, {
+          signal: reqAbort.signal,
+          authContextDigest,
+          reasoningModeOverride: deps.config?.reasoningModeOverride
+        });
+        if (!response2.writableEnded && !response2.destroyed) {
+          sendJson(response2, result.status, result.json);
+        }
+      } finally {
+        request.off("aborted", onDisconnect);
+        response2.off("close", onDisconnect);
       }
-      const result = await handleProjectGeneration(body, deps);
-      sendJson(response2, result.status, result.json);
       return;
     }
     if (method === "POST" && url.pathname === "/api/v1/architecture/evaluate") {
@@ -278343,16 +279419,29 @@ async function route(request, response2, deps, access2) {
       return;
     }
     if (method === "POST" && url.pathname === "/api/v1/cad/edit-proposal") {
-      const raw = await readBody(request);
-      let body = null;
+      const reqAbort = new AbortController();
+      const onDisconnect = /* @__PURE__ */ __name(() => {
+        if (!response2.writableEnded) reqAbort.abort();
+      }, "onDisconnect");
+      request.on("aborted", onDisconnect);
+      response2.on("close", onDisconnect);
       try {
-        body = raw.length > 0 ? JSON.parse(raw) : null;
-      } catch {
-        sendJson(response2, 400, { error: { code: "INVALID_JSON", message: "Request body must be valid JSON." } });
-        return;
+        const raw = await readBody(request);
+        let body = null;
+        try {
+          body = raw.length > 0 ? JSON.parse(raw) : null;
+        } catch {
+          sendJson(response2, 400, { error: { code: "INVALID_JSON", message: "Request body must be valid JSON." } });
+          return;
+        }
+        const result = await handleCadEditProposal(body, deps, { signal: reqAbort.signal });
+        if (!response2.writableEnded && !response2.destroyed) {
+          sendJson(response2, result.status, result.json);
+        }
+      } finally {
+        request.off("aborted", onDisconnect);
+        response2.off("close", onDisconnect);
       }
-      const result = await handleCadEditProposal(body, deps);
-      sendJson(response2, result.status, result.json);
       return;
     }
     if (await handleCadImportRoute(request, response2, url, readBody, sendJson)) return;

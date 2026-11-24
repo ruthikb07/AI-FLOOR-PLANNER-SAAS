@@ -12,6 +12,20 @@ export interface HttpProviderOptions {
   readonly signal?: AbortSignal;
 }
 
+export class ProviderCancelledError extends Error {
+  constructor(message = 'Provider request cancelled.') {
+    super(message);
+    this.name = 'ProviderCancelledError';
+  }
+}
+
+export class ProviderTimeoutError extends Error {
+  constructor(message = 'Provider request timed out.') {
+    super(message);
+    this.name = 'ProviderTimeoutError';
+  }
+}
+
 export function redactSecret(text: string, secret?: string): string {
   if (!text) return text;
   let sanitized = text;
@@ -19,46 +33,69 @@ export function redactSecret(text: string, secret?: string): string {
     sanitized = sanitized.split(secret.trim()).join('[REDACTED]');
   }
   sanitized = sanitized.replace(/(?:AIza|AQ\.)[A-Za-z0-9_-]{12,}/g, '[REDACTED_KEY]');
+  sanitized = sanitized.replace(/([?&]key=)[^&\s]+/gi, '$1[REDACTED_KEY]');
+  sanitized = sanitized.replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, '$1[REDACTED_TOKEN]');
   return sanitized;
 }
 
 export function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === 'object' ? value as Record<string, unknown> : {};
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
 
-export function parseJsonContent(content: string): Record<string, unknown> {
+export interface ParseJsonOptions {
+  readonly allowTruncatedRepair?: boolean;
+  readonly requiredFields?: readonly string[];
+}
+
+export function parseJsonContent(content: string, options: ParseJsonOptions = {}): Record<string, unknown> {
+  const allowRepair = options.allowTruncatedRepair ?? true;
+  const requiredFields = options.requiredFields ?? [];
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  try {
-    const parsed: unknown = JSON.parse(cleaned);
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('Expected an object.');
+
+  const validateParsedObject = (candidate: unknown, wasRepaired: boolean): Record<string, unknown> => {
+    if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      throw new AISafetyError('Provider returned non-object structured JSON.');
     }
-    return parsed as Record<string, unknown>;
-  } catch {
+    const obj = candidate as Record<string, unknown>;
+    if (requiredFields.length > 0) {
+      const missing = requiredFields.filter(key => !(key in obj) || obj[key] === undefined);
+      if (missing.length > 0) {
+        throw new AISafetyError(
+          `${wasRepaired ? 'TRUNCATED_JSON' : 'MISSING_REQUIRED_FIELDS'}: missing [${missing.join(', ')}]`,
+          content,
+        );
+      }
+    }
+    return obj;
+  };
+
+  try {
+    return validateParsedObject(JSON.parse(cleaned), false);
+  } catch (directErr) {
+    if (directErr instanceof AISafetyError && directErr.message.includes('MISSING_REQUIRED_FIELDS')) {
+      throw directErr;
+    }
     const firstBrace = content.indexOf('{');
     const lastBrace = content.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace > firstBrace) {
       try {
         const sub = content.slice(firstBrace, lastBrace + 1);
-        const parsed: unknown = JSON.parse(sub);
-        if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
+        return validateParsedObject(JSON.parse(sub), false);
+      } catch (subErr) {
+        if (subErr instanceof AISafetyError && subErr.message.includes('MISSING_REQUIRED_FIELDS')) {
+          throw subErr;
         }
-      } catch {
-        // Fall through
       }
     }
-    // Attempt safe recovery if JSON was cut off mid-stream
-    try {
-      const repaired = repairTruncatedJson(cleaned);
-      const parsed: unknown = JSON.parse(repaired);
-      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>;
+    if (allowRepair) {
+      try {
+        const repaired = repairTruncatedJson(cleaned);
+        return validateParsedObject(JSON.parse(repaired), true);
+      } catch (repairErr) {
+        if (repairErr instanceof AISafetyError) throw repairErr;
       }
-    } catch {
-      // Fall through
     }
-    throw new AISafetyError('Provider returned invalid structured JSON.');
+    throw new AISafetyError('TRUNCATED_OR_INVALID_JSON: Provider returned invalid structured JSON.', content);
   }
 }
 
@@ -102,13 +139,31 @@ export function usage(
 ): TokenUsage {
   const prompt = typeof promptTokens === 'number' ? promptTokens : 0;
   const completion = typeof completionTokens === 'number' ? completionTokens : 0;
-  const thoughts = typeof thoughtsTokens === 'number' && thoughtsTokens > 0 ? thoughtsTokens : undefined;
+  const thoughts = typeof thoughtsTokens === 'number' && thoughtsTokens >= 0 ? thoughtsTokens : undefined;
   return {
     promptTokens: prompt,
     completionTokens: completion,
     totalTokens: typeof totalTokens === 'number' ? totalTokens : prompt + completion + (thoughts ?? 0),
-    ...(thoughts !== undefined ? { thoughtsTokens: thoughts } : {}),
+    ...(thoughts !== undefined && thoughts > 0 ? { thoughtsTokens: thoughts } : {}),
   };
+}
+
+export function extractOptionalTokenUsage(envelope: unknown): TokenUsage | undefined {
+  const rec = asRecord(envelope);
+  const meta = asRecord(rec.usageMetadata);
+  if (
+    typeof meta.promptTokenCount === 'number' ||
+    typeof meta.candidatesTokenCount === 'number' ||
+    typeof meta.totalTokenCount === 'number'
+  ) {
+    return usage(
+      meta.promptTokenCount,
+      meta.candidatesTokenCount,
+      meta.totalTokenCount,
+      meta.thoughtsTokenCount,
+    );
+  }
+  return undefined;
 }
 
 export class HttpProviderError extends Error {
@@ -116,13 +171,24 @@ export class HttpProviderError extends Error {
   readonly detail?: string;
   readonly retryAfterMs?: number;
   readonly isTransient: boolean;
+  readonly latencyMs: number;
+  readonly partialUsage?: TokenUsage;
 
-  constructor(status: number, message: string, detail?: string, retryAfterMs?: number) {
+  constructor(
+    status: number,
+    message: string,
+    detail?: string,
+    retryAfterMs?: number,
+    latencyMs = 0,
+    partialUsage?: TokenUsage,
+  ) {
     super(message);
     this.name = 'HttpProviderError';
     this.status = status;
     this.detail = detail;
     this.retryAfterMs = retryAfterMs;
+    this.latencyMs = latencyMs;
+    this.partialUsage = partialUsage;
     this.isTransient = status === 503 || status === 429 || status === 408 || (status >= 500 && status < 600);
   }
 }
@@ -132,6 +198,12 @@ export async function postJson(
   headers: Record<string, string>,
   body: unknown,
 ): Promise<{ body: Record<string, unknown>; latencyMs: number }> {
+  if (options.signal?.aborted) {
+    throw new ProviderCancelledError();
+  }
+  if (options.timeoutMs <= 0) {
+    throw new ProviderTimeoutError();
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
   const combinedSignal = options.signal
@@ -139,22 +211,29 @@ export async function postJson(
     : controller.signal;
   const startedAt = Date.now();
   try {
-    const response = await options.fetchImplementation(options.endpoint, {
+    const res = await options.fetchImplementation(options.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify(body),
       signal: combinedSignal,
     });
-    if (!response.ok) {
+    const elapsed = Date.now() - startedAt;
+    if (!res.ok) {
       let detail = '';
+      let partialUsage: TokenUsage | undefined;
       try {
-        const errText = await response.text();
-        detail = redactSecret(errText.slice(0, 500), options.apiKey);
+        const errText = await res.text();
+        try {
+          partialUsage = extractOptionalTokenUsage(JSON.parse(errText));
+        } catch {
+          // Non-JSON error body
+        }
+        detail = redactSecret(errText.slice(0, 600), options.apiKey);
       } catch {
         // Ignore read errors
       }
       let retryAfterMs: number | undefined;
-      const retryHeader = response.headers.get('retry-after');
+      const retryHeader = res.headers.get('retry-after');
       if (retryHeader) {
         const parsedSec = Number.parseFloat(retryHeader);
         if (Number.isFinite(parsedSec) && parsedSec > 0) {
@@ -167,21 +246,30 @@ export async function postJson(
         }
       }
       throw new HttpProviderError(
-        response.status,
-        `Provider request failed with HTTP ${response.status}.${detail ? ' ' + detail : ''}`.trim(),
+        res.status,
+        `Provider request failed with HTTP ${res.status}.${detail ? ' ' + detail : ''}`.trim(),
         detail,
         retryAfterMs,
+        elapsed,
+        partialUsage,
       );
     }
-    const parsed: unknown = await response.json();
+    const parsed: unknown = await res.json();
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new AISafetyError('Provider returned a non-object response envelope.');
     }
     return { body: parsed as Record<string, unknown>, latencyMs: Date.now() - startedAt };
   } catch (error) {
-    if (error instanceof AISafetyError || error instanceof HttpProviderError) throw error;
-    if (options.signal?.aborted) throw new Error('Provider request cancelled.');
-    if (error instanceof Error && error.name === 'AbortError') throw new Error('Provider request timed out.');
+    if (
+      error instanceof AISafetyError ||
+      error instanceof HttpProviderError ||
+      error instanceof ProviderCancelledError ||
+      error instanceof ProviderTimeoutError
+    ) {
+      throw error;
+    }
+    if (options.signal?.aborted) throw new ProviderCancelledError();
+    if (error instanceof Error && error.name === 'AbortError') throw new ProviderTimeoutError();
     throw error instanceof Error
       ? new Error(redactSecret(error.message, options.apiKey))
       : new Error('Provider request failed.');
