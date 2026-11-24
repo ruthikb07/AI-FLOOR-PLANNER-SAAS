@@ -63,7 +63,19 @@ See [Phase 3 verification](PHASE3_FINAL_VERIFICATION.md) for inputs, test runs, 
 | AI guidance could reject a feasible brief | Gemini’s alternate guidance failed the mandatory room and access requirements on a live four-flat request. | Keep the mandatory audit and test the same brief without optional guidance. The verified alternate differed in geometry and respected all four requirements. |
 | Limited local editing | Rectangular partitions only. Edits applied immediately, and strict and advisory carpet targets could be conflated during retargeting. | Audited straight partition moves with oblique geometry, fixed returns, hosted-opening checks, area target verification, before/after preview and stale-revision refusal. |
 | Localized Unicode labels | Drawing PDFs rejected Indic labels and compliance reports replaced non-ASCII characters. | Embed and shape fonts and preserve searchable logical labels. Independently reopened Marathi, Hindi, Bengali, Gujarati, Tamil and Latin drawing text. |
-| Cinematic UI regression checks | Attribution and inspector controls had disappeared, and some selectors used former captions. | Restore attribution, the inspector toggle and the design-review entry point. The extended production walkthrough and WebGL cleanup checks remain open. |
+| Cinematic UI regression checks | Attribution and inspector controls had disappeared, and some selectors used former captions. | Restore attribution, the inspector toggle and the design-review entry point. The browser hotfix below records the extended Studio workflow and WebGL cleanup checks. |
 | CAD and IFC adapter review | External source provenance and native reader fidelity remain unverified. | Add isolated outbound contract and manifest checks. External source and license review remain open. |
 
 See [Phase 3.5 verification](PHASE35_RELEASE_GATE_VERIFICATION.md) for results and remaining release gates.
+
+
+## Phase 3.5 browser hotfix
+
+| Defect | Reproduced state on `fcc7bcc` | Disposition |
+| --- | --- | --- |
+| WebGL restored with a blank viewport | Real Chromium restored a lost context and the idle on-demand scene rendered zero new frames in five seconds. | Loss cancels scheduled drawing and releases old GPU allocations. Restore requests a frame on the same scene and camera. Verified on Tower and Floor 3D, across two projects and unmount. |
+| Massing Studies appeared missing during generation | HTTP 200 preceded worker acceptance, and the gallery assertion expired with the generation dialog still open. | Keep the existing semantic selectors and wait for audited gallery readiness. The workflow validates a physically different alternate and opens it in CAD. |
+| Extended workflow did not find the Tower canvas in time | The timeout trace and screenshot contained the Tower workspace and rendered canvas. | Coalesce scene invalidations and wait for a visible canvas with a positive production draw count. |
+| pnpm misreported a failed Playwright invocation | The frontend package resolved Playwright 1.65.0. After a child error, Windows pnpm reported `Command "playwright" not found`. | Call the installed Playwright entry point through package scripts. The negative control preserves the actual child error, and CI uses the same commands. |
+
+See [browser hotfix verification](PHASE35_WEBGL_BROWSER_HOTFIX.md) for commands, repeat-cycle observations and remaining gates.

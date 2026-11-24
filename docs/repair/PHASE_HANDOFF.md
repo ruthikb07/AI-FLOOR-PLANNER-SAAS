@@ -92,3 +92,11 @@ The local repair workflow verified Gemini credentials by contacting Google and e
 The canonical editor previews changes before acceptance and protects the current revision and lock state. The partition change supports straight returns on skewed room geometry. Unicode plan PDFs were independently reopened and rendered.
 
 See [Phase 3.5 verification](PHASE35_RELEASE_GATE_VERIFICATION.md) and the [CAD and IFC adapter contract](../integration/PHASE4_CAD_BIM_ADAPTER_CONTRACT.md). Phase 4 production integration remains NOT READY pending source and license review and native exchange validation.
+
+## Phase 3.5 WebGL and browser hotfix handoff
+
+The browser hotfix is `92210c1830251f1fcf1a3119735603aa0e76bcd3` on `repair/stabilize-rh-planner`. The Three.js viewport now automatically renders a fresh frame after real context restoration and releases each context on unmount. The Studio workflow waits for the audited gallery and a rendered Tower canvas. The package-local Playwright scripts are also the CI entry points.
+
+The production build, typecheck and lint passed. Chromium passed all 14 production tests and the separate five-cycle WebGL test. The package suites passed 1,737 tests across three runs, with eight pre-existing opt-in skips. The separately run planning benchmark completed all 288 cases in 7 minutes 52 seconds. Both integration suites passed, totaling 52 tests. Native Windows AutoCAD and Blender fixtures passed.
+
+Phase 4A is **CONDITIONAL**. The hotfix browser gates are closed. Cota and OpenBIMStudio source and license review and native exchange acceptance remain open. See [the browser hotfix verification](PHASE35_WEBGL_BROWSER_HOTFIX.md) for the exact commands, renderer measurements, and evidence scope.
