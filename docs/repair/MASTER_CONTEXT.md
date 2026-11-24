@@ -24,3 +24,9 @@ Local verification used Windows, Node 24.18.0 and pnpm 9.7.0. GitHub Actions tar
 - An HTTP 422 with `GENERATION_CHECKS_FAILED` carries blocker findings and no accepted building. The editor keeps its existing project open. Existing imported and saved projects remain accessible for repair.
 - Browser regeneration archives the previous project envelope before replacing the current model. The Project Library exposes archived envelopes as JSON. If the archive write fails, the current model remains active. A failed normal browser save keeps the current model in memory and offers retry and JSON export.
 - The migration deletes a legacy localStorage copy only after matching IndexedDB readback. Differing legacy bytes remain available even when the durable copy is active. Raw source CAD uploads are retained per project for the current session until a successful disk save.
+
+## Phase 4B canonical BIM boundary
+
+Phase 4B begins at `dc2e3ca777381b74a45297fc595a0b5cb0656e9d`. The separate feature worktree preserves Phase 4A.1 and the original operator edits. `packages/core/src/interchange/ifc-contract.ts` defines IFC4 receipt identity and the exchange namespace. The backend adapter owns serialization and software readback. The existing authorized export route validates the exact canonical revision and artifact digest. IFC reference inspection and prism clashes run in a cancellable browser worker, and imported geometry remains separate from canonical editor state.
+
+BIM Studio reads the active canonical building and its geometry projections for selection and schedules. The Phase 4A CAD and Phase 3.5 viewport lifecycles remain the source of edit and rendering behavior. See [Phase 4B acceptance](../integration/PHASE4B_ACCEPTANCE.md) for verified scope, workflows and open gates.

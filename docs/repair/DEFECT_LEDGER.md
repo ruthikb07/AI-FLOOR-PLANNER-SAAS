@@ -101,4 +101,13 @@ See [browser hotfix verification](PHASE35_WEBGL_BROWSER_HOTFIX.md) for commands,
 | Defect 6 — Unbounded cascade latency, missing quota cooldowns & non-propagating cancellation | 5 slow fallback models with `timeoutMs: 320` ran for `933 ms`; `server.ts` hard-clamped `timeoutMs` to `15s` with `maxRetriesOn503: 1` & `maxTotalAttempts: 4`; project-wide `429` retried fallback models; client disconnects still ran geometry synthesis. | Enforced single `deadlineAt` overall deadline (`24s` default), configurable `maxTotalAttempts`, per-model `429`/`503`/`TIMEOUT`/`404` cooldowns, immediate halt on `PROJECT_QUOTA_EXHAUSTED` or `401/403`, and end-to-end `AbortController` propagation (`HTTP 499 REQUEST_CANCELLED` before `executeAuditedPlanningPipeline` + worker `{ type: 'cancel' }`). |
 | Defect 7 — Insertion-order `Map` eviction & shared in-flight cancellation bleed | `providerResponseCache` evicted oldest inserted entry rather than LRU; aborting Consumer A aborted Consumer B's shared `inFlightStore` request (`resB` degraded to `DETERMINISTIC`). | Implemented recency-refreshing `BoundedLruCache` (configurable `maxEntries` & `ttlMs`, TTL pruning, invalidation) and `InFlightRequestDeduplicator` with subscriber-isolated `upstreamController` (upstream aborts only when all subscribers cancel; `bypassCache` isolated; stale age guard). |
 
+## Phase 4B IFC and BIM
 
+| Finding | Evidence and disposition |
+| --- | --- |
+| IFC exchange had no IFC4 writer | The revision-bound adapter writes and reads physical architecture, openings and spatial containment. Eleven generated and edited fixtures passed IfcOpenShell readback. Unsupported geometry is enumerated in the manifest. |
+| Reference input needed a canonical isolation boundary | The IFC4 worker validates size, encoding, syntax and supported relationships. References preserve source IDs and read-only placement and apply explicit alignment. Tests reject malformed STEP, unsupported schema, duplicate IDs, dangling references and oversized input. |
+| Coordination counted off-storey profiles against its work limit | The desktop full-building reference hit the pair budget. Storey and bounds filtering now precede expensive collision checks in the worker. The production browser completed the same file and the numerical test measured exact hard intersection while excluding the opening and touching faces. |
+| Windows preview encountered runtime dependency locks | Vite preview tried to load the build-time PostCSS configuration before serving immutable compiled assets. Preview now skips those plugins and retains the API proxy. |
+
+See [Phase 4B acceptance](../integration/PHASE4B_ACCEPTANCE.md) for the remaining native application, Advanced BIM and professional gates.

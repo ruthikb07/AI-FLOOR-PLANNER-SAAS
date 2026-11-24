@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ isPreview }) => ({
+  plugins: isPreview ? [] : [react()],
+  // Preview serves compiled assets and does not need the build-time PostCSS plugins.
+  ...(isPreview ? { css: { postcss: { plugins: [] } } } : {}),
   server: {
     port: 3000,
     host: '127.0.0.1',
@@ -19,4 +21,4 @@ export default defineConfig({
     maxWorkers: 3,
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
   },
-});
+}));
