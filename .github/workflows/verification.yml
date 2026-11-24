@@ -44,7 +44,7 @@ jobs:
       - name: Non-planning package unit and HTTP tests
         run: pnpm exec turbo run test --concurrency=2 "--filter=!@ai-floor-planner/planning-engine"
       - name: Planning-engine unit tests
-        run: pnpm --filter @ai-floor-planner/planning-engine exec vitest run --pool=threads --poolOptions.threads.maxThreads=2 --exclude "**/phase0-generation-benchmark.test.ts"
+        run: pnpm --filter @ai-floor-planner/planning-engine exec vitest run --pool=threads --poolOptions.threads.minThreads=1 --poolOptions.threads.maxThreads=2 --exclude "**/phase0-generation-benchmark.test.ts"
       - name: Monorepo integration tests
         run: pnpm test:integration
       - name: Backend integration tests
