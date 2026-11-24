@@ -31,3 +31,10 @@ Third-Party Software Attributions
 
 2. Embedded Noto Sans Fonts (`packages/backend/src/assets/fonts/`)
    Copyright Google LLC — Licensed under the SIL Open Font License 1.1.
+
+3. OpenBIMStudio (adapted compressed IFC GlobalId helpers)
+   Version: 0.74.0
+   Revision: 22fc82481331abaab2825cd4e898ca65bfe53fa8
+   Upstream Repository: https://github.com/amdghedy/openBIMstudio
+   Copyright (c) 2026 Amdghedy. MIT.
+   Original license: docs/integration/licenses/openbimstudio-MIT.txt
