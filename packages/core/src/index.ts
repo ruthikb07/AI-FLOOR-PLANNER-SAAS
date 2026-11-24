@@ -16,6 +16,9 @@ export * from './models/building-budget';
 export * from './models/reviewed-generation';
 export * from './models/canonical-revision';
 export * from './interchange/cad-bim-adapter-contract';
+export * from './interchange/ifc-guid';
+export * from './interchange/ifc-step-reader';
+export * from './interchange/ifc-contract';
 export * from './interchange/cota-cad-kernel';
 export * from './interchange/canonical-cad-adapter';
 

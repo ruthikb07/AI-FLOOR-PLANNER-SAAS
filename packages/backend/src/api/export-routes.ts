@@ -3,13 +3,14 @@
  * Provides HTTP request handlers for AutoCAD DWG, DXF, and 1:100 ISO A3 Vector PDF exports.
  */
 
-import { canonicalBuildingHash, type Building } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, exchangeRevision, type Building } from '@ai-floor-planner/core';
 import { buildingInputError, isRecord, RequestBodyTooLarge } from './http-input.js';
 import {
   exportBuildingToGlb,
   generateBlenderScript,
   projectBuildingScene,
 } from '@ai-floor-planner/projection-3d';
+import { CanonicalIfcExchangeAdapter } from '../services/canonical-ifc-adapter.js';
 import { handleETABSExportRoute } from './etabs-export-routes.js';
 import { BlenderExportService } from '../services/blender-export-service.js';
 import {
@@ -104,6 +105,7 @@ export async function handleExportRoute(
     let body: {
       building?: Building;
       format?: ArtifactFormat;
+      source?: unknown;
       options?: CadExportOptions & PdfExportOptions & import('@ai-floor-planner/core').ResidentialCadPackageOptions;
     };
     const raw = await readBody(request);
@@ -129,6 +131,25 @@ export async function handleExportRoute(
       throw new ExportError('INVALID_OPTIONS', 'Options must be an object.', 400);
     if (body.format !== undefined && typeof body.format !== 'string')
       throw new ExportError('INVALID_FORMAT', 'Format must be a string.', 400);
+    if (match[1] === 'ifc') {
+      const expected = body.source;
+      if (!isRecord(expected) || typeof expected.projectId !== 'string' || typeof expected.buildingId !== 'string' ||
+        typeof expected.revision !== 'number' || typeof expected.sha256 !== 'string') {
+        throw new ExportError('INVALID_IFC_REVISION', 'An exact canonical revision and digest are required.', 400);
+      }
+      const current = exchangeRevision(body.building);
+      if (expected.projectId !== current.projectId || expected.buildingId !== current.buildingId ||
+        expected.revision !== current.revision || expected.sha256 !== current.sha256) {
+        throw new ExportError('STALE_REVISION', 'The IFC request does not match the canonical snapshot.', 409);
+      }
+      try {
+        const { bytes, manifest } = await new CanonicalIfcExchangeAdapter().export(body.building, current);
+        sendJson(response, 200, { manifest, contentBase64: Buffer.from(bytes).toString('base64') });
+      } catch {
+        throw new ExportError('IFC_EXPORT_REFUSED', 'The canonical geometry could not be published within the IFC4 exchange profile.', 422);
+      }
+      return true;
+    }
     if (match[1] === 'glb') {
       const revision = body.options?.expectedRevision;
       if (revision !== undefined && revision !== body.building.version) {
