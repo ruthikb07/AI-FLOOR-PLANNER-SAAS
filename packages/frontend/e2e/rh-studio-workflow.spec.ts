@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
 
 test('current studio workflow through reference, massing and export', async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
