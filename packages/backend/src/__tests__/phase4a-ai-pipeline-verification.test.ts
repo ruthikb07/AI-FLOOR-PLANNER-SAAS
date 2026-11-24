@@ -268,7 +268,27 @@ describe('Phase 4A Gate A — AI Pipeline, Provider Configuration & Optimization
       },
     });
 
-    // Text-only call sends compact schema + thinkingBudget: 0
+    // FAST text-only call sends compact schema + thinkingBudget: 0
+    await generateArchitecturalProposal(provider, {
+      config: {
+        ...baseConfig,
+        units: [
+          { unitIndex: 1, bhkType: '2BHK', hasUtilityBalcony: true },
+          { unitIndex: 2, bhkType: '2BHK', hasUtilityBalcony: true },
+          { unitIndex: 3, bhkType: '2BHK', hasUtilityBalcony: true },
+          { unitIndex: 4, bhkType: '2BHK', hasUtilityBalcony: true },
+        ],
+        buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
+        aiPrompt: 'Simple 2BHK residential layout.',
+      },
+      seed: 1,
+    });
+    const fastCfg = (capturedBody?.generationConfig ?? {}) as Record<string, unknown>;
+    expect(fastCfg.maxOutputTokens).toBe(650);
+    expect(fastCfg.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect((fastCfg.responseSchema as Record<string, unknown>)?.properties).not.toHaveProperty('referenceSpatialGraph');
+
+    // Conflicting complex text-only call escalates to DEEP reasoning while still omitting vision-only schema fields
     await generateArchitecturalProposal(provider, {
       config: {
         ...baseConfig,
@@ -276,10 +296,11 @@ describe('Phase 4A Gate A — AI Pipeline, Provider Configuration & Optimization
         aiPrompt: 'NO OTS with central open-to-sky courtyard. Curved crescent shape. No balconies and all bedroom balconies.',
       },
       seed: 1,
+      bypassCache: true,
     });
     const genCfg = (capturedBody?.generationConfig ?? {}) as Record<string, unknown>;
-    expect(genCfg.maxOutputTokens).toBe(750);
-    expect(genCfg.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect(genCfg.maxOutputTokens).toBe(1356);
+    expect(genCfg.thinkingConfig).toEqual({ thinkingBudget: 512 });
     expect((genCfg.responseSchema as Record<string, unknown>)?.properties).not.toHaveProperty('referenceSpatialGraph');
 
     // Vision call validates spatial graph and rejects out-of-range centroids / invalid enums

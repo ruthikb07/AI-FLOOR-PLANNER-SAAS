@@ -1,21 +1,42 @@
 import {
   type AIImageInput,
+  type AIInvocationMode,
   type AIProposalTelemetry,
   type AIProvider,
+  type AIReasoningMode,
   type AIResponse,
   type BriefRequirementConflict,
   type BuildingMassingShape,
+  type FailedAttemptTelemetry,
   type MultiSheetApartmentConfig,
   type PlanCategory,
   type ReferenceAttachmentDisposition,
   type StructuredBriefInterpretation,
   type StructuredBriefRequirementItem,
+  type TokenUsage,
   AITaskType,
   exchangeArtifactDigest,
   mixedUnitSpecs,
   parseMixedUnitProgram,
 } from '@ai-floor-planner/core';
-import { GEMINI_SUPPORTED_IMAGE_MIME_TYPES, geminiErrorCode } from '../providers/gemini';
+import {
+  classifyGeminiFailure,
+  GEMINI_SUPPORTED_IMAGE_MIME_TYPES,
+  GeminiExecutionError,
+  geminiErrorCode,
+} from '../providers/gemini';
+import { ProviderCancelledError } from '../providers/http';
+import {
+  BoundedLruCache,
+  type BoundedLruCacheOptions,
+  canonicalJsonStringify,
+  InFlightRequestDeduplicator,
+  ProposalCancelledError,
+} from './lru-proposal-cache';
+import {
+  resolveModelThinkingParameters,
+  selectArchitecturalReasoningMode,
+} from './reasoning-policy';
 
 export const BUILDING_MASSING_SHAPES: readonly BuildingMassingShape[] = [
   'CURVED_CRESCENT',
@@ -780,52 +801,194 @@ export interface GenerateArchitecturalProposalOptions {
   readonly rejectedTopologyHashes?: readonly string[];
   readonly signal?: AbortSignal;
   readonly bypassCache?: boolean;
+  readonly reasoningMode?: AIReasoningMode;
+  /** Optional non-secret authorization/session scope digest preventing cross-user cache sharing. */
+  readonly authContextDigest?: string;
 }
 
-interface CachedProviderResponse {
-  readonly response: AIResponse;
-  readonly expiresAt: number;
-}
+const PROPOSAL_SYSTEM_PROMPT =
+  'Principal Indian Residential Architect (NBC 2016 / UDCPR). Convert brief, site, and optional reference image into ArchitecturalProposal JSON. ' +
+  'Strictly obey mandatory user rules (NO OTS, no balconies, center building, locked shape, core placement). Keep designRationale <= 180 chars.';
 
-const PROPOSAL_CACHE_TTL_MS = 5 * 60 * 1000;
-const MAX_CACHE_ENTRIES_PER_PROVIDER = 64;
-const providerResponseCache = new WeakMap<AIProvider, Map<string, CachedProviderResponse>>();
-const providerInFlightMap = new WeakMap<AIProvider, Map<string, Promise<AIResponse>>>();
+const PROPOSAL_SCHEMA_VERSION = 'phase4a1-v2';
+const TEXT_SCHEMA_DIGEST = exchangeArtifactDigest(
+  new TextEncoder().encode(canonicalJsonStringify(ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA)),
+).slice(0, 16);
+const VISION_SCHEMA_DIGEST = exchangeArtifactDigest(
+  new TextEncoder().encode(canonicalJsonStringify(ARCHITECTURAL_PROPOSAL_SCHEMA)),
+).slice(0, 16);
 
-export function clearArchitecturalProposalCache(provider?: AIProvider): void {
+const ZERO_TOKEN_USAGE: TokenUsage = {
+  promptTokens: 0,
+  completionTokens: 0,
+  totalTokens: 0,
+};
+
+let defaultCacheOptions: BoundedLruCacheOptions = {
+  maxEntries: 64,
+  ttlMs: 5 * 60 * 1000,
+};
+
+const providerResponseCache = new WeakMap<AIProvider, BoundedLruCache<string, AIResponse>>();
+const providerInFlightMap = new WeakMap<AIProvider, InFlightRequestDeduplicator<AIResponse>>();
+
+export function configureArchitecturalProposalCache(
+  provider: AIProvider | undefined,
+  options: BoundedLruCacheOptions,
+): void {
+  defaultCacheOptions = { ...defaultCacheOptions, ...options };
   if (provider) {
-    providerResponseCache.delete(provider);
-    providerInFlightMap.delete(provider);
+    let store = providerResponseCache.get(provider);
+    if (!store) {
+      store = new BoundedLruCache<string, AIResponse>(options);
+      providerResponseCache.set(provider, store);
+    } else {
+      store.configure(options);
+    }
   }
 }
 
-function buildProposalCacheKey(
-  provider: AIProvider,
-  config: MultiSheetApartmentConfig,
-  seed: number,
-  rejected: readonly string[],
-  imageDigest?: string,
-): string {
-  const payload = JSON.stringify({
-    provider: provider.name,
-    model: provider.getModelInfo().model,
-    plotW: config.plotWidthMm,
-    plotD: config.plotDepthMm,
-    roadW: config.roadWidthMm,
-    stack: config.verticalStackType,
-    floors: config.numTypicalFloors,
-    flats: config.flatsPerFloor,
-    units: (config.units ?? []).map(u => [u.unitIndex, u.bhkType, u.targetCarpetSqFt ?? null]),
-    area: config.targetAreaSqFt ?? null,
-    scope: config.areaTargetScope ?? null,
-    shape: config.buildingMassingShape ?? null,
-    cat: config.planCategory ?? null,
-    prompt: normalizeBriefSpelling(config.aiPrompt ?? '').trim(),
-    seed,
-    rejected: [...rejected].sort(),
-    img: imageDigest ?? null,
+export function clearArchitecturalProposalCache(provider?: AIProvider): void {
+  if (provider) {
+    providerResponseCache.get(provider)?.clear();
+    providerInFlightMap.get(provider)?.clear();
+  }
+}
+
+export interface ProposalCacheKeyParams {
+  readonly provider: AIProvider;
+  readonly config: MultiSheetApartmentConfig;
+  readonly seed: number;
+  readonly rejected: readonly string[];
+  readonly classifiedRef: ClassifiedReferenceAttachment;
+  readonly reasoningMode: AIReasoningMode;
+  readonly thinkingBudget?: number;
+  readonly maxOutputTokens: number;
+  readonly temperature: number;
+  readonly systemPrompt?: string;
+  readonly userPrompt?: string;
+  readonly authContextDigest?: string;
+}
+
+/**
+ * Derives a deterministic SHA-256 cache key from the complete effective provider request.
+ * Never includes raw API credentials or reference-image base64 bytes (uses content SHA-256 digest).
+ */
+export function buildProposalCacheKey(params: ProposalCacheKeyParams): string {
+  const { provider, config, seed, rejected, classifiedRef } = params;
+  const modelInfo = provider.getModelInfo();
+  const hasVision = Boolean(classifiedRef.imagePart);
+  const serialized = canonicalJsonStringify({
+    schemaVersion: PROPOSAL_SCHEMA_VERSION,
+    isolationScope: {
+      projectId: config.projectId ?? 'default-local-project',
+      authContextDigest: params.authContextDigest ?? null,
+    },
+    provider: {
+      name: provider.name,
+      model: modelInfo.model,
+      fallbackModels: modelInfo.fallbackModels ?? [],
+      configFingerprint: modelInfo.configFingerprint ?? null,
+    },
+    requestParameters: {
+      systemPrompt: params.systemPrompt ?? PROPOSAL_SYSTEM_PROMPT,
+      userPrompt: params.userPrompt ?? null,
+      responseSchemaName: 'architectural_proposal',
+      responseSchemaDigest: hasVision ? VISION_SCHEMA_DIGEST : TEXT_SCHEMA_DIGEST,
+      reasoningMode: params.reasoningMode,
+      thinkingBudget: params.thinkingBudget ?? null,
+      maxOutputTokens: params.maxOutputTokens,
+      temperature: params.temperature,
+    },
+    siteAndEnvelope: {
+      plotWidthMm: config.plotWidthMm,
+      plotDepthMm: config.plotDepthMm,
+      roadWidthMm: config.roadWidthMm,
+      roadAccessSides: [...config.roadAccessSides],
+      setbacksMm: config.setbacksMm ?? null,
+      lotAllotmentMode: config.lotAllotmentMode,
+      jurisdiction: config.jurisdiction,
+      irregularPlotBoundary: config.irregularPlotBoundary ?? null,
+      centerBuildingInEnvelope: config.centerBuildingInEnvelope ?? null,
+    },
+    programAndRequirements: {
+      aiPromptNormalized: normalizeBriefSpelling(config.aiPrompt ?? '').trim(),
+      verticalStackType: config.verticalStackType,
+      numTypicalFloors: config.numTypicalFloors,
+      floorToFloorHeightMm: config.floorToFloorHeightMm ?? null,
+      stiltHeightMm: config.stiltHeightMm ?? null,
+      basementHeightMm: config.basementHeightMm ?? null,
+      flatsPerFloor: config.flatsPerFloor,
+      units: (config.units ?? []).map(u => ({
+        unitIndex: u.unitIndex,
+        bhkType: u.bhkType,
+        targetCarpetSqFt: u.targetCarpetSqFt ?? null,
+        hasUtilityBalcony: u.hasUtilityBalcony ?? null,
+        hasServantRoom: (u as unknown as Record<string, unknown>).hasServantRoom ?? null,
+        hasPoojaRoom: (u as unknown as Record<string, unknown>).hasPoojaRoom ?? null,
+      })),
+      targetAreaSqFt: config.targetAreaSqFt ?? null,
+      areaTargetScope: config.areaTargetScope ?? null,
+      areaAcceptanceTolerancePercent: config.areaAcceptanceTolerancePercent ?? null,
+      requireAreaTargets: config.requireAreaTargets ?? null,
+      parkingMode: config.parkingMode,
+      visitorParkingPercent: config.visitorParkingPercent ?? null,
+      includeDiningHall: config.includeDiningHall ?? null,
+      includeStudyRoom: config.includeStudyRoom ?? null,
+      includeWindowChajjas: config.includeWindowChajjas ?? null,
+      staggeredBalconies: config.staggeredBalconies ?? null,
+      galleryCoordinationMode: config.galleryCoordinationMode ?? null,
+      structuralLayoutMode: config.structuralLayoutMode ?? null,
+      architectureOptions: config.architectureOptions ?? null,
+      regulatoryContext: config.regulatoryContext ?? null,
+      siteAmenities: config.siteAmenities,
+      stiltAmenities: config.stiltAmenities,
+      terraceAmenities: config.terraceAmenities,
+    },
+    massingAndExploration: {
+      seed,
+      buildingMassingShape: config.buildingMassingShape ?? null,
+      lockedMassingShape: config.lockedMassingShape ?? null,
+      planCategory: config.planCategory ?? null,
+      preferredArchetype: config.preferredArchetype ?? null,
+      autoExploreNovelShape: config.autoExploreNovelShape ?? null,
+      shapeParams: config.shapeParams ?? null,
+      rejectedTopologyHashes: [...rejected].sort(),
+      rejectedShapeIds: [...(config.rejectedShapeIds ?? [])].sort(),
+      rejectedArchetypeIds: [...(config.rejectedArchetypeIds ?? [])].sort(),
+    },
+    referenceAttachment: {
+      disposition: classifiedRef.disposition,
+      mimeType: classifiedRef.imagePart?.mimeType ?? config.referenceImage?.mimeType ?? null,
+      imageDigest: classifiedRef.imageDigest ?? null,
+    },
   });
-  return exchangeArtifactDigest(new TextEncoder().encode(payload));
+  return exchangeArtifactDigest(new TextEncoder().encode(serialized));
+}
+
+function summarizeFailedAttemptTokens(
+  attempts: readonly FailedAttemptTelemetry[],
+): TokenUsage | 'UNKNOWN' {
+  if (attempts.length === 0) return 'UNKNOWN';
+  if (attempts.some(a => a.tokenUsage === 'UNKNOWN')) return 'UNKNOWN';
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let totalTokens = 0;
+  let thoughtsTokens = 0;
+  for (const att of attempts) {
+    if (att.tokenUsage !== 'UNKNOWN') {
+      promptTokens += att.tokenUsage.promptTokens;
+      completionTokens += att.tokenUsage.completionTokens;
+      totalTokens += att.tokenUsage.totalTokens;
+      thoughtsTokens += att.tokenUsage.thoughtsTokens ?? 0;
+    }
+  }
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    ...(thoughtsTokens > 0 ? { thoughtsTokens } : {}),
+  };
 }
 
 export async function generateArchitecturalProposal(
@@ -837,6 +1000,12 @@ export async function generateArchitecturalProposal(
   const rejected = input.rejectedTopologyHashes ?? input.config.rejectedTopologyHashes ?? [];
   const classifiedRef = classifyReferenceAttachment(input.config.referenceImage);
   const imagePart = classifiedRef.imagePart;
+  const reasoningMode = selectArchitecturalReasoningMode(
+    input.config,
+    seed,
+    Boolean(imagePart),
+    input.reasoningMode,
+  );
 
   const buildEnriched = (
     proposal: ArchitecturalProposal,
@@ -844,10 +1013,12 @@ export async function generateArchitecturalProposal(
     rejectedReferenceGuidance: readonly string[] = [],
   ): ArchitecturalProposalResult => {
     const rg = proposal.referenceSpatialGraph;
-    // Seed > 1 explores different archetypes and macro building massing shapes monotonically
-    const effectiveArchetype = seed > 1 && rejected.length > 0 && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
-      ? ROOM_SLICING_ARCHETYPES[(seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
-      : rg?.wetCoreClustering === 'SHARED_SHAFT' && !input.config.preferredArchetype && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
+    const effectiveArchetype =
+      seed > 1 && rejected.length > 0 && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
+        ? ROOM_SLICING_ARCHETYPES[(seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
+        : rg?.wetCoreClustering === 'SHARED_SHAFT' &&
+          !input.config.preferredArchetype &&
+          proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
         ? 'MIRRORED_WET_CORE_STACK'
         : proposal.preferredArchetype;
     const promptExplicitlyRequestsNovelShape =
@@ -856,21 +1027,23 @@ export async function generateArchitecturalProposal(
       );
     const allowNovelAutoShape = Boolean(
       input.config.buildingMassingShape ||
-      input.config.autoExploreNovelShape ||
-      seed > 1 ||
-      rejected.length > 0 ||
-      imagePart ||
-      promptExplicitlyRequestsNovelShape,
+        input.config.autoExploreNovelShape ||
+        seed > 1 ||
+        rejected.length > 0 ||
+        imagePart ||
+        promptExplicitlyRequestsNovelShape,
     );
     const effectiveMassingShape: BuildingMassingShape =
-      input.config.buildingMassingShape
-      ?? (!allowNovelAutoShape
+      input.config.buildingMassingShape ??
+      (!allowNovelAutoShape
         ? 'COMPACT_DOUBLE_LOADED'
         : seed > 1 && (rejected.length > 0 || proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED')
-          ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
-          : rg?.detectedCorridorAxis === 'RING' && !proposal.noOts && proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
-            ? 'U_SHAPE_COURTYARD'
-            : proposal.buildingMassingShape);
+        ? BUILDING_MASSING_SHAPES[(seed - 1) % BUILDING_MASSING_SHAPES.length]!
+        : rg?.detectedCorridorAxis === 'RING' &&
+          !proposal.noOts &&
+          proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
+        ? 'U_SHAPE_COURTYARD'
+        : proposal.buildingMassingShape);
 
     const finalProposal: ArchitecturalProposal = {
       ...proposal,
@@ -901,7 +1074,10 @@ export async function generateArchitecturalProposal(
           synthesizedClauses.push('Larger kitchen.');
         }
       }
-      if (rg && !/\b(?:lifts?|elevators?|stairs?|staircases?|cores?|vertical\s+circulation)\b/i.test(basePrompt)) {
+      if (
+        rg &&
+        !/\b(?:lifts?|elevators?|stairs?|staircases?|cores?|vertical\s+circulation)\b/i.test(basePrompt)
+      ) {
         if (rg.detectedCorePosition === 'CENTRAL') {
           synthesizedClauses.push('Central lift core.');
         } else if (rg.detectedCorePosition === 'SPLIT') {
@@ -913,23 +1089,31 @@ export async function generateArchitecturalProposal(
     }
     const referenceGuidanceApplied = [
       ...(rg && synthesizedClauses.some(clause => /core/i.test(clause)) ? ['CORE_PLACEMENT'] : []),
-      ...(rg?.detectedCorridorAxis === 'RING' && !input.config.buildingMassingShape
-        && effectiveMassingShape === 'U_SHAPE_COURTYARD' && proposal.buildingMassingShape !== effectiveMassingShape ? ['COURTYARD_CIRCULATION'] : []),
-      ...(rg?.wetCoreClustering === 'SHARED_SHAFT' && !input.config.preferredArchetype
-        && effectiveArchetype === 'MIRRORED_WET_CORE_STACK' && proposal.preferredArchetype !== effectiveArchetype ? ['WET_CORE_CLUSTERING'] : []),
+      ...(rg?.detectedCorridorAxis === 'RING' &&
+      !input.config.buildingMassingShape &&
+      effectiveMassingShape === 'U_SHAPE_COURTYARD' &&
+      proposal.buildingMassingShape !== effectiveMassingShape
+        ? ['COURTYARD_CIRCULATION']
+        : []),
+      ...(rg?.wetCoreClustering === 'SHARED_SHAFT' &&
+      !input.config.preferredArchetype &&
+      effectiveArchetype === 'MIRRORED_WET_CORE_STACK' &&
+      proposal.preferredArchetype !== effectiveArchetype
+        ? ['WET_CORE_CLUSTERING']
+        : []),
     ];
 
     const baselineDeterministic = defaultProposalForConfig(input.config, seed);
-    const aiChangedProposal = telemetryBase.interpretationSource === 'GEMINI' && (
-      finalProposal.buildingMassingShape !== baselineDeterministic.buildingMassingShape ||
-      finalProposal.preferredArchetype !== baselineDeterministic.preferredArchetype ||
-      finalProposal.preferredTopologyFamily !== baselineDeterministic.preferredTopologyFamily ||
-      finalProposal.kitchenStyle !== baselineDeterministic.kitchenStyle ||
-      finalProposal.kitchenSize !== baselineDeterministic.kitchenSize ||
-      finalProposal.noOts !== baselineDeterministic.noOts ||
-      synthesizedClauses.length > 0 ||
-      referenceGuidanceApplied.length > 0
-    );
+    const aiChangedProposal =
+      telemetryBase.interpretationSource === 'GEMINI' &&
+      (finalProposal.buildingMassingShape !== baselineDeterministic.buildingMassingShape ||
+        finalProposal.preferredArchetype !== baselineDeterministic.preferredArchetype ||
+        finalProposal.preferredTopologyFamily !== baselineDeterministic.preferredTopologyFamily ||
+        finalProposal.kitchenStyle !== baselineDeterministic.kitchenStyle ||
+        finalProposal.kitchenSize !== baselineDeterministic.kitchenSize ||
+        finalProposal.noOts !== baselineDeterministic.noOts ||
+        synthesizedClauses.length > 0 ||
+        referenceGuidanceApplied.length > 0);
 
     const interpretedRequirements = interpretStructuredBriefRequirements(
       input.config,
@@ -939,26 +1123,32 @@ export async function generateArchitecturalProposal(
 
     const finalTelemetry: ArchitecturalProposalTelemetry = {
       ...telemetryBase,
+      reasoningMode,
       referenceDisposition: classifiedRef.disposition,
       referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0,
       referenceGuidanceApplied,
-      ...(rejectedReferenceGuidance.length > 0 ? { referenceGuidanceRejected: rejectedReferenceGuidance } : {}),
+      ...(rejectedReferenceGuidance.length > 0
+        ? { referenceGuidanceRejected: rejectedReferenceGuidance }
+        : {}),
       influencedGeometry: aiChangedProposal,
-      ...(interpretedRequirements.conflicts.length > 0 ? { conflictsDetected: interpretedRequirements.conflicts } : {}),
+      ...(interpretedRequirements.conflicts.length > 0
+        ? { conflictsDetected: interpretedRequirements.conflicts }
+        : {}),
       interpretedRequirements,
     };
     const effectiveAiPrompt = [basePrompt, ...synthesizedClauses].filter(Boolean).join(' ').trim();
 
     const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(input.config.aiPrompt));
     const currentUnitTypes = (input.config.units ?? []).map(u => u.bhkType);
-    const sizedUnitsMatch = !input.config.units?.some(unit => unit.targetCarpetSqFt !== undefined)
-      || parsedMixed?.length === currentUnitTypes.length;
+    const sizedUnitsMatch =
+      !input.config.units?.some(unit => unit.targetCarpetSqFt !== undefined) ||
+      parsedMixed?.length === currentUnitTypes.length;
     const shouldOverrideMixedUnits = Boolean(
       sizedUnitsMatch &&
-      parsedMixed &&
-      parsedMixed.length >= 2 &&
-      parsedMixed.length <= 6 &&
-      (currentUnitTypes.length !== parsedMixed.length || new Set(currentUnitTypes).size <= 1),
+        parsedMixed &&
+        parsedMixed.length >= 2 &&
+        parsedMixed.length <= 6 &&
+        (currentUnitTypes.length !== parsedMixed.length || new Set(currentUnitTypes).size <= 1),
     );
     const resolvedFlatsPerFloor = shouldOverrideMixedUnits
       ? (parsedMixed!.length as 1 | 2 | 3 | 4 | 5 | 6)
@@ -982,11 +1172,16 @@ export async function generateArchitecturalProposal(
       preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
       buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
       lockedMassingShape: input.config.lockedMassingShape ?? input.config.buildingMassingShape,
-      centerBuildingInEnvelope: input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
-      ...(promptMentionsArea && finalProposal.targetAreaSqFt !== undefined && input.config.targetAreaSqFt === undefined
+      centerBuildingInEnvelope:
+        input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
+      ...(promptMentionsArea &&
+      finalProposal.targetAreaSqFt !== undefined &&
+      input.config.targetAreaSqFt === undefined
         ? { targetAreaSqFt: finalProposal.targetAreaSqFt }
         : {}),
-      ...(promptMentionsArea && finalProposal.areaTargetScope !== undefined && input.config.areaTargetScope === undefined
+      ...(promptMentionsArea &&
+      finalProposal.areaTargetScope !== undefined &&
+      input.config.areaTargetScope === undefined
         ? { areaTargetScope: finalProposal.areaTargetScope }
         : {}),
       aiProposal: finalProposal as unknown as Record<string, unknown>,
@@ -997,10 +1192,35 @@ export async function generateArchitecturalProposal(
     return { proposal: finalProposal, telemetry: finalTelemetry, enrichedConfig };
   };
 
+  if (input.signal?.aborted) {
+    const proposal = defaultProposalForConfig(input.config, seed);
+    return buildEnriched(proposal, {
+      geminiInvoked: false,
+      invocationMode: 'CANCELLED',
+      provider: 'deterministic-rule-engine',
+      requestedModel: provider ? provider.getModelInfo().model : 'none',
+      modelUsed: 'none',
+      apiCallCount: 0,
+      cacheHit: false,
+      sharedInFlight: false,
+      providerExecutionMs: 0,
+      tokenUsage: ZERO_TOKEN_USAGE,
+      currentRequestTokenUsage: ZERO_TOKEN_USAGE,
+      proposalTokenUsage: 'UNKNOWN',
+      latencyMs: Date.now() - startedAt,
+      fallbackTriggered: true,
+      providerErrorCode: 'CANCELLED',
+      failureClass: 'CANCELLED',
+      fallbackReason: 'Generation cancelled before provider invocation.',
+      interpretationSource: 'DETERMINISTIC',
+      referenceImageUsedForGeometry: false,
+    });
+  }
+
   let available = false;
   let availabilityError = false;
   try {
-    available = Boolean(provider && await provider.isAvailable());
+    available = Boolean(provider && (await provider.isAvailable()));
   } catch {
     availabilityError = true;
   }
@@ -1008,11 +1228,17 @@ export async function generateArchitecturalProposal(
     const proposal = defaultProposalForConfig(input.config, seed);
     return buildEnriched(proposal, {
       geminiInvoked: false,
+      invocationMode: 'DETERMINISTIC_FALLBACK',
       provider: 'deterministic-rule-engine',
       requestedModel: provider ? provider.getModelInfo().model : 'none',
       modelUsed: 'none',
       apiCallCount: 0,
       cacheHit: false,
+      sharedInFlight: false,
+      providerExecutionMs: 0,
+      tokenUsage: ZERO_TOKEN_USAGE,
+      currentRequestTokenUsage: ZERO_TOKEN_USAGE,
+      proposalTokenUsage: ZERO_TOKEN_USAGE,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       fallbackReason: provider ? 'Gemini provider is unavailable.' : 'No Gemini provider is configured.',
@@ -1027,78 +1253,110 @@ export async function generateArchitecturalProposal(
     .map(u => `F${u.unitIndex}:${u.bhkType}${u.targetCarpetSqFt ? `@${u.targetCarpetSqFt}sqft` : ''}`)
     .join(',');
 
-  // Compact structured context lines to minimize prompt tokens while preserving full architectural fidelity.
   const boundedPrompt = normalizeBriefSpelling(
-    (input.config.aiPrompt ?? 'Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.').slice(0, 4000),
+    (
+      input.config.aiPrompt ??
+      'Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.'
+    ).slice(0, 4000),
   );
+  const setbackLine = input.config.setbacksMm
+    ? `Setbacks:${input.config.setbacksMm.front}/${input.config.setbacksMm.rear}/${input.config.setbacksMm.left}/${input.config.setbacksMm.right}mm`
+    : '';
+  const irregularLine = input.config.irregularPlotBoundary
+    ? `IrregularSite:${input.config.irregularPlotBoundary.polygon.points.length}pts,${Math.round(input.config.irregularPlotBoundary.areaMm2 / 1_000_000)}m2`
+    : '';
   const userPromptLines = [
     `Plot:${(input.config.plotWidthMm / 1000).toFixed(1)}x${(input.config.plotDepthMm / 1000).toFixed(1)}m Road:${(input.config.roadWidthMm / 1000).toFixed(1)}m(${input.config.roadAccessSides.join(',')})`,
+    setbackLine,
+    irregularLine,
     `Stack:${input.config.verticalStackType} Floors:${input.config.numTypicalFloors} Flats/Floor:${input.config.flatsPerFloor} Mix:${unitSummary || '2BHK'}`,
     `Seed:${seed}${rejected.length > 0 ? ` Excluded:${rejected.slice(0, 8).join(',')}` : ''}`,
-    input.config.targetAreaSqFt ? `TargetArea:${input.config.targetAreaSqFt}sqft(${input.config.areaTargetScope ?? 'UNSPECIFIED'})` : '',
+    input.config.targetAreaSqFt
+      ? `TargetArea:${input.config.targetAreaSqFt}sqft(${input.config.areaTargetScope ?? 'UNSPECIFIED'})`
+      : '',
     input.config.buildingMassingShape ? `LockedShape:${input.config.buildingMassingShape}` : '',
     `Brief:"${boundedPrompt}"`,
     imagePart
       ? 'Reference image attached: populate referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering).'
       : '',
     seed > 1 ? `Variant #${seed}: choose distinct archetype/massing from excluded layouts.` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
-  const cacheKey = buildProposalCacheKey(provider, input.config, seed, rejected, classifiedRef.imageDigest);
+  const resolvedReasoning = resolveModelThinkingParameters(requestedModel, reasoningMode, {
+    hasVisionImage: Boolean(imagePart),
+    taskKind: 'ARCHITECTURAL_PROPOSAL',
+  });
+  const temperature = seed > 1 ? 0.35 : 0.1;
+
+  const cacheKey = buildProposalCacheKey({
+    provider,
+    config: input.config,
+    seed,
+    rejected,
+    classifiedRef,
+    reasoningMode,
+    thinkingBudget: resolvedReasoning.thinkingBudget,
+    maxOutputTokens: resolvedReasoning.maxOutputTokens,
+    temperature,
+    systemPrompt: PROPOSAL_SYSTEM_PROMPT,
+    userPrompt: userPromptLines,
+    authContextDigest: input.authContextDigest,
+  });
+
   let cacheStore = providerResponseCache.get(provider);
   if (!cacheStore) {
-    cacheStore = new Map();
+    cacheStore = new BoundedLruCache<string, AIResponse>(defaultCacheOptions);
     providerResponseCache.set(provider, cacheStore);
   }
   let inFlightStore = providerInFlightMap.get(provider);
   if (!inFlightStore) {
-    inFlightStore = new Map();
+    inFlightStore = new InFlightRequestDeduplicator<AIResponse>();
     providerInFlightMap.set(provider, inFlightStore);
   }
+
+  let initiatedNewProviderCall = false;
+  let sharedInFlight = false;
 
   try {
     let response: AIResponse;
     let cacheHit = false;
     const cached = !input.bypassCache ? cacheStore.get(cacheKey) : undefined;
-    if (cached && cached.expiresAt > Date.now()) {
-      response = cached.response;
+    if (cached) {
+      response = cached;
       cacheHit = true;
     } else {
-      let pending = !input.bypassCache ? inFlightStore.get(cacheKey) : undefined;
-      if (!pending) {
-        const requestPromise = provider.complete({
-          taskType: AITaskType.RequirementExtraction,
-          systemPrompt:
-            'Principal Indian Residential Architect (NBC 2016 / UDCPR). Convert brief, site, and optional reference image into ArchitecturalProposal JSON. ' +
-            'Strictly obey mandatory user rules (NO OTS, no balconies, center building, locked shape, core placement). Keep designRationale <= 180 chars.',
-          userPrompt: userPromptLines,
-          ...(imagePart ? { images: [imagePart] } : {}),
-          responseFormat: 'json',
-          responseSchema: imagePart ? ARCHITECTURAL_PROPOSAL_SCHEMA : ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
-          responseSchemaName: 'architectural_proposal',
-          temperature: seed > 1 ? 0.35 : 0.1,
-          maxTokens: imagePart ? 1100 : 750,
-          thinkingBudget: 0,
+      const dedup = await inFlightStore.execute(
+        cacheKey,
+        upstreamSignal => {
+          initiatedNewProviderCall = true;
+          return provider.complete({
+            taskType: AITaskType.RequirementExtraction,
+            systemPrompt: PROPOSAL_SYSTEM_PROMPT,
+            userPrompt: userPromptLines,
+            ...(imagePart ? { images: [imagePart] } : {}),
+            responseFormat: 'json',
+            responseSchema: imagePart ? ARCHITECTURAL_PROPOSAL_SCHEMA : ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
+            responseSchemaName: 'architectural_proposal',
+            temperature,
+            maxTokens: resolvedReasoning.maxOutputTokens,
+            reasoningMode,
+            ...(resolvedReasoning.includeThinkingConfig && resolvedReasoning.thinkingBudget !== undefined
+              ? { thinkingBudget: resolvedReasoning.thinkingBudget }
+              : {}),
+            signal: upstreamSignal,
+          });
+        },
+        {
           signal: input.signal,
-        });
-        if (!input.bypassCache) {
-          inFlightStore.set(cacheKey, requestPromise);
-        }
-        pending = requestPromise;
-      } else {
-        cacheHit = true;
-      }
-      try {
-        response = await pending;
-      } finally {
-        inFlightStore.delete(cacheKey);
-      }
-      if (!input.bypassCache && response.parsed && Object.keys(response.parsed).length > 0) {
-        if (cacheStore.size >= MAX_CACHE_ENTRIES_PER_PROVIDER) {
-          const oldestKey = cacheStore.keys().next().value;
-          if (oldestKey !== undefined) cacheStore.delete(oldestKey);
-        }
-        cacheStore.set(cacheKey, { response, expiresAt: Date.now() + PROPOSAL_CACHE_TTL_MS });
+          bypassDeduplication: Boolean(input.bypassCache),
+        },
+      );
+      response = dedup.value;
+      sharedInFlight = dedup.sharedInFlight;
+      if (!input.bypassCache && !sharedInFlight && response.parsed && Object.keys(response.parsed).length > 0) {
+        cacheStore.set(cacheKey, response);
       }
     }
 
@@ -1111,17 +1369,38 @@ export async function generateArchitecturalProposal(
       seed,
       Boolean(imagePart),
     );
+
+    const invocationMode: AIInvocationMode = cacheHit
+      ? 'CACHED_PROVIDER_RESPONSE'
+      : sharedInFlight
+      ? 'SHARED_IN_FLIGHT_REQUEST'
+      : 'LIVE_PROVIDER';
+
+    const currentRequestUsage: TokenUsage =
+      invocationMode === 'LIVE_PROVIDER' ? response.usage : ZERO_TOKEN_USAGE;
+
     return buildEnriched(
       proposal,
       {
-        geminiInvoked: !cacheHit || true,
+        geminiInvoked: invocationMode === 'LIVE_PROVIDER',
+        invocationMode,
+        ...(response.appliedThinkingBudget !== undefined
+          ? { appliedThinkingBudget: response.appliedThinkingBudget }
+          : resolvedReasoning.thinkingBudget !== undefined
+          ? { appliedThinkingBudget: resolvedReasoning.thinkingBudget }
+          : {}),
         provider: 'google-genai',
         requestedModel,
         modelUsed: response.model,
         ...(response.attemptedModels ? { attemptedModels: response.attemptedModels } : {}),
-        apiCallCount: cacheHit ? 0 : (response.apiCallCount ?? 1),
+        apiCallCount: invocationMode === 'LIVE_PROVIDER' ? (response.apiCallCount ?? 1) : 0,
         cacheHit,
-        tokenUsage: response.usage,
+        sharedInFlight,
+        providerExecutionMs: cacheHit ? 0 : response.latencyMs,
+        tokenUsage: currentRequestUsage,
+        currentRequestTokenUsage: currentRequestUsage,
+        proposalTokenUsage: response.usage,
+        ...(response.failedAttempts ? { failedAttempts: response.failedAttempts } : {}),
         latencyMs: Date.now() - startedAt,
         fallbackTriggered: response.model !== requestedModel,
         ...(response.fallbackFromErrorCode
@@ -1137,19 +1416,51 @@ export async function generateArchitecturalProposal(
     );
   } catch (error) {
     const proposal = defaultProposalForConfig(input.config, seed);
-    const providerErrorCode = geminiErrorCode(error);
+    const isCancelled =
+      error instanceof ProposalCancelledError ||
+      error instanceof ProviderCancelledError ||
+      Boolean(input.signal?.aborted) ||
+      geminiErrorCode(error) === 'CANCELLED';
+
+    const execErr = error instanceof GeminiExecutionError ? error : undefined;
+    const failedAttempts = execErr?.failedAttempts ?? [];
+    const attemptedModels = execErr?.attemptedModels ?? (initiatedNewProviderCall ? [requestedModel] : []);
+    const apiCallCount = execErr
+      ? execErr.apiCallCount
+      : initiatedNewProviderCall
+      ? 1
+      : 0;
+    const providerErrorCode = isCancelled ? 'CANCELLED' : geminiErrorCode(error);
+    const failureClass = isCancelled ? 'CANCELLED' : classifyGeminiFailure(error);
+
+    const currentRequestTokenUsage: TokenUsage | 'UNKNOWN' =
+      apiCallCount === 0
+        ? ZERO_TOKEN_USAGE
+        : summarizeFailedAttemptTokens(failedAttempts);
+
     return buildEnriched(proposal, {
-      geminiInvoked: true,
+      geminiInvoked: apiCallCount > 0,
+      invocationMode: isCancelled ? 'CANCELLED' : 'PROVIDER_FAILURE',
       provider: 'deterministic-rule-engine',
       requestedModel,
-      modelUsed: requestedModel,
-      apiCallCount: 1,
+      modelUsed: 'none',
+      ...(attemptedModels.length > 0 ? { attemptedModels } : {}),
+      apiCallCount,
       cacheHit: false,
+      sharedInFlight,
+      providerExecutionMs: failedAttempts.reduce((sum, item) => sum + item.latencyMs, 0),
+      ...(currentRequestTokenUsage !== 'UNKNOWN' ? { tokenUsage: currentRequestTokenUsage } : {}),
+      currentRequestTokenUsage,
+      proposalTokenUsage: 'UNKNOWN',
+      ...(failedAttempts.length > 0 ? { failedAttempts } : {}),
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       interpretationSource: 'DETERMINISTIC',
       providerErrorCode,
-      fallbackReason: `Gemini interpretation failed (${providerErrorCode}).`,
+      failureClass,
+      fallbackReason: isCancelled
+        ? 'Gemini interpretation was cancelled by caller.'
+        : `Gemini interpretation failed (${providerErrorCode}).`,
       referenceImageUsedForGeometry: false,
     });
   }

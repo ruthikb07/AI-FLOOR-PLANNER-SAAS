@@ -9,15 +9,36 @@ export { BaseAIProvider, AISafetyError } from './providers/base';
 export { OpenAIProvider, type OpenAIProviderOptions } from './providers/openai';
 export {
   GeminiProvider,
+  GeminiExecutionError,
   type GeminiProviderOptions,
   type GeminiRetryPolicy,
   DEFAULT_GEMINI_RETRY_POLICY,
   extractHttpStatus,
   isTransientHttpError,
   isAuthHttpError,
+  isProjectWideQuotaError,
+  classifyGeminiFailure,
+  geminiErrorCode,
   calculateDelayWithJitter,
 } from './providers/gemini';
-export { HttpProviderError } from './providers/http';
+export { HttpProviderError, ProviderCancelledError, ProviderTimeoutError, redactSecret } from './providers/http';
+export {
+  BoundedLruCache,
+  InFlightRequestDeduplicator,
+  ProposalCancelledError,
+  canonicalJsonStringify,
+  type BoundedLruCacheOptions,
+  type DeduplicatedExecutionResult,
+} from './orchestration/lru-proposal-cache';
+export {
+  selectArchitecturalReasoningMode,
+  resolveModelThinkingParameters,
+  inspectModelThinkingCapabilities,
+  recordModelUnsupportedThinking,
+  clearModelCapabilityCache,
+  type ModelThinkingCapabilities,
+  type ResolvedReasoningParameters,
+} from './orchestration/reasoning-policy';
 export { RuleBasedRequirementParser } from './providers/rule-based';
 export {
   AIOrchestrationService,
@@ -101,12 +122,15 @@ export {
 export {
   generateArchitecturalProposal,
   clearArchitecturalProposalCache,
+  configureArchitecturalProposalCache,
+  buildProposalCacheKey,
   classifyReferenceAttachment,
   interpretStructuredBriefRequirements,
   defaultProposalForConfig,
   ARCHITECTURAL_PROPOSAL_SCHEMA,
   ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
   ROOM_SLICING_ARCHETYPES,
+  type ProposalCacheKeyParams,
   type ClassifiedReferenceAttachment,
   type RoomSlicingArchetypeId,
   type ProposalTopologyFamilyId,

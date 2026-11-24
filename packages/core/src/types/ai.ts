@@ -19,6 +19,42 @@ export interface TokenUsage {
   readonly thoughtsTokens?: number;
 }
 
+/** Application-level AI reasoning policy modes. */
+export type AIReasoningMode = 'FAST' | 'BALANCED' | 'DEEP';
+
+/** Precise invocation classification for provider, cache, shared in-flight, fallback, failure, and cancellation paths. */
+export type AIInvocationMode =
+  | 'LIVE_PROVIDER'
+  | 'CACHED_PROVIDER_RESPONSE'
+  | 'SHARED_IN_FLIGHT_REQUEST'
+  | 'DETERMINISTIC_FALLBACK'
+  | 'PROVIDER_FAILURE'
+  | 'CANCELLED';
+
+/** Granular failure classification for provider resilience and quota cooldowns. */
+export type GeminiFailureClass =
+  | 'MODEL_QUOTA_EXHAUSTED'
+  | 'PROJECT_QUOTA_EXHAUSTED'
+  | 'AUTH_FAILED'
+  | 'MODEL_UNAVAILABLE'
+  | 'TEMPORARILY_UNAVAILABLE'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT'
+  | 'CANCELLED'
+  | 'TRUNCATED_OR_INVALID_STRUCTURED_OUTPUT'
+  | 'OUTPUT_TOKEN_EXHAUSTED'
+  | 'UNSUPPORTED_THINKING_CONFIG'
+  | 'REQUEST_ERROR';
+
+/** Per-attempt failure record preserving partial or unknown token consumption honestly. */
+export interface FailedAttemptTelemetry {
+  readonly model: string;
+  readonly errorCode: string;
+  readonly failureClass: GeminiFailureClass;
+  readonly latencyMs: number;
+  readonly tokenUsage: TokenUsage | 'UNKNOWN';
+}
+
 /** Classification of interpreted architectural brief requirements. */
 export type BriefRequirementCategory =
   | 'MANDATORY'
@@ -63,19 +99,31 @@ export type ReferenceAttachmentDisposition =
 /** Sanitized generation telemetry shared across backend, canonical metadata, and UI. */
 export interface AIProposalTelemetry {
   readonly geminiInvoked: boolean;
+  readonly invocationMode?: AIInvocationMode;
+  readonly reasoningMode?: AIReasoningMode;
+  readonly appliedThinkingBudget?: number;
   readonly provider: string;
   readonly requestedModel?: string;
   readonly modelUsed?: string;
   readonly attemptedModels?: readonly string[];
   readonly apiCallCount?: number;
   readonly cacheHit?: boolean;
+  readonly sharedInFlight?: boolean;
   readonly latencyMs?: number;
+  readonly providerExecutionMs?: number;
   readonly solverLatencyMs?: number;
   readonly totalLatencyMs?: number;
+  /** Token consumption attributable to this specific request (0 on cache hit or shared follower; undefined when UNKNOWN). */
   readonly tokenUsage?: TokenUsage;
+  /** Explicit current-request token consumption or 'UNKNOWN' when a failed provider call did not report usage. */
+  readonly currentRequestTokenUsage?: TokenUsage | 'UNKNOWN';
+  /** Original provider-reported token usage that produced the proposal (preserved across cache hits & shared requests). */
+  readonly proposalTokenUsage?: TokenUsage | 'UNKNOWN';
+  readonly failedAttempts?: readonly FailedAttemptTelemetry[];
   readonly fallbackReason?: string;
   readonly fallbackTriggered?: boolean;
   readonly providerErrorCode?: string;
+  readonly failureClass?: GeminiFailureClass;
   readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
   readonly influencedGeometry?: boolean;
   readonly referenceDisposition?: ReferenceAttachmentDisposition;
@@ -90,6 +138,9 @@ export interface AIProposalTelemetry {
 export interface ModelInfo {
   readonly provider: string;
   readonly model: string;
+  readonly fallbackModels?: readonly string[];
+  /** Non-secret hash of provider endpoint, fallback list, deadline, and retry policy. */
+  readonly configFingerprint?: string;
   readonly contextWindow: number;
   readonly supportsJson: boolean;
   readonly supportsStreaming: boolean;
@@ -120,8 +171,14 @@ export interface AIRequest {
   readonly responseSchemaName?: string;
   readonly temperature?: number;
   readonly maxTokens?: number;
-  /** Optional Gemini 2.5/3.x thinking token budget (0 disables thinking overhead for deterministic schema extraction). */
+  /** Application-level reasoning policy (FAST, BALANCED, DEEP) resolved per model capability. */
+  readonly reasoningMode?: AIReasoningMode;
+  /** Optional explicit thinking token budget override. */
   readonly thinkingBudget?: number;
+  /** Optional overall deadline (ms) covering primary, fallback, retries, and bounded recovery. */
+  readonly totalDeadlineMs?: number;
+  /** Optional hard cap on total HTTP attempts across all models and recoveries. */
+  readonly maxTotalAttempts?: number;
   /** Optional cancellation signal propagated to network fetch. */
   readonly signal?: AbortSignal;
 }
@@ -133,9 +190,13 @@ export interface AIResponse {
   readonly usage: TokenUsage;
   readonly model: string;
   readonly latencyMs: number;
+  readonly finishReason?: string;
+  readonly reasoningMode?: AIReasoningMode;
+  readonly appliedThinkingBudget?: number;
   readonly fallbackFromErrorCode?: string;
   readonly attemptedModels?: readonly string[];
   readonly apiCallCount?: number;
+  readonly failedAttempts?: readonly FailedAttemptTelemetry[];
 }
 
 /** A streaming AI response chunk. */

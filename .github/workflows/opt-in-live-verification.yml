@@ -1,0 +1,40 @@
+name: Opt-in Live AI & Native Interop Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      reasoning_mode:
+        description: 'Optional AI reasoning mode override (AUTO, FAST, BALANCED, DEEP)'
+        required: false
+        default: 'AUTO'
+        type: choice
+        options:
+          - AUTO
+          - FAST
+          - BALANCED
+          - DEEP
+
+permissions:
+  contents: read
+
+jobs:
+  live-gemini-verification:
+    name: Opt-in Live Gemini Pipeline Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURBO_TELEMETRY_DISABLED: '1'
+      RUN_LIVE_AI_TESTS: '1'
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      AI_REASONING_MODE: ${{ inputs.reasoning_mode == 'AUTO' && '' || inputs.reasoning_mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Run opt-in live Gemini verification tests
+        run: pnpm --filter @ai-floor-planner/backend exec vitest run src/__tests__/phase4a-ai-pipeline-verification.test.ts src/__tests__/phase4a1-benchmark-and-reliability.test.ts
