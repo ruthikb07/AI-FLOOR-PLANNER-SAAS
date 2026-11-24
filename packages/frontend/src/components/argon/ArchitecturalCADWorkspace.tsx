@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import type { BuildingMassingShape, EngineeringOverlay, PlanCategory } from '@ai-floor-planner/core';
 import { apartmentFloorOutline } from '@ai-floor-planner/geometry-engine';
 import {
@@ -12,6 +12,8 @@ import { ArchitecturalCanvas } from '../canvas/ArchitecturalCanvas';
 import { PropertyInspector } from '../inspector/PropertyInspector';
 import { requestVerifiedExport, downloadVerifiedExport } from '../../services/export-client';
 import type { WorkspaceLayer } from '../workspace/BuildingNavigator';
+
+const LazyPrecisionCadWorkbench = React.lazy(() => import('./PrecisionCadWorkbench'));
 
 export interface ArchitecturalCADWorkspaceProps {
   editor: EditorContextValue;
@@ -52,6 +54,7 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
   const activePlanCategory = editor.building.metadata.generationBrief?.planCategory as PlanCategory | undefined;
   const [shapeDrawerOpen, setShapeDrawerOpen] = useState(false);
   const [scoreDrawerOpen, setScoreDrawerOpen] = useState(false);
+  const [precisionCadOpen, setPrecisionCadOpen] = useState(false);
   const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [disciplines, setDisciplines] = useState<Record<EngineeringOverlay, boolean>>({
     ARCHITECTURAL: true,
@@ -156,6 +159,19 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
             Wall &amp; Room Editor
           </button>
         )}
+        <button
+          type="button"
+          data-testid="toggle-precision-cad-studio"
+          aria-pressed={precisionCadOpen}
+          onClick={() => setPrecisionCadOpen(open => !open)}
+          className={`rounded border px-3 py-2 text-xs font-semibold transition-colors ${
+            precisionCadOpen
+              ? 'border-amber-300 bg-[#F4F4ED] text-[#122624]'
+              : 'border-amber-400/50 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
+          }`}
+        >
+          {precisionCadOpen ? 'Standard CAD Sheet' : 'Precision CAD Studio'}
+        </button>
         <span
           className="rounded-full border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 font-mono text-xs font-medium text-sky-300"
           title={`${activeMassingShape ? activeMassingShape.replace(/_/g, ' ') : 'Architectural Massing'}${activeArchetype ? ` · ${activeArchetype.replace(/_/g, ' ')}` : ''}`}
@@ -386,6 +402,22 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
           ))}
         </div>
       </div>
+      {precisionCadOpen ? (
+        <div className="min-h-0 flex-1">
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center bg-[#F4F4ED] font-mono text-xs text-[#122624]">
+                Loading Precision CAD Studio...
+              </div>
+            }
+          >
+            <LazyPrecisionCadWorkbench
+              editor={editor}
+              onExitPrecisionStudio={() => setPrecisionCadOpen(false)}
+            />
+          </Suspense>
+        </div>
+      ) : (
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="relative min-h-[320px] min-w-0 flex-1">
           <ArchitecturalCanvas
@@ -465,6 +497,7 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
           </ul>
         </aside>
       </div>
+      )}
       <div
         aria-label="CAD layers"
         className="flex shrink-0 flex-wrap gap-2 border-t border-slate-700 bg-slate-900 p-3"

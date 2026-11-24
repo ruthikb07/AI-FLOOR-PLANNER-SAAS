@@ -68,6 +68,7 @@ describe('Phase 4A Gate D — Real Building CAD Adapter, DXF/DWG Exchange & Roun
     // 2. Independent CAD Layout Importer readback of the Exchange DXF bytes
     const dxfBase64 = Buffer.from(artifact.bytes).toString('base64');
     const independentParsed = await parseUploadedCadFile({
+      action: 'preview',
       fileName: 'canonical-exchange.dxf',
       contentBase64: dxfBase64,
     });

@@ -313,6 +313,10 @@ export interface SourceCadUnderlay {
 /** Metadata associated with a building. */
 export interface BuildingMetadata {
   readonly sourceCadUnderlay?: SourceCadUnderlay;
+  /** Non-canonical 2D CAD drafting annotations (layers D-DRAFT, D-DIM, D-ANNO) keyed by floorId. */
+  readonly cadDraftingAnnotations?: Readonly<
+    Record<string, readonly import('../interchange/cota-cad-kernel').CadEntity[]>
+  >;
   readonly irregularPlotBoundary?: import('./multi-sheet-apartment').IrregularPlotBoundary;
   readonly facadeCoordination?: import('./multi-sheet-apartment').FacadeCoordinationMetadata;
   /** Identifies the solver run that produced the generated geometry. */
