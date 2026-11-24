@@ -135,7 +135,10 @@ export function classifyGeminiFailure(error: unknown): GeminiFailureClass {
   if (status === 429) {
     return isProjectWideQuotaError(error) ? 'PROJECT_QUOTA_EXHAUSTED' : 'MODEL_QUOTA_EXHAUSTED';
   }
-  if (status === 400 && /thinkingConfig|thinking_config|thinkingBudget/i.test(msg)) {
+  if (
+    status === 400 &&
+    /thinkingConfig|thinking_config|thinkingBudget|Request contains an invalid argument/i.test(msg)
+  ) {
     return 'UNSUPPORTED_THINKING_CONFIG';
   }
   if (status !== null && (status === 503 || status === 408 || (status >= 500 && status < 600))) {
@@ -287,8 +290,12 @@ export class GeminiProvider extends BaseAIProvider {
         fallbackModels.push(trimmed);
       }
     }
-    const timeoutMs = options.timeoutMs ?? 12_000;
-    const maxTotalAttempts = Math.max(1, options.maxTotalAttempts ?? Math.max(3, 1 + fallbackModels.length));
+    const timeoutMs = options.timeoutMs ?? 24_000;
+    const perModelFactor = 1 + Math.min(1, Math.max(0, options.maxRetriesOn503 ?? 1));
+    const maxTotalAttempts = Math.max(
+      1,
+      options.maxTotalAttempts ?? Math.min(8, Math.max(4, (1 + fallbackModels.length) * perModelFactor)),
+    );
     this.options = {
       apiKey: options.apiKey,
       model,
@@ -478,9 +485,15 @@ export class GeminiProvider extends BaseAIProvider {
         let lastPartialUsage: TokenUsage | undefined;
         try {
           const endpoint = `${this.endpointBase}/${encodeURIComponent(currentModel)}:generateContent`;
-          // Reserve time for fallback models when total budget permits, while strictly honoring overall deadline
+          // Reserve time for fallback models when total budget permits, without starving later fallbacks
+          const singleAttemptCapMs =
+            allowThinkingConfig && typeof currentThinkingBudget === 'number' && currentThinkingBudget > 0
+              ? 8_500
+              : 6_000;
           const fallbackShareCap = hasNextFallback
-            ? Math.min(5_500, Math.max(120, Math.floor(remainingForCall * 0.65)))
+            ? remainingForCall < 2_000
+              ? Math.max(25, Math.floor(remainingForCall * 0.6))
+              : Math.min(remainingForCall, singleAttemptCapMs)
             : remainingForCall;
           const perAttemptTimeout = Math.max(25, Math.min(remainingForCall, fallbackShareCap));
 
@@ -522,9 +535,9 @@ export class GeminiProvider extends BaseAIProvider {
           const { text: content, finishReason } = this.extractOutputAndFinishReason(result.body);
           const parsed = wantsJson
             ? parseJsonContent(content, {
-              allowTruncatedRepair: finishReason !== 'MAX_TOKENS',
-              requiredFields: requiredSchemaFields,
-            })
+                allowTruncatedRepair: finishReason !== 'MAX_TOKENS',
+                ...(finishReason === 'MAX_TOKENS' ? { requiredFields: requiredSchemaFields } : {}),
+              })
             : undefined;
           const rawUsage = asRecord(result.body.usageMetadata);
           const completed = response(
@@ -647,8 +660,11 @@ export class GeminiProvider extends BaseAIProvider {
             }
           }
 
-          // 404 model unavailable: cascade immediately if fallback exists, else fail immediately
+          // 404 model unavailable: cool down missing model and cascade immediately if fallback exists
           if (status === 404) {
+            if (this.options.modelCooldownMs > 0) {
+              this.modelCooldownUntil.set(currentModel, this.nowFn() + this.options.modelCooldownMs);
+            }
             if (hasNextFallback) {
               console.warn(
                 `[GeminiProvider] Model "${currentModel}" returned 404. Cascading immediately to "${modelsToExecute[mIdx + 1]}"...`,
@@ -679,6 +695,12 @@ export class GeminiProvider extends BaseAIProvider {
           }
 
           const isTimeout = failureClass === 'TIMEOUT';
+          if (isTimeout && hasNextFallback && this.options.modelCooldownMs > 0) {
+            this.modelCooldownUntil.set(
+              currentModel,
+              this.nowFn() + Math.min(this.options.modelCooldownMs, 30_000),
+            );
+          }
           const isTransient = isTransientHttpError(status, err);
           const isSafetyOrParseError = err instanceof AISafetyError;
 
@@ -704,6 +726,12 @@ export class GeminiProvider extends BaseAIProvider {
                 : this.retryPolicy.maxRetries;
 
           if (attempt >= maxRetriesForError || apiCallCount >= effectiveMaxAttempts) {
+            if (isServiceUnavailable && hasNextFallback && this.options.modelCooldownMs > 0) {
+              this.modelCooldownUntil.set(
+                currentModel,
+                this.nowFn() + Math.min(this.options.modelCooldownMs, 15_000),
+              );
+            }
             console.warn(
               `[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (${errCode}).`,
             );
