@@ -129,3 +129,28 @@ Phase 4A branched from `75716ddcfb52142314ed8d2edd343607a15c67da` onto `feat/pha
 
 - Phase 4A (`INTERNAL ENGINEERING GATE PASSED` · **READY** for Phase 4A scope; `PROFESSIONAL REVIEW REQUIRED` for statutory/structural sign-off) leaves `CanonicalExchangeAdapter` (`format: 'IFC'`) ready for Phase 4B OpenBIMStudio integration once OpenBIMStudio's archive provenance, license audit, and native IFC4 spatial hierarchy readback gate are executed.
 
+## Phase 4A.1 handoff (AI intelligence, cache identity, telemetry & reliability hotfix)
+
+Phase 4A.1 branched from `57a1a358af0b15886b44bd6be1efe64ae8ee16f9` onto `fix/phase4a-ai-reliability`. See [the Phase 4A.1 hotfix report](PHASE4A1_AI_RELIABILITY_HOTFIX.md), [the adaptive reasoning policy](../integration/AI_REASONING_POLICY.md), and [the cache & telemetry verification](../integration/AI_CACHE_AND_TELEMETRY_VERIFICATION.md).
+
+### Delivered scope
+
+1. **Comprehensive Cache Identity, True LRU & Cancellation-Isolated Deduplication:**
+   - Replaced partial cache key serialization with canonical SHA-256 `buildProposalCacheKey()` covering all 7 effective request namespaces (including `roadAccessSides`, `setbacksMm`, `irregularPlotBoundary`, `lockedMassingShape`, provider/fallback config fingerprint, schema digests, reasoning/token budgets, and `projectId` / hashed `authContextDigest`).
+   - Replaced insertion-order `Map` eviction and shared-signal in-flight deduplication with `BoundedLruCache` (recency refresh + TTL pruning + invalidation) and `InFlightRequestDeduplicator` (isolated `upstreamController` so cancelling one caller never cancels co-subscribers unless all subscribers cancel; `bypassCache` isolated).
+2. **Exact Invocation Telemetry & Dual Token Accounting:**
+   - Fixed `geminiInvoked: !cacheHit || true` (`geminiInvoked: invocationMode === 'LIVE_PROVIDER'`) with 6 explicit `invocationMode` states (`LIVE_PROVIDER`, `CACHED_PROVIDER_RESPONSE`, `SHARED_IN_FLIGHT_REQUEST`, `DETERMINISTIC_FALLBACK`, `PROVIDER_FAILURE`, `CANCELLED`).
+   - Separated `currentRequestTokenUsage` (`0` on cache hit / shared follower; `'UNKNOWN'` when failed HTTP attempts omit `usageMetadata`) from `proposalTokenUsage`, plus `failedAttempts[]`.
+3. **Capability-Aware Adaptive Reasoning, Single Provider Deadline, Cooldowns, Cancellation & CI:**
+   - Implemented `FAST` / `BALANCED` / `DEEP` reasoning policies (`reasoning-policy.ts`), live-verified model capability checks (`gemini-3.5-flash-lite` / `gemini-flash-lite-latest` omit `thinkingConfig` when `0` is unsupported to avoid `HTTP 400`), and bounded 1-retry recovery for `UNSUPPORTED_THINKING_CONFIG` and `MAX_TOKENS` truncation.
+   - Enforced single overall `totalDeadlineMs` (`24,000 ms` default, removing `server.ts`'s `15s` hard clamp), `maxTotalAttempts`, per-model `429`/`503`/`TIMEOUT`/`404` cooldowns, immediate halt on project-wide `429` or `401/403` auth failure, end-to-end `AbortController` cancellation (`HTTP 499 REQUEST_CANCELLED` before geometry synthesis + worker `{ type: 'cancel' }`), and expanded `.github/workflows/verification.yml` + `.github/workflows/opt-in-live-verification.yml`.
+
+### Verification summary
+
+- `pnpm build` (**9/9**), `pnpm typecheck` (**16/16**), `pnpm lint` (**16/16**): **PASS**.
+- Package unit suites: **1,756 passed** across all 9 workspace packages (`core` 198, `geometry-engine` 95, `projection-3d` 31, `ai-orchestration` 149, `renderer` 89, `constraint-engine` 185, `backend` 235, `frontend` 181, `planning-engine` 593 including `288/288` planning benchmark), plus **+2** opt-in live Gemini tests verified (`5,581 ms` live AI latency, `1,576` tokens, `12,693 ms` CAD-ready, `13,772 ms` 3D-ready).
+- Integration suites: **52/52 passed** (`21` workspace integration + `31` backend HTTP integration).
+- Chromium E2E (`test:e2e:repair`): **16/16 passed**; Chromium WebGL Recovery (`test:e2e:webgl`): **1/1 passed** (`5` restorations + `3` releases).
+- Phase 4B readiness: **CONDITIONAL** (`INTERNAL ENGINEERING GATE PASSED` for Phase 4A + 4A.1; OpenBIMStudio archive provenance/license audit and native IFC4 spatial hierarchy readback gate required before Phase 4B production sign-off).
+
+
