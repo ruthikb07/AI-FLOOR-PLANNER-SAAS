@@ -601,7 +601,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     scene: THREE.Scene;
     walkYaw: number;
     requestRender: (dampingFrames?: number) => void;
-    renderNow: () => void;
+    renderNow: () => boolean;
   } | null>(null);
 
   const isExploded = Boolean(exploded || (explodeDistance !== undefined && explodeDistance > 0));
@@ -763,12 +763,26 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     let remainingFrames = 0;
     let updatingOrbit = false;
     let disposed = false;
+    let contextLost = false;
+    const canvas = renderer.domElement;
+    const gl = renderer.getContext();
+    canvas.dataset.contextStatus = 'active';
+
+    const canRender = () => !disposed && !contextLost && !gl.isContextLost();
+
+    const stopRendering = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      remainingFrames = 0;
+    };
 
     const recordStats = () => {
       const calls = renderer.info.render.calls;
       const triangles = renderer.info.render.triangles;
-      renderer.domElement.dataset.drawCalls = String(calls);
-      renderer.domElement.dataset.triangles = String(triangles);
+      canvas.dataset.drawCalls = String(calls);
+      canvas.dataset.triangles = String(triangles);
+      canvas.dataset.geometries = String(renderer.info.memory.geometries);
+      canvas.dataset.textures = String(renderer.info.memory.textures);
       const win = window as unknown as { __rh3dStats?: Record<string, number> };
       win.__rh3dStats = {
         ...(win.__rh3dStats ?? {}),
@@ -778,14 +792,16 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     };
 
     const renderNow = () => {
-      if (disposed) return;
+      if (!canRender()) return false;
       renderer.render(scene, currentCamera());
+      if (!canRender()) return false;
       recordStats();
+      return true;
     };
 
     const tick = () => {
       rafId = 0;
-      if (disposed) return;
+      if (!canRender()) return;
 
       // Smooth rAF explode lerp on per-floor Y offsets (zero geometry rebuild!)
       let explodeAnimating = false;
@@ -811,17 +827,15 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         remainingFrames -= 1;
       }
 
-      renderer.render(scene, currentCamera());
-      recordStats();
-
-      if (remainingFrames > 0 || explodeAnimating) {
+      if (renderNow() && (remainingFrames > 0 || explodeAnimating)) {
         rafId = requestAnimationFrame(tick);
       }
     };
 
     const requestRender = (frames = 1) => {
+      if (!canRender()) return;
       remainingFrames = Math.max(remainingFrames, frames);
-      if (!rafId && !disposed) {
+      if (!rafId) {
         rafId = requestAnimationFrame(tick);
       }
     };
@@ -853,14 +867,58 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const onWheel = () => requestRender(14);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
 
-    const resize = new ResizeObserver(() => {
-      if (!host.clientWidth || !host.clientHeight) return;
-      camera.aspect = host.clientWidth / host.clientHeight;
+    const syncSize = () => {
+      const width = host.clientWidth;
+      const height = host.clientHeight;
+      if (!canRender() || !width || !height) return;
+      const currentSize = renderer.getSize(new THREE.Vector2());
+      if (currentSize.x === width && currentSize.y === height) return;
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
       fitOrthographic(halfHeight);
-      renderer.setSize(host.clientWidth, host.clientHeight);
-      renderNow();
-    });
+      renderer.setSize(width, height);
+      requestRender(0);
+    };
+
+    const releaseSceneResources = () => {
+      disposeGeometryOnly(scene);
+      materials.allMaterials.forEach(material => material.dispose());
+      skyMat.dispose();
+      scene.environment?.dispose();
+      stoneNormal.dispose();
+      roughnessMap?.dispose();
+      teakMap?.dispose();
+      Object.values(skyTextures).forEach(texture => texture?.dispose());
+      keyLight.shadow.dispose();
+      keyLight.shadow.map = null;
+      keyLight.shadow.mapPass = null;
+    };
+
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      contextLost = true;
+      canvas.dataset.contextStatus = 'lost';
+      delete canvas.dataset.drawCalls;
+      delete canvas.dataset.triangles;
+      delete canvas.dataset.geometries;
+      delete canvas.dataset.textures;
+      stopRendering();
+      // Dispose cached GPU allocations while the old Three.js caches still own them.
+      // Geometry, materials and texture sources remain available for the next upload.
+      releaseSceneResources();
+    };
+
+    const onContextRestored = () => {
+      // Three.js registers its restoration listener in the renderer constructor.
+      contextLost = false;
+      canvas.dataset.contextStatus = 'active';
+      syncSize();
+      requestRender(0);
+    };
+
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+    const resize = new ResizeObserver(syncSize);
     resize.observe(host);
 
     runtimeRef.current = {
@@ -887,19 +945,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     };
 
     if (sceneRef) sceneRef.current = scene;
-    renderNow();
+    requestRender(0);
 
     return () => {
       disposed = true;
-      if (rafId) cancelAnimationFrame(rafId);
-      scene.environment?.dispose();
-      stoneNormal.dispose();
-      roughnessMap?.dispose();
-      teakMap?.dispose();
-      Object.values(skyTextures).forEach(tex => tex?.dispose());
-      skyGeo.dispose();
-      skyMat.dispose();
-      materials.allMaterials.forEach(m => m.dispose());
+      stopRendering();
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
+      releaseSceneResources();
       scene.environment = null;
       resize.disconnect();
       renderer.domElement.removeEventListener('wheel', onWheel);
@@ -907,10 +960,10 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       controls.removeEventListener('start', onControlsStart);
       controls.removeEventListener('end', onControlsEnd);
       controls.dispose();
-      disposeGeometryOnly(scene);
       renderer.dispose();
       renderer.forceContextLoss();
-      renderer.domElement.remove();
+      canvas.remove();
+      if (sceneRef?.current === scene) sceneRef.current = null;
       runtimeRef.current = null;
     };
   }, []);
@@ -1659,7 +1712,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     scene.add(rootGroup);
     runtime.floorRecords = floorRecords;
     runtime.siteContext = siteContext;
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [buildingGeometryKey, projection]);
 
   // 3. INSTANT (< 5 ms) SHARED MATERIAL PALETTE + OPENING FINISH + X-RAY HOT-SWAP
@@ -1732,7 +1785,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const swapMs = Math.round((performance.now() - t0) * 100) / 100;
     const win = window as unknown as { __rh3dStats?: Record<string, number> };
     win.__rh3dStats = { ...(win.__rh3dStats ?? {}), materialSwapMs: swapMs };
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [materialPalette, openingFinish, viewMode]);
 
   // 4. INSTANT LIGHTING MODE HOT-SWAP (Day / Sunset / Night — zero geometry rebuild!)
@@ -1833,7 +1886,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     }
 
     renderer.domElement.dataset.lighting = lightingMode;
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [lightingMode]);
 
   // 5. INSTANT LAYER / FLOOR ISOLATION / DIMMING VISIBILITY UPDATE (Zero geometry rebuild!)
@@ -1909,7 +1962,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       }
     }
 
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [activeFloorId, floorMode, layers, linkedSpanStoreys, projection, sectionCut, viewMode, buildingGeometryKey]);
 
   // 6. SMOOTH rAF EXPLODE ANIMATION (Moves per-floor group Y only — zero geometry rebuild!)
@@ -1966,7 +2019,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       }
     }
 
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [selection, projection]);
 
   // 8. SECTION CUT / CUTAWAY CLIPPING PLANE
@@ -1982,7 +2035,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), (Math.min(...depths) + Math.max(...depths)) / 2)]
         : [];
     runtime.renderer.domElement.dataset.section = sectionCut ? 'on' : 'off';
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [sectionCut, projection, activeFloorId]);
 
   // 9. CAMERA FIT & PRESETS OR WALKTHROUGH ENTRY
@@ -2013,7 +2066,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       runtime.camera.far = 300;
       runtime.camera.updateProjectionMatrix();
       runtime.controls.update();
-      runtime.renderNow();
+      runtime.requestRender(0);
       return;
     }
 
@@ -2076,7 +2129,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     runtime.controls.maxZoom = 12;
     runtime.controls.target.copy(center);
     runtime.controls.update();
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [cameraPreset, fitRequest, buildingGeometryKey, activeFloorId, floorMode, fitSite, walkthroughActive, parallelProjection]);
 
   // 10. ZOOM & WALKTHROUGH & SNAPSHOT HANDLERS
@@ -2087,14 +2140,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     if (runtime.camera === runtime.orthographic) {
       runtime.orthographic.zoom = THREE.MathUtils.clamp(runtime.orthographic.zoom / factor, 0.25, 12);
       runtime.orthographic.updateProjectionMatrix();
-      runtime.renderNow();
+      runtime.requestRender(0);
       return;
     }
     const dir = runtime.camera.position.clone().sub(runtime.controls.target).multiplyScalar(factor);
     if (dir.length() >= 0.4 && dir.length() <= 1600) {
       runtime.camera.position.copy(runtime.controls.target).add(dir);
       runtime.controls.update();
-      runtime.renderNow();
+      runtime.requestRender(0);
     }
   }, [zoomCommand]);
 
@@ -2118,7 +2171,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         runtime.controls.target.copy(runtime.camera.position).add(offset);
       }
       runtime.controls.update();
-      runtime.renderNow();
+      runtime.requestRender(0);
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') applyStep('forward');
@@ -2149,13 +2202,12 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       runtime.controls.target.copy(runtime.camera.position).add(offset);
     }
     runtime.controls.update();
-    runtime.renderNow();
+    runtime.requestRender(0);
   }, [walkthroughActive, walkCommand]);
 
   useEffect(() => {
     const runtime = runtimeRef.current;
-    if (!runtime || !snapshotRequest) return;
-    runtime.renderNow();
+    if (!runtime || !snapshotRequest || !runtime.renderNow()) return;
     const link = document.createElement('a');
     link.download = 'architectural-model-view.png';
     link.href = runtime.renderer.domElement.toDataURL('image/png');

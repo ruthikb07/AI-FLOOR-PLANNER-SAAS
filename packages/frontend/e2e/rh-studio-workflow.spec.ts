@@ -19,7 +19,11 @@ test('current studio workflow through reference, massing and export', async ({ p
   const upload = page.getByTestId('reference-workflow-card').locator('input[type=file]').first();
   await upload.setInputFiles({ name: 'brief-reference.png', mimeType: 'image/png',
     buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a83sAAAAASUVORK5CYII=', 'base64') });
-  const firstRequest = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'));
+  const generationResponse = () => page.waitForResponse(
+    response => response.url().endsWith('/api/v1/projects/generate'),
+    { timeout: 60_000 },
+  );
+  const firstRequest = generationResponse();
   await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
   const first = await firstRequest;
   expect(first.status()).toBe(200);
@@ -27,11 +31,16 @@ test('current studio workflow through reference, massing and export', async ({ p
   const original = await first.json() as { building: Building; telemetry: { interpretationSource: string } };
   expect(original.telemetry.interpretationSource).toBe('DETERMINISTIC');
   const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
-  await expect(gallery.getByRole('heading', { name: 'Massing Studies' })).toBeVisible();
+  // HTTP acceptance precedes the browser worker's audit and projection.
+  const galleryReady = gallery.getByRole('heading', { name: 'Massing Studies' });
+  const generationFailed = page.getByRole('dialog', { name: 'Generation needs attention' });
+  await expect(galleryReady.or(generationFailed)).toBeVisible({ timeout: 25_000 });
+  await expect(generationFailed).toBeHidden();
+  await expect(galleryReady).toBeVisible();
   await gallery.getByRole('button', { name: 'Building', exact: true }).click();
   await expect(gallery.locator('canvas')).toBeVisible({ timeout: 25_000 });
   await gallery.getByRole('button', { name: 'Plan', exact: true }).click();
-  const secondRequest = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'));
+  const secondRequest = generationResponse();
   await gallery.getByRole('button', { name: 'Generate Massing Alternative' }).click();
   const second = await secondRequest;
   expect(second.status(), JSON.stringify((await second.json()).error ?? {})).toBe(200);
@@ -47,8 +56,9 @@ test('current studio workflow through reference, massing and export', async ({ p
   await expect(page.getByTestId('isometric-3d-viewport').locator('canvas')).toBeVisible({ timeout: 25_000 });
   await page.getByTestId('nav-building_3d').click();
   const tower = page.locator('.three-building-scene canvas').first();
-  await expect(tower).toBeVisible({ timeout: 25_000 });
-  await expect.poll(async () => Number(await tower.getAttribute('data-draw-calls'))).toBeGreaterThan(0);
+  // The real renderer writes these stats only after it submits a frame.
+  await expect(tower).toHaveAttribute('data-draw-calls', /^[1-9]\d*$/, { timeout: 45_000 });
+  await expect(tower).toBeVisible();
   await tower.evaluate(element => {
     const metrics = { renders: 0, maxPerFrame: 0 };
     let frameWrites = 0;
