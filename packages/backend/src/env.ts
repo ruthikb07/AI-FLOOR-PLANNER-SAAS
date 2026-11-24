@@ -11,14 +11,28 @@
  * deterministically before it can influence geometry.
  */
 
+export type GeminiCredentialSource = 'GEMINI_API_KEY' | 'GOOGLE_API_KEY' | 'NONE';
+
 export interface ServiceConfig {
   /** 'gemini' (default) or 'local-stub' (explicit dev opt-in only). */
   readonly briefInterpreterKind: 'gemini' | 'local-stub';
   readonly geminiApiKey: string;
+  readonly credentialSource?: GeminiCredentialSource;
   readonly geminiModel: string;
   readonly geminiFallbackModel: string;
+  readonly geminiFallbackModels?: readonly string[];
   readonly providerTimeoutMs: number;
   readonly port: number;
+}
+
+export interface SanitizedProviderAuditEntry {
+  readonly id: 'gemini' | 'openai' | 'rule-based-deterministic';
+  readonly runtimeStatus: 'CONNECTED_CONFIGURED' | 'UNCONFIGURED_NO_KEY' | 'LOCAL_STUB_ACTIVE' | 'IMPLEMENTED_NOT_WIRED_IN_RUNTIME' | 'ALWAYS_AVAILABLE_DETERMINISTIC';
+  readonly credentialConfigured: boolean;
+  readonly credentialSource: string;
+  readonly primaryModel: string;
+  readonly fallbackModels: readonly string[];
+  readonly supportsVision: boolean;
 }
 
 function positiveInt(value: string | undefined, fallback: number): number {
@@ -28,18 +42,87 @@ function positiveInt(value: string | undefined, fallback: number): number {
 
 export function resolveServiceConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
   const interpreterKind = (env.BRIEF_INTERPRETER ?? 'gemini').trim().toLowerCase();
+  const directGeminiKey = (env.GEMINI_API_KEY ?? '').trim();
+  const aliasGoogleKey = (env.GOOGLE_API_KEY ?? '').trim();
+  const geminiApiKey = directGeminiKey || aliasGoogleKey;
+  const credentialSource: GeminiCredentialSource = directGeminiKey
+    ? 'GEMINI_API_KEY'
+    : aliasGoogleKey
+      ? 'GOOGLE_API_KEY'
+      : 'NONE';
+
   // Both defaults are real, currently-available Gemini model IDs, verified
   // with a live smoke call against the Generative Language API.
   const primaryModel = (env.GEMINI_MODEL ?? '').trim() || 'gemini-3.1-flash-lite';
   const defaultFallback = primaryModel === 'gemini-3.5-flash-lite' ? 'gemini-3.1-flash-lite' : 'gemini-3.5-flash-lite';
   const fallbackModel = (env.GEMINI_FALLBACK_MODEL ?? '').trim() || defaultFallback;
+  const extraFallbacks = (env.GEMINI_FALLBACK_MODELS ?? '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+  const dedupedFallbacks: string[] = [];
+  for (const candidate of [
+    fallbackModel,
+    ...extraFallbacks,
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3-flash-preview',
+    'gemini-flash-lite-latest',
+  ]) {
+    if (candidate && candidate !== primaryModel && !dedupedFallbacks.includes(candidate)) {
+      dedupedFallbacks.push(candidate);
+    }
+  }
 
   return {
     briefInterpreterKind: interpreterKind === 'local-stub' ? 'local-stub' : 'gemini',
-    geminiApiKey: (env.GEMINI_API_KEY ?? '').trim(),
+    geminiApiKey,
+    credentialSource,
     geminiModel: primaryModel,
     geminiFallbackModel: fallbackModel,
+    geminiFallbackModels: dedupedFallbacks,
     providerTimeoutMs: positiveInt(env.PROVIDER_TIMEOUT_MS, 20_000),
     port: positiveInt(env.PORT, 4200),
   };
+}
+
+/** Produces a secret-free runtime provider audit report. */
+export function buildSanitizedProviderAudit(
+  config: ServiceConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): readonly SanitizedProviderAuditEntry[] {
+  const openAiKeyPresent = Boolean((env.OPENAI_API_KEY ?? '').trim());
+  return [
+    {
+      id: 'gemini',
+      runtimeStatus: config.briefInterpreterKind === 'local-stub'
+        ? 'LOCAL_STUB_ACTIVE'
+        : config.geminiApiKey.length > 0
+          ? 'CONNECTED_CONFIGURED'
+          : 'UNCONFIGURED_NO_KEY',
+      credentialConfigured: config.geminiApiKey.length > 0,
+      credentialSource: config.credentialSource ?? (config.geminiApiKey.length > 0 ? 'GEMINI_API_KEY' : 'NONE'),
+      primaryModel: config.geminiModel,
+      fallbackModels: config.geminiFallbackModels ?? [config.geminiFallbackModel],
+      supportsVision: true,
+    },
+    {
+      id: 'openai',
+      runtimeStatus: 'IMPLEMENTED_NOT_WIRED_IN_RUNTIME',
+      credentialConfigured: openAiKeyPresent,
+      credentialSource: openAiKeyPresent ? 'OPENAI_API_KEY' : 'NONE',
+      primaryModel: 'gpt-4o-mini',
+      fallbackModels: [],
+      supportsVision: false,
+    },
+    {
+      id: 'rule-based-deterministic',
+      runtimeStatus: 'ALWAYS_AVAILABLE_DETERMINISTIC',
+      credentialConfigured: true,
+      credentialSource: 'BUILT_IN',
+      primaryModel: 'deterministic-rule-engine',
+      fallbackModels: [],
+      supportsVision: false,
+    },
+  ];
 }

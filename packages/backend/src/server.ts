@@ -17,7 +17,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { handleExportRoute } from './api/export-routes.js';
 import { GeminiProvider, type BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
-import { resolveServiceConfig, type ServiceConfig } from './env.js';
+import {
+  buildSanitizedProviderAudit,
+  resolveServiceConfig,
+  type SanitizedProviderAuditEntry,
+  type ServiceConfig,
+} from './env.js';
 import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
@@ -54,11 +59,18 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
  */
 export function createGeminiProvider(config: ServiceConfig): GeminiProvider | null {
   if (config.geminiApiKey.length === 0) return null;
+  const fallbackList = config.geminiFallbackModels ?? [
+    config.geminiFallbackModel,
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3-flash-preview',
+    'gemini-flash-lite-latest',
+  ];
   return new GeminiProvider({
     apiKey: config.geminiApiKey,
     model: config.geminiModel,
     fallbackModel: config.geminiFallbackModel,
-    fallbackModels: [config.geminiFallbackModel, 'gemini-3-flash-preview', 'gemini-flash-lite-latest'],
+    fallbackModels: fallbackList,
     maxRetriesOn503: 1,
     retryPolicy: {
       maxRetries: 1,
@@ -89,6 +101,8 @@ export interface ProviderStatusInfo {
   readonly status: GeminiStatus | string;
   readonly model: string;
   readonly fallbackModel?: string;
+  readonly fallbackModels?: readonly string[];
+  readonly credentialSource?: string;
   readonly detail?: string;
 }
 
@@ -97,6 +111,7 @@ export interface BackendHealthResponse {
   /** Plan generation mode: hybrid-gemini when live Gemini key is configured, else deterministic. */
   readonly planGeneration: 'deterministic' | 'hybrid-gemini';
   readonly gemini: ProviderStatusInfo;
+  readonly providers?: readonly SanitizedProviderAuditEntry[];
 }
 
 /**
@@ -162,7 +177,10 @@ export async function checkProviderHealth(
     gemini: {
       ...geminiStatus,
       fallbackModel: config.geminiFallbackModel,
+      ...(config.geminiFallbackModels ? { fallbackModels: config.geminiFallbackModels } : {}),
+      ...(config.credentialSource ? { credentialSource: config.credentialSource } : {}),
     },
+    providers: buildSanitizedProviderAudit(config),
   };
 }
 

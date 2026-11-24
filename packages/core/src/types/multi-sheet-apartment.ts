@@ -271,17 +271,7 @@ export interface MultiSheetApartmentConfig {
   readonly rejectedArchetypeIds?: readonly string[];
   readonly autoExploreNovelShape?: boolean;
   readonly aiProposal?: Record<string, unknown>;
-  readonly aiTelemetryOverride?: {
-    readonly geminiInvoked: boolean;
-    readonly provider: string;
-    readonly modelUsed?: string;
-    readonly fallbackReason?: string;
-    readonly fallbackTriggered?: boolean;
-    readonly providerErrorCode?: string;
-    readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
-    readonly referenceGuidanceApplied?: readonly string[];
-    readonly referenceImageUsedForGeometry: boolean;
-  };
+  readonly aiTelemetryOverride?: import('./ai').AIProposalTelemetry;
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
   /** Optional imported or surveyed irregular plot boundary polygon (mm). */

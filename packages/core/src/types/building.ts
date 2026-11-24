@@ -347,17 +347,7 @@ export interface BuildingMetadata {
     readonly galleryCoordinationMode?: import('./multi-sheet-apartment').GalleryCoordinationMode;
     readonly includeStudyRoom?: boolean;
     readonly aiProposal?: Record<string, unknown>;
-    readonly aiTelemetry?: {
-      readonly geminiInvoked: boolean;
-      readonly provider: string;
-      readonly modelUsed?: string;
-      readonly fallbackReason?: string;
-      readonly fallbackTriggered?: boolean;
-      readonly providerErrorCode?: string;
-      readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
-      readonly referenceGuidanceApplied?: readonly string[];
-      readonly referenceImageUsedForGeometry: boolean;
-    };
+    readonly aiTelemetry?: import('./ai').AIProposalTelemetry;
   };
   readonly description?: string;
   readonly tags?: readonly string[];

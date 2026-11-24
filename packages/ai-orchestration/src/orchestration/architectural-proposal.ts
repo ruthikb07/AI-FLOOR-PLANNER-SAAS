@@ -1,10 +1,17 @@
 import {
   type AIImageInput,
+  type AIProposalTelemetry,
   type AIProvider,
+  type AIResponse,
+  type BriefRequirementConflict,
   type BuildingMassingShape,
   type MultiSheetApartmentConfig,
   type PlanCategory,
+  type ReferenceAttachmentDisposition,
+  type StructuredBriefInterpretation,
+  type StructuredBriefRequirementItem,
   AITaskType,
+  exchangeArtifactDigest,
   mixedUnitSpecs,
   parseMixedUnitProgram,
 } from '@ai-floor-planner/core';
@@ -103,7 +110,7 @@ export interface ArchitecturalProposal {
   readonly centerBuildingInEnvelope: boolean;
   readonly targetAreaSqFt?: number;
   readonly areaTargetScope?: 'GROSS_FLOOR_AREA' | 'FLOOR_TOTAL_CARPET' | 'PER_APARTMENT_CARPET';
-  readonly bedroomBalconies: 'ALL_BEDROOMS' | 'MASTER_ONLY' | 'STANDARD';
+  readonly bedroomBalconies: 'ALL_BEDROOMS' | 'MASTER_ONLY' | 'STANDARD' | 'NONE';
   readonly kitchenStyle: 'OPEN' | 'ENCLOSED';
   readonly kitchenSize: 'LARGER' | 'STANDARD';
   readonly vastuPreferences: {
@@ -115,16 +122,12 @@ export interface ArchitecturalProposal {
   readonly referenceSpatialGraph?: ReferenceSpatialGraph;
 }
 
-export interface ArchitecturalProposalTelemetry {
+export interface ArchitecturalProposalTelemetry extends AIProposalTelemetry {
   readonly geminiInvoked: boolean;
   readonly provider: string;
   readonly modelUsed: string;
   readonly latencyMs: number;
   readonly fallbackTriggered: boolean;
-  readonly fallbackReason?: string;
-  readonly providerErrorCode?: string;
-  readonly interpretationSource?: 'GEMINI' | 'DETERMINISTIC';
-  readonly referenceGuidanceApplied?: readonly string[];
   readonly referenceImageUsedForGeometry: boolean;
 }
 
@@ -134,67 +137,94 @@ export interface ArchitecturalProposalResult {
   readonly enrichedConfig: MultiSheetApartmentConfig;
 }
 
+const CORE_PROPOSAL_PROPERTIES: Record<string, unknown> = {
+  preferredTopologyFamily: {
+    type: 'string',
+    enum: [
+      'CENTRAL_CORE_SPINE',
+      'DUAL_WING',
+      'SIDE_CORE',
+      'CENTRAL_COURTYARD',
+      'LINEAR_SINGLE_LOADED',
+      'PERIMETER_HABITABLE',
+      'SPLIT_CORE',
+    ],
+  },
+  preferredArchetype: {
+    type: 'string',
+    enum: ROOM_SLICING_ARCHETYPES,
+  },
+  buildingMassingShape: {
+    type: 'string',
+    enum: BUILDING_MASSING_SHAPES,
+  },
+  maxOtsRatio: { type: 'number' },
+  corePlacement: {
+    type: 'string',
+    enum: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'],
+  },
+  ventilationStrategy: {
+    type: 'string',
+    enum: ['PERIMETER_ONLY', 'SIDE_SHAFTS', 'CENTRAL_COURTYARD'],
+  },
+  noOts: { type: 'boolean' },
+  centerBuildingInEnvelope: { type: 'boolean' },
+  targetAreaSqFt: { type: 'number' },
+  areaTargetScope: {
+    type: 'string',
+    enum: ['GROSS_FLOOR_AREA', 'FLOOR_TOTAL_CARPET', 'PER_APARTMENT_CARPET'],
+  },
+  bedroomBalconies: {
+    type: 'string',
+    enum: ['ALL_BEDROOMS', 'MASTER_ONLY', 'STANDARD', 'NONE'],
+  },
+  kitchenStyle: {
+    type: 'string',
+    enum: ['OPEN', 'ENCLOSED'],
+  },
+  kitchenSize: {
+    type: 'string',
+    enum: ['LARGER', 'STANDARD'],
+  },
+  vastuPreferences: {
+    type: 'object',
+    properties: {
+      kitchenQuadrant: { type: 'string', enum: ['SE', 'NW', 'ANY'] },
+      masterBedroomQuadrant: { type: 'string', enum: ['SW', 'ANY'] },
+      entranceDirection: { type: 'string', enum: ['NORTH', 'EAST', 'WEST', 'SOUTH', 'ANY'] },
+    },
+    required: ['kitchenQuadrant', 'masterBedroomQuadrant', 'entranceDirection'],
+  },
+  designRationale: { type: 'string' },
+};
+
+const CORE_REQUIRED_FIELDS = [
+  'preferredTopologyFamily',
+  'preferredArchetype',
+  'buildingMassingShape',
+  'corePlacement',
+  'ventilationStrategy',
+  'noOts',
+  'centerBuildingInEnvelope',
+  'bedroomBalconies',
+  'kitchenStyle',
+  'kitchenSize',
+  'vastuPreferences',
+  'designRationale',
+];
+
+/** Compact schema used when no reference image is attached (~35% fewer schema tokens). */
+export const ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  properties: CORE_PROPOSAL_PROPERTIES,
+  required: CORE_REQUIRED_FIELDS,
+};
+
+/** Full schema including referenceSpatialGraph when a vision reference image is attached. */
 export const ARCHITECTURAL_PROPOSAL_SCHEMA: Record<string, unknown> = {
   type: 'object',
   properties: {
-    preferredTopologyFamily: {
-      type: 'string',
-      enum: [
-        'CENTRAL_CORE_SPINE',
-        'DUAL_WING',
-        'SIDE_CORE',
-        'CENTRAL_COURTYARD',
-        'LINEAR_SINGLE_LOADED',
-        'PERIMETER_HABITABLE',
-        'SPLIT_CORE',
-      ],
-    },
-    preferredArchetype: {
-      type: 'string',
-      enum: ROOM_SLICING_ARCHETYPES,
-    },
-    buildingMassingShape: {
-      type: 'string',
-      enum: BUILDING_MASSING_SHAPES,
-    },
-    maxOtsRatio: { type: 'number' },
-    corePlacement: {
-      type: 'string',
-      enum: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'],
-    },
-    ventilationStrategy: {
-      type: 'string',
-      enum: ['PERIMETER_ONLY', 'SIDE_SHAFTS', 'CENTRAL_COURTYARD'],
-    },
-    noOts: { type: 'boolean' },
-    centerBuildingInEnvelope: { type: 'boolean' },
-    targetAreaSqFt: { type: 'number' },
-    areaTargetScope: {
-      type: 'string',
-      enum: ['GROSS_FLOOR_AREA', 'FLOOR_TOTAL_CARPET', 'PER_APARTMENT_CARPET'],
-    },
-    bedroomBalconies: {
-      type: 'string',
-      enum: ['ALL_BEDROOMS', 'MASTER_ONLY', 'STANDARD'],
-    },
-    kitchenStyle: {
-      type: 'string',
-      enum: ['OPEN', 'ENCLOSED'],
-    },
-    kitchenSize: {
-      type: 'string',
-      enum: ['LARGER', 'STANDARD'],
-    },
-    vastuPreferences: {
-      type: 'object',
-      properties: {
-        kitchenQuadrant: { type: 'string', enum: ['SE', 'NW', 'ANY'] },
-        masterBedroomQuadrant: { type: 'string', enum: ['SW', 'ANY'] },
-        entranceDirection: { type: 'string', enum: ['NORTH', 'EAST', 'WEST', 'SOUTH', 'ANY'] },
-      },
-      required: ['kitchenQuadrant', 'masterBedroomQuadrant', 'entranceDirection'],
-    },
-    designRationale: { type: 'string' },
+    ...CORE_PROPOSAL_PROPERTIES,
     referenceSpatialGraph: {
       type: 'object',
       properties: {
@@ -221,72 +251,97 @@ export const ARCHITECTURAL_PROPOSAL_SCHEMA: Record<string, unknown> = {
       required: ['detectedCorePosition', 'detectedCorridorAxis', 'relativeRoomCentroids', 'balconyEdges', 'wetCoreClustering'],
     },
   },
-  required: [
-    'preferredTopologyFamily',
-    'preferredArchetype',
-    'buildingMassingShape',
-    'corePlacement',
-    'ventilationStrategy',
-    'noOts',
-    'centerBuildingInEnvelope',
-    'bedroomBalconies',
-    'kitchenStyle',
-    'kitchenSize',
-    'vastuPreferences',
-    'designRationale',
-  ],
+  required: CORE_REQUIRED_FIELDS,
 };
 
-function parseReferenceImageDataUrl(
+export interface ClassifiedReferenceAttachment {
+  readonly imagePart: AIImageInput | null;
+  readonly disposition: ReferenceAttachmentDisposition;
+  readonly imageDigest?: string;
+}
+
+export function classifyReferenceAttachment(
   referenceImage?: MultiSheetApartmentConfig['referenceImage'],
-): AIImageInput | null {
-  if (!referenceImage?.dataUrl) return null;
+): ClassifiedReferenceAttachment {
+  if (!referenceImage?.dataUrl) {
+    return { imagePart: null, disposition: 'NONE' };
+  }
   const trimmed = referenceImage.dataUrl.trim();
+  const declaredMime = (referenceImage.mimeType || '').trim().toLowerCase();
+  if (
+    declaredMime === 'application/pdf' ||
+    declaredMime === 'application/dxf' ||
+    declaredMime === 'image/svg+xml' ||
+    /^data:(?:application\/pdf|application\/dxf|image\/svg\+xml)/i.test(trimmed)
+  ) {
+    return { imagePart: null, disposition: 'ADVISORY_METADATA_ONLY' };
+  }
   const match = trimmed.match(/^data:([^;]+);base64,(.+)$/i);
   if (match && match[1] && match[2]) {
     const mimeType = match[1].trim().toLowerCase();
-    if (!GEMINI_SUPPORTED_IMAGE_MIME_TYPES.has(mimeType)) return null;
-    return { mimeType, data: match[2].replace(/\s+/g, '') };
+    if (!GEMINI_SUPPORTED_IMAGE_MIME_TYPES.has(mimeType)) {
+      return { imagePart: null, disposition: 'UNSUPPORTED_FORMAT' };
+    }
+    const clean = match[2].replace(/\s+/g, '');
+    if (!clean || !/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
+      return { imagePart: null, disposition: 'MALFORMED_DATA' };
+    }
+    return {
+      imagePart: { mimeType, data: clean },
+      disposition: 'VISION_INLINE_ATTACHED',
+      imageDigest: exchangeArtifactDigest(new TextEncoder().encode(clean)).slice(0, 24),
+    };
   }
-  const fallbackMime = (referenceImage.mimeType || '').trim().toLowerCase();
-  if (GEMINI_SUPPORTED_IMAGE_MIME_TYPES.has(fallbackMime) && !trimmed.startsWith('data:')) {
-    return { mimeType: fallbackMime, data: trimmed.replace(/\s+/g, '') };
+  if (GEMINI_SUPPORTED_IMAGE_MIME_TYPES.has(declaredMime) && !trimmed.startsWith('data:')) {
+    const clean = trimmed.replace(/\s+/g, '');
+    if (!clean || !/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
+      return { imagePart: null, disposition: 'MALFORMED_DATA' };
+    }
+    return {
+      imagePart: { mimeType: declaredMime, data: clean },
+      disposition: 'VISION_INLINE_ATTACHED',
+      imageDigest: exchangeArtifactDigest(new TextEncoder().encode(clean)).slice(0, 24),
+    };
   }
-  return null;
+  return { imagePart: null, disposition: 'MALFORMED_DATA' };
 }
 
-function defaultProposalForConfig(
+function detectExplicitPromptShape(prompt: string): BuildingMassingShape | undefined {
+  return /\bcurved\s+crescent|\bcrescent|\bc[- ]?arc\b/.test(prompt) ? 'CURVED_CRESCENT'
+    : /\bserpentine|\bs[- ]?curve|\bundulating\b/.test(prompt) ? 'WAVE_SERPENTINE'
+      : /\brotunda|\bcircular\s+courtyard\b/.test(prompt) ? 'ROTUNDA_COURTYARD'
+        : /\belliptical|\boval\s+tower\b/.test(prompt) ? 'ELLIPTICAL_TOWER'
+          : /\blotus\s+petal|\bradial\s+petal\b/.test(prompt) ? 'LOTUS_PETAL_RADIAL'
+            : /\bbow[- ]?front|\bchamfered\b/.test(prompt) ? 'BOWFRONT_CHAMFERED'
+              : /\btriangular\s+atrium|\btriangular\b/.test(prompt) ? 'TRIANGULAR_ATRIUM'
+                : /\by[- ]?shape|\btriskele\b/.test(prompt) ? 'Y_SHAPE_TRISKELE'
+                  : /\bbutterfly|\bv[- ]?wing\b/.test(prompt) ? 'BUTTERFLY_V_WING'
+                    : /\bhexagonal|\bhoneycomb\b/.test(prompt) ? 'HEXAGONAL_HONEYCOMB'
+                      : /\btrapezoid(?:al)?|\btapered\b/.test(prompt) ? 'TRAPEZOIDAL_TAPERED'
+                        : /\bzigzag|\bsawtooth|\bchevron\b/.test(prompt) ? 'DIAGONAL_ZIGZAG'
+                          : /\bt[- ]?shape|\bt[- ]?wing\b/.test(prompt) ? 'T_SHAPE_SPINE'
+                            : /\bo[- ]?shape|\bperimeter\s+court\b/.test(prompt) ? 'O_SHAPE_PERIMETER_COURT'
+                              : /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
+                                : /\bu[- ]?shape\b|\bu[- ]?courtyard\b/.test(prompt) ? 'U_SHAPE_COURTYARD'
+                                  : /\bl[- ]?shape\b|\bl[- ]?wing\b/.test(prompt) ? 'L_SHAPE_CORNER'
+                                    : /\bcruciform\b|\bplus[- ]?shape\b/.test(prompt) ? 'CRUCIFORM_PLUS'
+                                      : /\bpinwheel\b/.test(prompt) ? 'PINWHEEL_CLUSTER'
+                                        : /\bstepped\b|\boffset\s+block\b/.test(prompt) ? 'STEPPED_OFFSET_BLOCK'
+                                          : undefined;
+}
+
+export function defaultProposalForConfig(
   config: MultiSheetApartmentConfig,
   seed: number,
 ): ArchitecturalProposal {
   const prompt = normalizeBriefSpelling(config.aiPrompt).toLowerCase();
   const explicitlyNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b|\bperimeter\s+only\b/.test(prompt);
   const explicitlyOts = !explicitlyNoOts && /\bopen[- ]to[- ]sky\b|\bots\b|\bcourtyard\b/.test(prompt);
+  const explicitlyNoBalcony = /\bno\s+balcon|\bwithout\s+balcon|\bexclude\s+balcon|\bzero\s+balcon/.test(prompt);
   const properSpaceUtilization = /\bproper\s+space\s+utiliz|\bspace\s+utilization\b|\befficient\s+space\b|\bno\s+(?:empty|wasted|giant)\s+(?:void|gap|strip)/.test(prompt);
   const ventilatedOtsShafts = !explicitlyNoOts && /\bventilated\s+(?:central\s+)?ots\s+shafts?\b|\bots\s+shafts?\b|\bcentral\s+ots\b/.test(prompt);
   const requestsDifferentShape = /\bdifferent\s+(?:building\s+)?(?:shape|shapes|massing|footprint)|\bunique\s+shape|\bnon[- ]?rectang|\bvaried\s+massing\b/.test(prompt);
-  const explicitShape: BuildingMassingShape | undefined =
-    /\bcurved\s+crescent|\bcrescent|\bc[- ]?arc\b/.test(prompt) ? 'CURVED_CRESCENT'
-      : /\bserpentine|\bs[- ]?curve|\bundulating\b/.test(prompt) ? 'WAVE_SERPENTINE'
-        : /\brotunda|\bcircular\s+courtyard\b/.test(prompt) ? 'ROTUNDA_COURTYARD'
-          : /\belliptical|\boval\s+tower\b/.test(prompt) ? 'ELLIPTICAL_TOWER'
-            : /\blotus\s+petal|\bradial\s+petal\b/.test(prompt) ? 'LOTUS_PETAL_RADIAL'
-              : /\bbow[- ]?front|\bchamfered\b/.test(prompt) ? 'BOWFRONT_CHAMFERED'
-                : /\btriangular\s+atrium|\btriangular\b/.test(prompt) ? 'TRIANGULAR_ATRIUM'
-                  : /\by[- ]?shape|\btriskele\b/.test(prompt) ? 'Y_SHAPE_TRISKELE'
-                    : /\bbutterfly|\bv[- ]?wing\b/.test(prompt) ? 'BUTTERFLY_V_WING'
-                      : /\bhexagonal|\bhoneycomb\b/.test(prompt) ? 'HEXAGONAL_HONEYCOMB'
-                        : /\btrapezoid(?:al)?|\btapered\b/.test(prompt) ? 'TRAPEZOIDAL_TAPERED'
-                          : /\bzigzag|\bsawtooth|\bchevron\b/.test(prompt) ? 'DIAGONAL_ZIGZAG'
-                            : /\bt[- ]?shape|\bt[- ]?wing\b/.test(prompt) ? 'T_SHAPE_SPINE'
-                              : /\bo[- ]?shape|\bperimeter\s+court\b/.test(prompt) ? 'O_SHAPE_PERIMETER_COURT'
-                                : /\bh[- ]?shape\b|\bh[- ]?wing\b/.test(prompt) ? 'H_SHAPE_WING'
-                                  : /\bu[- ]?shape\b|\bu[- ]?courtyard\b/.test(prompt) ? 'U_SHAPE_COURTYARD'
-                                    : /\bl[- ]?shape\b|\bl[- ]?wing\b/.test(prompt) ? 'L_SHAPE_CORNER'
-                                      : /\bcruciform\b|\bplus[- ]?shape\b/.test(prompt) ? 'CRUCIFORM_PLUS'
-                                        : /\bpinwheel\b/.test(prompt) ? 'PINWHEEL_CLUSTER'
-                                          : /\bstepped\b|\boffset\s+block\b/.test(prompt) ? 'STEPPED_OFFSET_BLOCK'
-                                            : undefined;
+  const explicitShape = detectExplicitPromptShape(prompt);
   const inferredCategory: PlanCategory | undefined =
     config.planCategory
     ?? (/\bluxury\s+villa|\bbungalow|\bindependent\s+villa\b/.test(prompt) ? 'LUXURY_VILLA_BUNGALOW'
@@ -331,11 +386,13 @@ function defaultProposalForConfig(
     centerBuildingInEnvelope: centerBuilding,
     targetAreaSqFt: config.targetAreaSqFt,
     areaTargetScope: config.areaTargetScope,
-    bedroomBalconies: /\ball\s+bedroom|\bprivate\s+bedroom\s+balcon|\beach\s+having\s+(?:one\s+)?bedroom\s+with\s+a\s+private\s+balcony/.test(prompt)
-      ? 'ALL_BEDROOMS'
-      : /\bmaster.*balcony/.test(prompt)
-        ? 'MASTER_ONLY'
-        : 'ALL_BEDROOMS',
+    bedroomBalconies: explicitlyNoBalcony
+      ? 'NONE'
+      : /\ball\s+bedroom|\bprivate\s+bedroom\s+balcon|\beach\s+having\s+(?:one\s+)?bedroom\s+with\s+a\s+private\s+balcony/.test(prompt)
+        ? 'ALL_BEDROOMS'
+        : /\bmaster.*balcony/.test(prompt)
+          ? 'MASTER_ONLY'
+          : 'ALL_BEDROOMS',
     kitchenStyle: /\bopen\s+kitchen\b/.test(prompt) ? 'OPEN' : 'ENCLOSED',
     kitchenSize: /\blarge[r]?\s+kitchen|\bspacious\s+kitchen/.test(prompt) ? 'LARGER' : 'STANDARD',
     vastuPreferences: {
@@ -356,12 +413,14 @@ function sanitizeProposalWithPromptGuardrails(
   config: MultiSheetApartmentConfig,
   seed: number,
   hasReferenceImage: boolean,
-): ArchitecturalProposal {
+): { proposal: ArchitecturalProposal; rejectedReferenceGuidance: readonly string[] } {
   const base = defaultProposalForConfig(config, seed);
-  if (!raw) return base;
+  if (!raw) return { proposal: base, rejectedReferenceGuidance: [] };
   const prompt = normalizeBriefSpelling(config.aiPrompt).toLowerCase();
   const explicitlyNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b/.test(prompt);
   const explicitlyCentral = /\bcentral\s+lift|\bcentral\s+core/.test(prompt);
+  const explicitlyNoBalcony = /\bno\s+balcon|\bwithout\s+balcon|\bexclude\s+balcon|\bzero\s+balcon/.test(prompt);
+  const rejectedReferenceGuidance: string[] = [];
 
   const family = typeof raw.preferredTopologyFamily === 'string'
     && ['CENTRAL_CORE_SPINE', 'DUAL_WING', 'SIDE_CORE', 'CENTRAL_COURTYARD', 'LINEAR_SINGLE_LOADED', 'PERIMETER_HABITABLE', 'SPLIT_CORE'].includes(raw.preferredTopologyFamily)
@@ -422,76 +481,296 @@ function sanitizeProposalWithPromptGuardrails(
     : {};
 
   let referenceSpatialGraph: ReferenceSpatialGraph | undefined;
-  if (hasReferenceImage && typeof raw.referenceSpatialGraph === 'object' && raw.referenceSpatialGraph !== null) {
-    const rg = raw.referenceSpatialGraph as Record<string, unknown>;
-    const centroids = Array.isArray(rg.relativeRoomCentroids)
-      ? rg.relativeRoomCentroids
-        .filter((item): item is { roomType: string; nx: number; ny: number } => {
-          if (!item || typeof item !== 'object') return false;
+  if (!hasReferenceImage && raw.referenceSpatialGraph !== undefined) {
+    rejectedReferenceGuidance.push('UNATTACHED_IMAGE_SPATIAL_GRAPH_DISCARDED');
+  } else if (hasReferenceImage && raw.referenceSpatialGraph !== undefined) {
+    if (typeof raw.referenceSpatialGraph !== 'object' || raw.referenceSpatialGraph === null || Array.isArray(raw.referenceSpatialGraph)) {
+      rejectedReferenceGuidance.push('MALFORMED_REFERENCE_GRAPH_OBJECT');
+    } else {
+      const rg = raw.referenceSpatialGraph as Record<string, unknown>;
+      const validCore = ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'].includes(String(rg.detectedCorePosition));
+      if (rg.detectedCorePosition !== undefined && !validCore) {
+        rejectedReferenceGuidance.push('INVALID_DETECTED_CORE_POSITION');
+      }
+      const validAxis = ['HORIZONTAL', 'VERTICAL', 'RING'].includes(String(rg.detectedCorridorAxis));
+      if (rg.detectedCorridorAxis !== undefined && !validAxis) {
+        rejectedReferenceGuidance.push('INVALID_DETECTED_CORRIDOR_AXIS');
+      }
+      const validWet = ['SHARED_SHAFT', 'PERIMETER', 'MIXED'].includes(String(rg.wetCoreClustering));
+      if (rg.wetCoreClustering !== undefined && !validWet) {
+        rejectedReferenceGuidance.push('INVALID_WET_CORE_CLUSTERING');
+      }
+
+      const centroids: Array<{ roomType: string; nx: number; ny: number }> = [];
+      if (Array.isArray(rg.relativeRoomCentroids)) {
+        for (const item of rg.relativeRoomCentroids) {
+          if (!item || typeof item !== 'object') {
+            rejectedReferenceGuidance.push('MALFORMED_ROOM_CENTROID');
+            continue;
+          }
           const point = item as Record<string, unknown>;
-          return typeof point.roomType === 'string' && typeof point.nx === 'number' && typeof point.ny === 'number'
-            && Number.isFinite(point.nx) && Number.isFinite(point.ny);
-        })
-        .map(item => ({
-          roomType: item.roomType,
-          nx: Math.max(0, Math.min(1, item.nx)),
-          ny: Math.max(0, Math.min(1, item.ny)),
-        }))
-      : [];
-    const balconyEdges = Array.isArray(rg.balconyEdges)
-      ? rg.balconyEdges.filter((e): e is 'NORTH' | 'SOUTH' | 'EAST' | 'WEST' => ['NORTH', 'SOUTH', 'EAST', 'WEST'].includes(String(e)))
-      : [];
-    referenceSpatialGraph = {
-      detectedCorePosition: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'].includes(String(rg.detectedCorePosition))
-        ? (String(rg.detectedCorePosition) as ReferenceSpatialGraph['detectedCorePosition'])
-        : undefined,
-      detectedCorridorAxis: ['HORIZONTAL', 'VERTICAL', 'RING'].includes(String(rg.detectedCorridorAxis))
-        ? (String(rg.detectedCorridorAxis) as ReferenceSpatialGraph['detectedCorridorAxis'])
-        : undefined,
-      relativeRoomCentroids: centroids,
-      balconyEdges,
-      wetCoreClustering: ['SHARED_SHAFT', 'PERIMETER', 'MIXED'].includes(String(rg.wetCoreClustering))
-        ? (String(rg.wetCoreClustering) as ReferenceSpatialGraph['wetCoreClustering'])
-        : undefined,
-    };
+          const roomType = typeof point.roomType === 'string' ? point.roomType.trim() : '';
+          const nx = point.nx;
+          const ny = point.ny;
+          // Reject malformed or out-of-range [0..1] normalized coordinates rather than clamping invalid numbers.
+          if (
+            !roomType ||
+            typeof nx !== 'number' ||
+            typeof ny !== 'number' ||
+            !Number.isFinite(nx) ||
+            !Number.isFinite(ny) ||
+            nx < 0 ||
+            nx > 1 ||
+            ny < 0 ||
+            ny > 1
+          ) {
+            rejectedReferenceGuidance.push('MALFORMED_ROOM_CENTROID');
+            continue;
+          }
+          centroids.push({ roomType, nx, ny });
+        }
+      }
+
+      const balconyEdges: Array<'NORTH' | 'SOUTH' | 'EAST' | 'WEST'> = [];
+      if (Array.isArray(rg.balconyEdges)) {
+        for (const edge of rg.balconyEdges) {
+          if (['NORTH', 'SOUTH', 'EAST', 'WEST'].includes(String(edge))) {
+            balconyEdges.push(String(edge) as 'NORTH' | 'SOUTH' | 'EAST' | 'WEST');
+          } else {
+            rejectedReferenceGuidance.push('INVALID_BALCONY_EDGE');
+          }
+        }
+      }
+
+      referenceSpatialGraph = {
+        detectedCorePosition: validCore ? (String(rg.detectedCorePosition) as ReferenceSpatialGraph['detectedCorePosition']) : undefined,
+        detectedCorridorAxis: validAxis ? (String(rg.detectedCorridorAxis) as ReferenceSpatialGraph['detectedCorridorAxis']) : undefined,
+        relativeRoomCentroids: centroids,
+        balconyEdges,
+        wetCoreClustering: validWet ? (String(rg.wetCoreClustering) as ReferenceSpatialGraph['wetCoreClustering']) : undefined,
+      };
+    }
   }
 
-  return {
-    preferredTopologyFamily: noOts && family === 'CENTRAL_COURTYARD' ? 'CENTRAL_CORE_SPINE' : family,
-    preferredArchetype: archetype,
-    buildingMassingShape,
-    ...(planCategory ? { planCategory } : {}),
-    ...(maxOtsRatio !== undefined ? { maxOtsRatio } : {}),
-    corePlacement,
-    ventilationStrategy,
-    noOts,
-    centerBuildingInEnvelope,
-    ...(targetAreaSqFt !== undefined ? { targetAreaSqFt } : {}),
-    ...(areaTargetScope !== undefined ? { areaTargetScope } : {}),
-    bedroomBalconies: typeof raw.bedroomBalconies === 'string' && ['ALL_BEDROOMS', 'MASTER_ONLY', 'STANDARD'].includes(raw.bedroomBalconies)
+  const bedroomBalconies: ArchitecturalProposal['bedroomBalconies'] = explicitlyNoBalcony
+    ? 'NONE'
+    : typeof raw.bedroomBalconies === 'string' && ['ALL_BEDROOMS', 'MASTER_ONLY', 'STANDARD', 'NONE'].includes(raw.bedroomBalconies)
       ? (raw.bedroomBalconies as ArchitecturalProposal['bedroomBalconies'])
-      : base.bedroomBalconies,
-    kitchenStyle: typeof raw.kitchenStyle === 'string' && ['OPEN', 'ENCLOSED'].includes(raw.kitchenStyle)
-      ? (raw.kitchenStyle as ArchitecturalProposal['kitchenStyle'])
-      : base.kitchenStyle,
-    kitchenSize: typeof raw.kitchenSize === 'string' && ['LARGER', 'STANDARD'].includes(raw.kitchenSize)
-      ? (raw.kitchenSize as ArchitecturalProposal['kitchenSize'])
-      : base.kitchenSize,
-    vastuPreferences: {
-      kitchenQuadrant: ['SE', 'NW', 'ANY'].includes(String(rawVastu.kitchenQuadrant))
-        ? (String(rawVastu.kitchenQuadrant) as 'SE' | 'NW' | 'ANY')
-        : base.vastuPreferences.kitchenQuadrant,
-      masterBedroomQuadrant: ['SW', 'ANY'].includes(String(rawVastu.masterBedroomQuadrant))
-        ? (String(rawVastu.masterBedroomQuadrant) as 'SW' | 'ANY')
-        : base.vastuPreferences.masterBedroomQuadrant,
-      entranceDirection: ['NORTH', 'EAST', 'WEST', 'SOUTH', 'ANY'].includes(String(rawVastu.entranceDirection))
-        ? (String(rawVastu.entranceDirection) as 'NORTH' | 'EAST' | 'WEST' | 'SOUTH' | 'ANY')
-        : base.vastuPreferences.entranceDirection,
+      : base.bedroomBalconies;
+
+  return {
+    proposal: {
+      preferredTopologyFamily: noOts && family === 'CENTRAL_COURTYARD' ? 'CENTRAL_CORE_SPINE' : family,
+      preferredArchetype: archetype,
+      buildingMassingShape,
+      ...(planCategory ? { planCategory } : {}),
+      ...(maxOtsRatio !== undefined ? { maxOtsRatio } : {}),
+      corePlacement,
+      ventilationStrategy,
+      noOts,
+      centerBuildingInEnvelope,
+      ...(targetAreaSqFt !== undefined ? { targetAreaSqFt } : {}),
+      ...(areaTargetScope !== undefined ? { areaTargetScope } : {}),
+      bedroomBalconies,
+      kitchenStyle: typeof raw.kitchenStyle === 'string' && ['OPEN', 'ENCLOSED'].includes(raw.kitchenStyle)
+        ? (raw.kitchenStyle as ArchitecturalProposal['kitchenStyle'])
+        : base.kitchenStyle,
+      kitchenSize: typeof raw.kitchenSize === 'string' && ['LARGER', 'STANDARD'].includes(raw.kitchenSize)
+        ? (raw.kitchenSize as ArchitecturalProposal['kitchenSize'])
+        : base.kitchenSize,
+      vastuPreferences: {
+        kitchenQuadrant: ['SE', 'NW', 'ANY'].includes(String(rawVastu.kitchenQuadrant))
+          ? (String(rawVastu.kitchenQuadrant) as 'SE' | 'NW' | 'ANY')
+          : base.vastuPreferences.kitchenQuadrant,
+        masterBedroomQuadrant: ['SW', 'ANY'].includes(String(rawVastu.masterBedroomQuadrant))
+          ? (String(rawVastu.masterBedroomQuadrant) as 'SW' | 'ANY')
+          : base.vastuPreferences.masterBedroomQuadrant,
+        entranceDirection: ['NORTH', 'EAST', 'WEST', 'SOUTH', 'ANY'].includes(String(rawVastu.entranceDirection))
+          ? (String(rawVastu.entranceDirection) as 'NORTH' | 'EAST' | 'WEST' | 'SOUTH' | 'ANY')
+          : base.vastuPreferences.entranceDirection,
+      },
+      designRationale: typeof raw.designRationale === 'string' && raw.designRationale.trim()
+        ? raw.designRationale.trim().slice(0, 480)
+        : base.designRationale,
+      ...(referenceSpatialGraph ? { referenceSpatialGraph } : {}),
     },
-    designRationale: typeof raw.designRationale === 'string' && raw.designRationale.trim()
-      ? raw.designRationale.trim()
-      : base.designRationale,
-    ...(referenceSpatialGraph ? { referenceSpatialGraph } : {}),
+    rejectedReferenceGuidance: [...new Set(rejectedReferenceGuidance)],
+  };
+}
+
+/**
+ * Converts the user's configuration, prompt, and validated proposal into an explicit
+ * structured requirements schema with mandatory/preference/suggestion/default/jurisdiction
+ * provenance and explicit conflict detection.
+ */
+export function interpretStructuredBriefRequirements(
+  config: MultiSheetApartmentConfig,
+  proposal: ArchitecturalProposal,
+  interpretationSource: 'GEMINI' | 'DETERMINISTIC',
+): StructuredBriefInterpretation {
+  const prompt = normalizeBriefSpelling(config.aiPrompt ?? '').toLowerCase();
+  const items: StructuredBriefRequirementItem[] = [];
+  const conflicts: BriefRequirementConflict[] = [];
+
+  items.push({
+    key: 'plot_envelope',
+    category: 'MANDATORY',
+    value: `${config.plotWidthMm}x${config.plotDepthMm}mm`,
+    source: 'USER_CONFIG',
+    summary: `Plot ${config.plotWidthMm / 1000}m × ${config.plotDepthMm / 1000}m, road ${config.roadWidthMm / 1000}m (${config.roadAccessSides.join(', ')}).`,
+  });
+
+  items.push({
+    key: 'floors_and_parking',
+    category: 'MANDATORY',
+    value: `${config.verticalStackType}:${config.numTypicalFloors}`,
+    source: 'USER_CONFIG',
+    summary: `${config.verticalStackType} with ${config.numTypicalFloors} residential floor(s), parking mode ${config.parkingMode}.`,
+  });
+
+  const unitSummary = (config.units ?? [])
+    .map(u => `${u.unitIndex}:${u.bhkType}${u.targetCarpetSqFt ? `@${u.targetCarpetSqFt}sqft` : ''}`)
+    .join(', ');
+  items.push({
+    key: 'unit_program',
+    category: 'MANDATORY',
+    value: `${config.flatsPerFloor} flats (${unitSummary})`,
+    source: 'USER_CONFIG',
+    summary: `${config.flatsPerFloor} flat(s)/floor (${unitSummary || 'unspecified'}).`,
+  });
+
+  if (config.setbacksMm) {
+    items.push({
+      key: 'setbacks_mm',
+      category: 'MANDATORY',
+      value: `F:${config.setbacksMm.front},R:${config.setbacksMm.rear},L:${config.setbacksMm.left},Ri:${config.setbacksMm.right}`,
+      source: 'USER_CONFIG',
+      summary: `Setbacks (mm) Front ${config.setbacksMm.front}, Rear ${config.setbacksMm.rear}, Sides ${config.setbacksMm.left}/${config.setbacksMm.right}.`,
+    });
+  }
+
+  // Conflict 1: Sized unit schedule vs conflicting mixed-BHK count in prompt
+  const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(config.aiPrompt));
+  const hasSizedSchedule = Boolean(config.units?.some(u => u.targetCarpetSqFt !== undefined));
+  if (parsedMixed && parsedMixed.length >= 1 && parsedMixed.length !== config.flatsPerFloor && hasSizedSchedule) {
+    conflicts.push({
+      code: 'CONFLICTING_UNIT_COUNT',
+      resolution: 'BLOCKS_PUBLICATION',
+      message: `Prompt specifies ${parsedMixed.length} flats while sized unit schedule has ${config.flatsPerFloor} slots.`,
+    });
+  }
+
+  // Conflict 2: NO OTS vs explicit courtyard / OTS request in same prompt
+  const promptHasNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b/.test(prompt);
+  const promptRequestsCourtyard = /\bcentral\s+(?:open[- ]to[- ]sky\s+)?courtyard\b|\bwith\s+ots\s+courtyard\b/.test(prompt);
+  if (promptHasNoOts && promptRequestsCourtyard) {
+    conflicts.push({
+      code: 'CONFLICTING_OTS_DIRECTIVE',
+      resolution: 'EXPLICIT_BRIEF_PRECEDENCE',
+      message: 'Brief mentions both NO OTS and a central courtyard; negative NO OTS constraint takes precedence.',
+    });
+  }
+  if (promptHasNoOts || proposal.noOts) {
+    items.push({
+      key: 'no_ots',
+      category: promptHasNoOts ? 'MANDATORY' : interpretationSource === 'GEMINI' ? 'AI_SUGGESTION' : 'DEFAULT',
+      value: true,
+      source: promptHasNoOts ? 'USER_PROMPT' : interpretationSource === 'GEMINI' ? 'AI_PROPOSAL' : 'SYSTEM_DEFAULT',
+      summary: 'Exclude internal Open-To-Sky (OTS) shafts; rely on perimeter ventilation.',
+    });
+  }
+
+  // Conflict 3: Locked massing shape vs different prompt shape
+  const promptShape = detectExplicitPromptShape(prompt);
+  if (config.buildingMassingShape && promptShape && promptShape !== config.buildingMassingShape) {
+    conflicts.push({
+      code: 'CONFLICTING_LOCKED_MASSING',
+      resolution: 'USER_CONFIG_PRECEDENCE',
+      message: `Locked massing ${config.buildingMassingShape} overrides prompt shape ${promptShape}.`,
+    });
+  }
+  items.push({
+    key: 'building_massing_shape',
+    category: config.buildingMassingShape || promptShape
+      ? 'MANDATORY'
+      : interpretationSource === 'GEMINI'
+        ? 'AI_SUGGESTION'
+        : 'DEFAULT',
+    value: proposal.buildingMassingShape,
+    source: config.buildingMassingShape
+      ? 'USER_CONFIG'
+      : promptShape
+        ? 'USER_PROMPT'
+        : interpretationSource === 'GEMINI'
+          ? 'AI_PROPOSAL'
+          : 'SYSTEM_DEFAULT',
+    summary: `Selected building massing: ${proposal.buildingMassingShape}.`,
+  });
+
+  // Conflict 4: Balcony negative constraint vs positive balcony request
+  const promptNoBalcony = /\bno\s+balcon|\bwithout\s+balcon|\bexclude\s+balcon|\bzero\s+balcon/.test(prompt);
+  const promptAllBalconies = /\ball\s+bedroom\s+balcon|\bgenerous\s+corner\s+balcon|\bcantilevered\s+balcon/.test(prompt);
+  if (promptNoBalcony && promptAllBalconies) {
+    conflicts.push({
+      code: 'CONFLICTING_BALCONY_DIRECTIVE',
+      resolution: 'EXPLICIT_BRIEF_PRECEDENCE',
+      message: 'Brief contains both no-balcony and balcony-provision clauses; explicit no-balcony exclusion takes precedence.',
+    });
+  }
+  items.push({
+    key: 'balcony_policy',
+    category: promptNoBalcony ? 'MANDATORY' : promptAllBalconies ? 'USER_PREFERENCE' : 'DEFAULT',
+    value: proposal.bedroomBalconies,
+    source: promptNoBalcony || promptAllBalconies ? 'USER_PROMPT' : 'SYSTEM_DEFAULT',
+    summary: `Balcony allocation: ${proposal.bedroomBalconies}.`,
+  });
+
+  if (proposal.centerBuildingInEnvelope) {
+    const promptCentered = Boolean(config.centerBuildingInEnvelope || /\bcenter(?:ed)?\b/.test(prompt));
+    items.push({
+      key: 'center_building',
+      category: promptCentered ? 'MANDATORY' : 'AI_SUGGESTION',
+      value: true,
+      source: config.centerBuildingInEnvelope ? 'USER_CONFIG' : promptCentered ? 'USER_PROMPT' : 'AI_PROPOSAL',
+      summary: 'Center building footprint inside permissible setback envelope.',
+    });
+  }
+
+  // Reference image vs explicit core brief conflict
+  if (
+    proposal.referenceSpatialGraph?.detectedCorePosition &&
+    /\b(?:central\s+lift|central\s+core|lifts?|stairs?|staircases?)\b/.test(prompt) &&
+    proposal.referenceSpatialGraph.detectedCorePosition !== proposal.corePlacement
+  ) {
+    conflicts.push({
+      code: 'REFERENCE_OVERRIDDEN_BY_BRIEF',
+      resolution: 'EXPLICIT_BRIEF_PRECEDENCE',
+      message: `Explicit brief core placement (${proposal.corePlacement}) overrides reference image core hint (${proposal.referenceSpatialGraph.detectedCorePosition}).`,
+    });
+  }
+
+  if (proposal.vastuPreferences.kitchenQuadrant !== 'ANY' || proposal.vastuPreferences.masterBedroomQuadrant !== 'ANY') {
+    items.push({
+      key: 'vastu_orientation',
+      category: /\bvastu|\bsoutheast|\bsouthwest\b/.test(prompt) ? 'USER_PREFERENCE' : 'AI_SUGGESTION',
+      value: `Kitchen:${proposal.vastuPreferences.kitchenQuadrant},Master:${proposal.vastuPreferences.masterBedroomQuadrant}`,
+      source: /\bvastu|\bsoutheast|\bsouthwest\b/.test(prompt) ? 'USER_PROMPT' : 'AI_PROPOSAL',
+      summary: `Vastu zoning preference: Kitchen ${proposal.vastuPreferences.kitchenQuadrant}, Master ${proposal.vastuPreferences.masterBedroomQuadrant}.`,
+    });
+  }
+
+  items.push({
+    key: 'udcpr_jurisdiction_verification',
+    category: 'JURISDICTION_VERIFICATION_REQUIRED',
+    value: config.jurisdiction,
+    source: 'REGULATORY_RULE',
+    summary: `Setback, FSI entitlement, road-width height cap, and fire egress require licensed architect verification under ${config.jurisdiction} / Maharashtra UDCPR 2020.`,
+  });
+
+  return {
+    schemaVersion: 1,
+    items,
+    conflicts,
   };
 }
 
@@ -499,6 +778,54 @@ export interface GenerateArchitecturalProposalOptions {
   readonly config: MultiSheetApartmentConfig;
   readonly seed?: number;
   readonly rejectedTopologyHashes?: readonly string[];
+  readonly signal?: AbortSignal;
+  readonly bypassCache?: boolean;
+}
+
+interface CachedProviderResponse {
+  readonly response: AIResponse;
+  readonly expiresAt: number;
+}
+
+const PROPOSAL_CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_CACHE_ENTRIES_PER_PROVIDER = 64;
+const providerResponseCache = new WeakMap<AIProvider, Map<string, CachedProviderResponse>>();
+const providerInFlightMap = new WeakMap<AIProvider, Map<string, Promise<AIResponse>>>();
+
+export function clearArchitecturalProposalCache(provider?: AIProvider): void {
+  if (provider) {
+    providerResponseCache.delete(provider);
+    providerInFlightMap.delete(provider);
+  }
+}
+
+function buildProposalCacheKey(
+  provider: AIProvider,
+  config: MultiSheetApartmentConfig,
+  seed: number,
+  rejected: readonly string[],
+  imageDigest?: string,
+): string {
+  const payload = JSON.stringify({
+    provider: provider.name,
+    model: provider.getModelInfo().model,
+    plotW: config.plotWidthMm,
+    plotD: config.plotDepthMm,
+    roadW: config.roadWidthMm,
+    stack: config.verticalStackType,
+    floors: config.numTypicalFloors,
+    flats: config.flatsPerFloor,
+    units: (config.units ?? []).map(u => [u.unitIndex, u.bhkType, u.targetCarpetSqFt ?? null]),
+    area: config.targetAreaSqFt ?? null,
+    scope: config.areaTargetScope ?? null,
+    shape: config.buildingMassingShape ?? null,
+    cat: config.planCategory ?? null,
+    prompt: normalizeBriefSpelling(config.aiPrompt ?? '').trim(),
+    seed,
+    rejected: [...rejected].sort(),
+    img: imageDigest ?? null,
+  });
+  return exchangeArtifactDigest(new TextEncoder().encode(payload));
 }
 
 export async function generateArchitecturalProposal(
@@ -508,11 +835,13 @@ export async function generateArchitecturalProposal(
   const startedAt = Date.now();
   const seed = input.seed ?? input.config.generationSeed ?? 1;
   const rejected = input.rejectedTopologyHashes ?? input.config.rejectedTopologyHashes ?? [];
-  const imagePart = parseReferenceImageDataUrl(input.config.referenceImage);
+  const classifiedRef = classifyReferenceAttachment(input.config.referenceImage);
+  const imagePart = classifiedRef.imagePart;
 
   const buildEnriched = (
     proposal: ArchitecturalProposal,
-    telemetry: ArchitecturalProposalTelemetry,
+    telemetryBase: Omit<ArchitecturalProposalTelemetry, 'interpretedRequirements' | 'conflictsDetected'>,
+    rejectedReferenceGuidance: readonly string[] = [],
   ): ArchitecturalProposalResult => {
     const rg = proposal.referenceSpatialGraph;
     // Seed > 1 explores different archetypes and macro building massing shapes monotonically
@@ -551,7 +880,7 @@ export async function generateArchitecturalProposal(
 
     const basePrompt = (input.config.aiPrompt ?? '').trim();
     const synthesizedClauses: string[] = [];
-    if (telemetry.interpretationSource === 'GEMINI' || rg) {
+    if (telemetryBase.interpretationSource === 'GEMINI' || rg) {
       if (
         effectiveMassingShape !== 'PINWHEEL_CLUSTER' &&
         basePrompt.length > 0 &&
@@ -589,8 +918,35 @@ export async function generateArchitecturalProposal(
       ...(rg?.wetCoreClustering === 'SHARED_SHAFT' && !input.config.preferredArchetype
         && effectiveArchetype === 'MIRRORED_WET_CORE_STACK' && proposal.preferredArchetype !== effectiveArchetype ? ['WET_CORE_CLUSTERING'] : []),
     ];
-    const finalTelemetry: ArchitecturalProposalTelemetry = { ...telemetry,
-      referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0, referenceGuidanceApplied };
+
+    const baselineDeterministic = defaultProposalForConfig(input.config, seed);
+    const aiChangedProposal = telemetryBase.interpretationSource === 'GEMINI' && (
+      finalProposal.buildingMassingShape !== baselineDeterministic.buildingMassingShape ||
+      finalProposal.preferredArchetype !== baselineDeterministic.preferredArchetype ||
+      finalProposal.preferredTopologyFamily !== baselineDeterministic.preferredTopologyFamily ||
+      finalProposal.kitchenStyle !== baselineDeterministic.kitchenStyle ||
+      finalProposal.kitchenSize !== baselineDeterministic.kitchenSize ||
+      finalProposal.noOts !== baselineDeterministic.noOts ||
+      synthesizedClauses.length > 0 ||
+      referenceGuidanceApplied.length > 0
+    );
+
+    const interpretedRequirements = interpretStructuredBriefRequirements(
+      input.config,
+      finalProposal,
+      telemetryBase.interpretationSource ?? 'DETERMINISTIC',
+    );
+
+    const finalTelemetry: ArchitecturalProposalTelemetry = {
+      ...telemetryBase,
+      referenceDisposition: classifiedRef.disposition,
+      referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0,
+      referenceGuidanceApplied,
+      ...(rejectedReferenceGuidance.length > 0 ? { referenceGuidanceRejected: rejectedReferenceGuidance } : {}),
+      influencedGeometry: aiChangedProposal,
+      ...(interpretedRequirements.conflicts.length > 0 ? { conflictsDetected: interpretedRequirements.conflicts } : {}),
+      interpretedRequirements,
+    };
     const effectiveAiPrompt = [basePrompt, ...synthesizedClauses].filter(Boolean).join(' ').trim();
 
     const parsedMixed = parseMixedUnitProgram(normalizeBriefSpelling(input.config.aiPrompt));
@@ -608,8 +964,11 @@ export async function generateArchitecturalProposal(
       ? (parsedMixed!.length as 1 | 2 | 3 | 4 | 5 | 6)
       : input.config.flatsPerFloor;
     const resolvedUnits = shouldOverrideMixedUnits
-      ? mixedUnitSpecs(parsedMixed!).map((unit, index) => ({ ...input.config.units?.[index], ...unit,
-        targetCarpetSqFt: input.config.units?.[index]?.targetCarpetSqFt }))
+      ? mixedUnitSpecs(parsedMixed!).map((unit, index) => ({
+          ...input.config.units?.[index],
+          ...unit,
+          targetCarpetSqFt: input.config.units?.[index]?.targetCarpetSqFt,
+        }))
       : input.config.units;
 
     const promptMentionsArea = /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|sft|sq\.?\s*m|sqm|m2|m²)\b/i.test(basePrompt);
@@ -650,7 +1009,10 @@ export async function generateArchitecturalProposal(
     return buildEnriched(proposal, {
       geminiInvoked: false,
       provider: 'deterministic-rule-engine',
+      requestedModel: provider ? provider.getModelInfo().model : 'none',
       modelUsed: 'none',
+      apiCallCount: 0,
+      cacheHit: false,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       fallbackReason: provider ? 'Gemini provider is unavailable.' : 'No Gemini provider is configured.',
@@ -660,65 +1022,129 @@ export async function generateArchitecturalProposal(
     });
   }
 
+  const requestedModel = provider.getModelInfo().model;
   const unitSummary = (input.config.units ?? [])
-    .map(u => `Flat ${u.unitIndex}: ${u.bhkType}${u.targetCarpetSqFt ? ` (${u.targetCarpetSqFt} sq.ft.)` : ''}`)
-    .join(', ');
+    .map(u => `F${u.unitIndex}:${u.bhkType}${u.targetCarpetSqFt ? `@${u.targetCarpetSqFt}sqft` : ''}`)
+    .join(',');
 
+  // Compact structured context lines to minimize prompt tokens while preserving full architectural fidelity.
+  const boundedPrompt = normalizeBriefSpelling(
+    (input.config.aiPrompt ?? 'Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.').slice(0, 4000),
+  );
   const userPromptLines = [
-    `Site Plot: ${(input.config.plotWidthMm / 1000).toFixed(1)}m x ${(input.config.plotDepthMm / 1000).toFixed(1)}m, Road Width: ${(input.config.roadWidthMm / 1000).toFixed(1)}m.`,
-    `Building Stack: ${input.config.verticalStackType}, Typical Residential Floors: ${input.config.numTypicalFloors}, Flats/Floor: ${input.config.flatsPerFloor}.`,
-    `Unit Mix: ${unitSummary || 'Default 2BHK'}.`,
-    `Generation Seed: ${seed}. Rejected Prior Topology Hashes: ${rejected.length > 0 ? rejected.join(', ') : 'None (first generation)'}.`,
-    input.config.targetAreaSqFt ? `Requested Target Area: ${input.config.targetAreaSqFt} sq. ft. (Scope: ${input.config.areaTargetScope ?? 'UNSPECIFIED'}).` : '',
-    `User Architectural Brief: "${normalizeBriefSpelling(input.config.aiPrompt ?? 'Modern compliant residential apartment tower with daylight, natural ventilation, and Vastu balance.')}"`,
-    input.config.buildingMassingShape
-      ? `Locked buildingMassingShape requested by user: ${input.config.buildingMassingShape} (preserve this exact massing shape).`
-      : `Available buildingMassingShape options: ${BUILDING_MASSING_SHAPES.join(', ')}. Prefer non-rectangular articulated massing (H_SHAPE_WING, U_SHAPE_COURTYARD, L_SHAPE_CORNER, CRUCIFORM_PLUS, PINWHEEL_CLUSTER, STEPPED_OFFSET_BLOCK) when distinct or varied building geometry is requested, and keep maxOtsRatio <= 0.12 unless a large central courtyard is explicitly mandated.`,
+    `Plot:${(input.config.plotWidthMm / 1000).toFixed(1)}x${(input.config.plotDepthMm / 1000).toFixed(1)}m Road:${(input.config.roadWidthMm / 1000).toFixed(1)}m(${input.config.roadAccessSides.join(',')})`,
+    `Stack:${input.config.verticalStackType} Floors:${input.config.numTypicalFloors} Flats/Floor:${input.config.flatsPerFloor} Mix:${unitSummary || '2BHK'}`,
+    `Seed:${seed}${rejected.length > 0 ? ` Excluded:${rejected.slice(0, 8).join(',')}` : ''}`,
+    input.config.targetAreaSqFt ? `TargetArea:${input.config.targetAreaSqFt}sqft(${input.config.areaTargetScope ?? 'UNSPECIFIED'})` : '',
+    input.config.buildingMassingShape ? `LockedShape:${input.config.buildingMassingShape}` : '',
+    `Brief:"${boundedPrompt}"`,
     imagePart
-      ? 'A reference sketch or plan image is attached. Extract referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering) to guide spatial zoning.'
+      ? 'Reference image attached: populate referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering).'
       : '',
-    seed > 1
-      ? `IMPORTANT REGENERATION DIRECTIVE: This is variant #${seed}. Propose a genuinely different buildingMassingShape, preferredArchetype, and spatial organization than prior rejected hashes.`
-      : '',
+    seed > 1 ? `Variant #${seed}: choose distinct archetype/massing from excluded layouts.` : '',
   ].filter(Boolean).join('\n');
 
+  const cacheKey = buildProposalCacheKey(provider, input.config, seed, rejected, classifiedRef.imageDigest);
+  let cacheStore = providerResponseCache.get(provider);
+  if (!cacheStore) {
+    cacheStore = new Map();
+    providerResponseCache.set(provider, cacheStore);
+  }
+  let inFlightStore = providerInFlightMap.get(provider);
+  if (!inFlightStore) {
+    inFlightStore = new Map();
+    providerInFlightMap.set(provider, inFlightStore);
+  }
+
   try {
-    const response = await provider.complete({
-      taskType: AITaskType.RequirementExtraction,
-      systemPrompt:
-        'You are a Principal Indian Residential Architect (NBC 2016 / UDCPR / RERA specialist). ' +
-        'Translate the user brief, site envelope, and optional reference plan image into a structured ArchitecturalProposal JSON object. ' +
-        'Strictly honor hard directives such as NO OTS, CENTER BUILDING, core placement, and Vastu rules.',
-      userPrompt: userPromptLines,
-      ...(imagePart ? { images: [imagePart] } : {}),
-      responseFormat: 'json',
-      responseSchema: ARCHITECTURAL_PROPOSAL_SCHEMA,
-      responseSchemaName: 'architectural_proposal',
-      temperature: seed > 1 ? 0.45 : 0.15,
-      maxTokens: 4096,
-    });
+    let response: AIResponse;
+    let cacheHit = false;
+    const cached = !input.bypassCache ? cacheStore.get(cacheKey) : undefined;
+    if (cached && cached.expiresAt > Date.now()) {
+      response = cached.response;
+      cacheHit = true;
+    } else {
+      let pending = !input.bypassCache ? inFlightStore.get(cacheKey) : undefined;
+      if (!pending) {
+        const requestPromise = provider.complete({
+          taskType: AITaskType.RequirementExtraction,
+          systemPrompt:
+            'Principal Indian Residential Architect (NBC 2016 / UDCPR). Convert brief, site, and optional reference image into ArchitecturalProposal JSON. ' +
+            'Strictly obey mandatory user rules (NO OTS, no balconies, center building, locked shape, core placement). Keep designRationale <= 180 chars.',
+          userPrompt: userPromptLines,
+          ...(imagePart ? { images: [imagePart] } : {}),
+          responseFormat: 'json',
+          responseSchema: imagePart ? ARCHITECTURAL_PROPOSAL_SCHEMA : ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA,
+          responseSchemaName: 'architectural_proposal',
+          temperature: seed > 1 ? 0.35 : 0.1,
+          maxTokens: imagePart ? 1100 : 750,
+          thinkingBudget: 0,
+          signal: input.signal,
+        });
+        if (!input.bypassCache) {
+          inFlightStore.set(cacheKey, requestPromise);
+        }
+        pending = requestPromise;
+      } else {
+        cacheHit = true;
+      }
+      try {
+        response = await pending;
+      } finally {
+        inFlightStore.delete(cacheKey);
+      }
+      if (!input.bypassCache && response.parsed && Object.keys(response.parsed).length > 0) {
+        if (cacheStore.size >= MAX_CACHE_ENTRIES_PER_PROVIDER) {
+          const oldestKey = cacheStore.keys().next().value;
+          if (oldestKey !== undefined) cacheStore.delete(oldestKey);
+        }
+        cacheStore.set(cacheKey, { response, expiresAt: Date.now() + PROPOSAL_CACHE_TTL_MS });
+      }
+    }
 
     if (!response.parsed || Object.keys(response.parsed).length === 0) {
       throw new Error('Gemini returned no structured architectural proposal.');
     }
-    const proposal = sanitizeProposalWithPromptGuardrails(response.parsed, input.config, seed, Boolean(imagePart));
-    return buildEnriched(proposal, {
-      geminiInvoked: true,
-      provider: 'google-genai',
-      modelUsed: response.model,
-      latencyMs: Date.now() - startedAt,
-      fallbackTriggered: response.model !== provider.getModelInfo().model,
-      ...(response.fallbackFromErrorCode ? { providerErrorCode: response.fallbackFromErrorCode } : {}),
-      interpretationSource: 'GEMINI',
-      referenceImageUsedForGeometry: false,
-    });
+    const { proposal, rejectedReferenceGuidance } = sanitizeProposalWithPromptGuardrails(
+      response.parsed,
+      input.config,
+      seed,
+      Boolean(imagePart),
+    );
+    return buildEnriched(
+      proposal,
+      {
+        geminiInvoked: !cacheHit || true,
+        provider: 'google-genai',
+        requestedModel,
+        modelUsed: response.model,
+        ...(response.attemptedModels ? { attemptedModels: response.attemptedModels } : {}),
+        apiCallCount: cacheHit ? 0 : (response.apiCallCount ?? 1),
+        cacheHit,
+        tokenUsage: response.usage,
+        latencyMs: Date.now() - startedAt,
+        fallbackTriggered: response.model !== requestedModel,
+        ...(response.fallbackFromErrorCode
+          ? {
+              providerErrorCode: response.fallbackFromErrorCode,
+              fallbackReason: `Primary model ${requestedModel} returned ${response.fallbackFromErrorCode}; completed on fallback ${response.model}.`,
+            }
+          : {}),
+        interpretationSource: 'GEMINI',
+        referenceImageUsedForGeometry: false,
+      },
+      rejectedReferenceGuidance,
+    );
   } catch (error) {
     const proposal = defaultProposalForConfig(input.config, seed);
     const providerErrorCode = geminiErrorCode(error);
     return buildEnriched(proposal, {
       geminiInvoked: true,
       provider: 'deterministic-rule-engine',
-      modelUsed: provider.getModelInfo().model,
+      requestedModel,
+      modelUsed: requestedModel,
+      apiCallCount: 1,
+      cacheHit: false,
       latencyMs: Date.now() - startedAt,
       fallbackTriggered: true,
       interpretationSource: 'DETERMINISTIC',

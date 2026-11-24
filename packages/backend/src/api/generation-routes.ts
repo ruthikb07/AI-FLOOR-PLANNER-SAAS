@@ -11,7 +11,7 @@ import {
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
 import { randomUUID } from 'node:crypto';
-import { validateRegulatoryContextSchema, type Building, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { validateRegulatoryContextSchema, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
 import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
 import { isRecord } from './http-input.js';
 import {
@@ -109,6 +109,7 @@ export async function handleProjectGeneration(
     }
   }
 
+  const routeStartedAt = Date.now();
   let proposalResult = await generateArchitecturalProposal(deps.gemini, {
     config: parsed.config,
     seed: parsed.seed,
@@ -116,6 +117,7 @@ export async function handleProjectGeneration(
   });
 
   try {
+    const solverStartedAt = Date.now();
     let pipelineResult = await executeAuditedPlanningPipeline(proposalResult.enrichedConfig);
     let complianceReport = evaluateArchitecturalComplianceScore(pipelineResult.building, {
       config: proposalResult.enrichedConfig,
@@ -133,9 +135,14 @@ export async function handleProjectGeneration(
           const telemetry = {
             ...rules.telemetry,
             geminiInvoked: true,
+            requestedModel: proposalResult.telemetry.requestedModel,
             modelUsed: proposalResult.telemetry.modelUsed,
+            attemptedModels: proposalResult.telemetry.attemptedModels,
+            apiCallCount: proposalResult.telemetry.apiCallCount,
+            tokenUsage: proposalResult.telemetry.tokenUsage,
             providerErrorCode: proposalResult.telemetry.providerErrorCode,
             latencyMs: proposalResult.telemetry.latencyMs + rules.telemetry.latencyMs,
+            influencedGeometry: false,
             fallbackReason: `Gemini guidance did not pass the required plan checks (${blockers[0]!.code}). The geometry engine used the original brief.`,
           };
           const candidateCompliance = evaluateArchitecturalComplianceScore(candidate.building, { config: rules.enrichedConfig });
@@ -148,61 +155,65 @@ export async function handleProjectGeneration(
         // Keep the first failed audit if the same brief also fails the deterministic solve.
       }
     }
-    // If compliance < 85 after deterministic solver loop and live AI provider is configured,
-    // escalate up to 2 corrective re-proposals (deterministic mode already exhausted its retry loop).
-    const maxOuterRetries = deps.gemini && proposalResult.telemetry.interpretationSource === 'GEMINI' ? 2 : 0;
-    const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
-    const rememberLayout = (brief: Building['metadata']['generationBrief']) => {
-      if (brief?.topologyHash) attemptedLayouts.add(brief.topologyHash);
-      if (brief?.physicalLayoutHash) attemptedLayouts.add(brief.physicalLayoutHash);
-    };
-    for (let retryIdx = 1; (blockers.length || !complianceReport.passed) && retryIdx <= maxOuterRetries; retryIdx++) {
+
+    // Token-free bounded deterministic recovery: only run when mandatory blockers remain AND massing is unlocked.
+    // Never re-invokes the external AI provider or re-transmits reference images.
+    if (blockers.length > 0 && !parsed.config.buildingMassingShape && !parsed.config.lockedMassingShape && !parsed.config.requireAreaTargets) {
       try {
         const prior = pipelineResult.building.metadata.generationBrief;
-        rememberLayout(prior);
+        const attemptedLayouts = new Set(parsed.rejectedTopologyHashes);
+        if (prior?.topologyHash) attemptedLayouts.add(prior.topologyHash);
+        if (prior?.physicalLayoutHash) attemptedLayouts.add(prior.physicalLayoutHash);
         const priorShape = prior?.buildingMassingShape;
-        const updatedRejectedShapes =
-          !parsed.config.buildingMassingShape && priorShape
-            ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
-            : parsed.config.rejectedShapeIds;
-        const correctiveHint = complianceReport.violations
-          .slice(0, 3)
-          .map(v => (typeof v === 'string' ? v : v.message))
-          .join(' ');
-        const retryProposal = await generateArchitecturalProposal(deps.gemini, {
+        const updatedRejectedShapes = priorShape
+          ? [...new Set([...(parsed.config.rejectedShapeIds ?? []), priorShape])]
+          : parsed.config.rejectedShapeIds;
+        const retryProposal = await generateArchitecturalProposal(null, {
           config: {
             ...parsed.config,
             ...(updatedRejectedShapes ? { rejectedShapeIds: updatedRejectedShapes as typeof parsed.config.rejectedShapeIds } : {}),
-            aiPrompt: `${parsed.config.aiPrompt ?? ''} [COMPLIANCE CORRECTION ${retryIdx}: ${correctiveHint}]`.trim(),
           },
-          seed: parsed.seed + retryIdx * 12,
+          seed: parsed.seed + 12,
           rejectedTopologyHashes: [...attemptedLayouts],
         });
         const retryPipeline = await executeAuditedPlanningPipeline(retryProposal.enrichedConfig);
-        rememberLayout(retryPipeline.building.metadata.generationBrief);
-        const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
-          config: retryProposal.enrichedConfig,
-        });
         const retryBlockers = generationBlockingFindings(retryPipeline.building, retryPipeline.validationReport);
-        const retryIsBetter = retryBlockers.length === 0 && (blockers.length > 0 ||
-          retryCompliance.redConflictCount < complianceReport.redConflictCount ||
-          (retryCompliance.redConflictCount === complianceReport.redConflictCount &&
-            retryCompliance.score >= complianceReport.score));
-        if (retryIsBetter) {
-          proposalResult = retryProposal;
+        if (retryBlockers.length === 0) {
+          const retryCompliance = evaluateArchitecturalComplianceScore(retryPipeline.building, {
+            config: retryProposal.enrichedConfig,
+          });
+          proposalResult = {
+            ...retryProposal,
+            telemetry: {
+              ...proposalResult.telemetry,
+              interpretationSource: 'DETERMINISTIC',
+              fallbackTriggered: true,
+              influencedGeometry: false,
+              fallbackReason: proposalResult.telemetry.fallbackReason
+                ?? `Initial seed failed mandatory checks (${blockers[0]!.code}); recovered via deterministic variant search.`,
+            },
+          };
           pipelineResult = retryPipeline;
           complianceReport = retryCompliance;
-          blockers = retryBlockers;
+          blockers = [];
         }
       } catch {
-        // A failed optional re-proposal cannot discard the first audited result.
+        // Retain original blockers if deterministic variant search cannot recover.
       }
     }
+
+    const solverLatencyMs = Date.now() - solverStartedAt;
+    const totalLatencyMs = Date.now() - routeStartedAt;
+    const enrichedTelemetry = {
+      ...proposalResult.telemetry,
+      solverLatencyMs,
+      totalLatencyMs,
+    };
 
     if (blockers.length) {
       return {
         status: 422,
-        json: { generationRunId: parsed.generationRunId, telemetry: proposalResult.telemetry, error: {
+        json: { generationRunId: parsed.generationRunId, telemetry: enrichedTelemetry, error: {
           code: 'GENERATION_CHECKS_FAILED',
           message: `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
           findings: blockers.slice(0, 20),
@@ -218,7 +229,7 @@ export async function handleProjectGeneration(
         generationRunId: parsed.generationRunId,
         generationBrief: {
           ...pipelineResult.building.metadata.generationBrief,
-          aiTelemetry: proposalResult.telemetry,
+          aiTelemetry: enrichedTelemetry,
         },
       },
     };
@@ -231,7 +242,7 @@ export async function handleProjectGeneration(
         building: enrichedBuilding,
         complianceReport,
         proposal: proposalResult.proposal,
-        telemetry: proposalResult.telemetry,
+        telemetry: enrichedTelemetry,
       },
     };
   } catch (error) {

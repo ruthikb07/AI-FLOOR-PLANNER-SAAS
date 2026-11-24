@@ -40,12 +40,32 @@ function conceptId(building: Building): string {
 function conceptFacts(building: Building) {
   const floor = representativeFloor(building);
   const telemetry = building.metadata.generationBrief?.aiTelemetry;
+  const modeLabel = telemetry?.interpretationSource === 'GEMINI'
+    ? `Live AI · Gemini (${telemetry.modelUsed ?? 'model unavailable'})${telemetry.fallbackTriggered ? ' · fallback model' : ''}${telemetry.cacheHit ? ' · cached' : ''}`
+    : telemetry?.geminiInvoked
+      ? `Deterministic fallback · ${telemetry.fallbackReason ?? 'Provider unavailable'}`
+      : telemetry?.fallbackReason ?? 'Deterministic rules';
   return [
     ...(telemetry?.interpretationSource ? [{
       name: 'Brief interpretation',
-      value: telemetry.interpretationSource === 'GEMINI'
-        ? `Gemini (${telemetry.modelUsed ?? 'model unavailable'})${telemetry.fallbackTriggered ? ' · fallback model' : ''}`
-        : telemetry.fallbackReason ?? 'Deterministic rules',
+      value: modeLabel,
+    }] : []),
+    ...(telemetry?.interpretationSource === 'GEMINI' && telemetry.influencedGeometry !== undefined ? [{
+      name: 'Geometry provenance',
+      value: telemetry.influencedGeometry
+        ? 'AI-assisted deterministic geometry (accepted)'
+        : 'Deterministic baseline geometry (accepted)',
+    }] : []),
+    ...(telemetry?.tokenUsage && telemetry.tokenUsage.totalTokens > 0 ? [{
+      name: 'AI tokens & latency',
+      value: `${telemetry.tokenUsage.totalTokens} tokens · AI ${telemetry.latencyMs ?? 0} ms${telemetry.solverLatencyMs ? ` · Solver ${telemetry.solverLatencyMs} ms` : ''}`,
+    }] : telemetry?.solverLatencyMs ? [{
+      name: 'Solver latency',
+      value: `${telemetry.solverLatencyMs} ms`,
+    }] : []),
+    ...(telemetry?.conflictsDetected?.length ? [{
+      name: 'Brief advisories',
+      value: telemetry.conflictsDetected.map(c => c.message).join(' '),
     }] : []),
     { name: 'Levels', value: building.floors.length.toString() },
     { name: 'Units on shown floor', value: floor?.apartmentUnits?.length.toString() ?? '—' },

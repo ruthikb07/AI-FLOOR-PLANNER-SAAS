@@ -1,12 +1,18 @@
-import { executeAuditedPlanningPipeline } from '@ai-floor-planner/planning-engine';
+import { executeAuditedPlanningPipeline, PipelineProgressEmitter } from '@ai-floor-planner/planning-engine';
 import type { PlanningRequest, PlanningResult } from './argon-generation';
 import { requireAcceptedGeneration } from '@ai-floor-planner/constraint-engine';
 
 type BackendGeneration = { result: PlanningResult } | { fallbackReason: string; providerErrorCode: string };
 const BACKEND_GENERATION_TIMEOUT_MS = 120_000;
 
-async function tryBackendHybridGeneration(request: PlanningRequest): Promise<BackendGeneration> {
+async function tryBackendHybridGeneration(
+  request: PlanningRequest,
+  onProgress: (progress: Parameters<NonNullable<Parameters<typeof executeAuditedPlanningPipeline>[1]>>[0]) => void,
+): Promise<BackendGeneration> {
   const { config, generationRunId } = request;
+  const emitter = new PipelineProgressEmitter();
+  emitter.subscribe(onProgress);
+  emitter.startStage('PLOT_BOUNDARY_SOLVE');
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BACKEND_GENERATION_TIMEOUT_MS);
   try {
@@ -38,8 +44,22 @@ async function tryBackendHybridGeneration(request: PlanningRequest): Promise<Bac
       throw new Error('The planning service returned an invalid or mismatched building. Try again.');
     }
     requireAcceptedGeneration(payload);
-    // Audit the received canonical model as well as the claimed report.
-    return { result: await executeAuditedPlanningPipeline(payload.building) };
+    // Audit the received canonical model as well as the claimed report, streaming real audit stages.
+    const verified = await executeAuditedPlanningPipeline(payload.building, onProgress);
+    return {
+      result: {
+        ...verified,
+        building: {
+          ...verified.building,
+          metadata: {
+            ...verified.building.metadata,
+            ...(payload.building.metadata?.generationBrief
+              ? { generationBrief: payload.building.metadata.generationBrief }
+              : {}),
+          },
+        },
+      },
+    };
   } finally {
     clearTimeout(timeout);
   }
@@ -47,17 +67,18 @@ async function tryBackendHybridGeneration(request: PlanningRequest): Promise<Bac
 
 self.onmessage = async (event: MessageEvent<PlanningRequest>) => {
   const { generationRunId, config } = event.data;
+  const postProgress = (progress: Parameters<NonNullable<Parameters<typeof executeAuditedPlanningPipeline>[1]>>[0]) => {
+    self.postMessage({ type: 'progress', generationRunId, progress });
+  };
   try {
-    const backend = await tryBackendHybridGeneration(event.data);
+    const backend = await tryBackendHybridGeneration(event.data, postProgress);
     const result = 'result' in backend ? backend.result
       : await executeAuditedPlanningPipeline({ ...config,
         aiTelemetryOverride: { geminiInvoked: false, provider: 'deterministic-rule-engine',
           interpretationSource: 'DETERMINISTIC', fallbackTriggered: true,
           fallbackReason: backend.fallbackReason, providerErrorCode: backend.providerErrorCode,
           referenceImageUsedForGeometry: false },
-      }, progress => {
-        self.postMessage({ type: 'progress', generationRunId, progress });
-      });
+      }, postProgress);
     requireAcceptedGeneration(result);
     const building = { ...result.building, metadata: { ...result.building.metadata, generationRunId } };
     self.postMessage({ type: 'complete', generationRunId, result: { ...result, building } });

@@ -56,6 +56,7 @@ export function extractHttpStatus(error: unknown): number | null {
 export function geminiErrorCode(error: unknown): string {
   const status = extractHttpStatus(error);
   if (status !== null) return `HTTP_${status}`;
+  if (error instanceof Error && /cancel/i.test(`${error.name} ${error.message}`)) return 'CANCELLED';
   if (error instanceof Error && /abort|timeout|timed out/i.test(`${error.name} ${error.message}`)) return 'TIMEOUT';
   return 'RESPONSE_OR_TRANSPORT_ERROR';
 }
@@ -192,30 +193,40 @@ export class GeminiProvider extends BaseAIProvider {
     const rawSchema = request.responseSchema ?? (extractsRequirements ? REQUIREMENT_RESPONSE_SCHEMA : undefined);
     const responseSchema = wantsJson && rawSchema ? cleanGeminiSchema(rawSchema) : undefined;
     const parts = buildGeminiParts(request);
-    const payload = {
+    const buildPayload = (includeThinkingBudget: boolean) => ({
       systemInstruction: { parts: [{ text: request.systemPrompt }] },
       contents: [{ role: 'user', parts }],
       generationConfig: {
+        ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
         ...(request.maxTokens ? { maxOutputTokens: request.maxTokens } : {}),
+        ...(includeThinkingBudget && typeof request.thinkingBudget === 'number'
+          ? { thinkingConfig: { thinkingBudget: request.thinkingBudget } }
+          : {}),
         ...(wantsJson ? {
           responseMimeType: 'application/json',
           ...(responseSchema ? { responseSchema } : {}),
         } : {}),
       },
-    };
+    });
 
     const primaryModel = this.options.model;
     const modelsToExecute: string[] = [primaryModel, ...this.options.fallbackModels];
 
     let lastError: unknown;
     let fallbackFromErrorCode: string | undefined;
+    const attemptedModels: string[] = [];
+    let apiCallCount = 0;
 
     for (let mIdx = 0; mIdx < modelsToExecute.length; mIdx++) {
       const currentModel = modelsToExecute[mIdx]!;
       const hasNextFallback = mIdx < modelsToExecute.length - 1;
       let nextDelayMs: number | undefined;
+      let allowThinkingConfig = typeof request.thinkingBudget === 'number';
 
       for (let attempt = 0; attempt <= this.retryPolicy.maxRetries; attempt++) {
+        if (request.signal?.aborted) {
+          throw new Error('Provider request cancelled.');
+        }
         if (attempt > 0) {
           const delayMs = nextDelayMs ?? calculateDelayWithJitter(attempt, this.retryPolicy);
           console.warn(
@@ -228,8 +239,10 @@ export class GeminiProvider extends BaseAIProvider {
         try {
           const endpoint = `${this.endpointBase}/${encodeURIComponent(currentModel)}:generateContent`;
           const perAttemptTimeout = hasNextFallback
-            ? Math.min(this.options.timeoutMs, 5_000)
+            ? Math.min(this.options.timeoutMs, 5_500)
             : this.options.timeoutMs;
+          apiCallCount++;
+          if (!attemptedModels.includes(currentModel)) attemptedModels.push(currentModel);
           const result = await postJson(
             {
               apiKey: this.options.apiKey,
@@ -237,9 +250,10 @@ export class GeminiProvider extends BaseAIProvider {
               endpoint,
               timeoutMs: perAttemptTimeout,
               fetchImplementation: this.options.fetchImplementation,
+              signal: request.signal,
             },
             { 'x-goog-api-key': this.options.apiKey },
-            payload,
+            buildPayload(allowThinkingConfig),
           );
           const content = this.extractOutputText(result.body);
           const parsed = wantsJson ? parseJsonContent(content) : undefined;
@@ -247,14 +261,37 @@ export class GeminiProvider extends BaseAIProvider {
           const completed = response(
             content,
             parsed,
-            usage(rawUsage.promptTokenCount, rawUsage.candidatesTokenCount, rawUsage.totalTokenCount),
+            usage(
+              rawUsage.promptTokenCount,
+              rawUsage.candidatesTokenCount,
+              rawUsage.totalTokenCount,
+              rawUsage.thoughtsTokenCount,
+            ),
             currentModel,
             result.latencyMs,
           );
-          return fallbackFromErrorCode ? { ...completed, fallbackFromErrorCode } : completed;
+          return {
+            ...completed,
+            ...(fallbackFromErrorCode ? { fallbackFromErrorCode } : {}),
+            attemptedModels,
+            apiCallCount,
+          };
         } catch (err) {
           lastError = err;
+          if (request.signal?.aborted) throw err;
           const status = extractHttpStatus(err);
+
+          // If a model rejects thinkingConfig with HTTP 400, strip thinkingConfig and retry once immediately on the same model.
+          if (
+            status === 400 &&
+            allowThinkingConfig &&
+            err instanceof Error &&
+            /thinkingConfig|thinking_config|thinkingBudget/i.test(err.message)
+          ) {
+            allowThinkingConfig = false;
+            attempt--;
+            continue;
+          }
 
           // 1. If auth error (401, 403), throw immediately - no retry, no fallback
           if (isAuthHttpError(status)) {
@@ -283,8 +320,9 @@ export class GeminiProvider extends BaseAIProvider {
             throw err;
           }
 
+          const isQuotaOrRateLimit = status === 429;
           const isServiceUnavailable = status === 503 || (err instanceof Error && /503|UNAVAILABLE|high demand|overloaded/i.test(err.message));
-          const maxRetriesForError = (isTimeout || isSafetyOrParseError) && hasNextFallback
+          const maxRetriesForError = (isTimeout || isSafetyOrParseError || isQuotaOrRateLimit) && hasNextFallback
             ? 0
             : isServiceUnavailable && hasNextFallback
               ? Math.min(this.retryPolicy.maxRetries, this.options.maxRetriesOn503 ?? 1)
@@ -292,7 +330,7 @@ export class GeminiProvider extends BaseAIProvider {
 
           if (attempt >= maxRetriesForError) {
             console.warn(
-              `[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (status ${status ?? 'parse/safety'}).`,
+              `[GeminiProvider] Retries exhausted for model "${currentModel}" on transient error (${geminiErrorCode(err)}).`,
             );
             break; // move to next fallback model if available
           }
