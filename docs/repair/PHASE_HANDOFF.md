@@ -100,3 +100,32 @@ The browser hotfix is `92210c1830251f1fcf1a3119735603aa0e76bcd3` on `repair/stab
 The production build, typecheck and lint passed. Chromium passed all 14 production tests and the separate five-cycle WebGL test. The package suites passed 1,737 tests across three runs, with eight pre-existing opt-in skips. The separately run planning benchmark completed all 288 cases in 7 minutes 52 seconds. Both integration suites passed, totaling 52 tests. Native Windows AutoCAD and Blender fixtures passed.
 
 Phase 4A is **CONDITIONAL**. The hotfix browser gates are closed. Cota and OpenBIMStudio source and license review and native exchange acceptance remain open. See [the browser hotfix verification](PHASE35_WEBGL_BROWSER_HOTFIX.md) for the exact commands, renderer measurements, and evidence scope.
+
+## Phase 4A handoff (AI pipeline optimization & Cota 2D CAD integration)
+
+Phase 4A branched from `75716ddcfb52142314ed8d2edd343607a15c67da` onto `feat/phase4a-ai-audit-and-cota-cad`.
+
+### Delivered scope
+
+1. **AI Pipeline, Security & Token/Latency Optimization:**
+   - Verified server-only credential handling (`GEMINI_API_KEY` / `GOOGLE_API_KEY` / `GEMINI_FALLBACK_MODELS`), `redactSecret` error scrubbing, sanitized `/api/v1/health` reporting (`OpenAIProvider` flagged `IMPLEMENTED_NOT_WIRED_IN_RUNTIME`), compact text vs vision JSON schemas, `thinkingBudget: 0`, 0-retry `HTTP 429` cascade, per-provider LRU + in-flight deduplication cache, structured requirement provenance, and conflict detection.
+   - Live Gemini multimodal PNG + mixed-BHK verification reduced AI interpretation latency from `29,647 ms` (text-only baseline) to **`10,746 ms`** (`1,701` total tokens, `0` thought tokens, `1` logical proposal call; `0 ms` on cached repeat) while proving `influencedGeometry: true` (`physicalLayoutHash` divergence).
+2. **Cota v2.49.3 Provenance Audit, Pure-TS 2D CAD Kernel & Canonical DXF Adapter:**
+   - Audited `cota-main.zip` (`12,787,740` bytes, SHA-256 `D6F145C95037573DDFBE84121F556DCD531E20E9708DD1BC2E25C48D54CEF60F`, Apache-2.0 by Christian Orengia), added root `NOTICE`, excluded incompatible React 19 / Three r169 / LGPL-2.1 `occt-wasm` / GPL-3.0 `LibreDWG` dependencies, and retained RH Planner's verified `AC1032` `CadExportService`.
+   - Implemented `cota-cad-kernel.ts` & `canonical-cad-adapter.ts` (`CanonicalDxfExchangeAdapter`), passing straight + curved (`ROTUNDA_COURTYARD`) round-trips with `0` lost IDs, `0` changed hosts, `<= 0.001 mm` deviation, `parseUploadedCadFile` DXF readback, `acad-ts` binary DWG readback, and native Windows AutoCAD 2021 `accoreconsole.exe` (`12/12` zero-error audits).
+3. **Controlled Canonical CAD Writeback, AI Edit Bridge & Precision CAD Studio:**
+   - Implemented `proposeControlledCadEdit` (`packages/planning-engine/src/refinement/cad-ai-edit-proposal.ts`), `POST /api/v1/cad/edit-proposal`, and lazy-loaded warm-beige `PrecisionCadWorkbench.tsx` (`76.51 kB` chunk) inside `ArchitecturalCADWorkspace.tsx`.
+   - Verified all 5 architectural instruction classes (including explicit `REFUSED_UNSUPPORTED` on single-flat topological regeneration of Flat 2 so Flats 1, 3, 4 remain untouched), stale-revision & lock guardrails, `ArgonStudioShell` async disk-open workspace preservation, 2D/3D/DXF/DWG/PDF/GLB synchronization, and Undo/Redo.
+
+### Verification summary
+
+- `pnpm build` (**9/9**), `pnpm typecheck` (**16/16**), `pnpm lint` (**16/16**): **PASS**.
+- Package unit suites: **1,747 passed** across all 9 workspace packages (`core` 198, `geometry-engine` 95, `projection-3d` 31, `ai-orchestration` 143, `renderer` 89, `constraint-engine` 185, `backend` 232, `frontend` 181, `planning-engine` 593), `9` pre-existing opt-in live/native skips.
+- Integration suites: **52/52 passed** (`21` workspace integration + `31` backend HTTP integration).
+- Chromium E2E (`test:e2e:repair`): **16/16 passed** (desktop `1440×900` & mobile `390×844`, `maxPerFrame: 1` orbit render budget).
+- Chromium WebGL Recovery (`test:e2e:webgl`): **1/1 passed** (`5` real context restorations + `3` unmount releases).
+
+### Phase 4B (OpenBIMStudio / IFC) readiness boundary
+
+- Phase 4A (`INTERNAL ENGINEERING GATE PASSED` · **READY** for Phase 4A scope; `PROFESSIONAL REVIEW REQUIRED` for statutory/structural sign-off) leaves `CanonicalExchangeAdapter` (`format: 'IFC'`) ready for Phase 4B OpenBIMStudio integration once OpenBIMStudio's archive provenance, license audit, and native IFC4 spatial hierarchy readback gate are executed.
+

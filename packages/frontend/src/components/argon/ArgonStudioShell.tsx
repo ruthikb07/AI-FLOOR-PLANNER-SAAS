@@ -228,7 +228,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       setShowWelcome(false);
       setConcepts([{ building: syncedBuilding, seed: 1 }]);
       regenerationBrief.current = null;
-      setActiveWorkspace('cad_2d');
+      setActiveWorkspace(current => (current === 'library' ? 'cad_2d' : current));
       setSaveToast(`Loaded "${loaded.manifest.name}" (Rev. ${loaded.revision}) from local disk`);
       setTimeout(() => setSaveToast(''), 3500);
     } catch (err) {
