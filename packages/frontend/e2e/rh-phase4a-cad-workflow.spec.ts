@@ -108,11 +108,31 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   await page
     .getByTestId('cad-ai-instruction-input')
     .fill('Regenerate only Flat 2 while keeping the remaining flats unchanged');
+  const regeneration = page.waitForResponse(response => response.url().endsWith('/api/v1/cad/edit-proposal'));
   await page.getByTestId('cad-ai-preview-btn').click();
+  const regenerated = await regeneration;
+  expect(regenerated.status()).toBe(200);
+  const { proposal } = await regenerated.json();
+  expect(proposal.status, proposal.message).toBe('PREVIEW_READY');
   await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('PREVIEW_READY');
   await expect(page.getByTestId('cad-ai-preview-card')).toContainText('Flat 02');
 
   // 8. Perform a canonical architectural edit (Resize window to 1500 mm) through the controlled edit bridge
+  const residential = genPayload.building.floors.find(floor => floor.floorUse === 'RESIDENTIAL')!;
+  const window = residential.windows.find(opening => {
+    const wall = residential.walls.find(candidate => candidate.id === opening.wallId);
+    return wall && !wall.arc && Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 2300
+      && opening.width !== 1500 && !residential.rooms.some(room => room.isFixed && wall.roomIds.includes(room.id));
+  })!;
+  expect(window?.id).toBeTruthy();
+  await page.getByTestId('nav-bim').click();
+  const bim = page.getByRole('region', { name: 'RH Planner — BIM Studio' });
+  await bim.getByRole('combobox', { name: 'BIM storey' }).selectOption(residential.id);
+  await bim.getByRole('combobox', { name: 'BIM schedule' }).selectOption('window');
+  await bim.getByLabel('Find element').fill(window.id);
+  await bim.getByRole('table').getByRole('button').click();
+  await bim.getByRole('button', { name: 'Precision CAD', exact: true }).click();
+  await expect(page.getByTestId('cad-entity-inspector')).toContainText(window.id);
   await page.getByTestId('cad-ai-instruction-input').fill('Resize this window to 1500 mm');
   await page.getByTestId('cad-ai-preview-btn').click();
   await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('PREVIEW_READY');

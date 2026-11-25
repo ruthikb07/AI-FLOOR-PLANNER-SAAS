@@ -66,3 +66,7 @@
   - **CSI ETABS 23.3.2:** Installed.
   - **FreeCAD / Bonsai / Autodesk Revit / Graphisoft Archicad:** **Not installed** on this machine.
 - **Honest Native Desktop BIM Reopen Status:** **`UNVERIFIED`** (no desktop IFC authoring client is installed locally; independent schema + 3D solid triangulation readback is verified via `IfcOpenShell 0.9.0.post1`).
+
+## Additional Windows replay
+
+The rerun passed five actual context restorations and automatic frame recovery on the intermediate Phase 5C production build. The first repeated orbit run could not load Playwright because Windows returned `EBUSY` for a dependency file. Standalone exact-head orbit timing and hardware-GPU verification remain open. See [Phase 5 performance](../integration/PHASE5_PERFORMANCE_REPORT.md).

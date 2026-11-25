@@ -56,6 +56,8 @@ import {
   deleteLocalDiskProject,
   listLocalDiskProjects,
   loadLocalDiskProject,
+  readLocalDiskSaveBase,
+  rememberLocalDiskSaveBase,
   saveLocalDiskProject,
   type LocalDiskProjectManifest,
 } from '../../services/local-project-api';
@@ -191,6 +193,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   };
 
   const handleSaveToLocalDisk = async () => {
+    if (isSavingDisk) return;
     setIsSavingDisk(true);
     setSaveWarning('');
     try {
@@ -200,13 +203,16 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         projectId: current.projectId,
         name: editor.projectName || current.name,
         building: current,
+        expected: readLocalDiskSaveBase(current.projectId),
         note: `Studio save (${current.metadata.generationBrief?.buildingMassingShape ?? 'layout'})`,
         sourceCad: pendingSourceCad.current.get(current.projectId),
       });
+      rememberLocalDiskSaveBase(current.projectId, saved);
       pendingSourceCad.current.delete(current.projectId);
-      await refreshDiskProjects();
-      setSaveToast(`Saved "${saved.manifest.name}" · Rev. ${saved.revision} to local disk`);
-      setTimeout(() => setSaveToast(''), 3500);
+      if (editor.engine.getBuilding().projectId === current.projectId) {
+        setSaveToast(`Saved "${saved.manifest.name}" · Disk snapshot ${saved.revision} to local disk`);
+      }
+      void refreshDiskProjects();
     } catch (err) {
       setSaveWarning(err instanceof Error ? `Local disk save failed: ${err.message}` : 'Local disk save failed.');
     } finally {
@@ -223,12 +229,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         await projectStorage.archiveRevision(projectId, local.building.version);
       }
       if (editor.engine.getBuilding() !== before) throw new Error('The active project changed while opening the disk copy. Try again.');
-      const syncedBuilding: Building = {
-        ...loaded.building,
-        projectId: loaded.manifest.projectId,
-        metadata: { ...loaded.building.metadata, projectId: loaded.manifest.projectId },
-      };
+      const syncedBuilding = loaded.building;
       editor.setBuilding(syncedBuilding, loaded.manifest.name, {}, 'residential');
+      rememberLocalDiskSaveBase(projectId, loaded);
       const floor = representativeFloor(syncedBuilding);
       if (floor) editor.switchFloor(floor.id);
       if (typeof window !== 'undefined') sessionStorage.setItem('rh_welcome_dismissed', 'true');
@@ -246,6 +249,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   const handleDeleteDiskProject = async (projectId: string) => {
     try {
       await deleteLocalDiskProject(projectId);
+      rememberLocalDiskSaveBase(projectId);
       await refreshDiskProjects();
     } catch (err) {
       setSaveWarning(err instanceof Error ? err.message : 'Could not delete project from local disk.');
@@ -260,17 +264,22 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     }
   }, [editor.building]);
 
-  const workspaces: Array<{ id: ArgonWorkspaceId; label: string; icon: React.ReactNode }> = [
-    { id: 'setup', label: 'Brief', icon: <Compass className="w-3.5 h-3.5" /> },
-    { id: 'concepts', label: 'Massing', icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'cad_2d', label: '2D CAD', icon: <DraftingCompass className="w-3.5 h-3.5" /> },
-    { id: 'edit_plan', label: 'Edit Plan', icon: <Edit3 className="w-3.5 h-3.5" /> },
-    { id: 'isometric', label: 'Floor 3D', icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'building_3d', label: 'Tower 3D', icon: <Box className="w-3.5 h-3.5" /> },
-    { id: 'bim', label: 'BIM Studio', icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'structural_cad', label: 'Structural', icon: <Building2 className="w-3.5 h-3.5" /> },
-    { id: 'engineering', label: 'Compliance', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-    { id: 'export', label: 'Exports', icon: <Download className="w-3.5 h-3.5" /> },
+  const workspaces: Array<{
+    id: ArgonWorkspaceId;
+    label: string;
+    modeGroup: 'Design' | 'Drafting' | 'BIM Coordination' | 'Structural';
+    icon: React.ReactNode;
+  }> = [
+    { id: 'setup', label: 'Brief', modeGroup: 'Design', icon: <Compass className="w-3.5 h-3.5" /> },
+    { id: 'concepts', label: 'Massing', modeGroup: 'Design', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'isometric', label: 'Floor 3D', modeGroup: 'Design', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'building_3d', label: 'Tower 3D', modeGroup: 'Design', icon: <Box className="w-3.5 h-3.5" /> },
+    { id: 'cad_2d', label: '2D CAD', modeGroup: 'Drafting', icon: <DraftingCompass className="w-3.5 h-3.5" /> },
+    { id: 'edit_plan', label: 'Edit Plan', modeGroup: 'Drafting', icon: <Edit3 className="w-3.5 h-3.5" /> },
+    { id: 'bim', label: 'BIM Studio', modeGroup: 'BIM Coordination', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'engineering', label: 'Compliance', modeGroup: 'BIM Coordination', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { id: 'export', label: 'Exports', modeGroup: 'BIM Coordination', icon: <Download className="w-3.5 h-3.5" /> },
+    { id: 'structural_cad', label: 'Structural', modeGroup: 'Structural', icon: <Building2 className="w-3.5 h-3.5" /> },
   ];
 
   const activeRun = useRef<AbortController | null>(null);
@@ -673,6 +682,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
   return (
       <div
         data-theme="obsidian"
+        data-studio-surface={studio.studioTheme === 'day' ? 'warm-paper' : 'obsidian'}
         data-lighting={studio.lightingMode}
         data-unit={studio.displayUnit}
         className="argon-shell rh-portfolio-shell rh-atelier-studio rh-obsidian-shell flex flex-col h-screen w-screen overflow-hidden relative"
@@ -821,25 +831,62 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             </div>
           </div>
 
-          {/* Center: 9 Architectural Studio Workspaces */}
+          {/* Center: 4 Architectural Studio Workflow Mode Groups */}
           <nav aria-label="Studio Workspaces" className="rh-topbar-nav">
-            {workspaces.map((ws) => (
-              <button
-                key={ws.id}
-                type="button"
-                data-testid={`nav-${ws.id}`}
-                aria-current={activeWorkspace === ws.id ? 'page' : undefined}
-                onClick={() => setActiveWorkspace(ws.id)}
-                className="rh-topbar-tab"
-              >
-                {ws.icon}
-                <span className="whitespace-nowrap">{ws.label}</span>
-              </button>
-            ))}
+            {workspaces.map((ws, idx) => {
+              const prevGroup = idx > 0 ? workspaces[idx - 1]?.modeGroup : ws.modeGroup;
+              return (
+                <React.Fragment key={ws.id}>
+                  {idx > 0 && prevGroup !== ws.modeGroup && (
+                    <span aria-hidden="true" className="mx-0.5 h-3.5 w-px bg-white/15 shrink-0 hidden xl:inline-block" />
+                  )}
+                  <button
+                    type="button"
+                    data-testid={`nav-${ws.id}`}
+                    data-mode-group={ws.modeGroup}
+                    title={`${ws.modeGroup} · ${ws.label}`}
+                    aria-current={activeWorkspace === ws.id ? 'page' : undefined}
+                    onClick={() => {
+                      if (ws.id !== 'cad_2d') setPrecisionFromBim(false);
+                      setActiveWorkspace(ws.id);
+                    }}
+                    className="rh-topbar-tab"
+                  >
+                    {ws.icon}
+                    <span className="whitespace-nowrap">{ws.label}</span>
+                  </button>
+                </React.Fragment>
+              );
+            })}
           </nav>
 
-          {/* Right: Import CAD + Save + Library + FT/M Toggle + Lighting Switch + Live Compliance Pill */}
+          {/* Right: Canonical Sync Pill + Import CAD + Save + Library + FT/M Toggle + Surface & Lighting Switch + Compliance Pill */}
           <div className="rh-topbar-right">
+            <span
+              data-testid="topbar-canonical-sync-pill"
+              title={`Unified Canonical Revision ${editor.building.version} · ${editor.activeFloor?.name ?? 'Storey'}${editor.selection ? ` · Selected ${editor.selection.entityType}` : ''}`}
+              className="hidden 2xl:inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-amber-300 tabular-nums"
+            >
+              <span>Rev #{editor.building.version}</span>
+              <span aria-hidden="true">·</span>
+              <span className="max-w-[90px] truncate">{editor.activeFloor?.name ?? 'Floor'}</span>
+              {editor.selection && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="uppercase">{editor.selection.entityType}</span>
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              data-testid="studio-surface-theme-toggle"
+              aria-pressed={studio.studioTheme === 'day'}
+              title="Toggle Warm Architectural Paper / Obsidian Studio Surface"
+              onClick={() => studioStoreActions.setStudioTheme(studio.studioTheme === 'day' ? 'night' : 'day')}
+              className="rh-topbar-tab hidden xl:inline-flex"
+            >
+              <span className="font-mono text-[10px]">{studio.studioTheme === 'day' ? 'Warm Paper' : 'Obsidian'}</span>
+            </button>
             {canOpenReview && <button type="button" aria-label="Architectural design review" aria-expanded={reviewOpen}
               title="Architectural design review" className="rh-topbar-tab"
               onClick={() => setReviewOpen(open => !open)}>
@@ -1163,6 +1210,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
           >
             <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>{saveToast}</span>
+            <button type="button" className="px-1" aria-label="Dismiss project status" onClick={() => setSaveToast('')}>×</button>
           </div>
         )}
       </div>

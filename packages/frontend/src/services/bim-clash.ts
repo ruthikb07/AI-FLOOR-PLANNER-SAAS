@@ -180,7 +180,9 @@ export function findBimClashes(input: {
   const floorBottom = floorElev - (floor.slabThicknessMm ?? 200);
   const floorTop = walls.length > 0 ? Math.max(...walls.map(w => w.elevation + w.height)) : floorElev + floor.floorHeight;
 
-  let skipped = 0;
+  let unsupported = 0;
+  let outsideStorey = 0;
+  let excludedByScope = 0;
   let comparisons = 0;
   let broadChecks = 0;
 
@@ -198,15 +200,21 @@ export function findBimClashes(input: {
 
   for (const source of reference) {
     if (source.topMm + alignment.z <= floorBottom - minClearanceMm || source.bottomMm + alignment.z >= floorTop + minClearanceMm) {
+      outsideStorey++;
       continue;
     }
     const item = alignedPlanPrism(source, alignment);
     const parts = triangulateSimplePolygon(item.boundary);
     if (parts.length === 0) {
-      skipped++;
+      unsupported++;
       continue;
     }
-    const holeParts = (item.holes ?? []).flatMap(h => triangulateSimplePolygon(h));
+    const holeTriangles = (item.holes ?? []).map(hole => triangulateSimplePolygon(hole));
+    if (holeTriangles.some(triangles => triangles.length === 0)) {
+      unsupported++;
+      continue;
+    }
+    const holeParts = holeTriangles.flat();
     const bounds = polygonBoundingBox({ points: [...item.boundary] });
     const idx = preparedRefs.length;
     preparedRefs.push({ item, convexParts: parts, holeParts, bounds });
@@ -232,11 +240,11 @@ export function findBimClashes(input: {
   for (const view of walls) {
     const wall = authoritative.get(view.sourceEntityId);
     if (!wall || !isPhysicalBoundary(wall)) {
-      skipped++;
+      unsupported++;
       continue;
     }
     if (wall.boundaryRole === 'GUARDRAIL' && !includeSlabsAndStructure) {
-      skipped++;
+      excludedByScope++;
       continue;
     }
 
@@ -248,7 +256,7 @@ export function findBimClashes(input: {
       const sweep = endAngleRad - startAngleRad;
       const arcLen = radiusMm * Math.abs(sweep);
       if (arcLen <= toleranceMm || view.height <= 0) {
-        skipped++;
+        unsupported++;
         continue;
       }
       const cuts: Array<{ start: number; end: number; bottom: number; top: number }> = [];
@@ -268,7 +276,7 @@ export function findBimClashes(input: {
         }
       }
       if (!validOpenings) {
-        skipped++;
+        unsupported++;
         continue;
       }
       const sign = sweep >= 0 ? 1 : -1;
@@ -324,7 +332,7 @@ export function findBimClashes(input: {
       }
     }
     if (cuts.length !== hosted.length || !view.length || view.height <= 0) {
-      skipped++;
+      unsupported++;
       continue;
     }
     const u = { x: (wall.endPoint.x - wall.startPoint.x) / view.length, y: (wall.endPoint.y - wall.startPoint.y) / view.length };
@@ -664,5 +672,5 @@ export function findBimClashes(input: {
     });
   }
 
-  return { results, comparisons, skipped };
+  return { results, comparisons, coverage: { unsupported, outsideStorey, excludedByScope } };
 }

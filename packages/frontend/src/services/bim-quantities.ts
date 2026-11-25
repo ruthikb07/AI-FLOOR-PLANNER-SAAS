@@ -6,7 +6,7 @@ import {
   polygonArea,
   roomSpaceUse,
 } from '@ai-floor-planner/geometry-engine';
-import type { FloorPlate3D, Wall3D } from '@ai-floor-planner/projection-3d';
+import { slabSolidRegions, type FloorPlate3D, type Wall3D } from '@ai-floor-planner/projection-3d';
 
 export type BimKind = 'room' | 'flat' | 'wall' | 'door' | 'window' | 'slab' | 'stair';
 export interface BimQuantityRow {
@@ -105,12 +105,8 @@ export function calculateBimSchedule(floor: Floor, projectedWalls: readonly Wall
   const stairs: BimQuantityRow[] = floor.stairs.map(stair => ({
     kind: 'stair', id: stair.id, name: stair.type, riserCount: stair.riserCount, areaMm2: polygonArea(stair.boundary),
   }));
-  const slabAreaMm2 = plate && polygonArea(plate.boundary) - plate.cutouts.reduce((sum, hole, i, all) => {
-    const key = JSON.stringify([...hole.points].map(p => [p.x, p.y]).sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!));
-    const first = all.findIndex(other =>
-      JSON.stringify([...other.points].map(p => [p.x, p.y]).sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!)) === key);
-    return sum + (first === i ? polygonArea(hole) : 0);
-  }, 0);
+  const slabAreaMm2 = plate && slabSolidRegions(plate.boundary, plate.cutouts)
+    .reduce((sum, solid) => sum + solid.areaMm2, 0);
   const slab: BimQuantityRow[] = slabAreaMm2 === undefined ? [] : [{ kind: 'slab', id: floor.id,
     name: floor.name + ' slab', ifcClass: floor.slabThicknessMm ? 'IfcSlab' : undefined, areaMm2: slabAreaMm2,
     heightMm: floor.slabThicknessMm, volumeMm3: floor.slabThicknessMm === undefined ? undefined : slabAreaMm2 * floor.slabThicknessMm }];

@@ -170,7 +170,7 @@ export function editCanonicalWallThickness(
     (rooms.length === 2 && Boolean(rooms[0]?.unitId) && Boolean(rooms[1]?.unitId) && rooms[0]!.unitId !== rooms[1]!.unitId);
   if (isExteriorEnvelope || isPartyWall) {
     if (thicknessMm < 230) {
-      throw new Error('Exterior perimeter and inter-flat party walls must maintain at least 230 mm masonry thickness.');
+      throw new Error('The current RH Planner masonry profile requires at least 230 mm for exterior and inter-flat walls.');
     }
   }
   if (!Number.isFinite(thicknessMm) || thicknessMm < 90 || thicknessMm > 350) {

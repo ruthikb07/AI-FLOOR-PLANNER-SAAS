@@ -1549,6 +1549,26 @@ function canonicalWallLineDigest(walls: readonly Wall[], wallUseFilter: Wall['wa
   return mergedTokens.join('|');
 }
 
+const orderedById = <T extends { readonly id: string }>(items: readonly T[]) =>
+  [...items].sort((first, second) => first.id.localeCompare(second.id));
+
+export function buildProtectedFloorGraph(
+  floor: Floor,
+  editableRooms: ReadonlySet<string>,
+  editableUnits: ReadonlySet<string>,
+  editedHosts: ReadonlySet<string> = new Set(),
+) {
+  return {
+    units: orderedById((floor.apartmentUnits ?? []).filter(unit => !editableUnits.has(unit.id))),
+    rooms: orderedById(floor.rooms.filter(room => !editableRooms.has(room.id))),
+    walls: orderedById(floor.walls.filter(wall => !wall.roomIds.some(id => editableRooms.has(id))))
+      .map(wall => editedHosts.has(wall.id) ? { ...wall, hasOpening: undefined } : wall),
+    doors: orderedById(floor.doors.filter(door => !door.connectsRooms.some(id => id && editableRooms.has(id)))),
+    windows: orderedById(floor.windows.filter(window => !editableRooms.has(window.roomId))),
+    furniture: orderedById((floor.furniture ?? []).filter(item => !editableRooms.has(item.roomId))),
+  };
+}
+
 /**
  * Independently verifies that EVERY unaffected floor, flat, room, internal wall, opening,
  * party wall, exterior outline, core element, structural column, and locked entity is untouched.
@@ -1566,11 +1586,8 @@ export function verifyProtectedRegionInvariance(params: {
   const violations: string[] = [];
 
   // 1. All other floors byte-identical
-  const unaffectedFloorsIdentical = before.floors.every(bf => {
-    if (bf.id === targetFloorId) return true;
-    const af = after.floors.find(f => f.id === bf.id);
-    return Boolean(af && stableValueHash(bf) === stableValueHash(af));
-  });
+  const unaffectedFloorsIdentical = stableValueHash(orderedById(before.floors.filter(floor => floor.id !== targetFloorId)))
+    === stableValueHash(orderedById(after.floors.filter(floor => floor.id !== targetFloorId)));
   if (!unaffectedFloorsIdentical) {
     violations.push('One or more non-target storeys changed during localized regeneration.');
   }
@@ -1605,73 +1622,52 @@ export function verifyProtectedRegionInvariance(params: {
     };
   }
 
-  // 2. All non-editable rooms (other flats + unselected rooms in same flat + cores) byte-identical!
-  let unaffectedUnitsIdentical = true;
-  for (const rBefore of beforeFloor.rooms) {
-    if (editableRoomIdsBefore.has(rBefore.id)) continue;
-    const rAfter = afterFloor.rooms.find(r => r.id === rBefore.id);
-    if (
-      !rAfter ||
-      stableValueHash(rBefore.boundary) !== stableValueHash(rAfter.boundary) ||
-      rBefore.type !== rAfter.type ||
-      rBefore.unitId !== rAfter.unitId
-    ) {
-      unaffectedUnitsIdentical = false;
-      violations.push(`Protected room '${rBefore.name}' (${rBefore.id}) was mutated or removed.`);
+  const beforeRoomIds = new Set(beforeFloor.rooms.map(room => room.id));
+  const editableAfter = new Set(editableRoomIdsBefore);
+  for (const room of afterFloor.rooms) {
+    if (!beforeRoomIds.has(room.id) && (room.unitId === targetUnitId
+      || (targetUnitId === 'single_dwelling' && !room.unitId && room.spaceUse === 'UNIT'))) {
+      editableAfter.add(room.id);
     }
   }
 
-  // Verify other apartmentUnits boundaries & internal walls & openings are byte-identical
-  for (const uBefore of beforeFloor.apartmentUnits ?? []) {
-    if (uBefore.id === targetUnitId) {
-      const uAfter = afterFloor.apartmentUnits?.find(u => u.id === uBefore.id);
-      if (!uAfter || stableValueHash(uBefore.boundary) !== stableValueHash(uAfter.boundary)) {
-        unaffectedUnitsIdentical = false;
-        violations.push(`Edited flat '${uBefore.id}' outer unit boundary changed.`);
-      }
-      continue;
+  const editableHostIds = new Set<string>();
+  for (const [floor, editableRooms] of [[beforeFloor, editableRoomIdsBefore], [afterFloor, editableAfter]] as const) {
+    for (const door of floor.doors) {
+      if (door.connectsRooms.some(id => id && editableRooms.has(id))) editableHostIds.add(door.wallId);
     }
-    const uAfter = afterFloor.apartmentUnits?.find(u => u.id === uBefore.id);
-    if (!uAfter || stableValueHash(uBefore) !== stableValueHash(uAfter)) {
-      unaffectedUnitsIdentical = false;
-      violations.push(`Unaffected flat '${uBefore.id}' metadata or boundary changed.`);
+    for (const window of floor.windows) {
+      if (editableRooms.has(window.roomId)) editableHostIds.add(window.wallId);
     }
-    const otherUnitRoomIds = new Set(beforeFloor.rooms.filter(r => r.unitId === uBefore.id).map(r => r.id));
-    for (const wBefore of beforeFloor.walls.filter(w => w.roomIds.length > 0 && w.roomIds.every(id => otherUnitRoomIds.has(id)))) {
-      const wAfter = afterFloor.walls.find(w => w.id === wBefore.id);
-      if (
-        !wAfter ||
-        stableValueHash(wBefore.startPoint) !== stableValueHash(wAfter.startPoint) ||
-        stableValueHash(wBefore.endPoint) !== stableValueHash(wAfter.endPoint) ||
-        wBefore.thickness !== wAfter.thickness
-      ) {
-        unaffectedUnitsIdentical = false;
-        violations.push(`Internal/exterior wall '${wBefore.id}' of unaffected flat '${uBefore.id}' changed.`);
-      }
+  }
+  const editableUnits = new Set(targetUnitId ? [targetUnitId] : []);
+  const flatGraph = (floor: Floor, editableRooms: ReadonlySet<string>) =>
+    buildProtectedFloorGraph(floor, editableRooms, editableUnits, editableHostIds);
+  const beforeGraph = flatGraph(beforeFloor, editableRoomIdsBefore);
+  const afterGraph = flatGraph(afterFloor, editableAfter);
+  let unaffectedUnitsIdentical = stableValueHash(beforeGraph) === stableValueHash(afterGraph);
+  for (const key of ['units', 'rooms', 'walls', 'doors', 'windows', 'furniture'] as const) {
+    if (stableValueHash(beforeGraph[key]) !== stableValueHash(afterGraph[key])) {
+      const nextById = new Map(afterGraph[key].map(item => [item.id, item]));
+      const previousById = new Map(beforeGraph[key].map(item => [item.id, item]));
+      const differences = [...new Set([...previousById.keys(), ...nextById.keys()])]
+        .filter(id => stableValueHash(previousById.get(id) ?? null) !== stableValueHash(nextById.get(id) ?? null))
+        .map(id => {
+          const previous = previousById.get(id);
+          const next = nextById.get(id);
+          if (!previous || !next) return `${id} ${previous ? 'removed' : 'added'}`;
+          const fields = Object.keys({ ...previous, ...next }).filter(field =>
+            stableValueHash(Reflect.get(previous, field) ?? null) !== stableValueHash(Reflect.get(next, field) ?? null));
+          return `${id} (${fields.join('/')})`;
+        });
+      violations.push(`Protected ${key} changed, were removed, or were added outside the edited zone (${differences.slice(0, 6).join(', ')}).`);
     }
-    for (const dBefore of beforeFloor.doors.filter(d => d.connectsRooms.some(id => id !== undefined && otherUnitRoomIds.has(id)))) {
-      const dAfter = afterFloor.doors.find(d => d.id === dBefore.id);
-      if (
-        !dAfter ||
-        stableValueHash(dBefore.position) !== stableValueHash(dAfter.position) ||
-        dBefore.width !== dAfter.width ||
-        stableValueHash(dBefore.connectsRooms) !== stableValueHash(dAfter.connectsRooms)
-      ) {
-        unaffectedUnitsIdentical = false;
-        violations.push(`Door '${dBefore.id}' serving unaffected flat '${uBefore.id}' changed.`);
-      }
-    }
-    for (const winBefore of beforeFloor.windows.filter(w => otherUnitRoomIds.has(w.roomId))) {
-      const winAfter = afterFloor.windows.find(w => w.id === winBefore.id);
-      if (
-        !winAfter ||
-        stableValueHash(winBefore.position) !== stableValueHash(winAfter.position) ||
-        winBefore.width !== winAfter.width
-      ) {
-        unaffectedUnitsIdentical = false;
-        violations.push(`Window '${winBefore.id}' serving unaffected flat '${uBefore.id}' changed.`);
-      }
-    }
+  }
+  const oldTargetUnit = beforeFloor.apartmentUnits?.find(unit => unit.id === targetUnitId);
+  const newTargetUnit = afterFloor.apartmentUnits?.find(unit => unit.id === targetUnitId);
+  if (oldTargetUnit && (!newTargetUnit || stableValueHash(oldTargetUnit.boundary) !== stableValueHash(newTargetUnit.boundary))) {
+    unaffectedUnitsIdentical = false;
+    violations.push('The edited flat outer boundary changed.');
   }
 
   // 3. Party walls (`230 mm` `UNIT_SEPARATION`) & exterior outline invariance
@@ -1688,24 +1684,20 @@ export function verifyProtectedRegionInvariance(params: {
   }
 
   // 4. Core elements (`stairs`, `lifts`, `common`, `shafts`) & structural columns identical
-  const coreBefore = {
-    stairs: beforeFloor.stairs,
-    coreRooms: beforeFloor.rooms
-      .filter(r => !r.unitId)
-      .map(r => ({ id: r.id, type: r.type, boundary: r.boundary })),
-  };
-  const coreAfter = {
-    stairs: afterFloor.stairs,
-    coreRooms: afterFloor.rooms
-      .filter(r => !r.unitId)
-      .map(r => ({ id: r.id, type: r.type, boundary: r.boundary })),
-  };
-  const coreElementsIdentical = stableValueHash(coreBefore) === stableValueHash(coreAfter);
+  const core = (floor: Floor) => ({
+    stairs: orderedById(floor.stairs),
+    canonicalStaircases: orderedById(floor.canonicalStaircases ?? []),
+    coreRooms: orderedById(floor.rooms.filter(room => !room.unitId && room.spaceUse !== 'UNIT')),
+    voidBoundaries: floor.voidBoundaries,
+  });
+  const coreElementsIdentical = stableValueHash(core(beforeFloor)) === stableValueHash(core(afterFloor));
   if (!coreElementsIdentical) {
     violations.push('Stairs, lifts, corridors, or shafts in the common core changed.');
   }
 
   const columnsIdentical = stableValueHash(beforeFloor.columns) === stableValueHash(afterFloor.columns);
+  const beamsIdentical = stableValueHash([beforeFloor.beams, before.beams]) === stableValueHash([afterFloor.beams, after.beams]);
+  if (!beamsIdentical) violations.push('Protected structural beams changed.');
   if (!columnsIdentical) {
     violations.push('Structural columns were moved, resized, or removed.');
   }
@@ -1713,19 +1705,13 @@ export function verifyProtectedRegionInvariance(params: {
   // 5. Locked entities identical
   const lockedSet = new Set([...control.lockedEntityIds, ...control.protectedCoreIds]);
   let lockedEntitiesIdentical = !control.lockedFloorIds.includes(targetFloorId);
-  for (const id of lockedSet) {
-    const rb = beforeFloor.rooms.find(r => r.id === id);
-    if (rb) {
-      const ra = afterFloor.rooms.find(r => r.id === id);
-      if (!ra || stableValueHash(rb.boundary) !== stableValueHash(ra.boundary)) {
-        lockedEntitiesIdentical = false;
-        violations.push(`Locked room '${id}' was modified.`);
-      }
-    }
-    if (targetUnitId === id) {
-      lockedEntitiesIdentical = false;
-      violations.push(`Locked flat '${id}' was modified.`);
-    }
+  const lockGraph = (floor: Floor) => orderedById([
+    ...floor.rooms, ...floor.walls, ...floor.doors, ...floor.windows, ...floor.stairs,
+    ...(floor.canonicalStaircases ?? []), ...floor.columns, ...(floor.beams ?? []), ...(floor.apartmentUnits ?? []),
+  ].filter(item => lockedSet.has(item.id)));
+  if (stableValueHash(lockGraph(beforeFloor)) !== stableValueHash(lockGraph(afterFloor))) {
+    lockedEntitiesIdentical = false;
+    violations.push('Locked entity data changed.');
   }
 
   // 6. Editable zone & floor planar area conservation
@@ -1755,10 +1741,10 @@ export function verifyProtectedRegionInvariance(params: {
     floorBoundary: f.boundary,
     columns: f.columns,
     stairs: f.stairs,
-    protectedUnits: (f.apartmentUnits ?? []).filter(u => u.id !== targetUnitId),
-    protectedRooms: f.rooms
-      .filter(r => untouchedRoomIds.has(r.id))
-      .map(r => ({ id: r.id, name: r.name, type: r.type, unitId: r.unitId, boundary: r.boundary })),
+    beams: [f.beams, b.beams],
+    core: core(f),
+    protectedGraph: flatGraph(f, f === beforeFloor ? editableRoomIdsBefore : editableAfter),
+    locked: lockGraph(f),
     partyWallLines: canonicalWallLineDigest(f.walls, 'UNIT_SEPARATION'),
   });
 
@@ -1989,9 +1975,12 @@ function assembleAndValidateEditedFloor(params: {
   const allDoors = [...preservedDoors, ...synthesizedDoors];
   const allWindows = [...preservedWindows, ...synthesizedWindows];
   const activeHostWallIds = new Set([...allDoors, ...allWindows].map(o => o.wallId));
-  const finalizedWalls = nextWalls.map(w =>
-    w.hasOpening === activeHostWallIds.has(w.id) ? w : { ...w, hasOpening: activeHostWallIds.has(w.id) },
-  );
+  const editedHosts = new Set([...existingZoneDoors, ...existingZoneWindows, ...synthesizedDoors, ...synthesizedWindows]
+    .map(opening => opening.wallId));
+  const finalizedWalls = nextWalls.map(w => {
+    if (!editedHosts.has(w.id) && !w.roomIds.some(id => newZoneRoomIds.has(id)) && oldWallById.has(w.id)) return w;
+    return w.hasOpening === activeHostWallIds.has(w.id) ? w : { ...w, hasOpening: activeHostWallIds.has(w.id) };
+  });
 
   const nextApartmentUnits = floor.apartmentUnits?.map(u => {
     if (u.id !== targetUnitId) return u;
@@ -2375,9 +2364,10 @@ export function proposeProtectedLocalRegeneration(
       targetUnit = units.find(u => u.id === firstRoom.unitId);
     }
   }
-  if (!targetUnit && units.length > 0) {
-    targetUnit = units[Math.min(1, units.length - 1)];
+  if (!targetUnit && (request.targetUnitId !== undefined || request.targetUnitIndex !== undefined || units.length > 1)) {
+    return fail('REJECTED_BY_CONSTRAINTS', 'Select the flat to regenerate on this floor.');
   }
+  targetUnit ??= units[0];
 
   const targetUnitId = targetUnit?.id ?? 'single_dwelling';
   const unitIndex1Based = targetUnit ? units.findIndex(u => u.id === targetUnit.id) + 1 : 1;
@@ -2398,8 +2388,8 @@ export function proposeProtectedLocalRegeneration(
   if (scope === 'SINGLE_ROOM' || operation === 'REGENERATE_ROOM') {
     const targetRoomId = request.targetRoomIds?.[0];
     const room = targetRoomId
-      ? floor.rooms.find(r => r.id === targetRoomId)
-      : floor.rooms.find(r => r.unitId === targetUnitId && r.type === RoomType.Bedroom && !lockedSet.has(r.id));
+      ? floor.rooms.find(r => r.id === targetRoomId && (targetUnit ? r.unitId === targetUnit.id : !r.unitId))
+      : undefined;
     if (!room) {
       return fail('REJECTED_BY_CONSTRAINTS', 'Select a valid room for single-room localized regeneration.', targetUnitId, [], protectedUnitIds);
     }
@@ -2646,7 +2636,10 @@ export function proposeProtectedLocalRegeneration(
   }
 
   // ── Scope 2: `CONNECTED_ROOM_GROUP` or `EDITABLE_ZONE` (subset of rooms in 1 flat) ──
-  if ((scope === 'CONNECTED_ROOM_GROUP' || scope === 'EDITABLE_ZONE') && request.targetRoomIds && request.targetRoomIds.length >= 2) {
+  if (scope === 'CONNECTED_ROOM_GROUP' || scope === 'EDITABLE_ZONE') {
+    if (!request.targetRoomIds || new Set(request.targetRoomIds).size < 2) {
+      return fail('REJECTED_BY_CONSTRAINTS', 'Select at least two rooms for an editable room group.');
+    }
     const groupRooms = request.targetRoomIds
       .map(id => floor.rooms.find(r => r.id === id))
       .filter((r): r is Room => Boolean(r));
@@ -2675,6 +2668,34 @@ export function proposeProtectedLocalRegeneration(
       operation,
       control,
     });
+    if (!groupCandidates.length && operation === 'RECONFIGURE_LIVING_DINING') {
+      // A nonrectangular group can still contain a rectangular pair sharing a complete edge.
+      const publicRooms = groupRooms.filter(room =>
+        room.type === RoomType.Living || room.type === RoomType.Dining || room.type === RoomType.Kitchen);
+      for (const [index, first] of publicRooms.entries()) {
+        for (const second of publicRooms.slice(index + 1)) {
+          if (!sharedEdge(first.boundary, second.boundary, 15)) continue;
+          groupCandidates.push(...proposeConnectedGroupCandidates({
+            building, floor, targetUnitId, groupRooms: [first, second], operation, control,
+          }));
+        }
+      }
+    }
+    if (!groupCandidates.length && operation === 'RECONFIGURE_LIVING_DINING') {
+      const requestedRooms = new Set(groupRooms.map(room => room.id));
+      for (const room of groupRooms.filter(room => room.type === RoomType.Living || room.type === RoomType.Dining)) {
+        const local = proposeProtectedLocalRegeneration({
+          building, floorId, targetUnitId, control, scope: 'SINGLE_ROOM', targetRoomIds: [room.id],
+        });
+        for (const candidate of local.candidates) {
+          const proof = verifyProtectedRegionInvariance({
+            before: building, after: candidate.building, targetFloorId: floorId,
+            editableRoomIdsBefore: requestedRooms, targetUnitId, control,
+          });
+          if (proof.passed) groupCandidates.push({ ...candidate, scope, operation, invarianceProof: proof });
+        }
+      }
+    }
     if (groupCandidates.length > 0) {
       const chosen = groupCandidates[(request.variantIndex ?? 0) % groupCandidates.length]!;
       return {
@@ -2692,6 +2713,8 @@ export function proposeProtectedLocalRegeneration(
         message: `Verified protected ${scope.toLowerCase().replace(/_/g, ' ')} regeneration across ${groupRooms.length} rooms in ${unitLabel}; unselected rooms and all other flats are byte-identical.`,
       };
     }
+    return fail('REJECTED_BY_CONSTRAINTS', 'No connected candidate preserved the requested editable room group.',
+      targetUnitId, groupRooms.map(room => room.id), protectedUnitIds);
   }
 
   // ── Scope 3: `SINGLE_FLAT` (Full internal layout synthesis inside 1 bounded flat) ──

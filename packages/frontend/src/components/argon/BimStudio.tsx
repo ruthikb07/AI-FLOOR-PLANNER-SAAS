@@ -430,7 +430,13 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
             {(clashes?.results ?? []).map(clash => <circle key={clash.id} cx={clash.point.x} cy={clash.point.y} r={Math.max(box[2]!, box[3]!) / 150} fill="#a53f27" />)}
           </svg>}
           {clashes && <div role="region" aria-label="Wall clash results">
-            <p>{clashes.results.length} confirmed intersections · {clashes.skipped} unsupported profiles or walls</p>
+            <p>{clashes.results.filter(item => item.kind !== 'CLEARANCE').length} confirmed intersections
+              {' · '}{clashes.results.filter(item => item.kind === 'CLEARANCE').length} clearance findings
+              {' · '}{clashes.results.filter(item => item.status === 'OPEN').length} open</p>
+            <p>{clashes.comparisons} checked pairs · {clashes.coverage.outsideStorey} profiles outside storey
+              {' · '}{clashes.coverage.excludedByScope} elements outside check scope
+              {' · '}{clashes.coverage.unsupported} unsupported check inputs</p>
+            {Object.keys(reference.model.unsupported).length > 0 && <p>Some reference bodies were omitted during import. See storeys and unsupported bodies.</p>}
             <ul>{clashes.results.map(clash => <li key={clash.id} className="rh-bim-controls">
               <button type="button" onClick={() => selectClash(clash)}>
                 {clash.kind} · {clash.elementKind}:{clash.ifcClass} · {clash.kind === 'CLEARANCE' ? `${clash.clearanceMm} mm gap` : `${(clash.volumeMm3 / 1e9).toFixed(4)} m³`} · {clash.status}

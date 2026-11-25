@@ -25,3 +25,7 @@ Phase 5B upgrades `PrecisionCadWorkbench.tsx` and the canonical planning/geometr
 - `packages/backend/src/__tests__/phase5b-cad-bim-intelligence.test.ts` (Gate F & G suite)
 - `packages/backend/src/__tests__/phase4a-canonical-cad-editing.test.ts`
 - `packages/frontend/e2e/rh-phase4a-cad-workflow.spec.ts` (live Chromium Desktop & Mobile)
+
+## Independent replay
+
+Target resolution now requires a unique match and can use a canonical selection to disambiguate a room or opening. The HTTP boundary rejects malformed intent, revisions, digests and lock state before proposal evaluation. The project masonry profile applies its 230 mm policy to exterior and party walls. Applicability to alternate material and project specifications remains subject to the actual project requirements.

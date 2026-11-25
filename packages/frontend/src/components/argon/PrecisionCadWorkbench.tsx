@@ -156,6 +156,7 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
   // AI-Assisted Canonical CAD Editing state
   const [aiInstruction, setAiInstruction] = useState('Resize this window to 1500 mm');
   const [aiBusy, setAiBusy] = useState(false);
+  const aiRequest = useRef<AbortController | null>(null);
   const [aiPreview, setAiPreview] = useState<{
     proposal: CadAiEditProposalResult;
     providerMode: string;
@@ -247,13 +248,11 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
     setViewBox(modelBounds);
   }, [activeFloorId, modelBounds.minX, modelBounds.minY, modelBounds.width, modelBounds.height]);
 
-  // Clear stale AI/direct preview whenever building revision changes
   useEffect(() => {
-    setAiPreview(prev =>
-      prev && prev.proposal.expectedRevision !== editor.building.version ? null : prev,
-    );
+    setAiPreview(null);
     setDirectPreview(null);
-  }, [editor.building.version]);
+    return () => aiRequest.current?.abort();
+  }, [activeFloorId, editor.building, editor.generationControl]);
 
   // Synchronize direct CAD inspector fields with the currently selected canonical/drafting entity
   useEffect(() => {
@@ -847,53 +846,64 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
     const promptText = (overrideInstruction ?? aiInstruction).trim();
     if (!promptText) return;
     if (overrideInstruction) setAiInstruction(overrideInstruction);
+    aiRequest.current?.abort();
+    const controller = new AbortController();
+    aiRequest.current = controller;
     setAiBusy(true);
+    setAiPreview(null);
     setGuardrailNotice(null);
+    const { building, generationControl: control, engine } = editor;
+    const base = {
+      building, floorId: activeFloorId, expectedRevision: building.version, control,
+      expectedRevisionDigest: buildingRefinementRevision(building, control),
+      selectedEntityId: selectedEntity?.canonicalId ?? editor.selection?.entityId,
+      instruction: promptText,
+    };
+    const isCurrent = () => !controller.signal.aborted
+      && engine.getBuilding() === building && engine.getState().activeFloorId === activeFloorId;
     try {
-      const selectedCanonicalId = selectedEntity?.canonicalId ?? editor.selection?.entityId;
-      const response = await fetch('/api/v1/cad/edit-proposal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          building: editor.building,
-          floorId: activeFloorId,
-          expectedRevision: editor.building.version,
-          control: editor.generationControl,
-          selectedEntityId: selectedCanonicalId,
-          instruction: promptText,
-        }),
-      });
-      if (response.ok) {
+      let response: Response | undefined;
+      try {
+        response = await fetch('/api/v1/cad/edit-proposal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(base),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (!isCurrent()) return;
+        if (!(error instanceof TypeError)) throw error;
+      }
+      if (!isCurrent()) return;
+      if (response?.ok) {
         const data = (await response.json()) as {
           proposal: CadAiEditProposalResult;
           aiTelemetry?: { interpretationSource?: string; modelUsed?: string; fallbackReason?: string };
         };
-        const mode =
-          data.aiTelemetry?.interpretationSource === 'GEMINI_ASSISTED'
-            ? `Live Gemini (${data.aiTelemetry.modelUsed ?? 'gemini'})`
-            : `Deterministic Parser (${data.aiTelemetry?.fallbackReason ?? 'local'})`;
+        if (!isCurrent()) return;
+        if (data.proposal.baseRevisionDigest !== base.expectedRevisionDigest) {
+          throw new Error('The CAD proposal was computed for a different revision. Preview again.');
+        }
+        const mode = data.aiTelemetry?.interpretationSource === 'GEMINI_ASSISTED'
+          ? `Live Gemini (${data.aiTelemetry.modelUsed ?? 'gemini'})`
+          : `Deterministic Parser (${data.aiTelemetry?.fallbackReason ?? 'local'})`;
         setAiPreview({ proposal: data.proposal, providerMode: mode });
         return;
       }
-    } catch {
-      // Fall back to in-process deterministic canonical edit proposal if backend route unreachable
+      if (response && response.status !== 404 && response.status < 500) {
+        const data = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+        throw new Error(data?.error?.message ?? `CAD request failed (${response.status}).`);
+      }
+      const proposal = proposeControlledCadEdit(base);
+      if (isCurrent()) setAiPreview({ proposal, providerMode: 'Deterministic Parser (local)' });
+    } catch (error) {
+      if (isCurrent()) setGuardrailNotice(error instanceof Error ? error.message : 'CAD proposal failed.');
     } finally {
-      setAiBusy(false);
+      if (aiRequest.current === controller) {
+        aiRequest.current = null;
+        setAiBusy(false);
+      }
     }
-
-    const fallbackProposal = proposeControlledCadEdit({
-      building: editor.building,
-      floorId: activeFloorId,
-      expectedRevision: editor.building.version,
-      control: editor.generationControl,
-      selectedEntityId: selectedEntity?.canonicalId ?? editor.selection?.entityId,
-      instruction: promptText,
-      intentSource: 'DETERMINISTIC',
-    });
-    setAiPreview({
-      proposal: fallbackProposal,
-      providerMode: 'Deterministic Parser (local)',
-    });
   };
 
   const handleAcceptAiProposal = () => {
@@ -914,14 +924,16 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
   const handleExportCanonicalExchangeDxf = async () => {
     try {
       const adapter = new CanonicalDxfExchangeAdapter();
-      const rev = exchangeRevision(editor.building);
-      const artifact = await adapter.export(editor.building, rev);
-      const readback = await adapter.readback(artifact, rev, editor.building);
+      const building = editor.engine.getBuilding();
+      const rev = exchangeRevision(building);
+      const artifact = await adapter.export(building, rev);
+      const readback = await adapter.readback(artifact, rev, building);
+      if (editor.engine.getBuilding() !== building) throw new Error('The project changed during DXF export. Export the current revision again.');
       const blob = new Blob([new Uint8Array(artifact.bytes)], { type: 'application/dxf' });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${editor.projectName.replace(/[^a-z0-9-_]+/gi, '_')}_rev${editor.building.version}_canonical.dxf`;
+      anchor.download = `${editor.projectName.replace(/[^a-z0-9-_]+/gi, '_')}_rev${rev.revision}_canonical.dxf`;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       setDxfExportNotice(

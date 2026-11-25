@@ -30,3 +30,7 @@ Local verification used Windows, Node 24.18.0 and pnpm 9.7.0. GitHub Actions tar
 Phase 4B begins at `dc2e3ca777381b74a45297fc595a0b5cb0656e9d`. The separate feature worktree preserves Phase 4A.1 and the original operator edits. `packages/core/src/interchange/ifc-contract.ts` defines IFC4 receipt identity and the exchange namespace. The backend adapter owns serialization and software readback. The existing authorized export route validates the exact canonical revision and artifact digest. IFC reference inspection and prism clashes run in a cancellable browser worker, and imported geometry remains separate from canonical editor state.
 
 BIM Studio reads the active canonical building and its geometry projections for selection and schedules. The Phase 4A CAD and Phase 3.5 viewport lifecycles remain the source of edit and rendering behavior. See [Phase 4B acceptance](../integration/PHASE4B_ACCEPTANCE.md) for verified scope, workflows and open gates.
+
+## Phase 5 canonical Studio boundary
+
+The active worktree is `C:/Users/ruthi/rh-planner-phase5`. The canonical editor owns the accepted building. CAD proposals and exchange artifacts capture the revision and digest. The server disk manifest publishes the readable snapshot and checks the browser's last opened or saved receipt before a changed write. See [Phase 5 engineering handoff](PHASE5_CODEX_HANDOFF.md).

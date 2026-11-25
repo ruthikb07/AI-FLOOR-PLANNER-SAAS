@@ -13,6 +13,7 @@ export default defineConfig({
     'rh-studio-workflow.spec.ts',
     'rh-phase4a-cad-workflow.spec.ts',
     'rh-phase4b-bim-workflow.spec.ts',
+    'rh-phase5-unified-studio.spec.ts',
   ],
   timeout: 90_000,
   workers: 1,

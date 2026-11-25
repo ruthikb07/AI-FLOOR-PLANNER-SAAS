@@ -2,19 +2,18 @@ import {
   apartmentFloorRegions,
   architecturalSlabCutouts,
   canonicalOpeningGeometry,
+  canonicalCurvedOpeningGeometry,
   canonicalStairSolids,
   fitOpeningInsideWall,
   generateApartmentWalls,
   mumtyCoverSolids,
-  pointInPolygon,
-  pointToSegmentDistance,
   polygonArea,
-  polygonCentroid,
 } from '@ai-floor-planner/geometry-engine';
-import { isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
-import type { Building, Door, Floor, Point, Polygon, Room, Wall, Window } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, isPhysicalBoundary, architecturalWallHeight } from '@ai-floor-planner/core';
+import type { Building, CanonicalFurnitureItem, Door, Floor, Point, Polygon, Room, Wall, Window } from '@ai-floor-planner/core';
 import { rectToPolygon, RoomType } from '@ai-floor-planner/core';
 import { resolveProjectionSettings } from './settings';
+import { cutoutOverlapsSlab } from './slab-solid-regions';
 import type {
   Building3DProjection,
   Building3DProjectionSettings,
@@ -23,6 +22,15 @@ import type {
   ParameterProvenance,
   WallSolidSegment3D,
 } from './types';
+
+const furnitureHeightsMm: Partial<Record<CanonicalFurnitureItem['type'], number>> = {
+  bed: 450, wardrobe: 2050, sofa: 700, l_sofa: 700, sectional_sofa: 700, chair: 450,
+  table: 750, round_table: 750, toilet: 420, bathtub: 500, shower: 75, fridge: 1750, sink: 850,
+};
+
+export function furnitureSolidHeightMm(item: CanonicalFurnitureItem): number {
+  return item.heightMm ?? furnitureHeightsMm[item.type] ?? 850;
+}
 
 const EPSILON = 0.001;
 
@@ -33,30 +41,6 @@ function isOpenToSkyVoidRoom(room: Room): boolean {
     room.spaceUse === 'VOID' ||
     room.type === RoomType.OTS
   );
-}
-
-function pointNearPolygonBoundary(pt: Point, poly: Polygon, toleranceMm: number): boolean {
-  const pts = poly.points;
-  for (let i = 0; i < pts.length; i += 1) {
-    const start = pts[i]!;
-    const end = pts[(i + 1) % pts.length]!;
-    if (pointToSegmentDistance(pt, { start, end }) <= toleranceMm) return true;
-  }
-  return false;
-}
-
-/**
- * Retains strictly-interior cutout holes (e.g. stairs, lifts, internal MEP shafts)
- * while dropping perimeter recesses and open-ended OTS voids already carved out of
- * the outer built slab contour. Canonical hole coordinates are preserved unmodified.
- */
-function sanitizeInteriorHole(hole: Polygon, outerBoundary: Polygon): Polygon | null {
-  if (hole.points.length < 3 || polygonArea(hole) < 50_000) return null;
-  const center = polygonCentroid(hole);
-  if (!pointInPolygon(center, outerBoundary) || pointNearPolygonBoundary(center, outerBoundary, 25)) {
-    return null;
-  }
-  return hole;
 }
 
 /**
@@ -85,21 +69,16 @@ export function deriveBuiltFloorPlate(
       return { boundary: floor.boundary, cutouts: rawCutouts };
     }
 
-    // Merge strictly-interior voids from the built union with shaft/stair cutouts,
-    // dropping any perimeter recess / open-ended OTS polygon already carved out of builtBoundary.
+    // Retain cutouts with material to remove. The slab projection clips edge-crossing cutouts.
     const candidateHoles: Polygon[] = [...regions.voids, ...rawCutouts];
     const seen = new Set<string>();
     const cleanCutouts: Polygon[] = [];
     for (const candidate of candidateHoles) {
-      const sanitized = sanitizeInteriorHole(candidate, builtBoundary);
-      if (!sanitized) continue;
-      const key = sanitized.points
-        .map(p => `${Math.round(p.x / 10)},${Math.round(p.y / 10)}`)
-        .sort()
-        .join(';');
+      if (candidate.points.length < 3 || !cutoutOverlapsSlab(builtBoundary, candidate)) continue;
+      const key = candidate.points.map(point => `${point.x},${point.y}`).sort().join(';');
       if (seen.has(key)) continue;
       seen.add(key);
-      cleanCutouts.push(sanitized);
+      cleanCutouts.push(candidate);
     }
     return { boundary: builtBoundary, cutouts: cleanCutouts };
   } catch {
@@ -113,6 +92,14 @@ function length(start: Point, end: Point): number {
 }
 
 function projectionOpeningInterval(opening: Door | Window, wall: Wall, allowNarrowing: boolean) {
+  if (wall.arc) {
+    try {
+      const curve = canonicalCurvedOpeningGeometry(opening, wall);
+      return { position: curve.pointAt(curve.start), alongWall: curve.start, width: opening.width };
+    } catch {
+      return undefined;
+    }
+  }
   if (opening.openingGeometryVersion === 1) {
     // Defensive sanitizer: never let an out-of-bounds opening crash Floor 3D / Building 3D.
     try {
@@ -295,6 +282,7 @@ export function projectBuildingTo3D(
   return {
     buildingId: building.id,
     buildingVersion: building.version,
+    buildingDigest: canonicalBuildingHash(building),
     ...(coordinatedChajjas.length ? { coordinatedChajjas } : {}),
     ...(otsLouverScreens.length ? { otsLouverScreens } : {}),
     ...(facadeCoord?.galleryCoordinationMode ? { galleryCoordinationMode: facadeCoord.galleryCoordinationMode } : {}),
@@ -347,7 +335,9 @@ export function projectBuildingTo3D(
         )
         .map(wall => {
           const physicalHeight = architecturalWallHeight(wall, wallHeight);
-          const wallLength = length(wall.startPoint, wall.endPoint);
+          const wallLength = wall.arc
+            ? wall.arc.radiusMm * Math.abs(wall.arc.endAngleRad - wall.arc.startAngleRad)
+            : length(wall.startPoint, wall.endPoint);
           return {
             sourceEntityId: wall.id,
             sourceEntityType: 'wall' as const,
@@ -363,6 +353,10 @@ export function projectBuildingTo3D(
           };
         });
     }),
+    furniture: building.floors.flatMap(floor => (floor.furniture ?? []).filter(item =>
+      !item.siteZoneId && floor.rooms.some(room => room.id === item.roomId)).map(item => ({
+      ...item, heightMm: furnitureSolidHeightMm(item), floorId: floor.id, elevation: (levelByFloor.get(floor.id)?.elevation ?? 0) + (item.elevationMm ?? 0),
+    }))),
     openings,
     rooms: building.floors.flatMap(floor => {
       const level = levelByFloor.get(floor.id);
@@ -377,7 +371,7 @@ export function projectBuildingTo3D(
             && stair.boundary.points.every(point => point.x >= room.x && point.x <= room.x + room.width
               && point.y >= room.y && point.y <= room.y + room.height))
           .map(stair => stair.boundary) : [],
-        elevation: (level?.elevation ?? 0) + settings.slabThickness.value,
+        elevation: (level?.elevation ?? 0) + (floor.architecture ? 0 : settings.slabThickness.value),
         height: floor.architecture ? 8 : Math.min(settings.defaultWallHeight.value, Math.max(1, (level?.floorToFloorHeight ?? settings.defaultFloorToFloorHeight.value) - settings.slabThickness.value)),
         name: room.name,
       }));

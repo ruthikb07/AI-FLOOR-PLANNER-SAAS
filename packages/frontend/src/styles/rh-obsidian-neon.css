@@ -892,8 +892,41 @@ body {
   }
 }
 
+/* Warm-Beige Architectural Paper Studio Surface (Phase 5 Gate L) */
+.rh-obsidian-shell[data-studio-surface="warm-paper"] {
+  --rh-obsidian: #F5EFE6;
+  --rh-obsidian-elevated: #FAF6F0;
+  --rh-glass: rgba(250, 246, 240, 0.92);
+  --rh-glass-strong: rgba(245, 239, 230, 0.96);
+  --rh-glass-border: rgba(34, 29, 24, 0.14);
+  --rh-glass-border-strong: rgba(34, 29, 24, 0.22);
+  --rh-text: #221D18;
+  --rh-text-secondary: #4A3F35;
+  --rh-text-muted: #6E6053;
+  --bg-app: #F5EFE6;
+  --bg-surface: #FAF6F0;
+  --bg-panel: #EDE4D5;
+  --bg-card: #FFFDF9;
+  --argon-bg: #F5EFE6;
+  --argon-surface: #EDE4D5;
+  --argon-card: #FFFDF9;
+  --argon-border: rgba(34, 29, 24, 0.14);
+  --argon-text: #221D18;
+  --argon-muted: #6E6053;
+  --argon-btn: #8B6843;
+  --argon-btn-hover: #735434;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
   .rh-tab-transition {
-    animation: none;
+    animation: none !important;
   }
 }

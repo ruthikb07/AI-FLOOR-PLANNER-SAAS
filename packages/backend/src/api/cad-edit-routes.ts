@@ -1,11 +1,11 @@
 import {
   GeminiExecutionError,
+  redactSecret,
   resolveModelThinkingParameters,
   type BaseAIProvider,
 } from '@ai-floor-planner/ai-orchestration';
 import {
   AITaskType,
-  validateBuildingSchema,
   type AIInvocationMode,
   type Building,
   type GenerationControlState,
@@ -15,9 +15,9 @@ import {
   parseCadEditInstructionDeterministically,
   proposeControlledCadEdit,
   type CadAiEditProposalResult,
-  type CadEditAction,
   type CadEditIntent,
 } from '@ai-floor-planner/planning-engine';
+import { buildingInputError, isRecord } from './http-input.js';
 
 const CAD_EDIT_INTENT_SCHEMA: Record<string, unknown> = {
   type: 'object',
@@ -36,6 +36,7 @@ const CAD_EDIT_INTENT_SCHEMA: Record<string, unknown> = {
     },
     targetRoomQuery: { type: 'string' },
     targetUnitIndex: { type: 'integer' },
+    targetEntityId: { type: 'string' },
     targetOpeningKind: { type: 'string', enum: ['door', 'window'] },
     targetWidthMm: { type: 'number' },
     shiftMm: { type: 'number' },
@@ -43,6 +44,8 @@ const CAD_EDIT_INTENT_SCHEMA: Record<string, unknown> = {
     areaDeltaPercent: { type: 'number' },
     targetAreaSqM: { type: 'number' },
     targetAreaSqFt: { type: 'number' },
+    targetAreaMm2: { type: 'number' },
+    variantIndex: { type: 'integer' },
     localScope: {
       type: 'string',
       enum: ['SINGLE_FLAT', 'SINGLE_ROOM', 'CONNECTED_ROOM_GROUP', 'EDITABLE_ZONE'],
@@ -78,17 +81,40 @@ export interface CadEditProposalApiResponse {
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+type IntentField = { readonly type: string; readonly enum?: readonly string[] };
+const intentFields = CAD_EDIT_INTENT_SCHEMA.properties as Record<string, IntentField>;
+const identifier = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0 && value.length <= 512;
+const revisionNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
+function parseCadIntent(value: unknown): CadEditIntent | undefined {
+  if (!isRecord(value) || typeof value.action !== 'string') return undefined;
+  for (const [key, entry] of Object.entries(value)) {
+    if (!Object.hasOwn(intentFields, key)) return undefined;
+    const field = intentFields[key]!;
+    if (field.type === 'string') {
+      if (!identifier(entry) || (field.enum && !field.enum.includes(entry))) return undefined;
+    } else {
+      if (typeof entry !== 'number' || !Number.isFinite(entry)) return undefined;
+      if (field.type === 'integer' && !revisionNumber(entry)) return undefined;
+      if (['targetAreaMm2', 'targetAreaSqM', 'targetAreaSqFt', 'targetWidthMm', 'targetUnitIndex'].includes(key)
+        && entry <= 0) return undefined;
+      if (key === 'areaDeltaPercent' && entry <= -100) return undefined;
+    }
+  }
+  if (value.action === 'RESIZE_OPENING' && value.targetWidthMm === undefined) return undefined;
+  if (value.moveOpeningMode === 'SHIFT_MM' && value.shiftMm === undefined) return undefined;
+  return value as unknown as CadEditIntent;
 }
 
-const VALID_ACTIONS = new Set<CadEditAction>([
-  'RESIZE_ROOM_AREA',
-  'MOVE_OPENING',
-  'ADJUST_PARTITION_OR_PASSAGE',
-  'RESIZE_OPENING',
-  'LOCALIZED_FLAT_REGENERATION',
-]);
+function isControl(value: unknown): value is GenerationControlState {
+  return isRecord(value) && value.schemaVersion === 1 && identifier(value.revisionId)
+    && value.footprintLocked === true && typeof value.updatedAt === 'string'
+    && Number.isFinite(Date.parse(value.updatedAt))
+    && [value.lockedEntityIds, value.lockedFloorIds, value.protectedCoreIds].every(list =>
+      Array.isArray(list) && list.every(identifier));
+}
 
 const ZERO_USAGE: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
@@ -106,31 +132,33 @@ export async function handleCadEditProposal(
     };
   }
 
-  const building = body.building as Building | undefined;
-  const floorId = typeof body.floorId === 'string' ? body.floorId.trim() : '';
-  const instruction = typeof body.instruction === 'string' ? body.instruction.trim() : '';
-  const selectedEntityId = typeof body.selectedEntityId === 'string' ? body.selectedEntityId.trim() : undefined;
-  const expectedRevision = typeof body.expectedRevision === 'number' ? body.expectedRevision : undefined;
-  const expectedRevisionDigest =
-    typeof body.expectedRevisionDigest === 'string' ? body.expectedRevisionDigest : undefined;
-  const control = isRecord(body.control) ? (body.control as unknown as GenerationControlState) : undefined;
-
-  if (!building || !isRecord(building) || validateBuildingSchema(building).length > 0) {
+  if (buildingInputError(body.building)) {
     return {
       status: 400,
       json: { error: { code: 'INVALID_BUILDING', message: 'A valid canonical Building payload is required.' } },
     };
   }
-  if (!floorId) {
+  const building = body.building as Building;
+  const { floorId, expectedRevision, expectedRevisionDigest, control, selectedEntityId } = body;
+  if (!identifier(floorId) || !building.floors.some(floor => floor.id === floorId)) {
     return {
       status: 400,
-      json: { error: { code: 'MISSING_FLOOR_ID', message: 'floorId is required.' } },
+      json: { error: { code: 'INVALID_FLOOR_ID', message: 'Select a floor in the canonical building.' } },
     };
   }
-  if (!instruction && !isRecord(body.parsedIntent)) {
+  const instruction = typeof body.instruction === 'string' ? body.instruction.trim() : '';
+  let parsedIntent = parseCadIntent(body.parsedIntent);
+  if ((selectedEntityId !== undefined && !identifier(selectedEntityId))
+    || (expectedRevision !== undefined && !revisionNumber(expectedRevision))
+    || (expectedRevisionDigest !== undefined && (typeof expectedRevisionDigest !== 'string'
+      || !/^[a-f0-9]{64}$/.test(expectedRevisionDigest)))
+    || (control !== undefined && !isControl(control))
+    || (body.instruction !== undefined && (typeof body.instruction !== 'string' || body.instruction.length > 32_000))
+    || (body.parsedIntent !== undefined && !parsedIntent)
+    || (!instruction && !parsedIntent)) {
     return {
       status: 400,
-      json: { error: { code: 'MISSING_INSTRUCTION', message: 'instruction or parsedIntent is required.' } },
+      json: { error: { code: 'INVALID_CAD_EDIT', message: 'Check the selected entity, revision, locks and edit intent.' } },
     };
   }
 
@@ -142,10 +170,6 @@ export async function handleCadEditProposal(
   }
 
   const startedAt = Date.now();
-  let parsedIntent: CadEditIntent | undefined =
-    isRecord(body.parsedIntent) && VALID_ACTIONS.has(body.parsedIntent.action as CadEditAction)
-      ? (body.parsedIntent as unknown as CadEditIntent)
-      : undefined;
   let intentSource: 'GEMINI_ASSISTED' | 'DETERMINISTIC' = 'DETERMINISTIC';
   let invocationMode: AIInvocationMode = 'DETERMINISTIC_FALLBACK';
   let geminiInvoked = false;
@@ -182,49 +206,9 @@ export async function handleCadEditProposal(
       const decoded: unknown =
         response.parsed ??
         (response.content.trim().startsWith('{') ? JSON.parse(response.content) : null);
-      if (isRecord(decoded) && VALID_ACTIONS.has(decoded.action as CadEditAction)) {
-        const raw = decoded;
-        parsedIntent = {
-          action: raw.action as CadEditAction,
-          ...(selectedEntityId
-            ? { targetEntityId: selectedEntityId.replace(/^cad:(?:wall|room|door|window|stair|floor|anno:room):/, '') }
-            : {}),
-          ...(typeof raw.targetRoomQuery === 'string' ? { targetRoomQuery: raw.targetRoomQuery } : {}),
-          ...(typeof raw.targetUnitIndex === 'number' ? { targetUnitIndex: raw.targetUnitIndex } : {}),
-          ...(raw.targetOpeningKind === 'door' || raw.targetOpeningKind === 'window'
-            ? { targetOpeningKind: raw.targetOpeningKind }
-            : {}),
-          ...(typeof raw.targetWidthMm === 'number' ? { targetWidthMm: raw.targetWidthMm } : {}),
-          ...(typeof raw.shiftMm === 'number' ? { shiftMm: raw.shiftMm } : {}),
-          ...(raw.moveOpeningMode === 'TOWARDS_CORNER' ||
-          raw.moveOpeningMode === 'CENTER' ||
-          raw.moveOpeningMode === 'SHIFT_MM'
-            ? { moveOpeningMode: raw.moveOpeningMode }
-            : {}),
-          ...(typeof raw.areaDeltaPercent === 'number' ? { areaDeltaPercent: raw.areaDeltaPercent } : {}),
-          ...(typeof raw.targetAreaSqM === 'number' ? { targetAreaSqM: raw.targetAreaSqM } : {}),
-          ...(typeof raw.targetAreaSqFt === 'number' ? { targetAreaSqFt: raw.targetAreaSqFt } : {}),
-          ...(raw.localScope === 'SINGLE_FLAT' ||
-          raw.localScope === 'SINGLE_ROOM' ||
-          raw.localScope === 'CONNECTED_ROOM_GROUP' ||
-          raw.localScope === 'EDITABLE_ZONE'
-            ? { localScope: raw.localScope }
-            : {}),
-          ...(raw.localOperation === 'REGENERATE_ALTERNATIVE' ||
-          raw.localOperation === 'RELOCATE_KITCHEN' ||
-          raw.localOperation === 'CONVERT_BHK' ||
-          raw.localOperation === 'RESIZE_MASTER_BEDROOM' ||
-          raw.localOperation === 'RECONFIGURE_LIVING_DINING' ||
-          raw.localOperation === 'REGENERATE_ROOM'
-            ? { localOperation: raw.localOperation }
-            : {}),
-          ...(raw.targetBhk === '1BHK' ||
-          raw.targetBhk === '2BHK' ||
-          raw.targetBhk === '3BHK' ||
-          raw.targetBhk === '4BHK'
-            ? { targetBhk: raw.targetBhk }
-            : {}),
-        };
+      const validatedIntent = parseCadIntent(decoded);
+      if (validatedIntent) {
+        parsedIntent = { ...validatedIntent, targetEntityId: selectedEntityId };
         intentSource = 'GEMINI_ASSISTED';
         invocationMode = 'LIVE_PROVIDER';
         modelUsed = response.model;
@@ -241,7 +225,7 @@ export async function handleCadEditProposal(
       apiCallCount = err instanceof GeminiExecutionError ? err.apiCallCount : 1;
       tokenUsage = undefined;
       currentRequestTokenUsage = 'UNKNOWN';
-      fallbackReason = err instanceof Error ? err.message.slice(0, 120) : 'GEMINI_EDIT_PARSE_FAILED';
+      fallbackReason = err instanceof Error ? redactSecret(err.message).slice(0, 120) : 'GEMINI_EDIT_PARSE_FAILED';
     }
   } else if (!parsedIntent && !deps.gemini) {
     fallbackReason = 'GEMINI_NOT_CONFIGURED';

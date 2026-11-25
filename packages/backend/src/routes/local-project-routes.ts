@@ -7,6 +7,7 @@ import {
   readLocalProjectSourceCad,
   saveLocalProject,
   isLocalProjectId,
+  LocalProjectRevisionConflict,
   type SaveLocalProjectInput,
 } from '../services/local-project-store.js';
 
@@ -45,6 +46,12 @@ export async function handleLocalProjectRoute(
         sendJson(response, 400, { error: { code: 'INVALID_BUILDING', message: invalid } });
         return true;
       }
+      if (body.expected !== undefined && (!isRecord(body.expected)
+        || !Number.isSafeInteger(body.expected.revision) || Number(body.expected.revision) < 1
+        || typeof body.expected.digest !== 'string' || !/^[a-f0-9]{64}$/.test(body.expected.digest))) {
+        sendJson(response, 400, { error: { code: 'INVALID_REVISION', message: 'Provide a persisted revision and its canonical digest.' } });
+        return true;
+      }
       const input = body as unknown as SaveLocalProjectInput;
       const id = input.projectId ?? input.building.projectId;
       if (!isLocalProjectId(id)
@@ -54,8 +61,13 @@ export async function handleLocalProjectRoute(
         sendJson(response, 400, { error: { code: 'INVALID_PROJECT', message: 'Check the project ID, name, note and source CAD attachment.' } });
         return true;
       }
-      const saved = saveLocalProject(input);
-      sendJson(response, 200, { ok: true, ...saved });
+      try {
+        const saved = saveLocalProject(input);
+        sendJson(response, 200, { ok: true, ...saved });
+      } catch (error) {
+        if (!(error instanceof LocalProjectRevisionConflict)) throw error;
+        sendJson(response, 409, { error: { code: 'PROJECT_REVISION_CONFLICT', message: error.message } });
+      }
       return true;
     }
   }

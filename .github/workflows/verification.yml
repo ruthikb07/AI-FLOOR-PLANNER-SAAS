@@ -42,7 +42,9 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Non-planning package unit and HTTP tests
-        run: pnpm exec turbo run test --concurrency=2 "--filter=!@ai-floor-planner/planning-engine"
+        run: pnpm exec turbo run test --concurrency=2 "--filter=!@ai-floor-planner/planning-engine" "--filter=!@ai-floor-planner/constraint-engine"
+      - name: Constraint engine and wall-clock budgets
+        run: pnpm --filter @ai-floor-planner/constraint-engine run test
       - name: Planning-engine unit tests
         run: pnpm --filter @ai-floor-planner/planning-engine exec vitest run --pool=threads --poolOptions.threads.minThreads=1 --poolOptions.threads.maxThreads=2 --exclude "**/phase0-generation-benchmark.test.ts"
       - name: Monorepo integration tests

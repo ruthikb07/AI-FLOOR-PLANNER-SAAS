@@ -84,6 +84,7 @@ materials = {
     'MAT_Concrete_Structural': material('MAT_Concrete_Structural', (0.38, 0.39, 0.40), 0.9),
     'MAT_Glass_Aperture': material('MAT_Glass_Aperture', (0.90, 0.96, 1.0), 0.05, transmission=1.0),
     'MAT_Metal_Railing': material('MAT_Metal_Railing', (0.055, 0.065, 0.075), 0.26, metallic=0.82),
+    'MAT_Furniture': material('MAT_Furniture', (0.38, 0.25, 0.15), 0.65),
     'MAT_Floor_Tile': material('MAT_Floor_Tile', (0.72, 0.68, 0.59), 0.38),
     'MAT_Floor_Wet': material('MAT_Floor_Wet', (0.36, 0.47, 0.49), 0.52),
     'MAT_Door': material('MAT_Door', (0.22, 0.105, 0.045), 0.6),

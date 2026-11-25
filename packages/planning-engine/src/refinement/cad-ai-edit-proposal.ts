@@ -28,6 +28,7 @@ import { moveApartmentPartition } from './apartment-partition-edit';
 import { expandFlatIntoSetbackMargin, optimizeRoomArea } from './room-area-optimizer';
 import { buildingRefinementRevision } from './targeted-regeneration';
 import {
+  buildProtectedFloorGraph,
   proposeProtectedLocalRegeneration,
   type LocalizedRegenerationOperation,
   type LocalizedRegenerationScope,
@@ -174,7 +175,7 @@ export function parseCadEditInstructionDeterministically(
       localScope: 'SINGLE_FLAT',
       localOperation: 'CONVERT_BHK',
       targetBhk: `${bhkConvertMatch[1]}BHK` as ApartmentBhkType,
-      targetUnitIndex: parsedUnitIndex ?? 2,
+      targetUnitIndex: parsedUnitIndex,
       targetEntityId: normalizedSelected,
     };
   }
@@ -227,6 +228,10 @@ export function parseCadEditInstructionDeterministically(
     };
   }
 
+  const openingRoomHint = lower.match(
+    /\b(master\s+bedroom|bedroom\s*\d*|living(?:\s+room)?|dining|kitchen|study|bathroom|toilet|utility|balcony)\b/i,
+  )?.[1]?.trim();
+
   // 2. Resize window / door width (e.g. "Resize this window to 1500 mm")
   const resizeOpeningMatch = lower.match(/\b(?:resize|set|change|make|widen|narrow)\b.*?\b(window|door)\b.*?\b(\d+(?:\.\d+)?)\s*(mm|cm|m)\b/i)
     ?? lower.match(/\b(window|door)\b.*?\b(?:width|to)\s*(\d+(?:\.\d+)?)\s*(mm|cm|m)\b/i);
@@ -238,6 +243,8 @@ export function parseCadEditInstructionDeterministically(
     return {
       action: 'RESIZE_OPENING',
       targetOpeningKind: kind,
+      targetUnitIndex: parsedUnitIndex,
+      targetRoomQuery: openingRoomHint,
       targetWidthMm: widthMm,
       targetEntityId: normalizedSelected,
     };
@@ -246,23 +253,13 @@ export function parseCadEditInstructionDeterministically(
   // 3. Move opening along host wall (e.g. "Move this bedroom door towards the corner")
   if (/\b(?:move|shift|slide|reposition|center|centre)\b/.test(lower) && /\b(door|window|opening)\b/.test(lower)) {
     const kind: 'door' | 'window' = /\bwindow\b/.test(lower) ? 'window' : 'door';
-    const roomHint = /\bmaster\s+bedroom\b/.test(lower)
-      ? 'master bedroom'
-      : /\bbedroom\b/.test(lower)
-      ? 'bedroom'
-      : /\bkitchen\b/.test(lower)
-      ? 'kitchen'
-      : /\bliving\b/.test(lower)
-      ? 'living'
-      : /\bbathroom|toilet\b/.test(lower)
-      ? 'bathroom'
-      : undefined;
     const mmMatch = lower.match(/([+-]?\d+(?:\.\d+)?)\s*(mm|cm|m)\b/);
     if (/\b(?:center|centre|middle)\b/.test(lower)) {
       return {
         action: 'MOVE_OPENING',
         targetOpeningKind: kind,
-        targetRoomQuery: roomHint,
+        targetUnitIndex: parsedUnitIndex,
+        targetRoomQuery: openingRoomHint,
         moveOpeningMode: 'CENTER',
         targetEntityId: normalizedSelected,
       };
@@ -274,7 +271,8 @@ export function parseCadEditInstructionDeterministically(
       return {
         action: 'MOVE_OPENING',
         targetOpeningKind: kind,
-        targetRoomQuery: roomHint,
+        targetUnitIndex: parsedUnitIndex,
+        targetRoomQuery: openingRoomHint,
         moveOpeningMode: 'SHIFT_MM',
         shiftMm,
         targetEntityId: normalizedSelected,
@@ -283,7 +281,8 @@ export function parseCadEditInstructionDeterministically(
     return {
       action: 'MOVE_OPENING',
       targetOpeningKind: kind,
-      targetRoomQuery: roomHint,
+      targetUnitIndex: parsedUnitIndex,
+      targetRoomQuery: openingRoomHint,
       moveOpeningMode: 'TOWARDS_CORNER',
       targetEntityId: normalizedSelected,
     };
@@ -335,7 +334,7 @@ export function parseCadEditInstructionDeterministically(
     action: 'RESIZE_ROOM_AREA',
     targetEntityId: normalizedSelected,
     ...(parsedUnitIndex !== undefined ? { targetUnitIndex: parsedUnitIndex } : {}),
-    targetRoomQuery: roomQueryMatch ? roomQueryMatch[1]!.toLowerCase() : 'master bedroom',
+    targetRoomQuery: roomQueryMatch?.[1]?.trim(),
     ...(exactMm2 !== undefined ? { targetAreaMm2: exactMm2 } : {}),
     ...(parsedSqm?.ok ? { targetAreaSqM: parsedSqm.sqM } : {}),
     ...(parsedSqft?.ok ? { targetAreaSqFt: parsedSqft.sqFt } : {}),
@@ -369,11 +368,9 @@ function verifyProposedBuilding(
     };
   }
 
-  const unaffectedFloorsUnchanged = before.floors.every(bf => {
-    if (bf.id === editedFloorId) return true;
-    const af = after.floors.find(f => f.id === bf.id);
-    return Boolean(af && stableValueHash(bf) === stableValueHash(af));
-  });
+  const unrelated = (building: Building) => building.floors.filter(floor => floor.id !== editedFloorId)
+    .slice().sort((a, b) => a.id.localeCompare(b.id));
+  const unaffectedFloorsUnchanged = stableValueHash(unrelated(before)) === stableValueHash(unrelated(after));
 
   const beforeFloor = before.floors.find(f => f.id === editedFloorId);
   const afterFloor = after.floors.find(f => f.id === editedFloorId);
@@ -383,14 +380,14 @@ function verifyProposedBuilding(
 
   let unaffectedFlatsUnchanged = true;
   if (allowedUnitIds.size > 0 && (beforeFloor.apartmentUnits?.length ?? 0) > 1) {
-    for (const roomBefore of beforeFloor.rooms) {
-      if (!roomBefore.unitId || allowedUnitIds.has(roomBefore.unitId)) continue;
-      const roomAfter = afterFloor.rooms.find(r => r.id === roomBefore.id);
-      if (!roomAfter || stableValueHash(roomBefore.boundary) !== stableValueHash(roomAfter.boundary)) {
-        unaffectedFlatsUnchanged = false;
-        break;
-      }
-    }
+    const editableRooms = (floor: Floor) => new Set(floor.rooms
+      .filter(room => room.unitId && allowedUnitIds.has(room.unitId)).map(room => room.id));
+    const graph = (floor: Floor) => ({
+      ...buildProtectedFloorGraph(floor, editableRooms(floor), allowedUnitIds),
+      stairs: floor.stairs, canonicalStaircases: floor.canonicalStaircases,
+      columns: floor.columns, beams: floor.beams,
+    });
+    unaffectedFlatsUnchanged = stableValueHash(graph(beforeFloor)) === stableValueHash(graph(afterFloor));
   }
 
   const audit = new GeometryValidator({
@@ -420,7 +417,7 @@ function verifyProposedBuilding(
     return { ok: false, summary, error: 'Proposed edit modified an unrelated building floor.' };
   }
   if (!unaffectedFlatsUnchanged) {
-    return { ok: false, summary, error: 'Proposed edit modified rooms belonging to an unrelated apartment flat.' };
+    return { ok: false, summary, error: 'Proposed edit changed protected flat, circulation or structural entities.' };
   }
   if (!geometryValid) {
     return { ok: false, summary, error: criticalGeo!.description };
@@ -508,40 +505,35 @@ function buildDiffFromProposal(
   return { wallIds, roomIds, openingIds, unitIds: [...unitSet], roomAreaDeltas };
 }
 
-function resolveRoomByQuery(floor: Floor, query: string | undefined, selectedId: string | undefined): Room | undefined {
-  if (selectedId) {
-    const direct = floor.rooms.find(r => r.id === selectedId);
-    if (direct) return direct;
+function roomMatchesQuery(room: Room, query: string): boolean {
+  const normalized = (value: string) => value.toLowerCase().trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b0+(?=\d)/g, '');
+  const search = normalized(query);
+  const name = normalized(room.name);
+  if (name === search || name.replace(/^(?:flat|unit|apartment)\s+#?\d+\s+/, '') === search) return true;
+  switch (search) {
+    case 'master bedroom': return room.type === RoomType.Bedroom && /\bmaster\b/.test(name);
+    case 'bedroom': return room.type === RoomType.Bedroom;
+    case 'living':
+    case 'living room': return room.type === RoomType.Living;
+    case 'kitchen': return room.type === RoomType.Kitchen;
+    case 'dining': return room.type === RoomType.Dining;
+    case 'bathroom':
+    case 'toilet': return room.type === RoomType.Bathroom;
+    case 'passage':
+    case 'corridor': return room.type === RoomType.Corridor || room.type === RoomType.Foyer;
+    default: return false;
   }
-  const habitable = floor.rooms.filter(
-    r =>
-      architecturalSpaceRole(r) !== 'OPEN_TO_SKY_VOID' &&
-      r.type !== RoomType.Staircase &&
-      r.type !== RoomType.Lift,
+}
+
+function resolveRoomByQuery(rooms: readonly Room[], query: string | undefined, selectedId: string | undefined): Room | undefined {
+  const matches = rooms.filter(room =>
+    architecturalSpaceRole(room) !== 'OPEN_TO_SKY_VOID'
+    && (!selectedId || room.id === selectedId)
+    && (!query || roomMatchesQuery(room, query)),
   );
-  if (!query) return habitable[0];
-  const q = query.toLowerCase().trim();
-  if (q.includes('master')) {
-    const namedMaster = habitable.find(r => r.name.toLowerCase().includes('master'));
-    if (namedMaster) return namedMaster;
-    const bedrooms = habitable.filter(r => r.type === RoomType.Bedroom);
-    return bedrooms.sort((a, b) => b.area - a.area)[0];
-  }
-  const exactName = habitable.find(r => r.name.toLowerCase().includes(q));
-  if (exactName) return exactName;
-  if (q.includes('bedroom')) return habitable.find(r => r.type === RoomType.Bedroom);
-  if (q.includes('living')) return habitable.find(r => r.type === RoomType.Living);
-  if (q.includes('kitchen')) return habitable.find(r => r.type === RoomType.Kitchen);
-  if (q.includes('dining')) return habitable.find(r => r.type === RoomType.Dining);
-  if (q.includes('passage') || q.includes('corridor')) {
-    return habitable.find(
-      r =>
-        r.type === RoomType.Corridor ||
-        r.type === RoomType.Foyer ||
-        /passage|corridor|lobby|foyer/i.test(r.name),
-    );
-  }
-  return habitable[0];
+  return (query || selectedId) && matches.length === 1 ? matches[0] : undefined;
 }
 
 function isEntityLocked(
@@ -587,10 +579,11 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
   const control = request.control ?? defaultControl();
   const baseRevisionDigest = buildingRefinementRevision(building, control);
   const intentSource = request.intentSource ?? 'DETERMINISTIC';
-  const normalizedSelected = normalizeEntityId(request.selectedEntityId);
+  const selectedEntityId = normalizeEntityId(request.selectedEntityId);
   const parsedIntent =
     request.parsedIntent ??
-    parseCadEditInstructionDeterministically(request.instruction ?? '', normalizedSelected);
+    parseCadEditInstructionDeterministically(request.instruction ?? '', selectedEntityId);
+  const normalizedSelected = normalizeEntityId(parsedIntent.targetEntityId) ?? selectedEntityId;
 
   const fail = (
     status: CadAiEditProposalStatus,
@@ -636,20 +629,26 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
     );
   }
 
+  const requestedUnit = parsedIntent.targetUnitIndex === undefined
+    ? undefined
+    : floor.apartmentUnits?.[parsedIntent.targetUnitIndex - 1];
+  if (parsedIntent.targetUnitIndex !== undefined && !requestedUnit) {
+    return fail('REJECTED_BY_CONSTRAINTS', `Flat ${parsedIntent.targetUnitIndex} does not exist on "${floor.name}".`);
+  }
+  const scopedRooms = requestedUnit ? floor.rooms.filter(room => room.unitId === requestedUnit.id) : floor.rooms;
+
   // Action 5: Protected Localized Flat / Room / Zone Regeneration (Phase 5 Gate E)
   if (parsedIntent.action === 'LOCALIZED_FLAT_REGENERATION') {
     const scope = parsedIntent.localScope ?? 'SINGLE_FLAT';
     let targetRoomIds: string[] | undefined;
+    const selectedRoom = scopedRooms.find(room => room.id === normalizedSelected);
+    if (selectedEntityId && !selectedRoom && !requestedUnit && !parsedIntent.targetRoomQuery) {
+      return fail('REJECTED_BY_CONSTRAINTS', 'Select a room in the flat to regenerate or specify its number.');
+    }
     if (scope === 'SINGLE_ROOM') {
-      const unitForRoom =
-        parsedIntent.targetUnitIndex !== undefined
-          ? floor.apartmentUnits?.[parsedIntent.targetUnitIndex - 1]
-          : undefined;
-      const scopedFloor: Floor = unitForRoom
-        ? { ...floor, rooms: floor.rooms.filter(r => r.unitId === unitForRoom.id) }
-        : floor;
-      const matched = resolveRoomByQuery(scopedFloor, parsedIntent.targetRoomQuery, normalizedSelected);
-      if (matched) targetRoomIds = [matched.id];
+      const matched = resolveRoomByQuery(scopedRooms, parsedIntent.targetRoomQuery, selectedRoom?.id);
+      if (!matched) return fail('REJECTED_BY_CONSTRAINTS', 'Select a unique room on the requested floor and flat.');
+      targetRoomIds = [matched.id];
     }
 
     const localRes = proposeProtectedLocalRegeneration({
@@ -658,6 +657,7 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
       scope,
       operation: parsedIntent.localOperation,
       targetUnitIndex: parsedIntent.targetUnitIndex,
+      targetUnitId: requestedUnit?.id ?? selectedRoom?.unitId,
       targetRoomIds,
       targetBhk: parsedIntent.targetBhk,
       targetAreaMm2: parsedIntent.targetAreaMm2,
@@ -715,51 +715,37 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
   if (parsedIntent.action === 'RESIZE_OPENING' || parsedIntent.action === 'MOVE_OPENING') {
     const selectedDoor = normalizedSelected ? floor.doors.find(d => d.id === normalizedSelected) : undefined;
     const selectedWindow = normalizedSelected ? floor.windows.find(w => w.id === normalizedSelected) : undefined;
-    const selectedRoom = normalizedSelected ? floor.rooms.find(r => r.id === normalizedSelected) : undefined;
-    const queriedRoom = parsedIntent.targetRoomQuery
-      ? resolveRoomByQuery(floor, parsedIntent.targetRoomQuery, selectedRoom?.id)
-      : selectedRoom;
+    const selectedRoom = scopedRooms.find(room => room.id === normalizedSelected);
+    const selectedOpening = selectedDoor ?? selectedWindow;
+    const kind = parsedIntent.targetOpeningKind ?? (selectedWindow ? 'window' : 'door');
+    if ((selectedDoor && kind !== 'door') || (selectedWindow && kind !== 'window')
+      || (normalizedSelected && !selectedOpening && !selectedRoom)) {
+      return fail('REJECTED_BY_CONSTRAINTS', 'The selection does not match the requested opening or its room.');
+    }
 
-    const wantDoor =
-      selectedDoor !== undefined ||
-      (selectedWindow === undefined && parsedIntent.targetOpeningKind === 'door');
-
+    const pool: readonly (Door | Window)[] = selectedOpening
+      ? [selectedOpening] : kind === 'door' ? floor.doors : floor.windows;
     const candidates: Array<{ opening: Door | Window; kind: 'door' | 'window'; host: Wall }> = [];
-    const pool: Array<{ opening: Door | Window; kind: 'door' | 'window' }> = selectedDoor
-      ? [{ opening: selectedDoor, kind: 'door' }]
-      : selectedWindow
-      ? [{ opening: selectedWindow, kind: 'window' }]
-      : wantDoor
-      ? floor.doors.map(opening => ({ opening, kind: 'door' as const }))
-      : floor.windows.map(opening => ({ opening, kind: 'window' as const }));
-
-    for (const item of pool) {
-      const host = floor.walls.find(w => w.id === item.opening.wallId);
+    for (const opening of pool) {
+      const host = floor.walls.find(w => w.id === opening.wallId);
       if (!host || !isPhysicalBoundary(host) || host.arc) continue;
-      if (queriedRoom) {
-        const servesRoom =
-          item.kind === 'door'
-            ? (item.opening as Door).connectsRooms.includes(queriedRoom.id)
-            : (item.opening as Window).roomId === queriedRoom.id;
-        if (!servesRoom) continue;
+      const servingRooms = scopedRooms.filter(room => 'connectsRooms' in opening
+        ? opening.connectsRooms.includes(room.id) : opening.roomId === room.id);
+      const targetRoom = resolveRoomByQuery(
+        selectedOpening ? servingRooms : scopedRooms,
+        parsedIntent.targetRoomQuery,
+        selectedRoom?.id,
+      );
+      if (!selectedOpening || requestedUnit || parsedIntent.targetRoomQuery) {
+        if (targetRoom ? !servingRooms.includes(targetRoom) : !(selectedOpening && requestedUnit
+          && !parsedIntent.targetRoomQuery && servingRooms.length > 0)) continue;
       }
-      candidates.push({ ...item, host });
+      candidates.push({ opening, host, kind });
     }
-
-    // Fallback to any straight-hosted opening of the requested kind on the floor if room query had none
-    if (candidates.length === 0 && !selectedDoor && !selectedWindow) {
-      for (const item of pool) {
-        const host = floor.walls.find(w => w.id === item.opening.wallId);
-        if (host && isPhysicalBoundary(host) && !host.arc) {
-          candidates.push({ ...item, host });
-        }
-      }
-    }
-
-    if (candidates.length === 0) {
+    if (candidates.length !== 1) {
       return fail(
         'REJECTED_BY_CONSTRAINTS',
-        `No straight physical wall-hosted ${wantDoor ? 'door' : 'window'} matched the selection on "${floor.name}".`,
+        `Select a unique straight-wall ${kind} on "${floor.name}" matching the requested room and flat.`,
       );
     }
 
@@ -1020,7 +1006,7 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
   }
 
   // Action 1: Resize room carpet area
-  const targetRoom = resolveRoomByQuery(floor, parsedIntent.targetRoomQuery, normalizedSelected);
+  const targetRoom = resolveRoomByQuery(scopedRooms, parsedIntent.targetRoomQuery, normalizedSelected);
   if (!targetRoom) {
     return fail('REJECTED_BY_CONSTRAINTS', `Could not locate target room on "${floor.name}".`);
   }
@@ -1050,6 +1036,13 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
   const baseBuilding = relaxAreaTargetLockForExplicitUserEdit(building);
   const allowedUnits = new Set(targetRoom.unitId ? [targetRoom.unitId] : []);
 
+  const hasNumericTarget = parsedIntent.targetAreaMm2 !== undefined || parsedIntent.targetAreaSqM !== undefined
+    || parsedIntent.targetAreaSqFt !== undefined || /\d\s*%/.test(request.instruction ?? '');
+  const toleranceMm2 = hasNumericTarget ? 250_000 : Math.max(250_000, Math.abs(requestedAreaMm2 - currentAreaMm2) * 0.45);
+  const meetsRequest = (area: number) =>
+    (requestedAreaMm2 > currentAreaMm2 ? area > currentAreaMm2 + 1000 : area < currentAreaMm2 - 1000)
+    && (!hasNumericTarget || Math.abs(area - requestedAreaMm2) <= toleranceMm2);
+
   // Strategy 1A: Try moveApartmentPartition on any unlocked internal partition of targetRoom first (exact topological & opening preservation!)
   if (floor.apartmentUnits?.length) {
     const roomPartitions = floor.walls.filter(
@@ -1060,7 +1053,6 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
         w.roomIds.includes(targetRoom.id) &&
         w.roomIds.length === 2,
     );
-    const wantIncrease = requestedAreaMm2 >= currentAreaMm2;
     for (const part of roomPartitions) {
       const wallLen = Math.hypot(part.endPoint.x - part.startPoint.x, part.endPoint.y - part.startPoint.y) || 3000;
       const idealShiftMag = Math.min(350, Math.max(50, Math.round(Math.abs(requestedAreaMm2 - currentAreaMm2) / wallLen / 25) * 25));
@@ -1071,7 +1063,7 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
             const afterFloor = cand.floors.find(f => f.id === floorId)!;
             const afterTarget = afterFloor.rooms.find(r => r.id === targetRoom.id)!;
             const afterArea = polygonArea(afterTarget.boundary);
-            if (wantIncrease ? afterArea <= currentAreaMm2 + 1000 : afterArea >= currentAreaMm2 - 1000) continue;
+            if (!meetsRequest(afterArea)) continue;
             const check = verifyProposedBuilding(building, cand, floorId, allowedUnits);
             if (!check.ok) continue;
             const diff = buildDiffFromProposal(floor, afterFloor);
@@ -1106,13 +1098,22 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
   // Strategy 1B: Parametric room area optimizer / local setback margin expansion
   const opt = optimizeRoomArea(baseBuilding, targetRoom.id, {
     targetAreaMm2: requestedAreaMm2,
-    toleranceMm2: Math.max(250_000, Math.abs(requestedAreaMm2 - currentAreaMm2) * 0.45),
+    toleranceMm2,
     allowAdjacentAdjustments: true,
     preserveStructural: true,
     control,
   });
 
-  const allCandidates = [...opt.candidates];
+  const allCandidates: { building: Building; name: string; accepted?: boolean }[] = [...opt.candidates];
+  if (floor.apartmentUnits?.length) {
+    const local = proposeProtectedLocalRegeneration({
+      building, floorId, control, targetUnitId: targetRoom.unitId, scope: 'SINGLE_ROOM',
+      targetRoomIds: [targetRoom.id], targetAreaMm2: requestedAreaMm2,
+    });
+    allCandidates.push(...local.candidates.map(candidate => ({
+      building: candidate.building, name: candidate.label, accepted: true,
+    })));
+  }
   if (allCandidates.length === 0 && requestedAreaMm2 > currentAreaMm2 && !control.footprintLocked) {
     const modeA = expandFlatIntoSetbackMargin(baseBuilding, targetRoom.id, requestedAreaMm2, {
       control,
@@ -1121,9 +1122,10 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
     allCandidates.push(...modeA.candidates);
   }
 
+  let rejectedCandidateReason: string | undefined;
   for (const cand of allCandidates) {
     let candidateBuilding = cand.building;
-    if (floor.apartmentUnits?.length) {
+    if (floor.apartmentUnits?.length && !cand.accepted) {
       try {
         const editedFl = candidateBuilding.floors.find(f => f.id === floorId)!;
         candidateBuilding = acceptApartmentFloorEdit(baseBuilding, editedFl);
@@ -1132,10 +1134,11 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
       }
     }
     const check = verifyProposedBuilding(building, candidateBuilding, floorId, allowedUnits);
-    if (!check.ok) continue;
+    if (!check.ok) { rejectedCandidateReason = check.error; continue; }
     const afterFloor = candidateBuilding.floors.find(f => f.id === floorId)!;
     const afterTarget = afterFloor.rooms.find(r => r.id === targetRoom.id)!;
     const afterArea = polygonArea(afterTarget.boundary);
+    if (!meetsRequest(afterArea)) continue;
     const diff = buildDiffFromProposal(floor, afterFloor);
     return {
       status: 'PREVIEW_READY',
@@ -1161,7 +1164,7 @@ export function proposeControlledCadEdit(request: CadAiEditProposalRequest): Cad
 
   return fail(
     'REJECTED_BY_CONSTRAINTS',
-    opt.infeasibilityReason ??
+    rejectedCandidateReason ?? opt.infeasibilityReason ??
       `Cannot resize "${targetRoom.name}" to ${(requestedAreaMm2 / SQMM_PER_SQM).toFixed(2)} m² without violating structural columns, adjacent room minimums, or flat closure.`,
     [targetRoom.id],
   );

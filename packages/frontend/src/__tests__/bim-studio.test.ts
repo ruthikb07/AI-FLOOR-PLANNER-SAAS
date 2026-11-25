@@ -49,6 +49,12 @@ it('confirms exact prism overlap, excludes intentional opening volume and reject
     bottomMm: view.elevation + 10, topMm: view.elevation + 90 };
   const input = { floor, walls: [view], alignment: { x: 0, y: 0, z: 0, angle: 0 }, referenceSha256: 'ref',
     revisionSha256: 'rev', toleranceMm: 0.01 };
+  const coverage = findBimClashes({ ...input, reference: [
+    sample,
+    { ...sample, globalId: 'off-floor', bottomMm: view.elevation + 8000, topMm: view.elevation + 8100 },
+    { ...sample, globalId: 'invalid-hole', holes: [[{ x: 0, y: 0 }]] },
+  ] });
+  expect(coverage.coverage).toMatchObject({ outsideStorey: 1, unsupported: 1, excludedByScope: 0 });
   expect(findBimClashes({ ...input, reference: [sample] }).results).toHaveLength(0);
   const top = view.elevation + door.height + 81;
   const inWall = { ...sample, bottomMm: top - 80, topMm: top };
@@ -83,4 +89,16 @@ it('imports an independently authored metre IFC with nested storey and product p
   expect(Math.min(...aligned.boundary.map(point => point.x))).toBeCloseTo(3300);
   expect(Math.min(...aligned.boundary.map(point => point.y))).toBeCloseTo(-5200);
   expect(aligned.bottomMm).toBe(3000);
+});
+
+it('deducts only the clipped union of overlapping slab cutouts', () => {
+  const rectangle = (left: number, top: number, right: number, bottom: number) => ({
+    points: [{ x: left, y: top }, { x: right, y: top }, { x: right, y: bottom }, { x: left, y: bottom }],
+  });
+  const schedule = calculateBimSchedule(floor, [], {
+    ...plate!,
+    boundary: rectangle(0, 0, 10000, 10000),
+    cutouts: [rectangle(1000, 1000, 6000, 5000), rectangle(4000, 1000, 11000, 5000)],
+  });
+  expect(schedule.slabAreaMm2).toBe(64_000_000);
 });

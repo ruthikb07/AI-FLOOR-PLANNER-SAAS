@@ -287,6 +287,30 @@ describe('Phase 5A — Gates B, C, D & E: Architectural Intelligence, Exact Unit
       }
     });
 
+    it('rejects protected opening and wall metadata changes without a coordinate change', () => {
+      const flat2Id = typicalFloor.apartmentUnits![1]!.id;
+      const protectedRooms = new Set(typicalFloor.rooms.filter(room => room.unitId !== flat2Id).map(room => room.id));
+      const window = typicalFloor.windows.find(opening => protectedRooms.has(opening.roomId))!;
+      const wall = typicalFloor.walls.find(item => item.id === window.wallId)!;
+      const alteredFloors: Floor[] = [
+        { ...typicalFloor, windows: typicalFloor.windows.map(item => item.id === window.id
+          ? { ...item, sillHeight: item.sillHeight + 10 } : item) },
+        { ...typicalFloor, walls: typicalFloor.walls.map(item => item.id === wall.id
+          ? { ...item, material: 'unrelated wall material' } : item) },
+      ];
+      for (const altered of alteredFloors) {
+        const proof = verifyProtectedRegionInvariance({
+          before: sharedFourFlat,
+          after: { ...sharedFourFlat, floors: sharedFourFlat.floors.map(floor => floor.id === altered.id ? altered : floor) },
+          targetFloorId: typicalFloor.id,
+          targetUnitId: flat2Id,
+          editableRoomIdsBefore: new Set(typicalFloor.rooms.filter(room => room.unitId === flat2Id).map(room => room.id)),
+        });
+        expect(proof.passed, proof.violations.join(' ')).toBe(false);
+        expect(proof.beforeProtectedDigest).not.toBe(proof.afterProtectedDigest);
+      }
+    });
+
     it('(6) regenerates ONLY 1 bedroom inside Flat 2 without affecting other flats', () => {
       const flat2Id = typicalFloor.apartmentUnits![1]!.id;
       const bed = typicalFloor.rooms.find(r => r.unitId === flat2Id && r.type === RoomType.Bedroom)!;

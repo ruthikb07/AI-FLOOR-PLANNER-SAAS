@@ -57,6 +57,9 @@ export const ArchitecturalCADWorkspace: React.FC<ArchitecturalCADWorkspaceProps>
   const [shapeDrawerOpen, setShapeDrawerOpen] = useState(false);
   const [scoreDrawerOpen, setScoreDrawerOpen] = useState(false);
   const [precisionCadOpen, setPrecisionCadOpen] = useState(initialPrecisionCadOpen);
+  React.useEffect(() => {
+    if (initialPrecisionCadOpen) setPrecisionCadOpen(true);
+  }, [initialPrecisionCadOpen]);
   const [entityLayers, setEntityLayers] = useState({ columns: false, beams: false, furniture: true });
   const [disciplines, setDisciplines] = useState<Record<EngineeringOverlay, boolean>>({
     ARCHITECTURAL: true,

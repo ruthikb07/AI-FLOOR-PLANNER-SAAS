@@ -111,3 +111,16 @@ See [browser hotfix verification](PHASE35_WEBGL_BROWSER_HOTFIX.md) for commands,
 | Windows preview encountered runtime dependency locks | Vite preview tried to load the build-time PostCSS configuration before serving immutable compiled assets. Preview now skips those plugins and retains the API proxy. |
 
 See [Phase 4B acceptance](../integration/PHASE4B_ACCEPTANCE.md) for the remaining native application, Advanced BIM and professional gates.
+
+## Phase 5 source review
+
+| Defect | Evidence and disposition |
+| --- | --- |
+| D01 and D02, entity fallback | Reproduced unsafe targets. CAD resolution requires an unambiguous floor, flat, room and opening. An unavailable opening is refused. |
+| D03 and D04, local protection | Reproduced undetected protected wall and window metadata changes. Graph checks now include complete protected records. Edits preserve existing opening flags outside their scope. Connected group regeneration stays within the requested group. |
+| D05, slab cutouts | Reproduced 52 m² where the clipped union yields 64 m². BIM schedules, IFC and interactive 3D use the actual planar difference. |
+| D06, stale saves | Reproduced competing HTTP 200 responses and an unpublished revision accessible by number. The backend compares persisted revision and digest, returns 409 on conflicting writes and gates reads on the published manifest. |
+| D07, CAD input validation | Reproduced eight malformed request shapes accepted as HTTP 200. The route validates canonical building, floor, locks, revision, digest, dimensions and edit intent. |
+| D08 and D09, proposals and briefs | Reproduced caching of a malformed proposal and loss of text after character 4,000. The provider receives the accepted full brief and only normalized valid proposals enter the LRU. |
+| D10, clash coverage | Checked pairs, out-of-storey geometry, excluded scope, invalid or unsupported inputs and open findings are enumerated. |
+| D11 and D12, IFC and BIM coverage | Bounded reference representations and typed schedule queries are implemented. General Boolean, mapped and mesh federation, native viewer reopen, BCF and unrestricted semantic interpretation remain outside the verified workflow. |

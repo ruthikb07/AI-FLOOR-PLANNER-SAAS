@@ -16,6 +16,8 @@
 
 import {
   RoomType,
+  rectToPolygon,
+  type GenerationControlState,
   type Building,
   type CanonicalFurnitureItem,
   type DynamicApartmentManifest,
@@ -24,6 +26,7 @@ import {
   type Room,
   type SiteZone,
 } from '@ai-floor-planner/core';
+import { pointInPolygon, polygonBoundingBox, segmentIntersection } from '@ai-floor-planner/geometry-engine';
 import { buildFurniturePolygonContainmentGuard } from '../catalog/shape-geometry-synthesizer';
 
 interface DoorClearanceBox {
@@ -797,5 +800,85 @@ export function populateCanonicalFurniture(
     ...building,
     floors: updatedFloors,
     furniture: buildingFurniture,
+  };
+}
+
+
+/** Validates a manual move in the canonical plan coordinate system. */
+export function editFurniturePlacement(
+  building: Building,
+  control: GenerationControlState,
+  floorId: string,
+  furnitureId: string,
+  change: { readonly dxMm?: number; readonly dyMm?: number; readonly rotateQuarterTurn?: boolean },
+): Building {
+  const floor = building.floors.find(candidate => candidate.id === floorId);
+  const item = floor?.furniture?.find(candidate => candidate.id === furnitureId);
+  const room = floor?.rooms.find(candidate => candidate.id === item?.roomId);
+  if (!floor || !item || !room || item.siteZoneId) throw new Error('Select furniture in an architectural room.');
+  const locked = new Set([...control.lockedEntityIds, ...control.protectedCoreIds]);
+  if (room.isFixed || control.lockedFloorIds.includes(floorId)
+    || [item.id, room.id, room.unitId].some(id => id && locked.has(id))) {
+    throw new Error('Unlock the room and furniture before changing the placement.');
+  }
+  const { dxMm = 0, dyMm = 0, rotateQuarterTurn = false } = change;
+  if (![dxMm, dyMm].every(Number.isFinite)) throw new Error('Enter finite offsets in millimetres.');
+  if (!dxMm && !dyMm && !rotateQuarterTurn) return building;
+  const widthMm = rotateQuarterTurn ? item.depthMm : item.widthMm;
+  const depthMm = rotateQuarterTurn ? item.widthMm : item.depthMm;
+  const next: CanonicalFurnitureItem = {
+    ...item,
+    xMm: item.xMm + dxMm + (item.widthMm - widthMm) / 2,
+    yMm: item.yMm + dyMm + (item.depthMm - depthMm) / 2,
+    widthMm, depthMm, anchorWall: undefined,
+    rotationDeg: rotateQuarterTurn ? ((item.rotationDeg + 90) % 360) as CanonicalFurnitureItem['rotationDeg'] : item.rotationDeg,
+  };
+  const footprint = rectToPolygon(next.xMm, next.yMm, widthMm, depthMm);
+  const points = footprint.points;
+  if (points.some(point => !pointInPolygon(point, room.boundary))
+    || points.some((start, index) => room.boundary.points.some((roomStart, roomIndex) => segmentIntersection(
+      { start, end: points[(index + 1) % points.length]! },
+      { start: roomStart, end: room.boundary.points[(roomIndex + 1) % room.boundary.points.length]! },
+    )))) {
+    throw new Error('The furniture footprint crosses its room boundary.');
+  }
+  const bounds = polygonBoundingBox(footprint);
+  const conflicts = getRoomDoorClearanceBoxes(room, floor);
+  for (const wall of floor.walls.filter(wall => wall.roomIds.includes(room.id))) {
+    if (wall.arc || (wall.startPoint.x !== wall.endPoint.x && wall.startPoint.y !== wall.endPoint.y)) {
+      throw new Error('Furniture placement editing is supported on rooms with straight orthogonal walls.');
+    }
+    const offset = wall.thickness / 2;
+    if (wall.startPoint.x === wall.endPoint.x) {
+      conflicts.push({ minX: wall.startPoint.x - offset, maxX: wall.startPoint.x + offset,
+        minY: Math.min(wall.startPoint.y, wall.endPoint.y), maxY: Math.max(wall.startPoint.y, wall.endPoint.y) });
+    } else if (wall.startPoint.y === wall.endPoint.y) {
+      conflicts.push({ minY: wall.startPoint.y - offset, maxY: wall.startPoint.y + offset,
+        minX: Math.min(wall.startPoint.x, wall.endPoint.x), maxX: Math.max(wall.startPoint.x, wall.endPoint.x) });
+    }
+  }
+  for (const other of floor.furniture ?? []) {
+    if (other.id === item.id || other.roomId !== room.id) continue;
+    const bedWardrobe = (item.type === 'bed' && other.type === 'wardrobe') || (item.type === 'wardrobe' && other.type === 'bed');
+    const margin = bedWardrobe ? 650 : 0;
+    conflicts.push({ minX: other.xMm - margin, minY: other.yMm - margin,
+      maxX: other.xMm + other.widthMm + margin, maxY: other.yMm + other.depthMm + margin });
+  }
+  if (collidesWithDoorClearance({ x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height }, conflicts)) {
+    throw new Error('The furniture placement overlaps a wall, doorway clearance or another item.');
+  }
+  // Columns are architectural obstructions even when modeled as provisional framing.
+  if (floor.columns.some(column => collidesWithDoorClearance({ x: bounds.x, y: bounds.y, w: bounds.width, h: bounds.height }, [{
+    minX: column.position.x - column.width / 2, maxX: column.position.x + column.width / 2,
+    minY: column.position.y - column.depth / 2, maxY: column.position.y + column.depth / 2,
+  }]))) throw new Error('The furniture placement overlaps a column.');
+  const itemReplacement = (candidate: CanonicalFurnitureItem) => candidate.id === furnitureId ? next : candidate;
+  return {
+    ...building,
+    version: building.version + 1,
+    updatedAt: new Date().toISOString(),
+    floors: building.floors.map(candidate => candidate.id === floorId
+      ? { ...candidate, furniture: candidate.furniture?.map(itemReplacement) } : candidate),
+    ...(building.furniture ? { furniture: building.furniture.map(itemReplacement) } : {}),
   };
 }

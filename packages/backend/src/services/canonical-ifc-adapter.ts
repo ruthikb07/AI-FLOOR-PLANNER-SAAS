@@ -10,7 +10,7 @@ import {
   polygonArea,
   wallToPolygon,
 } from '@ai-floor-planner/geometry-engine';
-import { projectBuildingTo3D } from '@ai-floor-planner/projection-3d';
+import { projectBuildingTo3D, slabSolidRegions } from '@ai-floor-planner/projection-3d';
 import { IfcStepWriter, exchangeRing, stepList, stepReal, stepString, type StepId } from './ifc-step-writer';
 
 const CURVE_TOLERANCE_MM = 0.5;
@@ -224,19 +224,15 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
 
       const plate = plates.get(floorId)!;
       if (floor.slabThicknessMm !== undefined && floor.slabThicknessMm > 0) {
-        // End-on-end recesses are already cut out of the derived exterior ring.
-        const polygon = plate.boundary;
-        const seenHoles = new Set<string>();
-        const holes = plate.cutouts.filter(hole => {
-          const key = hole.points.map(p => JSON.stringify([p.x, p.y])).sort().join();
-          if (seenHoles.has(key)) return false;
-          seenHoles.add(key);
-          return true;
-        });
-        const id = { ...mapping('slab', floorId, 'IFCSLAB'), profileAreaMm2: profileArea(polygon, holes), heightMm: floor.slabThicknessMm };
-        contained.push(register(id, step.add('IFCSLAB', ...root(id.externalId, floor.name + ' slab'), '$', place,
-          definition([bodyShape({ polygon, holes, bottom: -floor.slabThicknessMm, height: floor.slabThicknessMm })]), '$',
-          floor.floorUse === 'ROOF' ? '.ROOF.' : '.FLOOR.')));
+        const height = floor.slabThicknessMm;
+        const regions = slabSolidRegions(plate.boundary, plate.cutouts);
+        if (regions.length) {
+          const id = { ...mapping('slab', floorId, 'IFCSLAB'),
+            profileAreaMm2: regions.reduce((sum, region) => sum + region.areaMm2, 0), heightMm: height };
+          const solids = regions.map(({ polygon, holes }) => ({ polygon, holes, bottom: -height, height }));
+          contained.push(register(id, step.add('IFCSLAB', ...root(id.externalId, floor.name + ' slab'), '$', place,
+            definition([bodyShape(...solids)]), '$', floor.floorUse === 'ROOF' ? '.ROOF.' : '.FLOOR.')));
+        } else omit('slab', floorId, 'Canonical slab is fully cut out');
       } else omit('slab', floorId, 'Canonical slab thickness unavailable');
 
       for (const [kind, openings] of [['door', floor.doors], ['window', floor.windows]] as const) {
@@ -473,25 +469,28 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
         (mapping.axisMm || mapping.profileAreaMm2 !== undefined || mapping.heightMm !== undefined)) {
         const product = reader.entity(geometricEntity.args[6], 'IFCPRODUCTDEFINITIONSHAPE');
         const shapes = stepArgs(product.args[2]!).map(ref => reader.entity(ref, 'IFCSHAPEREPRESENTATION'));
-        const itemOf = (identifier: string) => {
+        const itemsOf = (identifier: string) => {
           const repr = shapes.find(candidate => candidate.args[1] === identifier);
-          return repr && stepArgs(repr.args[3]!)[0];
+          return repr ? stepArgs(repr.args[3]!) : [];
         };
         if (mapping.axisMm) {
-          const vertices = reader.ring(itemOf("'Axis'"));
+          const vertices = reader.ring(itemsOf("'Axis'")[0]);
           const positions = [vertices[0]!, vertices.at(-1)!].flatMap(p => [p.x, p.y]);
           mapping.axisMm.forEach((target, i) => compare(positions[i]!, target));
         }
-        const body = itemOf("'Body'");
-        const outline = itemOf("'FootPrint'");
-        const extrusion = body ? reader.entity(body, 'IFCEXTRUDEDAREASOLID') : undefined;
-        if (mapping.heightMm !== undefined && extrusion) compare(stepNumber(extrusion.args[3]), mapping.heightMm);
+        const outline = itemsOf("'FootPrint'")[0];
+        const extrusions = itemsOf("'Body'").map(body => reader.entity(body, 'IFCEXTRUDEDAREASOLID'));
+        if (mapping.heightMm !== undefined) {
+          for (const extrusion of extrusions) compare(stepNumber(extrusion.args[3]), mapping.heightMm);
+        }
         if (mapping.profileAreaMm2 !== undefined) {
-          const profile = extrusion && reader.entity(extrusion.args[0]);
-          const measured = outline
-            ? polygonArea({ points: reader.ring(outline) })
-            : profileArea({ points: reader.ring(profile?.args[2]) }, profile?.type === 'IFCARBITRARYPROFILEDEFWITHVOIDS'
-              ? stepArgs(profile.args[3]!).map(ref => ({ points: reader.ring(ref) })) : []);
+          const measured = outline ? polygonArea({ points: reader.ring(outline) })
+            : extrusions.reduce((sum, extrusion) => {
+                const profile = reader.entity(extrusion.args[0]);
+                const holes = profile.type === 'IFCARBITRARYPROFILEDEFWITHVOIDS'
+                  ? stepArgs(profile.args[3]!).map(ref => ({ points: reader.ring(ref) })) : [];
+                return sum + profileArea({ points: reader.ring(profile.args[2]) }, holes);
+              }, 0);
           maximumAreaErrorMm2 = Math.max(maximumAreaErrorMm2, Math.abs(measured - mapping.profileAreaMm2));
         }
       }

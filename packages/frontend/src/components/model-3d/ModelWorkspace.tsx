@@ -24,6 +24,7 @@ import {
   ThreeBuildingScene,
   type ArchitecturalMaterialPalette,
   type BuildingLightingMode,
+  type FurnitureCategoryId,
   type OpeningFinishOverride,
 } from './ThreeBuildingScene';
 import {
@@ -51,6 +52,8 @@ export interface ModelWorkspaceProps {
   readonly materialPalette?: ArchitecturalMaterialPalette;
   readonly onMaterialPaletteChange?: (palette: ArchitecturalMaterialPalette) => void;
   readonly openingFinish?: OpeningFinishOverride;
+  readonly enabledFurnitureCategories?: readonly FurnitureCategoryId[];
+  readonly forceInteriorCutaway?: boolean;
   readonly linkedSpanStoreys?: 1 | 2 | 3;
   readonly onLinkedSpanChange?: (span: 1 | 2 | 3) => void;
   readonly sceneRef?: React.MutableRefObject<THREE.Scene | null>;
@@ -80,6 +83,8 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
   materialPalette,
   onMaterialPaletteChange,
   openingFinish,
+  enabledFurnitureCategories,
+  forceInteriorCutaway,
   linkedSpanStoreys,
   onLinkedSpanChange,
   sceneRef,
@@ -229,13 +234,14 @@ export const ModelWorkspace: React.FC<ModelWorkspaceProps> = ({
         lightingMode={effectiveLighting}
         materialPalette={effectivePalette}
         openingFinish={openingFinish}
-        sectionCut={sectionCut}
+        enabledFurnitureCategories={enabledFurnitureCategories}
+        sectionCut={sectionCut || Boolean(forceInteriorCutaway)}
         parallelProjection={parallelProjection}
         walkthroughActive={walkthroughActive}
         walkCommand={walkCommand}
         zoomCommand={zoomCommand}
         linkedSpanStoreys={effectiveLinkedSpan}
-        layers={preferences.layers}
+        layers={forceInteriorCutaway ? { ...preferences.layers, rooms: true } : preferences.layers}
         fitRequest={fitRequest}
         fitSite={fitSite}
         snapshotRequest={snapshotRequest}

@@ -23,3 +23,7 @@ RH Planner's BIM & CAD Assistant combines a zero-latency deterministic engine (`
 | 7 | `AREA_TARGET_EDIT` | `"Resize Flat 1 to 920 sq ft"` | Multi-unit parser + `regenerateProtectedScope` | Requires **Accept Preview** + Undo/Redo |
 | 8 | `EXPORT_READINESS` | `"Check IFC export readiness and omissions"` | Deterministic (`0` tokens) | Read-only manifest check |
 | 9 | `REVISION_DIFF` | `"Compare changes since previous revision"` | Deterministic (`0` tokens) | Read-only diff |
+
+## Independent replay
+
+The backend and frontend BIM assistant tests exercised supported deterministic queries, cache telemetry and proposal confirmation. The visible BIM Studio query uses the local deterministic path. The server has a separately tested provider-assisted route. Live Gemini, broader intent coverage and complete native coordination are open.

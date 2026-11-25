@@ -1,3 +1,4 @@
+import { projectBuildingTo3D } from '@ai-floor-planner/projection-3d';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SITE_AMENITIES,
@@ -213,6 +214,17 @@ describe('Phase 5B Backend — Direct CAD Editing, Element Realism, IFC4 Curved 
       .windows.find(w => w.wallId === curvedWall.id)!;
     expect(createdWin).toBeDefined();
     expect(createdWin.sillHeight).toBe(950);
+
+    const interactive = projectBuildingTo3D(addedCurvedWin);
+    const viewWall = interactive.walls.find(wall => wall.sourceEntityId === curvedWall.id)!;
+    const viewWindow = interactive.openings.find(opening => opening.sourceEntityId === createdWin.id);
+    expect(viewWall.length).toBeCloseTo(curvedLen, 6);
+    expect(viewWindow?.width).toBe(createdWin.width);
+    const center = viewWindow!.alongWall + viewWindow!.width / 2;
+    expect(viewWall.solidSegments.some(segment => segment.alongStart < center && segment.alongEnd > center
+      && segment.bottom < createdWin.sillHeight + createdWin.height / 2
+      && segment.top > createdWin.sillHeight + createdWin.height / 2)).toBe(false);
+
 
     const movedCurvedWin = editApartmentOpening(
       addedCurvedWin,

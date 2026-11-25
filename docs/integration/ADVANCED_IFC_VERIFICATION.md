@@ -23,3 +23,7 @@
   - Broad-phase `2,500 mm` 2D spatial hash grid + narrow-phase ear-clipped triangle intersection (`HARD_CLASH` volume in `mm³`) and 3D prism-to-prism minimum clearance distance (`CLEARANCE` in `mm`).
   - Evaluates straight walls (split around hosted door/window openings), chorded curved walls (split around curved openings), and optional floor slabs (respecting inner cutouts), provisional RCC columns/beams, and door swing clearance zones (`includeSlabsAndStructure`).
   - Excludes zero-volume face contact (`volumeMm3 <= 1`), valid structural bearing at slab/column interfaces (`isValidStructuralBearing`), and tracks revision-bound `OPEN | RESOLVED | IGNORED` clash statuses.
+
+## Independent replay
+
+Windows IfcOpenShell 0.9.0.post1 read and meshed twelve generated files. The suite exercised the curved window, stable identifiers, host/fill references, staircase decomposition and edited geometry. Independent files and logs are stored separately from production source. The native desktop IFC reopen, BCF and general arbitrary IFC representation federation remain unverified.

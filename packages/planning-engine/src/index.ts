@@ -337,3 +337,5 @@ export {
   SPRINKLER_SPACING_MM,
   SWITCH_OFFSET_FROM_FRAME_MM,
 } from './mep/mep-synthesizer';
+
+export { editFurniturePlacement } from './plancraft/auto-furnish-apartment';

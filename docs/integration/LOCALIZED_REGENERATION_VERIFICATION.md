@@ -26,3 +26,9 @@
 | 12 | Reject infeasible local target / lock / stale rev | `CONVERT_BHK` (`4BHK` on compact flat) | `REJECTED_BY_CONSTRAINTS` / `REFUSED_LOCKED` / `REFUSED_STALE_REVISION`, canonical `Building` untouched |
 | 13 | Undo and Redo localized regeneration | `EditorEngine` + `ReplaceBuildingCommand` | `undo()` restores exact pre-edit `stableValueHash`; `redo()` restores exact post-edit `stableValueHash` |
 | 14 | Save and reload after localized regeneration | `serializeBuilding` -> `deserializeBuilding` | Round-trip preserves exact canonical hash, unit/room/wall IDs, and `verifyProtectedRegionInvariance` |
+
+## Independent replay
+
+The recovered 14 tests passed. A new failing regression demonstrated that the original proof missed an unchanged-position window's sill edit and an unrelated wall material edit. The revised check compares full entity records and rejects additions, removals and unrelated mutations. It includes other floors, canonical stairs, protected core rooms, shafts, columns, beams and furniture. Shared wall line coverage remains invariant where a local T-junction may split segments. Canonical completion and professional acceptance are separate gates.
+
+A single room can use an unlocked adjacent edge to re-proportion space. Room-group candidates stay inside the selected group and return a refusal if no bounded candidate survives. Regenerating one flat on a multi-flat floor requires an explicit flat or room. The solver supports the tested irregular cases and may refuse other geometry.

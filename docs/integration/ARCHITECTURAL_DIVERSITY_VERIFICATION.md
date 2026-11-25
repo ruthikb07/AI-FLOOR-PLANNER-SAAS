@@ -37,3 +37,7 @@
 - **Implemented Module:** `packages/core/src/models/unit-conversion.ts`
 - **Supported Input Formats:** `mm`, `cm`, `m`, `ft`, `in`, compound `ft' in"`, mixed fractions (`12' 6 1/2"`, `165 1/2 sq ft`), `sq ft`, `sq m`, `mm²`, and `Width × Length` dimension pairs (`12' 0" x 15' 0"`, `3600 x 4500 mm`), converted to exact canonical `mm` (`304.8 mm/ft`, `25.4 mm/in`) and `mm²` (`92,903.04 mm²/sq ft`, `1,000,000 mm²/sq m`).
 - **Interactive Editor (`InteractivePlanEditorPage.tsx`):** Displays current size, min habitable constraint, lock state, multi-unit target input, live `Δ sq ft` deviation, and protects locked neighbour rooms from shrinking.
+
+## Independent replay
+
+The Phase 5A topology tests executed genuine floor generation, compared physically different plans and rejected repeats. The group and single-room checks are evidence for bounded local changes. The broader diversity workflow still needs review across the nine briefs.

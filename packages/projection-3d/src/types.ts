@@ -1,4 +1,5 @@
 import type {
+  CanonicalFurnitureItem,
   CoordinatedChajjaBand,
   Direction,
   DoorType,
@@ -154,6 +155,7 @@ export interface OtsLouverScreen3D extends OtsLouverScreen {
 }
 
 export interface Building3DProjection {
+  readonly furniture?: readonly (CanonicalFurnitureItem & { readonly floorId: string; readonly elevation: number })[];
   readonly architecturalSolids?: readonly { readonly sourceEntityId: string; readonly sourceEntityType: 'stair' | 'room'; readonly floorId: string; readonly boundary: Polygon; readonly bottom: number; readonly top: number; readonly kind: string }[];
   readonly coordinatedChajjas?: readonly CoordinatedChajja3D[];
   readonly otsLouverScreens?: readonly OtsLouverScreen3D[];
@@ -161,6 +163,7 @@ export interface Building3DProjection {
   readonly galleryBays?: readonly GalleryBayCoordination[];
   readonly buildingId: string;
   readonly buildingVersion: number;
+  readonly buildingDigest?: string;
   readonly settings: Building3DProjectionSettings;
   readonly levels: readonly Level3D[];
   readonly floorPlates: readonly FloorPlate3D[];

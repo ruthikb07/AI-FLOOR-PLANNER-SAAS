@@ -158,3 +158,7 @@ Phase 4A.1 branched from `57a1a358af0b15886b44bd6be1efe64ae8ee16f9` onto `fix/ph
 The feature branch includes OpenBIMStudio source/license review, architectural IFC4 exchange, independent IfcOpenShell validation, and the lazy BIM Studio. The implemented scope covers revision-bound IFC and manifest export, geometric active-storey schedules, canonical CAD and 3D selection, bounded read-only IFC4 references and supported wall intersection checks. The only reused OpenBIMStudio production code is the compressed GlobalId utility.
 
 Do not enable unrestricted external IFC writeback. Keep native BIM application reopen distinct from STEP/schema validation. Curved hosted openings and generalized Boolean/mesh federation, BCF, clearance checking and provider-assisted BIM inference are open. Continue to use the existing CAD proposal and acceptance gate for canonical writes. [Phase 4B acceptance](../integration/PHASE4B_ACCEPTANCE.md)
+
+## Phase 5 handoff
+
+The actual Antigravity worktree and its Phase 5A, Phase 5B and pending Phase 5C work were recovered. See [Phase 5 engineering handoff](PHASE5_CODEX_HANDOFF.md) for verification, checkpoint commits and remaining gates.
