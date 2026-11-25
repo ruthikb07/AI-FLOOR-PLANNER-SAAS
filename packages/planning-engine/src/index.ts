@@ -90,6 +90,40 @@ export {
   type CadAiEditProposalRequest,
   type CadAiEditProposalResult,
 } from './refinement/cad-ai-edit-proposal';
+export {
+  proposeProtectedLocalRegeneration,
+  verifyProtectedRegionInvariance,
+  type LocalizedRegenerationScope,
+  type LocalizedRegenerationOperation,
+  type ProtectedLocalRegenerationRequest,
+  type ProtectedRegionInvarianceProof,
+  type LocalizedRegenerationCandidate,
+  type ProtectedLocalRegenerationStatus,
+  type ProtectedLocalRegenerationResult,
+} from './refinement/protected-local-regeneration';
+export {
+  ARCHITECTURAL_REQUIREMENT_HIERARCHY,
+  evaluateBriefRequirementHierarchyAndConflicts,
+  computeFloorEfficiencyBreakdown,
+  auditFloorFunctionalQuality,
+  type RequirementHierarchyTierId,
+  type RequirementHierarchyTierSpec,
+  type RequirementConflictAlternative,
+  type RequirementConflictDiagnostic,
+  type RequirementHierarchyEvaluation,
+  type EfficiencyBucketMetric,
+  type FloorEfficiencyBreakdown,
+  type FunctionalQualityFinding,
+  type FunctionalQualityReport,
+} from './diagnostics/architectural-efficiency';
+export {
+  compareCanonicalBuildingAlternatives,
+  resolveExplorationConfigFromControls,
+  verifyAlternativeRespectsControls,
+  buildAlternativeExhaustionExplanation,
+  type AlternativeExplorationControls,
+  type CanonicalAlternativeComparison,
+} from './topology/diversity-controls';
 export { coordinateStairAccess, stairModelIssues } from './generator/stair-coordination';
 export { evaluateDesign, type DesignEvaluationOptions } from './diagnostics/design-evaluator';
 export { diagnosticsToValidation, type ValidationSummary } from './repair/engine';

@@ -43,6 +43,22 @@ const CAD_EDIT_INTENT_SCHEMA: Record<string, unknown> = {
     areaDeltaPercent: { type: 'number' },
     targetAreaSqM: { type: 'number' },
     targetAreaSqFt: { type: 'number' },
+    localScope: {
+      type: 'string',
+      enum: ['SINGLE_FLAT', 'SINGLE_ROOM', 'CONNECTED_ROOM_GROUP', 'EDITABLE_ZONE'],
+    },
+    localOperation: {
+      type: 'string',
+      enum: [
+        'REGENERATE_ALTERNATIVE',
+        'RELOCATE_KITCHEN',
+        'CONVERT_BHK',
+        'RESIZE_MASTER_BEDROOM',
+        'RECONFIGURE_LIVING_DINING',
+        'REGENERATE_ROOM',
+      ],
+    },
+    targetBhk: { type: 'string', enum: ['1BHK', '2BHK', '3BHK', '4BHK'] },
   },
 };
 
@@ -188,6 +204,26 @@ export async function handleCadEditProposal(
           ...(typeof raw.areaDeltaPercent === 'number' ? { areaDeltaPercent: raw.areaDeltaPercent } : {}),
           ...(typeof raw.targetAreaSqM === 'number' ? { targetAreaSqM: raw.targetAreaSqM } : {}),
           ...(typeof raw.targetAreaSqFt === 'number' ? { targetAreaSqFt: raw.targetAreaSqFt } : {}),
+          ...(raw.localScope === 'SINGLE_FLAT' ||
+          raw.localScope === 'SINGLE_ROOM' ||
+          raw.localScope === 'CONNECTED_ROOM_GROUP' ||
+          raw.localScope === 'EDITABLE_ZONE'
+            ? { localScope: raw.localScope }
+            : {}),
+          ...(raw.localOperation === 'REGENERATE_ALTERNATIVE' ||
+          raw.localOperation === 'RELOCATE_KITCHEN' ||
+          raw.localOperation === 'CONVERT_BHK' ||
+          raw.localOperation === 'RESIZE_MASTER_BEDROOM' ||
+          raw.localOperation === 'RECONFIGURE_LIVING_DINING' ||
+          raw.localOperation === 'REGENERATE_ROOM'
+            ? { localOperation: raw.localOperation }
+            : {}),
+          ...(raw.targetBhk === '1BHK' ||
+          raw.targetBhk === '2BHK' ||
+          raw.targetBhk === '3BHK' ||
+          raw.targetBhk === '4BHK'
+            ? { targetBhk: raw.targetBhk }
+            : {}),
         };
         intentSource = 'GEMINI_ASSISTED';
         invocationMode = 'LIVE_PROVIDER';

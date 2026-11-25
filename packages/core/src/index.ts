@@ -32,3 +32,4 @@ export * from './models/mixed-unit-program';
 export * from './models/opening-migration';
 
 export * from './models/architectural-semantics';
+export * from './models/unit-conversion';

@@ -534,6 +534,20 @@ function normalizeBudget(value: unknown, context: import('@ai-floor-planner/core
   return refreshBudgetApproval(context, budget);
 }
 
+function triggerJsonBlobDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body?.appendChild(a);
+  a.click();
+  a.remove();
+  // Defer blob URL revocation so Chromium's out-of-process download manager
+  // completes async navigation IPC even under heavy Windows/CI CPU load.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 /** Export project envelope as downloaded JSON file */
 export function exportProjectAsJsonFile(envelope: ProjectEnvelope): void {
   const data = JSON.stringify(
@@ -545,12 +559,19 @@ export function exportProjectAsJsonFile(envelope: ProjectEnvelope): void {
     2,
   );
   const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${envelope.name.toLowerCase().replace(/\s+/g, '_')}_floorplan.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const safeStem = (envelope.name || envelope.projectId || 'project').toLowerCase().replace(/\s+/g, '_');
+  triggerJsonBlobDownload(blob, `${safeStem}_floorplan.json`);
+}
+
+/** Export an already-serialized archived revision payload without synchronous multi-MB re-parsing. */
+export function exportArchivedProjectPayloadAsJsonFile(
+  payload: string,
+  projectId: string,
+  version: number,
+): void {
+  const blob = new Blob([payload], { type: 'application/json' });
+  const safeStem = (projectId || 'project').toLowerCase().replace(/[^a-z0-9_-]+/g, '_');
+  triggerJsonBlobDownload(blob, `${safeStem}_rev_${version}_floorplan.json`);
 }
 
 /** Validate and import project from JSON string */

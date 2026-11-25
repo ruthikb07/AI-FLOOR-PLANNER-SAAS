@@ -36,12 +36,15 @@ import { DesignAssistant } from './DesignAssistant';
 import { CommandPalette } from '../workspace/CommandPalette';
 import { exportProjectAsJsonFile, projectStorage } from '../../services/storage';
 import {
+  buildAlternativeExhaustionExplanation,
+  compareCanonicalBuildingAlternatives,
   coordinateBuildingFacade,
   evaluateStudioLayoutScore,
   evaluateUDCPRCompliance,
   generateTargetedRefinements,
   RefinementError,
-  synthesizeStructuralFraming,
+   synthesizeStructuralFraming,
+  type AlternativeExplorationControls,
   type PipelineStageProgressEvent,
 } from '@ai-floor-planner/planning-engine';
 import type { WorkspaceCommand } from '../../services/workspace-commands';
@@ -392,8 +395,17 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       if (target === 'compare') {
         const prior = concepts.filter(concept => concept.building.projectId === projectId);
         if (prior.length === 0) prior.push({ building: before, seed: generationSeed });
-        if (prior.some(entry => layoutSignature(entry.building) === layoutSignature(generated))) {
-          setConceptNotice('The solver returned an existing layout. Adjust the brief or choose a different massing.');
+        const duplicateMatch = prior.find(
+          entry =>
+            layoutSignature(entry.building) === layoutSignature(generated) ||
+            !compareCanonicalBuildingAlternatives(entry.building, generated).meaningful,
+        );
+        if (duplicateMatch) {
+          setConceptNotice(
+            buildAlternativeExhaustionExplanation(prior.length, prior.length + 1, {
+              preserveExteriorFootprint: Boolean(data.buildingMassingShape && data.buildingMassingShape !== 'AUTO'),
+            }),
+          );
         } else {
           setConcepts([...prior.slice(-3), { building: generated, seed, sourceRevision: before }]);
         }
@@ -443,7 +455,10 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     );
   };
 
-  const handleRegenerateVariant = (target: 'edit' | 'compare' = 'edit') => {
+  const handleRegenerateVariant = (
+    target: 'edit' | 'compare' = 'edit',
+    controls?: AlternativeExplorationControls,
+  ) => {
     const brief = projectBrief ?? studioStoreActions.getProjectSetupWizardData();
     const currentBrief = editor.building.metadata.generationBrief;
     const currentShape = editor.building.metadata.generationBrief?.buildingMassingShape;
@@ -458,11 +473,28 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     }
     const nextSeed = generationSeed + 1;
     setGenerationSeed(nextSeed);
-    const shouldExploreNovel = !shapeExplicitlyLocked.current || Boolean(brief.autoExploreNovelShape);
+    const lockFootprint = Boolean(controls?.preserveExteriorFootprint);
+    const shouldExploreNovel = !lockFootprint && (
+      controls?.exploreAlternativeMassing !== undefined
+        ? Boolean(controls.exploreAlternativeMassing)
+        : !shapeExplicitlyLocked.current || Boolean(brief.autoExploreNovelShape)
+    );
+    const extraClauses: string[] = [];
+    if (controls?.optimizeCarpetArea) extraClauses.push('Prioritize compact efficiency and proper space utilization.');
+    if (controls?.improveCirculation) extraClauses.push('Prioritize privacy and circulation with minimal corridors.');
+    if (controls?.improveDaylight) extraClauses.push('Prioritize daylight and cross-ventilation.');
+    const nextPrompt = extraClauses.length
+      ? `${brief.aiPrompt ?? ''} ${extraClauses.join(' ')}`.trim()
+      : brief.aiPrompt;
     runGeneration(
       {
         ...brief,
-        ...(shouldExploreNovel ? { buildingMassingShape: 'AUTO', autoExploreNovelShape: true } : {}),
+        aiPrompt: nextPrompt,
+        ...(lockFootprint && currentShape
+          ? { buildingMassingShape: currentShape as BuildingMassingShape, autoExploreNovelShape: false }
+          : shouldExploreNovel
+            ? { buildingMassingShape: 'AUTO' as const, autoExploreNovelShape: true }
+            : {}),
         usedShapeIds: usedShapeIds.current,
         usedArchetypeIds: usedArchetypeIds.current,
       },
@@ -939,7 +971,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             {activeWorkspace === 'concepts' && (
               <ConceptReviewWorkspace activeBuilding={editor.building} concepts={concepts}
                 canGenerate={Boolean(projectBrief) && !isGenerating} notice={conceptNotice}
-                onGenerate={() => handleRegenerateVariant('compare')} onOpen={async ({ building, sourceRevision }) => {
+                onGenerate={(ctrls) => handleRegenerateVariant('compare', ctrls)} onOpen={async ({ building, sourceRevision }) => {
                   try {
                     const before = editor.engine.getBuilding();
                     let design = before;

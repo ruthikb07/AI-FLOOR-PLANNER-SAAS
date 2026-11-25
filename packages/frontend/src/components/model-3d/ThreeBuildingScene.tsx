@@ -656,15 +656,22 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     }
 
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    // Cap pixelRatio <= 1.5 for crisp 60fps performance on HiDPI / 4K displays
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const rawGl = renderer.getContext();
+    const dbgInfo = rawGl.getExtension('WEBGL_debug_renderer_info');
+    const unmaskedRenderer = dbgInfo
+      ? String(rawGl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) ?? '')
+      : String(rawGl.getParameter(rawGl.RENDERER) ?? '');
+    const isSoftwareWebGL = /swiftshader|llvmpipe|software|basic render driver/i.test(unmaskedRenderer);
+    // Cap pixelRatio <= 1.0 on CPU software rasterizers (SwiftShader/llvmpipe) and <= 1.5 on hardware GPUs
+    renderer.setPixelRatio(isSoftwareWebGL ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = isSoftwareWebGL ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.04;
     renderer.domElement.setAttribute('aria-label', 'Interactive canonical 3D building model');
     renderer.domElement.dataset.pixelRatio = String(renderer.getPixelRatio());
+    renderer.domElement.dataset.softwareRasterizer = isSoftwareWebGL ? 'true' : 'false';
     host.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -702,7 +709,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     keyLight.name = 'key-light';
     keyLight.position.set(28, 24, 22);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1536, 1536);
+    const shadowMapDim = isSoftwareWebGL ? 1024 : 1536;
+    keyLight.shadow.mapSize.set(shadowMapDim, shadowMapDim);
     keyLight.shadow.camera.near = 1;
     keyLight.shadow.camera.far = 160;
     keyLight.shadow.camera.left = -40;

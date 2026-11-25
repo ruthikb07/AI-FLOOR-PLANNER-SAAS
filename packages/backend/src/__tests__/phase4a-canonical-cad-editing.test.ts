@@ -133,18 +133,21 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
     expect(passageProposal.validation.closureValid).toBe(true);
     expect(passageProposal.validation.unaffectedFlatsUnchanged).toBe(true);
 
-    // 5. Explicit refusal for localized free-form single-flat topological regeneration ("Regenerate only Flat 2...")
-    const flat2Refusal = proposeControlledCadEdit({
+    // 5. Protected localized single-flat regeneration ("Regenerate only Flat 2...") preserves Flats 1, 3, 4 byte-identically
+    const flat2Regen = proposeControlledCadEdit({
       building: baseBuilding,
       floorId: typicalFloor.id,
       expectedRevision: baseBuilding.version,
       control,
       instruction: 'Regenerate only Flat 2 while keeping the remaining flats unchanged',
     });
-    expect(flat2Refusal.status).toBe('REFUSED_UNSUPPORTED');
-    expect(flat2Refusal.proposedBuilding).toBeNull();
-    expect(flat2Refusal.message).toMatch(/Flat 2/);
-    expect(flat2Refusal.validation.unaffectedFlatsUnchanged).toBe(true);
+    expect(flat2Regen.status, flat2Regen.message).toBe('PREVIEW_READY');
+    expect(flat2Regen.proposedBuilding).not.toBeNull();
+    expect(flat2Regen.message).toMatch(/Flat 0?2/);
+    expect(flat2Regen.validation.unaffectedFlatsUnchanged).toBe(true);
+    expect(flat2Regen.validation.unaffectedFloorsUnchanged).toBe(true);
+    expect(flat2Regen.invarianceProof?.passed).toBe(true);
+    expect(flat2Regen.invarianceProof?.beforeProtectedDigest).toBe(flat2Regen.invarianceProof?.afterProtectedDigest);
   }, 60_000);
 
   it('enforces stale revision rejection, locked room/floor guardrails, Undo/Redo, and 2D/3D/DXF/GLB sync after canonical edit', async () => {

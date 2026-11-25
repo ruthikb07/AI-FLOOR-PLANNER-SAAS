@@ -104,12 +104,13 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   await expect(page.getByTestId('cad-revision-badge')).toContainText(`Rev ${initialRevNum + 1}`);
   await expect(workbench).toContainText('Drafts: 1');
 
-  // Verify explicit refusal for unsupported single-flat free-form regeneration
+  // Verify protected localized single-flat regeneration previews cleanly without touching remaining flats
   await page
     .getByTestId('cad-ai-instruction-input')
     .fill('Regenerate only Flat 2 while keeping the remaining flats unchanged');
   await page.getByTestId('cad-ai-preview-btn').click();
-  await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('REFUSED_UNSUPPORTED');
+  await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('PREVIEW_READY');
+  await expect(page.getByTestId('cad-ai-preview-card')).toContainText('Flat 02');
 
   // 8. Perform a canonical architectural edit (Resize window to 1500 mm) through the controlled edit bridge
   await page.getByTestId('cad-ai-instruction-input').fill('Resize this window to 1500 mm');
