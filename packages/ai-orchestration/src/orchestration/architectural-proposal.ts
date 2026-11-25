@@ -234,6 +234,30 @@ const CORE_REQUIRED_FIELDS = [
   'designRationale',
 ];
 
+interface ProposalField {
+  readonly type?: string;
+  readonly enum?: readonly unknown[];
+  readonly properties?: Readonly<Record<string, ProposalField>>;
+  readonly required?: readonly string[];
+}
+
+function matchesProposalField(value: unknown, field: ProposalField): boolean {
+  if (field.enum) return field.enum.includes(value);
+  switch (field.type) {
+    case 'object': {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+      const entries = value as Record<string, unknown>;
+      return (field.required ?? []).every(key => Object.hasOwn(entries, key))
+        && Object.entries(field.properties ?? {}).every(([key, child]) =>
+          !Object.hasOwn(entries, key) || matchesProposalField(entries[key], child));
+    }
+    case 'string': return typeof value === 'string' && value.trim().length > 0;
+    case 'number': return typeof value === 'number' && Number.isFinite(value);
+    case 'boolean': return typeof value === 'boolean';
+    default: return false;
+  }
+}
+
 /** Compact schema used when no reference image is attached (~35% fewer schema tokens). */
 export const ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA: Record<string, unknown> = {
   type: 'object',
@@ -829,7 +853,10 @@ let defaultCacheOptions: BoundedLruCacheOptions = {
   ttlMs: 5 * 60 * 1000,
 };
 
-const providerResponseCache = new WeakMap<AIProvider, BoundedLruCache<string, AIResponse>>();
+type CachedArchitecturalProposal = ReturnType<typeof sanitizeProposalWithPromptGuardrails> & {
+  readonly receipt: Omit<AIResponse, 'parsed' | 'content'>;
+};
+const providerResponseCache = new WeakMap<AIProvider, BoundedLruCache<string, CachedArchitecturalProposal>>();
 const providerInFlightMap = new WeakMap<AIProvider, InFlightRequestDeduplicator<AIResponse>>();
 
 export function configureArchitecturalProposalCache(
@@ -840,7 +867,7 @@ export function configureArchitecturalProposalCache(
   if (provider) {
     let store = providerResponseCache.get(provider);
     if (!store) {
-      store = new BoundedLruCache<string, AIResponse>(options);
+      store = new BoundedLruCache<string, CachedArchitecturalProposal>(options);
       providerResponseCache.set(provider, store);
     } else {
       store.configure(options);
@@ -1253,12 +1280,8 @@ export async function generateArchitecturalProposal(
     .map(u => `F${u.unitIndex}:${u.bhkType}${u.targetCarpetSqFt ? `@${u.targetCarpetSqFt}sqft` : ''}`)
     .join(',');
 
-  const boundedPrompt = normalizeBriefSpelling(
-    (
-      input.config.aiPrompt ??
-      'Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.'
-    ).slice(0, 4000),
-  );
+  const fullBrief = normalizeBriefSpelling(input.config.aiPrompt
+    ?? 'Compliant residential apartment with daylight, cross-ventilation, and Vastu balance.');
   const setbackLine = input.config.setbacksMm
     ? `Setbacks:${input.config.setbacksMm.front}/${input.config.setbacksMm.rear}/${input.config.setbacksMm.left}/${input.config.setbacksMm.right}mm`
     : '';
@@ -1275,7 +1298,7 @@ export async function generateArchitecturalProposal(
       ? `TargetArea:${input.config.targetAreaSqFt}sqft(${input.config.areaTargetScope ?? 'UNSPECIFIED'})`
       : '',
     input.config.buildingMassingShape ? `LockedShape:${input.config.buildingMassingShape}` : '',
-    `Brief:"${boundedPrompt}"`,
+    `Brief:"${fullBrief}"`,
     imagePart
       ? 'Reference image attached: populate referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering).'
       : '',
@@ -1307,7 +1330,7 @@ export async function generateArchitecturalProposal(
 
   let cacheStore = providerResponseCache.get(provider);
   if (!cacheStore) {
-    cacheStore = new BoundedLruCache<string, AIResponse>(defaultCacheOptions);
+    cacheStore = new BoundedLruCache<string, CachedArchitecturalProposal>(defaultCacheOptions);
     providerResponseCache.set(provider, cacheStore);
   }
   let inFlightStore = providerInFlightMap.get(provider);
@@ -1319,12 +1342,13 @@ export async function generateArchitecturalProposal(
   let initiatedNewProviderCall = false;
   let sharedInFlight = false;
 
+  let invalidResponse: AIResponse | undefined;
   try {
-    let response: AIResponse;
+    let result: CachedArchitecturalProposal;
     let cacheHit = false;
     const cached = !input.bypassCache ? cacheStore.get(cacheKey) : undefined;
     if (cached) {
-      response = cached;
+      result = cached;
       cacheHit = true;
     } else {
       const dedup = await inFlightStore.execute(
@@ -1353,23 +1377,21 @@ export async function generateArchitecturalProposal(
           bypassDeduplication: Boolean(input.bypassCache),
         },
       );
-      response = dedup.value;
+      const response = dedup.value;
       sharedInFlight = dedup.sharedInFlight;
-      if (!input.bypassCache && !sharedInFlight && response.parsed && Object.keys(response.parsed).length > 0) {
-        cacheStore.set(cacheKey, response);
+      const { parsed, content: _content, ...receipt } = response;
+      if (!parsed || !matchesProposalField(parsed, ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA)) {
+        invalidResponse = response;
+        throw new Error('INVALID_STRUCTURED_ARCHITECTURAL_PROPOSAL');
       }
+      result = {
+        ...sanitizeProposalWithPromptGuardrails(parsed, input.config, seed, Boolean(imagePart)),
+        receipt,
+      };
+      if (!input.bypassCache && !sharedInFlight) cacheStore.set(cacheKey, result);
     }
 
-    if (!response.parsed || Object.keys(response.parsed).length === 0) {
-      throw new Error('Gemini returned no structured architectural proposal.');
-    }
-    const { proposal, rejectedReferenceGuidance } = sanitizeProposalWithPromptGuardrails(
-      response.parsed,
-      input.config,
-      seed,
-      Boolean(imagePart),
-    );
-
+    const { proposal, rejectedReferenceGuidance, receipt: response } = result;
     const invocationMode: AIInvocationMode = cacheHit
       ? 'CACHED_PROVIDER_RESPONSE'
       : sharedInFlight
@@ -1424,19 +1446,21 @@ export async function generateArchitecturalProposal(
 
     const execErr = error instanceof GeminiExecutionError ? error : undefined;
     const failedAttempts = execErr?.failedAttempts ?? [];
-    const attemptedModels = execErr?.attemptedModels ?? (initiatedNewProviderCall ? [requestedModel] : []);
+    const attemptedModels = execErr?.attemptedModels ?? invalidResponse?.attemptedModels
+      ?? (initiatedNewProviderCall ? [requestedModel] : []);
     const apiCallCount = execErr
       ? execErr.apiCallCount
       : initiatedNewProviderCall
-      ? 1
+      ? (invalidResponse?.apiCallCount ?? 1)
       : 0;
-    const providerErrorCode = isCancelled ? 'CANCELLED' : geminiErrorCode(error);
+    const providerErrorCode = isCancelled ? 'CANCELLED'
+      : invalidResponse ? 'INVALID_STRUCTURED_ARCHITECTURAL_PROPOSAL' : geminiErrorCode(error);
     const failureClass = isCancelled ? 'CANCELLED' : classifyGeminiFailure(error);
 
     const currentRequestTokenUsage: TokenUsage | 'UNKNOWN' =
       apiCallCount === 0
         ? ZERO_TOKEN_USAGE
-        : summarizeFailedAttemptTokens(failedAttempts);
+        : invalidResponse?.usage ?? summarizeFailedAttemptTokens(failedAttempts);
 
     return buildEnriched(proposal, {
       geminiInvoked: apiCallCount > 0,
@@ -1448,7 +1472,7 @@ export async function generateArchitecturalProposal(
       apiCallCount,
       cacheHit: false,
       sharedInFlight,
-      providerExecutionMs: failedAttempts.reduce((sum, item) => sum + item.latencyMs, 0),
+      providerExecutionMs: invalidResponse?.latencyMs ?? failedAttempts.reduce((sum, item) => sum + item.latencyMs, 0),
       ...(currentRequestTokenUsage !== 'UNKNOWN' ? { tokenUsage: currentRequestTokenUsage } : {}),
       currentRequestTokenUsage,
       proposalTokenUsage: 'UNKNOWN',

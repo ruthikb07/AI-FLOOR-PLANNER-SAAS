@@ -2,7 +2,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "dist-server/**"]
     },
     "dev": {
       "cache": false,
