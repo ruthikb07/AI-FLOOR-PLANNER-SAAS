@@ -231,6 +231,25 @@ describe('Phase 5A — Gates B, C, D & E: Architectural Intelligence, Exact Unit
       });
       expect(controlCheck.ok).toBe(true);
     });
+
+    it('rejects moved storeys and changes to a protected core on any storey', () => {
+      const controls = { preserveExteriorFootprint: true, preserveCore: true };
+      expect(verifyAlternativeRespectsControls(sharedFourFlat, sharedFourFlat, controls).ok).toBe(true);
+      const moved: Building = { ...sharedFourFlat, floors: sharedFourFlat.floors.map(floor => floor.id === typicalFloor.id
+        ? { ...floor, boundary: { ...floor.boundary, points: floor.boundary.points.map(point => ({ ...point, x: point.x + 100 })) } }
+        : floor) };
+      expect(verifyAlternativeRespectsControls(sharedFourFlat, moved, controls).violations).toEqual([
+        expect.stringContaining('locked storey'),
+      ]);
+      const coreRoom = typicalFloor.rooms.find(room => room.type === RoomType.Lift || room.type === RoomType.Staircase)!;
+      const wall = typicalFloor.walls.find(item => item.roomIds.includes(coreRoom.id))!;
+      const changed: Building = { ...sharedFourFlat, floors: sharedFourFlat.floors.map(floor => floor.id === typicalFloor.id
+        ? { ...floor, walls: floor.walls.map(item => item.id === wall.id ? { ...item, thickness: item.thickness + 10 } : item) }
+        : floor) };
+      expect(verifyAlternativeRespectsControls(sharedFourFlat, changed, controls).violations).toEqual([
+        expect.stringContaining('protected core'),
+      ]);
+    });
   });
 
   describe('Gate E — All 14 Mandatory Protected Localized Regeneration Scenarios', () => {

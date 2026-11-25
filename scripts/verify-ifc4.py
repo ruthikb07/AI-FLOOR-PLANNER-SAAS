@@ -51,6 +51,12 @@ def verify(path):
         assert entity.GlobalId == mapped["externalId"]
         kind = mapped["kind"]
         counts[kind] = counts.get(kind, 0) + 1
+        if kind == "site" and (canonical.get("metadata", {}).get("irregularPlotBoundary") or {}).get("sourceFormat") == "survey":
+            site_points = [(p["x"], -p["y"]) for p in canonical["site"]["plotBoundary"]["points"]]
+            site_outline = outline(entity, "FootPrint")
+            assert len(site_outline) == len(site_points) + 1 and site_outline[0] == site_outline[-1]
+            assert any(all(math.dist(actual, expected) <= 0.001 for actual, expected in zip(site_outline, order))
+                       for order in (site_points, list(reversed(site_points))))
         floor_id = mapped["floorId"]
         floor = floors.get(floor_id)
         if floor is None:

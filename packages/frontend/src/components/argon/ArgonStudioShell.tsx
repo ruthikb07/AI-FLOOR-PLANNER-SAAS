@@ -38,6 +38,7 @@ import { exportProjectAsJsonFile, projectStorage } from '../../services/storage'
 import {
   buildAlternativeExhaustionExplanation,
   compareCanonicalBuildingAlternatives,
+  verifyAlternativeRespectsControls,
   coordinateBuildingFacade,
   evaluateStudioLayoutScore,
   evaluateUDCPRCompliance,
@@ -131,6 +132,7 @@ interface GenerationAttempt {
   readonly rejectedHashes: readonly string[];
   readonly target: GenerationTarget;
   readonly projectId: string;
+  readonly alternativeControls?: AlternativeExplorationControls;
 }
 
 interface ArgonStudioShellProps {
@@ -346,6 +348,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     rejectedHashes: readonly string[],
     target: GenerationTarget = 'edit',
     retryProjectId?: string,
+    alternativeControls?: AlternativeExplorationControls,
   ) => {
     activeRun.current?.abort();
     const controller = new AbortController();
@@ -358,14 +361,14 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     setConceptNotice('');
     try {
       const projectId = target === 'intake' ? retryProjectId ?? crypto.randomUUID() : before.projectId;
-      lastAttempt.current = { data, seed, rejectedHashes, target, projectId };
+      lastAttempt.current = { data, seed, rejectedHashes, target, projectId, alternativeControls };
       const assertUnlocked = () => {
         const control = editor.getGenerationControl?.() ?? editor.generationControl;
         if (control.lockedFloorIds.length || control.lockedEntityIds.length || control.protectedCoreIds.length) {
           throw new Error('Unlock the protected floors, rooms and cores before replacing the layout.');
         }
       };
-      if (target !== 'intake' && target !== 'compare') assertUnlocked();
+      if (target !== 'intake') assertUnlocked();
       const result = await planInWorker({
         generationRunId: crypto.randomUUID(),
         config: {
@@ -378,9 +381,17 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       if (editor.engine.getBuilding() !== before) {
         throw new Error('The active project changed during generation. Run generation again from the current revision.');
       }
-      if (target !== 'intake' && target !== 'compare') assertUnlocked();
+      if (target !== 'intake') assertUnlocked();
 
       const generated = result.building;
+      if (target === 'compare') {
+        const proof = verifyAlternativeRespectsControls(before, generated, alternativeControls ?? {});
+        if (!proof.ok) {
+          setConceptNotice(proof.violations.join(' '));
+          setActiveWorkspace('concepts');
+          return;
+        }
+      }
       if (target === 'repair') {
         const next = { ...generated, regulatoryContext: before.regulatoryContext };
         const assessment = assessComplianceRepair(before, next);
@@ -483,7 +494,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     const nextSeed = generationSeed + 1;
     setGenerationSeed(nextSeed);
     const lockFootprint = Boolean(controls?.preserveExteriorFootprint);
-    const shouldExploreNovel = !lockFootprint && (
+    const shouldExploreNovel = !lockFootprint && !shapeExplicitlyLocked.current && (
       controls?.exploreAlternativeMassing !== undefined
         ? Boolean(controls.exploreAlternativeMassing)
         : !shapeExplicitlyLocked.current || Boolean(brief.autoExploreNovelShape)
@@ -510,6 +521,8 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
       nextSeed,
       rejectedTopologyHashes.current,
       target,
+      undefined,
+      controls,
     );
   };
 
@@ -1177,7 +1190,7 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
               draft={studio.wizard}
               onRetry={() => {
                 const attempt = lastAttempt.current;
-                if (attempt) void runGeneration(attempt.data, attempt.seed, attempt.rejectedHashes, attempt.target, attempt.projectId);
+                if (attempt) void runGeneration(attempt.data, attempt.seed, attempt.rejectedHashes, attempt.target, attempt.projectId, attempt.alternativeControls);
               }}
               onCancel={cancelGeneration}
             />

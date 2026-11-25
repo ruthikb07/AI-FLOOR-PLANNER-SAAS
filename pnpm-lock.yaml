@@ -208,6 +208,9 @@ importers:
       '@ai-floor-planner/core':
         specifier: workspace:*
         version: link:../core
+      polygon-clipping:
+        specifier: 0.15.7
+        version: 0.15.7
     devDependencies:
       typescript:
         specifier: 5.5.4

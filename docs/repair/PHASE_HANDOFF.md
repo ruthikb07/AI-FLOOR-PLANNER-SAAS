@@ -164,3 +164,5 @@ Do not enable unrestricted external IFC writeback. Keep native BIM application r
 The actual Antigravity worktree and its Phase 5A, Phase 5B and pending Phase 5C work were recovered. See [Phase 5 engineering handoff](PHASE5_CODEX_HANDOFF.md) for verification, checkpoint commits and remaining gates.
 
 The continuation added production HTTP, persisted-revision, IFC and GLB verification for the nine-brief suite. Phase 6 awaits the acceptance gates documented in the [Phase 5 acceptance report](../integration/PHASE5_ACCEPTANCE.md).
+
+Continue from [Phase 5.1 acceptance](../integration/PHASE5_1_FINAL_ACCEPTANCE.md) on `fix/phase5-final-acceptance`. The Phase 5 anchor is `c2caa172881db01a47117f688a796ab7c1893fee`. Complete the recorded acceptance gates before starting Phase 6.

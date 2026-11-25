@@ -10,7 +10,7 @@ import type { Building, Floor, HardConstraintViolation, Polygon } from '@ai-floo
 import { RoomType } from '@ai-floor-planner/core';
 import { MINIMUM_ROOM_AREAS, MINIMUM_DIMENSIONS } from '@ai-floor-planner/core';
 import {
-  containsPolygon,
+  containsPolygon, containsSurveyFootprint,
   isValidPolygon,
   polygonIntersectionArea,
 } from '@ai-floor-planner/geometry-engine';
@@ -45,7 +45,9 @@ export function validateFloorContainment(building: Building): HardConstraintViol
   const site = building.site;
 
   // Compute buildable area (plot minus setbacks)
-  const buildableArea: Polygon = {
+  const survey = building.metadata.irregularPlotBoundary;
+  const exactEnvelope = survey?.sourceFormat === 'survey' ? survey.buildablePolygon : undefined;
+  const buildableArea: Polygon = exactEnvelope ?? {
     points: [
       { x: site.setbacks.left, y: site.setbacks.front },
       { x: site.plotWidth - site.setbacks.right, y: site.setbacks.front },
@@ -54,9 +56,10 @@ export function validateFloorContainment(building: Building): HardConstraintViol
     ],
   };
 
+  const contains = exactEnvelope ? containsSurveyFootprint : containsPolygon;
   for (const floor of building.floors) {
     if (floor.boundary.points.length < 3) continue;
-    if (!containsPolygon(buildableArea, floor.boundary)) {
+    if (!contains(buildableArea, floor.boundary)) {
       violations.push({
         constraintId: 'HC-002',
         description: `Floor "${floor.name}" extends outside buildable area (plot minus setbacks)`,

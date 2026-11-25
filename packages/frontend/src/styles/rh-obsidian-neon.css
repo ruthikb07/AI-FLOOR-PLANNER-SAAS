@@ -746,6 +746,11 @@ body {
   background: #0E1420 !important;
 }
 
+.rh-obsidian-shell .rh-concept-strip button {
+  background: var(--rh-glass-strong);
+  color: var(--rh-text);
+}
+
 .rh-obsidian-shell .rh-concept-description,
 .rh-obsidian-shell .rh-library-grid article,
 .rh-obsidian-shell .rh-delivery-settings,

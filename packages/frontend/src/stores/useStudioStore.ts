@@ -55,6 +55,9 @@ export interface WizardState {
   flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   bhkCounts: Record<BhkType, number>;
   bhkCarpetAreas: Record<BhkType, number>;
+  unitCarpetTargets?: Partial<Record<BhkType, readonly (number | null)[]>>;
+  requireAreaTargets?: boolean;
+  areaAcceptanceTolerancePercent?: number;
   buildingMassingShape?: BuildingMassingShape | 'AUTO';
   planCategory?: PlanCategory;
   autoExploreNovelShape?: boolean;
@@ -470,6 +473,7 @@ export const studioStoreActions = {
         plotWidthM: wizard.plotWidthM,
         plotDepthM: wizard.plotDepthM,
         siteGeometryMode: wizard.siteGeometryMode,
+        surveyDraft: wizard.surveyDraft,
         roadWidthM: wizard.roadWidthM,
         roadFacing: wizard.roadFacing,
         frontSetbackM: wizard.frontSetbackM,
@@ -481,6 +485,9 @@ export const studioStoreActions = {
         triplexCount: wizard.triplexCount ?? 0,
         flatsPerFloor: wizard.flatsPerFloor,
         bhkMix: bhkMixArray,
+        unitCarpetTargets: wizard.unitCarpetTargets,
+        requireAreaTargets: wizard.requireAreaTargets,
+        areaAcceptanceTolerancePercent: wizard.areaAcceptanceTolerancePercent,
         buildingMassingShape: wizard.buildingMassingShape,
         planCategory: wizard.planCategory ?? 'HIGH_RISE_APARTMENT',
         autoExploreNovelShape: wizard.autoExploreNovelShape ?? false,

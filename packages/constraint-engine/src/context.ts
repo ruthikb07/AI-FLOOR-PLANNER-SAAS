@@ -26,7 +26,9 @@ export function buildEvaluationContext(
 ): EvaluationContext {
   // Compute buildable envelope (plot minus setbacks)
   const site = building.site;
-  const buildableEnvelope: Polygon = {
+  const survey = building.metadata.irregularPlotBoundary;
+  const exactEnvelope = survey?.sourceFormat === 'survey' ? survey.buildablePolygon : undefined;
+  const buildableEnvelope: Polygon = exactEnvelope ?? {
     points: [
       { x: site.setbacks.left, y: site.setbacks.front },
       { x: site.plotWidth - site.setbacks.right, y: site.setbacks.front },

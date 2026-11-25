@@ -18,3 +18,5 @@ Phase 5A and 5B were recovered with their local commits and Phase 5C source. The
 [Engineering handoff](../repair/PHASE5_CODEX_HANDOFF.md) · [Project matrix](PHASE5_REAL_PROJECT_ACCEPTANCE.md) · [Performance evidence](PHASE5_PERFORMANCE_REPORT.md)
 
 Windows native AutoCAD completed twelve zero-error audits. A native Blender 5.2 package produced and verified seven files, including the complete `.blend` assembly and GLBs with canonical provenance. The initial ETABS 23.3.2 replay timed out at connect. A fresh isolated replay exported and independently reopened both model-only EDB fixtures with matching revision provenance. The evidence is in the local `native-etabs-verified` directory.
+
+The [Phase 5.1 acceptance record](PHASE5_1_FINAL_ACCEPTANCE.md) supersedes the open survey and alternative-generation entries for its supported profile. This document preserves the historical Phase 5 results and outstanding commercial and professional scope.

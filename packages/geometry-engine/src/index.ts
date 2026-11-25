@@ -320,3 +320,4 @@ export * from './opening-geometry';
 export * from './architectural-solids';
 
 export * from './architectural-validation';
+export * from './survey-generation';

@@ -1,5 +1,5 @@
-import type { Point } from '@ai-floor-planner/core';
-import { resolveSurveyBoundary, resolveSurveyTraverse, type SurveyBoundaryResult, type SurveyIssue } from '@ai-floor-planner/geometry-engine';
+import type { Point, Setbacks } from '@ai-floor-planner/core';
+import { prepareSurveyGeneration, SurveyGenerationError, resolveSurveyBoundary, resolveSurveyTraverse, type SurveyBoundaryResult, type SurveyIssue } from '@ai-floor-planner/geometry-engine';
 
 export type SurveyUnit = 'm' | 'mm' | 'ft' | 'in';
 export type SurveyMode = 'coordinates' | 'bearings' | 'angles';
@@ -156,6 +156,20 @@ export function surveyIssueText(issue: SurveyIssue, draft: SurveyDraft): string 
   }
 }
 
-export function surveyGenerationBlock(active: boolean | undefined) {
-  return active ? 'Surveyed-boundary generation requires a planner route that accepts the exact site boundary. This survey is saved in project setup.' : undefined;
+export function prepareSurveyDraftGeneration(draft: SurveyDraft | undefined, setbacks: Setbacks) {
+  if (!draft) throw new SurveyGenerationError('INVALID_SURVEY_BOUNDARY', 'Enter the exact site boundary in Plot & Type.');
+  const resolved = resolveSurveyDraft(draft);
+  if (!resolved.metrics) {
+    const issue = resolved.issues[0];
+    throw new SurveyGenerationError('INVALID_SURVEY_BOUNDARY',
+      issue ? surveyIssueText(issue, draft) : 'Enter the exact site boundary in Plot & Type.');
+  }
+  const input = {
+    points: resolved.points,
+    sweepsDeg: draft.rows.map(row => row.sweepDeg ?? 0),
+    roadEdge: draft.roadEdge ?? -1,
+    edgeSetbacksMm: draft.rows.map(row => row.setbackMm),
+    ...(draft.sourceFile ? { sourceFileName: draft.sourceFile } : {}),
+  };
+  return { input, ...prepareSurveyGeneration(input, setbacks) };
 }

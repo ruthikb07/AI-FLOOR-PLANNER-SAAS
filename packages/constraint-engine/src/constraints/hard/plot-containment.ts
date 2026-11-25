@@ -6,7 +6,7 @@
 
 import type { Constraint, ConstraintResult, EvaluationContext, SuggestedFix } from '../../types';
 import { ConstraintSeverity, ConstraintCategory } from '../../types';
-import { containsPolygon } from '@ai-floor-planner/geometry-engine';
+import { containsPolygon, containsSurveyFootprint } from '@ai-floor-planner/geometry-engine';
 
 export const RoomContainment: Constraint = {
   id: 'HC-001',
@@ -79,11 +79,13 @@ export const FloorContainment: Constraint = {
   evaluate(context: EvaluationContext): ConstraintResult[] {
     const results: ConstraintResult[] = [];
 
+    const contains = context.building.metadata.irregularPlotBoundary?.sourceFormat === 'survey'
+      ? containsSurveyFootprint : containsPolygon;
     for (const floor of context.building.floors) {
       if (floor.boundary.points.length < 3) continue;
       if (context.buildableEnvelope.points.length < 3) continue;
 
-      const contained = containsPolygon(context.buildableEnvelope, floor.boundary);
+      const contained = contains(context.buildableEnvelope, floor.boundary);
 
       if (!contained) {
         results.push({

@@ -30,7 +30,7 @@ import { Stage3FlatsAndBhkMix } from './wizard/Stage3FlatsAndBhkMix';
 import { Stage4PromptAndUpload } from './wizard/Stage4PromptAndUpload';
 import { SurveyDrawing } from './wizard/SurveyDrawing';
 import { useSurveyEditor } from './wizard/useSurveyEditor';
-import { surveyGenerationBlock } from '../../services/survey-draft';
+import type { SurveyDraft } from '../../services/survey-draft';
 import { ParcelStudy } from './ParcelStudy';
 
 export interface ProjectSetupWizardData {
@@ -43,6 +43,7 @@ export interface ProjectSetupWizardData {
   plotWidthM: number;
   plotDepthM: number;
   siteGeometryMode?: 'survey' | 'rectangle';
+  surveyDraft?: SurveyDraft;
   roadWidthM: number;
   roadFacing: 'North' | 'East' | 'South' | 'West';
   frontSetbackM: number;
@@ -53,6 +54,9 @@ export interface ProjectSetupWizardData {
   duplexCount?: number;
   triplexCount?: number;
   flatsPerFloor: number;
+  unitCarpetTargets?: Partial<Record<'1BHK' | '2BHK' | '3BHK' | '4BHK', readonly (number | null)[]>>;
+  requireAreaTargets?: boolean;
+  areaAcceptanceTolerancePercent?: number;
   bhkMix: Array<{
     unitType: '1BHK' | '2BHK' | '3BHK' | '4BHK';
     carpetAreaSqFt: number;
@@ -102,7 +106,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   const [existing, setExisting] = useState(false);
   const [readingReference, setReadingReference] = useState(false);
   const survey = useSurveyEditor(wizard, updateWizard);
-  const surveyBlock = surveyGenerationBlock(survey.active);
+  const surveyBlock = survey.active ? survey.generationError : undefined;
   const redevelopment = wizard.projectType === 'redevelopment';
   const titles = ['Project type and site', 'Floors and parking', 'Massing and apartment mix', 'Project brief and references'];
 

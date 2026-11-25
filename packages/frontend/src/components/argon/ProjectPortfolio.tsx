@@ -307,7 +307,7 @@ export function ProjectLibrary({
       })}
       {browserOnlyProjects.slice(0, Math.max(0, visible - diskProjects.length)).map(project => {
         const envelope = projectStorage.load(project.id);
-        return <article key={project.id}>
+        return <article key={project.id} data-testid={`browser-project-card-${project.id}`}>
           {envelope && <PlanThumbnail building={envelope.building} />}
           <h2>{project.name}</h2>
           <p>{project.floorCount} floors · {project.roomCount} rooms{envelope ? ` · Revision ${envelope.building.version}` : ''}</p>

@@ -1,8 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { Point } from '@ai-floor-planner/core';
-import { surveySetbackEnvelope } from '@ai-floor-planner/geometry-engine';
 import {
-  addSurveyVertex, createSurveyDraft, removeSurveyVertex, resolveSurveyDraft, switchSurveyMode,
+  prepareSurveyDraftGeneration, addSurveyVertex, createSurveyDraft, removeSurveyVertex, resolveSurveyDraft, switchSurveyMode,
   type SurveyDraft, type SurveyMode, type SurveyRow, type SurveyTemplate,
 } from '../../../services/survey-draft';
 import type { WizardState } from '../../../stores/useStudioStore';
@@ -12,7 +11,18 @@ export function useSurveyEditor(wizard: WizardState, patch: (value: Partial<Wiza
   const depth = wizard.plotDepthM * 1000;
   const draft = useMemo(() => wizard.surveyDraft ?? createSurveyDraft('custom', width, depth), [wizard.surveyDraft, width, depth]);
   const boundary = useMemo(() => resolveSurveyDraft(draft), [draft]);
-  const envelope = useMemo(() => surveySetbackEnvelope(boundary, draft.rows.map(row => row.setbackMm)), [boundary, draft.rows]);
+  const { frontSetbackM, rearSetbackM, sideSetbackM } = wizard;
+  const generation = useMemo(() => {
+    try {
+      const { boundary } = prepareSurveyDraftGeneration(draft, {
+        front: frontSetbackM * 1000, rear: rearSetbackM * 1000,
+        left: sideSetbackM * 1000, right: sideSetbackM * 1000,
+      });
+      return { envelope: boundary.buildablePolygon, error: undefined };
+    } catch (error) {
+      return { envelope: undefined, error: error instanceof Error ? error.message : 'The survey could not be validated.' };
+    }
+  }, [draft, frontSetbackM, rearSetbackM, sideSetbackM]);
   const [selected, setSelected] = useState(0);
   const [past, setPast] = useState<SurveyDraft[]>([]);
   const [future, setFuture] = useState<SurveyDraft[]>([]);
@@ -71,7 +81,7 @@ export function useSurveyEditor(wizard: WizardState, patch: (value: Partial<Wiza
     change(removeSurveyVertex(latest.current, index));
   };
   return {
-    active, draft, boundary, envelope, width, depth,
+    active, draft, boundary, envelope: generation.envelope, generationError: generation.error, width, depth,
     selected: Math.max(0, Math.min(selected, draft.rows.length - 1)), setSelected,
     change, editRow, add, remove, beginEdit, finishEdit,
     undo, redo, canUndo: past.length > 0, canRedo: future.length > 0,

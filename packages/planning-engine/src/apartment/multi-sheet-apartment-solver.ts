@@ -69,6 +69,8 @@ import {
   openingFitsApartmentWall,
   fitFloorOpeningsInsideWalls,
   pointInPolygon,
+  containsSurveyFootprint,
+  intersectSurveyStrip,
   polygonBoundingBox,
   polygonSignedArea,
   measureApartmentAreaLedger,
@@ -391,6 +393,49 @@ export function solveSitePlanSheet(
   config: MultiSheetApartmentConfig,
   envelope: Box2D,
 ): SitePlanSheetResult {
+  const survey = config.irregularPlotBoundary;
+  if (survey?.sourceFormat === 'survey' && survey.roadEdgeIndex !== undefined) {
+    const plot = survey.polygon;
+    const bounds = polygonBoundingBox(plot);
+    const { x, y, w, h } = envelope;
+    const right = bounds.x + bounds.width;
+    const bottom = bounds.y + bounds.height;
+    const strips = [
+      [bounds.x, bounds.y, bounds.width, y - bounds.y],
+      [bounds.x, y + h, bounds.width, bottom - y - h],
+      [bounds.x, y, x - bounds.x, h],
+      [x + w, y, right - x - w, h],
+    ] as const;
+    const openSpace = strips.flatMap(([sx, sy, width, depth]) =>
+      width > 0 && depth > 0 ? intersectSurveyStrip(plot, rectPolygon(sx, sy, width, depth)) : []);
+    const siteZones: SiteZone[] = [rectPolygon(x, y, w, h), ...openSpace].map((boundary, index) => ({
+      id: `survey_zone_${index}`, boundary, area: polygonArea(boundary),
+      kind: 'future_expansion', name: index === 0 ? 'Building planning footprint' : 'Unprogrammed survey open space',
+      accessLinks: [], source: 'GENERATED', reviewStatus: 'UNREVIEWED',
+    }));
+    const edgeStart = plot.points[survey.roadEdgeIndex]!;
+    const edgeEnd = plot.points[(survey.roadEdgeIndex + 1) % plot.points.length]!;
+    const roadFacing = config.roadAccessSides[0]!;
+    const accountedArea = siteZones.reduce((sum, zone) => sum + zone.area, 0);
+    const delta = survey.areaMm2 - accountedArea;
+    return {
+      site: {
+        id: 'project_site', plotBoundary: plot, plotWidth: bounds.width, plotDepth: bounds.height,
+        plotArea: survey.areaMm2, plotShape: PlotShape.Irregular, orientation: 0,
+        setbacks: config.setbacksMm ?? { front: 0, rear: 0, left: 0, right: 0 },
+        accessPoints: [{ id: 'acc_survey_frontage', position: {
+          x: (edgeStart.x + edgeEnd.x) / 2, y: (edgeStart.y + edgeEnd.y) / 2,
+        }, width: Math.min(4500, Math.hypot(edgeEnd.x - edgeStart.x, edgeEnd.y - edgeStart.y)), direction: roadFacing }],
+        roadFacing, roadWidth: config.roadWidthMm, siteZones,
+      },
+      siteZones, audit: {
+        sheetId: 'sheet_01_site_plan', sheetName: 'Sheet 01: Surveyed Site',
+        grossAreaMm2: survey.areaMm2, accountedAreaMm2: accountedArea, deltaMm2: delta,
+        unassignedMm2: Math.max(0, delta), isPlanarConserved: Math.abs(delta) < 0.001,
+      },
+    };
+  }
+
   const plotW = config.plotWidthMm;
   const plotD = config.plotDepthMm;
   const plotArea = plotW * plotD;
@@ -2461,12 +2506,13 @@ export function computeIrregularPlotInscribedEnvelope(
   edgeSetbacksMm?: readonly number[],
   fallbackSetbacks?: { front: number; rear: number; left: number; right: number },
   roadEdgeIndex?: number,
+  validatedSurveyEnvelope?: Polygon,
 ): { buildablePolygon: Polygon; inscribedEnvelope: Box2D } {
   const pts = plotPolygon.points;
   const ccw = polygonSignedArea(plotPolygon) >= 0;
   let clipped: Point[] = [...pts];
   const fb = fallbackSetbacks ?? { front: 4500, rear: 3000, left: 3000, right: 3000 };
-  for (let i = 0; i < pts.length; i++) {
+  for (let i = 0; !validatedSurveyEnvelope && i < pts.length; i++) {
     const a = pts[i]!;
     const b = pts[(i + 1) % pts.length]!;
     let inset = edgeSetbacksMm?.[i];
@@ -2489,13 +2535,16 @@ export function computeIrregularPlotInscribedEnvelope(
     clipped = clipPolygonHalfPlane(clipped, a, b, Math.max(0, inset), ccw);
     if (clipped.length < 3) break;
   }
-  const buildablePolygon: Polygon = { points: clipped };
+  const buildablePolygon: Polygon = validatedSurveyEnvelope ?? { points: clipped };
   if (clipped.length < 3 || polygonArea(buildablePolygon) <= 0) {
     throw new Error('The requested setbacks leave too little buildable space for this irregular plot.');
   }
   const bbox = polygonBoundingBox(buildablePolygon);
   const rectFitsInside = (x1: number, y1: number, x2: number, y2: number): boolean => {
     if (x2 - x1 < 100 || y2 - y1 < 100) return false;
+    if (validatedSurveyEnvelope) {
+      return containsSurveyFootprint(validatedSurveyEnvelope, rectPolygon(x1, y1, x2 - x1, y2 - y1));
+    }
     const mx = (x1 + x2) / 2;
     const my = (y1 + y2) / 2;
     return [{ x: x1, y: y1 }, { x: x2, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 },
@@ -2679,7 +2728,8 @@ export function solveMultiSheetApartmentProject(
     const measured = irregularSite.inscribedEnvelopeMm && irregularSite.buildablePolygon
       ? { inscribedEnvelope: irregularSite.inscribedEnvelopeMm, buildablePolygon: irregularSite.buildablePolygon }
       : computeIrregularPlotInscribedEnvelope(irregularSite.polygon, irregularSite.edgeSetbacksMm,
-        config.setbacksMm, irregularSite.roadEdgeIndex);
+        config.setbacksMm, irregularSite.roadEdgeIndex,
+        irregularSite.sourceFormat === 'survey' ? irregularSite.buildablePolygon : undefined);
     permissibleEnvelope = measured.inscribedEnvelope;
     irregularSite = { ...irregularSite, buildablePolygon: measured.buildablePolygon,
       inscribedEnvelopeMm: measured.inscribedEnvelope };
@@ -2714,17 +2764,18 @@ export function solveMultiSheetApartmentProject(
   })();
 
   const specifiedUnits = config.units ?? [];
-  const aggregateRequiredCarpetSqFt = config.requireAreaTargets && specifiedUnits.length === config.flatsPerFloor
+  // On an irregular site, complete advisory unit targets also guide how much of the surveyed capacity to occupy.
+  const aggregateCarpetTargetSqFt = (config.requireAreaTargets || irregularSite) && specifiedUnits.length === config.flatsPerFloor
     && specifiedUnits.every(unit => unit.targetCarpetSqFt && unit.targetCarpetSqFt > 0)
     ? specifiedUnits.reduce((total, unit) => total + (unit.targetCarpetSqFt ?? 0), 0)
     : undefined;
   const explicitTargetSqFt = config.targetAreaSqFt ?? promptIntent?.mandatory.targetAreaSqFt;
-  const effectiveTargetSqFt = explicitTargetSqFt ?? aggregateRequiredCarpetSqFt;
+  const effectiveTargetSqFt = explicitTargetSqFt ?? aggregateCarpetTargetSqFt;
   const effectiveAreaScope: AreaTargetScope | undefined =
     config.areaTargetScope ??
     promptIntent?.mandatory.areaTargetScope ??
     (explicitTargetSqFt !== undefined ? 'PER_APARTMENT_CARPET'
-      : aggregateRequiredCarpetSqFt !== undefined ? 'FLOOR_TOTAL_CARPET' : undefined);
+      : aggregateCarpetTargetSqFt !== undefined ? 'FLOOR_TOTAL_CARPET' : undefined);
   const shouldCenterBuilding = Boolean(
     config.centerBuildingInEnvelope ||
     promptIntent?.mandatory.centerBuilding ||
@@ -2737,7 +2788,7 @@ export function solveMultiSheetApartmentProject(
     liftCount: promptIntent?.mandatory.singleLift ? 1 : 2 });
   const minimumProgramGrossM2 = (config.units ?? []).reduce((area, unit) =>
     area + (FLAT_AREA_BOUNDS_SQM[unit.bhkType]?.min ?? 0), 0) + coreAcross * coreRun / 1e6;
-  if (!recovery?.unitGrossAreasMm2 && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
+  if ((!recovery?.unitGrossAreasMm2 || irregularSite) && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
     const coreW = 7800;
     const bedroomBalconiesRequested = promptIntent?.preferences.bedroomBalconies === 'ALL_BEDROOMS';
     const minHabitableW = Math.min(permissibleEnvelope.w,
@@ -2869,7 +2920,7 @@ export function solveMultiSheetApartmentProject(
 
   onStage?.('WALL_AND_OPENING_TOPOLOGY');
   // 3. Solve Sheet 1: SITE_PLAN
-  const siteSheet = solveSitePlanSheet(config, envelope);
+  const siteSheet = solveSitePlanSheet({ ...config, irregularPlotBoundary: irregularSite }, envelope);
 
   // 4. Solve Sheet 2: STILT_PARKING_PLAN
   const stiltSheet = solveStiltParkingSheet(config, envelope, macro, stackParams);
@@ -3249,33 +3300,49 @@ export function solveMultiSheetApartmentProject(
   });
 
   const tolerance = (config.areaAcceptanceTolerancePercent ?? 5) / 100;
-  if (aggregateRequiredCarpetSqFt && explicitTargetSqFt === undefined && !recovery?.skipComplianceGate &&
-      aggregateRequiredCarpetSqFt * SQUARE_METRES_PER_SQUARE_FOOT * (1 - tolerance) < permissibleEnvelope.w * permissibleEnvelope.h / 1e6) {
-    const errorOf = (candidate: MultiSheetApartmentResult) => Math.max(0, ...(candidate.schedule.floorAreas ?? [])
-      .flatMap(floor => floor.units.map(unit => unit.target
-        ? Math.abs(unit.target.achievedAreaSqFt / unit.target.requestedAreaSqFt - 1) : 0)));
+  const areaError = (candidate: MultiSheetApartmentResult) => Math.max(0, ...(candidate.schedule.floorAreas ?? [])
+    .flatMap(floor => floor.units.map(unit => unit.target
+      ? Math.abs(unit.target.achievedAreaSqFt / unit.target.requestedAreaSqFt - 1) : 0)));
+  if (aggregateCarpetTargetSqFt && explicitTargetSqFt === undefined && !recovery?.unitGrossAreasMm2
+      && !recovery?.legacyOnly && (!recovery?.skipComplianceGate || Boolean(config.requireAreaTargets && config.rejectedTopologyHashes?.length)) &&
+      aggregateCarpetTargetSqFt * SQUARE_METRES_PER_SQUARE_FOOT * (1 - tolerance) < permissibleEnvelope.w * permissibleEnvelope.h / 1e6) {
     const nonAreaBlockers = (candidate: MultiSheetApartmentResult) =>
       generationBlockingFindings(candidate.building, candidate.validationReport)
         .filter(finding => finding.code !== 'AREA_TARGET_UNMET').length;
-    if (errorOf(finalResult) > tolerance) {
+    if (areaError(finalResult) > tolerance) {
       const targetMm2 = specifiedUnits.map(unit => unit.targetCarpetSqFt! * SQUARE_METRES_PER_SQUARE_FOOT * 1e6);
       let grossAreas = targetMm2.map(area => area / 0.8 + 9e6);
+      const initialGross = grossAreas.reduce((sum, area) => sum + area, 0);
+      const targetTotal = targetMm2.reduce((sum, area) => sum + area, 0);
+      const scaleToCapacity = (value: number) => Math.max(0.75, Math.min(1.25, value));
+      const initialCarpet = finalResult.schedule.floorAreas?.[0]?.carpetMm2 ?? 0;
+      let areaEnvelopeScale = irregularSite && initialCarpet > 0
+        ? scaleToCapacity(Math.sqrt(targetTotal / initialCarpet)) : undefined;
       let previousError = Infinity;
-      for (let attempt = 0; attempt < 4; attempt++) {
+      for (let attempt = 0; attempt < (irregularSite ? 6 : 4); attempt++) {
         try {
           const sized = solveMultiSheetApartmentProject(rawConfig, undefined,
-            { skipComplianceGate: true, unitGrossAreasMm2: grossAreas });
-          const error = errorOf(sized);
-          if (nonAreaBlockers(sized) <= nonAreaBlockers(finalResult) && error < errorOf(finalResult)) {
+            { skipComplianceGate: true, unitGrossAreasMm2: grossAreas, areaEnvelopeScale });
+          const error = areaError(sized);
+          if (nonAreaBlockers(sized) <= nonAreaBlockers(finalResult) && error < areaError(finalResult)) {
             ({ result: finalResult, compliance: finalCompliance } = attachCompliance(sized, 1));
+            if (error <= tolerance) break;
           }
-          const measured = sized.schedule.floorAreas?.[0]?.units;
-          if (!measured || measured.length !== grossAreas.length || error >= previousError - 0.0001 || error <= tolerance) break;
+          const floor = sized.schedule.floorAreas?.[0];
+          const measured = floor?.units;
+          if (!measured || measured.length !== grossAreas.length || (!irregularSite && error >= previousError - 0.0001)) break;
           previousError = error;
           grossAreas = grossAreas.map((gross, index) => Math.max(targetMm2[index]!,
             gross + (targetMm2[index]! - measured[index]!.carpetMm2) / 0.8));
+          if (areaEnvelopeScale !== undefined && floor.carpetMm2 > 0) {
+            // Adjust total plate capacity and the unit shares independently.
+            areaEnvelopeScale = scaleToCapacity(areaEnvelopeScale * (targetTotal / floor.carpetMm2) ** 0.3);
+            const grossTotal = grossAreas.reduce((sum, area) => sum + area, 0);
+            grossAreas = grossAreas.map(gross => gross * initialGross / grossTotal);
+          }
         } catch {
-          break;
+          if (areaEnvelopeScale === undefined) break;
+          areaEnvelopeScale = scaleToCapacity(areaEnvelopeScale * 1.04);
         }
       }
     }
@@ -3376,6 +3443,8 @@ export function solveMultiSheetApartmentProject(
         const nextBlocked = generationBlockingFindings(nextEvaluated.building, nextEvaluated.validationReport).length;
         const currentBlocked = generationBlockingFindings(finalResult.building, finalResult.validationReport).length;
         const isBetter = nextBlocked < currentBlocked || (nextBlocked === currentBlocked && (
+          !(irregularSite && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult)
+        ) && (
           nextCompliance.score > finalCompliance.score ||
           (nextCompliance.score === finalCompliance.score &&
             nextCompliance.redConflictCount < finalCompliance.redConflictCount)
@@ -3384,7 +3453,8 @@ export function solveMultiSheetApartmentProject(
           finalResult = nextEvaluated;
           finalCompliance = nextCompliance;
         }
-        if (nextCompliance.passed && nextBlocked === 0) {
+        if (nextCompliance.passed && nextBlocked === 0 &&
+          (!(irregularSite && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult))) {
           return finalizeWithMep(nextEvaluated);
         }
       } catch {
@@ -3394,6 +3464,7 @@ export function solveMultiSheetApartmentProject(
   }
 
   if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly && !config.rejectedTopologyHashes?.length &&
+    !(irregularSite && aggregateCarpetTargetSqFt) &&
     finalResult.building.metadata.generationBrief?.buildingMassingShape !== 'PINWHEEL_CLUSTER') {
     // One bounded comparison after repair. Never replace a previously conserved
     // solution with an unassigned/overlapping candidate solely to avoid fallback.

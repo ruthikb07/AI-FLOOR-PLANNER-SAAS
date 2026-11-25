@@ -15,7 +15,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@ai-floor-planner/core": "workspace:*"
+    "@ai-floor-planner/core": "workspace:*",
+    "polygon-clipping": "0.15.7"
   },
   "devDependencies": {
     "typescript": "5.5.4",

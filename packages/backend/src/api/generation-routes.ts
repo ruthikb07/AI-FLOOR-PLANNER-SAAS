@@ -17,6 +17,7 @@ import {
   type AIReasoningMode,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
+import { prepareSurveyGeneration, SurveyGenerationError } from '@ai-floor-planner/geometry-engine';
 import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
 import { isRecord } from './http-input.js';
 import {
@@ -43,7 +44,8 @@ function includesSurveyGeometry(value: unknown): boolean {
       value.surveyDraft != null ||
       value.surveyBoundary != null ||
       value.plotBoundary != null ||
-      value.buildableEnvelope != null)
+      value.buildableEnvelope != null ||
+      (isRecord(value.irregularPlotBoundary) && value.irregularPlotBoundary.sourceFormat === 'survey'))
   );
 }
 
@@ -57,14 +59,14 @@ function parseGenerationRequest(body: unknown): {
   if (!isRecord(body)) return null;
 
   const rawConfig = isRecord(body.config) ? body.config : body;
+  const measured = rawConfig.surveyBoundary != null;
   const positive = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value) && value > 0;
   const setbacks = rawConfig.setbacksMm;
   const flats = Number(rawConfig.flatsPerFloor);
   const floors = Number(rawConfig.numTypicalFloors);
   if (
+    (!measured && ![rawConfig.plotWidthMm, rawConfig.plotDepthMm].every(positive)) ||
     ![
-      rawConfig.plotWidthMm,
-      rawConfig.plotDepthMm,
       rawConfig.roadWidthMm,
       rawConfig.floorToFloorHeightMm,
       rawConfig.stiltHeightMm,
@@ -142,7 +144,10 @@ export async function handleProjectGeneration(
   deps: GenerationRouteDeps,
   runtimeOptions: GenerationRequestRuntimeOptions = {},
 ): Promise<RouteResponse> {
-  if (includesSurveyGeometry(body) || (isRecord(body) && includesSurveyGeometry(body.config))) {
+  const requestConfig = isRecord(body) && isRecord(body.config) ? body.config : body;
+  const hasSurveyContract = isRecord(requestConfig) && requestConfig.surveyBoundary != null;
+  const hasOuterAlias = isRecord(body) && body !== requestConfig && includesSurveyGeometry(body);
+  if (hasOuterAlias || (!hasSurveyContract && includesSurveyGeometry(requestConfig))) {
     return {
       status: 422,
       json: {
@@ -165,6 +170,24 @@ export async function handleProjectGeneration(
         },
       },
     };
+  }
+
+  if (hasSurveyContract) {
+    try {
+      const survey = prepareSurveyGeneration(parsed.config.surveyBoundary, parsed.config.setbacksMm);
+      parsed.config = {
+        ...parsed.config,
+        plotWidthMm: survey.bounds.width, plotDepthMm: survey.bounds.height,
+        roadAccessSides: [survey.roadFacing], irregularPlotBoundary: survey.boundary,
+        ...(parsed.config.regulatoryContext && { regulatoryContext: {
+          ...parsed.config.regulatoryContext, plotAreaSqm: survey.boundary.areaMm2 / 1e6,
+        } }),
+      };
+    } catch (error) {
+      if (!(error instanceof SurveyGenerationError)) throw error;
+      return { status: error.code === 'INVALID_SURVEY_BOUNDARY' ? 400 : 422,
+        json: { error: { code: error.code, message: error.message } } };
+    }
   }
 
   if (parsed.config.regulatoryContext !== undefined) {
@@ -259,9 +282,32 @@ export async function handleProjectGeneration(
     };
   }
 
+  const strictAlternative = parsed.config.requireAreaTargets && parsed.rejectedTopologyHashes.length > 0;
+  const attemptedSeeds: number[] = [];
+  async function solveGeneration(config: MultiSheetApartmentConfig) {
+    if (!strictAlternative) return executeAuditedPlanningPipeline(config);
+
+    let firstMeasured: Awaited<ReturnType<typeof executeAuditedPlanningPipeline>> | undefined;
+    let failure: unknown;
+    // Keep the original constraints and exclusions while trying a small deterministic seed window.
+    for (let offset = 0; offset < 4 && !signal?.aborted; offset++) {
+      const seed = parsed!.seed + offset;
+      attemptedSeeds.push(seed);
+      try {
+        const result = await executeAuditedPlanningPipeline({ ...config, generationSeed: seed });
+        if (generationBlockingFindings(result.building, result.validationReport).length === 0) return result;
+        firstMeasured ??= result;
+      } catch (error) {
+        failure = error;
+      }
+    }
+    if (firstMeasured) return firstMeasured;
+    throw failure ?? new Error('No candidate reached geometry validation.');
+  }
+
   try {
     const solverStartedAt = Date.now();
-    let pipelineResult = await executeAuditedPlanningPipeline(proposalResult.enrichedConfig);
+    let pipelineResult = await solveGeneration(proposalResult.enrichedConfig);
     if (signal?.aborted) {
       return {
         status: 499,
@@ -400,6 +446,7 @@ export async function handleProjectGeneration(
       ...proposalResult.telemetry,
       solverLatencyMs,
       totalLatencyMs,
+      ...(strictAlternative && { alternativeSearch: { attemptedSeeds, seedBudget: 4 } }),
     };
 
     if (blockers.length) {
@@ -410,7 +457,9 @@ export async function handleProjectGeneration(
           telemetry: enrichedTelemetry,
           error: {
             code: 'GENERATION_CHECKS_FAILED',
-            message: `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
+            message: strictAlternative
+              ? `No distinct candidate satisfied the strict area and geometry requirements across ${attemptedSeeds.length} seeds. ${blockers[0]!.message}`
+              : `Required design checks failed. ${blockers[0]!.message} Try a different massing or adjust the brief.`,
             findings: blockers.slice(0, 20),
           },
         },
@@ -448,8 +497,12 @@ export async function handleProjectGeneration(
     };
     let diagnostic: Exclude<ReturnType<typeof generateApartmentOutcome>, { status: 'PLAN' }> | undefined;
     try {
-      const outcome = generateApartmentOutcome(proposalResult.enrichedConfig);
-      if (outcome.status !== 'PLAN') {
+      const outcome = strictAlternative || signal?.aborted ? undefined : generateApartmentOutcome(proposalResult.enrichedConfig);
+      if (strictAlternative) {
+        failure = { code: 'STRICT_AREA_ALTERNATIVES_EXHAUSTED',
+          message: `No distinct candidate reached geometry validation across ${attemptedSeeds.length} seeds. ${failure.message}` };
+      }
+      if (outcome && outcome.status !== 'PLAN') {
         diagnostic = outcome;
         failure = { code: outcome.status, message: outcome.reason };
       }
@@ -463,7 +516,10 @@ export async function handleProjectGeneration(
         error: failure,
         ...(diagnostic ? { outcome: diagnostic } : {}),
         proposal: proposalResult.proposal,
-        telemetry: proposalResult.telemetry,
+        telemetry: {
+          ...proposalResult.telemetry,
+          ...(strictAlternative && { alternativeSearch: { attemptedSeeds, seedBudget: 4 } }),
+        },
       },
     };
   }

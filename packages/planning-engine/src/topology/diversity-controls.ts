@@ -350,9 +350,7 @@ export function resolveExplorationConfigFromControls(
   };
 }
 
-/**
- * Verifies whether a generated alternative honoured `preserveExteriorFootprint` and `preserveSelectedRooms`.
- */
+/** Verify explicit preservation constraints against accepted canonical geometry. */
 export function verifyAlternativeRespectsControls(
   before: Building,
   candidate: Building,
@@ -363,21 +361,41 @@ export function verifyAlternativeRespectsControls(
   const fAfter = representativeResidentialFloor(candidate);
   if (!fBefore || !fAfter) return { ok: false, violations: ['Missing residential floor in candidate.'] };
 
+  if (stableValueHash(before.site.plotBoundary) !== stableValueHash(candidate.site.plotBoundary)) {
+    violations.push('The alternative changed the project site boundary.');
+  }
+
   if (controls.preserveExteriorFootprint) {
-    const shapeBefore = before.metadata.generationBrief?.buildingMassingShape ?? 'COMPACT_DOUBLE_LOADED';
-    const shapeAfter = candidate.metadata.generationBrief?.buildingMassingShape ?? 'COMPACT_DOUBLE_LOADED';
-    if (shapeBefore !== shapeAfter) {
-      violations.push(`Exterior massing shape changed from ${shapeBefore} to ${shapeAfter} while footprint preservation was active.`);
+    const footprint = (building: Building) => building.floors.map(floor => ({
+      level: floor.level, boundary: floor.boundary,
+    }));
+    if (stableValueHash(footprint(before)) !== stableValueHash(footprint(candidate))) {
+      violations.push('The alternative moved the footprint of at least one locked storey.');
     }
   }
 
-  if (controls.preserveSelectedRooms?.length) {
-    for (const roomId of controls.preserveSelectedRooms) {
-      const rBefore = fBefore.rooms.find(r => r.id === roomId);
-      const rAfter = fAfter.rooms.find(r => r.id === roomId);
-      if (rBefore && (!rAfter || stableValueHash(rBefore.boundary) !== stableValueHash(rAfter.boundary))) {
-        violations.push(`Preserved room '${rBefore.name}' (${roomId}) changed boundary during whole-floor alternative generation; use Protected Localized Regeneration to keep specific rooms/flats exact.`);
-      }
+  if (controls.preserveCore) {
+    const core = (building: Building) => building.floors.map(floor => {
+      const rooms = floor.rooms.filter(room => room.spaceUse === 'CORE' ||
+        room.type === RoomType.Staircase || room.type === RoomType.Lift);
+      const ids = new Set(rooms.map(room => room.id));
+      const walls = floor.walls.filter(wall => wall.roomIds.some(id => ids.has(id)));
+      const wallIds = new Set(walls.map(wall => wall.id));
+      return { level: floor.level, rooms, stairs: floor.stairs, walls,
+        doors: floor.doors.filter(door => wallIds.has(door.wallId)),
+        windows: floor.windows.filter(window => wallIds.has(window.wallId)),
+      };
+    });
+    if (stableValueHash(core(before)) !== stableValueHash(core(candidate))) {
+      violations.push('The alternative changed the protected core or one of its connected elements.');
+    }
+  }
+
+  for (const roomId of controls.preserveSelectedRooms ?? []) {
+    const original = before.floors.flatMap(floor => floor.rooms).find(room => room.id === roomId);
+    const changed = candidate.floors.flatMap(floor => floor.rooms).find(room => room.id === roomId);
+    if (!original || !changed || stableValueHash(original) !== stableValueHash(changed)) {
+      violations.push(`The alternative changed or removed a preserved room (${roomId}).`);
     }
   }
 

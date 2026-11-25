@@ -22,7 +22,7 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   });
 
   // 1 & 2. Open RH Planner and verify provider health mode explicitly
-  const healthResp = await request.get('http://127.0.0.1:44318/api/v1/health');
+  const healthResp = await request.get('/api/v1/health');
   expect(healthResp.status()).toBe(200);
   const healthJson = (await healthResp.json()) as {
     status: string;

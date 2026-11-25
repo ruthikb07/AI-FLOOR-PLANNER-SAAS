@@ -1,0 +1,202 @@
+import { createHash } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { expect, test } from '@playwright/test';
+import { EXACT_SQMM_PER_SQFT, type Building, type IfcExchangeManifest, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { auditFloorFunctionalQuality, compareCanonicalBuildingAlternatives } from '@ai-floor-planner/planning-engine';
+
+test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
+
+const fixtures = [
+  { id: 1, name: 'Residential bungalow', width: 28, depth: 24, floors: 2, mix: [0, 0, 0, 1], bungalow: true },
+  { id: 2, name: 'Compact apartment', width: 18.5, depth: 25, floors: 1, mix: [0, 2, 0, 0] },
+  { id: 4, name: 'Four-flat mixed BHK', width: 38, depth: 32, floors: 1, mix: [0, 2, 2, 0], stilt: true },
+  { id: 5, name: 'Strict unequal targets', width: 42, depth: 34, floors: 1, mix: [0, 2, 2, 0], stilt: true, strict: true },
+  { id: 6, name: 'Six-flat high density', width: 50, depth: 40, floors: 1, mix: [0, 6, 0, 0], stilt: true },
+  { id: 7, name: 'Multi-storey open stilt', width: 38, depth: 32, floors: 4, mix: [0, 4, 0, 0], stilt: true },
+  { id: 8, name: 'Reference attachment', width: 38, depth: 32, floors: 1, mix: [0, 4, 0, 0], stilt: true, reference: true },
+] as const;
+
+for (const fixture of fixtures) {
+  test(`project ${fixture.id}: ${fixture.name}`, async ({ page, request }, info) => {
+    test.setTimeout(300_000);
+    const errors: string[] = [];
+    const times: Record<string, number> = {};
+    const row: Record<string, unknown> = { id: fixture.id, name: fixture.name, browserErrors: errors, processingMs: times,
+      surveyPreservation: 'not_applicable', furnitureClearance: 'unverified',
+      protectedRegeneration: 'not_run', cadEditing: 'not_run', visualReview: 'pending_review',
+    };
+    const start = Date.now();
+    const mark = (key: string) => { times[key] = Date.now() - start; };
+    page.on('pageerror', error => errors.push(error.message));
+    try {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      const flats = Array.from(fixture.mix, Number).reduce((sum, count) => sum + count, 0);
+      await page.addInitScript(draft => {
+        if (!localStorage.getItem('argon_studio_store_wizard_v1')) {
+          localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify(draft));
+        }
+      }, {
+        plotWidthM: fixture.width, plotDepthM: fixture.depth, floorsCount: fixture.floors,
+        flatsPerFloor: flats, hasStiltParking: 'stilt' in fixture, roadFacing: 'South',
+        authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
+        planCategory: 'bungalow' in fixture ? 'LUXURY_VILLA_BUNGALOW' : 'HIGH_RISE_APARTMENT',
+        bhkCounts: { '1BHK': fixture.mix[0], '2BHK': fixture.mix[1], '3BHK': fixture.mix[2], '4BHK': fixture.mix[3] },
+        aiPrompt: '',
+      });
+      await page.goto('/');
+      await page.getByTestId('cta-new-construction').click();
+      await page.getByLabel('Project Title / Estate', { exact: false }).fill(fixture.name);
+      for (const step of [2, 3]) await page.getByRole('button', { name: 'Continue to Step 0' + step }).click();
+      const strict = 'strict' in fixture;
+      const strictTargets = [720, 1050, 1420, 1750];
+      if (strict) {
+        await page.getByRole('checkbox', { name: 'Require carpet targets' }).check();
+        await page.getByLabel('Carpet area tolerance (%)').fill('3');
+        for (const [index, label] of ['2BHK flat 1', '2BHK flat 2', '3BHK flat 1', '3BHK flat 2'].entries()) {
+          await page.getByLabel(label + ' target (sq ft)').fill(String(strictTargets[index]));
+        }
+      }
+      await page.getByRole('button', { name: 'Continue to Step 04' }).click();
+      if ('reference' in fixture) {
+        const image = await readFile(new URL('../../../docs/phase2/evidence/floor_typical.png', import.meta.url));
+        await page.getByTestId('reference-workflow-card').locator('input[type=file]').first()
+          .setInputFiles({ name: 'floor_typical.png', mimeType: 'image/png', buffer: image });
+        row.liveReferenceInfluence = 'pending_authorized_runtime';
+      }
+      const generation = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'), { timeout: 100_000 });
+      await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
+      const response = await generation;
+      const { config } = response.request().postDataJSON() as { config: MultiSheetApartmentConfig };
+      expect(config).toMatchObject({ projectName: fixture.name, plotWidthMm: fixture.width * 1000,
+        plotDepthMm: fixture.depth * 1000, numTypicalFloors: fixture.floors, flatsPerFloor: flats });
+      if (strict) expect(config.units?.map(unit => unit.targetCarpetSqFt)).toEqual(strictTargets);
+      row.wizardInput = 'pass';
+      row.requestedCarpetSqFt = config.units?.map(unit => unit.targetCarpetSqFt);
+      row.httpStatus = response.status();
+      const failure = page.getByRole('dialog', { name: 'Generation needs attention' });
+      if (!response.ok()) {
+        await expect(failure).toBeVisible();
+        row.generation = await failure.getByRole('alert').innerText();
+        throw new Error(String(row.generation));
+      }
+      const generated = await response.json() as { building: Building; validationReport: { isValid: boolean }; telemetry: { solverLatencyMs: number } };
+      const { building } = generated;
+      expect(generated.validationReport.isValid).toBe(true);
+      const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;
+      expect(floor.apartmentUnits).toHaveLength(flats);
+      if ('stilt' in fixture) expect(building.floors.some(candidate => candidate.floorUse === 'STILT_PARKING')).toBe(true);
+      row.mandatoryConstraints = 'pass';
+      row.generation = 'pass';
+      times.solver = generated.telemetry.solverLatencyMs;
+      const area = building.metadata.generationReport?.floorAreas?.find(candidate => candidate.floorId === floor.id);
+      row.achievedCarpetSqFt = area?.units.map(unit => unit.target?.achievedAreaSqFt ?? unit.carpetMm2 / EXACT_SQMM_PER_SQFT);
+      if (strict) expect(area?.units.map(unit => unit.target?.status)).toEqual(Array(flats).fill('ACHIEVED'));
+      const functional = auditFloorFunctionalQuality(floor);
+      row.roomAccessAndCirculation = functional;
+      expect(functional.passed, JSON.stringify(functional.findings)).toBe(true);
+      mark('generation');
+
+      const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
+      const preview = gallery.getByRole('img', { name: /Plan preview/ }).first();
+      await expect(preview).toBeVisible({ timeout: 45_000 });
+      await preview.screenshot({ path: info.outputPath('plan.png') });
+      row.visualReview = 'plan_captured';
+      if (strict) {
+        const alternative = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/projects/generate'), { timeout: 100_000 });
+        await gallery.getByRole('button', { name: 'Generate Massing Alternative' }).click();
+        const alternativeResponse = await alternative;
+        row.alternativeHttpStatus = alternativeResponse.status();
+        if (alternativeResponse.ok()) {
+          const next = (await alternativeResponse.json()).building as Building;
+          const comparison = compareCanonicalBuildingAlternatives(building, next);
+          row.topologyDiversity = comparison;
+          if (comparison.meaningful) {
+            await expect(gallery.getByRole('button', { name: /Study 2/ })).toBeVisible();
+          } else {
+            await expect(gallery.getByRole('status')).toBeVisible();
+            await expect(gallery.getByRole('button', { name: /Study 2/ })).toHaveCount(0);
+          }
+        } else {
+          expect(alternativeResponse.status()).toBe(422);
+          await expect(failure).toBeVisible();
+          row.topologyDiversity = await failure.getByRole('alert').innerText();
+          await failure.getByRole('button', { name: 'Close' }).click();
+        }
+        await gallery.getByRole('button', { name: /Study 1/ }).click();
+      } else {
+        row.topologyDiversity = 'not_run';
+      }
+      await gallery.getByRole('button', { name: 'Open in CAD' }).click();
+      row.candidateSelection = 'pass';
+      await page.getByRole('button', { name: floor.name, exact: true }).first().click();
+      if (fixture.id === 4 || fixture.id === 7) {
+        await page.getByTestId('toggle-precision-cad-studio').click();
+        const command = page.getByTestId('cad-ai-instruction-input');
+        await command.fill('Regenerate only Flat 2 while keeping the remaining flats unchanged');
+        const proposalResponse = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/cad/edit-proposal'));
+        await page.getByTestId('cad-ai-preview-btn').click();
+        const proposal = (await (await proposalResponse).json()).proposal;
+        row.protectedRegeneration = proposal.status;
+        expect(proposal.status).toBe('PREVIEW_READY');
+        expect(proposal.invarianceProof.passed).toBe(true);
+        expect(proposal.invarianceProof.beforeProtectedDigest).toBe(proposal.invarianceProof.afterProtectedDigest);
+        row.protectedEntityEquality = true;
+        await page.getByTestId('cad-ai-accept-btn').click();
+        await expect(page.getByTestId('cad-revision-badge')).toContainText(`Rev ${building.version + 1}`);
+        row.cadEditing = 'protected_edit_accepted';
+      }
+      await page.getByTestId('nav-bim').click();
+      const bim = page.getByRole('region', { name: 'RH Planner — BIM Studio' });
+      await bim.getByRole('combobox', { name: 'BIM storey' }).selectOption(floor.id);
+      await bim.getByRole('combobox', { name: 'BIM schedule' }).selectOption('window');
+      await expect(bim.getByRole('table').getByRole('row').nth(1)).toBeVisible();
+      await bim.getByRole('table').getByRole('button').first().click();
+      await expect(bim.getByRole('region', { name: 'BIM property inspector' })).toBeVisible();
+      row.bimSchedule = 'pass';
+      mark('bimSchedule');
+      const download = page.waitForEvent('download');
+      const exportResponse = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/export/ifc'));
+      await bim.getByRole('button', { name: 'Export IFC4' }).click();
+      const [file, ifcResponse] = await Promise.all([download, exportResponse]);
+      expect(ifcResponse.status()).toBe(200);
+      const { manifest } = await ifcResponse.json() as { manifest: IfcExchangeManifest };
+      expect(manifest.source).toEqual(ifcResponse.request().postDataJSON().source);
+      const bytes = await readFile((await file.path())!);
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.artifactSha256);
+      row.export = { format: 'IFC4', source: manifest.source, digest: manifest.artifactSha256 };
+      mark('ifc');
+
+      await page.getByTestId('nav-isometric').click();
+      await page.getByTestId('toggle-view-3d').click();
+      await expect(page.getByTestId('isometric-3d-viewport').locator('canvas')).toBeVisible();
+      row.floor3d = 'pass';
+      mark('floor3d');
+      await page.getByTestId('nav-building_3d').click();
+      const tower = page.locator('.three-building-scene canvas').first();
+      await expect(tower).toHaveAttribute('data-draw-calls', /^[1-9]\d*$/, { timeout: 45_000 });
+      row.tower3d = 'pass';
+      mark('tower3d');
+      const saving = page.waitForResponse(candidate => candidate.request().method() === 'POST' &&
+        candidate.url().endsWith('/api/v1/local-projects'));
+      await page.getByTestId('topbar-save-local').click();
+      expect((await saving).status()).toBe(200);
+      const restored = await request.get('/api/v1/local-projects/' + building.projectId);
+      expect(restored.ok()).toBe(true);
+      const saved = await restored.json() as { digest: string; building: Building };
+      expect(saved.digest).toBe(manifest.source.sha256);
+      expect(saved.building.version).toBe(manifest.source.revision);
+      await page.reload();
+      await expect(page.getByTestId('project-switcher-trigger')).toContainText(fixture.name);
+      row.saveReloadAndRevision = 'pass';
+      mark('saveReload');
+      expect(errors).toEqual([]);
+      row.status = 'verified_for_exercised_controls';
+    } catch (error) {
+      row.status = 'failed';
+      row.failure = error instanceof Error ? error.message : String(error);
+      throw error;
+    } finally {
+      await writeFile(info.outputPath('acceptance.json'), JSON.stringify(row, null, 2));
+    }
+  });
+}

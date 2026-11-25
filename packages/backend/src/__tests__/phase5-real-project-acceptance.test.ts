@@ -9,7 +9,9 @@ import {
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
   Direction,
+  EXACT_SQMM_PER_SQFT,
   exchangeRevision,
+  type AIProposalTelemetry,
   type Building,
   type ExportOptions,
   type IfcExchangeArtifact,
@@ -19,13 +21,17 @@ import { polygonArea } from '@ai-floor-planner/geometry-engine';
 import {
   auditArchitecturalElementRealism,
   auditFloorFunctionalQuality,
+  compareCanonicalBuildingAlternatives,
   computeFloorEfficiencyBreakdown,
   evaluateBriefRequirementHierarchyAndConflicts,
 } from '@ai-floor-planner/planning-engine';
 import { exportSVG } from '@ai-floor-planner/renderer';
+import type { ArchitecturalProposal } from '@ai-floor-planner/ai-orchestration';
+import { handleProjectGeneration } from '../api/generation-routes.js';
+import { resolveServiceConfig } from '../env.js';
 import { CanonicalIfcExchangeAdapter } from '../services/canonical-ifc-adapter';
 import type { LoadedLocalProject } from '../services/local-project-store.js';
-import { createBackendServer } from '../server.js';
+import { createBackendServer, createGeminiProvider } from '../server.js';
 
 let endpoint: string;
 const storage = mkdtempSync(join(tmpdir(), 'rh-phase5-acceptance-'));
@@ -38,6 +44,77 @@ beforeAll(async () => {
   endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
   if (evidence) await mkdir(evidence, { recursive: true });
 });
+
+it.skipIf(process.env.RUN_PHASE51_LIVE_REFERENCE !== '1')(
+  'verifies measured canonical influence and precedence with the live Gemini runtime', async () => {
+    const gemini = createGeminiProvider(resolveServiceConfig());
+    expect(gemini, 'LIVE_PROVIDER_VERIFICATION_PENDING: no authorized runtime credential').toBeTruthy();
+    const referenceName = 'floor_typical.png';
+    const image = await readFile(new URL(`../../../../docs/phase2/evidence/${referenceName}`, import.meta.url));
+    const referenceImage = { name: referenceName, mimeType: 'image/png', dataUrl: 'data:image/png;base64,' + image.toString('base64') };
+    const brief: MultiSheetApartmentConfig = {
+      ...BASE_BRIEF, projectId: 'phase51-live-reference', autoExploreNovelShape: true, numTypicalFloors: 1,
+      aiPrompt: 'Create cross-ventilated apartments with no open-to-sky ducts. Where feasible, follow the attached reference for core location, circulation, and apartment organization.',
+    };
+    async function request(config: MultiSheetApartmentConfig, provider = gemini) {
+      const result = await handleProjectGeneration({ config, seed: 1 }, { gemini: provider });
+      expect(result.status, JSON.stringify((result.json as { error?: unknown }).error)).toBe(200);
+      return result.json as { building: Building; proposal: ArchitecturalProposal; telemetry: AIProposalTelemetry };
+    }
+    const without = await request(brief);
+    const withImage = await request({ ...brief, referenceImage });
+    const repeat = await request({ ...brief, referenceImage });
+    const difference = compareCanonicalBuildingAlternatives(without.building, withImage.building);
+    for (const result of [without, withImage]) {
+      expect(result.telemetry).toMatchObject({ interpretationSource: 'GEMINI', invocationMode: 'LIVE_PROVIDER' });
+      expect(result.telemetry.modelUsed).toBeTruthy();
+      expect(result.telemetry.apiCallCount).toBeGreaterThan(0);
+      expect(result.telemetry.tokenUsage?.totalTokens).toBeGreaterThan(0);
+    }
+    expect(without.telemetry.referenceDisposition).toBe('NONE');
+    expect(withImage.telemetry.referenceDisposition).toBe('VISION_INLINE_ATTACHED');
+    expect(withImage.proposal.referenceSpatialGraph).toBeDefined();
+    expect(withImage.telemetry.referenceGuidanceApplied?.length).toBeGreaterThan(0);
+    console.info('Live reference comparison', JSON.stringify({
+      without: without.telemetry, withImage: withImage.telemetry, repeat: repeat.telemetry,
+      extractedGraph: withImage.proposal.referenceSpatialGraph, difference,
+    }));
+    expect(difference.meaningful).toBe(true);
+    expect(repeat.telemetry).toMatchObject({ invocationMode: 'CACHED_PROVIDER_RESPONSE', cacheHit: true, apiCallCount: 0 });
+    expect(repeat.telemetry.tokenUsage?.totalTokens).toBe(0);
+    expect(repeat.building.metadata.generationBrief?.physicalLayoutHash).toBe(withImage.building.metadata.generationBrief?.physicalLayoutHash);
+
+    const survey = {
+      points: [{ x: -250.25, y: 312.75 }, { x: 39749.75, y: 1512.75 }, { x: 38449.75, y: 34312.75 }, { x: 549.75, y: 33312.75 }],
+      sweepsDeg: [0, 0, 0, 0], roadEdge: 2, edgeSetbacksMm: [1900, 2200, 3200, 2050],
+    };
+    const lockedBrief: MultiSheetApartmentConfig = {
+      ...brief, autoExploreNovelShape: false, buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
+      lockedMassingShape: 'COMPACT_DOUBLE_LOADED', surveyBoundary: survey,
+      aiPrompt: 'No OTS. Require a central core and retain the locked compact rectangular massing. Read the reference core position independently even if it differs.',
+    };
+    const measured = await request(lockedBrief, null);
+    const measuredUnits = measured.building.metadata.generationReport!.floorAreas![0]!.units;
+    const locked = await request({ ...lockedBrief, referenceImage, requireAreaTargets: true, areaAcceptanceTolerancePercent: 3,
+      units: lockedBrief.units!.map((unit, index) => ({ ...unit, targetCarpetSqFt: measuredUnits[index]!.carpetMm2 / EXACT_SQMM_PER_SQFT })),
+    });
+    console.info('Live reference precedence', JSON.stringify({ telemetry: locked.telemetry, graph: locked.proposal.referenceSpatialGraph }));
+    expect(locked.telemetry).toMatchObject({ interpretationSource: 'GEMINI', referenceDisposition: 'VISION_INLINE_ATTACHED' });
+    expect(locked.proposal.corePlacement).toBe('CENTRAL');
+    expect(locked.telemetry.conflictsDetected).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'REFERENCE_OVERRIDDEN_BY_BRIEF' }),
+    ]));
+    expect(locked.building.site.plotBoundary.points).toEqual(survey.points);
+    expect(locked.building.metadata.generationBrief?.buildingMassingShape).toBe('COMPACT_DOUBLE_LOADED');
+    for (const floor of locked.building.metadata.generationReport!.floorAreas!) {
+      expect(floor.units).toHaveLength(lockedBrief.flatsPerFloor);
+      for (const unit of floor.units) {
+        expect(unit.target?.status).toBe('ACHIEVED');
+        expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThanOrEqual(0.03);
+      }
+    }
+  }, 180_000,
+);
 
 afterAll(async () => {
   await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
@@ -294,6 +371,13 @@ describe('Phase 5 real-project acceptance', () => {
       const floorAreas = building.metadata.generationReport?.floorAreas;
       const floorArea = floorAreas?.find(floor => floor.floorId === residentialFloor.id);
       expect(floorArea?.units).toHaveLength(config.flatsPerFloor);
+      if (briefName === '3-irregular-surveyed-plot') {
+        console.info('Irregular carpet measurements', floorArea!.units.map(unit => unit.target!.achievedAreaSqFt));
+        for (const unit of floorArea!.units) {
+          expect(unit.target).toBeDefined();
+          expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThan(0.15);
+        }
+      }
       if (config.requireAreaTargets) {
         for (const floor of floorAreas!) {
           expect(floor.units).toHaveLength(config.flatsPerFloor);
@@ -350,6 +434,46 @@ describe('Phase 5 real-project acceptance', () => {
     },
     60_000,
   );
+
+  it.each([
+    ['original unequal-area brief', {}],
+    ['independent oblong brief', { plotWidthMm: 42800, plotDepthMm: 34000, roadAccessSides: [Direction.East] }],
+  ] as const)('preserves strict targets while searching for an alternative for %s', async (name, overrides) => {
+    const fixture = feasibleBriefs.find(([id]) => id === '5-unequal-flat-carpet-targets')![1];
+    const config: MultiSheetApartmentConfig = { ...fixture, ...overrides, projectId: 'strict-alternative-' + name.replaceAll(' ', '-') };
+    const baselineResponse = await post('/projects/generate', { config });
+    const baseline = await baselineResponse.json() as { building: Building; error?: unknown };
+    expect(baselineResponse.status, JSON.stringify(baseline.error)).toBe(200);
+    const first = baseline.building.metadata.generationBrief!;
+    const excluded = [first.topologyHash, first.physicalLayoutHash].filter(Boolean);
+    const response = await post('/projects/generate', { config, seed: 2, rejectedTopologyHashes: excluded });
+    const alternative = await response.json() as {
+      building?: Building;
+      error?: { code: string; message: string };
+      telemetry: { alternativeSearch: { attemptedSeeds: number[]; seedBudget: number } };
+    };
+    const search = alternative.telemetry.alternativeSearch;
+    expect(search.attemptedSeeds[0]).toBe(2);
+    expect(search.attemptedSeeds.length).toBeLessThanOrEqual(search.seedBudget);
+    if (response.status === 422) {
+      expect(alternative.building).toBeUndefined();
+      expect(search.attemptedSeeds).toHaveLength(search.seedBudget);
+      expect(alternative.error!.message).toMatch(/across 4 seeds/);
+      console.info('Strict alternative refused', name, alternative.error);
+    } else {
+      expect(response.status).toBe(200);
+      const candidate = alternative.building!;
+      expect(compareCanonicalBuildingAlternatives(baseline.building, candidate).meaningful).toBe(true);
+      for (const floor of candidate.metadata.generationReport!.floorAreas!) {
+        expect(floor.units).toHaveLength(config.flatsPerFloor);
+        for (const unit of floor.units) {
+          expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThanOrEqual(0.03);
+        }
+      }
+      console.info('Strict alternative accepted', name, search.attemptedSeeds,
+        candidate.metadata.generationReport!.floorAreas![0]!.units.map(unit => unit.target!.achievedAreaSqFt));
+    }
+  }, 120_000);
 
   it('refuses brief 9 over HTTP and explains the infeasible area with measurable alternatives', async () => {
     // Six 2,200 ft² apartments on a tight 18 m × 20 m plot.
