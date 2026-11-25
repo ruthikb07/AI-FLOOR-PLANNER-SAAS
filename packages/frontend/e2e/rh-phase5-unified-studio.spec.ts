@@ -22,6 +22,10 @@ test('Phase 5 unified architectural studio: 4-mode nav, warm-paper theme, protec
   await surfaceToggle.click();
   const nextSurface = await page.locator('.rh-obsidian-shell').getAttribute('data-studio-surface');
   expect(nextSurface).not.toBe(initialSurface);
+  if (nextSurface !== 'warm-paper') await surfaceToggle.click();
+  await expect(page.locator('.rh-obsidian-shell')).toHaveAttribute('data-studio-surface', 'warm-paper');
+  await expect(page.getByTestId('nav-setup')).toHaveCSS('color', 'rgb(34, 29, 24)');
+
 
   // Verify 4-mode navigation grouping attributes exist cleanly
   await expect(page.getByTestId('nav-setup')).toHaveAttribute('data-mode-group', 'Design');

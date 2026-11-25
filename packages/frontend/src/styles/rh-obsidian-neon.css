@@ -917,6 +917,46 @@ body {
   --argon-btn-hover: #735434;
 }
 
+[data-studio-surface="warm-paper"].rh-obsidian-shell {
+  color-scheme: light;
+}
+
+[data-studio-surface="warm-paper"] :is(.rh-topbar-tab, .rh-segmented-pill button, .rh-monogram-word) {
+  color: var(--rh-text-secondary);
+}
+
+[data-studio-surface="warm-paper"] :is(.rh-topbar-tab, .rh-segmented-pill button):hover,
+[data-studio-surface="warm-paper"] :is(.rh-topbar-tab[aria-current="page"], .rh-segmented-pill button[aria-pressed="true"]) {
+  color: var(--rh-text);
+  background: #E8DBC8;
+}
+
+[data-studio-surface="warm-paper"] :is(.rh-topbar-tab[aria-current="page"] svg, .rh-compliance-pill.is-warn) {
+  color: #734515;
+}
+
+[data-studio-surface="warm-paper"] .rh-project-pill {
+  background: var(--argon-card);
+  border-color: var(--rh-glass-border-strong);
+  color: var(--rh-text);
+}
+
+[data-studio-surface="warm-paper"] .rh-topbar-action-cad {
+  color: #1B5067 !important;
+}
+
+[data-studio-surface="warm-paper"] :is(.rh-topbar-action-save, [data-testid="topbar-canonical-sync-pill"]) {
+  color: #694010 !important;
+}
+
+[data-studio-surface="warm-paper"] .rh-compliance-pill.is-pass {
+  color: #18583C;
+}
+
+.rh-obsidian-shell[data-studio-surface="warm-paper"] .rh-cad-actions .rh-workspace-title {
+  color: var(--rh-text) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
