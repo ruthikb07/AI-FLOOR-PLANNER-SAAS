@@ -21,3 +21,5 @@
 Layer visibility and day/night transitions were exercised in production Chromium. Furniture placement editing is scoped to canonical items in rooms with straight orthogonal walls. The editor checks the footprint, door clearance, neighboring items and modeled columns. This is a bounded placement check. The complete control inventory, visual review of all design cases, physical lighting analysis and native structural verification remain open.
 
 Leaving Welcome while Three.js was compiling shaders raised an uncaught error on the hardware Chromium replay. The welcome scene now compiles its first frame on its own cancellable animation callback. The pending-shader browser regression and the complete hardware studio workflow both passed twice.
+
+A supplemental Windows Chromium replay exercised the current camera preset names, forward and backward wheel scrubbing, free orbit, night lighting, credits links and Studio entry on a single canvas. The legacy cinematic test still references retired button names. The production repair suite covers the actual current Studio entry and the shader teardown regression.

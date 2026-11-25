@@ -30,7 +30,7 @@ See [Phase 5 acceptance](../integration/PHASE5_ACCEPTANCE.md), [Windows reliabil
 - Phase 5 furniture move and rotation passed a focused test that also exercises locked and conflicting placements.
 - Windows production Chromium passed the desktop unified workflow and mobile navigation checks. The final Windows WebGL replay passed five real context restorations with automatic rendering and context release. See the [Windows reliability report](PHASE5_WINDOWS_RELIABILITY.md) for orbit results. The full nine-project production-browser matrix and its visual review remain open.
 - Twelve native AutoCAD audits reported zero errors. The native Blender test executed Blender 5.2 and verified the complete `.blend` and six GLB files, with revision IDs and digests in the export manifest.
-- The current ETABS replay timed out at native connect before either model could be reopened. Earlier native model-only results remain historical. No suitable native IFC desktop executable was found. Live Gemini was unavailable in the active worktree.
+- The initial ETABS replay timed out at native connect before either model could be reopened. A fresh isolated continuation revived that evidence by exporting and independently reopening both model-only fixtures. No suitable native IFC desktop executable was found. Live Gemini was unavailable in the active worktree.
 
 ## Continuation verification
 
@@ -41,3 +41,7 @@ See [Phase 5 acceptance](../integration/PHASE5_ACCEPTANCE.md), [Windows reliabil
 
 - `fc2c17d36ad92970ae2e19954716f745d2370b5c` is the continuation checkpoint for the Windows renderer, BIM target refusal, hard area conflict and production project matrix. [GitHub Actions run 45641390169](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45641390169)
 - The hardware replay exposed a welcome shader teardown exception. The focused browser regression reproduced it. After repair, two SwiftShader workflow repetitions and two Direct3D11 workflow repetitions passed with the existing budgets. The eight persisted models also passed 24 receipt- and download-verified DWG, DXF and PDF exports.
+
+- `ff07f5c3beecd98d61e2c7ef25006d315a91e28b` contains the welcome shader teardown fix and its browser regression. [GitHub Actions run 45643292741](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45643292741)
+- Independent local ETABS 23.3.2 native replay passed for two model-only EDBs. The copied EDBs, artifact receipts and native readback are in `native-etabs-verified` under the evidence directory.
+- The alternate generation replay returned seven meaningfully different accepted candidates and one explicit strict-area refusal. The supplemental current welcome tour passed its camera, wheel, orbit, lighting, credits and entry checks.

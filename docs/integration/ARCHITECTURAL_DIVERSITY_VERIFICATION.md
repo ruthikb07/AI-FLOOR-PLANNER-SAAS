@@ -41,3 +41,5 @@
 ## Independent replay
 
 The Phase 5A topology tests executed genuine floor generation, compared physically different plans and rejected repeats. The group and single-room checks are evidence for bounded local changes. The broader diversity workflow still needs review across the nine briefs.
+
+A production HTTP replay used the eight feasible project fixtures and excluded each accepted starting design. Seven second-seed candidates changed architectural geometry under the six-axis comparison. One candidate was refused because the strict unequal-area brief missed Flat 1's target. [Phase 5 project acceptance](PHASE5_REAL_PROJECT_ACCEPTANCE.md)

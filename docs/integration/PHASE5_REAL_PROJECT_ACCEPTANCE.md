@@ -30,3 +30,5 @@ The eight first-residential-floor SVGs were visually reviewed in Chromium. The c
 The Windows logs, generated SVGs, Chromium contact sheets, model snapshots, IFC files and manifests are retained separately from source under `%LOCALAPPDATA%/RHPlanner/phase5-codex-20261125`.
 
 A separate production export replay used the same eight persisted models and downloaded 24 first-residential-floor artifacts, eight each in DWG, DXF and PDF. Each receipt matched the building, canonical revision and digest. The bytes matched their declared size and SHA-256. Native desktop coverage is tracked separately. [Phase 5 acceptance](PHASE5_ACCEPTANCE.md)
+
+A separate generation replay excluded each starting geometry and requested the second seed. Seven of eight briefs returned meaningfully different geometry under the production diversity comparison. The unequal-area brief returned HTTP 422 because Flat 1 measured 819.4 ft² against a required 720 ft² target at 3% tolerance. The invalid candidate was withheld. [Architectural diversity verification](ARCHITECTURAL_DIVERSITY_VERIFICATION.md)
