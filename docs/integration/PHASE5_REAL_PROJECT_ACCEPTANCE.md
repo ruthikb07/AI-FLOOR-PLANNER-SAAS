@@ -28,3 +28,5 @@ The eight first-residential-floor SVGs were visually reviewed in Chromium. The c
 | 4 | 1,750 | 1,756.56 | +0.37% | ACHIEVED |
 
 The Windows logs, generated SVGs, Chromium contact sheets, model snapshots, IFC files and manifests are retained separately from source under `%LOCALAPPDATA%/RHPlanner/phase5-codex-20261125`.
+
+A separate production export replay used the same eight persisted models and downloaded 24 first-residential-floor artifacts, eight each in DWG, DXF and PDF. Each receipt matched the building, canonical revision and digest. The bytes matched their declared size and SHA-256. Native desktop coverage is tracked separately. [Phase 5 acceptance](PHASE5_ACCEPTANCE.md)

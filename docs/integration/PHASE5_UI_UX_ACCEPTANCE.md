@@ -1,6 +1,6 @@
 # Phase 5 Architectural UI/UX, 3D Realism & Structural Workflow Acceptance (Gates L, M & N)
 
-## 1. Gate L — Architectural UI/UX, 4-Mode Grouping & Zero Placeholder Controls
+## 1. Gate L — Architectural UI/UX and connected controls
 - **4-Mode Studio Workflow Navigation (`ArgonStudioShell.tsx`):**
   - Grouped workspaces into four clear architectural workflow phases: **Design** (`Brief`, `Massing`, `Floor 3D`, `Tower 3D`), **Drafting** (`2D CAD`, `Edit Plan`), **BIM Coordination** (`BIM Studio`, `Compliance`, `Exports`), and **Structural** (`Structural`), accompanied by a live `topbar-canonical-sync-pill` (`Rev #N · Storey · Selection`) and `FT / M` unit toggle.
 - **Warm-Beige Architectural Paper & Obsidian Themes + Reduced Motion (`rh-obsidian-neon.css`):**
@@ -19,3 +19,5 @@
 ## Independent review
 
 Layer visibility and day/night transitions were exercised in production Chromium. Furniture placement editing is scoped to canonical items in rooms with straight orthogonal walls. The editor checks the footprint, door clearance, neighboring items and modeled columns. This is a bounded placement check. The complete control inventory, visual review of all design cases, physical lighting analysis and native structural verification remain open.
+
+Leaving Welcome while Three.js was compiling shaders raised an uncaught error on the hardware Chromium replay. The welcome scene now compiles its first frame on its own cancellable animation callback. The pending-shader browser regression and the complete hardware studio workflow both passed twice.

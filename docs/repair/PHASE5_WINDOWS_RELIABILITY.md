@@ -73,4 +73,8 @@ The initial exact-head replay hit an `EBUSY` while opening the test loader. The 
 
 The software rasterizer now limits the backing buffer to 500,000 pixels, retaining the viewport's CSS size and camera aspect. Its fixed-directional shadow map updates on scene changes and context restoration. The two isolated Windows workflow runs then passed in 52.8 and 43.6 seconds with 114 draw calls during orbit. GLB download, save and reload passed both times. The production context-recovery suite passed five real restorations with no user input, each in one frame, and verified release on workspace and project transitions.
 
-Independent IFC readback on this continuation covered eight additional project files. The desktop IFC reopen and hardware-GPU performance remain unverified. [Phase 5 performance](../integration/PHASE5_PERFORMANCE_REPORT.md)
+Independent IFC readback on this continuation covered eight additional project files. The desktop IFC reopen remains unverified. [Phase 5 performance](../integration/PHASE5_PERFORMANCE_REPORT.md)
+
+## Hardware GPU and welcome lifecycle
+
+The Intel UHD Direct3D11 Chromium probe exposed the welcome scene's shader polling race when leaving the welcome view. A browser regression reproduced the same exception while shader completion remained pending. First-frame compilation now runs in the welcome scene's cancellable animation callback. The regression passed twice in software Chromium, and two hardware Chromium workflows passed through Floor 3D, Tower orbit, GLB download and save/reload after the fix.

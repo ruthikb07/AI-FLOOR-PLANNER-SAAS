@@ -314,7 +314,7 @@ export default function ResidenceShowcase({ progress, orbit, night = false, ligh
       contextLost = false;
       if (showcase && textures.length === 4) {
         setStatus('loading');
-        void warmUp().catch(() => { if (!disposed) setStatus('unavailable'); });
+        scheduleWarmUp();
       }
     };
     controls.addEventListener('change', schedule);
@@ -323,26 +323,32 @@ export default function ResidenceShowcase({ progress, orbit, night = false, ligh
 
     const source = `${import.meta.env.BASE_URL}architecture/`;
     let hdr: THREE.DataTexture | undefined;
-    async function warmUp() {
+    function scheduleWarmUp() {
+      if (!frame && !disposed && !contextLost) frame = requestAnimationFrame(warmUp);
+    }
+
+    function warmUp() {
+      frame = 0;
       if (!hdr || disposed || contextLost) return;
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      environment?.dispose();
-      environment = pmrem.fromEquirectangular(hdr);
-      pmrem.dispose();
-      scene.environment = environment.texture;
-      scene.environmentRotation.y = 2.6;
-      for (const texture of textures.slice(0, 3)) renderer.initTexture(texture);
-      applyLighting(renderedSunset, renderedNight);
-      // Day and dusk share the same light and material topology. Dusk changes uniforms.
-      await renderer.compileAsync(scene, camera);
-      if (disposed || contextLost) return;
-      applyTrack(input.current.progress);
-      sky.position.copy(camera.position);
-      renderer.shadowMap.needsUpdate = true;
-      renderer.render(scene, camera);
-      ready = true;
-      render();
-      setStatus('ready');
+      try {
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        environment?.dispose();
+        environment = pmrem.fromEquirectangular(hdr);
+        pmrem.dispose();
+        scene.environment = environment.texture;
+        scene.environmentRotation.y = 2.6;
+        for (const texture of textures.slice(0, 3)) renderer.initTexture(texture);
+
+        // The first frame compiles its shaders without leaving a poll running after unmount.
+        renderer.shadowMap.needsUpdate = true;
+        ready = true;
+        render();
+        setStatus('ready');
+      } catch (error) {
+        ready = false;
+        console.error('Welcome model failed to render', error);
+        setStatus('unavailable');
+      }
     }
 
     async function load() {
@@ -384,7 +390,7 @@ export default function ResidenceShowcase({ progress, orbit, night = false, ligh
         stone.roughnessMap = roughness;
         stone.roughness = .93;
       }
-      await warmUp();
+      scheduleWarmUp();
     }
 
     function disposeMeshes(root: THREE.Object3D) {

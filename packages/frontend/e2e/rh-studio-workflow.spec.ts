@@ -8,6 +8,37 @@ test.use({
   trace: { mode: 'retain-on-failure', screenshots: false },
 });
 
+test('leaves the welcome scene while shaders are still pending', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const proto = WebGL2RenderingContext.prototype;
+    const completionStatus = 0x91b1;
+    const getExtension = proto.getExtension;
+    proto.getExtension = function (name: string) {
+      return name === 'KHR_parallel_shader_compile'
+        ? { COMPLETION_STATUS_KHR: completionStatus }
+        : getExtension.call(this, name);
+    };
+    const getProgramParameter = proto.getProgramParameter;
+    proto.getProgramParameter = function (program, parameter) {
+      if (parameter === completionStatus) return false;
+      return getProgramParameter.call(this, program, parameter);
+    };
+  });
+
+  await page.goto('/');
+  const scene = page.getByTestId('residence-showcase');
+  await expect(scene).toHaveAttribute('data-component-count', /^[1-9]\d*$/, { timeout: 45_000 });
+  await page.getByTestId('cta-new-construction').click();
+  await expect(scene).toHaveCount(0);
+  await expect(page.getByLabel('Project Title / Estate', { exact: false })).toBeVisible();
+  await page.evaluate(() => new Promise<void>(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  expect(errors).toEqual([]);
+});
+
 test('current studio workflow through reference, massing and export', async ({ page }) => {
   test.setTimeout(300_000);
   const t0 = Date.now();
