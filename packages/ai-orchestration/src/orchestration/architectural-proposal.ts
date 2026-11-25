@@ -158,7 +158,14 @@ export interface ArchitecturalProposalResult {
   readonly enrichedConfig: MultiSheetApartmentConfig;
 }
 
-const CORE_PROPOSAL_PROPERTIES: Record<string, unknown> = {
+interface ProposalField {
+  readonly type?: string;
+  readonly enum?: readonly unknown[];
+  readonly properties?: Readonly<Record<string, ProposalField>>;
+  readonly required?: readonly string[];
+}
+
+const CORE_PROPOSAL_PROPERTIES: Record<string, ProposalField> = {
   preferredTopologyFamily: {
     type: 'string',
     enum: [
@@ -234,13 +241,6 @@ const CORE_REQUIRED_FIELDS = [
   'designRationale',
 ];
 
-interface ProposalField {
-  readonly type?: string;
-  readonly enum?: readonly unknown[];
-  readonly properties?: Readonly<Record<string, ProposalField>>;
-  readonly required?: readonly string[];
-}
-
 function matchesProposalField(value: unknown, field: ProposalField): boolean {
   if (field.enum) return field.enum.includes(value);
   switch (field.type) {
@@ -256,6 +256,13 @@ function matchesProposalField(value: unknown, field: ProposalField): boolean {
     case 'boolean': return typeof value === 'boolean';
     default: return false;
   }
+}
+
+function hasValidProposalFields(parsed: Record<string, unknown>): boolean {
+  // Some provider versions return a partial proposal. Validate every supplied
+  // core field and require meaningful input before the normalizer fills defaults.
+  return Object.keys(CORE_PROPOSAL_PROPERTIES).some(key => Object.hasOwn(parsed, key))
+    && matchesProposalField(parsed, { type: 'object', properties: CORE_PROPOSAL_PROPERTIES });
 }
 
 /** Compact schema used when no reference image is attached (~35% fewer schema tokens). */
@@ -1380,7 +1387,7 @@ export async function generateArchitecturalProposal(
       const response = dedup.value;
       sharedInFlight = dedup.sharedInFlight;
       const { parsed, content: _content, ...receipt } = response;
-      if (!parsed || !matchesProposalField(parsed, ARCHITECTURAL_PROPOSAL_TEXT_SCHEMA)) {
+      if (!parsed || !hasValidProposalFields(parsed)) {
         invalidResponse = response;
         throw new Error('INVALID_STRUCTURED_ARCHITECTURAL_PROPOSAL');
       }
