@@ -140,3 +140,56 @@ export function moveApartmentPartition(
     doors: floor.doors.map(remap), windows: floor.windows.map(remap),
   });
 }
+
+/**
+ * Validated canonical interior partition thickness adjustment (Phase 5 Gate F).
+ * Preserves 230 mm exterior & inter-flat party walls, load-bearing walls, and locked entities.
+ */
+export function editCanonicalWallThickness(
+  building: Building,
+  control: GenerationControlState,
+  floorId: string,
+  wallId: string,
+  thicknessMm: number,
+): Building {
+  const floor = building.floors.find(c => c.id === floorId);
+  const wall = floor?.walls.find(c => c.id === wallId);
+  if (!floor || !wall) throw new Error('Selected wall does not exist on the active floor.');
+  if (control.lockedFloorIds.includes(floorId)) throw new Error('Unlock the floor before editing wall thickness.');
+  const locked = new Set([...control.lockedEntityIds, ...control.protectedCoreIds]);
+  if (locked.has(wall.id) || wall.loadBearing) {
+    throw new Error('Locked or load-bearing walls cannot have their thickness modified.');
+  }
+  const rooms = floor.rooms.filter(r => wall.roomIds.includes(r.id));
+  const isExteriorEnvelope =
+    wall.wallUse === 'EXTERNAL' ||
+    wall.type === 'external' ||
+    (wall.roomIds.length === 1 && wall.boundaryRole !== 'PARAPET' && wall.boundaryRole !== 'GUARDRAIL');
+  const isPartyWall =
+    wall.wallUse === 'UNIT_SEPARATION' ||
+    (rooms.length === 2 && Boolean(rooms[0]?.unitId) && Boolean(rooms[1]?.unitId) && rooms[0]!.unitId !== rooms[1]!.unitId);
+  if (isExteriorEnvelope || isPartyWall) {
+    if (thicknessMm < 230) {
+      throw new Error('Exterior perimeter and inter-flat party walls must maintain at least 230 mm masonry thickness.');
+    }
+  }
+  if (!Number.isFinite(thicknessMm) || thicknessMm < 90 || thicknessMm > 350) {
+    throw new Error('Enter a valid architectural wall thickness between 90 mm and 350 mm.');
+  }
+  if (rooms.some(r => r.isFixed || locked.has(r.id) || locked.has(r.unitId ?? ''))) {
+    throw new Error('Cannot modify wall thickness adjacent to a locked room or flat.');
+  }
+  const editedFloor = {
+    ...floor,
+    walls: floor.walls.map(w => (w.id === wallId ? { ...w, thickness: Math.round(thicknessMm) } : w)),
+  };
+  if (!floor.apartmentUnits?.length) {
+    return {
+      ...building,
+      version: building.version + 1,
+      updatedAt: new Date().toISOString(),
+      floors: building.floors.map(f => (f.id === floorId ? editedFloor : f)),
+    };
+  }
+  return acceptApartmentFloorEdit(building, editedFloor);
+}

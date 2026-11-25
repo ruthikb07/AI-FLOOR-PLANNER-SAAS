@@ -1,5 +1,11 @@
 import { DoorType, isPhysicalBoundary, type Door, type Floor, type Window } from '@ai-floor-planner/core';
-import { canonicalOpeningGeometry, measureApartmentAreaLedger, polygonArea, roomSpaceUse } from '@ai-floor-planner/geometry-engine';
+import {
+  canonicalCurvedOpeningGeometry,
+  canonicalOpeningGeometry,
+  measureApartmentAreaLedger,
+  polygonArea,
+  roomSpaceUse,
+} from '@ai-floor-planner/geometry-engine';
 import type { FloorPlate3D, Wall3D } from '@ai-floor-planner/projection-3d';
 
 export type BimKind = 'room' | 'flat' | 'wall' | 'door' | 'window' | 'slab' | 'stair';
@@ -65,11 +71,13 @@ export function calculateBimSchedule(floor: Floor, projectedWalls: readonly Wall
     const heightMm = wall.heightMm ?? (floor.architecture && floor.slabThicknessMm !== undefined ? view?.height : undefined);
     const hosted = openingsByWall.get(wall.id) ?? [];
     let areaMm2: number | undefined;
-    if (heightMm !== undefined && heightMm > 0 && wall.boundaryRole !== 'GUARDRAIL' && !(wall.arc && hosted.length)) {
+    if (heightMm !== undefined && heightMm > 0) {
       const rectangles: OpeningRectangle[] = [];
       for (const opening of hosted) {
         try {
-          const { start, end } = canonicalOpeningGeometry(opening, wall);
+          const { start, end } = wall.arc
+            ? canonicalCurvedOpeningGeometry(opening, wall)
+            : canonicalOpeningGeometry(opening, wall);
           const bottom = 'sillHeight' in opening ? opening.sillHeight : 0;
           if (bottom < 0 || bottom + opening.height > heightMm) break;
           rectangles.push({ start, end, bottom, top: bottom + opening.height });
@@ -77,7 +85,7 @@ export function calculateBimSchedule(floor: Floor, projectedWalls: readonly Wall
       }
       if (rectangles.length === hosted.length) areaMm2 = lengthMm * heightMm - openingUnion(rectangles);
     }
-    return { kind: 'wall', id: wall.id, name: wall.wallUse ?? 'Wall', ifcClass: wall.boundaryRole === 'GUARDRAIL' ? undefined : 'IfcWall',
+    return { kind: 'wall', id: wall.id, name: wall.wallUse ?? 'Wall', ifcClass: wall.boundaryRole === 'GUARDRAIL' ? 'IfcRailing' : 'IfcWall',
       lengthMm, widthMm: wall.thickness, heightMm, material: wall.material, areaMm2,
       volumeMm3: areaMm2 === undefined ? undefined : areaMm2 * wall.thickness };
   });

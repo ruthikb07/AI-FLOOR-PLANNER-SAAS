@@ -101,6 +101,70 @@ it.each(configs)('authors and reads canonical IFC4 for %s', async (name, config)
     expect(after).toMatchObject({ externalId: before!.externalId, hostWallId: host.id, widthMm: window.width - 40 });
     await recordEvidence('edited-window', editedArtifact, editedWindow);
   }
+  if (name === 'rotunda-mixed') {
+    const { building: crescent } = await executeAuditedPlanningPipeline({
+      ...base,
+      projectId: 'phase5b-elliptical-curved-ifc',
+      plotWidthMm: 42000,
+      plotDepthMm: 36000,
+      buildingMassingShape: 'ELLIPTICAL_TOWER',
+      numTypicalFloors: 1,
+      units: base.units!.map(u => ({ ...u, hasUtilityBalcony: false })),
+    });
+    const floor = crescent.floors.find(
+      candidate => Boolean(candidate.apartmentUnits?.length) && candidate.walls.some(wall => Boolean(wall.arc)),
+    )!;
+    const arcHost = floor.walls
+      .filter(wall => {
+        if (!wall.arc) return false;
+        if (wall.boundaryRole === 'PARAPET' || wall.boundaryRole === 'GUARDRAIL' || wall.boundaryRole === 'OPEN_BOUNDARY') return false;
+        const nonVoidRooms = floor.rooms.filter(
+          r => wall.roomIds.includes(r.id) && r.spaceUse !== 'VOID' && !r.openToSky,
+        );
+        if (nonVoidRooms.length !== 1) return false;
+        const room = nonVoidRooms[0]!;
+        const arcLength = Math.abs(wall.arc.endAngleRad - wall.arc.startAngleRad) * wall.arc.radiusMm;
+        const hasDoor = floor.doors.some(d => d.wallId === wall.id);
+        return Boolean(room.unitId && !room.isFixed && room.spaceUse !== 'OUTDOOR' && !hasDoor && arcLength >= 750);
+      })
+      .sort(
+        (a, b) =>
+          Math.abs(b.arc!.endAngleRad - b.arc!.startAngleRad) * b.arc!.radiusMm -
+          Math.abs(a.arc!.endAngleRad - a.arc!.startAngleRad) * a.arc!.radiusMm,
+      )[0];
+    expect(arcHost).toBeDefined();
+    if (arcHost && arcHost.arc) {
+      let cleared = crescent;
+      for (const preWin of floor.windows.filter(w => w.wallId === arcHost.id)) {
+        cleared = editApartmentOpening(cleared, createGenerationControlState(), floor.id, {
+          action: 'remove',
+          id: preWin.id,
+        });
+      }
+      const arcLength = Math.abs(arcHost.arc.endAngleRad - arcHost.arc.startAngleRad) * arcHost.arc.radiusMm;
+      const winW = Math.min(1100, Math.max(600, Math.floor(arcLength - 280)));
+      const withCurvedWindow = editApartmentOpening(cleared, createGenerationControlState(), floor.id, {
+        action: 'add',
+        kind: 'window',
+        wallId: arcHost.id,
+        widthMm: winW,
+        offsetMm: Math.round(arcLength / 2),
+        sillHeightMm: 900,
+      });
+      const curvedRev = exchangeRevision(withCurvedWindow);
+      const curvedArtifact = await adapter.export(withCurvedWindow, curvedRev);
+      const curvedReadback = await adapter.readback(curvedArtifact, curvedRev);
+      expect(curvedReadback.lostCanonicalIds).toEqual([]);
+      expect(curvedReadback.changedHostIds).toEqual([]);
+      expect(curvedReadback.maximumPositionErrorMm).toBeLessThanOrEqual(0.001);
+      expect(
+        curvedArtifact.manifest.elements.some(
+          item => item.kind === 'window' && item.hostWallId === arcHost.id && item.ifcClass === 'IFCWINDOW',
+        ),
+      ).toBe(true);
+      await recordEvidence('rotunda-curved-window', curvedArtifact, withCurvedWindow);
+    }
+  }
   console.log('RH_IFC', name, artifact.bytes.length, artifact.manifest.elements.length, artifact.manifest.omissions.length, measurements);
 }, 60_000);
 

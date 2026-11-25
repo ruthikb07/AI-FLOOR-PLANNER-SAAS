@@ -99,7 +99,8 @@ def verify(path):
             opening = next(item for item in floor[kind + "s"] if item["id"] == source_id)
             void = model.by_guid(mapped["openingGlobalId"])
             assert len(void.VoidsElements) == 1
-            assert void.VoidsElements[0].RelatingBuildingElement.GlobalId == guid_map[("wall", floor_id, opening["wallId"])]
+            host_wall_entity = void.VoidsElements[0].RelatingBuildingElement
+            assert host_wall_entity.GlobalId == guid_map[("wall", floor_id, opening["wallId"])]
             body = void.Representation.Representations[0].Items[0]
             points = [p.Coordinates for p in body.SweptArea.OuterCurve.Points][:-1]
             center = [sum(p[i] for p in points) / len(points) for i in (0, 1)]
@@ -110,13 +111,25 @@ def verify(path):
                 assert void.HasFillings[0].RelatedBuildingElement == entity
                 max_opening = max(max_opening, abs(entity.OverallWidth - opening["width"]),
                                   abs(entity.OverallHeight - opening["height"]))
+                assert entity.Representation is not None
+            host_wall_spec = next(w for w in floor["walls"] if w["id"] == opening["wallId"])
+            if host_wall_spec.get("arc") and "curved_void_wall" not in geometric_samples:
+                curved_shape = ifcopenshell.geom.create_shape(mesh_settings, host_wall_entity)
+                assert len(curved_shape.geometry.verts) >= 24 and len(curved_shape.geometry.faces) >= 24
+                geometric_samples.add("curved_void_wall")
         elif kind == "slab":
             body = entity.Representation.Representations[0].Items[0]
             assert abs(body.Depth - floor["slabThicknessMm"]) <= 0.001
             if body.SweptArea.is_a("IfcArbitraryProfileDefWithVoids"):
                 cutouts += len(body.SweptArea.InnerCurves)
         if kind in ("wall", "slab", "stair") and kind not in geometric_samples:
-            shape = ifcopenshell.geom.create_shape(mesh_settings, entity)
+            mesh_target = entity
+            if kind == "stair" and entity.Representation is None:
+                assert len(entity.IsDecomposedBy) == 1
+                flights = [child for child in entity.IsDecomposedBy[0].RelatedObjects if child.is_a("IfcStairFlight")]
+                assert len(flights) >= 1
+                mesh_target = flights[0]
+            shape = ifcopenshell.geom.create_shape(mesh_settings, mesh_target)
             assert len(shape.geometry.verts) >= 12 and len(shape.geometry.faces) >= 12
             geometric_samples.add(kind)
 

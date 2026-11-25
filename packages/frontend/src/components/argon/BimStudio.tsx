@@ -6,10 +6,15 @@ import { projectBuildingTo3D, type ProjectionSource } from '@ai-floor-planner/pr
 import type { EditorContextValue } from '../../stores/editor-store';
 import { calculateBimSchedule, scheduleCsv, type BimKind, type BimQuantityRow } from '../../services/bim-quantities';
 import { DEFAULT_MODEL_VIEW_PREFERENCES, projectionSourceToSelection } from '../../services/projection-preferences';
-import { alignedPlanPrism, type IfcReferenceModel, type ReferenceAlignment } from '../../services/ifc-reference';
+import { alignedPlanPrism, type IfcReferenceModel } from '../../services/ifc-reference';
+import {
+  loadProjectBimFederation,
+  saveProjectBimFederation,
+  type PersistedLinkedReference,
+} from '../../services/ifc-reference-store';
 import { runWorkerTask } from '../../services/worker-task';
-import type { findBimClashes, BimClash } from '../../services/bim-clash';
-import { queryBimSchedule } from '../../services/bim-query';
+import type { BimClash, ClashResolutionStatus, findBimClashes } from '../../services/bim-clash';
+import { queryBimSchedule, type BimQueryResponse } from '../../services/bim-query';
 import { ThreeBuildingScene } from '../model-3d/ThreeBuildingScene';
 import './bim-studio.css';
 
@@ -28,13 +33,6 @@ function download(content: BlobPart, mime: string, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-interface LinkedReference {
-  readonly model: IfcReferenceModel;
-  readonly fileName: string;
-  readonly discipline: string;
-  readonly alignment?: ReferenceAlignment;
-}
-
 export default function BimStudio({ editor, onOpenCad }: { editor: EditorContextValue; onOpenCad: () => void }) {
   const { building, activeFloor, selection, switchFloor, selectEntity, clearSelection } = editor;
   const [filter, setFilter] = useState<BimKind | 'all'>('all');
@@ -49,14 +47,19 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<'import' | 'export' | 'clash'>();
   const [query, setQuery] = useState('');
-  const [queryResult, setQueryResult] = useState<ReturnType<typeof queryBimSchedule>>();
-  const [references, setReferences] = useState<LinkedReference[]>([]);
+  const [queryResult, setQueryResult] = useState<BimQueryResponse>();
+  const [references, setReferences] = useState<PersistedLinkedReference[]>([]);
   const [activeReference, setActiveReference] = useState('');
   const [discipline, setDiscipline] = useState('Unclassified');
   const [alignment, setAlignment] = useState({ x: '0', y: '0', z: '0', angle: '0' });
   const [showReference, setShowReference] = useState(true);
   const [tolerance, setTolerance] = useState('0.5');
+  const [minClearance, setMinClearance] = useState('0');
+  const [includeSlabsAndStructure, setIncludeSlabsAndStructure] = useState(false);
+  const [clashResolutions, setClashResolutions] = useState<Record<string, ClashResolutionStatus>>({});
+  const [federationLoadedForProject, setFederationLoadedForProject] = useState('');
   const [clashes, setClashes] = useState<ReturnType<typeof findBimClashes>>();
+  const previousBuildingRef = useRef(building);
   const operation = useRef<AbortController>();
   const projection = useMemo(() => projectBuildingTo3D(building), [building]);
   const source = useMemo(() => exchangeRevision(building), [building]);
@@ -78,13 +81,40 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
     return () => { operation.current?.abort(); };
   }, [source.sha256, activeFloor.id]);
   useEffect(() => {
+    let cancelled = false;
     setReferences([]);
     setActiveReference('');
+    setClashResolutions({});
+    setFederationLoadedForProject('');
+    void loadProjectBimFederation(building.projectId).then(persisted => {
+      if (cancelled) return;
+      if (persisted && persisted.projectId === building.projectId) {
+        setReferences([...persisted.references]);
+        setActiveReference(persisted.activeReferenceSha256 || persisted.references[0]?.model.sha256 || '');
+        setClashResolutions({ ...persisted.clashResolutions });
+      }
+      setFederationLoadedForProject(building.projectId);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [building.projectId]);
+
+  useEffect(() => {
+    if (federationLoadedForProject !== building.projectId) return;
+    void saveProjectBimFederation({
+      projectId: building.projectId,
+      activeReferenceSha256: activeReference,
+      references,
+      clashResolutions,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [building.projectId, federationLoadedForProject, activeReference, references, clashResolutions]);
+
   useEffect(() => {
     setClashes(undefined);
     if (busy === 'clash') operation.current?.abort();
-  }, [activeReference, references, tolerance]);
+  }, [activeReference, references, tolerance, minClearance, includeSlabsAndStructure]);
 
   function pick(row: BimQuantityRow) {
     setLocalRow(undefined);
@@ -176,11 +206,31 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
   }
 
   function selectClash(clash: BimClash) {
-    setFilter('wall'); setSearch(clash.wallId);
-    selectEntity('wall', clash.wallId, clash.floorId);
+    setFilter(clash.elementKind === 'column' || clash.elementKind === 'beam' ? 'all' : clash.elementKind);
+    setSearch(clash.elementId);
+    if (clash.elementKind !== 'slab') {
+      selectEntity(clash.elementKind, clash.elementId, clash.floorId);
+    }
+  }
+
+  function setClashStatus(clash: BimClash, nextStatus: ClashResolutionStatus) {
+    const key = `${source.sha256}::${clash.id}`;
+    setClashResolutions(prev => ({ ...prev, [key]: nextStatus }));
+    setClashes(prev =>
+      prev
+        ? {
+            ...prev,
+            results: prev.results.map(item => (item.id === clash.id ? { ...item, status: nextStatus } : item)),
+          }
+        : prev,
+    );
   }
 
   const profiles = useMemo(() => reference?.model.elements.flatMap(entity => entity.prisms) ?? [], [reference]);
+  const floorPlate = useMemo(
+    () => projection.floorPlates.find(plate => plate.floorId === activeFloor.id),
+    [projection.floorPlates, activeFloor.id],
+  );
   async function checkClashes() {
     if (!reference?.alignment) return;
     const controller = new AbortController();
@@ -189,9 +239,22 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
     try {
       const result = await runWorkerTask<ReturnType<typeof findBimClashes>>({
         start: () => new Worker(new URL('../../services/ifc-reference.worker.ts', import.meta.url), { type: 'module' }),
-        input: { job: 'clash', input: { floor: activeFloor, walls: wallProjection, reference: profiles,
-          alignment: reference.alignment, referenceSha256: reference.model.sha256, revisionSha256: source.sha256,
-          toleranceMm: Number(tolerance) } },
+        input: {
+          job: 'clash',
+          input: {
+            floor: activeFloor,
+            walls: wallProjection,
+            plate: floorPlate,
+            reference: profiles,
+            alignment: reference.alignment,
+            referenceSha256: reference.model.sha256,
+            revisionSha256: source.sha256,
+            toleranceMm: Number(tolerance),
+            minClearanceMm: Number(minClearance) || 0,
+            includeSlabsAndStructure,
+            resolutions: clashResolutions,
+          },
+        },
         signal: controller.signal, label: 'IFC clash check', timeoutMs: 30_000,
         receive: data => {
           if (!data || typeof data !== 'object') throw new Error('Invalid IFC worker response.');
@@ -284,11 +347,44 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
             {selected.volumeMm3 !== undefined && <><dt>Element volume</dt><dd>{(selected.volumeMm3 / 1e9).toFixed(3)} m³</dd></>}
             {selected.riserCount !== undefined && <><dt>Risers</dt><dd>{selected.riserCount}</dd></>}
           </dl> : <p>Select an element in the model or schedule.</p>}
-          <form onSubmit={event => { event.preventDefault(); setQueryResult(queryBimSchedule(query, schedule.rows)); }}>
-            <label>Model query <input value={query} placeholder="Total window area" onChange={event => setQuery(event.target.value)} /></label>
+          <form onSubmit={event => {
+            event.preventDefault();
+            const res = queryBimSchedule(query, schedule.rows, {
+              building,
+              previousBuilding: previousBuildingRef.current.version !== building.version ? previousBuildingRef.current : undefined,
+              floor: activeFloor,
+              clashes: clashes?.results,
+              control: editor.generationControl,
+            });
+            setQueryResult(res);
+          }}>
+            <label>Model query <input value={query} placeholder="Total window area or Regenerate Flat 2" onChange={event => setQuery(event.target.value)} /></label>
             <button type="submit">Run query</button>
           </form>
-          {queryResult && <p role="status">{queryResult.text}</p>}
+          {queryResult && (
+            <div>
+              <p role="status">{queryResult.text}</p>
+              {queryResult.proposalPreview?.status === 'PREVIEW_READY' && queryResult.proposalPreview.proposedBuilding && (
+                <div className="rh-bim-controls" data-testid="bim-assistant-preview">
+                  <button
+                    type="button"
+                    data-testid="bim-accept-proposal-btn"
+                    onClick={() => {
+                      const prop = queryResult.proposalPreview!;
+                      if (!prop.proposedBuilding) return;
+                      previousBuildingRef.current = building;
+                      editor.applyRefinement(prop.proposedBuilding, prop.message, true, prop.baseRevisionDigest);
+                      setQueryResult(undefined);
+                      setNotice('Applied canonical BIM/CAD proposal to revision ' + prop.proposedRevision + '.');
+                    }}
+                  >
+                    Accept Preview
+                  </button>
+                  <button type="button" onClick={() => setQueryResult(undefined)}>Discard Preview</button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
       <section className="rh-bim-card" aria-label="Read-only IFC references">
@@ -323,6 +419,8 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
           </form>
           {reference.alignment && <div className="rh-bim-controls">
             <label>Clash tolerance (mm) <input type="number" min="0.01" step="any" value={tolerance} onChange={event => setTolerance(event.target.value)} /></label>
+            <label>Min clearance (mm) <input type="number" min="0" max="2000" step="10" value={minClearance} onChange={event => setMinClearance(event.target.value)} /></label>
+            <label><input type="checkbox" checked={includeSlabsAndStructure} onChange={event => setIncludeSlabsAndStructure(event.target.checked)} /> Slabs, columns &amp; door zones</label>
             <button type="button" disabled={Boolean(busy)} onClick={() => void checkClashes()}>Check wall clashes</button>
           </div>}
           {box && showReference && reference.alignment && <svg viewBox={box.join(' ')} className="rh-bim-overlay" aria-label="Aligned reference floor outline" role="img">
@@ -333,9 +431,20 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
           </svg>}
           {clashes && <div role="region" aria-label="Wall clash results">
             <p>{clashes.results.length} confirmed intersections · {clashes.skipped} unsupported profiles or walls</p>
-            <ul>{clashes.results.map(clash => <li key={clash.id}><button type="button" onClick={() => selectClash(clash)}>
-              {clash.kind} · {clash.ifcClass} · {(clash.volumeMm3 / 1e9).toFixed(4)} m³ · {clash.status}
-            </button></li>)}</ul>
+            <ul>{clashes.results.map(clash => <li key={clash.id} className="rh-bim-controls">
+              <button type="button" onClick={() => selectClash(clash)}>
+                {clash.kind} · {clash.elementKind}:{clash.ifcClass} · {clash.kind === 'CLEARANCE' ? `${clash.clearanceMm} mm gap` : `${(clash.volumeMm3 / 1e9).toFixed(4)} m³`} · {clash.status}
+              </button>
+              <select
+                aria-label={`Status for clash ${clash.id}`}
+                value={clash.status}
+                onChange={e => setClashStatus(clash, e.target.value as ClashResolutionStatus)}
+              >
+                <option value="OPEN">OPEN</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="IGNORED">IGNORED</option>
+              </select>
+            </li>)}</ul>
           </div>}
         </>}
       </section>

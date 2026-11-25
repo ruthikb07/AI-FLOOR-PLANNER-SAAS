@@ -6,6 +6,7 @@ export interface ReferencePrism {
   readonly ifcClass: string;
   readonly name: string;
   readonly boundary: readonly Point[];
+  readonly holes?: readonly (readonly Point[])[];
   readonly bottomMm: number;
   readonly topMm: number;
 }
@@ -43,15 +44,49 @@ function compose(parent: Transform, local: Transform): Transform {
 }
 
 export function alignedPlanPrism(prism: ReferencePrism, transform: ReferenceAlignment): ReferencePrism {
-  return { ...prism, boundary: prism.boundary.map(p => {
+  const mapPt = (p: Point): Point => {
     const point = transformPoint(p, transform);
     return { x: point.x, y: -point.y };
-  }), bottomMm: prism.bottomMm + transform.z, topMm: prism.topMm + transform.z };
+  };
+  return {
+    ...prism,
+    boundary: prism.boundary.map(mapPt),
+    ...(prism.holes ? { holes: prism.holes.map(ring => ring.map(mapPt)) } : {}),
+    bottomMm: prism.bottomMm + transform.z,
+    topMm: prism.topMm + transform.z,
+  };
+}
+
+function convexHull2D(points: readonly Point[]): Point[] {
+  if (points.length <= 2) return [...points];
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const deduped: Point[] = [];
+  for (const p of sorted) {
+    const prev = deduped[deduped.length - 1];
+    if (!prev || Math.hypot(p.x - prev.x, p.y - prev.y) > 1e-4) deduped.push(p);
+  }
+  if (deduped.length < 3) return deduped;
+  const cross = (o: Point, a: Point, b: Point) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower: Point[] = [];
+  for (const p of deduped) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2]!, lower[lower.length - 1]!, p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: Point[] = [];
+  for (let i = deduped.length - 1; i >= 0; i--) {
+    const p = deduped[i]!;
+    while (upper.length >= 2 && cross(upper[upper.length - 2]!, upper[upper.length - 1]!, p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
 }
 
 const physicalClasses = new Set([
   'IFCWALL', 'IFCWALLSTANDARDCASE', 'IFCSLAB', 'IFCROOF', 'IFCBEAM', 'IFCCOLUMN', 'IFCMEMBER', 'IFCPLATE',
-  'IFCDUCTSEGMENT', 'IFCPIPESEGMENT', 'IFCBUILDINGELEMENTPROXY', 'IFCSTAIR', 'IFCSTAIRFLIGHT', 'IFCRAILING', 'IFCDOOR', 'IFCWINDOW',
+  'IFCDUCTSEGMENT', 'IFCPIPESEGMENT', 'IFCCABLECARRIERSEGMENT', 'IFCCABLESEGMENT', 'IFCFLOWSEGMENT', 'IFCFLOWTERMINAL',
+  'IFCBUILDINGELEMENTPROXY', 'IFCSTAIR', 'IFCSTAIRFLIGHT', 'IFCRAILING', 'IFCDOOR', 'IFCWINDOW', 'IFCFOOTING',
 ]);
 
 export function readIfcReference(bytes: Uint8Array): IfcReferenceModel {
@@ -130,35 +165,135 @@ export function readIfcReference(bytes: Uint8Array): IfcReferenceModel {
       if (!representation) throw new Error('IFC_REFERENCE_BODY_UNSUPPORTED');
       const bodies = stepArgs(representation.args[3]!);
       if (!bodies.length || bodies.length > 256) throw new Error('IFC_REFERENCE_BODY_COMPLEXITY');
+      const entityPlacement = placement(entity.args[5]);
       prisms = bodies.map(ref => {
-        const body = doc.entity(ref, 'IFCEXTRUDEDAREASOLID');
-        checkVertical(body.args[2]);
-        const bodyPose = compose(placement(entity.args[5]), axis(body.args[1]));
-        const profile = doc.entity(body.args[0]);
-        let points: readonly Point[];
-        let pose = bodyPose;
-        if (profile.type === 'IFCRECTANGLEPROFILEDEF') {
-          const w = stepNumber(profile.args[3]) * factor / 2, d = stepNumber(profile.args[4]) * factor / 2;
-          if (w <= 0 || d <= 0) throw new Error('IFC_REFERENCE_DEGENERATE_RECTANGLE');
-          pose = compose(pose, axis(profile.args[2]));
-          points = [{x:-w,y:-d},{x:w,y:-d},{x:w,y:d},{x:-w,y:d}];
-        } else if (profile.type === 'IFCARBITRARYCLOSEDPROFILEDEF') {
-          const ring = doc.ring(profile.args[2]);
-          if (ring.length < 4 || ring[0]!.x !== ring.at(-1)!.x || ring[0]!.y !== ring.at(-1)!.y) {
-            throw new Error('IFC_REFERENCE_OPEN_PROFILE');
+        const body = doc.entity(ref);
+        if (body.type === 'IFCEXTRUDEDAREASOLID') {
+          checkVertical(body.args[2]);
+          const bodyPose = compose(entityPlacement, axis(body.args[1]));
+          const profile = doc.entity(body.args[0]);
+          let points: readonly Point[];
+          let rawHoles: (readonly Point[])[] | undefined;
+          let pose = bodyPose;
+          if (profile.type === 'IFCRECTANGLEPROFILEDEF') {
+            const w = stepNumber(profile.args[3]) * factor / 2, d = stepNumber(profile.args[4]) * factor / 2;
+            if (w <= 0 || d <= 0) throw new Error('IFC_REFERENCE_DEGENERATE_RECTANGLE');
+            pose = compose(pose, axis(profile.args[2]));
+            points = [{ x: -w, y: -d }, { x: w, y: -d }, { x: w, y: d }, { x: -w, y: d }];
+          } else if (profile.type === 'IFCCIRCLEPROFILEDEF') {
+            const radius = stepNumber(profile.args[3]) * factor;
+            if (radius <= 0) throw new Error('IFC_REFERENCE_DEGENERATE_CIRCLE');
+            pose = compose(pose, axis(profile.args[2]));
+            const segs = 24;
+            points = Array.from({ length: segs }, (_, idx) => {
+              const ang = (idx * Math.PI * 2) / segs;
+              return { x: radius * Math.cos(ang), y: radius * Math.sin(ang) };
+            });
+          } else if (profile.type === 'IFCARBITRARYCLOSEDPROFILEDEF') {
+            const ring = doc.ring(profile.args[2]);
+            if (ring.length < 4 || ring[0]!.x !== ring.at(-1)!.x || ring[0]!.y !== ring.at(-1)!.y) {
+              throw new Error('IFC_REFERENCE_OPEN_PROFILE');
+            }
+            points = ring.slice(0, -1).map(p => ({ x: p.x * factor, y: p.y * factor }));
+          } else if (profile.type === 'IFCARBITRARYPROFILEDEFWITHVOIDS') {
+            const ring = doc.ring(profile.args[2]);
+            if (ring.length < 4 || ring[0]!.x !== ring.at(-1)!.x || ring[0]!.y !== ring.at(-1)!.y) {
+              throw new Error('IFC_REFERENCE_OPEN_PROFILE');
+            }
+            points = ring.slice(0, -1).map(p => ({ x: p.x * factor, y: p.y * factor }));
+            rawHoles = stepArgs(profile.args[3]!).map(holeRef => {
+              const hr = doc.ring(holeRef);
+              if (hr.length < 4) throw new Error('IFC_REFERENCE_OPEN_HOLE');
+              return hr.slice(0, -1).map(p => ({ x: p.x * factor, y: p.y * factor }));
+            });
+          } else {
+            throw new Error('IFC_REFERENCE_PROFILE_UNSUPPORTED');
           }
-          points = ring.slice(0, -1).map(p => ({ x: p.x * factor, y: p.y * factor }));
-        } else throw new Error('IFC_REFERENCE_PROFILE_UNSUPPORTED');
-        if (points.length > 4096 || polygonArea({ points }) < 0.001) throw new Error('IFC_REFERENCE_PROFILE_LIMIT');
-        vertexBudget -= points.length;
-        if (vertexBudget < 0) throw new Error('IFC_REFERENCE_VERTEX_BUDGET');
-        const boundary = points.map(p => {
-          const q = transformPoint(p, pose);
-          return { x: limit(q.x), y: limit(q.y) };
-        });
-        const height = stepNumber(body.args[3]) * factor;
-        if (height <= 0) throw new Error('IFC_REFERENCE_DEPTH_INVALID');
-        return { globalId: id, ifcClass, name, boundary, bottomMm: limit(pose.z), topMm: limit(pose.z + height) };
+          if (points.length > 4096 || polygonArea({ points }) < 0.001) throw new Error('IFC_REFERENCE_PROFILE_LIMIT');
+          vertexBudget -= points.length + (rawHoles?.reduce((s, h) => s + h.length, 0) ?? 0);
+          if (vertexBudget < 0) throw new Error('IFC_REFERENCE_VERTEX_BUDGET');
+          const boundary = points.map(p => {
+            const q = transformPoint(p, pose);
+            return { x: limit(q.x), y: limit(q.y) };
+          });
+          const holes = rawHoles?.map(hr =>
+            hr.map(p => {
+              const q = transformPoint(p, pose);
+              return { x: limit(q.x), y: limit(q.y) };
+            }),
+          );
+          const height = stepNumber(body.args[3]) * factor;
+          if (height <= 0) throw new Error('IFC_REFERENCE_DEPTH_INVALID');
+          return {
+            globalId: id,
+            ifcClass,
+            name,
+            boundary,
+            ...(holes?.length ? { holes } : {}),
+            bottomMm: limit(pose.z),
+            topMm: limit(pose.z + height),
+          };
+        }
+
+        if (body.type === 'IFCFACETEDBREP') {
+          const shell = doc.entity(body.args[0], 'IFCCLOSEDSHELL');
+          const faces = stepArgs(shell.args[0]!);
+          if (!faces.length || faces.length > 2048) throw new Error('IFC_REFERENCE_BREP_LIMIT');
+          const pts2d: Point[] = [];
+          let minZ = Infinity;
+          let maxZ = -Infinity;
+          for (const fRef of faces) {
+            const face = doc.entity(fRef, 'IFCFACE');
+            for (const bRef of stepArgs(face.args[0]!)) {
+              const bound = doc.entity(bRef);
+              if (bound.type !== 'IFCFACEOUTERBOUND' && bound.type !== 'IFCFACEBOUND') continue;
+              const loop = doc.entity(bound.args[0], 'IFCPOLYLOOP');
+              const loopRefs = stepArgs(loop.args[0]!);
+              vertexBudget -= loopRefs.length;
+              if (vertexBudget < 0) throw new Error('IFC_REFERENCE_VERTEX_BUDGET');
+              for (const ptRef of loopRefs) {
+                const coords = doc.point(ptRef);
+                const tp = transformPoint({ x: coords[0]! * factor, y: coords[1]! * factor }, entityPlacement);
+                const tz = entityPlacement.z + (coords[2] ?? 0) * factor;
+                pts2d.push({ x: limit(tp.x), y: limit(tp.y) });
+                minZ = Math.min(minZ, limit(tz));
+                maxZ = Math.max(maxZ, limit(tz));
+              }
+            }
+          }
+          const hull = convexHull2D(pts2d);
+          if (hull.length < 3 || polygonArea({ points: hull }) < 0.001 || !(maxZ > minZ)) {
+            throw new Error('IFC_REFERENCE_DEGENERATE_BREP');
+          }
+          return { globalId: id, ifcClass, name, boundary: hull, bottomMm: minZ, topMm: maxZ };
+        }
+
+        if (body.type === 'IFCTRIANGULATEDFACESET' || body.type === 'IFCPOLYGONALFACESET') {
+          const coordEntity = doc.entity(body.args[0], 'IFCCARTESIANPOINTLIST3D');
+          const triples = stepArgs(coordEntity.args[0]!);
+          if (triples.length < 4 || triples.length > 16_384) throw new Error('IFC_REFERENCE_FACESET_LIMIT');
+          vertexBudget -= triples.length;
+          if (vertexBudget < 0) throw new Error('IFC_REFERENCE_VERTEX_BUDGET');
+          const pts2d: Point[] = [];
+          let minZ = Infinity;
+          let maxZ = -Infinity;
+          for (const tripleText of triples) {
+            const nums = stepArgs(tripleText).map(stepNumber);
+            if (nums.length < 3) throw new Error('IFC_REFERENCE_INVALID_COORD_TRIPLE');
+            const tp = transformPoint({ x: nums[0]! * factor, y: nums[1]! * factor }, entityPlacement);
+            const tz = entityPlacement.z + nums[2]! * factor;
+            pts2d.push({ x: limit(tp.x), y: limit(tp.y) });
+            minZ = Math.min(minZ, limit(tz));
+            maxZ = Math.max(maxZ, limit(tz));
+          }
+          const hull = convexHull2D(pts2d);
+          if (hull.length < 3 || polygonArea({ points: hull }) < 0.001 || !(maxZ > minZ)) {
+            throw new Error('IFC_REFERENCE_DEGENERATE_FACESET');
+          }
+          return { globalId: id, ifcClass, name, boundary: hull, bottomMm: minZ, topMm: maxZ };
+        }
+
+        throw new Error('IFC_REFERENCE_BODY_UNSUPPORTED');
       });
     } catch (error) {
       if (error instanceof Error && ['IFC_REFERENCE_VERTEX_BUDGET', 'IFC_REFERENCE_COORDINATE_LIMIT', 'IFC_REFERENCE_PLACEMENT_DEPTH'].includes(error.message)) throw error;

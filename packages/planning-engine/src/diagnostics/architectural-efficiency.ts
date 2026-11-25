@@ -611,3 +611,90 @@ export function auditFloorFunctionalQuality(floor: Floor): FunctionalQualityRepo
     findings,
   };
 }
+
+// ─── Gate G: Architectural Element Realism Audit ────────────────────────────
+
+export interface ElementRealismFinding {
+  readonly code:
+    | 'BALCONY_FULL_HEIGHT_EXTERIOR_WALL'
+    | 'STILT_PARKING_ENCLOSED_BY_FULL_WALL'
+    | 'DOOR_CORNER_RETURN_VIOLATION'
+    | 'UNREQUESTED_LIFT_MACHINE_ROOM';
+  readonly severity: 'ERROR' | 'WARNING';
+  readonly elementId: string;
+  readonly description: string;
+}
+
+export function auditArchitecturalElementRealism(
+  floor: Floor,
+  options: { readonly allowLiftMachineRoom?: boolean } = {},
+): { readonly passed: boolean; readonly findings: readonly ElementRealismFinding[] } {
+  const findings: ElementRealismFinding[] = [];
+  const roomById = new Map(floor.rooms.map(r => [r.id, r]));
+
+  for (const wall of floor.walls) {
+    const owners = wall.roomIds.map(id => roomById.get(id)).filter((r): r is Room => Boolean(r));
+    // 1. Exterior balcony guard must be PARAPET / GUARDRAIL (1,050-1,150 mm), never full-height enclosing wall
+    if (
+      owners.length === 1 &&
+      owners[0]!.type === RoomType.Balcony &&
+      wall.boundaryRole === 'FULL_HEIGHT_WALL' &&
+      (wall.heightMm === undefined || wall.heightMm > 1300)
+    ) {
+      findings.push({
+        code: 'BALCONY_FULL_HEIGHT_EXTERIOR_WALL',
+        severity: 'ERROR',
+        elementId: wall.id,
+        description: `Balcony '${owners[0]!.name}' outer edge '${wall.id}' is modeled as a full-height wall instead of a 1,050–1,100 mm parapet/railing.`,
+      });
+    }
+
+    // 2. Open stilt parking bays/aisles must not be enclosed by full-height walls between parking bays
+    if (
+      floor.floorUse === 'STILT_PARKING' &&
+      owners.length > 0 &&
+      owners.every(r => r.type === RoomType.Parking) &&
+      wall.boundaryRole === 'FULL_HEIGHT_WALL'
+    ) {
+      findings.push({
+        code: 'STILT_PARKING_ENCLOSED_BY_FULL_WALL',
+        severity: 'ERROR',
+        elementId: wall.id,
+        description: `Stilt parking bay boundary '${wall.id}' uses a full-height wall instead of open stilt columns/open boundary.`,
+      });
+    }
+  }
+
+  // 3. Door corner clearance >= 100 mm on physical masonry walls
+  for (const door of floor.doors) {
+    if (door.type === 'open_passage') continue;
+    const host = floor.walls.find(w => w.id === door.wallId);
+    if (host && !openingFitsApartmentWall(host, door.position, door.width)) {
+      findings.push({
+        code: 'DOOR_CORNER_RETURN_VIOLATION',
+        severity: 'ERROR',
+        elementId: door.id,
+        description: `Door '${door.id}' violates minimum 100 mm masonry jamb return clearance on host wall '${host.id}'.`,
+      });
+    }
+  }
+
+  // 4. No unrequested lift machine rooms
+  if (!options.allowLiftMachineRoom) {
+    for (const room of floor.rooms) {
+      if (room.architecturalRole === 'LIFT_EQUIPMENT' || /machine\s*room/i.test(room.name)) {
+        findings.push({
+          code: 'UNREQUESTED_LIFT_MACHINE_ROOM',
+          severity: 'ERROR',
+          elementId: room.id,
+          description: `Unrequested lift machine room '${room.name}' was generated without explicit brief authorization.`,
+        });
+      }
+    }
+  }
+
+  return {
+    passed: !findings.some(f => f.severity === 'ERROR'),
+    findings,
+  };
+}

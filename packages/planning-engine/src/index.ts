@@ -77,7 +77,7 @@ export {
   type ModifiedRoomDetail,
 } from './refinement/room-area-optimizer';
 export { editApartmentOpening, type OpeningEdit } from './refinement/apartment-opening-edit';
-export { moveApartmentPartition } from './refinement/apartment-partition-edit';
+export { moveApartmentPartition, editCanonicalWallThickness } from './refinement/apartment-partition-edit';
 export {
   proposeControlledCadEdit,
   parseCadEditInstructionDeterministically,
@@ -106,6 +106,7 @@ export {
   evaluateBriefRequirementHierarchyAndConflicts,
   computeFloorEfficiencyBreakdown,
   auditFloorFunctionalQuality,
+  auditArchitecturalElementRealism,
   type RequirementHierarchyTierId,
   type RequirementHierarchyTierSpec,
   type RequirementConflictAlternative,
@@ -115,6 +116,7 @@ export {
   type FloorEfficiencyBreakdown,
   type FunctionalQualityFinding,
   type FunctionalQualityReport,
+  type ElementRealismFinding,
 } from './diagnostics/architectural-efficiency';
 export {
   compareCanonicalBuildingAlternatives,

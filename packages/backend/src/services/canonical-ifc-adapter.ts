@@ -4,7 +4,12 @@ import {
   type Building, type CanonicalExchangeAdapter, type CanonicalExchangeRevision, type ExchangeArtifact, type ExchangeReadback,
   type IfcElementMapping, type IfcExchangeArtifact, type IfcOmission, type Point, type Polygon, type Wall,
 } from '@ai-floor-planner/core';
-import { canonicalOpeningGeometry, polygonArea, wallToPolygon } from '@ai-floor-planner/geometry-engine';
+import {
+  canonicalCurvedOpeningGeometry,
+  canonicalOpeningGeometry,
+  polygonArea,
+  wallToPolygon,
+} from '@ai-floor-planner/geometry-engine';
 import { projectBuildingTo3D } from '@ai-floor-planner/projection-3d';
 import { IfcStepWriter, exchangeRing, stepList, stepReal, stepString, type StepId } from './ifc-step-writer';
 
@@ -164,7 +169,25 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
           continue;
         }
         if (wall.boundaryRole === 'GUARDRAIL') {
-          omit('railing', wall.id, 'Guardrail geometry has no supported physical IFC profile');
+          const { polygon: railPoly, axisPoints: railAxis, deviation: railDev } = annularWall(wall);
+          maximumCurveChordDeviationMm = Math.max(maximumCurveChordDeviationMm, railDev);
+          const railEndpoints = [wall.startPoint, wall.endPoint].map(p => ({ x: p.x, y: -p.y }));
+          const railShapes = [
+            shape('Axis', 'Curve2D', axis, [step.polyline(railAxis.map(p => ({ x: p.x, y: -p.y })), false)]),
+            bodyShape({ polygon: railPoly, bottom: 0, height: geometry.height }),
+          ];
+          const railMap = {
+            ...mapping('railing', wall.id, 'IFCRAILING'),
+            axisMm: [railEndpoints[0]!.x, railEndpoints[0]!.y, railEndpoints[1]!.x, railEndpoints[1]!.y] as const,
+            widthMm: wall.thickness,
+            heightMm: geometry.height,
+            profileAreaMm2: polygonArea(railPoly),
+          };
+          const railProduct = register(
+            railMap,
+            step.add('IFCRAILING', ...root(railMap.externalId, 'Guardrail'), '$', place, definition(railShapes), '$', '.BALUSTRADE.'),
+          );
+          contained.push(railProduct);
           continue;
         }
         const { polygon, axisPoints, deviation } = annularWall(wall);
@@ -222,24 +245,83 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
           const host = wallIds.get(opening.wallId);
           const hostGeometry = mappedWallGeometry.get(JSON.stringify([floorId, opening.wallId]));
           const isPassage = kind === 'door' && opening.type === DoorType.OpenPassage;
-          if (!wall || !host || !hostGeometry || wall.arc) {
-            omit(kind, opening.id, wall?.arc ? 'Curved-host aperture unresolved' : 'No exported physical host');
+          if (!wall || !host || !hostGeometry) {
+            omit(kind, opening.id, 'No exported physical host');
             continue;
           }
-          let placement: ReturnType<typeof canonicalOpeningGeometry>;
-          try { placement = canonicalOpeningGeometry(opening, wall); }
-          catch { omit(kind, opening.id, 'Opening lacks a valid canonical centre, interval or host'); continue; }
           const sill = 'sillHeight' in opening ? opening.sillHeight : 0;
           if (sill < 0 || sill + opening.height > hostGeometry.height + POSITION_TOLERANCE_MM) {
             omit(kind, opening.id, 'Opening exceeds exported host height');
             continue;
           }
-          const normal = { x: -placement.uy * wall.thickness / 2, y: placement.ux * wall.thickness / 2 };
-          const p = placement.startPoint, q = placement.endPoint;
-          const polygon = { points: [
-            { x: p.x + normal.x, y: p.y + normal.y }, { x: q.x + normal.x, y: q.y + normal.y },
-            { x: q.x - normal.x, y: q.y - normal.y }, { x: p.x - normal.x, y: p.y - normal.y },
-          ] };
+          let polygon: Polygon;
+          let fillPolygon: Polygon;
+          if (wall.arc) {
+            let curvedPlacement: ReturnType<typeof canonicalCurvedOpeningGeometry>;
+            try {
+              curvedPlacement = canonicalCurvedOpeningGeometry(opening, wall);
+            } catch {
+              omit(kind, opening.id, 'Curved-host opening lacks a valid canonical arc interval');
+              continue;
+            }
+            const { radiusMm, startAngleRad, endAngleRad } = wall.arc;
+            const sign = endAngleRad >= startAngleRad ? 1 : -1;
+            const tx = -Math.sin(curvedPlacement.thetaCenter) * sign;
+            const ty = Math.cos(curvedPlacement.thetaCenter) * sign;
+            const halfSweep = Math.abs(curvedPlacement.thetaEnd - curvedPlacement.thetaStart) / 2;
+            const sagitta = radiusMm * (1 - Math.cos(halfSweep));
+            const cutHalfThk = wall.thickness / 2 + sagitta + 20;
+            const fillHalfThk = Math.min(wall.thickness / 2, kind === 'door' ? 25 : 35);
+            const halfW = opening.width / 2;
+            const cx = opening.position.x;
+            const cy = opening.position.y;
+            const nx = -ty;
+            const ny = tx;
+            polygon = {
+              points: [
+                { x: cx - tx * halfW + nx * cutHalfThk, y: cy - ty * halfW + ny * cutHalfThk },
+                { x: cx + tx * halfW + nx * cutHalfThk, y: cy + ty * halfW + ny * cutHalfThk },
+                { x: cx + tx * halfW - nx * cutHalfThk, y: cy + ty * halfW - ny * cutHalfThk },
+                { x: cx - tx * halfW - nx * cutHalfThk, y: cy - ty * halfW - ny * cutHalfThk },
+              ],
+            };
+            fillPolygon = {
+              points: [
+                { x: cx - tx * halfW + nx * fillHalfThk, y: cy - ty * halfW + ny * fillHalfThk },
+                { x: cx + tx * halfW + nx * fillHalfThk, y: cy + ty * halfW + ny * fillHalfThk },
+                { x: cx + tx * halfW - nx * fillHalfThk, y: cy + ty * halfW - ny * fillHalfThk },
+                { x: cx - tx * halfW - nx * fillHalfThk, y: cy - ty * halfW - ny * fillHalfThk },
+              ],
+            };
+          } else {
+            let placement: ReturnType<typeof canonicalOpeningGeometry>;
+            try {
+              placement = canonicalOpeningGeometry(opening, wall);
+            } catch {
+              omit(kind, opening.id, 'Opening lacks a valid canonical centre, interval or host');
+              continue;
+            }
+            const normal = { x: -placement.uy * wall.thickness / 2, y: placement.ux * wall.thickness / 2 };
+            const fillRatio = Math.min(1, (kind === 'door' ? 50 : 70) / Math.max(50, wall.thickness));
+            const fillNormal = { x: normal.x * fillRatio, y: normal.y * fillRatio };
+            const p = placement.startPoint, q = placement.endPoint;
+            polygon = {
+              points: [
+                { x: p.x + normal.x, y: p.y + normal.y },
+                { x: q.x + normal.x, y: q.y + normal.y },
+                { x: q.x - normal.x, y: q.y - normal.y },
+                { x: p.x - normal.x, y: p.y - normal.y },
+              ],
+            };
+            fillPolygon = {
+              points: [
+                { x: p.x + fillNormal.x, y: p.y + fillNormal.y },
+                { x: q.x + fillNormal.x, y: q.y + fillNormal.y },
+                { x: q.x - fillNormal.x, y: q.y - fillNormal.y },
+                { x: p.x - fillNormal.x, y: p.y - fillNormal.y },
+              ],
+            };
+          }
           const ifcClass = isPassage ? 'IFCOPENINGELEMENT' : kind === 'door' ? 'IFCDOOR' : 'IFCWINDOW';
           const item = mapping(kind, opening.id, ifcClass);
           const openingGlobalId = isPassage ? item.externalId : guid('opening', floorId, kind, opening.id);
@@ -250,7 +332,8 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
           relationship('IFCRELVOIDSELEMENT', ['void', openingGlobalId], host, cut);
           if (isPassage) register(id, cut);
           else {
-            const fill = register(id, step.add(ifcClass, ...root(id.externalId, kind === 'door' ? 'Door' : 'Window'), '$', step.placement(0, openingPlace), '$', '$',
+            const fillShape = definition([bodyShape({ polygon: fillPolygon, bottom: sill, height: opening.height })]);
+            const fill = register(id, step.add(ifcClass, ...root(id.externalId, kind === 'door' ? 'Door' : 'Window'), '$', step.placement(0, openingPlace), fillShape, '$',
               stepReal(opening.height), stepReal(opening.width), kind === 'door' ? '.DOOR.' : '.WINDOW.', '.NOTDEFINED.', '$'));
             relationship('IFCRELFILLSELEMENT', ['fill', openingGlobalId], cut, fill);
             contained.push(fill);
@@ -267,9 +350,41 @@ export class CanonicalIfcExchangeAdapter implements CanonicalExchangeAdapter {
       }
       for (const [sourceId, parts] of stairs) {
         const id = mapping('stair', sourceId, 'IFCSTAIR');
-        contained.push(register(id, step.add('IFCSTAIR', ...root(id.externalId, 'Stair'), '$', place,
-          definition([bodyShape(...parts)]), '$', '.NOTDEFINED.')));
-        omit('stair-flight', sourceId, 'Stair geometry kept as treads and landings within IfcStair');
+        const canonStair = floor.canonicalStaircases?.find(cs => cs.id === sourceId);
+        const stairEntity = register(id, step.add('IFCSTAIR', ...root(id.externalId, 'Stair'), '$', place,
+          canonStair ? '$' : definition([bodyShape(...parts)]), '$', '.NOTDEFINED.'));
+        contained.push(stairEntity);
+
+        // Emit decomposed IfcStairFlight sub-elements when canonicalStaircases metadata is present (IFC4 CorrectShapeDecomposition)
+        if (canonStair) {
+          const riserHeightMm = Math.round(floor.floorHeight / Math.max(1, canonStair.riserCount));
+          const flightChildren: StepId[] = [];
+          const sortedByBottom = [...parts].sort((a, b) => a.bottom - b.bottom);
+          const midIdx = Math.max(1, Math.floor(sortedByBottom.length / 2));
+          const f1Parts = sortedByBottom.slice(0, midIdx);
+          const f2Parts = sortedByBottom.slice(midIdx);
+          if (f1Parts.length > 0) {
+            const f1Guid = guid('stair-flight', floorId, sourceId, 'flight1');
+            const f1Risers = Math.max(1, Math.floor(canonStair.riserCount / 2));
+            flightChildren.push(
+              step.add('IFCSTAIRFLIGHT', ...root(f1Guid, 'Flight 1'), '$', place,
+                definition([bodyShape(...f1Parts)]), '$', String(f1Risers),
+                String(Math.max(1, f1Risers - 1)), stepReal(riserHeightMm),
+                stepReal(canonStair.treadWidthMm), '.STRAIGHT.'),
+            );
+          }
+          if (f2Parts.length > 0) {
+            const f2Guid = guid('stair-flight', floorId, sourceId, 'flight2');
+            const f2Risers = Math.max(1, Math.ceil(canonStair.riserCount / 2));
+            flightChildren.push(
+              step.add('IFCSTAIRFLIGHT', ...root(f2Guid, 'Flight 2'), '$', place,
+                definition([bodyShape(...f2Parts)]), '$', String(f2Risers),
+                String(Math.max(1, f2Risers - 1)), stepReal(riserHeightMm),
+                stepReal(canonStair.treadWidthMm), '.STRAIGHT.'),
+            );
+          }
+          aggregate(['stair-flights', floorId, sourceId], stairEntity, flightChildren);
+        }
       }
       for (const stair of floor.stairs) {
         if (!stairs.has(stair.id)) omit('stair', stair.id, 'Legacy stair envelope without canonical flight solids');

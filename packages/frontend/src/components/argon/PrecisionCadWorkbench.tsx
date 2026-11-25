@@ -3,11 +3,14 @@ import {
   ARCHITECTURAL_CAD_LAYERS,
   CanonicalDxfExchangeAdapter,
   DEFAULT_CAD_OSNAP_CONFIG,
+  SwingDirection,
   cadArcFrom3Points,
   cadArcPointAt,
+  cadPointToPlan,
   deterministicDxfHandle,
   exchangeRevision,
   extendDraftingLine,
+  formatArchitecturalLength,
   measureCadAngle,
   measureCadDistance,
   mirrorDraftingEntity,
@@ -17,6 +20,7 @@ import {
   resolveCadSnap,
   rotateDraftingEntity,
   trimDraftingLine,
+  type Building,
   type CadArcEntity,
   type CadEntity,
   type CadLineEntity,
@@ -24,8 +28,14 @@ import {
   type CadPoint2D,
   type CadSnapResult,
 } from '@ai-floor-planner/core';
+import { canonicalCurvedOpeningGeometry, projectOnSegment } from '@ai-floor-planner/geometry-engine';
 import {
+  buildingRefinementRevision,
+  editApartmentOpening,
+  editCanonicalWallThickness,
+  moveApartmentPartition,
   proposeControlledCadEdit,
+  proposeProtectedLocalRegeneration,
   type CadAiEditProposalResult,
 } from '@ai-floor-planner/planning-engine';
 import type { EditorContextValue } from '../../stores/editor-store';
@@ -151,6 +161,21 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
     providerMode: string;
   } | null>(null);
 
+  // Direct Interactive Canonical CAD Editing state (Phase 5 Gate F)
+  const [directWallOffsetMm, setDirectWallOffsetMm] = useState('120');
+  const [directWallThicknessMm, setDirectWallThicknessMm] = useState('115');
+  const [directOpeningOffsetMm, setDirectOpeningOffsetMm] = useState('1200');
+  const [directOpeningWidthMm, setDirectOpeningWidthMm] = useState('900');
+  const [directWindowSillMm, setDirectWindowSillMm] = useState('900');
+  const [directRoomExpr, setDirectRoomExpr] = useState('');
+  const [directDimOverride, setDirectDimOverride] = useState('');
+  const [localRegenFallbackUnitId, setLocalRegenFallbackUnitId] = useState<string | null>(null);
+  const [directPreview, setDirectPreview] = useState<{
+    readonly building: Building;
+    readonly baseRevisionDigest: string;
+    readonly summary: string;
+  } | null>(null);
+
   const cadDoc = useMemo(
     () =>
       projectBuildingToCanonicalCad(editor.building, {
@@ -222,12 +247,49 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
     setViewBox(modelBounds);
   }, [activeFloorId, modelBounds.minX, modelBounds.minY, modelBounds.width, modelBounds.height]);
 
-  // Clear stale AI preview whenever building revision changes
+  // Clear stale AI/direct preview whenever building revision changes
   useEffect(() => {
     setAiPreview(prev =>
       prev && prev.proposal.expectedRevision !== editor.building.version ? null : prev,
     );
+    setDirectPreview(null);
   }, [editor.building.version]);
+
+  // Synchronize direct CAD inspector fields with the currently selected canonical/drafting entity
+  useEffect(() => {
+    setLocalRegenFallbackUnitId(null);
+    if (!selectedEntity) return;
+    const fl = editor.activeFloor;
+    if (selectedEntity.canonicalKind === 'wall' && selectedEntity.canonicalId) {
+      const w = fl.walls.find(item => item.id === selectedEntity.canonicalId);
+      if (w) setDirectWallThicknessMm(String(Math.round(w.thickness)));
+    } else if ((selectedEntity.canonicalKind === 'door' || selectedEntity.canonicalKind === 'window') && selectedEntity.canonicalId) {
+      const op =
+        selectedEntity.canonicalKind === 'door'
+          ? fl.doors.find(d => d.id === selectedEntity.canonicalId)
+          : fl.windows.find(w => w.id === selectedEntity.canonicalId);
+      const host = op ? fl.walls.find(w => w.id === op.wallId) : undefined;
+      if (op) {
+        setDirectOpeningWidthMm(String(Math.round(op.width)));
+        if ('sillHeight' in op) setDirectWindowSillMm(String(Math.round(op.sillHeight)));
+        if (host) {
+          if (host.arc) {
+            try {
+              const cg = canonicalCurvedOpeningGeometry(op, host);
+              setDirectOpeningOffsetMm(String(Math.round(cg.center)));
+            } catch {
+              setDirectOpeningOffsetMm('1000');
+            }
+          } else {
+            const proj = projectOnSegment(op.position, host.startPoint, host.endPoint);
+            if (proj) setDirectOpeningOffsetMm(String(Math.round(proj.along)));
+          }
+        }
+      }
+    } else if (selectedEntity.type === 'DIMENSION' && selectedEntity.origin === 'DRAFTING_ANNOTATION') {
+      setDirectDimOverride(selectedEntity.textOverride ?? `${Math.round(selectedEntity.measuredMm)} mm`);
+    }
+  }, [selectedEntity, editor.activeFloor]);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const panDragRef = useRef<{ startClientX: number; startClientY: number; box: typeof viewBox } | null>(null);
@@ -605,6 +667,79 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
 
       if (activeTool === 'move') {
         if (target.origin === 'CANONICAL_ARCHITECTURAL') {
+          if (
+            target.canonicalId &&
+            (target.canonicalKind === 'wall' || target.canonicalKind === 'door' || target.canonicalKind === 'window')
+          ) {
+            if (pickedPoints.length === 0) {
+              setPickedPoints([pt]);
+              setMeasurementReadout(`Pick destination point to preview canonical ${target.canonicalKind} move...`);
+              return;
+            }
+            const basePlan = cadPointToPlan(pickedPoints[0]!);
+            const destPlan = cadPointToPlan(pt);
+            setPickedPoints([]);
+            setMeasurementReadout(null);
+            const fl = editor.activeFloor;
+            const ctrl = editor.generationControl;
+            const revDigest = buildingRefinementRevision(editor.building, ctrl);
+            try {
+              if (target.canonicalKind === 'wall') {
+                const wall = fl.walls.find(w => w.id === target.canonicalId);
+                if (!wall) throw new Error('Selected wall not found.');
+                const len = Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) || 1;
+                const nx = -(wall.endPoint.y - wall.startPoint.y) / len;
+                const ny = (wall.endPoint.x - wall.startPoint.x) / len;
+                const delta = Math.round((destPlan.x - basePlan.x) * nx + (destPlan.y - basePlan.y) * ny);
+                const nextB = moveApartmentPartition(editor.building, ctrl, activeFloorId, wall.id, delta);
+                setDirectPreview({
+                  building: nextB,
+                  baseRevisionDigest: revDigest,
+                  summary: `Interactive CAD partition move (${delta > 0 ? '+' : ''}${delta} mm) on '${wall.id}'`,
+                });
+              } else {
+                const op =
+                  target.canonicalKind === 'door'
+                    ? fl.doors.find(d => d.id === target.canonicalId)
+                    : fl.windows.find(w => w.id === target.canonicalId);
+                const host = op ? fl.walls.find(w => w.id === op.wallId) : undefined;
+                if (!op || !host) throw new Error('Selected opening or host wall not found.');
+                let nextOffset = 1000;
+                if (host.arc) {
+                  const sign = host.arc.endAngleRad >= host.arc.startAngleRad ? 1 : -1;
+                  const ang = Math.atan2(destPlan.y - host.arc.center.y, destPlan.x - host.arc.center.x);
+                  let dAng = ((ang - host.arc.startAngleRad) * sign) % (Math.PI * 2);
+                  if (dAng < 0) dAng += Math.PI * 2;
+                  nextOffset = Math.round(dAng * host.arc.radiusMm);
+                } else {
+                  const proj = projectOnSegment(destPlan, host.startPoint, host.endPoint);
+                  if (!proj) throw new Error('Could not project target point onto host wall.');
+                  nextOffset = Math.round(proj.along);
+                }
+                const nextB = editApartmentOpening(editor.building, ctrl, activeFloorId, {
+                  action: 'update',
+                  id: op.id,
+                  wallId: host.id,
+                  offsetMm: nextOffset,
+                  widthMm: op.width,
+                });
+                setDirectPreview({
+                  building: nextB,
+                  baseRevisionDigest: revDigest,
+                  summary: `Interactive CAD ${target.canonicalKind} slide to ${nextOffset} mm along '${host.id}'`,
+                });
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              setGuardrailNotice(msg);
+              if (target.canonicalKind === 'wall') {
+                const wall = fl.walls.find(w => w.id === target.canonicalId);
+                const unitId = fl.rooms.find(r => wall?.roomIds.includes(r.id))?.unitId ?? null;
+                setLocalRegenFallbackUnitId(unitId);
+              }
+            }
+            return;
+          }
           const blocked = moveDraftingEntity(target, 100, 0);
           setGuardrailNotice(blocked.reason ?? 'Canonical entity requires controlled edit.');
           return;
@@ -1418,6 +1553,414 @@ export const PrecisionCadWorkbench: React.FC<PrecisionCadWorkbenchProps> = ({
               </p>
             )}
           </div>
+
+          {/* Direct Interactive Canonical CAD Element Editor (Phase 5 Gate F) */}
+          {selectedEntity && (
+            <div
+              data-testid="cad-direct-canonical-editor"
+              className="mb-3 rounded border border-[#CAD1C6] bg-[#FCFCF7] p-2.5 text-xs"
+            >
+              <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#1C5148]">
+                Direct Canonical Element Edit
+              </h3>
+
+              {selectedEntity.canonicalKind === 'wall' && selectedEntity.canonicalId && (() => {
+                const wall = editor.activeFloor.walls.find(w => w.id === selectedEntity.canonicalId);
+                if (!wall) return null;
+                const wallLenMm = wall.arc
+                  ? wall.arc.radiusMm * Math.abs(wall.arc.endAngleRad - wall.arc.startAngleRad)
+                  : Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y);
+                const fmtLen = formatArchitecturalLength(wallLenMm);
+                const isInternal = wall.wallUse === 'INTERNAL_PARTITION' && !wall.loadBearing && !wall.arc;
+                const runWallMove = (deltaMm: number) => {
+                  setGuardrailNotice(null);
+                  setLocalRegenFallbackUnitId(null);
+                  try {
+                    const ctrl = editor.generationControl;
+                    const nextB = moveApartmentPartition(editor.building, ctrl, activeFloorId, wall.id, deltaMm);
+                    setDirectPreview({
+                      building: nextB,
+                      baseRevisionDigest: buildingRefinementRevision(editor.building, ctrl),
+                      summary: `Move partition '${wall.id}' by ${deltaMm > 0 ? '+' : ''}${deltaMm} mm`,
+                    });
+                  } catch (err) {
+                    setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                    const uId = editor.activeFloor.rooms.find(r => wall.roomIds.includes(r.id))?.unitId ?? null;
+                    setLocalRegenFallbackUnitId(uId);
+                  }
+                };
+                const runAddOpening = (kind: 'door' | 'window') => {
+                  setGuardrailNotice(null);
+                  try {
+                    const ctrl = editor.generationControl;
+                    const nextB = editApartmentOpening(editor.building, ctrl, activeFloorId, {
+                      action: 'add',
+                      kind,
+                      wallId: wall.id,
+                      offsetMm: Math.round(wallLenMm / 2),
+                      widthMm: kind === 'door' ? 900 : Math.min(1200, Math.max(600, Math.floor((wallLenMm - 300) / 100) * 100)),
+                    });
+                    setDirectPreview({
+                      building: nextB,
+                      baseRevisionDigest: buildingRefinementRevision(editor.building, ctrl),
+                      summary: `Add hosted ${kind} on ${wall.arc ? 'curved ' : ''}wall '${wall.id}'`,
+                    });
+                  } catch (err) {
+                    setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                  }
+                };
+                return (
+                  <div className="mt-2 space-y-2">
+                    <div className="rounded bg-[#F4F4ED] p-1.5 font-mono text-[10px]">
+                      Length: {Math.round(wallLenMm)} mm ({fmtLen.feetInches}) · Thk: {wall.thickness} mm · {wall.wallUse ?? 'WALL'}
+                      {wall.boundaryRole === 'PARAPET' ? ` (${wall.heightMm ?? 1100} mm Parapet)` : ''}
+                    </div>
+                    {isInternal && (
+                      <div className="space-y-1.5">
+                        <label className="flex items-center justify-between gap-2 font-mono text-[11px]">
+                          <span>Shift (mm):</span>
+                          <input
+                            data-testid="cad-direct-wall-offset-input"
+                            type="number"
+                            value={directWallOffsetMm}
+                            onChange={e => setDirectWallOffsetMm(e.target.value)}
+                            className="w-24 rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5"
+                          />
+                        </label>
+                        <div className="flex flex-wrap gap-1">
+                          {[-150, -100, 100, 150].map(step => (
+                            <button
+                              key={step}
+                              type="button"
+                              data-testid={`cad-nudge-wall-${step}`}
+                              onClick={() => runWallMove(step)}
+                              className="rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5 font-mono text-[10px] hover:bg-[#EAE8DC]"
+                            >
+                              {step > 0 ? `+${step}` : step} mm
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            data-testid="cad-preview-wall-move-btn"
+                            onClick={() => runWallMove(Number(directWallOffsetMm) || 0)}
+                            className="rounded bg-[#1C5148] px-2 py-0.5 font-mono text-[10px] font-semibold text-white"
+                          >
+                            Preview Move
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
+                      <span>Thickness:</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          data-testid="cad-direct-wall-thickness-input"
+                          type="number"
+                          value={directWallThicknessMm}
+                          onChange={e => setDirectWallThicknessMm(e.target.value)}
+                          className="w-16 rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5"
+                        />
+                        <button
+                          type="button"
+                          data-testid="cad-preview-wall-thickness-btn"
+                          onClick={() => {
+                            setGuardrailNotice(null);
+                            try {
+                              const ctrl = editor.generationControl;
+                              const nextB = editCanonicalWallThickness(
+                                editor.building,
+                                ctrl,
+                                activeFloorId,
+                                wall.id,
+                                Number(directWallThicknessMm),
+                              );
+                              setDirectPreview({
+                                building: nextB,
+                                baseRevisionDigest: buildingRefinementRevision(editor.building, ctrl),
+                                summary: `Update wall '${wall.id}' thickness to ${directWallThicknessMm} mm`,
+                              });
+                            } catch (err) {
+                              setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                            }
+                          }}
+                          className="rounded border border-[#1C5148] px-2 py-0.5 text-[10px] font-semibold text-[#1C5148]"
+                        >
+                          Set mm
+                        </button>
+                      </div>
+                    </div>
+                    {wall.boundaryRole !== 'PARAPET' && wall.boundaryRole !== 'OPEN_BOUNDARY' && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {wall.roomIds.length === 2 && (
+                          <button
+                            type="button"
+                            data-testid="cad-add-door-on-wall-btn"
+                            onClick={() => runAddOpening('door')}
+                            className="rounded border border-[#9B6948] bg-[#9B6948]/10 px-2 py-1 text-[10px] font-semibold text-[#7C4F32]"
+                          >
+                            + Add Door
+                          </button>
+                        )}
+                        {(wall.wallUse === 'EXTERNAL' || wall.wallUse === 'SHAFT' || wall.roomIds.length === 1) && (
+                          <button
+                            type="button"
+                            data-testid="cad-add-window-on-wall-btn"
+                            onClick={() => runAddOpening('window')}
+                            className="rounded border border-[#1C5148] bg-[#1C5148]/10 px-2 py-1 text-[10px] font-semibold text-[#1C5148]"
+                          >
+                            + Add Window
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {localRegenFallbackUnitId && (
+                      <button
+                        type="button"
+                        data-testid="cad-offer-local-regen-btn"
+                        onClick={() => {
+                          const ctrl = editor.generationControl;
+                          const localRes = proposeProtectedLocalRegeneration({
+                            building: editor.building,
+                            floorId: activeFloorId,
+                            scope: 'SINGLE_FLAT',
+                            operation: 'REGENERATE_ALTERNATIVE',
+                            targetUnitId: localRegenFallbackUnitId,
+                            control: ctrl,
+                          });
+                          if (localRes.status === 'PREVIEW_READY' && localRes.selectedCandidate) {
+                            setGuardrailNotice(null);
+                            setDirectPreview({
+                              building: localRes.selectedCandidate.building,
+                              baseRevisionDigest: localRes.baseRevisionDigest,
+                              summary: localRes.message,
+                            });
+                          } else {
+                            setGuardrailNotice(localRes.message);
+                          }
+                        }}
+                        className="w-full rounded bg-[#9B6948] px-2 py-1 text-[10px] font-semibold text-white"
+                      >
+                        Offer Protected Flat Regeneration Instead
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {(selectedEntity.canonicalKind === 'door' || selectedEntity.canonicalKind === 'window') && selectedEntity.canonicalId && (() => {
+                const isDoor = selectedEntity.canonicalKind === 'door';
+                const op = isDoor
+                  ? editor.activeFloor.doors.find(d => d.id === selectedEntity.canonicalId)
+                  : editor.activeFloor.windows.find(w => w.id === selectedEntity.canonicalId);
+                if (!op) return null;
+                const previewUpdate = (overrideSwing?: SwingDirection) => {
+                  setGuardrailNotice(null);
+                  try {
+                    const ctrl = editor.generationControl;
+                    const nextB = editApartmentOpening(editor.building, ctrl, activeFloorId, {
+                      action: 'update',
+                      id: op.id,
+                      wallId: op.wallId,
+                      offsetMm: Number(directOpeningOffsetMm),
+                      widthMm: Number(directOpeningWidthMm),
+                      ...(!isDoor ? { sillHeightMm: Number(directWindowSillMm) } : {}),
+                      ...(overrideSwing ? { swingDirection: overrideSwing } : {}),
+                    });
+                    setDirectPreview({
+                      building: nextB,
+                      baseRevisionDigest: buildingRefinementRevision(editor.building, ctrl),
+                      summary: overrideSwing
+                        ? `Flip door '${op.id}' swing to ${overrideSwing.toUpperCase()}`
+                        : `Update ${selectedEntity.canonicalKind} '${op.id}' (${directOpeningWidthMm} mm @ ${directOpeningOffsetMm} mm)`,
+                    });
+                  } catch (err) {
+                    setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                  }
+                };
+                return (
+                  <div className="mt-2 space-y-1.5 font-mono text-[11px]">
+                    <label className="flex items-center justify-between gap-2">
+                      <span>Centre Offset (mm):</span>
+                      <input
+                        data-testid="cad-direct-opening-offset-input"
+                        type="number"
+                        value={directOpeningOffsetMm}
+                        onChange={e => setDirectOpeningOffsetMm(e.target.value)}
+                        className="w-24 rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5"
+                      />
+                    </label>
+                    <label className="flex items-center justify-between gap-2">
+                      <span>Width (mm):</span>
+                      <input
+                        data-testid="cad-direct-opening-width-input"
+                        type="number"
+                        value={directOpeningWidthMm}
+                        onChange={e => setDirectOpeningWidthMm(e.target.value)}
+                        className="w-24 rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5"
+                      />
+                    </label>
+                    {!isDoor && (
+                      <label className="flex items-center justify-between gap-2">
+                        <span>Sill Height (mm):</span>
+                        <input
+                          data-testid="cad-direct-window-sill-input"
+                          type="number"
+                          value={directWindowSillMm}
+                          onChange={e => setDirectWindowSillMm(e.target.value)}
+                          className="w-24 rounded border border-[#CAD1C6] bg-white px-1.5 py-0.5"
+                        />
+                      </label>
+                    )}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        data-testid="cad-direct-opening-preview-btn"
+                        onClick={() => previewUpdate()}
+                        className="rounded bg-[#1C5148] px-2 py-1 text-[10px] font-semibold text-white"
+                      >
+                        Preview {isDoor ? 'Door' : 'Window'}
+                      </button>
+                      {isDoor && 'swingDirection' in op && (
+                        <button
+                          type="button"
+                          data-testid="cad-flip-door-swing-btn"
+                          onClick={() =>
+                            previewUpdate(
+                              op.swingDirection === SwingDirection.Left ? SwingDirection.Right : SwingDirection.Left,
+                            )
+                          }
+                          className="rounded border border-[#9B6948] px-2 py-1 text-[10px] font-semibold text-[#7C4F32]"
+                        >
+                          Flip Swing ({op.swingDirection})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        data-testid="cad-direct-opening-remove-btn"
+                        onClick={() => {
+                          setGuardrailNotice(null);
+                          try {
+                            const ctrl = editor.generationControl;
+                            const nextB = editApartmentOpening(editor.building, ctrl, activeFloorId, {
+                              action: 'remove',
+                              id: op.id,
+                            });
+                            setDirectPreview({
+                              building: nextB,
+                              baseRevisionDigest: buildingRefinementRevision(editor.building, ctrl),
+                              summary: `Remove ${selectedEntity.canonicalKind} '${op.id}'`,
+                            });
+                          } catch (err) {
+                            setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                          }
+                        }}
+                        className="rounded border border-rose-700/40 px-2 py-1 text-[10px] font-semibold text-rose-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {selectedEntity.canonicalKind === 'room' && selectedEntity.canonicalId && (
+                <div className="mt-2 space-y-1.5">
+                  <label className="block font-mono text-[10px] text-[#5B635E]">
+                    Exact Target Area / Dims (e.g. 175 sq ft, 16.5 sq m, 12&apos; 6&quot; x 14&apos; 0&quot;)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      data-testid="cad-direct-room-area-input"
+                      type="text"
+                      placeholder="e.g. 175 sq ft or 12' x 15'"
+                      value={directRoomExpr}
+                      onChange={e => setDirectRoomExpr(e.target.value)}
+                      className="min-w-0 flex-1 rounded border border-[#CAD1C6] bg-white px-1.5 py-1 font-mono text-[11px]"
+                    />
+                    <button
+                      type="button"
+                      data-testid="cad-direct-room-resize-btn"
+                      onClick={() => {
+                        if (!directRoomExpr.trim()) return;
+                        void handleRequestAiProposal(`Resize this room to ${directRoomExpr.trim()}`);
+                      }}
+                      className="rounded bg-[#1C5148] px-2 py-1 font-mono text-[10px] font-semibold text-white"
+                    >
+                      Resize
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedEntity.type === 'DIMENSION' && selectedEntity.origin === 'DRAFTING_ANNOTATION' && (
+                <div className="mt-2 flex items-center gap-1.5">
+                  <input
+                    data-testid="cad-edit-dimension-input"
+                    type="text"
+                    value={directDimOverride}
+                    onChange={e => setDirectDimOverride(e.target.value)}
+                    className="min-w-0 flex-1 rounded border border-[#CAD1C6] bg-white px-1.5 py-1 font-mono text-[11px]"
+                  />
+                  <button
+                    type="button"
+                    data-testid="cad-apply-dimension-btn"
+                    onClick={() => {
+                      commitDraftingEntities(
+                        currentDrafts.map(d =>
+                          d.id === selectedEntity.id && d.type === 'DIMENSION'
+                            ? { ...d, textOverride: directDimOverride.trim() || undefined }
+                            : d,
+                        ),
+                        'Edit CAD dimension annotation',
+                      );
+                    }}
+                    className="rounded bg-[#1C5148] px-2 py-1 font-mono text-[10px] font-semibold text-white"
+                  >
+                    Update Dim
+                  </button>
+                </div>
+              )}
+
+              {directPreview && (
+                <div
+                  data-testid="cad-direct-preview-card"
+                  className="mt-2.5 rounded border border-[#1C5148]/40 bg-[#F4F8F6] p-2"
+                >
+                  <div className="font-mono text-[10px] font-bold text-[#1C5148]">CANONICAL PREVIEW READY</div>
+                  <p className="mt-1 text-[11px] text-[#122624]">{directPreview.summary}</p>
+                  <div className="mt-2 flex gap-1.5">
+                    <button
+                      type="button"
+                      data-testid="cad-direct-accept-btn"
+                      onClick={() => {
+                        try {
+                          editor.applyRefinement(
+                            directPreview.building,
+                            directPreview.summary,
+                            true,
+                            directPreview.baseRevisionDigest,
+                          );
+                          setDirectPreview(null);
+                        } catch (err) {
+                          setGuardrailNotice(err instanceof Error ? err.message : String(err));
+                        }
+                      }}
+                      className="flex-1 rounded bg-[#1C5148] px-2 py-1 text-[11px] font-semibold text-white"
+                    >
+                      Accept Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectPreview(null)}
+                      className="rounded border border-[#CAD1C6] bg-white px-2 py-1 text-[11px]"
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Controlled AI-Assisted Canonical CAD Edit Bridge */}
           <div className="rounded border border-[#CAD1C6] bg-[#FCFCF7] p-2.5">

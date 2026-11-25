@@ -173,10 +173,28 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
 }
 
 export function openingFitsApartmentWall(wall: Wall, position: { x: number; y: number }, width: number): boolean {
+  if (!Number.isFinite(width) || width <= 0) return false;
+  if (wall.arc) {
+    const { center, radiusMm, startAngleRad, endAngleRad } = wall.arc;
+    const sweep = endAngleRad - startAngleRad;
+    if (!Number.isFinite(radiusMm) || radiusMm <= 0 || !Number.isFinite(sweep) || Math.abs(sweep) < 1e-9) {
+      return false;
+    }
+    const arcLen = radiusMm * Math.abs(sweep);
+    const sign = sweep >= 0 ? 1 : -1;
+    const rawAng = Math.atan2(position.y - center.y, position.x - center.x);
+    const twoPi = Math.PI * 2;
+    let deltaAng = ((rawAng - startAngleRad) * sign) % twoPi;
+    if (deltaAng < 0) deltaAng += twoPi;
+    if (deltaAng > Math.abs(sweep) + Math.PI) deltaAng -= twoPi;
+    const across = Math.abs(Math.hypot(position.x - center.x, position.y - center.y) - radiusMm);
+    const along = deltaAng * radiusMm;
+    return across <= Math.max(25, wall.thickness / 2) && along - width / 2 >= 100 - 1e-3 && along + width / 2 <= arcLen - 100 + 1e-3;
+  }
   const dx = wall.endPoint.x - wall.startPoint.x;
   const dy = wall.endPoint.y - wall.startPoint.y;
   const len = Math.hypot(dx, dy);
-  if (!Number.isFinite(len) || len <= 0 || !Number.isFinite(width) || width <= 0) return false;
+  if (!Number.isFinite(len) || len <= 0) return false;
   const ux = dx / len, uy = dy / len;
   const px = position.x - wall.startPoint.x, py = position.y - wall.startPoint.y;
   const across = Math.abs(px * uy - py * ux);
