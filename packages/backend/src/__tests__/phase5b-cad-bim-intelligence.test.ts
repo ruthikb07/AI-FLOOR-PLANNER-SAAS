@@ -315,6 +315,13 @@ describe('Phase 5B Backend — Direct CAD Editing, Element Realism, IFC4 Curved 
     }
     expect(providerCalls).toBe(0);
 
+    const missingFloor = await handleBimAssistantQuery(
+      { building, floorId: 'missing-storey', query: 'Regenerate Flat 2' },
+      { gemini: mockGemini, briefInterpreterKind: 'gemini' },
+    );
+    expect(missingFloor).toMatchObject({ status: 400, json: { error: { code: 'MISSING_FLOOR' } } });
+    expect(providerCalls).toBe(0);
+
     // 2. Ambiguous natural-language edit query invokes Gemini once, produces preview requiring acceptance, then hits SHA-256 cache on repeat
     const editQueryBody = {
       building,

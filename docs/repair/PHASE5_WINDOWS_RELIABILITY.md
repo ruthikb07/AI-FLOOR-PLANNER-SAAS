@@ -67,6 +67,10 @@
   - **FreeCAD / Bonsai / Autodesk Revit / Graphisoft Archicad:** **Not installed** on this machine.
 - **Honest Native Desktop BIM Reopen Status:** **`UNVERIFIED`** (no desktop IFC authoring client is installed locally; independent schema + 3D solid triangulation readback is verified via `IfcOpenShell 0.9.0.post1`).
 
-## Additional Windows replay
+## Phase 5C Windows replay
 
-The rerun passed five actual context restorations and automatic frame recovery on the intermediate Phase 5C production build. The first repeated orbit run could not load Playwright because Windows returned `EBUSY` for a dependency file. Standalone exact-head orbit timing and hardware-GPU verification remain open. See [Phase 5 performance](../integration/PHASE5_PERFORMANCE_REPORT.md).
+The initial exact-head replay hit an `EBUSY` while opening the test loader. The next two repeat batches each passed one of two. The isolated trace recorded a 191-second 12-step orbit drag and Chromium pixel-readback stalls. A separate run with screenshot capture disabled still timed out once. Both baseline passes and failures recorded one render per sampled orbit frame.
+
+The software rasterizer now limits the backing buffer to 500,000 pixels, retaining the viewport's CSS size and camera aspect. Its fixed-directional shadow map updates on scene changes and context restoration. The two isolated Windows workflow runs then passed in 52.8 and 43.6 seconds with 114 draw calls during orbit. GLB download, save and reload passed both times. The production context-recovery suite passed five real restorations with no user input, each in one frame, and verified release on workspace and project transitions.
+
+Independent IFC readback on this continuation covered eight additional project files. The desktop IFC reopen and hardware-GPU performance remain unverified. [Phase 5 performance](../integration/PHASE5_PERFORMANCE_REPORT.md)

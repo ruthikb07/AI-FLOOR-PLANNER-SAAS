@@ -259,6 +259,10 @@ describe('Phase 5B Frontend — Advanced IFC4 Reference Reader, Persistence, 3D 
     expect(c9.commandClass).toBe('REVISION_DIFF');
     expect(c9.text).toMatch(/Revision diff/);
 
+    const missingFlat = queryBimSchedule('Show all doors in Flat 99', schedule.rows, ctx);
+    expect(missingFlat.matches).toEqual([]);
+    expect(missingFlat.text).toMatch(/Flat 99.*not found/i);
+
     expect(queryBimSchedule('Upload the model elsewhere', schedule.rows, ctx).mode).toBe('UNSUPPORTED');
   });
 });

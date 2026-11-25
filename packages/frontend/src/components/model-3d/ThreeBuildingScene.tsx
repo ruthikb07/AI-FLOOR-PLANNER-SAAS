@@ -730,15 +730,22 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       ? String(rawGl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) ?? '')
       : String(rawGl.getParameter(rawGl.RENDERER) ?? '');
     const isSoftwareWebGL = /swiftshader|llvmpipe|software|basic render driver/i.test(unmaskedRenderer);
-    // Cap pixelRatio <= 1.0 on CPU software rasterizers (SwiftShader/llvmpipe) and <= 1.5 on hardware GPUs
-    renderer.setPixelRatio(isSoftwareWebGL ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setSize(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
+    const resizeDrawingBuffer = (width: number, height: number) => {
+      // Keep CSS dimensions and camera aspect while bounding SwiftShader fill cost.
+      const pixelRatio = isSoftwareWebGL
+        ? Math.min(1, Math.sqrt(500_000 / (width * height)))
+        : Math.min(window.devicePixelRatio || 1, 1.5);
+      renderer.setPixelRatio(pixelRatio);
+      renderer.setSize(width, height);
+      renderer.domElement.dataset.pixelRatio = String(pixelRatio);
+    };
+    resizeDrawingBuffer(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.autoUpdate = !isSoftwareWebGL;
     renderer.shadowMap.type = isSoftwareWebGL ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.04;
     renderer.domElement.setAttribute('aria-label', 'Interactive canonical 3D building model');
-    renderer.domElement.dataset.pixelRatio = String(renderer.getPixelRatio());
     renderer.domElement.dataset.softwareRasterizer = isSoftwareWebGL ? 'true' : 'false';
     host.appendChild(renderer.domElement);
 
@@ -825,7 +832,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const stoneNormal = new THREE.TextureLoader().load(
       `${import.meta.env.BASE_URL}architecture/cast-stone-normal.webp`,
       () => {
-        if (!disposed) requestRender(1);
+        if (!disposed) scheduleRender(1);
       },
       undefined,
       () => {},
@@ -892,6 +899,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
             rec.group.position.y = rec.floorIndex * explodeCurrentGapRef.current;
           }
         }
+        renderer.shadowMap.needsUpdate = true;
         explodeAnimating = Math.abs(targetGap - explodeCurrentGapRef.current) > 0.002;
       }
 
@@ -908,12 +916,18 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       }
     };
 
-    const requestRender = (frames = 1) => {
+    const scheduleRender = (frames = 1) => {
       if (!canRender()) return;
       remainingFrames = Math.max(remainingFrames, frames);
       if (!rafId) {
         rafId = requestAnimationFrame(tick);
       }
+    };
+
+    // Scene updates affect fixed directional-light shadows. Moving the viewing camera does not.
+    const requestRender = (frames = 1) => {
+      renderer.shadowMap.needsUpdate = true;
+      scheduleRender(frames);
     };
 
     new HDRLoader().load(
@@ -925,22 +939,22 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         }
         texture.mapping = THREE.EquirectangularReflectionMapping;
         scene.environment = texture;
-        requestRender(1);
+        scheduleRender(1);
       },
       undefined,
       () => {},
     );
 
     const onControlsChange = () => {
-      if (!updatingOrbit) requestRender();
+      if (!updatingOrbit) scheduleRender();
     };
-    const onControlsStart = () => requestRender(24);
-    const onControlsEnd = () => requestRender(16);
+    const onControlsStart = () => scheduleRender(24);
+    const onControlsEnd = () => scheduleRender(16);
     controls.addEventListener('change', onControlsChange);
     controls.addEventListener('start', onControlsStart);
     controls.addEventListener('end', onControlsEnd);
 
-    const onWheel = () => requestRender(14);
+    const onWheel = () => scheduleRender(14);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
 
     const syncSize = () => {
@@ -952,8 +966,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       fitOrthographic(halfHeight);
-      renderer.setSize(width, height);
-      requestRender(0);
+      resizeDrawingBuffer(width, height);
+      scheduleRender(0);
     };
 
     const releaseSceneResources = () => {

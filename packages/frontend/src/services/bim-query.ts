@@ -82,40 +82,48 @@ export function queryBimSchedule(
     const kind = (plural === 'slabs' ? 'slab' : plural.slice(0, -1)) as BimKind;
     let matches = rows.filter(row => row.kind === kind);
 
-    if (flatScopeMatch && ctx.floor?.apartmentUnits?.length) {
+    if (flatScopeMatch) {
       const unitIdx = Number.parseInt(flatScopeMatch[1]!, 10) - 1;
-      const unit = ctx.floor.apartmentUnits[unitIdx];
-      if (unit) {
-        const unitRoomIds = new Set(ctx.floor.rooms.filter(r => r.unitId === unit.id).map(r => r.id));
-        const unitWallIds = new Set(
-          ctx.floor.walls.filter(w => w.roomIds.some(id => unitRoomIds.has(id))).map(w => w.id),
-        );
-        const unitDoorIds = new Set(
-          ctx.floor.doors
-            .filter(d => d.connectsRooms.some(id => id !== undefined && unitRoomIds.has(id)))
-            .map(d => d.id),
-        );
-        const unitWinIds = new Set(ctx.floor.windows.filter(w => unitRoomIds.has(w.roomId)).map(w => w.id));
-        matches = matches.filter(r =>
-          kind === 'room'
-            ? unitRoomIds.has(r.id)
-            : kind === 'wall'
-              ? unitWallIds.has(r.id)
-              : kind === 'door'
-                ? unitDoorIds.has(r.id)
-                : kind === 'window'
-                  ? unitWinIds.has(r.id)
-                  : r.id === unit.id,
-        );
+      const floor = ctx.floor;
+      const unit = floor?.apartmentUnits?.[unitIdx];
+      if (!floor || !unit) {
         return {
           mode: 'DETERMINISTIC',
           commandClass: 'LIST_ELEMENTS',
-          text: `${matches.length} ${plural} in Flat 0${unitIdx + 1} (${unit.unitType}) on ${ctx.floor.name}`,
-          matches,
-          highlightEntityIds: matches.map(m => m.id),
+          text: `Flat ${unitIdx + 1} was not found on the active floor.`,
+          matches: [],
           apiCallCount: 0,
         };
       }
+      const unitRoomIds = new Set(floor.rooms.filter(r => r.unitId === unit.id).map(r => r.id));
+      const unitWallIds = new Set(
+        floor.walls.filter(w => w.roomIds.some(id => unitRoomIds.has(id))).map(w => w.id),
+      );
+      const unitDoorIds = new Set(
+        floor.doors
+          .filter(d => d.connectsRooms.some(id => id !== undefined && unitRoomIds.has(id)))
+          .map(d => d.id),
+      );
+      const unitWinIds = new Set(floor.windows.filter(w => unitRoomIds.has(w.roomId)).map(w => w.id));
+      matches = matches.filter(r =>
+        kind === 'room'
+          ? unitRoomIds.has(r.id)
+          : kind === 'wall'
+            ? unitWallIds.has(r.id)
+            : kind === 'door'
+              ? unitDoorIds.has(r.id)
+              : kind === 'window'
+                ? unitWinIds.has(r.id)
+                : r.id === unit.id,
+      );
+      return {
+        mode: 'DETERMINISTIC',
+        commandClass: 'LIST_ELEMENTS',
+        text: `${matches.length} ${plural} in Flat 0${unitIdx + 1} (${unit.unitType}) on ${floor.name}`,
+        matches,
+        highlightEntityIds: matches.map(m => m.id),
+        apiCallCount: 0,
+      };
     }
 
     return {

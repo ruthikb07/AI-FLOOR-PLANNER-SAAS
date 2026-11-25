@@ -158,7 +158,7 @@ export async function handleBimAssistantQuery(
       json: { error: { code: 'INVALID_BUILDING', message: 'Valid canonical Building is required.' } },
     };
   }
-  const floor = building.floors.find(f => f.id === floorId) ?? building.floors[0];
+  const floor = building.floors.find(f => f.id === floorId);
   if (!floor) {
     return { status: 400, json: { error: { code: 'MISSING_FLOOR', message: 'Target floor not found.' } } };
   }

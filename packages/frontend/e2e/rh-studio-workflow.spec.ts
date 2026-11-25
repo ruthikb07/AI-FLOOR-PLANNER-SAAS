@@ -2,7 +2,11 @@ import { expect, test } from '@playwright/test';
 import type { Building } from '@ai-floor-planner/core';
 import { readFile } from 'node:fs/promises';
 
-test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
+test.use({
+  launchOptions: { args: ['--enable-unsafe-swiftshader'] },
+  // Continuous screenshots force pixel readbacks during software WebGL orbit.
+  trace: { mode: 'retain-on-failure', screenshots: false },
+});
 
 test('current studio workflow through reference, massing and export', async ({ page }) => {
   test.setTimeout(300_000);
@@ -70,6 +74,11 @@ test('current studio workflow through reference, massing and export', async ({ p
   // The real renderer writes these stats only after it submits a frame.
   await expect(tower).toHaveAttribute('data-draw-calls', /^[1-9]\d*$/, { timeout: 45_000 });
   await expect(tower).toBeVisible();
+  const rendering = await tower.evaluate(canvas => {
+    const { width, height, dataset } = canvas as HTMLCanvasElement;
+    return { width, height, softwareRasterizer: dataset.softwareRasterizer === 'true' };
+  });
+  if (rendering.softwareRasterizer) expect(rendering.width * rendering.height).toBeLessThanOrEqual(500_000);
   markStage('tower_3d_first_frame');
   const box = (await tower.boundingBox())!;
   await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.45);
@@ -108,7 +117,7 @@ test('current studio workflow through reference, massing and export', async ({ p
     triangles: await tower.getAttribute('data-triangles'),
     geometries: await tower.getAttribute('data-geometries'),
     textures: await tower.getAttribute('data-textures'),
-    softwareRasterizer: await tower.getAttribute('data-software-rasterizer'),
+    ...rendering,
     stageMs,
   });
   await page.getByTestId('nav-structural_cad').click();

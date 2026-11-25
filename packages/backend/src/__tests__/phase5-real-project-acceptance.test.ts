@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtempSync, rmSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_SITE_AMENITIES,
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
   Direction,
   exchangeRevision,
+  type Building,
   type ExportOptions,
+  type IfcExchangeArtifact,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
 import { polygonArea } from '@ai-floor-planner/geometry-engine';
@@ -14,10 +21,37 @@ import {
   auditFloorFunctionalQuality,
   computeFloorEfficiencyBreakdown,
   evaluateBriefRequirementHierarchyAndConflicts,
-  executeAuditedPlanningPipeline,
 } from '@ai-floor-planner/planning-engine';
 import { exportSVG } from '@ai-floor-planner/renderer';
 import { CanonicalIfcExchangeAdapter } from '../services/canonical-ifc-adapter';
+import type { LoadedLocalProject } from '../services/local-project-store.js';
+import { createBackendServer } from '../server.js';
+
+let endpoint: string;
+const storage = mkdtempSync(join(tmpdir(), 'rh-phase5-acceptance-'));
+const server = createBackendServer({ gemini: null, briefInterpreterKind: 'local-stub' });
+const evidence = process.env.RH_PHASE5_EVIDENCE_DIR;
+
+beforeAll(async () => {
+  vi.stubEnv('RH_LOCAL_PROJECTS_DIR', storage);
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
+  if (evidence) await mkdir(evidence, { recursive: true });
+});
+
+afterAll(async () => {
+  await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  vi.unstubAllEnvs();
+  rmSync(storage, { recursive: true, force: true });
+});
+
+function post(route: string, body: object) {
+  return fetch(endpoint + route, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
 
 const BASE_BRIEF: MultiSheetApartmentConfig = {
   projectId: 'phase5-gate-o',
@@ -64,7 +98,9 @@ function defaultExportOptions(floorId: string): ExportOptions {
   };
 }
 
-describe('Phase 5 Gate O — Real Project Acceptance Across All 9 Required Architectural Briefs', () => {
+describe('Phase 5 real-project acceptance', () => {
+  const referenceName = 'floor_typical.png';
+  const referenceFixture = new URL(`../../../../docs/phase2/evidence/${referenceName}`, import.meta.url);
   const feasibleBriefs: ReadonlyArray<[string, MultiSheetApartmentConfig]> = [
     // 1. Single-family residential bungalow
     [
@@ -201,22 +237,35 @@ describe('Phase 5 Gate O — Real Project Acceptance Across All 9 Required Archi
         ...BASE_BRIEF,
         projectId: 'gate-o-8-ref-image',
         numTypicalFloors: 1,
-        aiPrompt: 'Cross-ventilated 2BHK flats inspired by uploaded courtyard reference sketch with generous living rooms.',
-        referenceImage: {
-          name: 'courtyard-sketch.png',
-          mimeType: 'image/png',
-          dataUrl:
-            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a83sAAAAASUVORK5CYII=',
-        },
+        aiPrompt: 'Prioritize cross-ventilation and generous living rooms. Use the attached typical floor as architectural context.',
       },
     ],
   ];
 
   it.each(feasibleBriefs)(
-    'synthesizes, audits, renders architectural SVG, and verifies IFC4 readback for brief %s',
+    'generates, audits, persists and exports the canonical snapshot for brief %s',
     async (briefName, config) => {
-      const { building, validationReport } = await executeAuditedPlanningPipeline(config);
+      const referenceImage = briefName === '8-reference-image-assisted' ? {
+        name: referenceName,
+        mimeType: 'image/png',
+        dataUrl: 'data:image/png;base64,' + (await readFile(referenceFixture)).toString('base64'),
+      } : undefined;
+      const generation = await post('/projects/generate', { config: { ...config, referenceImage } });
+      const generated = await generation.json() as {
+        error?: { code: string; message: string };
+        building: Building;
+        validationReport: { isValid: boolean };
+        telemetry: { interpretationSource: string; apiCallCount: number; solverLatencyMs: number };
+      };
+      expect(generation.status, JSON.stringify(generated.error)).toBe(200);
+      const { building, validationReport, telemetry } = generated;
       expect(validationReport.isValid).toBe(true);
+      expect(telemetry).toMatchObject({ interpretationSource: 'DETERMINISTIC', apiCallCount: 0 });
+      expect(telemetry.solverLatencyMs).toBeGreaterThanOrEqual(0);
+      if (referenceImage) {
+        expect(building.metadata.generationBrief?.referenceImage).toMatchObject({ name: referenceName, mimeType: 'image/png' });
+        expect(building.metadata.generationBrief?.aiTelemetry).toMatchObject({ referenceImageUsedForGeometry: false });
+      }
 
       const residentialFloor =
         building.floors.find(f => f.floorUse === 'RESIDENTIAL' || Boolean(f.apartmentUnits?.length)) ??
@@ -242,23 +291,69 @@ describe('Phase 5 Gate O — Real Project Acceptance Across All 9 Required Archi
       expect(svg).toContain('</svg>');
       expect(svg).toMatch(/Living|Bedroom|Kitchen/i);
 
-      // 4. Canonical IFC4 export & lossless software readback on representative multi-category briefs
-      if (briefName === '1-single-family-bungalow' || briefName === '7-multi-floor-open-stilt-parking') {
-        const adapter = new CanonicalIfcExchangeAdapter();
-        const rev = exchangeRevision(building);
-        const ifc = await adapter.export(building, rev);
-        const readback = await adapter.readback(ifc, rev);
-        expect(readback.lostCanonicalIds).toEqual([]);
-        expect(readback.changedHostIds).toEqual([]);
-        expect(readback.maximumPositionErrorMm).toBeLessThanOrEqual(0.001);
+      const floorAreas = building.metadata.generationReport?.floorAreas;
+      const floorArea = floorAreas?.find(floor => floor.floorId === residentialFloor.id);
+      expect(floorArea?.units).toHaveLength(config.flatsPerFloor);
+      if (config.requireAreaTargets) {
+        for (const floor of floorAreas!) {
+          expect(floor.units).toHaveLength(config.flatsPerFloor);
+          for (const unit of floor.units) {
+            const requested = config.units![unit.unitIndex - 1]!.targetCarpetSqFt!;
+            expect(unit.target).toMatchObject({
+              status: 'ACHIEVED',
+              requestedAreaSqFt: requested,
+              tolerancePercent: config.areaAcceptanceTolerancePercent,
+            });
+            expect(Math.abs(unit.target!.achievedAreaSqFt - requested) / requested * 100)
+              .toBeLessThanOrEqual(config.areaAcceptanceTolerancePercent!);
+          }
+        }
+      }
+
+      const revision = exchangeRevision(building);
+      const save = await post('/local-projects', { building });
+      const saved = await save.json() as LoadedLocalProject & { error?: unknown };
+      expect(save.status, JSON.stringify(saved.error)).toBe(200);
+      const restored = await fetch(endpoint + `/local-projects/${building.projectId}?revision=${saved.revision}`);
+      expect(restored.status).toBe(200);
+      const persisted = await restored.json() as LoadedLocalProject;
+      expect(persisted.digest).toBe(revision.sha256);
+      expect(exchangeRevision(persisted.building)).toEqual(revision);
+
+      const exported = await post('/export/ifc', { building: persisted.building, source: revision });
+      const ifc = await exported.json() as { manifest: IfcExchangeArtifact['manifest']; contentBase64: string; error?: unknown };
+      expect(exported.status, JSON.stringify(ifc.error)).toBe(200);
+      const artifact: IfcExchangeArtifact = { manifest: ifc.manifest, bytes: Buffer.from(ifc.contentBase64, 'base64') };
+      const readback = await new CanonicalIfcExchangeAdapter().readback(artifact, revision);
+      expect(readback.lostCanonicalIds).toEqual([]);
+      expect(readback.changedHostIds).toEqual([]);
+      expect(readback.maximumPositionErrorMm).toBeLessThanOrEqual(0.001);
+
+      const model = await post('/export/glb', { building: persisted.building, options: { expectedRevision: revision.revision } });
+      expect(model.status).toBe(200);
+      expect(model.headers.get('x-building-revision')).toBe(String(revision.revision));
+      expect(model.headers.get('x-building-sha256')).toBe(revision.sha256);
+      const glb = Buffer.from(await model.arrayBuffer());
+      expect(glb.subarray(0, 4).toString()).toBe('glTF');
+      expect(glb.readUInt32LE(8)).toBe(glb.length);
+
+      if (evidence) {
+        await writeFile(join(evidence, briefName + '.svg'), svg);
+        await writeFile(join(evidence, briefName + '.ifc'), artifact.bytes);
+        await writeFile(join(evidence, briefName + '.manifest.json'), JSON.stringify(artifact.manifest));
+        await writeFile(join(evidence, briefName + '.building.json'), JSON.stringify(persisted.building));
+        await writeFile(join(evidence, briefName + '.metrics.json'), JSON.stringify({
+          revision, telemetry, planarDeltaMm2: eff.planarDeltaMm2, rooms: residentialFloor.rooms.length,
+          units: floorArea?.units,
+        }, null, 2));
       }
     },
     60_000,
   );
 
-  it('Brief 9 (infeasible brief with conflicting constraints): explains mathematical conflict and offers measurable alternatives without silently breaking rules', () => {
-    // Requesting 6 × 2,200 sq ft 4BHK flats (= 13,200 sq ft carpet) on a tight 18 m × 20 m plot with 3 m setbacks
-    const conflictReport = evaluateBriefRequirementHierarchyAndConflicts({
+  it('refuses brief 9 over HTTP and explains the infeasible area with measurable alternatives', async () => {
+    // Six 2,200 ft² apartments on a tight 18 m × 20 m plot.
+    const config: MultiSheetApartmentConfig = {
       ...BASE_BRIEF,
       projectId: 'gate-o-9-infeasible',
       plotWidthMm: 18000,
@@ -272,7 +367,21 @@ describe('Phase 5 Gate O — Real Project Acceptance Across All 9 Required Archi
         hasUtilityBalcony: true,
         targetCarpetSqFt: 2200,
       })),
+    };
+    const conflictReport = evaluateBriefRequirementHierarchyAndConflicts(config);
+    const response = await post('/projects/generate', { config });
+    const refusal = await response.json() as { error?: unknown };
+    expect(response.status).toBe(422);
+    expect(refusal).not.toHaveProperty('building');
+    expect(refusal.error).toMatchObject({
+      code: 'CARPET_TARGETS_EXCEED_ENVELOPE',
+      message: expect.stringMatching(/13200 sq ft.*exceeds the entire.*plot/),
+      alternatives: expect.arrayContaining([
+        expect.objectContaining({ optionId: 'reduce_carpet_per_floor', measurableAdjustment: { maximumTargetSqFt: 4078 } }),
+        expect.objectContaining({ optionId: 'increase_plot_area', measurableAdjustment: { minimumSiteSqFt: 12540 } }),
+      ]),
     });
+    if (evidence) await writeFile(join(evidence, '9-infeasible.metrics.json'), JSON.stringify(refusal, null, 2));
 
     expect(conflictReport.isFeasibleWithoutConflict).toBe(false);
     expect(conflictReport.conflicts.length).toBeGreaterThan(0);
@@ -280,5 +389,5 @@ describe('Phase 5 Gate O — Real Project Acceptance Across All 9 Required Archi
     expect(primary.explanation.length).toBeGreaterThan(20);
     expect(primary.alternatives.length).toBeGreaterThanOrEqual(2);
     expect(primary.alternatives.some(alt => /\d+/.test(alt.summary))).toBe(true);
-  });
+  }, 60_000);
 });

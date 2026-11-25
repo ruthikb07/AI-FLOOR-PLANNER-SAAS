@@ -27,3 +27,5 @@
 ## Independent replay
 
 Windows IfcOpenShell 0.9.0.post1 read and meshed twelve generated files. The suite exercised the curved window, stable identifiers, host/fill references, staircase decomposition and edited geometry. Independent files and logs are stored separately from production source. The native desktop IFC reopen, BCF and general arbitrary IFC representation federation remain unverified.
+
+A separate production HTTP acceptance replay authored eight more IFC4 files from persisted canonical revisions. Windows IfcOpenShell independently checked their schema, identities, units, placements, host relations and sample solids. The manifests declare profile omissions, including furniture and provisional framing. [Project matrix](PHASE5_REAL_PROJECT_ACCEPTANCE.md)

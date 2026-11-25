@@ -27,3 +27,5 @@ RH Planner's BIM & CAD Assistant combines a zero-latency deterministic engine (`
 ## Independent replay
 
 The backend and frontend BIM assistant tests exercised supported deterministic queries, cache telemetry and proposal confirmation. The visible BIM Studio query uses the local deterministic path. The server has a separately tested provider-assisted route. Live Gemini, broader intent coverage and complete native coordination are open.
+
+The BIM API rejects an unresolved target storey before invoking a provider. A flat-scoped local schedule query reports a missing flat with zero matches. The deterministic desktop workflow remains covered by the unified Studio browser test.

@@ -12,6 +12,7 @@ import {
 } from '@ai-floor-planner/ai-orchestration';
 import { randomUUID } from 'node:crypto';
 import {
+  EXACT_SQMM_PER_SQFT,
   validateRegulatoryContextSchema,
   type AIReasoningMode,
   type MultiSheetApartmentConfig,
@@ -190,6 +191,43 @@ export async function handleProjectGeneration(
         error: { code: 'REQUEST_CANCELLED', message: 'Generation cancelled before execution.' },
       },
     };
+  }
+
+  const { config } = parsed;
+  if (config.requireAreaTargets && !config.irregularPlotBoundary) {
+    const requestedCarpetSqFt = config.units?.reduce((sum, unit) => sum + (unit.targetCarpetSqFt ?? 0), 0) ?? 0;
+    const tolerance = (config.areaAcceptanceTolerancePercent ?? 5) / 100;
+    const minimumCarpetMm2 = requestedCarpetSqFt * (1 - tolerance) * EXACT_SQMM_PER_SQFT;
+    const siteAreaMm2 = config.plotWidthMm * config.plotDepthMm;
+    // The entire plot is a hard upper bound even before subtracting setbacks, walls and common areas.
+    if (minimumCarpetMm2 > siteAreaMm2) {
+      const siteAreaSqFt = siteAreaMm2 / EXACT_SQMM_PER_SQFT;
+      const minimumCarpetSqFt = minimumCarpetMm2 / EXACT_SQMM_PER_SQFT;
+      const minimumSiteSqFt = Math.ceil(minimumCarpetSqFt);
+      const maximumTargetSqFt = Math.floor(siteAreaSqFt / (1 - tolerance));
+      return {
+        status: 422,
+        json: {
+          generationRunId: parsed.generationRunId,
+          error: {
+            code: 'CARPET_TARGETS_EXCEED_ENVELOPE',
+            message: `Required unit carpet totals ${requestedCarpetSqFt.toFixed(0)} sq ft. Even at the lower tolerance bound of ${minimumCarpetSqFt.toFixed(0)} sq ft, it exceeds the entire ${siteAreaSqFt.toFixed(0)} sq ft plot.`,
+            alternatives: [
+              {
+                optionId: 'reduce_carpet_per_floor',
+                summary: `Reduce the total per-floor target below ${maximumTargetSqFt} sq ft and reassess the room mix, setbacks and common areas.`,
+                measurableAdjustment: { maximumTargetSqFt },
+              },
+              {
+                optionId: 'increase_plot_area',
+                summary: `Use a larger site. The required carpet alone takes at least ${minimumSiteSqFt} sq ft before setbacks and common areas.`,
+                measurableAdjustment: { minimumSiteSqFt },
+              },
+            ],
+          },
+        },
+      };
+    }
   }
 
   const routeStartedAt = Date.now();
