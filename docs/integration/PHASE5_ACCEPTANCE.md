@@ -16,3 +16,5 @@ Phase 5A and 5B were recovered with their local commits and Phase 5C source. The
 | Independent CI | The first Phase 5 checkpoint's independent planning and IFC jobs passed. Its combined verification job failed before Chromium. See the handoff for run and commit identities. |
 
 [Engineering handoff](../repair/PHASE5_CODEX_HANDOFF.md) · [Project matrix](PHASE5_REAL_PROJECT_ACCEPTANCE.md) · [Performance evidence](PHASE5_PERFORMANCE_REPORT.md)
+
+Native ETABS 23.3.2 replay reached the existing bridge and returned `TRANSPORT_ERROR` at connect. The bridge reported an unknown native outcome, so no current EDB reopen result was recorded.

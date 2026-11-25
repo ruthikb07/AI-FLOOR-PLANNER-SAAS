@@ -122,7 +122,9 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   const window = residential.windows.find(opening => {
     const wall = residential.walls.find(candidate => candidate.id === opening.wallId);
     return wall && !wall.arc && Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 2300
-      && opening.width !== 1500 && !residential.rooms.some(room => room.isFixed && wall.roomIds.includes(room.id));
+      && opening.width !== 1500 && !residential.rooms.some(room => room.isFixed && wall.roomIds.includes(room.id))
+      && residential.windows.every(other => other.id === opening.id || other.wallId !== wall.id)
+      && residential.doors.every(door => door.wallId !== wall.id);
   })!;
   expect(window?.id).toBeTruthy();
   await page.getByTestId('nav-bim').click();

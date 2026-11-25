@@ -4,6 +4,7 @@ import {
   DEFAULT_STILT_AMENITIES,
   DEFAULT_TERRACE_AMENITIES,
   Direction,
+  type Building,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
 import {
@@ -289,21 +290,30 @@ describe('Phase 4A.1 — 12-Scenario Pipeline Benchmark, Cancellation & Live Gem
     recordRun(7, 'Reference-image vision (BALANCED)', s7.status, (s7.json as { telemetry: Record<string, unknown> }).telemetry);
 
     // 8. Supported AI CAD edit (FAST)
-    const s3Building = (s3.json as { building: Parameters<typeof handleCadEditProposal>[0] extends { building: infer B } ? B : never }).building;
-    const resFloor = (s3Building as { floors: Array<{ id: string; apartmentUnits?: unknown[] }> }).floors.find(f =>
-      Boolean(f.apartmentUnits?.length),
-    )!;
+    const s3Building = (s3.json as { building: Building }).building;
+    const resFloor = s3Building.floors.find(floor => Boolean(floor.apartmentUnits?.length))!;
+    const selectedWindow = resFloor.windows.find(window => {
+      const host = resFloor.walls.find(wall => wall.id === window.wallId);
+      return host && !host.arc && window.width !== 1500
+        && Math.hypot(host.endPoint.x - host.startPoint.x, host.endPoint.y - host.startPoint.y) >= 2300
+        && !resFloor.rooms.some(room => room.isFixed && host.roomIds.includes(room.id))
+        && resFloor.windows.every(other => other.id === window.id || other.wallId !== host.id)
+        && resFloor.doors.every(door => door.wallId !== host.id);
+    });
+    expect(selectedWindow?.id).toBeTruthy();
     const s8 = await handleCadEditProposal(
       {
         building: s3Building,
         floorId: resFloor.id,
+        selectedEntityId: selectedWindow!.id,
         instruction: 'Resize this window to 1500 mm',
       },
       { gemini: provider, briefInterpreterKind: 'gemini' },
     );
     expect(s8.status).toBe(200);
     if ('proposal' in s8.json) {
-      expect(s8.json.proposal.status).toBe('PREVIEW_READY');
+      expect(s8.json.proposal.status, s8.json.proposal.message).toBe('PREVIEW_READY');
+      expect(s8.json.proposal.openingSummary?.openingId).toBe(selectedWindow!.id);
       recordRun(8, 'Supported AI CAD edit (FAST)', 200, s8.json.aiTelemetry as unknown as Record<string, unknown>);
     }
 
