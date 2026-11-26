@@ -1,4 +1,4 @@
-import { isPhysicalBoundary, architecturalSpaceRole } from '@ai-floor-planner/core';
+import { isPhysicalBoundary, architecturalSpaceRole, PLUMBING_RISER_TAG } from '@ai-floor-planner/core';
 import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 /**
  * SVG Renderer — generates architectural floor plan SVG from Building Model.
@@ -309,14 +309,15 @@ function renderRooms(
 
   for (const room of floor.rooms) {
     if (room.tags?.includes('recess:perimeter')) continue;
-    const color = ROOM_COLORS[room.type] ?? '#F5F5F5';
+    const plumbingRiser = room.type === RoomType.ServiceShaft && room.tags?.some(tag => tag.startsWith(PLUMBING_RISER_TAG));
+    const color = plumbingRiser ? '#1A8B82' : ROOM_COLORS[room.type] ?? '#F5F5F5';
     const points = polygonToSvgPoints(room.boundary, transform);
 
     // Room fill
     if (!labelsOnly) elements.push(
       `<polygon points="${points}" fill="${color}" fill-opacity="0.35" stroke="none" data-entity-type="room" data-entity-id="${room.id}" data-architectural-role="${architecturalSpaceRole(room)}"/>`,
     );
-    const hatch = room.type === RoomType.Bathroom ? 'wet-hatch'
+    const hatch = room.type === RoomType.Bathroom || plumbingRiser ? 'wet-hatch'
       : room.type === RoomType.ServiceShaft || room.type === RoomType.OTS ? 'outdoor-hatch'
         : [RoomType.Balcony, RoomType.Terrace, RoomType.Utility].includes(room.type) ? 'outdoor-hatch' : 'tile-hatch';
     if (!labelsOnly && ![RoomType.Staircase, RoomType.Lift].includes(room.type)) elements.push(`<polygon points="${points}" fill="url(#${hatch})" pointer-events="none"/>`);
@@ -390,9 +391,30 @@ function renderRooms(
       }
     }
 
+    if (labelsOnly && plumbingRiser) {
+      if (showLabels) {
+        const anchor = worldToScreen({ x: room.x + room.width / 2, y: room.y + room.height / 2 }, transform);
+        const markerSize = Math.min(10, Math.max(4, scaleToScreen(Math.min(room.width, room.height) * 0.62, transform)));
+        elements.push(`<text x="${anchor.x.toFixed(1)}" y="${anchor.y.toFixed(1)}" font-size="${markerSize.toFixed(1)}" fill="#074F49" text-anchor="middle" dominant-baseline="central"><title>Plumbing riser</title>PR</text>`);
+      }
+      continue;
+    }
+    if (labelsOnly && room.tags?.includes('shaft:central-court')) {
+      if (showLabels) {
+        const center = polygonCentroid(room.boundary);
+        const fontSize = Math.max(6, Math.min(12, scaleToScreen(room.width * 0.09, transform)));
+        for (const [i, line] of ['CENTRAL COURTYARD', 'OPEN TO SKY'].entries()) {
+          const anchor = worldToScreen({ x: center.x, y: center.y + (i - 0.5) * 340 }, transform);
+          elements.push(`<text x="${anchor.x.toFixed(1)}" y="${anchor.y.toFixed(1)}" font-size="${fontSize.toFixed(1)}" fill="#1e293b" text-anchor="middle" dominant-baseline="central" data-room-name="${escapeXml(room.name)}">${line}</text>`);
+        }
+      }
+      continue;
+    }
     if (labelsOnly && (showLabels || showAreas)) {
       const annotation = roomAnnotation(room);
-      let labelCenter = { x: annotation.center.x, y: annotation.center.y };
+      const stair = room.type === RoomType.Staircase && floor.floorUse !== 'ROOF'
+        ? floor.canonicalStaircases?.find(staircase => staircase.id.startsWith(`${room.id}:`)) : undefined;
+      let labelCenter = stair ? polygonCentroid(stair.midLanding) : { x: annotation.center.x, y: annotation.center.y };
       const roomFurn = (floor.furniture ?? []).filter(
         f => f.roomId === room.id && ['bed', 'king_bed', 'queen_bed', 'single_bed', 'sectional_sofa', 'l_sofa', 'sofa', 'dining_table'].includes(f.type),
       );

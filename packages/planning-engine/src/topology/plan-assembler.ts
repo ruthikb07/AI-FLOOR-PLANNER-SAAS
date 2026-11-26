@@ -45,7 +45,7 @@ import type {
   ApartmentPlanStructure,
 } from '../interpretation/apartment-plan';
 import type { ExtractedRoom } from '../interpretation/extraction';
-import { frameFor, type Box2D } from './rect-frame';
+import { frameFor, type AccessEdge, type Box2D } from './rect-frame';
 import {
   sharedEdgeLength,
   assignUnitTypesToBoxes,
@@ -105,6 +105,7 @@ export interface AssembleInput {
   readonly roadAccessSides?: readonly Direction[];
   readonly setbacksMm?: Setbacks;
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
+  readonly coordinatedWetWallLayout?: boolean;
 }
 
 export interface AssembledPlan {
@@ -119,6 +120,14 @@ function stripWorldEdge(strip: Box2D, worldBox: Box2D): WorldEdgeSide {
     return Math.abs(strip.y - worldBox.y) <= 2 ? 'NORTH' : 'SOUTH';
   }
   return Math.abs(strip.x - worldBox.x) <= 2 ? 'WEST' : 'EAST';
+}
+
+function sharedAccessEdge(flat: Box2D, common: Box2D): AccessEdge | undefined {
+  if (Math.abs(common.x + common.w - flat.x) <= 2) return 'WEST';
+  if (Math.abs(common.x - flat.x - flat.w) <= 2) return 'EAST';
+  if (Math.abs(common.y + common.h - flat.y) <= 2) return 'NORTH';
+  if (Math.abs(common.y - flat.y - flat.h) <= 2) return 'SOUTH';
+  return undefined;
 }
 
 /**
@@ -168,28 +177,40 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
   const assignedUnitTypes = assignUnitTypesToBoxes(partition.flatBoxes, unitTypes);
   for (let i = 0; i < partition.flatBoxes.length; i++) {
     const worldBox = partition.flatBoxes[i]!;
-    const accessEdge = partition.accessEdgeForFlat[i]!;
     const flatId = `flat_0${i + 1}`;
     const flatLabel = `Flat 0${i + 1}`;
     const unitType = (assignedUnitTypes[i] ?? unitTypes[i] ?? '2BHK') as ApartmentBhkType;
 
     // Score all four perimeter edges of THIS flat independently (no blind copy-paste).
-    const rawExposureProfile = scoreFlatExteriorEdges(worldBox, {
+    const exposureOptions = {
       flatId,
       envelope: builtFace,
-      accessEdge,
       otsShaftBoxes,
       recessBoxes,
       roadAccessSides: input.roadAccessSides,
       setbacksMm: input.setbacksMm,
       irregularPlotBoundary: input.irregularPlotBoundary,
-    });
+    };
 
     // The circulation space this flat actually shares the most wall with; that
     // is the one its entrance can be hosted on.
-    const entry = circulation
+    const entries = circulation
       .map(c => ({ c, shared: sharedEdgeLength(worldBox, c.box) }))
-      .sort((a, b) => b.shared - a.shared)[0];
+      .sort((a, b) => b.shared - a.shared);
+    const ranked = input.coordinatedWetWallLayout ? entries.flatMap(candidate => {
+      if (candidate.shared < 1250) return [];
+      const edge = sharedAccessEdge(worldBox, candidate.c.box);
+      if (!edge) return [];
+      const profile = scoreFlatExteriorEdges(worldBox, { ...exposureOptions, accessEdge: edge });
+      // The slicer's public rooms reach the facade perpendicular to the entrance edge.
+      const facade = edge === 'EAST' || edge === 'WEST' ? ['NORTH', 'SOUTH'] : ['EAST', 'WEST'];
+      const exposure = Math.max(0, ...profile.edgeScores.filter(side => side.tier <= 2 && facade.includes(side.edge))
+        .map(side => side.score));
+      return [{ candidate, edge, exposure, profile }];
+    }).sort((a, b) => b.exposure - a.exposure || b.candidate.shared - a.candidate.shared)[0] : undefined;
+    const entry = ranked?.candidate ?? entries[0];
+    const accessEdge = ranked?.edge ?? partition.accessEdgeForFlat[i]!;
+    const rawExposureProfile = ranked?.profile ?? scoreFlatExteriorEdges(worldBox, { ...exposureOptions, accessEdge });
 
     // Solve in a local frame where the occupant enters from the local east, so
     // the slicer's corridor-on-east assumption holds for every access edge.
@@ -266,7 +287,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       ? { x: localFlat.x, y: localFlat.y - 1000, w: localFlat.w, h: localFlat.h + 1000 }
       : serviceBandEnvelope(frame, worldBox, localFlat, builtFace);
 
-    const sliced = sliceFlatRooms({
+    const sliceInput: Parameters<typeof sliceFlatRooms>[0] = {
       flatId,
       flatLabel,
       unitType,
@@ -280,7 +301,36 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       localExteriorFaces,
       exposureProfile,
       localExposure,
-    });
+    };
+    let sliced = sliceFlatRooms(sliceInput);
+    if (input.coordinatedWetWallLayout && entry?.shared) {
+      const layoutScore = (candidate: typeof sliced) => {
+        const rooms = candidate.rooms.map(room => ({ room, box: frame.toWorld(rectToBox(room.rect)) }));
+        const exterior = ({ box }: typeof rooms[number]) => projectsToOutsideFace(box, worldBox, partition.builtOutline);
+        const outdoor = rooms.filter(item => ['balcony', 'utility'].includes(item.room.type) && exterior(item));
+        const publicRooms = rooms.filter(item => ['living', 'dining', 'foyer'].includes(item.room.type));
+        if (!publicRooms.some(item => sharedEdgeLength(item.box, entry.c.box) >= 1250)) return -Infinity;
+        const interiorWet = rooms.filter(item => /bath|toilet/.test(item.room.type) && !exterior(item));
+        if (interiorWet.some(item => !allOpenVoids.some(voidBox => sharedEdgeLength(item.box, voidBox) >= 600))) return -Infinity;
+        const living = rooms.find(item => item.room.type === 'living');
+        const kitchen = rooms.find(item => item.room.type === 'kitchen');
+        const exposed = (item: typeof rooms[number] | undefined) => item &&
+          (exterior(item) || outdoor.some(other => sharedEdgeLength(item.box, other.box) >= 600));
+        return 2 * Number(Boolean(exposed(living))) + 2 * Number(Boolean(exposed(kitchen))) + interiorWet.length;
+      };
+      let bestScore = layoutScore(sliced);
+      const alternatives: RoomSlicingArchetypeId[] = ['CORNER_L_LIVING_REAR_SLEEPING', 'MIRRORED_WET_CORE_STACK'];
+      if (placement.kitchenStyle === 'OPEN') alternatives.push('FRONT_BALCONY_OPEN_KITCHEN');
+      for (const archetype of alternatives) {
+        if (archetype === input.archetype) continue;
+        const candidate = sliceFlatRooms({ ...sliceInput, archetype });
+        const score = layoutScore(candidate);
+        if (score > bestScore) {
+          sliced = candidate;
+          bestScore = score;
+        }
+      }
+    }
 
     // Carry rooms back into world coordinates.
     const worldRooms: ApartmentPlanRoom[] = sliced.rooms.map(room => ({
@@ -427,9 +477,10 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       architecturalRole: role,
       name: isPerimeterRecess
         ? 'Perimeter Courtyard Setback Recess'
+        : tags?.includes('shaft:central-court') ? 'Central Open-to-Sky Courtyard'
         : role === 'OPEN_TO_SKY_VOID'
           ? 'Open-to-Sky Court / Light and Air Void'
-          : `MEP / Plumbing Duct 0${i + 1}`,
+          : `Core Service Shaft 0${i + 1}`,
       rect: boxToRect(b),
       ...(tags ? { tags } : {}),
       assignedFlatId: null,

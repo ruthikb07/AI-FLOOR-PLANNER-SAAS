@@ -2,8 +2,16 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { ArrowRight, Box, FilePlus2, FileUp, HardDrive, LayoutTemplate, Trash2 } from 'lucide-react';
 import type { Building } from '@ai-floor-planner/core';
 import { polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
+import {
+  computeFloorEfficiencyBreakdown,
+  type AlternativeExplorationControls,
+} from '@ai-floor-planner/planning-engine';
 import { fitToView, renderFloor } from '@ai-floor-planner/renderer';
-import { exportProjectAsJsonFile, projectStorage, type ProjectHeader } from '../../services/storage';
+import {
+  exportArchivedProjectPayloadAsJsonFile,
+  projectStorage,
+  type ProjectHeader,
+} from '../../services/storage';
 import type { ArchivedProjectRevision } from '../../services/durable-project-store';
 import type { LocalDiskProjectManifest } from '../../services/local-project-api';
 
@@ -78,21 +86,67 @@ export function ConceptReviewWorkspace({ concepts, activeBuilding, canGenerate, 
   activeBuilding: Building;
   canGenerate: boolean;
   notice: string;
-  onGenerate: () => void;
+  onGenerate: (controls?: AlternativeExplorationControls) => void;
   onOpen: (concept: GeneratedConcept) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [preview, setPreview] = useState<'plan' | '3d'>('plan');
+  const [controls, setControls] = useState<AlternativeExplorationControls>({
+    preserveCore: false,
+    preserveExteriorFootprint: false,
+    changeInternalLayout: true,
+    exploreAlternativeMassing: true,
+    optimizeCarpetArea: false,
+    improveCirculation: false,
+    improveDaylight: false,
+  });
   const collection = concepts.length ? concepts : [{ building: activeBuilding, seed: 1 }];
   const selected = collection.find(concept => conceptId(concept.building) === selectedId) ?? collection.at(-1)!;
   const { building } = selected;
   const title = building.metadata.generationBrief?.buildingMassingShape?.replaceAll('_', ' ') ?? building.name;
+  const repFloor = representativeFloor(building);
+  const efficiency = useMemo(
+    () => (repFloor ? computeFloorEfficiencyBreakdown(repFloor) : null),
+    [repFloor],
+  );
+
+  const toggleControl = (key: keyof AlternativeExplorationControls) => {
+    setControls(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return <section className="rh-catalog rh-concept-gallery" aria-label="Massing studies gallery">
     <header className="rh-catalog-heading">
       <div><p className="rh-atelier-kicker">{building.name}</p><h1>Massing Studies</h1></div>
-      <button type="button" className="rh-outline-action" onClick={onGenerate} disabled={!canGenerate}><FilePlus2 size={17} /> Generate Massing Alternative</button>
+      <button type="button" className="rh-outline-action" onClick={() => onGenerate(controls)} disabled={!canGenerate}><FilePlus2 size={17} /> Generate Massing Alternative</button>
     </header>
+    <div
+      data-testid="alternative-exploration-controls"
+      aria-label="Design alternative controls"
+      className="mb-3 flex flex-wrap items-center gap-1.5 text-xs"
+    >
+      {([
+        ['preserveCore', 'Preserve core'],
+        ['preserveExteriorFootprint', 'Preserve exterior footprint'],
+        ['changeInternalLayout', 'Change internal layout'],
+        ['exploreAlternativeMassing', 'Explore alternative massing'],
+        ['optimizeCarpetArea', 'Optimize carpet area'],
+        ['improveCirculation', 'Improve circulation'],
+        ['improveDaylight', 'Improve daylight'],
+      ] as const).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          data-testid={`alt-ctrl-${key}`}
+          aria-pressed={Boolean(controls[key])}
+          onClick={() => toggleControl(key)}
+          className={`rounded-full border px-2.5 py-1 text-[11px] font-mono ${
+            controls[key] ? 'border-amber-500 bg-amber-500/20 font-semibold' : 'border-black/15 opacity-80'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
     {notice && <p className="rh-catalog-notice" role="status">{notice}</p>}
     <div className="rh-concept-workbench">
       <div className="rh-concept-stage">
@@ -106,6 +160,13 @@ export function ConceptReviewWorkspace({ concepts, activeBuilding, canGenerate, 
       <div className="rh-concept-description">
         <h2>{title}</h2>
         <dl>{conceptFacts(building).map(fact => <div key={fact.name}><dt>{fact.name}</dt><dd>{fact.value}</dd></div>)}</dl>
+        {efficiency && (
+          <div data-testid="floor-efficiency-breakdown" className="my-2 rounded border border-black/10 p-2 text-[11px] font-mono">
+            <div className="font-semibold mb-1">Floor Plate Breakdown ({efficiency.grossFloorPlate.areaSqM.toFixed(1)} m²)</div>
+            <div>Carpet: {efficiency.modeledHabitableCarpet.areaSqM.toFixed(1)} m² ({efficiency.modeledHabitableCarpet.shareOfGrossPercent}%) · Walls: {efficiency.wallFootprint.shareOfGrossPercent}%</div>
+            <div>Common Circ: {efficiency.commonCirculation.shareOfGrossPercent}% · Core: {efficiency.verticalCore.shareOfGrossPercent}% · Balconies: {efficiency.balconiesAndOutdoor.shareOfGrossPercent}%</div>
+          </div>
+        )}
         <button type="button" className="rh-solid-action" onClick={() => onOpen(selected)}>Open in CAD <ArrowRight size={17} /></button>
         {selected.sourceRevision && <p className="rh-concept-note">Opening this alternative creates a revision of the current project.</p>}
       </div>
@@ -135,7 +196,7 @@ function BrowserRevisionArchive({ projectId }: { projectId: string }) {
       entries.length === 0 ? <p>No browser revisions have been archived.</p> :
         <ol>{entries.map(entry => <li key={entry.id}>
           <time dateTime={entry.savedAt}>{new Date(entry.savedAt).toLocaleString()}</time>
-          <button type="button" onClick={() => exportProjectAsJsonFile(JSON.parse(entry.payload))}>Export revision {entry.version}</button>
+          <button type="button" onClick={() => exportArchivedProjectPayloadAsJsonFile(entry.payload, projectId, entry.version)}>Export revision {entry.version}</button>
         </li>)}</ol>}
   </details>;
 }
@@ -246,7 +307,7 @@ export function ProjectLibrary({
       })}
       {browserOnlyProjects.slice(0, Math.max(0, visible - diskProjects.length)).map(project => {
         const envelope = projectStorage.load(project.id);
-        return <article key={project.id}>
+        return <article key={project.id} data-testid={`browser-project-card-${project.id}`}>
           {envelope && <PlanThumbnail building={envelope.building} />}
           <h2>{project.name}</h2>
           <p>{project.floorCount} floors · {project.roomCount} rooms{envelope ? ` · Revision ${envelope.building.version}` : ''}</p>

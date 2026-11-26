@@ -1,5 +1,5 @@
 import type { Building, Room, DynamicApartmentManifest, ApartmentBhkType } from '@ai-floor-planner/core';
-import { APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, architecturalSpaceRole } from '@ai-floor-planner/core';
+import { APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM, architecturalSpaceRole, PLUMBING_RISER_TAG } from '@ai-floor-planner/core';
 import { containsPolygon, polygonIntersectionArea, measureApartmentAreaLedger, openingFitsApartmentWall } from '@ai-floor-planner/geometry-engine';
 
 function sharesBoundarySegment(
@@ -249,7 +249,8 @@ export function validateApartmentClosure(building: Building, manifest?: DynamicA
     }
     for (let uIdx = 0; uIdx < units.length; uIdx++) {
       const u = units[uIdx]!;
-      const unitRooms = rooms.filter(r => r.unitId === u.id);
+      const unitRooms = rooms.filter(r => r.unitId === u.id && !(r.type === 'service_shaft' &&
+        r.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG))));
       const entrances = floor.doors.filter(d => validDoors.has(d.id) && d.connectsRooms.some(id => unitRooms.some(r => r.id === id)) && d.connectsRooms.some(id => rooms.some(r => r.id === id && r.spaceUse === 'COMMON')));
       if (entrances.length !== 1) add('PRIMARY_ENTRANCE_MISSING', `${u.id}: ${entrances.length} entrances`);
       const entryIds = entrances.flatMap(d => d.connectsRooms.filter(id => unitRooms.some(r => r.id === id)));

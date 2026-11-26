@@ -4,12 +4,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import type { EditorSelection, Point, Polygon } from '@ai-floor-planner/core';
+import type { EditorSelection, PlancraftFurnitureElementType, Point, Polygon } from '@ai-floor-planner/core';
 import { DoorType } from '@ai-floor-planner/core';
 import { computeStairSolids } from '@ai-floor-planner/geometry-engine';
 import { makeProjectionShape as makeShape } from './projection-shape';
 import {
   millimetersToSceneUnits,
+  furnitureSolidHeightMm,
+  slabSolidRegions,
   type Building3DProjection,
   type ProjectionSource,
 } from '@ai-floor-planner/projection-3d';
@@ -25,7 +27,42 @@ const EXPLODED_GAP_M = 1.8;
 
 export type ArchitecturalMaterialPalette = 'travertine' | 'concrete' | 'coastal';
 export type BuildingLightingMode = 'day' | 'golden' | 'night';
+export type FurnitureCategoryId =
+  | 'bed_master'
+  | 'sofa_living'
+  | 'dining_set'
+  | 'wardrobe_full'
+  | 'kitchen_modular'
+  | 'bath_fixtures';
 
+export const ALL_FURNITURE_CATEGORY_IDS: readonly FurnitureCategoryId[] = [
+  'bed_master',
+  'sofa_living',
+  'dining_set',
+  'wardrobe_full',
+  'kitchen_modular',
+  'bath_fixtures',
+] as const;
+
+const furniturePresentation: Partial<Record<PlancraftFurnitureElementType, {
+  category: FurnitureCategoryId;
+  role: MaterialRoleKey;
+}>> = {
+  bed: { category: 'bed_master', role: 'furnBed' },
+  sofa: { category: 'sofa_living', role: 'furnWood' },
+  l_sofa: { category: 'sofa_living', role: 'furnWood' },
+  sectional_sofa: { category: 'sofa_living', role: 'furnWood' },
+  table: { category: 'dining_set', role: 'furnWood' },
+  round_table: { category: 'dining_set', role: 'furnWood' },
+  chair: { category: 'dining_set', role: 'furnWood' },
+  wardrobe: { category: 'wardrobe_full', role: 'furnWood' },
+  counter: { category: 'kitchen_modular', role: 'furnStone' },
+  fridge: { category: 'kitchen_modular', role: 'furnStone' },
+  toilet: { category: 'bath_fixtures', role: 'furnCeramic' },
+  bathtub: { category: 'bath_fixtures', role: 'furnCeramic' },
+  shower: { category: 'bath_fixtures', role: 'furnCeramic' },
+  sink: { category: 'bath_fixtures', role: 'furnCeramic' },
+};
 export interface OpeningFinishOverride {
   readonly frameColorHex?: number;
   readonly doorColorHex?: number;
@@ -45,6 +82,7 @@ export interface ThreeBuildingSceneProps {
   readonly lightingMode?: BuildingLightingMode;
   readonly materialPalette?: ArchitecturalMaterialPalette;
   readonly openingFinish?: OpeningFinishOverride;
+  readonly enabledFurnitureCategories?: readonly FurnitureCategoryId[];
   readonly sectionCut?: boolean;
   readonly parallelProjection?: boolean;
   readonly walkthroughActive?: boolean;
@@ -168,6 +206,7 @@ interface FloorGroupRecord {
     readonly openings: THREE.Group;
     readonly stairs: THREE.Group;
     readonly rooms: THREE.Group;
+    readonly furnitureByCategory: Record<FurnitureCategoryId, THREE.Group>;
   };
   readonly meshes: Array<{ readonly mesh: THREE.Mesh; readonly role: MaterialRoleKey; readonly isStair?: boolean }>;
 }
@@ -416,11 +455,14 @@ function normalizeForMerge(rawGeo: THREE.BufferGeometry): THREE.BufferGeometry {
 
 class GeometryBatcher {
   private readonly buckets = new Map<MaterialRoleKey, THREE.BufferGeometry[]>();
+  private readonly sources = new WeakMap<THREE.BufferGeometry, ProjectionSource>();
+  source: ProjectionSource | undefined;
 
   add(role: MaterialRoleKey, geo: THREE.BufferGeometry, matrix?: THREE.Matrix4): void {
     const clean = normalizeForMerge(geo);
     geo.dispose();
     if (matrix) clean.applyMatrix4(matrix);
+    if (this.source) this.sources.set(clean, this.source);
     const list = this.buckets.get(role);
     if (list) list.push(clean);
     else this.buckets.set(role, [clean]);
@@ -480,7 +522,16 @@ class GeometryBatcher {
       const isTransparent = role === 'glass' || role === 'balustradeGlass' || role === 'glow' || role === 'roomTint';
       mesh.castShadow = Boolean(meta.castShadow && !isTransparent && role !== 'lawn' && role !== 'road' && role !== 'paver');
       mesh.receiveShadow = Boolean(meta.receiveShadow ?? !isTransparent);
+      let nextFace = 0;
+      const pickRanges: { from: number; to: number; source: ProjectionSource }[] = [];
+      for (const geometry of geos) {
+        const faceCount = (geometry.index?.count ?? geometry.getAttribute('position').count) / 3;
+        const source = this.sources.get(geometry);
+        if (source) pickRanges.push({ from: nextFace, to: nextFace + faceCount, source });
+        nextFace += faceCount;
+      }
       mesh.userData = {
+        pickRanges,
         floorId: meta.floorId,
         layerKind: meta.layerKind,
         materialRole: role,
@@ -490,6 +541,21 @@ class GeometryBatcher {
     }
     this.buckets.clear();
   }
+}
+
+function openingPose(opening: Building3DProjection['openings'][number], wall: Building3DProjection['walls'][number]) {
+  const center = opening.alongWall + opening.width / 2;
+  if (wall.arc) {
+    const arc = wall.arc;
+    const sweep = arc.endAngleRad - arc.startAngleRad;
+    const theta = arc.startAngleRad + Math.sign(sweep) * center / arc.radiusMm;
+    const ux = -Math.sin(theta) * Math.sign(sweep);
+    const uy = Math.cos(theta) * Math.sign(sweep);
+    return { x: arc.center.x + arc.radiusMm * Math.cos(theta), y: arc.center.y + arc.radiusMm * Math.sin(theta), ux, uy };
+  }
+  const ux = (wall.endPoint.x - wall.startPoint.x) / wall.length;
+  const uy = (wall.endPoint.y - wall.startPoint.y) / wall.length;
+  return { x: wall.startPoint.x + ux * center, y: wall.startPoint.y + uy * center, ux, uy };
 }
 
 function disposeGeometryOnly(object: THREE.Object3D): void {
@@ -559,6 +625,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
   lightingMode = 'golden',
   materialPalette = 'travertine',
   openingFinish,
+  enabledFurnitureCategories,
   sectionCut = false,
   parallelProjection = false,
   walkthroughActive = false,
@@ -613,6 +680,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       [
         projection.buildingId,
         projection.buildingVersion,
+        projection.buildingDigest,
         projection.levels.length,
         projection.floorPlates.length,
         projection.walls.length,
@@ -656,15 +724,32 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     }
 
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    // Cap pixelRatio <= 1.5 for crisp 60fps performance on HiDPI / 4K displays
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setSize(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
+    const rawGl = renderer.getContext();
+    const dbgInfo = rawGl.getExtension('WEBGL_debug_renderer_info');
+    const unmaskedRenderer = dbgInfo
+      ? String(rawGl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) ?? '')
+      : String(rawGl.getParameter(rawGl.RENDERER) ?? '');
+    const isSoftwareWebGL = /swiftshader|llvmpipe|software|basic render driver/i.test(unmaskedRenderer);
+    let orbitInteraction = false;
+    let reducedOrbitBuffer = false;
+    const resizeDrawingBuffer = (width: number, height: number) => {
+      // Software orbit trades back-buffer resolution for responsive input.
+      const pixelBudget = reducedOrbitBuffer ? 180_000 : 500_000;
+      const pixelRatio = isSoftwareWebGL
+        ? Math.min(1, Math.sqrt(pixelBudget / (width * height)))
+        : Math.min(window.devicePixelRatio || 1, 1.5);
+      renderer.setPixelRatio(pixelRatio);
+      renderer.setSize(width, height);
+      renderer.domElement.dataset.pixelRatio = String(pixelRatio);
+    };
+    resizeDrawingBuffer(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = !isSoftwareWebGL;
+    renderer.shadowMap.type = isSoftwareWebGL ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.04;
     renderer.domElement.setAttribute('aria-label', 'Interactive canonical 3D building model');
-    renderer.domElement.dataset.pixelRatio = String(renderer.getPixelRatio());
+    renderer.domElement.dataset.softwareRasterizer = isSoftwareWebGL ? 'true' : 'false';
     host.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -702,7 +787,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     keyLight.name = 'key-light';
     keyLight.position.set(28, 24, 22);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1536, 1536);
+    const shadowMapDim = isSoftwareWebGL ? 1024 : 1536;
+    keyLight.shadow.mapSize.set(shadowMapDim, shadowMapDim);
     keyLight.shadow.camera.near = 1;
     keyLight.shadow.camera.far = 160;
     keyLight.shadow.camera.left = -40;
@@ -749,7 +835,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const stoneNormal = new THREE.TextureLoader().load(
       `${import.meta.env.BASE_URL}architecture/cast-stone-normal.webp`,
       () => {
-        if (!disposed) requestRender(1);
+        if (!disposed) scheduleRender(1);
       },
       undefined,
       () => {},
@@ -816,6 +902,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
             rec.group.position.y = rec.floorIndex * explodeCurrentGapRef.current;
           }
         }
+        renderer.shadowMap.needsUpdate = true;
         explodeAnimating = Math.abs(targetGap - explodeCurrentGapRef.current) > 0.002;
       }
 
@@ -827,17 +914,31 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         remainingFrames -= 1;
       }
 
+      if (isSoftwareWebGL) {
+        const useOrbitBuffer = orbitInteraction || (reducedOrbitBuffer && remainingFrames > 0);
+        if (useOrbitBuffer !== reducedOrbitBuffer) {
+          reducedOrbitBuffer = useOrbitBuffer;
+          resizeDrawingBuffer(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
+        }
+      }
+
       if (renderNow() && (remainingFrames > 0 || explodeAnimating)) {
         rafId = requestAnimationFrame(tick);
       }
     };
 
-    const requestRender = (frames = 1) => {
+    const scheduleRender = (frames = 1) => {
       if (!canRender()) return;
       remainingFrames = Math.max(remainingFrames, frames);
       if (!rafId) {
         rafId = requestAnimationFrame(tick);
       }
+    };
+
+    // Scene updates affect fixed directional-light shadows. Moving the viewing camera does not.
+    const requestRender = (frames = 1) => {
+      renderer.shadowMap.needsUpdate = true;
+      scheduleRender(frames);
     };
 
     new HDRLoader().load(
@@ -849,22 +950,28 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         }
         texture.mapping = THREE.EquirectangularReflectionMapping;
         scene.environment = texture;
-        requestRender(1);
+        scheduleRender(1);
       },
       undefined,
       () => {},
     );
 
     const onControlsChange = () => {
-      if (!updatingOrbit) requestRender();
+      if (!updatingOrbit) scheduleRender();
     };
-    const onControlsStart = () => requestRender(24);
-    const onControlsEnd = () => requestRender(16);
+    const onControlsStart = () => {
+      orbitInteraction = true;
+      scheduleRender(24);
+    };
+    const onControlsEnd = () => {
+      orbitInteraction = false;
+      scheduleRender(16);
+    };
     controls.addEventListener('change', onControlsChange);
     controls.addEventListener('start', onControlsStart);
     controls.addEventListener('end', onControlsEnd);
 
-    const onWheel = () => requestRender(14);
+    const onWheel = () => scheduleRender(14);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
 
     const syncSize = () => {
@@ -876,8 +983,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       fitOrthographic(halfHeight);
-      renderer.setSize(width, height);
-      requestRender(0);
+      resizeDrawingBuffer(width, height);
+      scheduleRender(0);
     };
 
     const releaseSceneResources = () => {
@@ -1177,6 +1284,18 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       stairsLayer.name = 'layer-stairs';
       const roomsLayer = new THREE.Group();
       roomsLayer.name = 'layer-rooms';
+      const furnitureByCategory: Record<FurnitureCategoryId, THREE.Group> = {
+        bed_master: new THREE.Group(),
+        sofa_living: new THREE.Group(),
+        dining_set: new THREE.Group(),
+        wardrobe_full: new THREE.Group(),
+        kitchen_modular: new THREE.Group(),
+        bath_fixtures: new THREE.Group(),
+      };
+      for (const catId of ALL_FURNITURE_CATEGORY_IDS) {
+        furnitureByCategory[catId].name = `layer-furn-${catId}`;
+        roomsLayer.add(furnitureByCategory[catId]);
+      }
 
       floorGroup.add(floorPlatesLayer, ceilingSoffitsLayer, wallsLayer, openingsLayer, stairsLayer, roomsLayer);
 
@@ -1187,17 +1306,25 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       const openingBatch = new GeometryBatcher();
       const stairBatch = new GeometryBatcher();
       const roomBatch = new GeometryBatcher();
+      const furnBatches: Record<FurnitureCategoryId, GeometryBatcher> = {
+        bed_master: new GeometryBatcher(),
+        sofa_living: new GeometryBatcher(),
+        dining_set: new GeometryBatcher(),
+        wardrobe_full: new GeometryBatcher(),
+        kitchen_modular: new GeometryBatcher(),
+        bath_fixtures: new GeometryBatcher(),
+      };
       const edgePositions: number[] = [];
 
       const plate = plateByFloor.get(floorId);
       if (plate && plate.boundary.points.length >= 3) {
         const plateY = plate.elevation * MM_TO_M;
-        const slabGeo = new THREE.ExtrudeGeometry(makeShape(plate.boundary, plate.cutouts), {
-          depth: plate.thickness * MM_TO_M,
-          bevelEnabled: false,
-        });
-        slabGeo.rotateX(-Math.PI / 2);
-        plateBatch.add('slab', slabGeo, new THREE.Matrix4().makeTranslation(0, plateY, 0));
+        const thickness = plate.thickness * MM_TO_M;
+        for (const { polygon, holes } of slabSolidRegions(plate.boundary, plate.cutouts)) {
+          const slabGeo = new THREE.ExtrudeGeometry(makeShape(polygon, holes), { depth: thickness, bevelEnabled: false });
+          slabGeo.rotateX(-Math.PI / 2);
+          plateBatch.add('slab', slabGeo, new THREE.Matrix4().makeTranslation(0, plateY - thickness, 0));
+        }
 
         // Crisp 150 mm horizontal slab-edge accent trim strictly along the BUILT outer floor perimeter
         const pts = plate.boundary.points;
@@ -1226,7 +1353,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         const isTopPlate =
           projection.floorPlates.length > 1 && Math.abs(plate.elevation - topPlateElevation) < 5;
         if (isTopPlate) {
-          const roofTopY = plateY + plate.thickness * MM_TO_M;
+          const roofTopY = plateY;
           const parapetH = 1.05;
           const parapetT = 0.2;
           for (let i = 0; i < pts.length; i++) {
@@ -1296,8 +1423,23 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       const floorRooms = projection.rooms.filter(r => r.floorId === floorId);
       const fKey = floorId.toLowerCase();
       if (plate && !(projection.floorPlates.length > 1 && plate.elevation >= topPlateElevation - 5)) {
-        for (const room of floorRooms) {
-          const rName = `${room.sourceEntityId} ${room.name}`.toLowerCase();
+        const canonicalFurnitureRooms = new Set<string>();
+      for (const item of projection.furniture ?? []) {
+        if (item.floorId !== floorId) continue;
+        const presentation = furniturePresentation[item.type];
+        if (!presentation) continue;
+        canonicalFurnitureRooms.add(item.roomId);
+        const height = furnitureSolidHeightMm(item) * MM_TO_M;
+        const quarterTurn = item.rotationDeg === 90 || item.rotationDeg === 270;
+        const width = (quarterTurn ? item.depthMm : item.widthMm) * MM_TO_M;
+        const depth = (quarterTurn ? item.widthMm : item.depthMm) * MM_TO_M;
+        furnBatches[presentation.category].addBox(presentation.role, width, height, depth,
+          (item.xMm + item.widthMm / 2) * MM_TO_M, item.elevation * MM_TO_M + height / 2,
+          (item.yMm + item.depthMm / 2) * MM_TO_M, -item.rotationDeg * Math.PI / 180);
+      }
+      for (const room of floorRooms) {
+          if (canonicalFurnitureRooms.has(room.sourceEntityId)) continue;
+        const rName = `${room.sourceEntityId} ${room.name}`.toLowerCase();
           if (
             rName.includes('terrace') ||
             rName.includes('roof') ||
@@ -1442,6 +1584,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
               bevelEnabled: false,
             });
             arcGeo.rotateX(-Math.PI / 2);
+            wallBatch.source = wall;
             wallBatch.add('wall', arcGeo, new THREE.Matrix4().makeTranslation(0, wallY, 0));
           } else {
             // Slight 4 mm corner overlap miter closes hairline vertical corner seams cleanly
@@ -1450,6 +1593,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
             const cx = (wall.startPoint.x + ux * alongMid) * MM_TO_M;
             const cy = wallY + segmentHeight / 2;
             const cz = (wall.startPoint.y + uy * alongMid) * MM_TO_M;
+            wallBatch.source = wall;
             wallBatch.addBox('wall', segmentLength, segmentHeight, wall.thickness * MM_TO_M, cx, cy, cz, angle);
 
             // Crisp top & bottom horizontal edge lines for subtle architectural drafting definition
@@ -1472,15 +1616,11 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         if (opening.doorType === DoorType.OpenPassage) continue;
         const wall = wallById.get(opening.hostWallId);
         if (!wall || wall.length <= 0) continue;
-        const dx = wall.endPoint.x - wall.startPoint.x;
-        const dy = wall.endPoint.y - wall.startPoint.y;
-        const angle = -Math.atan2(dy, dx);
-        const ux = dx / wall.length;
-        const uy = dy / wall.length;
-        const centerAlong = opening.alongWall + opening.width / 2;
-        const ox = (wall.startPoint.x + ux * centerAlong) * MM_TO_M;
+        const { x: openX, y: openY, ux, uy } = openingPose(opening, wall);
+        const angle = -Math.atan2(uy, ux);
+        const ox = openX * MM_TO_M;
         const oy = (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M;
-        const oz = (wall.startPoint.y + uy * centerAlong) * MM_TO_M;
+        const oz = openY * MM_TO_M;
 
         const winW = opening.width * MM_TO_M;
         const winH = opening.height * MM_TO_M;
@@ -1488,6 +1628,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         const isWin = opening.sourceEntityType === 'window';
         const isSlidingDoor = !isWin && opening.doorType === DoorType.Sliding;
 
+        openingBatch.source = opening;
         openingBatch.addBox(
           isWin || isSlidingDoor ? 'glass' : 'door',
           winW,
@@ -1531,9 +1672,8 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
           addLocal('glow', Math.max(0.2, winW - 0.08), Math.max(0.2, winH - 0.08), 0.014, 0, 0);
         }
 
+        openingBatch.source = undefined;
         // Single non-duplicated fallback chajja ONLY if not covered by coordinatedChajjas and NOT in narrow OTS
-        const openX = wall.startPoint.x + ux * centerAlong;
-        const openY = wall.startPoint.y + uy * centerAlong;
         const facesNarrowOts = floorNarrowCutouts.some(
           box => openX >= box.minX - 280 && openX <= box.maxX + 280 && openY >= box.minY - 280 && openY <= box.maxY + 280,
         );
@@ -1657,6 +1797,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         const insetBoundary = insetPolygonTowardCenter(room.boundary, 130);
         const roomGeo = new THREE.ShapeGeometry(makeShape(insetBoundary, room.cutouts));
         roomGeo.rotateX(-Math.PI / 2);
+        roomBatch.source = room;
         roomBatch.add('roomTint', roomGeo, new THREE.Matrix4().makeTranslation(0, room.elevation * MM_TO_M + 0.012, 0));
 
         const rc = polygonCenter2D(room.boundary.points);
@@ -1664,16 +1805,26 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         const rz = rc.y * MM_TO_M;
         const ry = room.elevation * MM_TO_M + 0.02;
         const rName = `${room.sourceEntityId} ${room.name}`.toLowerCase();
+        const rXs = room.boundary.points.map(p => p.x * MM_TO_M);
+        const rZs = room.boundary.points.map(p => p.y * MM_TO_M);
+        const rSpanX = Math.max(0.8, Math.max(...rXs) - Math.min(...rXs));
+        const rSpanZ = Math.max(0.8, Math.max(...rZs) - Math.min(...rZs));
         if (rName.includes('bed')) {
-          roomBatch.addBox('furnBed', 1.55, 0.45, 1.95, rx, ry + 0.225, rz);
+          furnBatches.bed_master.addBox('furnBed', Math.min(1.55, rSpanX * 0.52), 0.45, Math.min(1.95, rSpanZ * 0.55), rx, ry + 0.225, rz);
+          // Perimeter joinery wardrobe inset cleanly from doors along bedroom side wall
+          if (rSpanX >= 2.7 && rSpanZ >= 2.9) {
+            const wardW = Math.min(1.65, rSpanX * 0.48);
+            const wardZ = Math.min(...rZs) + 0.34;
+            furnBatches.wardrobe_full.addBox('furnWood', wardW, 2.05, 0.55, rx, ry + 1.025, wardZ);
+          }
         } else if (rName.includes('living') || rName.includes('hall')) {
-          roomBatch.addBox('furnWood', 2.0, 0.65, 0.85, rx, ry + 0.325, rz);
+          furnBatches.sofa_living.addBox('furnWood', Math.min(2.0, rSpanX * 0.52), 0.65, Math.min(0.85, rSpanZ * 0.32), rx, ry + 0.325, rz);
         } else if (rName.includes('dining')) {
-          roomBatch.addBox('furnWood', 1.45, 0.75, 0.9, rx, ry + 0.375, rz);
+          furnBatches.dining_set.addBox('furnWood', Math.min(1.45, rSpanX * 0.48), 0.75, Math.min(0.9, rSpanZ * 0.42), rx, ry + 0.375, rz);
         } else if (rName.includes('kitchen')) {
-          roomBatch.addBox('furnStone', 1.9, 0.85, 0.62, rx, ry + 0.425, rz);
+          furnBatches.kitchen_modular.addBox('furnStone', Math.min(1.9, rSpanX * 0.58), 0.85, 0.6, rx, ry + 0.425, Math.min(...rZs) + 0.38);
         } else if (rName.includes('bath') || rName.includes('toilet') || rName.includes('wc')) {
-          roomBatch.addBox('furnCeramic', 0.52, 0.42, 0.62, rx, ry + 0.21, rz);
+          furnBatches.bath_fixtures.addBox('furnCeramic', 0.5, 0.42, 0.6, rx, ry + 0.21, rz);
         }
       }
 
@@ -1691,6 +1842,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       openingBatch.flush(openingsLayer, materials, { floorId, layerKind: 'openings', castShadow: true, receiveShadow: true }, meshes);
       stairBatch.flush(stairsLayer, materials, { floorId, layerKind: 'stairs', castShadow: true, receiveShadow: true }, meshes);
       roomBatch.flush(roomsLayer, materials, { floorId, layerKind: 'rooms', castShadow: false, receiveShadow: true }, meshes);
+      for (const catId of ALL_FURNITURE_CATEGORY_IDS) {
+        furnBatches[catId].flush(
+          furnitureByCategory[catId],
+          materials,
+          { floorId, layerKind: 'rooms', castShadow: false, receiveShadow: true },
+          meshes,
+        );
+      }
 
       rootGroup.add(floorGroup);
       floorRecords.push({
@@ -1704,6 +1863,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
           openings: openingsLayer,
           stairs: stairsLayer,
           rooms: roomsLayer,
+          furnitureByCategory,
         },
         meshes,
       });
@@ -1909,6 +2069,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     // Room overlay + furniture ONLY appear when explicitly in 'rooms' view mode OR isolated/cutaway floor mode
     // (NEVER poking light-blue room overlays onto exterior facades in Tower 3D Solid view!)
     const showRoomOverlays = viewMode === 'rooms' || (layers.rooms && (floorMode === 'isolate' || sectionCut));
+    const activeFurnSet = new Set<FurnitureCategoryId>(enabledFurnitureCategories ?? ALL_FURNITURE_CATEGORY_IDS);
 
     for (const rec of floorRecords) {
       const visible = floorMode !== 'isolate' || rec.floorId === activeFloorId;
@@ -1921,6 +2082,9 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       rec.layers.openings.visible = layers.openings;
       rec.layers.stairs.visible = layers.stairs;
       rec.layers.rooms.visible = showRoomOverlays;
+      for (const catId of ALL_FURNITURE_CATEGORY_IDS) {
+        rec.layers.furnitureByCategory[catId].visible = showRoomOverlays && activeFurnSet.has(catId);
+      }
 
       const inLinked = isFloorInLinkedSpan(projection, rec.floorId, activeFloorId, linkedSpanStoreys);
       const isDimmed =
@@ -1962,8 +2126,11 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       }
     }
 
+    runtime.renderer.domElement.dataset.visibleFurnitureCategories = ALL_FURNITURE_CATEGORY_IDS.filter(category =>
+      floorRecords.some(record => record.group.visible && record.layers.furnitureByCategory[category].visible
+        && record.layers.furnitureByCategory[category].children.length > 0)).join(',');
     runtime.requestRender(0);
-  }, [activeFloorId, floorMode, layers, linkedSpanStoreys, projection, sectionCut, viewMode, buildingGeometryKey]);
+  }, [activeFloorId, enabledFurnitureCategories, floorMode, layers, linkedSpanStoreys, projection, sectionCut, viewMode, buildingGeometryKey]);
 
   // 6. SMOOTH rAF EXPLODE ANIMATION (Moves per-floor group Y only — zero geometry rebuild!)
   useEffect(() => {
@@ -1979,6 +2146,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const runtime = runtimeRef.current;
     if (!runtime) return;
     const { selectionOverlay, materials } = runtime;
+    delete runtime.renderer.domElement.dataset.selectedCanonicalId;
     disposeGeometryOnly(selectionOverlay);
     selectionOverlay.clear();
 
@@ -2016,9 +2184,37 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
           mesh.rotation.y = -Math.atan2(dy, dx);
           selectionOverlay.add(mesh);
         }
+      } else if (selection.entityType === 'door' || selection.entityType === 'window') {
+        const opening = projection.openings.find(
+          op => op.sourceEntityId === selection.entityId && op.floorId === selection.floorId,
+        );
+        const hostWall = opening
+          ? projection.walls.find(w => w.sourceEntityId === opening.hostWallId && w.floorId === opening.floorId)
+          : undefined;
+        if (opening && hostWall && hostWall.length > 0) {
+          const { x, y, ux, uy } = openingPose(opening, hostWall);
+          const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(
+              Math.max(0.4, opening.width * MM_TO_M + 0.06),
+              Math.max(0.4, opening.height * MM_TO_M + 0.06),
+              Math.max(0.26, hostWall.thickness * MM_TO_M + 0.1),
+            ),
+            materials.selectHighlight,
+          );
+          mesh.position.set(
+            x * MM_TO_M,
+            (opening.elevation + opening.bottom + opening.height / 2) * MM_TO_M + yExplode,
+            y * MM_TO_M,
+          );
+          mesh.rotation.y = -Math.atan2(uy, ux);
+          selectionOverlay.add(mesh);
+        }
       }
     }
 
+    if (selection && selectionOverlay.children.length > 0) {
+      runtime.renderer.domElement.dataset.selectedCanonicalId = selection.entityId;
+    }
     runtime.requestRender(0);
   }, [selection, projection]);
 
@@ -2230,43 +2426,28 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     raycaster.setFromCamera(pointer, runtime.camera);
     const buildingGroup = runtime.scene.getObjectByName('building-projection');
     const hits = buildingGroup ? raycaster.intersectObjects(buildingGroup.children, true) : [];
-    const hit = hits.find(
-      result =>
-        result.object.visible &&
-        result.object.userData?.floorId &&
-        runtime.renderer.clippingPlanes.every(plane => plane.distanceToPoint(result.point) >= 0),
-    );
+    const hit = hits.find(result => {
+      let object: THREE.Object3D | null = result.object;
+      for (; object; object = object.parent) if (!object.visible) return false;
+      return result.object.userData.floorId
+        && runtime.renderer.clippingPlanes.every(plane => plane.distanceToPoint(result.point) >= 0);
+    });
     if (!hit) {
       onClearSelection();
       return;
     }
 
     const hitFloorId = String(hit.object.userData.floorId);
-    const layerKind = String(hit.object.userData.layerKind ?? '');
-    const worldMm: Point = { x: hit.point.x / MM_TO_M, y: hit.point.z / MM_TO_M };
-
-    if (layerKind === 'walls' || layerKind === 'openings') {
-      // Find closest wall on this floor within 300 mm
-      let bestWall: Building3DProjection['walls'][number] | undefined;
-      let bestDist = 320;
-      for (const w of projection.walls) {
-        if (w.floorId !== hitFloorId) continue;
-        const dx = w.endPoint.x - w.startPoint.x;
-        const dy = w.endPoint.y - w.startPoint.y;
-        const len2 = dx * dx + dy * dy || 1;
-        const t = Math.max(0, Math.min(1, ((worldMm.x - w.startPoint.x) * dx + (worldMm.y - w.startPoint.y) * dy) / len2));
-        const d = Math.hypot(worldMm.x - (w.startPoint.x + t * dx), worldMm.y - (w.startPoint.y + t * dy));
-        if (d < bestDist) {
-          bestDist = d;
-          bestWall = w;
-        }
-      }
-      if (bestWall) {
-        onSelect(bestWall);
-        return;
-      }
+    const faceIndex = hit.faceIndex;
+    const pickRanges = hit.object.userData.pickRanges as
+      { from: number; to: number; source: ProjectionSource }[] | undefined;
+    const direct = faceIndex == null ? undefined : pickRanges?.find(range => range.from <= faceIndex && faceIndex < range.to);
+    if (direct) {
+      onSelect(direct.source);
+      return;
     }
 
+    const worldMm: Point = { x: hit.point.x / MM_TO_M, y: hit.point.z / MM_TO_M };
     const matchedRoom = projection.rooms.find(
       r => r.floorId === hitFloorId && pointInPolygon2D(worldMm, r.boundary.points),
     );

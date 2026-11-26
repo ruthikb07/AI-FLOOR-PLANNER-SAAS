@@ -20,7 +20,7 @@ import {
 import { GeometryValidator } from '../validator/geometry-validator';
 import { solveMultiSheetApartmentProject } from '../apartment/multi-sheet-apartment-solver';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
-import { containsPolygon } from '@ai-floor-planner/geometry-engine';
+import { containsPolygon, containsSurveyFootprint } from '@ai-floor-planner/geometry-engine';
 import { createGenerationReport } from '../apartment/generation-report';
 import { physicalLayoutHash } from '../topology/physical-layout-fingerprint';
 
@@ -241,12 +241,15 @@ export async function executeAuditedPlanningPipeline(
       validateApartmentClosure({ ...building, floors: [floor] }).issues.filter(issue => issue.severity === 'error')
         .map(issue => ({ code: issue.code, severity: 'CRITICAL' as const, elementIds: [floor.id], floorId: floor.id,
           locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 }, description: issue.message, autoCorrected: false })));
-    const envelope = building.metadata.irregularPlotBoundary?.buildablePolygon;
+    const irregular = building.metadata.irregularPlotBoundary;
+    const envelope = irregular?.buildablePolygon;
+    const exactSurvey = irregular?.sourceFormat === 'survey';
     const boundaryErrors: GeometryValidationError[] = envelope ? building.floors.filter(floor =>
-      floor.apartmentUnits?.length && !containsPolygon(envelope, floor.boundary)).map(floor => ({
+      exactSurvey ? !containsSurveyFootprint(envelope, floor.boundary)
+        : floor.apartmentUnits?.length && !containsPolygon(envelope, floor.boundary)).map(floor => ({
         code: 'SETBACK_ENVELOPE_EXCEEDED', severity: 'CRITICAL', floorId: floor.id, elementIds: [floor.id],
         locationMm: floor.boundary.points[0] ?? { x: 0, y: 0 },
-        description: 'The residential floor outline exceeds the measured buildable envelope. Reduce the footprint or adjust the brief.',
+        description: `The ${floor.name} outline exceeds the measured buildable envelope. Reduce the footprint or adjust the brief.`,
         autoCorrected: false,
       })) : [];
     const validationReport = { ...audit.report, isValid: audit.report.isValid && !closureErrors.length && !boundaryErrors.length,

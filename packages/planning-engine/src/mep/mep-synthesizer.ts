@@ -13,6 +13,7 @@
 import {
   RoomType,
   DoorType,
+  PLUMBING_RISER_TAG,
   type Building,
   type CantileverBeam,
   type CeilingZone,
@@ -27,6 +28,7 @@ import {
   type Room,
   type Wall,
 } from '@ai-floor-planner/core';
+import { PLUMB_SHAFT_MIN } from './wet-wall-risers';
 
 interface Box { x: number; y: number; w: number; h: number }
 
@@ -39,7 +41,7 @@ const LABELS: Readonly<Record<MepSymbolKind, string>> = {
   FHR: 'FHR', FHR_HR: 'FHR-HR', FACP: 'FACP', SD: 'SD', HD: 'HD', EXIT_SIGN: 'EXIT', SPRINKLER: 'SPK',
 };
 
-export const PLUMB_SHAFT_MIN = { widthMm: 600, depthMm: 900 } as const;
+export { PLUMB_SHAFT_MIN };
 export const COVE_INSET_MM = 450;
 export const CEILING_GRID_MM = 600;
 export const SPRINKLER_SPACING_MM = 3000;
@@ -147,8 +149,12 @@ function switchboardForDoor(floor: Floor, door: Door, room: Room): Point | null 
   return null;
 }
 
-/** Plumbing shaft location for a bathroom: the corner nearest an exterior or corridor wall. */
-function shaftForBath(floor: Floor, bath: Room): Box {
+/** Locate the architectural reservation or a schematic corner in the legacy layout. */
+function shaftForBath(floor: Floor, bath: Room, reservationsOnly = false): Box | undefined {
+  const reserved = floor.rooms.find(room => room.type === RoomType.ServiceShaft && room.tags.some(tag =>
+    tag.startsWith(PLUMBING_RISER_TAG) && bath.tags.includes('apt-room:' + tag.slice(PLUMBING_RISER_TAG.length))));
+  if (reserved) return roomBox(reserved);
+  if (reservationsOnly) return undefined;
   const b = roomBox(bath);
   const walls = floor.walls.filter(w => wallRoomIds(w).includes(bath.id));
   const ext = walls.find(w => w.wallUse === 'EXTERNAL' || wallRoomIds(w).length === 1)
@@ -231,12 +237,13 @@ function synthesizeUnitElectrical(fb: FloorBuilder, floor: Floor, unitRooms: Roo
 
 const isBalconyLike = (r: Room) => r.type === RoomType.Balcony;
 
-function synthesizeUnitPlumbing(fb: FloorBuilder, floor: Floor, unitRooms: Room[], unitId: string, shafts: Map<string, Box>): void {
+function synthesizeUnitPlumbing(fb: FloorBuilder, floor: Floor, unitRooms: Room[], unitId: string, shafts: Map<string, Box>, reservationsOnly: boolean): void {
   for (const room of unitRooms) {
     const b = roomBox(room);
     if (isWetTrapRoom(room)) fb.sym('FT', { x: b.x + b.w / 2, y: b.y + b.h / 2 }, { roomId: room.id, unitId });
     if (!isBath(room) && !isKitchen(room)) continue;
-    const shaft = shafts.get(room.id) ?? shaftForBath(floor, room);
+    const shaft = shafts.get(room.id) ?? (reservationsOnly ? undefined : shaftForBath(floor, room));
+    if (!shaft) continue;
     const sc = center(shaft);
     if (isBath(room)) {
       const nt = fb.sym('NT', { x: b.x + b.w * 0.7, y: b.y + b.h * 0.7 }, { roomId: room.id, unitId, label: 'NT (SHOWER)' });
@@ -373,14 +380,15 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
   const floors = [...building.floors].sort((a, b) => a.level - b.level);
   const residential = floors.filter(isResidential);
   const reference = residential[0];
+  const reservationsOnly = building.metadata.generationBrief?.coordinatedWetWallLayout === true;
 
   // Vertical stacks are fixed from the first typical floor and repeated on every
   // residential floor, so wet cores stack and drop to the stilt collector line.
   const stackBoxes = new Map<string, Box>();
   const stackByKey = new Map<string, { box: Box; floorIds: string[] }>();
   if (reference) {
-    for (const bath of reference.rooms.filter(r => isBath(r) || isKitchen(r))) {
-      const box = isBath(bath) ? shaftForBath(reference, bath) : undefined;
+    for (const bath of reference.rooms.filter(isBath)) {
+      const box = shaftForBath(reference, bath, reservationsOnly);
       if (!box) continue;
       const key = `${box.x}|${box.y}`;
       stackByKey.set(key, { box, floorIds: [] });
@@ -392,25 +400,36 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
     const fb = new FloorBuilder(floor);
     if (isResidential(floor)) {
       stackBoxes.clear();
-      for (const bath of floor.rooms.filter(isBath)) {
-        const own = shaftForBath(floor, bath);
-        const stack = stackByKey.get(`${own.x}|${own.y}`);
+      const bathRooms = floor.rooms.filter(isBath);
+      const activeStackKeys = new Set<string>();
+      for (const bath of bathRooms) {
+        const own = shaftForBath(floor, bath, reservationsOnly);
+        if (!own) continue;
+        const key = `${own.x}|${own.y}`;
+        const stack = stackByKey.get(key);
+        if (reservationsOnly && !stack) continue;
         const box = stack?.box ?? own;
+        activeStackKeys.add(key);
         stackBoxes.set(bath.id, box);
       }
-      for (const stack of stackByKey.values()) {
+      for (const [key, stack] of stackByKey) {
+        if (reservationsOnly && !activeStackKeys.has(key)) continue;
         stack.floorIds.push(floor.id);
         fb.sym('PLUMB_SHAFT', center(stack.box), { widthMm: stack.box.w, depthMm: stack.box.h, label: 'PLUMB SHAFT 600x900' });
       }
       for (const k of floor.rooms.filter(isKitchen)) {
-        const nearest = [...stackByKey.values()].sort((a, b) => dist(center(a.box), center(roomBox(k))) - dist(center(b.box), center(roomBox(k))))[0];
-        if (nearest) stackBoxes.set(k.id, nearest.box);
+        const options = reservationsOnly
+          ? bathRooms.filter(room => room.unitId === k.unitId).flatMap(room => stackBoxes.get(room.id) ?? [])
+          : [...stackByKey.values()].map(stack => stack.box);
+        const kitchenCenter = center(roomBox(k));
+        const nearest = options.sort((a, b) => dist(center(a), kitchenCenter) - dist(center(b), kitchenCenter))[0];
+        if (nearest) stackBoxes.set(k.id, nearest);
       }
       const byUnit = new Map<string, Room[]>();
       for (const r of floor.rooms.filter(x => x.unitId)) byUnit.set(r.unitId!, [...(byUnit.get(r.unitId!) ?? []), r]);
       for (const [unitId, unitRooms] of byUnit) {
         synthesizeUnitElectrical(fb, floor, unitRooms, unitId);
-        synthesizeUnitPlumbing(fb, floor, unitRooms, unitId, stackBoxes);
+        synthesizeUnitPlumbing(fb, floor, unitRooms, unitId, stackBoxes, reservationsOnly);
       }
       synthesizeCeilings(fb, floor, [...floor.rooms]);
       synthesizeCantilevers(fb, floor);

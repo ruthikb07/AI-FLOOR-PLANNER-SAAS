@@ -54,12 +54,85 @@ export function canonicalOpeningGeometry(opening: Door | Window, wall: Wall) {
 }
 
 /**
+ * Exact arc-length opening geometry on a curved wall (`wall.arc`).
+ * Unwraps angles continuously along `startAngleRad -> endAngleRad`.
+ */
+export function canonicalCurvedOpeningGeometry(opening: Door | Window, wall: Wall) {
+  if (!wall?.arc) throw new Error(`OPENING_CURVED_HOST_REQUIRED:${opening?.id}`);
+  if (opening.openingGeometryVersion !== 1 || opening.positionReference !== 'CENTER') {
+    throw new Error(`OPENING_MIGRATION_REQUIRED:${opening.id}`);
+  }
+  if (opening.wallId !== wall.id || opening.floorId !== wall.floorId) {
+    throw new Error(`OPENING_HOST_MISMATCH:${opening.id}`);
+  }
+  const { center: arcCenter, radiusMm, startAngleRad, endAngleRad } = wall.arc;
+  const sweep = endAngleRad - startAngleRad;
+  if (!Number.isFinite(radiusMm) || radiusMm <= 0 || !Number.isFinite(sweep) || Math.abs(sweep) < 1e-9) {
+    throw new Error('INVALID_CURVED_OPENING_HOST');
+  }
+  const sign = sweep >= 0 ? 1 : -1;
+  const arcLength = radiusMm * Math.abs(sweep);
+  const rawAng = Math.atan2(opening.position.y - arcCenter.y, opening.position.x - arcCenter.x);
+  let deltaAng = (rawAng - startAngleRad) * sign;
+  const twoPi = Math.PI * 2;
+  deltaAng = ((deltaAng % twoPi) + twoPi) % twoPi;
+  if (deltaAng > Math.abs(sweep) + Math.PI) {
+    deltaAng -= twoPi;
+  }
+  const radialError = Math.abs(Math.hypot(opening.position.x - arcCenter.x, opening.position.y - arcCenter.y) - radiusMm);
+  const center = deltaAng * radiusMm;
+  const start = center - opening.width / 2;
+  const end = center + opening.width / 2;
+  if (
+    ![start, end, opening.height].every(Number.isFinite) ||
+    opening.width <= 0 ||
+    opening.height <= 0 ||
+    radialError > Math.max(25, wall.thickness / 2) ||
+    start < -OPENING_LINEAR_TOLERANCE_MM ||
+    end > arcLength + OPENING_LINEAR_TOLERANCE_MM
+  ) {
+    throw new Error(`INVALID_CURVED_OPENING_INTERVAL:${opening.id}`);
+  }
+  const angleAt = (along: number) => startAngleRad + sign * (along / radiusMm);
+  const pointAt = (along: number): Point => {
+    const theta = angleAt(along);
+    return {
+      x: arcCenter.x + radiusMm * Math.cos(theta),
+      y: arcCenter.y + radiusMm * Math.sin(theta),
+    };
+  };
+  return {
+    start,
+    end,
+    center,
+    length: arcLength,
+    thetaStart: angleAt(start),
+    thetaCenter: angleAt(center),
+    thetaEnd: angleAt(end),
+    startPoint: pointAt(start),
+    centerPoint: pointAt(center),
+    endPoint: pointAt(end),
+    pointAt,
+  };
+}
+
+/**
  * Defensive variant used by renderers / 3D projection: clamps the opening interval into
  * [100 mm, wallLength - 100 mm] (narrowing windows, dropping openings on walls < 650 mm)
  * and never throws. Returns undefined when the opening cannot be hosted safely.
  */
 export function safeCanonicalOpeningGeometry(opening: Door | Window, wall: Wall | undefined, allowNarrowing = true) {
   if (!wall || !opening) return undefined;
+  if (wall.arc) {
+    try {
+      const curved = canonicalCurvedOpeningGeometry(opening, wall);
+      const tx = -Math.sin(curved.thetaCenter);
+      const ty = Math.cos(curved.thetaCenter);
+      return { ...curved, ux: tx, uy: ty };
+    } catch {
+      return undefined;
+    }
+  }
   try {
     return canonicalOpeningGeometry(opening, wall);
   } catch {

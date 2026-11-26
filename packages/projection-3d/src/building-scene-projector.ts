@@ -1,8 +1,9 @@
 import { canonicalStairSolids, mumtyCoverSolids, architecturalSlabCutouts } from '@ai-floor-planner/geometry-engine';
-import { isPhysicalBoundary, architecturalWallHeight, architecturalSpaceRole } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, isPhysicalBoundary, architecturalWallHeight, architecturalSpaceRole } from '@ai-floor-planner/core';
 import { MEP_MATERIALS } from "@ai-floor-planner/core";
 import { appendMepScene } from './mep-scene-projector';
-import { deriveBuiltFloorPlate } from './project-building';
+import { deriveBuiltFloorPlate, furnitureSolidHeightMm } from './project-building';
+import { subtractPlanCutouts } from './slab-solid-regions';
 import type {
   Building,
   Point,
@@ -20,10 +21,7 @@ import {
   polygonBoundingBox,
   segmentFootprint as segment,
 } from "@ai-floor-planner/geometry-engine";
-import polygonClipping, {
-  type MultiPolygon,
-  type Ring,
-} from "polygon-clipping";
+import type { MultiPolygon } from "polygon-clipping";
 import {
   Shape,
   Path,
@@ -58,15 +56,13 @@ export interface SceneMesh {
 }
 export interface BuildingScene {
   buildingId: string;
+  canonicalDigest?: string;
   canonicalRevision: number;
   units: "mm";
   upAxis: "Z";
   floors: { id: string; name: string; elevationMm: number; fileName: string }[];
   meshes: SceneMesh[];
   warnings: string[];
-}
-function ring(p: Polygon): Ring {
-  return p.points.map((p) => [p.x, p.y]);
 }
 function shapeGeometry(
   polygons: MultiPolygon,
@@ -112,13 +108,7 @@ function prism(
     !p.points.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
   )
     throw new Error("Invalid canonical polygon");
-  return shapeGeometry(
-    holes.length
-      ? polygonClipping.difference([ring(p)], ...holes.map((h) => [ring(h)]))
-      : [[ring(p)]],
-    bottom,
-    top,
-  );
+  return shapeGeometry(subtractPlanCutouts(p, holes), bottom, top);
 }
 const rect = (x: number, y: number, w: number, h: number): Polygon => ({
   points: [
@@ -163,6 +153,7 @@ export function projectBuildingScene(building: Building): BuildingScene {
   }
   const scene: BuildingScene = {
     buildingId: building.id,
+    canonicalDigest: canonicalBuildingHash(building),
     canonicalRevision: building.version,
     units: "mm",
     upAxis: "Z",
@@ -238,6 +229,15 @@ export function projectBuildingScene(building: Building): BuildingScene {
       ...builtSlab.cutouts,
       ...f.rooms.filter(isBalcony).map((r) => r.boundary),
     ]);
+    const roomsById = new Map(f.rooms.map(room => [room.id, room]));
+    for (const item of f.furniture ?? []) {
+      if (item.siteZoneId || !roomsById.has(item.roomId) || ![item.xMm, item.yMm, item.widthMm, item.depthMm]
+        .every(Number.isFinite) || item.widthMm <= 0 || item.depthMm <= 0) continue;
+      const bottom = z + (item.elevationMm ?? 0);
+      const height = furnitureSolidHeightMm(item);
+      if (!Number.isFinite(height) || height <= 0) continue;
+      add(f, item.id, "furniture", "MAT_Furniture", rect(item.xMm, item.yMm, item.widthMm, item.depthMm), bottom, bottom + height);
+    }
     for (const room of f.rooms) {
       if (
         ["lift", "service_shaft", "ots", "staircase", "garden"].includes(

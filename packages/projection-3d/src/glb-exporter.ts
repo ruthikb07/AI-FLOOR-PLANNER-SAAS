@@ -39,6 +39,7 @@ const ARCH_MATERIALS: Record<string, MaterialPbrSpec> = {
     alphaMode: 'BLEND',
   },
   MAT_Metal_Railing: { baseColorFactor: [0.12, 0.14, 0.16, 1.0], metallicFactor: 0.82, roughnessFactor: 0.26 },
+  MAT_Furniture: { baseColorFactor: [0.38, 0.25, 0.15, 1.0], metallicFactor: 0.0, roughnessFactor: 0.65 },
   MAT_Floor_Tile: { baseColorFactor: [0.72, 0.68, 0.59, 1.0], metallicFactor: 0.0, roughnessFactor: 0.38 },
   MAT_Floor_Wet: { baseColorFactor: [0.36, 0.47, 0.49, 1.0], metallicFactor: 0.0, roughnessFactor: 0.52 },
   MAT_Door: { baseColorFactor: [0.22, 0.105, 0.045, 1.0], metallicFactor: 0.0, roughnessFactor: 0.60 },
@@ -321,6 +322,7 @@ export function exportBuildingSceneToGlb(scene: BuildingScene): Uint8Array {
       upAxis: 'Y',
       canonicalUnits: scene.units,
       canonicalRevision: scene.canonicalRevision,
+      canonicalDigest: scene.canonicalDigest,
     },
   };
 

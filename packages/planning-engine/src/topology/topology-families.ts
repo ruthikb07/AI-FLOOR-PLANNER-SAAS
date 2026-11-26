@@ -168,6 +168,7 @@ export interface TopologyContext {
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly program: ArchitecturalProgram;
   readonly enableMacroShapes?: boolean;
+  readonly preferSplitCourtyard?: boolean;
 }
 
 export interface TopologyCandidate {
@@ -1942,11 +1943,55 @@ const splitCore: FamilyBuilder = ctx => {
  * light and air; the cost is the built area the court consumes and the longer
  * circulation perimeter the loop requires.
  */
+const splitCourtyard: FamilyBuilder = ({ envelope: env, flatsPerFloor, program, preferSplitCourtyard }) => {
+  if (!preferSplitCourtyard || flatsPerFloor !== 4 || program.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
+      program.mandatory.singleLiftRequired || (program.mandatory.stairCountRequired && program.mandatory.stairCount !== 2)) return [];
+
+  const variantId = 'courtyard:opposed-stair-lift-pairs';
+  const label = 'Central open-to-sky court with two stair and lift cores';
+  const spine = CORE_BOUNDS.corridorStandard;
+  const stairWidth = CORE_BOUNDS.stairWidthMax;
+  const stairRun = 5000;
+  const courtWidth = 3200;
+  const courtRun = stairRun + CORE_BOUNDS.liftDepth;
+  const islandWidth = 2 * stairWidth + courtWidth;
+  const bandWidth = islandWidth + 2 * spine;
+  const westWingWidth = snap10((env.w - bandWidth) / 2);
+  const northDepth = snap10(env.h / 2);
+  const recessDepth = snap10((env.h - courtRun - 2 * spine) / 2);
+  if (westWingWidth < FLAT_BOUNDS.minSpanMm || Math.min(northDepth, env.h - northDepth) < FLAT_BOUNDS.minRunMm || recessDepth < 1000) {
+    return [{ variantId, label, rationale: '', reasons: ['The plot cannot accommodate four usable flats, a central court, and two separated stairs and lifts.'] }];
+  }
+
+  const [westWing, band, eastWing] = splitX(env, [westWingWidth, bandWidth, 0]) as [Box2D, Box2D, Box2D];
+  const [westSpine, island, eastSpine] = splitX(band, [spine, islandWidth, 0]) as [Box2D, Box2D, Box2D];
+  const [northRecess, northLink, midRow, southLink, southRecess] =
+    splitY(island, [recessDepth, spine, courtRun, spine, 0]) as [Box2D, Box2D, Box2D, Box2D, Box2D];
+  const [westCore, court, eastCore] = splitX(midRow, [stairWidth, courtWidth, 0]) as [Box2D, Box2D, Box2D];
+  const [westStair, westLiftRow] = splitY(westCore, [stairRun, 0]) as [Box2D, Box2D];
+  const [eastLiftRow, eastStair] = splitY(eastCore, [CORE_BOUNDS.liftDepth, 0]) as [Box2D, Box2D];
+  const [westLift, westShaft] = splitX(westLiftRow, [CORE_BOUNDS.liftWidthMax, 0]) as [Box2D, Box2D];
+  const [eastShaft, eastLift] = splitX(eastLiftRow, [stairWidth - CORE_BOUNDS.liftWidthMax, 0]) as [Box2D, Box2D];
+  return [{ variantId, label,
+    rationale: 'One stair and one lift stand on each side of a central open-to-sky court. Two common cross-links join the side spines, and the stairs enter from opposite landings.',
+    partition: {
+      familyId: 'CENTRAL_COURTYARD', variantId, massingShape: 'COMPACT_DOUBLE_LOADED', envelope: env, builtOutline: env,
+      flatBoxes: [...splitY(westWing, [northDepth, 0]), ...splitY(eastWing, [northDepth, 0])],
+      accessEdgeForFlat: ['EAST', 'EAST', 'WEST', 'WEST'],
+      corridorBoxes: [westSpine, eastSpine, northLink, southLink], lobbyBoxes: [],
+      liftBoxes: [westLift, eastLift], stairBoxes: [westStair, eastStair], coreBoxes: [westCore, eastCore],
+      shaftBoxes: [court, westShaft, eastShaft, northRecess, southRecess],
+      shaftRoles: ['OPEN_TO_SKY_VOID', 'SERVICE_SHAFT', 'SERVICE_SHAFT', 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
+      shaftTags: [['shaft:ots', 'shaft:central-court'], [], [], ['recess:perimeter'], ['recess:perimeter']],
+    },
+  }];
+};
+
 const centralCourtyard: FamilyBuilder = ctx => {
   const { envelope: env, flatsPerFloor, program } = ctx;
   const compact = program.preferences.coreCompactness === 'COMPACT';
   const corrW = corridorWidth(compact);
-  const attempts: BuildAttempt[] = [];
+  const attempts: BuildAttempt[] = splitCourtyard(ctx);
 
   // Middle band across: [core | corridor | court | corridor | core].
   // Middle band down:   [north corridor | that row | south corridor], so the

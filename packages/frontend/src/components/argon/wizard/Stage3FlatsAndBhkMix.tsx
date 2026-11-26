@@ -243,6 +243,54 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
             })}
           </div>
 
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={Boolean(wizard.coordinatedWetWallLayout)} onChange={event =>
+              updateWizard({ coordinatedWetWallLayout: event.target.checked })} />
+            Prefer exterior living and wet-wall risers
+          </label>
+          {wizard.flatsPerFloor === 4 && (
+            <p className="text-xs text-argon-muted">Also prefers a stair and lift on each side of a central open-to-sky court when the brief and site allow it.</p>
+          )}
+
+          <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">
+            <legend className="px-1 text-sm font-semibold">Carpet area acceptance</legend>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={Boolean(wizard.requireAreaTargets)} onChange={event =>
+                updateWizard({ requireAreaTargets: event.target.checked })} />
+              Require carpet targets
+            </label>
+            {wizard.requireAreaTargets && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="text-sm">Carpet area tolerance (%)
+                  <input type="number" min={0} max={99} step="any" value={wizard.areaAcceptanceTolerancePercent ?? 5}
+                    onChange={event => {
+                      const tolerance = event.target.valueAsNumber;
+                      if (Number.isFinite(tolerance) && tolerance >= 0 && tolerance < 100) {
+                        updateWizard({ areaAcceptanceTolerancePercent: tolerance });
+                      }
+                    }}
+                    className="ms-2 w-20 rounded border border-argon-border bg-argon-surface px-2 py-1" />
+                </label>
+                {bhkTypes.flatMap(({ type, defaultCarpet }) =>
+                  Array.from({ length: wizard.bhkCounts[type] }, (_, index) => (
+                    <label key={`${type}-${index}`} className="text-sm">{type} flat {index + 1} target (sq ft)
+                      <input type="number" min={1} step="any"
+                        value={wizard.unitCarpetTargets?.[type]?.[index] ?? wizard.bhkCarpetAreas[type] ?? defaultCarpet}
+                        onChange={event => {
+                          const area = event.target.valueAsNumber;
+                          if (!Number.isFinite(area) || area <= 0) return;
+                          const perType = Array.from({ length: wizard.bhkCounts[type] }, (_, position) =>
+                            position === index ? area : wizard.unitCarpetTargets?.[type]?.[position] ?? null);
+                          updateWizard({ unitCarpetTargets: { ...wizard.unitCarpetTargets, [type]: perType } });
+                        }}
+                        className="ms-2 w-24 rounded border border-argon-border bg-argon-surface px-2 py-1" />
+                    </label>
+                  )),
+                )}
+              </div>
+            )}
+          </fieldset>
+
           {/* Quick 2BHK / 3BHK Mix Presets */}
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-argon-border/60">
             <span className="text-[11px] font-mono font-bold uppercase text-argon-muted mr-1">

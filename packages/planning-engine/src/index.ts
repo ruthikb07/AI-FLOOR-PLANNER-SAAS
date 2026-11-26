@@ -77,7 +77,7 @@ export {
   type ModifiedRoomDetail,
 } from './refinement/room-area-optimizer';
 export { editApartmentOpening, type OpeningEdit } from './refinement/apartment-opening-edit';
-export { moveApartmentPartition } from './refinement/apartment-partition-edit';
+export { moveApartmentPartition, editCanonicalWallThickness } from './refinement/apartment-partition-edit';
 export {
   proposeControlledCadEdit,
   parseCadEditInstructionDeterministically,
@@ -90,6 +90,42 @@ export {
   type CadAiEditProposalRequest,
   type CadAiEditProposalResult,
 } from './refinement/cad-ai-edit-proposal';
+export {
+  proposeProtectedLocalRegeneration,
+  verifyProtectedRegionInvariance,
+  type LocalizedRegenerationScope,
+  type LocalizedRegenerationOperation,
+  type ProtectedLocalRegenerationRequest,
+  type ProtectedRegionInvarianceProof,
+  type LocalizedRegenerationCandidate,
+  type ProtectedLocalRegenerationStatus,
+  type ProtectedLocalRegenerationResult,
+} from './refinement/protected-local-regeneration';
+export {
+  ARCHITECTURAL_REQUIREMENT_HIERARCHY,
+  evaluateBriefRequirementHierarchyAndConflicts,
+  computeFloorEfficiencyBreakdown,
+  auditFloorFunctionalQuality,
+  auditArchitecturalElementRealism,
+  type RequirementHierarchyTierId,
+  type RequirementHierarchyTierSpec,
+  type RequirementConflictAlternative,
+  type RequirementConflictDiagnostic,
+  type RequirementHierarchyEvaluation,
+  type EfficiencyBucketMetric,
+  type FloorEfficiencyBreakdown,
+  type FunctionalQualityFinding,
+  type FunctionalQualityReport,
+  type ElementRealismFinding,
+} from './diagnostics/architectural-efficiency';
+export {
+  compareCanonicalBuildingAlternatives,
+  resolveExplorationConfigFromControls,
+  verifyAlternativeRespectsControls,
+  buildAlternativeExhaustionExplanation,
+  type AlternativeExplorationControls,
+  type CanonicalAlternativeComparison,
+} from './topology/diversity-controls';
 export { coordinateStairAccess, stairModelIssues } from './generator/stair-coordination';
 export { evaluateDesign, type DesignEvaluationOptions } from './diagnostics/design-evaluator';
 export { diagnosticsToValidation, type ValidationSummary } from './repair/engine';
@@ -301,3 +337,5 @@ export {
   SPRINKLER_SPACING_MM,
   SWITCH_OFFSET_FROM_FRAME_MM,
 } from './mep/mep-synthesizer';
+
+export { editFurniturePlacement } from './plancraft/auto-furnish-apartment';

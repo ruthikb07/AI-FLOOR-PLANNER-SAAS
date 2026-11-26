@@ -1,0 +1,999 @@
+{
+  "evidenceRoot": "%LOCALAPPDATA%/RHPlanner/phase5-1-20261125",
+  "source": "Windows production Chromium matrix and focused tower replay. Pending fields and nulls identify scope without case-specific evidence.",
+  "cases": [
+    {
+      "id": 1,
+      "project": "Residential bungalow",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          1800
+        ],
+        "achieved": [
+          3321.403422320733
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_level_00",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_level_00::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 4940
+        },
+        {
+          "id": "floor_level_00::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_level_00::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_level_00::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 39,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 39,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.3582,
+        "doorCirculationDistance": 0.3571,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 1,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> ROTUNDA_COURTYARD)",
+          "core/corridor arrangement shifted by 100%",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 36%",
+          "door/circulation graph differs by 36%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> ROTUNDA_COURTYARD); core/corridor arrangement shifted by 100%; apartment boundary topology changed by 100%; room adjacency graph differs by 36%; door/circulation graph differs by 36%."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:566ff4a4-822c-4b45-917e-4cc57ff1a618",
+        "projectId": "566ff4a4-822c-4b45-917e-4cc57ff1a618",
+        "revision": 1,
+        "sha256": "b0b2e40df56679cb6f2aef291e716726860a5f77d51717f8636a4b6666211c56"
+      },
+      "exportDigest": "3de55211d7d7aa168f4dbfd2216f685c9bfb2f48af011841e9bb6667982a9b21",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 1451,
+        "generation": 4042,
+        "bimSchedule": 15157,
+        "ifc": 18269,
+        "floor3d": 29520,
+        "tower3d": 37735,
+        "saveReload": 46100
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-1-Residential-bungalow/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 2,
+      "project": "Compact apartment",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850
+        ],
+        "achieved": [
+          715.2639326980042,
+          812.3369805767389
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_level_00",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_level_00::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 1590
+        },
+        {
+          "id": "floor_level_00::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 1590
+        },
+        {
+          "id": "floor_level_00::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 44,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 26,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.4235,
+        "doorCirculationDistance": 0.2857,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 0,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 42%",
+          "door/circulation graph differs by 29%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); apartment boundary topology changed by 100%; room adjacency graph differs by 42%; door/circulation graph differs by 29%."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:081009c8-64ee-40cb-9c88-ffba72129322",
+        "projectId": "081009c8-64ee-40cb-9c88-ffba72129322",
+        "revision": 1,
+        "sha256": "711fe039794d197330aae2d1ad4495f66bdc0601c58509b4e3e03992feb3418c"
+      },
+      "exportDigest": "d7a8da63702624287e4daa85afb9814e95d0dcb05760b4eaa2d9044a8f36ee35",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 2865,
+        "generation": 8869,
+        "bimSchedule": 18435,
+        "ifc": 19445,
+        "floor3d": 29842,
+        "tower3d": 36110,
+        "saveReload": 40416
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-2-Compact-apartment/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 3,
+      "project": "Exact oblique survey",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "near_duplicate_withheld",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850
+        ],
+        "achieved": [
+          807.7419344942856,
+          881.6661166308444
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "exact_signed_vertices",
+      "roomAccess": {
+        "floorId": "floor_level_00",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_level_00::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 1420
+        },
+        {
+          "id": "floor_level_00::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 1420
+        },
+        {
+          "id": "floor_level_00::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 48,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 39,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.1299,
+        "doorCirculationDistance": 0.0714,
+        "apartmentBoundaryDistance": 0,
+        "coreArrangementShift": 0,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": false,
+        "meaningful": false,
+        "differences": [],
+        "explanation": "Rejected near-duplicate: room adjacency graph, door circulation graph, core placement, apartment boundaries, and massing are materially unchanged (dimension-only tweak)."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:ff58fe2b-65f5-426e-8d59-a00b28b39266",
+        "projectId": "ff58fe2b-65f5-426e-8d59-a00b28b39266",
+        "revision": 1,
+        "sha256": "78c2ddb96fa7b6191bf5b2fa170716b41536653ed6f55773fb10d8336ddb08ac"
+      },
+      "exportDigest": "fdb829ac18af6a52a37e73d3183eee73bb8daa6fd9e72e3df6de4af6c3fdb570",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 1479,
+        "generation": 4743,
+        "bimSchedule": 11786,
+        "ifc": 12731,
+        "floor3d": 22735,
+        "tower3d": 25989,
+        "saveReload": 35687
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-3-Exact-oblique-survey/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 4,
+      "project": "Mixed four-flat apartment",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "PREVIEW_READY",
+      "cadEditing": "protected_edit_accepted",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 2,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850,
+          1250,
+          1250
+        ],
+        "achieved": [
+          1213.7621519166648,
+          1382.6320295869757,
+          1939.2066583612334,
+          1920.0073404487084
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_typical_01",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 1590
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 1590
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+          "unitId": "flat_03",
+          "minimumBoxSpanMm": 3240
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+          "unitId": "flat_04",
+          "minimumBoxSpanMm": 3240
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_2",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_3",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 101,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 93,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.2909,
+        "doorCirculationDistance": 0.1875,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 0.8462,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "core/corridor arrangement shifted by 85%",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 29%",
+          "door/circulation graph differs by 19%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); core/corridor arrangement shifted by 85%; apartment boundary topology changed by 100%; room adjacency graph differs by 29%; door/circulation graph differs by 19%."
+      },
+      "protectedEntityEquality": true,
+      "exportRevision": {
+        "buildingId": "building:2440628f-fa27-4a56-ab2c-1d506f0dca2f",
+        "projectId": "2440628f-fa27-4a56-ab2c-1d506f0dca2f",
+        "revision": 2,
+        "sha256": "0934e1a67af86625542f57e48cf85f24e4d3fb0c012e2eaaa3ca4bd90d0ef9b1"
+      },
+      "exportDigest": "2e246327c9c82d2cd8f4fea9ca363d6cebdabc68bbcd445bc3d1767c2e62f5cc",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 3273,
+        "generation": 6259,
+        "bimSchedule": 27393,
+        "ifc": 29250,
+        "floor3d": 40191,
+        "tower3d": 48843,
+        "saveReload": 56108
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-4-Four-flat-mixed-BHK/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 5,
+      "project": "Strict unequal carpet targets",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          720,
+          1050,
+          1420,
+          1750
+        ],
+        "achieved": [
+          723.7927171166841,
+          1056.7343921146175,
+          1417.4350484117633,
+          1756.5638863916615
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_typical_01",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 1570
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 1570
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+          "unitId": "flat_03",
+          "minimumBoxSpanMm": 2280
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+          "unitId": "flat_04",
+          "minimumBoxSpanMm": 2280
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_2",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_3",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 100,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 81,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.3017,
+        "doorCirculationDistance": 0.2063,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 0,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 30%",
+          "door/circulation graph differs by 21%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); apartment boundary topology changed by 100%; room adjacency graph differs by 30%; door/circulation graph differs by 21%."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:ccb77dcf-503f-46d1-a958-1f57853e0920",
+        "projectId": "ccb77dcf-503f-46d1-a958-1f57853e0920",
+        "revision": 1,
+        "sha256": "9e075f302df055b0d516943ae5fd6826b0420015838f11eef49f0f9039555d0b"
+      },
+      "exportDigest": "865f6b40faabad10c80cfaa1efd8b8e9fc0aed10083c552b6bd0370bc92807c8",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 4748,
+        "generation": 10168,
+        "bimSchedule": 56861,
+        "ifc": 58255,
+        "floor3d": 69283,
+        "tower3d": 72988,
+        "saveReload": 83851
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-5-Strict-unequal-targets/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 6,
+      "project": "Dense six-flat floor",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850,
+          850,
+          850,
+          850,
+          850
+        ],
+        "achieved": [
+          1425.511950416262,
+          1455.183813145404,
+          1975.7130660094651,
+          1425.4594763529803,
+          1455.0439495844269,
+          1975.7130660094651
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_typical_01",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+          "unitId": "flat_03",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+          "unitId": "flat_04",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_05__internal_passage",
+          "unitId": "flat_05",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_06__internal_passage",
+          "unitId": "flat_06",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_2",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_3",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 125,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 129,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.1965,
+        "doorCirculationDistance": 0.0526,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 0,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 20%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); apartment boundary topology changed by 100%; room adjacency graph differs by 20%."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:0b7d0326-e1ef-40fc-8bc0-36b3825ea6bb",
+        "projectId": "0b7d0326-e1ef-40fc-8bc0-36b3825ea6bb",
+        "revision": 1,
+        "sha256": "314a2b2cc5f1ea424fc515fd067f2c132bf4853ab2fcb9407739cadf58d0b76d"
+      },
+      "exportDigest": "e1852859707ae8917a0b327201d5fb20ea59e7fa15926d34dbf04fed9317aefc",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 1395,
+        "generation": 9622,
+        "bimSchedule": 26857,
+        "ifc": 28663,
+        "floor3d": 39225,
+        "tower3d": 45970,
+        "saveReload": 51651
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-6-Six-flat-high-density/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 7,
+      "project": "Multi-storey open stilt",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "PREVIEW_READY",
+      "cadEditing": "protected_edit_accepted",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 2,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850,
+          850,
+          850
+        ],
+        "achieved": [
+          1450.3149600917254,
+          1652.4959113286282,
+          1450.3149600917254,
+          1652.4959113286282
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_typical_01",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+          "unitId": "flat_03",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+          "unitId": "flat_04",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_2",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_3",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 96,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 109,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.3275,
+        "doorCirculationDistance": 0.1667,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 1,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "core/corridor arrangement shifted by 100%",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 33%",
+          "door/circulation graph differs by 17%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); core/corridor arrangement shifted by 100%; apartment boundary topology changed by 100%; room adjacency graph differs by 33%; door/circulation graph differs by 17%."
+      },
+      "protectedEntityEquality": true,
+      "exportRevision": {
+        "buildingId": "building:80563bb5-d0b7-496e-b578-f569aed81894",
+        "projectId": "80563bb5-d0b7-496e-b578-f569aed81894",
+        "revision": 2,
+        "sha256": "48dff8f13d314ff8d36a5c4a38eb2f3a3fd3b456062f91278612a1a58a4d0494"
+      },
+      "exportDigest": "6d3de81ae1d53d275b8c8877be2e71d9f3ccc39c27712c09ae24b4770b883568",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 6677,
+        "generation": 9319,
+        "bimSchedule": 83884,
+        "ifc": 88719,
+        "floor3d": 101626,
+        "tower3d": 106266,
+        "saveReload": 128033
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-tower-results/rh-phase51-project-matrix-project-7-Multi-storey-open-stilt/acceptance.json",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 8,
+      "project": "Reference image",
+      "status": "verified_for_exercised_controls",
+      "wizardInput": "pass",
+      "requirementPreservation": "pass",
+      "generation": "pass",
+      "candidateSelection": "pass",
+      "alternativeExploration": "distinct_study_presented",
+      "protectedRegeneration": "not_run",
+      "cadEditing": "not_run",
+      "bimInspection": "pass",
+      "quantitySchedule": "pass",
+      "floor3D": "pass",
+      "tower3D": "pass",
+      "saveReload": "pass",
+      "revision": 1,
+      "exports": "IFC4",
+      "areasFt2": {
+        "requested": [
+          850,
+          850,
+          850,
+          850
+        ],
+        "achieved": [
+          1450.3149600917254,
+          1652.4959113286282,
+          1450.3149600917254,
+          1652.4959113286282
+        ]
+      },
+      "mandatoryConstraints": "pass",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": {
+        "floorId": "floor_typical_01",
+        "passed": true,
+        "findings": []
+      },
+      "circulation": [
+        {
+          "id": "floor_typical_01::apt-room:flat_01__internal_passage",
+          "unitId": "flat_01",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_02__internal_passage",
+          "unitId": "flat_02",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_03__internal_passage",
+          "unitId": "flat_03",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:flat_04__internal_passage",
+          "unitId": "flat_04",
+          "minimumBoxSpanMm": 2100
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_1",
+          "minimumBoxSpanMm": 1800
+        },
+        {
+          "id": "floor_typical_01::apt-room:core_lobby_2",
+          "minimumBoxSpanMm": 1200
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_1",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_2",
+          "minimumBoxSpanMm": 2400
+        },
+        {
+          "id": "floor_typical_01::apt-room:corridor_3",
+          "minimumBoxSpanMm": 2400
+        }
+      ],
+      "openingClearance": {
+        "checkedHostFits": 96,
+        "failedHostFits": []
+      },
+      "furnitureInterference": {
+        "furnitureCount": 109,
+        "doorsWithModeledSwingIntersection": []
+      },
+      "topologyDiversity": {
+        "roomAdjacencyDistance": 0.3275,
+        "doorCirculationDistance": 0.1667,
+        "apartmentBoundaryDistance": 1,
+        "coreArrangementShift": 1,
+        "physicalGeometryIdentical": false,
+        "massingShapeChanged": true,
+        "meaningful": true,
+        "differences": [
+          "massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE)",
+          "core/corridor arrangement shifted by 100%",
+          "apartment boundary topology changed by 100%",
+          "room adjacency graph differs by 33%",
+          "door/circulation graph differs by 17%"
+        ],
+        "explanation": "Distinct architectural alternative: massing shape changed (COMPACT_DOUBLE_LOADED -> WAVE_SERPENTINE); core/corridor arrangement shifted by 100%; apartment boundary topology changed by 100%; room adjacency graph differs by 33%; door/circulation graph differs by 17%."
+      },
+      "protectedEntityEquality": null,
+      "exportRevision": {
+        "buildingId": "building:8af5a4ee-67d0-44a5-b4f4-f74a70e31be8",
+        "projectId": "8af5a4ee-67d0-44a5-b4f4-f74a70e31be8",
+        "revision": 1,
+        "sha256": "193723848acf802dda570344d77b6af024c0644420b03e2735778d43874c93cb"
+      },
+      "exportDigest": "f3cd9491f67a0c30f0e5efc6c3925e28de8fe14514b3b983bbed13b48913111d",
+      "browserErrors": [],
+      "processingMs": {
+        "solver": 1065,
+        "generation": 2676,
+        "bimSchedule": 16227,
+        "ifc": 18059,
+        "floor3d": 30138,
+        "tower3d": 33276,
+        "saveReload": 45660
+      },
+      "visualReview": "plan_capture_reviewed",
+      "evidence": "release-matrix-results/rh-phase51-project-matrix-project-8-Reference-attachment/acceptance.json",
+      "liveReferenceInfluence": "pending_authorized_runtime",
+      "alternativeHttpStatus": 200
+    },
+    {
+      "id": 9,
+      "project": "Infeasible requirements",
+      "status": "verified_refusal",
+      "wizardInput": "pass",
+      "requirementPreservation": "conflict_refused",
+      "generation": "refused_as_expected",
+      "candidateSelection": "pending",
+      "alternativeExploration": "not_applicable",
+      "protectedRegeneration": "not_applicable",
+      "cadEditing": "not_applicable",
+      "bimInspection": "not_applicable",
+      "quantitySchedule": "not_applicable",
+      "floor3D": "not_applicable",
+      "tower3D": "not_applicable",
+      "saveReload": "pending",
+      "revision": "pending",
+      "exports": "not_applicable",
+      "areasFt2": {
+        "requested": [
+          2200,
+          2200,
+          2200,
+          2200,
+          2200,
+          2200
+        ],
+        "achieved": null
+      },
+      "mandatoryConstraints": "conflict_refused",
+      "surveyedBoundary": "not_applicable",
+      "roomAccess": "pending",
+      "circulation": "pending",
+      "openingClearance": "pending",
+      "furnitureInterference": "pending",
+      "topologyDiversity": "pending",
+      "protectedEntityEquality": null,
+      "exportRevision": null,
+      "exportDigest": null,
+      "browserErrors": null,
+      "processingMs": null,
+      "visualReview": "not_applicable",
+      "evidence": "release-matrix.log",
+      "refusal": {
+        "code": "CARPET_TARGETS_EXCEED_ENVELOPE",
+        "status": 422,
+        "publishedBuilding": false
+      }
+    }
+  ],
+  "visualEvidence": [
+    "browser-review-sheet-1.png",
+    "browser-review-sheet-2.png"
+  ]
+}

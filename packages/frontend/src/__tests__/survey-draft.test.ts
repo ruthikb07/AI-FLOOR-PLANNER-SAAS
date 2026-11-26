@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createArgonRequest } from '../services/argon-request';
-import { parseSurveyMeasure, resolveSurveyDraft } from '../services/survey-draft';
+import { createSurveyDraft, parseSurveyMeasure, resolveSurveyDraft } from '../services/survey-draft';
 import { readSurveyDxf } from '../services/survey-dxf';
 import { studioStoreActions } from '../stores/useStudioStore';
 
@@ -33,9 +33,14 @@ describe('survey setup integration', () => {
     expect(readSurveyDxf(declared, 'm', 'm', 'override.dxf').rows[1]?.xMm).toBe(10_000);
   });
 
-  it('rejects surveyed generation at the request adapter and retains the rectangular request contract', () => {
+  it('passes exact survey measurements and refuses a missing survey without changing rectangular requests', () => {
     const data = studioStoreActions.getProjectSetupWizardData();
     expect(() => createArgonRequest({ ...data, siteGeometryMode: 'survey' })).toThrow(/exact site boundary/);
+    const draft = createSurveyDraft('trapezoid', 32800.25, 30300.75);
+    const request = createArgonRequest({ ...data, siteGeometryMode: 'survey', surveyDraft: draft });
+    expect(request.surveyBoundary?.points).toEqual(resolveSurveyDraft(draft).points);
+    expect(request.plotDepthMm).toBe(30300.75);
+    expect(request.surveyBoundary?.roadEdge).toBe(0);
     expect(createArgonRequest({ ...data, siteGeometryMode: 'rectangle' }).plotWidthMm).toBe(data.plotWidthM * 1000);
   });
 });

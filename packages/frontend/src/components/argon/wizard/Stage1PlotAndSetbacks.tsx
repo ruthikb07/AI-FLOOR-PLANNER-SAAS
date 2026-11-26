@@ -261,15 +261,17 @@ export const Stage1PlotAndSetbacks: React.FC<{ survey?: SurveyEditor }> = ({ sur
         </ArgonCard>
       </div>
 
-      {/* Statutory Boundary Setbacks */}
+      </>}
+
+      {/* Boundary setback inputs are also the defaults for unassigned survey edges. */}
       <ArgonCard className="space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-argon-border/70">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-argon-pass" />
-            <h3 className="text-sm font-bold text-argon-text">Statutory Boundary Setbacks (m)</h3>
+            <h3 className="text-sm font-bold text-argon-text">{survey?.active ? 'Default survey edge setbacks (m)' : 'Statutory Boundary Setbacks (m)'}</h3>
           </div>
           <span className="text-xs text-argon-muted font-mono">
-            NBC / UDCPR Clearance Buffer
+            {survey?.active ? 'An entered edge setback takes precedence' : 'NBC / UDCPR Clearance Buffer'}
           </span>
         </div>
 
@@ -310,7 +312,7 @@ export const Stage1PlotAndSetbacks: React.FC<{ survey?: SurveyEditor }> = ({ sur
         </div>
 
         {/* Live Buildable Footprint Calculation Banner */}
-        <div className="mt-3 p-4 bg-argon-card border border-argon-accent/40 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+        {!survey?.active && <div className="mt-3 p-4 bg-argon-card border border-argon-accent/40 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-argon-text font-semibold">
             <ShieldCheck className="w-4 h-4 text-argon-pass shrink-0" />
             <span>Buildable Footprint Envelope:</span>
@@ -328,9 +330,8 @@ export const Stage1PlotAndSetbacks: React.FC<{ survey?: SurveyEditor }> = ({ sur
               ({groundCoveragePct}% ground coverage)
             </span>
           </div>
-        </div>
+        </div>}
       </ArgonCard>
-      </>}
     </div>
   );
 };

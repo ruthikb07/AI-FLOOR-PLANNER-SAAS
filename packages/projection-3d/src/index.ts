@@ -5,3 +5,4 @@ export * from './units';
 export * from './building-scene-projector';
 export * from './glb-exporter';
 export * from './blender/blender-script-generator';
+export { slabSolidRegions } from './slab-solid-regions';

@@ -36,13 +36,16 @@ jobs:
       - name: Install dependencies from frozen lockfile
         run: pnpm install --frozen-lockfile
       - name: Production build
+        id: production_build
         run: pnpm build
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
       - name: Non-planning package unit and HTTP tests
-        run: pnpm exec turbo run test --concurrency=2 "--filter=!@ai-floor-planner/planning-engine"
+        run: pnpm exec turbo run test --concurrency=2 "--filter=!@ai-floor-planner/planning-engine" "--filter=!@ai-floor-planner/constraint-engine"
+      - name: Constraint engine and wall-clock budgets
+        run: pnpm --filter @ai-floor-planner/constraint-engine run test
       - name: Planning-engine unit tests
         run: pnpm --filter @ai-floor-planner/planning-engine exec vitest run --pool=threads --poolOptions.threads.minThreads=1 --poolOptions.threads.maxThreads=2 --exclude "**/phase0-generation-benchmark.test.ts"
       - name: Monorepo integration tests
@@ -50,11 +53,28 @@ jobs:
       - name: Backend integration tests
         run: pnpm --filter @ai-floor-planner/backend run test:integration
       - name: Install Chromium
+        id: chromium_install
+        if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
         run: pnpm --filter @ai-floor-planner/frontend exec playwright install --with-deps chromium
       - name: Production Chromium E2E repair & CAD Studio tests
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
+        env:
+          RH_TEST_SOFTWARE_ORBIT_BUDGET: '1'
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair
       - name: Real Chromium WebGL context recovery tests
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:webgl
+      - name: Phase 5.1 Chromium project acceptance evidence
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
+        env:
+          RH_TEST_PROJECT_MATRIX: '1'
+        run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair rh-phase51-project-matrix.spec.ts rh-survey-setup.spec.ts --output "$RUNNER_TEMP/rh-phase51-browser"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase51-project-browser-evidence
+          path: ${{ runner.temp }}/rh-phase51-browser/
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -82,3 +102,35 @@ jobs:
         run: pnpm exec turbo run build --filter=@ai-floor-planner/planning-engine...
       - name: Run 288-case planning benchmark
         run: pnpm --filter @ai-floor-planner/planning-engine exec vitest run src/__tests__/phase0-generation-benchmark.test.ts
+
+  ifc-independent-readback:
+    name: IFC4 independent schema and geometry readback
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GEMINI_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec turbo run build --filter=@ai-floor-planner/backend...
+      - run: pnpm --filter @ai-floor-planner/backend run test src/__tests__/phase4b-ifc-exchange.test.ts
+        env:
+          RH_IFC_EVIDENCE_DIR: ${{ runner.temp }}/rh-ifc-fixtures
+      - run: pnpm --filter @ai-floor-planner/backend run test src/__tests__/phase5-real-project-acceptance.test.ts
+        env:
+          RH_PHASE5_EVIDENCE_DIR: ${{ runner.temp }}/rh-phase5-projects
+      - run: pnpm --filter @ai-floor-planner/backend run test src/__tests__/survey-dxf.test.ts
+        env:
+          RH_SURVEY_IFC_EVIDENCE_DIR: ${{ runner.temp }}/rh-phase5-exact-surveys
+      - run: python -m pip install ifcopenshell==0.9.0.post1
+      - run: python scripts/verify-ifc4.py "$RUNNER_TEMP/rh-ifc-fixtures"
+      - run: python scripts/verify-ifc4.py "$RUNNER_TEMP/rh-phase5-projects"
+      - run: python scripts/verify-ifc4.py "$RUNNER_TEMP/rh-phase5-exact-surveys"

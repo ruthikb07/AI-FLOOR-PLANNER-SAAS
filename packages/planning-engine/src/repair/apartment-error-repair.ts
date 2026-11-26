@@ -27,6 +27,7 @@ import {
   createRoom,
   MINIMUM_DIMENSIONS,
   MINIMUM_ROOM_AREAS,
+  PLUMBING_RISER_TAG,
 } from '@ai-floor-planner/core';
 import {
   generateApartmentWalls,
@@ -1051,7 +1052,8 @@ function repairPrivacyAndCirculation(params: PrivacyRepairParams): {
 
       // Check for orphan rooms inside this unit (heal corridors/passages before bedrooms)
       const unreachable = unitRooms
-        .filter(r => !visited.has(r.id))
+        .filter(r => !visited.has(r.id) && !(r.type === RoomType.ServiceShaft &&
+          r.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG))))
         .sort((a, b) => {
           const priority = (r: Room) => (r.type === RoomType.Corridor ? 0 : r.type === RoomType.Bedroom ? 1 : 2);
           return priority(a) - priority(b);

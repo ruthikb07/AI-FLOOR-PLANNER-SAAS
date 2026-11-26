@@ -22,7 +22,7 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   });
 
   // 1 & 2. Open RH Planner and verify provider health mode explicitly
-  const healthResp = await request.get('http://127.0.0.1:44318/api/v1/health');
+  const healthResp = await request.get('/api/v1/health');
   expect(healthResp.status()).toBe(200);
   const healthJson = (await healthResp.json()) as {
     status: string;
@@ -104,14 +104,37 @@ test('Phase 4A end-to-end CAD studio, AI-assisted canonical edit, 3D sync, expor
   await expect(page.getByTestId('cad-revision-badge')).toContainText(`Rev ${initialRevNum + 1}`);
   await expect(workbench).toContainText('Drafts: 1');
 
-  // Verify explicit refusal for unsupported single-flat free-form regeneration
+  // Verify protected localized single-flat regeneration previews cleanly without touching remaining flats
   await page
     .getByTestId('cad-ai-instruction-input')
     .fill('Regenerate only Flat 2 while keeping the remaining flats unchanged');
+  const regeneration = page.waitForResponse(response => response.url().endsWith('/api/v1/cad/edit-proposal'));
   await page.getByTestId('cad-ai-preview-btn').click();
-  await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('REFUSED_UNSUPPORTED');
+  const regenerated = await regeneration;
+  expect(regenerated.status()).toBe(200);
+  const { proposal } = await regenerated.json();
+  expect(proposal.status, proposal.message).toBe('PREVIEW_READY');
+  await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('PREVIEW_READY');
+  await expect(page.getByTestId('cad-ai-preview-card')).toContainText('Flat 02');
 
   // 8. Perform a canonical architectural edit (Resize window to 1500 mm) through the controlled edit bridge
+  const residential = genPayload.building.floors.find(floor => floor.floorUse === 'RESIDENTIAL')!;
+  const window = residential.windows.find(opening => {
+    const wall = residential.walls.find(candidate => candidate.id === opening.wallId);
+    return wall && !wall.arc && Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 2300
+      && opening.width !== 1500 && !residential.rooms.some(room => room.isFixed && wall.roomIds.includes(room.id))
+      && residential.windows.every(other => other.id === opening.id || other.wallId !== wall.id)
+      && residential.doors.every(door => door.wallId !== wall.id);
+  })!;
+  expect(window?.id).toBeTruthy();
+  await page.getByTestId('nav-bim').click();
+  const bim = page.getByRole('region', { name: 'RH Planner — BIM Studio' });
+  await bim.getByRole('combobox', { name: 'BIM storey' }).selectOption(residential.id);
+  await bim.getByRole('combobox', { name: 'BIM schedule' }).selectOption('window');
+  await bim.getByLabel('Find element').fill(window.id);
+  await bim.getByRole('table').getByRole('button').click();
+  await bim.getByRole('button', { name: 'Precision CAD', exact: true }).click();
+  await expect(page.getByTestId('cad-entity-inspector')).toContainText(window.id);
   await page.getByTestId('cad-ai-instruction-input').fill('Resize this window to 1500 mm');
   await page.getByTestId('cad-ai-preview-btn').click();
   await expect(page.getByTestId('cad-ai-preview-status')).toHaveText('PREVIEW_READY');

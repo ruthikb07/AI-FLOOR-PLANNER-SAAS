@@ -1,12 +1,23 @@
 import React, { useMemo, useRef, useState } from 'react';
-import type { Floor, Point, Room } from '@ai-floor-planner/core';
-import { architecturalSpaceRole } from '@ai-floor-planner/core';
+import type { ApartmentBhkType, Floor, Point, Room } from '@ai-floor-planner/core';
+import {
+  architecturalSpaceRole,
+  formatArchitecturalArea,
+  formatArchitecturalLength,
+  parseArchitecturalAreaMm2,
+  parseArchitecturalLengthMm,
+} from '@ai-floor-planner/core';
 import { polygonArea, polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
 import { fitToView, renderFloor, screenToWorld, worldToScreen } from '@ai-floor-planner/renderer';
 import {
+  ENGINEERING_MIN_ROOM_AREAS,
   createRoomAreaRegenerationCommand,
   expandFlatIntoSetbackMargin,
+  proposeProtectedLocalRegeneration,
   regenerateWithPreservedRatios,
+  type LocalizedRegenerationCandidate,
+  type LocalizedRegenerationOperation,
+  type LocalizedRegenerationScope,
   type RoomAreaCandidate,
 } from '@ai-floor-planner/planning-engine';
 import { solveRoomArea } from '../../services/room-area-solver';
@@ -98,6 +109,17 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
   const [targetFlatSqFtInput, setTargetFlatSqFtInput] = useState<string>(() =>
     Math.max(500, currentUnitAreaSqFt).toString(),
   );
+  const [multiUnitExprInput, setMultiUnitExprInput] = useState<string>('');
+  const [localScope, setLocalScope] = useState<LocalizedRegenerationScope>('SINGLE_FLAT');
+  const [localOperation, setLocalOperation] = useState<LocalizedRegenerationOperation>('REGENERATE_ALTERNATIVE');
+  const [localTargetUnitId, setLocalTargetUnitId] = useState<string>(() => floor.apartmentUnits?.[1]?.id ?? floor.apartmentUnits?.[0]?.id ?? '');
+  const [localTargetBhk, setLocalTargetBhk] = useState<ApartmentBhkType>('3BHK');
+  const [localRegenPreview, setLocalRegenPreview] = useState<{
+    readonly candidates: readonly LocalizedRegenerationCandidate[];
+    readonly selectedIndex: number;
+    readonly baseRevisionDigest: string;
+    readonly message: string;
+  } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [candidates, setCandidates] = useState<readonly RoomAreaCandidate[]>([]);
@@ -167,8 +189,20 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
     if (!selectedRoom) return;
     setErrorMessage('');
     setStatusMessage('');
-    const targetSqFt = Number(targetRoomSqFtInput);
-    const areaMm2 = overrideAreaMm2 ?? (Number.isFinite(targetSqFt) && targetSqFt > 0 ? targetSqFt * SQFT_TO_MM2 : 0);
+    let resolvedMm2 = overrideAreaMm2 ?? 0;
+    if (!(resolvedMm2 > 0) && multiUnitExprInput.trim()) {
+      const parsed = parseArchitecturalAreaMm2(multiUnitExprInput.trim());
+      if (!parsed.ok) {
+        setErrorMessage(parsed.error);
+        return;
+      }
+      resolvedMm2 = parsed.mm2;
+    }
+    if (!(resolvedMm2 > 0)) {
+      const parsedInput = parseArchitecturalAreaMm2(targetRoomSqFtInput, 'sqft');
+      resolvedMm2 = parsedInput.ok ? parsedInput.mm2 : 0;
+    }
+    const areaMm2 = resolvedMm2;
     if (!(areaMm2 > 0)) {
       setErrorMessage('Enter a positive room target area or valid Width x Length dimensions.');
       return;
@@ -513,43 +547,84 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="text-[11px] text-argon-muted">
-                    Width (mm)
+                    Width (mm or ft&apos; in&quot;)
                     <input
-                      type="number"
+                      type="text"
                       value={widthMmInput}
                       onChange={(e) => {
                         setWidthMmInput(e.target.value);
-                        const w = Number(e.target.value);
-                        const l = Number(lengthMmInput);
-                        if (w > 0 && l > 0) setTargetRoomSqFtInput((w * l * MM2_TO_SQFT).toFixed(1));
+                        const pw = parseArchitecturalLengthMm(e.target.value, 'mm');
+                        const pl = parseArchitecturalLengthMm(lengthMmInput, 'mm');
+                        if (pw.ok && pl.ok) setTargetRoomSqFtInput((pw.mm * pl.mm * MM2_TO_SQFT).toFixed(1));
                       }}
                       className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2 py-1 text-xs text-argon-text"
                     />
                   </label>
                   <label className="text-[11px] text-argon-muted">
-                    Length (mm)
+                    Length (mm or ft&apos; in&quot;)
                     <input
-                      type="number"
+                      type="text"
                       value={lengthMmInput}
                       onChange={(e) => {
                         setLengthMmInput(e.target.value);
-                        const w = Number(widthMmInput);
-                        const l = Number(e.target.value);
-                        if (w > 0 && l > 0) setTargetRoomSqFtInput((w * l * MM2_TO_SQFT).toFixed(1));
+                        const pw = parseArchitecturalLengthMm(widthMmInput, 'mm');
+                        const pl = parseArchitecturalLengthMm(e.target.value, 'mm');
+                        if (pw.ok && pl.ok) setTargetRoomSqFtInput((pw.mm * pl.mm * MM2_TO_SQFT).toFixed(1));
                       }}
                       className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2 py-1 text-xs text-argon-text"
                     />
                   </label>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-argon-muted">
+                  <span>
+                    Min Constraint:{' '}
+                    <strong className="font-mono text-argon-text">
+                      {formatArchitecturalArea(ENGINEERING_MIN_ROOM_AREAS[selectedRoom.type] ?? 1_800_000).labelImperial}
+                    </strong>
+                  </span>
+                  <span>
+                    Lock:{' '}
+                    <strong className="font-mono text-argon-text">
+                      {lockedEntities.includes(selectedRoom.id) ? 'LOCKED' : 'EDITABLE'}
+                    </strong>
+                  </span>
                 </div>
                 <label className="block text-[11px] text-argon-muted">
                   Target Room Area (sq.ft.)
                   <input
                     type="number"
                     value={targetRoomSqFtInput}
-                    onChange={(e) => setTargetRoomSqFtInput(e.target.value)}
+                    onChange={(e) => {
+                      setTargetRoomSqFtInput(e.target.value);
+                      setMultiUnitExprInput('');
+                    }}
                     className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2.5 py-1.5 text-xs text-argon-text"
                   />
                 </label>
+                <label className="block text-[11px] text-argon-muted">
+                  Multi-Unit Target (sq ft, sq m, fractional, or ft&apos; in&quot; × ft&apos; in&quot;)
+                  <input
+                    type="text"
+                    data-testid="multi-unit-area-input"
+                    placeholder={`e.g. 18.5 sq m, 165 1/2 sq ft, or ${formatArchitecturalLength(selectedRoomDims.width).feetInches} x ${formatArchitecturalLength(selectedRoomDims.height).feetInches}`}
+                    value={multiUnitExprInput}
+                    onChange={(e) => setMultiUnitExprInput(e.target.value)}
+                    className="mt-1 w-full rounded border border-argon-border bg-argon-surface px-2.5 py-1.5 text-xs font-mono text-argon-text"
+                  />
+                </label>
+                {(() => {
+                  const parsedPreview = multiUnitExprInput.trim()
+                    ? parseArchitecturalAreaMm2(multiUnitExprInput.trim())
+                    : parseArchitecturalAreaMm2(targetRoomSqFtInput, 'sqft');
+                  if (!parsedPreview.ok) return null;
+                  const deltaSqFt = parsedPreview.sqFt - selectedRoom.area * MM2_TO_SQFT;
+                  return (
+                    <div data-testid="room-target-deviation" className="text-[11px] font-mono text-argon-muted">
+                      Target: {parsedPreview.sqFt.toFixed(1)} sq ft ({parsedPreview.sqM.toFixed(2)} m²) · Δ{' '}
+                      {deltaSqFt >= 0 ? `+${deltaSqFt.toFixed(1)}` : deltaSqFt.toFixed(1)} sq ft
+                    </div>
+                  );
+                })()}
 
                 <label className="flex items-center gap-2 text-xs text-argon-text">
                   <input
@@ -673,6 +748,197 @@ export const InteractivePlanEditorPage: React.FC<InteractivePlanEditorPageProps>
                   onClick={() => editor.setCoreLock(coreId, !locked)}>{locked ? 'Unlock' : 'Lock'} core {index + 1}</button>;
               })}
             </div>
+            <section
+              data-testid="protected-local-regen-panel"
+              aria-label="Protected localized regeneration"
+              className="space-y-2 rounded-lg border border-argon-border bg-argon-bg/60 p-3 text-xs"
+            >
+              <div className="font-bold uppercase tracking-wider text-argon-text">
+                Protected Localized Regeneration
+              </div>
+              <p className="text-[11px] text-argon-muted">
+                Regenerate one flat, one room, or one zone while keeping all other flats, 230 mm party walls, cores, and storeys byte-identical.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="grid gap-1 text-[11px] text-argon-muted">
+                  Scope
+                  <select
+                    data-testid="local-regen-scope"
+                    value={localScope}
+                    onChange={(e) => {
+                      setLocalScope(e.target.value as LocalizedRegenerationScope);
+                      setLocalRegenPreview(null);
+                    }}
+                    className="rounded border border-argon-border bg-argon-surface p-1 text-xs text-argon-text"
+                  >
+                    <option value="SINGLE_FLAT">Single Flat</option>
+                    <option value="SINGLE_ROOM">Selected Room</option>
+                    <option value="CONNECTED_ROOM_GROUP">Public Zone Group</option>
+                  </select>
+                </label>
+                <label className="grid gap-1 text-[11px] text-argon-muted">
+                  Target Flat
+                  <select
+                    data-testid="local-regen-unit"
+                    value={localTargetUnitId || floor.apartmentUnits[0]?.id || ''}
+                    onChange={(e) => {
+                      setLocalTargetUnitId(e.target.value);
+                      setLocalRegenPreview(null);
+                    }}
+                    className="rounded border border-argon-border bg-argon-surface p-1 text-xs text-argon-text"
+                  >
+                    {floor.apartmentUnits.map((u, i) => (
+                      <option key={u.id} value={u.id}>
+                        Flat 0{i + 1} ({u.unitType ?? 'Unit'})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="grid gap-1 text-[11px] text-argon-muted">
+                  Operation
+                  <select
+                    data-testid="local-regen-operation"
+                    value={localOperation}
+                    onChange={(e) => {
+                      setLocalOperation(e.target.value as LocalizedRegenerationOperation);
+                      setLocalRegenPreview(null);
+                    }}
+                    className="rounded border border-argon-border bg-argon-surface p-1 text-xs text-argon-text"
+                  >
+                    <option value="REGENERATE_ALTERNATIVE">Distinct Layout</option>
+                    <option value="RELOCATE_KITCHEN">Relocate Kitchen</option>
+                    <option value="RECONFIGURE_LIVING_DINING">Living/Dining Flow</option>
+                    <option value="CONVERT_BHK">Convert BHK</option>
+                    <option value="RESIZE_MASTER_BEDROOM">Expand Master Bed</option>
+                  </select>
+                </label>
+                {localOperation === 'CONVERT_BHK' && (
+                  <label className="grid gap-1 text-[11px] text-argon-muted">
+                    Target BHK
+                    <select
+                      data-testid="local-regen-bhk"
+                      value={localTargetBhk}
+                      onChange={(e) => setLocalTargetBhk(e.target.value as ApartmentBhkType)}
+                      className="rounded border border-argon-border bg-argon-surface p-1 text-xs text-argon-text"
+                    >
+                      <option value="1BHK">1BHK</option>
+                      <option value="2BHK">2BHK</option>
+                      <option value="3BHK">3BHK</option>
+                      <option value="4BHK">4BHK</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+              <button
+                type="button"
+                data-testid="btn-preview-protected-regen"
+                onClick={() => {
+                  setErrorMessage('');
+                  setStatusMessage('');
+                  const control = editor.generationControl;
+                  const unitId = localTargetUnitId || floor.apartmentUnits?.[0]?.id;
+                  const publicGroupIds =
+                    localScope === 'CONNECTED_ROOM_GROUP'
+                      ? floor.rooms
+                          .filter(
+                            (r) =>
+                              r.unitId === unitId &&
+                              (r.type === 'living' || r.type === 'dining' || r.type === 'kitchen'),
+                          )
+                          .map((r) => r.id)
+                      : localScope === 'SINGLE_ROOM' && selectedRoom
+                        ? [selectedRoom.id]
+                        : undefined;
+                  const res = proposeProtectedLocalRegeneration({
+                    building: editor.building,
+                    floorId: floor.id,
+                    scope: localScope,
+                    operation: localOperation,
+                    targetUnitId: unitId,
+                    targetRoomIds: publicGroupIds,
+                    ...(localOperation === 'CONVERT_BHK' ? { targetBhk: localTargetBhk } : {}),
+                    control,
+                  });
+                  if (res.status !== 'PREVIEW_READY' || !res.selectedCandidate) {
+                    setLocalRegenPreview(null);
+                    setErrorMessage(res.message);
+                    return;
+                  }
+                  setLocalRegenPreview({
+                    candidates: res.candidates,
+                    selectedIndex: 0,
+                    baseRevisionDigest: res.baseRevisionDigest,
+                    message: res.message,
+                  });
+                }}
+                className="w-full rounded bg-argon-btn px-3 py-1.5 text-xs font-semibold text-argon-card hover:bg-argon-btnHover"
+              >
+                Preview Protected Regeneration
+              </button>
+              {localRegenPreview && (() => {
+                const cand = localRegenPreview.candidates[localRegenPreview.selectedIndex]!;
+                return (
+                  <div data-testid="local-regen-preview-card" className="space-y-2 rounded border border-emerald-500/40 bg-argon-card p-2.5">
+                    <div className="font-semibold text-argon-text">{cand.label}</div>
+                    <p className="text-[11px] text-argon-muted">{cand.summary}</p>
+                    <p className="font-mono text-[10px] text-emerald-700">
+                      Invariance verified · {cand.invarianceProof.entityDiff.untouchedRoomCount} protected rooms byte-identical · Δ ={' '}
+                      {cand.invarianceProof.floorPlanarDeltaMm2.toFixed(4)} mm²
+                    </p>
+                    {localRegenPreview.candidates.length > 1 && (
+                      <div className="flex flex-wrap gap-1">
+                        {localRegenPreview.candidates.map((c, idx) => (
+                          <button
+                            key={c.candidateId}
+                            type="button"
+                            onClick={() => setLocalRegenPreview({ ...localRegenPreview, selectedIndex: idx })}
+                            className={`rounded border px-2 py-0.5 text-[10px] ${
+                              idx === localRegenPreview.selectedIndex
+                                ? 'border-amber-500 bg-amber-500/20 font-semibold'
+                                : 'border-argon-border'
+                            }`}
+                          >
+                            Option {idx + 1}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        data-testid="btn-accept-protected-regen"
+                        onClick={() => {
+                          try {
+                            editor.applyRefinement(
+                              cand.building,
+                              `Protected local regeneration: ${cand.label}`,
+                              true,
+                              localRegenPreview.baseRevisionDigest,
+                            );
+                            setStatusMessage(`Applied ${cand.label}. All neighbouring flats and storeys preserved unchanged.`);
+                            setLocalRegenPreview(null);
+                          } catch (err) {
+                            setErrorMessage(err instanceof Error ? err.message : 'Could not apply protected preview.');
+                          }
+                        }}
+                        className="flex-1 rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+                      >
+                        Accept Protected Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLocalRegenPreview(null)}
+                        className="rounded border border-argon-border px-2.5 py-1 text-xs"
+                      >
+                        Discard
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </section>
             <ApartmentOpeningEditor key={floor.id} editor={editor} />
           </> : null}
 

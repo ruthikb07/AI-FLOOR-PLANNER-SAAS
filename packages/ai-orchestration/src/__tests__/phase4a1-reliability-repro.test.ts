@@ -801,3 +801,21 @@ describe('Phase 4A.1 — Seven Defects Reproduction & Comprehensive Regression S
     await d2Rejected;
   });
 });
+
+it('does not cache malformed nonempty proposals and sends the end of long briefs to the provider', async () => {
+  class InvalidProposalProvider extends RecordingMockProvider {
+    override async complete(request: AIRequest): Promise<AIResponse> {
+      const response = await super.complete(request);
+      return { ...response, parsed: { corePlacement: 'INVALID' } };
+    }
+  }
+  const provider = new InvalidProposalProvider();
+  const end = 'Mandatory: preserve the west service access.';
+  const config = makeBaseConfig({ aiPrompt: `${'Residential requirements. '.repeat(175)}${end}` });
+  const first = await generateArchitecturalProposal(provider, { config });
+  const second = await generateArchitecturalProposal(provider, { config });
+  expect(provider.requests.map(request => request.userPrompt.includes(end))).toEqual([true, true]);
+  expect(first.telemetry.invocationMode).toBe('PROVIDER_FAILURE');
+  expect(second.telemetry.invocationMode).toBe('PROVIDER_FAILURE');
+  expect(second.telemetry.currentRequestTokenUsage).toEqual(first.telemetry.currentRequestTokenUsage);
+});

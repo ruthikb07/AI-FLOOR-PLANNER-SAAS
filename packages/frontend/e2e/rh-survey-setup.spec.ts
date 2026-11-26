@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { Building } from '@ai-floor-planner/core';
+import { writeFile } from 'node:fs/promises';
 
 const url = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
@@ -89,10 +91,12 @@ test('desktop survey editing, exact arcs, closure, history and generation guard'
   await page.reload();
   await expect(page.getByRole('button', { name: 'Surveyed boundary' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('Survey input')).toHaveValue('bearings');
+  await page.getByLabel('Length A–B (m)').fill('22');
+  await page.getByLabel('Length A–B (m)').press('Tab');
   await page.getByRole('button', { name: 'Reference Upload', exact: true }).click();
   const generate = page.getByRole('button', { name: 'Generate Architectural Project' });
   await expect(generate).toBeDisabled();
-  await expect(page.getByTestId('survey-generation-block')).toContainText('exact site boundary');
+  await expect(page.getByTestId('survey-generation-block')).toContainText('Traverse closure error');
   expect(errors).toEqual([]);
 });
 
@@ -161,4 +165,97 @@ test('rectangular setup still generates a real concept after visiting the survey
   await page.getByRole('button', { name: 'Section cut' }).click();
   await expect(model).toHaveAttribute('data-section', 'on');
   expect(errors).toEqual([]);
+});
+
+
+test('the wizard generates and saves a canonical oblique survey', async ({ page, request }, info) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
+    plotWidthM: 39, plotDepthM: 34, floorsCount: 1, hasStiltParking: false,
+    authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
+    flatsPerFloor: 2, bhkCounts: { '1BHK': 0, '2BHK': 2, '3BHK': 0, '4BHK': 0 },
+    buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
+  })));
+  await openSite(page);
+  await page.getByRole('button', { name: 'Surveyed boundary' }).click();
+  await page.getByLabel('Starting outline').selectOption('trapezoid');
+  await page.getByLabel('East A (m)').fill('-0.125');
+  await page.getByLabel('East A (m)').press('Tab');
+  await page.getByLabel('Road-facing edge').selectOption('2');
+  await page.getByRole('button', { name: 'Reference Upload', exact: true }).click();
+  const reply = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'));
+  await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
+  const generation = await reply;
+  const sent = generation.request().postDataJSON().config.surveyBoundary;
+  const payload = await generation.json() as { building: Building; error?: unknown };
+  expect(generation.status(), JSON.stringify(payload.error)).toBe(200);
+  expect(sent.points[0]).toEqual({ x: -125, y: 0 });
+  expect(payload.building.site.plotBoundary.points).toEqual(sent.points);
+  expect(payload.building.metadata.irregularPlotBoundary?.roadEdgeIndex).toBe(2);
+  expect(payload.building.metadata.irregularPlotBoundary?.buildablePolygon?.points.length).toBeGreaterThanOrEqual(3);
+
+  const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
+  await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 45_000 });
+  const study = gallery.getByRole('button', { name: /Study 1/ });
+  await expect(study).toHaveCSS('background-color', 'rgba(10, 14, 21, 0.92)');
+  const theme = page.getByTestId('studio-surface-theme-toggle');
+  await theme.click();
+  await expect(study).toHaveCSS('background-color', 'rgba(245, 239, 230, 0.96)');
+  await expect(study).toHaveCSS('color', 'rgb(34, 29, 24)');
+  await theme.click();
+  await page.screenshot({ path: info.outputPath('survey-generated-plan.png') });
+  await gallery.getByRole('button', { name: 'Open in CAD' }).click();
+  const diskSave = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/api/v1/local-projects'));
+  await page.getByTestId('topbar-save-local').click();
+  expect((await diskSave).status()).toBe(200);
+  await expect(page.getByTestId('local-save-toast')).toContainText('to local disk');
+  const restored = await request.get('/api/v1/local-projects/' + payload.building.projectId);
+  expect(restored.ok()).toBe(true);
+  const persisted = await restored.json() as { building: Building };
+  expect(persisted.building.site.plotBoundary.points).toEqual(sent.points);
+  await page.reload();
+  await expect(page.getByTestId('project-switcher-trigger')).toContainText(payload.building.name);
+  expect(errors).toEqual([]);
+});
+
+
+test('the wizard refuses a carpet program larger than the entire site', async ({ page, request }, info) => {
+  const start = Date.now();
+  const browserErrors: string[] = [];
+  page.on('pageerror', error => browserErrors.push(error.message));
+  await page.addInitScript(() => localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
+    plotWidthM: 18, plotDepthM: 20, floorsCount: 1, hasStiltParking: false,
+    flatsPerFloor: 6, bhkCounts: { '1BHK': 0, '2BHK': 0, '3BHK': 0, '4BHK': 6 },
+    bhkCarpetAreas: { '4BHK': 2200 },
+  })));
+  await openSite(page);
+  await page.getByRole('button', { name: 'Continue to Step 02' }).click();
+  await page.getByRole('button', { name: 'Continue to Step 03' }).click();
+  await page.getByRole('checkbox', { name: 'Require carpet targets' }).check();
+  await page.getByRole('spinbutton', { name: 'Carpet area tolerance (%)' }).fill('3');
+  await page.getByRole('button', { name: 'Continue to Step 04' }).click();
+  const response = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/projects/generate'));
+  await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
+  const result = await response;
+  expect(result.status()).toBe(422);
+  const sent = result.request().postDataJSON();
+  expect(sent.config).toMatchObject({ requireAreaTargets: true, areaAcceptanceTolerancePercent: 3 });
+  // Chromium can discard the response body when the wizard cancels fetch cleanup.
+  const replay = await request.post('/api/v1/projects/generate', { data: sent });
+  expect(replay.status()).toBe(422);
+  const payload = await replay.json();
+  expect(payload).not.toHaveProperty('building');
+  expect(payload.error.code).toBe('CARPET_TARGETS_EXCEED_ENVELOPE');
+  await expect(page.getByRole('dialog', { name: 'Generation needs attention' })).toContainText(/exceeds the entire/i);
+  await expect(page.getByRole('region', { name: 'Massing studies gallery' })).toHaveCount(0);
+  expect(browserErrors).toEqual([]);
+  await writeFile(info.outputPath('acceptance.json'), JSON.stringify({
+    id: 9, name: 'Infeasible requirements', status: 'verified_refusal', wizardInput: 'pass',
+    httpStatus: result.status(), refusal: payload.error, requestedCarpetSqFt: sent.config.units.map((unit: { targetCarpetSqFt: number }) => unit.targetCarpetSqFt),
+    tolerancePercent: sent.config.areaAcceptanceTolerancePercent, publishedBuilding: false, browserErrors,
+    processingMs: { total: Date.now() - start },
+  }, null, 2));
 });

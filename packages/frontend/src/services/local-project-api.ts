@@ -105,11 +105,15 @@ export interface LocalDiskProjectManifest {
   readonly revisions: readonly LocalDiskRevisionSummary[];
 }
 
-export interface LoadedLocalDiskProject {
+export interface LocalDiskSaveBase {
+  readonly revision: number;
+  readonly digest: string;
+}
+
+export interface LoadedLocalDiskProject extends LocalDiskSaveBase {
   readonly ok: true;
   readonly manifest: LocalDiskProjectManifest;
   readonly building: Building;
-  readonly revision: number;
 }
 
 async function parseJsonResponse<T>(res: Response): Promise<T> {
@@ -167,6 +171,7 @@ export async function saveLocalDiskProject(input: {
   readonly projectId?: string;
   readonly name?: string;
   readonly building: Building;
+  readonly expected?: LocalDiskSaveBase;
   readonly note?: string;
   readonly sourceCad?: {
     readonly fileName: string;
@@ -180,6 +185,32 @@ export async function saveLocalDiskProject(input: {
     body: JSON.stringify(input),
   });
   return parseJsonResponse<LoadedLocalDiskProject>(res);
+}
+
+/** Each tab keeps the disk snapshot that it actually opened or saved. */
+export function readLocalDiskSaveBase(projectId: string): LocalDiskSaveBase | undefined {
+  try {
+    const raw = sessionStorage.getItem(`rh-disk-base:${projectId}`);
+    if (!raw) return undefined;
+    const base = JSON.parse(raw) as Partial<LocalDiskSaveBase> | null;
+    if (base && typeof base.revision === 'number' && Number.isSafeInteger(base.revision) && base.revision > 0
+      && typeof base.digest === 'string' && /^[a-f0-9]{64}$/.test(base.digest)) {
+      return { revision: base.revision, digest: base.digest };
+    }
+  } catch {
+    // The caller can still create a new disk project when storage is unavailable.
+  }
+  return undefined;
+}
+
+export function rememberLocalDiskSaveBase(projectId: string, base?: LocalDiskSaveBase): void {
+  try {
+    const key = `rh-disk-base:${projectId}`;
+    if (base) sessionStorage.setItem(key, JSON.stringify({ revision: base.revision, digest: base.digest }));
+    else sessionStorage.removeItem(key);
+  } catch {
+    // A missing precondition makes a subsequent overwriting save fail closed.
+  }
 }
 
 export async function deleteLocalDiskProject(projectId: string): Promise<void> {

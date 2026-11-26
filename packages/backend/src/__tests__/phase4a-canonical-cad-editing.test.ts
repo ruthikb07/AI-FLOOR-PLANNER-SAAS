@@ -88,16 +88,20 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
     expect(resizeWinResp.json.proposal.validation.unaffectedFlatsUnchanged).toBe(true);
     expect(resizeWinResp.json.proposal.validation.unaffectedFloorsUnchanged).toBe(true);
 
-    // 2. Move bedroom door towards the corner
+    // 2. Move the selected bedroom door towards the corner.
+    const bedroom = typicalFloor.rooms.find(room => room.type === 'bedroom')!;
+    const bedroomDoor = typicalFloor.doors.find(door => door.connectsRooms.includes(bedroom.id))!;
     const moveDoorProposal = proposeControlledCadEdit({
       building: baseBuilding,
       floorId: typicalFloor.id,
       expectedRevision: baseBuilding.version,
       control,
+      selectedEntityId: bedroomDoor.id,
       instruction: 'Move this bedroom door towards the corner',
     });
     expect(moveDoorProposal.status).toBe('PREVIEW_READY');
     expect(moveDoorProposal.openingSummary?.kind).toBe('door');
+    expect(moveDoorProposal.openingSummary?.openingId).toBe(bedroomDoor.id);
     expect(
       Math.hypot(
         moveDoorProposal.openingSummary!.afterPosition.x - moveDoorProposal.openingSummary!.beforePosition.x,
@@ -112,13 +116,13 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
       floorId: typicalFloor.id,
       expectedRevision: baseBuilding.version,
       control,
-      instruction: 'Increase the master bedroom carpet area',
+      instruction: 'Increase the master bedroom carpet area by 3% in Flat 2',
     });
-    expect(resizeRoomProposal.status).toBe('PREVIEW_READY');
-    expect(resizeRoomProposal.roomAreaDeltas.length).toBeGreaterThan(0);
-    expect(resizeRoomProposal.roomAreaDeltas.some(d => d.deltaSqM > 0)).toBe(true);
-    expect(resizeRoomProposal.validation.closureValid).toBe(true);
-    expect(resizeRoomProposal.validation.unaffectedFlatsUnchanged).toBe(true);
+    const master = typicalFloor.rooms.find(room => room.name.includes('Master Bedroom')
+      && room.unitId === typicalFloor.apartmentUnits![1]!.id)!;
+    expect(resizeRoomProposal.resolvedEntityIds[0]).toBe(master.id);
+    expect(resizeRoomProposal.status).toBe('REJECTED_BY_CONSTRAINTS');
+    expect(resizeRoomProposal.proposedBuilding).toBeNull();
 
     // 4. Reduce passage width / shift internal partition safely
     const passageProposal = proposeControlledCadEdit({
@@ -133,18 +137,21 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
     expect(passageProposal.validation.closureValid).toBe(true);
     expect(passageProposal.validation.unaffectedFlatsUnchanged).toBe(true);
 
-    // 5. Explicit refusal for localized free-form single-flat topological regeneration ("Regenerate only Flat 2...")
-    const flat2Refusal = proposeControlledCadEdit({
+    // 5. Protected localized single-flat regeneration ("Regenerate only Flat 2...") preserves Flats 1, 3, 4 byte-identically
+    const flat2Regen = proposeControlledCadEdit({
       building: baseBuilding,
       floorId: typicalFloor.id,
       expectedRevision: baseBuilding.version,
       control,
       instruction: 'Regenerate only Flat 2 while keeping the remaining flats unchanged',
     });
-    expect(flat2Refusal.status).toBe('REFUSED_UNSUPPORTED');
-    expect(flat2Refusal.proposedBuilding).toBeNull();
-    expect(flat2Refusal.message).toMatch(/Flat 2/);
-    expect(flat2Refusal.validation.unaffectedFlatsUnchanged).toBe(true);
+    expect(flat2Regen.status, flat2Regen.message).toBe('PREVIEW_READY');
+    expect(flat2Regen.proposedBuilding).not.toBeNull();
+    expect(flat2Regen.message).toMatch(/Flat 0?2/);
+    expect(flat2Regen.validation.unaffectedFlatsUnchanged).toBe(true);
+    expect(flat2Regen.validation.unaffectedFloorsUnchanged).toBe(true);
+    expect(flat2Regen.invarianceProof?.passed).toBe(true);
+    expect(flat2Regen.invarianceProof?.beforeProtectedDigest).toBe(flat2Regen.invarianceProof?.afterProtectedDigest);
   }, 60_000);
 
   it('enforces stale revision rejection, locked room/floor guardrails, Undo/Redo, and 2D/3D/DXF/GLB sync after canonical edit', async () => {
@@ -172,21 +179,28 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
       floorId: typicalFloor.id,
       expectedRevision: baseBuilding.version,
       control: lockedFloorControl,
-      instruction: 'Increase the master bedroom carpet area',
+      instruction: 'Increase the master bedroom carpet area in Flat 2',
     });
     expect(lockedRes.status).toBe('REFUSED_LOCKED');
 
     // Accept canonical edit through EditorEngine and verify Undo/Redo + 2D/3D/DXF/GLB sync
     const engine = new EditorEngine(baseBuilding);
     const beforeHash = stableValueHash(engine.getBuilding());
+    const selectedWindow = typicalFloor.windows.find(window => {
+      const wall = typicalFloor.walls.find(candidate => candidate.id === window.wallId);
+      return wall && !wall.arc && Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y) >= 2100
+        && window.width !== 1500 && !typicalFloor.rooms.some(room => room.isFixed && wall.roomIds.includes(room.id));
+    })!;
     const proposal = proposeControlledCadEdit({
       building: engine.getBuilding(),
       floorId: typicalFloor.id,
       expectedRevision: engine.getBuilding().version,
       control,
-      instruction: 'Increase the master bedroom carpet area',
+      selectedEntityId: selectedWindow.id,
+      instruction: 'Resize this window to 1500 mm',
     });
-    expect(proposal.status).toBe('PREVIEW_READY');
+    expect(proposal.openingSummary?.openingId).toBe(selectedWindow.id);
+    expect(proposal.status, proposal.message).toBe('PREVIEW_READY');
     expect(proposal.baseRevisionDigest).toBe(buildingRefinementRevision(engine.getBuilding(), control));
 
     engine.execute(
@@ -228,4 +242,60 @@ describe('Phase 4A Gate E — Controlled Canonical CAD Writeback & AI-Assisted C
     engine.redo();
     expect(stableValueHash(engine.getBuilding())).toBe(editedHash);
   }, 60_000);
+  it('refuses missing or ambiguous room targets and never substitutes another room opening', async () => {
+    const { building } = await executeAuditedPlanningPipeline(baseConfig);
+    const floor = building.floors.find(f => Boolean(f.apartmentUnits?.length))!;
+    const roomWithoutWindow = floor.rooms.find(room =>
+      room.type === 'bedroom' && !floor.windows.some(window => window.roomId === room.id),
+    ) ?? floor.rooms.find(room =>
+      room.unitId && !room.isFixed && !floor.windows.some(window => window.roomId === room.id),
+    )!;
+    expect(roomWithoutWindow).toBeDefined();
+    const request = { building, floorId: floor.id, expectedRevision: building.version };
+    const outcomes = [
+      proposeControlledCadEdit({
+        ...request,
+        parsedIntent: { action: 'RESIZE_ROOM_AREA', targetRoomQuery: 'Nonexistent Observatory', areaDeltaPercent: 8 },
+      }),
+      proposeControlledCadEdit({
+        ...request,
+        instruction: 'Increase the master bedroom carpet area',
+      }),
+      proposeControlledCadEdit({
+        ...request,
+        selectedEntityId: roomWithoutWindow.id,
+        instruction: 'Resize this window to 1500 mm',
+      }),
+      proposeControlledCadEdit({
+        ...request,
+        parsedIntent: { action: 'RESIZE_OPENING', targetRoomQuery: 'Nonexistent Observatory', targetOpeningKind: 'window', targetWidthMm: 1500 },
+      }),
+    ];
+    expect(outcomes.map(result => [result.status, result.resolvedEntityIds, result.proposedBuilding])).toEqual(
+      Array.from({ length: outcomes.length }, () => ['REJECTED_BY_CONSTRAINTS', [], null]),
+    );
+  }, 60_000);
+
+  it('validates CAD revision, intent and lock data at the runtime boundary', async () => {
+    const { building } = await executeAuditedPlanningPipeline(baseConfig);
+    const floor = building.floors.find(f => Boolean(f.apartmentUnits?.length))!;
+    const request = { building, floorId: floor.id, instruction: 'Regenerate only Flat 2' };
+    const deps = { gemini: null, briefInterpreterKind: 'local-stub' } as const;
+    const invalidBodies = [
+      { expectedRevision: '1' },
+      { expectedRevisionDigest: 'bad-digest' },
+      { selectedEntityId: ['not an entity ID'] },
+      { control: { ...createGenerationControlState(), lockedEntityIds: [42] } },
+      { control: { ...createGenerationControlState(), footprintLocked: false } },
+      { parsedIntent: { action: 'RESIZE_OPENING', targetWidthMm: -100 } },
+      { parsedIntent: { action: 'RESIZE_ROOM_AREA', targetAreaSqM: '42' } },
+      { parsedIntent: { action: 'LOCALIZED_FLAT_REGENERATION', targetUnitIndex: 2.5 } },
+    ];
+    const statuses = [];
+    for (const invalid of invalidBodies) {
+      statuses.push((await handleCadEditProposal({ ...request, ...invalid }, deps)).status);
+    }
+    expect(statuses).toEqual(invalidBodies.map(() => 400));
+  }, 60_000);
+
 });

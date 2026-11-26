@@ -162,6 +162,14 @@ export type NamedBuildingMassingShape =
   | 'IRREGULAR_ANGLED_PLOT'
   | 'IMPORTED_CAD_LAYOUT';
 
+export interface SurveyGenerationInput {
+  readonly points: readonly Point[];
+  readonly sweepsDeg: readonly number[];
+  readonly roadEdge: number;
+  readonly edgeSetbacksMm: readonly (number | null)[];
+  readonly sourceFileName?: string;
+}
+
 export interface IrregularPlotBoundary {
   readonly polygon: Polygon;
   readonly areaMm2: number;
@@ -275,6 +283,7 @@ export interface MultiSheetApartmentConfig {
   readonly referenceImage?: { readonly name: string; readonly mimeType: string; readonly dataUrl: string };
   readonly setbacksMm?: Setbacks;
   /** Optional imported or surveyed irregular plot boundary polygon (mm). */
+  readonly surveyBoundary?: SurveyGenerationInput;
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly plotWidthMm: number;
   readonly plotDepthMm: number;

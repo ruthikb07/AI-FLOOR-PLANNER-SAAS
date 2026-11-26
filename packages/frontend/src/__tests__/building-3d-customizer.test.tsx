@@ -326,7 +326,7 @@ describe('Building3DCustomizer Component', () => {
     });
   });
 
-  it('disables unsupported furniture items and identifies them as preview only', async () => {
+  it('toggles live 3D interior furniture categories and cutaway inspection without placeholder controls', async () => {
     const editor = createMockEditor();
     await act(async () => {
       root.render(<Building3DCustomizer editor={editor} />);
@@ -340,15 +340,21 @@ describe('Building3DCustomizer Component', () => {
 
     const furnitureList = host.querySelector('[data-testid="furniture-list"]');
     expect(furnitureList).not.toBeNull();
+    expect(host.querySelectorAll('[aria-disabled="true"]')).toHaveLength(0);
+    expect(host.textContent).not.toContain('scheduled for Phase 8');
 
-    const bedOption = host.querySelector('[data-testid="furniture-opt-bed_master"]');
+    const bedOption = host.querySelector('[data-testid="furniture-opt-bed_master"]') as HTMLButtonElement;
     expect(bedOption).not.toBeNull();
-    expect(bedOption?.getAttribute('aria-disabled')).toBe('true');
-    expect(bedOption?.className).toContain('cursor-not-allowed');
+    expect(bedOption.getAttribute('aria-pressed')).toBe('true');
 
-    const badges = host.querySelectorAll('[data-testid="badge-pending-phase8"]');
-    expect(badges.length).toBeGreaterThanOrEqual(6);
-    expect(host.textContent).toContain('scheduled for Phase 8 (preview only)');
+    act(() => {
+      bedOption.click();
+    });
+    expect(bedOption.getAttribute('aria-pressed')).toBe('false');
+    expect(host.querySelector('[data-testid="feedback-notice"]')?.textContent).toContain('Hidden King / Queen Bed Suites');
+
+    const cutawayBtn = host.querySelector('[data-testid="btn-toggle-furniture-cutaway"]') as HTMLButtonElement;
+    expect(cutawayBtn.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('dispatches Apply Global 3D Skin BatchCommand across all building openings', async () => {

@@ -4,16 +4,21 @@ import {
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
 import type { ProjectSetupWizardData } from '../components/argon/ProjectSetupWizard';
-import { surveyGenerationBlock } from './survey-draft';
+import { prepareSurveyDraftGeneration } from './survey-draft';
 
 /** One conversion at the UI boundary; the solver contract is always millimetres. */
 export function createArgonRequest(data: ProjectSetupWizardData, projectId: string = crypto.randomUUID()): MultiSheetApartmentConfig {
-  const surveyBlock = surveyGenerationBlock(data.siteGeometryMode === 'survey');
-  if (surveyBlock) throw new Error(surveyBlock);
   const mm = (value: number) => Math.round(value * 1000);
+  const setbacksMm = {
+    front: data.frontSetbackM * 1000, rear: data.rearSetbackM * 1000,
+    left: data.sideSetbackM * 1000, right: data.sideSetbackM * 1000,
+  };
+  const survey = data.siteGeometryMode === 'survey' ? prepareSurveyDraftGeneration(data.surveyDraft, setbacksMm) : undefined;
   if (![1, 2, 3, 4, 5, 6].includes(data.flatsPerFloor)) throw new Error('Choose between 1 and 6 flats per floor.');
-  const units = data.bhkMix.flatMap(group => Array.from({ length: group.count }, () => ({
-    unitIndex: 0, bhkType: group.unitType, targetCarpetSqFt: group.carpetAreaSqFt, hasUtilityBalcony: true,
+  const units = data.bhkMix.flatMap(group => Array.from({ length: group.count }, (_, index) => ({
+    unitIndex: 0, bhkType: group.unitType,
+    targetCarpetSqFt: data.unitCarpetTargets?.[group.unitType]?.[index] ?? group.carpetAreaSqFt,
+    hasUtilityBalcony: true,
   }))).map((unit, index) => ({ ...unit, unitIndex: index + 1 }));
   if (units.length !== data.flatsPerFloor) throw new Error('The BHK mix must equal the selected flats per floor.');
   const facing = { North: Direction.North, East: Direction.East, South: Direction.South, West: Direction.West };
@@ -44,21 +49,29 @@ export function createArgonRequest(data: ProjectSetupWizardData, projectId: stri
 
   return {
     structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
-    architectureOptions: { liftSystem: 'UNSPECIFIED' },
+    architectureOptions: { liftSystem: 'UNSPECIFIED',
+      ...(data.coordinatedWetWallLayout && { coordinatedWetWallLayout: true }) },
     regulatoryContext: {
       authorityType: data.authorityType, congestionZone: data.congestionZone,
-      roadWidthM: data.roadWidthM, plotAreaSqm: data.plotWidthM * data.plotDepthM,
+      roadWidthM: data.roadWidthM, plotAreaSqm: survey ? survey.boundary.areaMm2 / 1e6 : data.plotWidthM * data.plotDepthM,
       numFloors: data.floorsCount + (data.hasStiltParking ? 1 : 0),
       stiltParkingEnabled: data.hasStiltParking, buildingUsage: 'RESIDENTIAL_APARTMENT',
       clearRoomHeightMm: data.clearRoomHeightMm,
       stiltClearHeightBelowBeamMm: data.hasStiltParking ? data.stiltClearHeightBelowBeamMm : undefined,
     },
     projectId, projectName: data.projectName.trim(), aiPrompt: promptAnnotations.join(' ').trim(), referenceImage: data.referenceImage,
-    plotWidthMm: mm(data.plotWidthM), plotDepthMm: mm(data.plotDepthM), roadWidthMm: mm(data.roadWidthM),
-    roadAccessSides: [facing[data.roadFacing]],
-    setbacksMm: { front: mm(data.frontSetbackM), rear: mm(data.rearSetbackM), left: mm(data.sideSetbackM), right: mm(data.sideSetbackM) },
+    plotWidthMm: survey?.bounds.width ?? mm(data.plotWidthM),
+    plotDepthMm: survey?.bounds.height ?? mm(data.plotDepthM),
+    roadWidthMm: mm(data.roadWidthM),
+    roadAccessSides: [survey?.roadFacing ?? facing[data.roadFacing]],
+    setbacksMm: survey ? setbacksMm : { front: Math.round(setbacksMm.front), rear: Math.round(setbacksMm.rear),
+      left: Math.round(setbacksMm.left), right: Math.round(setbacksMm.right) },
+    ...(survey && { surveyBoundary: survey.input }),
     flatsPerFloor: data.flatsPerFloor as 1 | 2 | 3 | 4 | 5 | 6, units, numTypicalFloors: data.floorsCount,
     floorToFloorHeightMm: 3150, stiltHeightMm: 3150,
+    ...(data.requireAreaTargets && {
+      requireAreaTargets: true, areaAcceptanceTolerancePercent: data.areaAcceptanceTolerancePercent ?? 5,
+    }),
     verticalStackType: data.hasStiltParking ? 'STILT_PLUS_N' : 'G_PLUS_N',
     lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT', jurisdiction: 'generic_maharashtra',
     ...(data.buildingMassingShape && data.buildingMassingShape !== 'AUTO'

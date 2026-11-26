@@ -3,8 +3,9 @@ import { bytesToHex } from '@noble/hashes/utils';
 import { canonicalBuildingHash } from '../models/canonical-revision';
 import type { Building } from '../types/building';
 
-export type ExchangeFormat = 'DXF' | 'IFC4X3_ADD2';
-export type ExchangeElementKind = 'floor' | 'wall' | 'room' | 'door' | 'window';
+export type ExchangeFormat = 'DXF' | 'IFC4' | 'IFC4X3_ADD2';
+export type ExchangeElementKind = 'project' | 'site' | 'building' | 'floor' | 'wall' | 'room' | 'door' | 'window'
+  | 'slab' | 'stair' | 'column' | 'beam' | 'railing';
 
 export const EXCHANGE_FRAME = 'BUILDING_LOCAL_RIGHT_HANDED_Z_UP' as const;
 export const EXCHANGE_MAX_BYTES = 25 * 1024 * 1024;

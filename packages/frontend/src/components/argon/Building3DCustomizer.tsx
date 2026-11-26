@@ -14,7 +14,6 @@ import {
   Armchair,
   CheckCircle2,
   ChevronRight,
-  Clock,
   Palette,
 } from 'lucide-react';
 import * as THREE from 'three';
@@ -28,11 +27,14 @@ import {
   type IEditorCommand,
 } from '@ai-floor-planner/core';
 import { coordinateBuildingFacade } from '@ai-floor-planner/planning-engine';
+import { FurniturePlacementControls } from './FurniturePlacementControls';
 import { use3DAnimation } from '../../hooks/use3dAnimations';
-import type {
-  ArchitecturalMaterialPalette,
-  BuildingLightingMode,
-  OpeningFinishOverride,
+import {
+  ALL_FURNITURE_CATEGORY_IDS,
+  type ArchitecturalMaterialPalette,
+  type BuildingLightingMode,
+  type FurnitureCategoryId,
+  type OpeningFinishOverride,
 } from '../model-3d/ThreeBuildingScene';
 
 const ModelWorkspace = lazy(() => import('../model-3d/ModelWorkspace'));
@@ -55,11 +57,11 @@ interface FixtureOption {
 }
 
 interface FurnitureOption {
-  readonly id: string;
+  readonly id: FurnitureCategoryId;
   readonly label: string;
   readonly icon: React.ReactNode;
   readonly category: string;
-  readonly pendingPhase: string;
+  readonly clearanceNote: string;
 }
 
 export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
@@ -77,6 +79,10 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
   };
   const [materialPalette, setMaterialPalette] = useState<ArchitecturalMaterialPalette>('travertine');
   const [openingFinish, setOpeningFinish] = useState<OpeningFinishOverride>({});
+  const [enabledFurniture, setEnabledFurniture] = useState<readonly FurnitureCategoryId[]>(
+    () => [...ALL_FURNITURE_CATEGORY_IDS],
+  );
+  const [interiorCutawayActive, setInteriorCutawayActive] = useState(false);
   const [linkedSpanStoreys, setLinkedSpanStoreys] = useState<1 | 2 | 3>(1);
   const [customizerTab, setCustomizerTab] = useState<'fixtures' | 'furniture'>('fixtures');
   const [selectedFixtureId, setSelectedFixtureId] = useState<string>('sliding_aluminum_win');
@@ -174,15 +180,27 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
 
   const furnitureOptions: readonly FurnitureOption[] = useMemo(
     () => [
-      { id: 'bed_master', label: 'King / Queen Bed Suites', icon: <Bed className="w-4 h-4" />, category: 'A-FURN Bed', pendingPhase: 'Architectural 3D PBR Spec' },
-      { id: 'sofa_living', label: 'L-Sectional Living Seating', icon: <Armchair className="w-4 h-4" />, category: 'A-FURN Seating', pendingPhase: 'Architectural 3D PBR Spec' },
-      { id: 'dining_set', label: '6-Seat Timber Dining Suite', icon: <Layout className="w-4 h-4" />, category: 'A-FURN Dining', pendingPhase: 'Architectural 3D PBR Spec' },
-      { id: 'wardrobe_full', label: 'Full-Height Joinery Wardrobes', icon: <Layers className="w-4 h-4" />, category: 'A-FURN Storage', pendingPhase: 'Architectural 3D PBR Spec' },
-      { id: 'kitchen_modular', label: 'Modular Stone Counter & Casework', icon: <Home className="w-4 h-4" />, category: 'A-FURN Casework', pendingPhase: 'Architectural 3D PBR Spec' },
-      { id: 'bath_fixtures', label: 'Vitreous Ceramic Bath Fixtures', icon: <Home className="w-4 h-4" />, category: 'P-FIXT Plumbing', pendingPhase: 'Architectural 3D PBR Spec' },
+      { id: 'bed_master', label: 'King / Queen Bed Suites', icon: <Bed className="w-4 h-4" />, category: 'A-FURN Bed', clearanceNote: 'Bedroom display' },
+      { id: 'sofa_living', label: 'L-Sectional Living Seating', icon: <Armchair className="w-4 h-4" />, category: 'A-FURN Seating', clearanceNote: 'Living room display' },
+      { id: 'dining_set', label: '6-Seat Timber Dining Suite', icon: <Layout className="w-4 h-4" />, category: 'A-FURN Dining', clearanceNote: 'Proportional to dining zone' },
+      { id: 'wardrobe_full', label: 'Full-Height Joinery Wardrobes', icon: <Layers className="w-4 h-4" />, category: 'A-FURN Storage', clearanceNote: '550 mm flush perimeter joinery' },
+      { id: 'kitchen_modular', label: 'Modular Stone Counter & Casework', icon: <Home className="w-4 h-4" />, category: 'A-FURN Casework', clearanceNote: '600 mm counter depth' },
+      { id: 'bath_fixtures', label: 'Vitreous Ceramic Bath Fixtures', icon: <Home className="w-4 h-4" />, category: 'P-FIXT Plumbing', clearanceNote: 'Bathroom display' },
     ],
     []
   );
+
+  const toggleFurnitureCategory = (id: FurnitureCategoryId, label: string) => {
+    setEnabledFurniture(prev => {
+      const exists = prev.includes(id);
+      const next = exists ? prev.filter(item => item !== id) : [...prev, id];
+      setInteriorCutawayActive(true);
+      setFeedbackMessage(
+        `${exists ? 'Hidden' : 'Enabled'} ${label} in 3D interior cutaway (${next.length}/${ALL_FURNITURE_CATEGORY_IDS.length} categories active).`,
+      );
+      return next;
+    });
+  };
 
   const applyFixtureToSelectionOrFloor = (fixture: FixtureOption) => {
     setSelectedFixtureId(fixture.id);
@@ -349,6 +367,8 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
             materialPalette={materialPalette}
             onMaterialPaletteChange={setMaterialPalette}
             openingFinish={openingFinish}
+            enabledFurnitureCategories={enabledFurniture}
+            forceInteriorCutaway={interiorCutawayActive}
             linkedSpanStoreys={linkedSpanStoreys}
             onLinkedSpanChange={setLinkedSpanStoreys}
             sceneRef={sceneRef}
@@ -589,32 +609,62 @@ export const Building3DCustomizer: React.FC<Building3DCustomizerProps> = ({
             </div>
           ) : (
             <div data-testid="furniture-list" className="space-y-2">
-              <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2 text-amber-950 text-[11px]">
-                <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>3D PBR Furniture Library scheduled for Phase 8 (preview only).</span>
-              </div>
-              {furnitureOptions.map((opt) => (
-                <div
-                  key={opt.id}
-                  data-testid={`furniture-opt-${opt.id}`}
-                  className="w-full p-3 rounded-xl border border-argon-border flex items-start gap-2.5 opacity-60 cursor-not-allowed"
-                  aria-disabled="true"
+              <div className="p-2.5 bg-argon-surface/80 border border-argon-border rounded-xl flex items-center justify-between gap-2 text-[11px]">
+                <span>
+                  Interior 3D Furniture Layers ({enabledFurniture.length}/{ALL_FURNITURE_CATEGORY_IDS.length} active)
+                </span>
+                <button
+                  type="button"
+                  data-testid="btn-toggle-furniture-cutaway"
+                  aria-pressed={interiorCutawayActive}
+                  onClick={() => setInteriorCutawayActive(v => !v)}
+                  className={`px-2 py-1 rounded font-mono text-[10px] border cursor-pointer ${
+                    interiorCutawayActive
+                      ? 'bg-argon-btn text-argon-card border-argon-btn font-bold'
+                      : 'border-argon-border text-argon-text'
+                  }`}
                 >
-                  <div className="w-7 h-7 rounded-lg bg-argon-surface flex items-center justify-center shrink-0">
-                    {opt.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold">{opt.label}</div>
-                    <div className="text-[10px] opacity-75">{opt.category}</div>
-                    <span
-                      data-testid="badge-pending-phase8"
-                      className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-argon-border inline-block mt-1"
+                  {interiorCutawayActive ? 'Cutaway ON' : 'Cutaway View'}
+                </button>
+              </div>
+              <FurniturePlacementControls editor={editor} />
+              {furnitureOptions.map((opt) => {
+                const isActive = enabledFurniture.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    data-testid={`furniture-opt-${opt.id}`}
+                    aria-pressed={isActive}
+                    onClick={() => toggleFurnitureCategory(opt.id, opt.label)}
+                    className={`w-full p-3 rounded-xl border flex items-start gap-2.5 text-left transition-all cursor-pointer ${
+                      isActive
+                        ? 'border-argon-btn bg-argon-btn/10'
+                        : 'border-argon-border opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        isActive ? 'bg-argon-btn text-white' : 'bg-argon-surface text-argon-muted'
+                      }`}
                     >
-                      {opt.pendingPhase}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                      {opt.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-semibold truncate">{opt.label}</span>
+                        <span
+                          data-testid={`badge-furn-state-${opt.id}`}
+                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-argon-border"
+                        >
+                          {isActive ? 'VISIBLE' : 'HIDDEN'}
+                        </span>
+                      </div>
+                      <div className="text-[10px] opacity-75">{opt.category} · {opt.clearanceNote}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

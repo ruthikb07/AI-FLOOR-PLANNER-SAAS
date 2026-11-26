@@ -25,6 +25,7 @@ import {
   type ServiceConfig,
 } from './env.js';
 import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
+import { handleBimAssistantQuery } from './api/bim-assistant-routes.js';
 import { handleCadEditProposal } from './api/cad-edit-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
@@ -325,6 +326,33 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
           return;
         }
         const result = await handleCadEditProposal(body, deps, { signal: reqAbort.signal });
+        if (!response.writableEnded && !response.destroyed) {
+          sendJson(response, result.status, result.json);
+        }
+      } finally {
+        request.off('aborted', onDisconnect);
+        response.off('close', onDisconnect);
+      }
+      return;
+    }
+
+    if (method === 'POST' && url.pathname === '/api/v1/bim/assistant') {
+      const reqAbort = new AbortController();
+      const onDisconnect = () => {
+        if (!response.writableEnded) reqAbort.abort();
+      };
+      request.on('aborted', onDisconnect);
+      response.on('close', onDisconnect);
+      try {
+        const raw = await readBody(request);
+        let body: unknown = null;
+        try {
+          body = raw.length > 0 ? JSON.parse(raw) : null;
+        } catch {
+          sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+          return;
+        }
+        const result = await handleBimAssistantQuery(body, deps, { signal: reqAbort.signal });
         if (!response.writableEnded && !response.destroyed) {
           sendJson(response, result.status, result.json);
         }

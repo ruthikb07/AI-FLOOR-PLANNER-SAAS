@@ -113,6 +113,7 @@ export interface GenerateConceptsInput {
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly includeStudyRoom?: boolean;
+  readonly coordinatedWetWallLayout?: boolean;
 }
 
 export interface RejectedCandidate {
@@ -206,6 +207,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     program,
     unitCarpetTargetsSqFt: input.unitCarpetTargetsSqFt,
     unitGrossAreasMm2: input.unitGrossAreasMm2,
+    preferSplitCourtyard: input.coordinatedWetWallLayout,
     enableMacroShapes: Boolean(effectiveMassingShape && effectiveMassingShape !== 'COMPACT_DOUBLE_LOADED'),
   });
 
@@ -222,7 +224,8 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     .map(t => ({
       t,
       key: explorationKey(t, program, random()),
-      priority: input.preferredMassingShape && t.partition.massingShape === effectiveMassingShape ? 0 : 1,
+      priority: input.preferredMassingShape && t.partition.massingShape === effectiveMassingShape ? 0
+        : t.partition.shaftTags?.some(tags => tags.includes('shaft:central-court')) ? 0 : 1,
     }))
     .sort((a, b) => a.priority - b.priority || a.key - b.key)
     .map(x => x.t);
@@ -269,6 +272,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         irregularPlotBoundary: input.irregularPlotBoundary,
         galleryCoordinationMode: input.galleryCoordinationMode,
         includeStudyRoom: input.includeStudyRoom,
+        coordinatedWetWallLayout: input.coordinatedWetWallLayout,
       });
     } catch (error) {
       rejected.push({
@@ -285,6 +289,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       partition: topology.partition,
       program,
       flatsWithoutEntrance: assembled.flatsWithoutEntrance,
+      coordinatedWetWallLayout: input.coordinatedWetWallLayout,
     });
 
     if (!score.feasible) {
@@ -357,9 +362,13 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
   const matchingShape = effectiveMassingShape
     ? basePool.filter(c => (c.partition.massingShape ?? 'COMPACT_DOUBLE_LOADED') === effectiveMassingShape)
     : [];
-  const baseRanked = matchingShape.length
+  const rankedByShape = matchingShape.length
     ? [...matchingShape, ...basePool.filter(c => !matchingShape.includes(c))]
     : basePool;
+  const hasExplicitMassing = input.preferredMassingShape || program.preferences.preferredMassingShape;
+  const splitCourtyards = rankedByShape.filter(c => c.partition.shaftTags?.some(tags => tags.includes('shaft:central-court')) &&
+    (!hasExplicitMassing || !matchingShape.length || matchingShape.includes(c)));
+  const baseRanked = [...splitCourtyards, ...rankedByShape.filter(c => !splitCourtyards.includes(c))];
   const isRejectedCandidate = (c: ScoredCandidate) =>
     rejectedHashSet.has(c.fingerprint.digests.canonical)
     || rejectedHashSet.has(c.fingerprint.canonical)

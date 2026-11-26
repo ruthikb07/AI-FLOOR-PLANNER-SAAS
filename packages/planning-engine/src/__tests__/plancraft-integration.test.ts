@@ -16,12 +16,17 @@ import {
   type DynamicApartmentManifest,
   type DynamicApartmentUnitSpec,
   type PlancraftFurnitureElementType,
+  addRoom,
+  createBuilding,
   createFurnitureItem,
+  createGenerationControlState,
+  updateGenerationControl,
   PlotShape,
   RoomType,
 } from '@ai-floor-planner/core';
 import {
   apartmentStructureToBuilding,
+  editFurniturePlacement,
   solveOrthogonalSpaceFillingApartment,
 } from '../index';
 import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
@@ -331,8 +336,8 @@ describe('Plancraft Integration Suite', () => {
 
         for (const br of bedRooms) {
           const brFurn = floor.furniture!.filter(f => f.roomId === br.id);
-          expect(brFurn.some(f => f.type === 'bed')).toBe(true);
-          expect(brFurn.some(f => f.type === 'wardrobe')).toBe(true);
+          expect(brFurn.some(f => f.type === 'bed'), `${tc.name} / ${br.name} (${br.width} × ${br.height} mm) requires a bed`).toBe(true);
+          expect(brFurn.some(f => f.type === 'wardrobe'), `${tc.name} / ${br.name} requires a wardrobe`).toBe(true);
         }
 
         for (const k of kitchens) {
@@ -460,4 +465,34 @@ describe('Plancraft Integration Suite', () => {
       }
     });
   });
+});
+
+it('edits canonical furniture placement and rejects collision, out-of-bounds and locked edits', () => {
+  const empty = createBuilding({ projectId: 'furniture-edit', name: 'Test',
+    site: { plotWidth: 10_000, plotDepth: 10_000 },
+    floors: [{ buildingId: '', name: 'Ground', level: 0 }] });
+  const floorId = empty.floors[0]!.id;
+  const furnished = addRoom(empty, floorId, {
+    floorId, name: 'Bedroom', type: RoomType.Bedroom, x: 0, y: 0, width: 5000, height: 5000,
+  });
+  const floor = furnished.floors[0]!;
+  const room = floor.rooms[0]!;
+  const bed = createFurnitureItem({
+    type: 'bed', roomId: room.id, xMm: 1200, yMm: 1200, widthMm: 1200, depthMm: 2000, rotationDeg: 0,
+  });
+  const wardrobe = createFurnitureItem({
+    type: 'wardrobe', roomId: room.id, xMm: 3800, yMm: 1200, widthMm: 650, depthMm: 1700, rotationDeg: 0,
+  });
+  const furniture = [bed, wardrobe];
+  const model = { ...furnished, floors: [{ ...floor, furniture }], furniture };
+  const control = createGenerationControlState();
+  const moved = editFurniturePlacement(model, control, floorId, bed.id, { dxMm: 100, rotateQuarterTurn: true });
+  expect(moved.version).toBe(model.version + 1);
+  expect(moved.floors[0]!.furniture?.[0]).toMatchObject({ rotationDeg: 90, xMm: 900, widthMm: 2000, depthMm: 1200 });
+  expect(moved.furniture).toEqual(moved.floors[0]!.furniture);
+  expect(moved.floors[0]!.rooms).toEqual(floor.rooms);
+  expect(() => editFurniturePlacement(model, control, floorId, bed.id, { dxMm: 1800 })).toThrow(/overlaps/);
+  expect(() => editFurniturePlacement(model, control, floorId, bed.id, { dxMm: -2000 })).toThrow(/boundary/);
+  expect(() => editFurniturePlacement(model, updateGenerationControl(control, { lockedEntityIds: [room.id] }),
+    floorId, bed.id, { dyMm: 100 })).toThrow(/Unlock/);
 });

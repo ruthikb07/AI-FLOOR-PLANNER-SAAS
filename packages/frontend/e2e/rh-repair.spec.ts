@@ -125,9 +125,14 @@ test('a verified generated revision keeps project identity and archives the prev
   await page.reload();
   await page.getByTestId('nav-library').click();
   const library = page.getByTestId('project-library-view');
-  await library.getByText('Archived browser revisions').click();
+  const card = library.getByTestId(`browser-project-card-${before.projectId}`)
+    .or(library.getByTestId(`disk-project-card-${before.projectId}`));
+  const more = library.getByRole('button', { name: 'Show more projects' });
+  await expect(card.or(more)).toBeVisible();
+  while (!(await card.isVisible()) && await more.isVisible()) await more.click();
+  await card.getByText('Archived browser revisions').click();
   const downloaded = page.waitForEvent('download');
-  await library.getByRole('button', { name: `Export revision ${before.building.version}`, exact: true }).click();
+  await card.getByRole('button', { name: `Export revision ${before.building.version}`, exact: true }).click();
   const archive = await downloaded;
   const recovered = JSON.parse(await readFile((await archive.path())!, 'utf8'));
   expect(recovered.building).toEqual(before.building);

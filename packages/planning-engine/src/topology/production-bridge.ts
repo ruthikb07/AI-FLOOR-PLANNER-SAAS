@@ -114,6 +114,7 @@ export interface SelectTopologyInput {
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly includeStudyRoom?: boolean;
+  readonly coordinatedWetWallLayout?: boolean;
 }
 
 export interface SelectedTopology {
@@ -155,6 +156,7 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     irregularPlotBoundary: input.irregularPlotBoundary,
     galleryCoordinationMode: input.galleryCoordinationMode,
     includeStudyRoom: input.includeStudyRoom,
+    coordinatedWetWallLayout: input.coordinatedWetWallLayout,
   });
 
   input.onEvaluated?.(result);
