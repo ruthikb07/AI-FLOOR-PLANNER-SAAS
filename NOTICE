@@ -5,12 +5,15 @@ Copyright 2026 RH Planner Contributors
 Third-Party Software Attributions
 -------------------------------------------------------------------------------
 
-1. Cota (Selectively Adapted 2D Pure-TypeScript CAD Geometry, Snapping, Editing
-   and DXF Exchange Algorithms in `packages/core/src/interchange/cota-cad-kernel.ts`)
+1. Cota (Integrated 2D/3D CAD Document, Command Engine, Snapping, Dimensioning,
+   Hatching, Paper-Space Layouts, Vector PDF Plotting, CSG Mesh Solids & File
+   Interoperability in `packages/cota-integration` and
+   `packages/core/src/interchange/cota-cad-kernel.ts`)
    Version: 2.49.3 (2026-11-18)
    Upstream Repository: https://github.com/mxchristian17/cota
    Copyright 2026 Christian Orengia (https://github.com/mxchristian17)
    Licensed under the Apache License, Version 2.0.
+   Full License: docs/integration/licenses/cota-Apache-2.0.txt
 
    Original Cota NOTICE preserved per Apache License 2.0 Section 4(d):
      Cota
@@ -24,17 +27,33 @@ Third-Party Software Attributions
      not grant permission to use them. RH Planner is an independent product
      and is not endorsed by or affiliated with Cota or its author.
 
-   Note on Excluded Components:
-     RH Planner does NOT bundle or distribute Cota's optional LGPL-2.1
-     OpenCascade WebAssembly modules (`occt-wasm`, `occt-import-js`), GPL-3.0
-     `LibreDWG` external tools, or Cota's React 19 / Three.js 0.169 UI shell.
+   Modifications by RH Planner (2026):
+     - Packaged as internal workspace library `@ai-floor-planner/cota-integration`
+       mounted inside ARGON Studio with Three.js 0.185 compatibility and pure-TS
+       mesh solid kernel (`three-bvh-csg`) plus pure-TS STEP/IGES readers.
+     - Connected via typed `CotaCanonicalDrawingAdapter` so RH Planner's
+       canonical `Building` model remains the sole authoritative architectural
+       geometry state.
+     - Excluded LGPL-2.1 `occt-wasm` / `occt-import-js` WebAssembly binaries,
+       GPL-3.0 `LibreDWG` external tools, and Cota's standalone React 19 UI/API.
 
-2. Embedded Noto Sans Fonts (`packages/backend/src/assets/fonts/`)
+2. Hershey Simplex Stroke Font (`packages/cota-integration/src/core/text/hersheySimplex.ts`)
+   The Hershey Fonts were originally created by Dr. A. V. Hershey while working
+   at the U. S. National Bureau of Standards (1967). The format of the Font
+   data in this distribution was originally created by James Hurt, Cognition,
+   Inc., 900 Technology Park Drive, Billerica, MA 01821.
+   JSON port (`hersheytext` 2.0.0) Copyright (c) 2014 James T. (MIT License).
+   Full License: docs/integration/licenses/hershey-MIT.txt
+
+3. Embedded Noto Sans Fonts (`packages/backend/src/assets/fonts/`)
    Copyright Google LLC — Licensed under the SIL Open Font License 1.1.
 
-3. OpenBIMStudio (adapted compressed IFC GlobalId helpers)
+4. OpenBIMStudio (Integrated IFC4/IFC4X3 Semantic Model & Validator, 3D BVH/GJK
+   Clash Engine, BCF 2.1 Markup & Archive Writer/Reader, IDS 1.0 Specification
+   Validator, Classification & Formula Schedules, 5D QTO Rules, COBie 2.4
+   Exporter, and Compressed IFC GlobalId Helpers in
+   `packages/openbim-integration` and `packages/core/src/interchange/ifc-guid.ts`)
    Version: 0.74.0
-   Revision: 22fc82481331abaab2825cd4e898ca65bfe53fa8
    Upstream Repository: https://github.com/amdghedy/openBIMstudio
-   Copyright (c) 2026 Amdghedy. MIT.
+   Copyright (c) 2026 Amdghedy. MIT License.
    Original license: docs/integration/licenses/openbimstudio-MIT.txt

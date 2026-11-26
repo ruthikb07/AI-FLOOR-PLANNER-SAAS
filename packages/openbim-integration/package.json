@@ -1,0 +1,31 @@
+{
+  "name": "@ai-floor-planner/openbim-integration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Integrated OpenBIM Studio Engine: IFC4/IFC4X3 Semantics & Validation, 3D BVH/GJK Clash Coordination, BCF 2.1, IDS 1.0, Classification, 5D QTO, COBie 2.4, and Canonical BIM Adapter",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ --no-error-on-unmatched-pattern",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@ai-floor-planner/constraint-engine": "workspace:*",
+    "@ai-floor-planner/core": "workspace:*",
+    "@ai-floor-planner/geometry-engine": "workspace:*",
+    "@ai-floor-planner/projection-3d": "workspace:*",
+    "fflate": "0.8.3",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.4",
+    "typescript": "5.5.4",
+    "vitest": "2.0.5"
+  }
+}
