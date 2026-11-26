@@ -5,7 +5,7 @@ import {
   createGenerationControlState, DEFAULT_SITE_AMENITIES, DEFAULT_STILT_AMENITIES, DEFAULT_TERRACE_AMENITIES,
   type Building,
 } from '@ai-floor-planner/core';
-import { moveApartmentPartition } from '@ai-floor-planner/planning-engine';
+import { editApartmentOpening, moveApartmentPartition } from '@ai-floor-planner/planning-engine';
 
 async function openCad(page: Page) {
   await page.addInitScript(() => sessionStorage.setItem('rh_welcome_dismissed', 'true'));
@@ -206,7 +206,7 @@ test('edits a hosted window, enforces its floor lock and saves the exact undoabl
 
 });
 
-test('moves a supported apartment partition by exactly 50 mm in the production editor', async ({ page }) => {
+test('moves a supported apartment partition and edits a hosted door in the production editor', async ({ page }) => {
   const projectId = 'browser-partition-edit';
   const generation = await page.request.post('/api/v1/projects/generate', { data: { config: {
     projectId, projectName: 'Partition edit fixture', structuralLayoutMode: 'DEFERRED',
@@ -265,6 +265,41 @@ test('moves a supported apartment partition by exactly 50 mm in the production e
   const axis = movable!.startPoint.x === movable!.endPoint.x ? 'x' : 'y';
   expect(moved.startPoint[axis] - movable!.startPoint[axis]).toBe(50);
   expect(revision.floors.filter(item => item.id !== floor.id)).toEqual(before.floors.filter(item => item.id !== floor.id));
+
+  const editedFloor = revision.floors.find(item => item.id === floor.id)!;
+  const doorRefusals = new Set<string>();
+  const door = editedFloor.doors.find(opening => {
+    const wall = editedFloor.walls.find(item => item.id === opening.wallId);
+    if (!wall || wall.arc || opening.type === 'open_passage' || wall.roomIds.length !== 2 || opening.width < 900) return false;
+    const offsetMm = Math.round(Math.hypot(opening.position.x - wall.startPoint.x, opening.position.y - wall.startPoint.y));
+    try {
+      editApartmentOpening(revision, createGenerationControlState(), floor.id, {
+        action: 'update', id: opening.id, wallId: wall.id, offsetMm, widthMm: opening.width + 20,
+      });
+      return true;
+    } catch (error) {
+      doorRefusals.add(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  });
+  expect(door, [...doorRefusals].join('\n')).toBeDefined();
+  await page.getByText('Doors and windows', { exact: true }).click();
+  await page.getByLabel('Opening', { exact: true }).selectOption(door!.id);
+  await expect(page.getByRole('combobox', { name: /^Host wall/ })).toHaveValue(door!.wallId);
+  await page.getByLabel('Opening width (mm)').fill(String(door!.width + 20));
+  await page.getByRole('button', { name: 'Preview opening' }).click();
+  await expect(preview).toContainText('0 wall positions and 1 openings affected');
+  expect((await durableProject(page)).building).toEqual(revision);
+  await preview.getByRole('button', { name: 'Accept preview' }).click();
+  await expect(page.getByText('Edit hosted opening applied.', { exact: true })).toBeVisible();
+  await expect.poll(async () => (await durableProject(page)).building.version).toBe(revision.version + 1);
+  const resized = (await durableProject(page)).building as Building;
+  const resizedFloor = resized.floors.find(item => item.id === floor.id)!;
+  expect(resizedFloor.doors.find(item => item.id === door!.id)).toMatchObject({
+    wallId: door!.wallId, width: door!.width + 20, connectsRooms: door!.connectsRooms, swingDirection: door!.swingDirection,
+  });
+  expect(resizedFloor.walls).toEqual(editedFloor.walls);
+  expect(resized.floors.filter(item => item.id !== floor.id)).toEqual(revision.floors.filter(item => item.id !== floor.id));
 });
 
 test('the production studio surfaces mandatory circulation rejection without replacing the current design', async ({ page }) => {

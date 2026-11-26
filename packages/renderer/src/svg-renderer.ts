@@ -1,4 +1,4 @@
-import { isPhysicalBoundary, architecturalSpaceRole, PLUMBING_RISER_TAG } from '@ai-floor-planner/core';
+import { isPhysicalBoundary, architecturalSpaceRole, PLUMBING_RISER_TAG, SHARED_PLUMBING_RISER_TAG } from '@ai-floor-planner/core';
 import { canonicalOpeningGeometry } from '@ai-floor-planner/geometry-engine';
 /**
  * SVG Renderer — generates architectural floor plan SVG from Building Model.
@@ -395,7 +395,8 @@ function renderRooms(
       if (showLabels) {
         const anchor = worldToScreen({ x: room.x + room.width / 2, y: room.y + room.height / 2 }, transform);
         const markerSize = Math.min(10, Math.max(4, scaleToScreen(Math.min(room.width, room.height) * 0.62, transform)));
-        elements.push(`<text x="${anchor.x.toFixed(1)}" y="${anchor.y.toFixed(1)}" font-size="${markerSize.toFixed(1)}" fill="#074F49" text-anchor="middle" dominant-baseline="central"><title>Plumbing riser</title>PR</text>`);
+        const title = room.tags.includes(SHARED_PLUMBING_RISER_TAG) ? 'Shared plumbing shaft' : 'Plumbing riser';
+        elements.push(`<text x="${anchor.x.toFixed(1)}" y="${anchor.y.toFixed(1)}" font-size="${markerSize.toFixed(1)}" fill="#074F49" text-anchor="middle" dominant-baseline="central"><title>${title}</title>PR</text>`);
       }
       continue;
     }

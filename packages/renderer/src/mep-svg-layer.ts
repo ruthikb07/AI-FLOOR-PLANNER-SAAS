@@ -243,7 +243,9 @@ function renderMepRuns(
       })
       .join(' ');
     const dashAttr = st.dash ? ` stroke-dasharray="${st.dash}"` : '';
-    return `<polyline points="${pts}" fill="none" stroke="${st.stroke}" stroke-width="${st.width}"${dashAttr} stroke-opacity="0.88" data-layer="${escapeXml(run.layer)}" data-pipe-kind="${escapeXml(run.kind)}"/>`;
+    const slopeAttr = run.slopeRatio ? ` data-slope="${escapeXml(run.slopeRatio)}"` : '';
+    const diaAttr = run.diameterMm ? ` data-diameter-mm="${run.diameterMm}"` : '';
+    return `<polyline points="${pts}" fill="none" stroke="${st.stroke}" stroke-width="${st.width}"${dashAttr} stroke-opacity="0.88" data-layer="${escapeXml(run.layer)}" data-pipe-kind="${escapeXml(run.kind)}"${diaAttr}${slopeAttr}/>`;
   });
 
   const layerName = disciplineFilter === 'ELECTRICAL' ? 'M-ELEC-WIRE' : 'M-PLUMB-PIPE';

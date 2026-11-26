@@ -334,6 +334,36 @@ export async function handleProjectGeneration(
     });
 
     let blockers = generationBlockingFindings(pipelineResult.building, pipelineResult.validationReport);
+    const referenceShape = proposalResult.telemetry.referenceGuidanceApplied?.some(hint =>
+      hint === 'CORRIDOR_AXIS' || hint === 'COURTYARD_CIRCULATION')
+      ? proposalResult.enrichedConfig.buildingMassingShape : undefined;
+    const missedReferenceShape = Boolean(referenceShape &&
+      pipelineResult.building.metadata.generationBrief?.buildingMassingShape !== referenceShape);
+    if ((blockers.length || missedReferenceShape) && !strictAlternative &&
+        proposalResult.telemetry.interpretationSource === 'GEMINI' && !signal?.aborted) {
+      const aiCandidates = [1, 2].map(seedOffset => ({
+        ...proposalResult.enrichedConfig, generationSeed: parsed.seed + seedOffset,
+      }));
+      for (const aiCandidateConfig of aiCandidates) {
+        if (signal?.aborted) break;
+        try {
+          const aiCandidate = await executeAuditedPlanningPipeline(aiCandidateConfig);
+          if (!generationBlockingFindings(aiCandidate.building, aiCandidate.validationReport).length &&
+              (!missedReferenceShape || aiCandidate.building.metadata.generationBrief?.buildingMassingShape === referenceShape)) {
+            pipelineResult = aiCandidate;
+            proposalResult = { ...proposalResult, enrichedConfig: aiCandidateConfig };
+            complianceReport = evaluateArchitecturalComplianceScore(aiCandidate.building, {
+              config: aiCandidateConfig,
+            });
+            blockers = [];
+            break;
+          }
+        } catch {
+          // Keep the verified candidate, or the original blockers if none passed.
+        }
+      }
+    }
+
     if (blockers.length && proposalResult.telemetry.interpretationSource === 'GEMINI' && !signal?.aborted) {
       // The user brief and exclusions stay in force when optional AI guidance fails the geometry gate.
       const rules = await generateArchitecturalProposal(null, {
@@ -444,8 +474,20 @@ export async function handleProjectGeneration(
 
     const solverLatencyMs = Date.now() - solverStartedAt;
     const totalLatencyMs = Date.now() - routeStartedAt;
+    const guidance = proposalResult.telemetry.referenceGuidanceApplied ?? [];
+    const acceptedGuidance = blockers.length ? [] : guidance.filter(hint =>
+      !['CORRIDOR_AXIS', 'COURTYARD_CIRCULATION'].includes(hint) ||
+      pipelineResult.building.metadata.generationBrief?.buildingMassingShape === referenceShape);
+    const rejectedGuidance = guidance.filter(hint => !acceptedGuidance.includes(hint));
     const enrichedTelemetry = {
       ...proposalResult.telemetry,
+      ...(rejectedGuidance.length > 0 && {
+        referenceGuidanceApplied: acceptedGuidance,
+        referenceImageUsedForGeometry: acceptedGuidance.length > 0,
+        referenceGuidanceRejected: [...(proposalResult.telemetry.referenceGuidanceRejected ?? []),
+          ...rejectedGuidance.map(hint => `${hint} was not realized in accepted massing.`)],
+      }),
+      ...(blockers.length > 0 && { influencedGeometry: false }),
       solverLatencyMs,
       totalLatencyMs,
       ...(strictAlternative && { alternativeSearch: { attemptedSeeds, seedBudget: 4 } }),

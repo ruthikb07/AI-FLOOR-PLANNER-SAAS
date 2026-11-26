@@ -1,6 +1,10 @@
 # Native IFC reopen verification
 
-**UNVERIFIED.** The Windows installed-application inventory did not show a compatible Revit, Archicad, FreeCAD, Bonsai, Solibri or BIMvision desktop installation. The existing Blender verification established its native RH package path. It did not establish a working IFC desktop import plugin. No additional desktop BIM software was installed.
+**VERIFIED FOR THE TESTED ARCHITECTURAL EXPORTS.** FreeCAD 1.1.4 imported the representative IFC4 files on Windows. The native checks covered exact surveyed geometry, straight and curved hosts, a four-storey central courtyard, both stairs and lift shafts, slab openings, and schematic plumbing reservations.
+
+## Phase 5.1 baseline
+
+The prior Windows installed-application inventory did not show a compatible Revit, Archicad, FreeCAD, Bonsai, Solibri or BIMvision desktop installation. The existing Blender verification established its native RH package path. It did not establish a working IFC desktop import plugin.
 
 The Phase 5 anchor passed 20 independent IfcOpenShell 0.9.0.post1 schema and geometry readbacks. The first Phase 5.1 run passed all 22, including exact oblique and concave site outlines. These checks validate the canonical site outline, identities, types, storey and coordinate placement, opening hosts, wall and slab geometry and representative meshes. Desktop application verification remains required for the hierarchy, elevations, straight and curved walls, openings, stair flights, slab voids, parapets and object identity. [Phase 5.1 independent IFC job](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45657646226/job/139358542106)
 
@@ -11,3 +15,15 @@ Production BIM reference coordination supports the scoped read-only IFC represen
 The operator authorized the official FreeCAD Windows package for Phase 5.2. The portable 1.1.4 release is isolated in the evidence folder. The archive matched official SHA-256 `4828741fc91ee37fafcdb97a1abacb18b04ba451ac4372d9ff7a7349b36f4d6d`. The native executable has a valid Authenticode signature from The FreeCAD project association AISBL. The GUI reported FreeCAD 1.1.4 and source commit `4fd3bf320d9566a27e60069fc8387448aaa3a094`. [Official release](https://github.com/FreeCAD/FreeCAD/releases/tag/1.1.4)
 
 The first native imports reopened the exact oblique survey and open-stilt multi-storey IFC4 files. File digests matched the manifests and all nine storey elevations matched at 0 mm error. FreeCAD materialized 327 and 1,548 GUID-bearing records. The absent native objects were six and forty `open_passage` door records, respectively. The IFC4 files retain these records.
+
+The exact surveyed site matched all signed canonical vertices in the embedded IFC footprint after applying the documented coordinate transform and allowing ring winding reversal. Native wall solids cleared all 55 sampled door and window opening centers in that model. The rectangular wet-wall export and the IFC exported by the production browser each cleared all 181 sampled hosted aperture centers.
+
+The browser export opened as a four-storey model with 893 GUID-bearing objects and a matching file digest. All four courtyard slab center samples were clear. A second FreeCAD session reopened the saved native document and matched the six lift shaft and 16 plumbing reservation footprints to the canonical model by GUID. It recovered two stair assemblies on each storey, including the terrace stair headhouses. The six full stairs each returned 18 native solids and two embedded IFC flight bodies. All 12 full-stair landing and both roof-access landing footprints matched the native solids within 0.01 mm. The canonical projection ends at the roof landing. FreeCAD presents the flight geometry under the parent objects. The lift and riser exports describe reservations using `IfcSpace` geometry.
+
+The first rotated and curved import check treated a FreeCAD wall compound as wall material and reported 24 occupied opening centers. A follow-up isolated the actual host and fill solids. All 87 host openings then cleared their canonical centers, including 16 curved-host openings. The saved native compounds also cleared samples near both wall faces. At the initially occupied centers, the solid in the wall compound belonged to the imported door leaf or glazing. The original IFC exporter was retained. The independent schema readback covers a separate gate.
+
+The saved courtyard and rotunda documents preserved all 1,473 imported GUIDs, IFC classes and associated canonical object, floor and host properties. All eight storey elevations matched the canonical values at 0 mm error. The remaining manifest entries were virtual open passages, with 24 in the courtyard and 16 in the rotunda. The native solids retain those cuts.
+
+Local evidence is under `%LOCALAPPDATA%\RHPlanner\phase5-2`, including `freecad-native-final.json`, `freecad-padding-and-courtyard.json`, `freecad-browser-spaces.json`, `native-all-aperture-probe.json`, `native-id-elevation-probe.json` and the reopened `freecad-native\courtyard.FCStd`.
+
+After the operator moved the design to shared shafts outside bathrooms, FreeCAD reimported the new production IFC4 with an exact artifact digest. It resolved all four shared-shaft GUIDs across two residential floors as `IfcSpace` and recovered their exact canonical footprints. The imported document and receipt are in `shared-plumbing-native\wet-wall-residential.FCStd` and `shared-plumbing-native.json`.

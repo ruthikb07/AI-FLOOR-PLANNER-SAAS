@@ -21,9 +21,11 @@ import {
   executeAuditedPlanningPipeline,
   moveApartmentPartition,
 } from '@ai-floor-planner/planning-engine';
-import { GeminiProvider, type BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
+import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import { CanonicalIfcExchangeAdapter } from '../services/canonical-ifc-adapter';
 import { handleBimAssistantQuery } from '../api/bim-assistant-routes';
+import { resolveServiceConfig } from '../env';
+import { createGeminiProvider } from '../server';
 
 const BASE_APARTMENT_CONFIG: MultiSheetApartmentConfig = {
   projectId: 'phase5b-suite',
@@ -354,12 +356,9 @@ describe('Phase 5B Backend — Direct CAD Editing, Element Realism, IFC4 Curved 
       expect(cachedCall.json.aiTelemetry.invocationMode).toBe('CACHED_PROVIDER_RESPONSE');
     }
 
-    // Opt-in live Gemini verification when RUN_LIVE_AI_TESTS === '1' and GEMINI_API_KEY is present
-    if (process.env.RUN_LIVE_AI_TESTS === '1' && process.env.GEMINI_API_KEY) {
-      const liveProvider = new GeminiProvider({
-        apiKey: process.env.GEMINI_API_KEY,
-        model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
-      });
+    if (process.env.RUN_LIVE_AI_TESTS === '1') {
+      const liveProvider = createGeminiProvider(resolveServiceConfig());
+      expect(liveProvider, 'An authorized runtime credential is required for live BIM verification').toBeTruthy();
       const liveRes = await handleBimAssistantQuery(
         {
           building,
@@ -370,9 +369,12 @@ describe('Phase 5B Backend — Direct CAD Editing, Element Realism, IFC4 Curved 
         { gemini: liveProvider, briefInterpreterKind: 'gemini' },
       );
       expect(liveRes.status).toBe(200);
-      if ('aiTelemetry' in liveRes.json) {
-        expect(liveRes.json.aiTelemetry.geminiInvoked).toBe(true);
-      }
+      expect(liveRes.json).toMatchObject({
+        aiTelemetry: { geminiInvoked: true, invocationMode: 'LIVE_PROVIDER', interpretationSource: 'GEMINI_ASSISTED' },
+      });
+      if (!('aiTelemetry' in liveRes.json)) throw new Error('Missing live BIM telemetry');
+      expect(liveRes.json.aiTelemetry.modelUsed).toBeTruthy();
+      expect(liveRes.json.aiTelemetry.apiCallCount).toBeGreaterThan(0);
     }
   }, 60_000);
 });

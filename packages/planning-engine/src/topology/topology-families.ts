@@ -3162,6 +3162,10 @@ export function generateTopologyCandidates(ctx: TopologyContext): TopologyGenera
       const balanced = weighted && partitionDefects(weighted, ctx.program).length === 0 ? weighted : unweighted;
       const tightened = withTightBuiltOutline(reserveInterflatDucts(balanced, ctx.program));
       const defects = partitionDefects(tightened, ctx.program);
+      const requiredLiftCount = ctx.architectureOptions?.liftCount;
+      if (requiredLiftCount !== undefined && tightened.liftBoxes.length !== requiredLiftCount) {
+        defects.push(`the selected program requires exactly ${requiredLiftCount} lifts`);
+      }
       if (defects.length) {
         rejections.push({ familyId: family.id, variantId: attempt.variantId, reasons: defects });
         continue;

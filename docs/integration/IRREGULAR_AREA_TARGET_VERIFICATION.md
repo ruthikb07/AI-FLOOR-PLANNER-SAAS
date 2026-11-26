@@ -20,3 +20,15 @@ Each candidate came from seed 2 and passed the canonical meaningful-diversity co
 ## Phase 5.2
 
 Phase 5.2 measures complete advisory rectangular schedules when the accepted baseline materially exceeds the requested carpet. A bounded search adjusts plate and unit capacity and retains the accepted geometry when no trial improves the maximum relative error. It preserves a realized requested massing or split arrangement. The 5% advisory objective remains separate from a strict target tolerance.
+
+The irregular replay retained 960.68 and 1,138.02 ft². Thirteen nearby envelope, axis and allocation probes did not produce a better accepted maximum deviation. Several smaller probes failed stairs or bedroom-door requirements. The best measured outcome remains an advisory miss for both units.
+
+
+| Windows production brief | Requested carpet | Phase 5.1 maximum deviation | Phase 5.2 maximum deviation | Phase 5.2 achieved carpet |
+| --- | --- | --- | --- | --- |
+| Bungalow | 1,800 ft² | 84.52% | 2.07% | 1,762.7 ft² |
+| Four-flat mixed BHK | 850, 850, 1,250, 1,250 ft² | 62.66% | 62.66% | 1,213.8, 1,382.6, 1,939.2, 1,920.0 ft² |
+| Six-flat high density | 850 ft² each | 132.44% | 19.82% | 884.0, 936.4, 1,018.5, 883.1, 935.4, 1,017.3 ft² |
+| Multi-storey open stilt | 850 ft² each | 94.41% | 11.98% | 748.2, 890.7, 748.2, 890.7 ft² |
+
+The Windows strict case retained the same four achieved areas as Phase 5.1. The no-improvement mixed case retained its valid baseline after the bounded search. The browser evidence includes requested and measured areas, physical opening fits and functional audit outcomes.

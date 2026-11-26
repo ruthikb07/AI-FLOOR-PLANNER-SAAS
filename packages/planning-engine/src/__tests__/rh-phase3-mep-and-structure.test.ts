@@ -14,7 +14,6 @@ import {
 } from '@ai-floor-planner/core';
 import { solveMultiSheetApartmentProject } from '../apartment/multi-sheet-apartment-solver';
 import { evaluateArchitecturalComplianceScore } from '../topology/candidate-scoring';
-import { PLUMB_SHAFT_MIN } from '../mep/mep-synthesizer';
 
 function makePhase3Config(
   bhkTypes: Array<'2BHK' | '3BHK' | '4BHK'>,
@@ -53,7 +52,7 @@ function makePhase3Config(
 }
 
 describe('RH Planner Phase 3: MEP Engineering, Stilt Safety & Mixed-BHK Precision', () => {
-  it('synthesizes coordinated Electrical, Plumbing (vertical stacks), Reflected Ceiling, Fire Safety & Cantilever Beams', () => {
+  it('synthesizes electrical, fixture, ceiling and fire layers without inventing plumbing shafts', () => {
     const result = solveMultiSheetApartmentProject(
       makePhase3Config(['2BHK', '2BHK', '3BHK', '3BHK']),
     );
@@ -63,14 +62,7 @@ describe('RH Planner Phase 3: MEP Engineering, Stilt Safety & Mixed-BHK Precisio
     expect(mep).toBeDefined();
     expect(mep!.schemaVersion).toBe('RH-MEP-3.0');
     expect(mep!.floors.length).toBe(building.floors.length);
-    expect(mep!.verticalStacks.length).toBeGreaterThan(0);
-
-    // Every plumbing shaft meets >= 600x900 mm minimum and terminates at stilt collector
-    for (const stack of mep!.verticalStacks) {
-      expect(Math.min(stack.widthMm, stack.depthMm)).toBeGreaterThanOrEqual(PLUMB_SHAFT_MIN.widthMm);
-      expect(Math.max(stack.widthMm, stack.depthMm)).toBeGreaterThanOrEqual(PLUMB_SHAFT_MIN.depthMm);
-      expect(stack.terminatesAtStiltCollector).toBe(true);
-    }
+    expect(mep!.verticalStacks).toEqual([]);
 
     const typFloor = building.floors.find(
       (f) => f.floorUse !== 'STILT_PARKING' && f.level > 0,
@@ -89,7 +81,7 @@ describe('RH Planner Phase 3: MEP Engineering, Stilt Safety & Mixed-BHK Precisio
     expect(kinds.has('AC_IDU')).toBe(true);
     expect(kinds.has('AC_ODU')).toBe(true);
     // M-PLUMB & F-FIRE
-    expect(kinds.has('PLUMB_SHAFT')).toBe(true);
+    expect(kinds.has('PLUMB_SHAFT')).toBe(false);
     expect(kinds.has('FT') || kinds.has('NT')).toBe(true);
     expect(kinds.has('FHR')).toBe(true);
     expect(kinds.has('FHR_HR')).toBe(true);
@@ -99,10 +91,7 @@ describe('RH Planner Phase 3: MEP Engineering, Stilt Safety & Mixed-BHK Precisio
 
     const pipeKinds = new Set(typMep.runs.map((r) => r.kind));
     expect(pipeKinds.has('WIRING_LOOP')).toBe(true);
-    expect(pipeKinds.has('CWS')).toBe(true);
-    expect(pipeKinds.has('HWS')).toBe(true);
-    expect(pipeKinds.has('SP')).toBe(true);
-    expect(pipeKinds.has('WP')).toBe(true);
+    expect((['CWS', 'HWS', 'SP', 'WP'] as const).some(kind => pipeKinds.has(kind))).toBe(false);
 
     const ceilKinds = new Set(typMep.ceilings.map((c) => c.kind));
     expect(ceilKinds.has('COVE_GYPSUM')).toBe(true);

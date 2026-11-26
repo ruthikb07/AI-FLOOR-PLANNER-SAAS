@@ -83,6 +83,7 @@ export interface ArchitecturalGenerationOptions {
   readonly openToSky?: 'AUTO' | 'REQUIRED' | 'PROHIBITED';
   readonly coreDimensions?: CorePlanningDimensions;
   readonly requireWetWallRisers?: boolean;
+  /** Retained for saved briefs. Coordinated reservations are shared by default. */
   readonly preferSharedWetWallRisers?: boolean;
   readonly wetWallRiserSizeMm?: { readonly widthMm: number; readonly depthMm: number };
   readonly liftSystem?:
@@ -92,6 +93,7 @@ export interface ArchitecturalGenerationOptions {
 }
 
 export const PLUMBING_RISER_TAG = 'plumbing:serves:';
+export const SHARED_PLUMBING_RISER_TAG = 'plumbing:shared-riser';
 export const PLUMBING_RESERVATION_NOTE_TAG = 'plumbing:reservation-note:';
 
 export function isArchitecturalGenerationOptions(value: unknown): value is ArchitecturalGenerationOptions {

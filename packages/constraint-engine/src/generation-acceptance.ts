@@ -1,5 +1,5 @@
-import { architecturalSpaceRole, isPhysicalBoundary, PLUMBING_RESERVATION_NOTE_TAG, PLUMBING_RISER_TAG, RoomType, validateBuildingSchema, type ApartmentGenerationViolation, type Building, type Floor, type GeometryValidationReport, type Room } from '@ai-floor-planner/core';
-import { openingFitsApartmentWall, polygonBoundingBox } from '@ai-floor-planner/geometry-engine';
+import { architecturalSpaceRole, isPhysicalBoundary, PLUMBING_RESERVATION_NOTE_TAG, PLUMBING_RISER_TAG, RoomType, SHARED_PLUMBING_RISER_TAG, validateBuildingSchema, type ApartmentGenerationViolation, type Building, type Floor, type GeometryValidationReport, type Room } from '@ai-floor-planner/core';
+import { openingFitsApartmentWall, polygonBoundingBox, polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
 
 export interface GenerationBlockingFinding {
   readonly code: string;
@@ -132,9 +132,19 @@ export function architecturalRequirementFindings(building: Building): readonly A
       add('WET_WALL_RISER_ALIGNMENT_MISMATCH', `Architectural riser footprints on ${floor.name} differ from ${floors[0]!.name}.`,
         [...reservations[index]!.map(room => room.id), ...reservations[0]!.map(room => room.id)]);
     }
+    const bathrooms = floor.rooms.filter(room => room.type === RoomType.Bathroom && room.unitId);
+    for (const shaft of reservations[index]!.filter(room => room.tags.includes(SHARED_PLUMBING_RISER_TAG))) {
+      const served = bathrooms.filter(bath => bath.tags.some(tag => tag.startsWith('apt-room:') &&
+        shaft.tags.includes(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length))));
+      const servedFlats = new Set(served.map(bath => bath.unitId)).size;
+      if (shaft.unitId || servedFlats < Math.min(2, floor.apartmentUnits!.length) || servedFlats > 4 ||
+          bathrooms.some(bath => polygonIntersectionArea(bath.boundary, shaft.boundary) > 0.001)) {
+        add('SHARED_PLUMBING_RESERVATION_INVALID', `${shaft.name} on ${floor.name} must serve nearby flats from outside their bathrooms.`, [shaft.id]);
+      }
+    }
     if (options?.requireWetWallRisers) {
       const served = new Set(reservations[index]!.flatMap(room => room.tags));
-      for (const bath of floor.rooms.filter(room => room.type === RoomType.Bathroom && room.unitId)) {
+      for (const bath of bathrooms) {
         if (!bath.tags.some(tag => tag.startsWith('apt-room:') && served.has(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length)))) {
           const reason = bath.tags.find(tag => tag.startsWith(PLUMBING_RESERVATION_NOTE_TAG))?.slice(PLUMBING_RESERVATION_NOTE_TAG.length);
           add('WET_WALL_RISER_REQUIRED', `${bath.name}: ${reason ?? 'No feasible architectural plumbing riser.'}`, [bath.id]);
@@ -171,7 +181,8 @@ export function generationBlockingFindings(
   const generationReport = building.metadata.generationReport;
   for (const issue of generationReport?.violations ?? []) {
     if (issue.severity === 'CRITICAL' && (['GEOMETRY', 'CLOSURE', 'OPENING'].includes(issue.source) ||
-      ['AREA_TARGET_UNMET', 'MANDATORY_BRIEF_UNMET', 'DUPLICATE_FINAL_LAYOUT', 'CORE_DIMENSION_UNMET', 'WET_WALL_RISER_ALIGNMENT_MISMATCH', 'WET_WALL_RISER_REQUIRED'].includes(issue.code))) {
+      ['AREA_TARGET_UNMET', 'MANDATORY_BRIEF_UNMET', 'DUPLICATE_FINAL_LAYOUT', 'CORE_DIMENSION_UNMET', 'WET_WALL_RISER_ALIGNMENT_MISMATCH',
+        'WET_WALL_RISER_REQUIRED', 'SHARED_PLUMBING_RESERVATION_INVALID'].includes(issue.code))) {
       findings.push({ code: issue.code, message: issue.description });
     }
   }

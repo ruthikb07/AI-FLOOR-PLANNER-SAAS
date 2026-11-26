@@ -270,9 +270,9 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(wizard.architectureOptions?.preferExteriorLiving)} onChange={event =>
               updateWizard({ architectureOptions: { ...wizard.architectureOptions, preferExteriorLiving: event.target.checked } })} />Prefer exterior living</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wizard.architectureOptions?.coordinatedWetWallLayout ?? Boolean(wizard.coordinatedWetWallLayout)} onChange={event =>
-              updateWizard({ architectureOptions: { ...wizard.architectureOptions, coordinatedWetWallLayout: event.target.checked } })} />Coordinate wet-wall risers</label>
+              updateWizard({ architectureOptions: { ...wizard.architectureOptions, coordinatedWetWallLayout: event.target.checked } })} />Reserve shared plumbing shafts outside bathrooms</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(wizard.architectureOptions?.requireWetWallRisers)} onChange={event =>
-              updateWizard({ architectureOptions: { ...wizard.architectureOptions, requireWetWallRisers: event.target.checked } })} />Require a riser for every bathroom</label>
+              updateWizard({ architectureOptions: { ...wizard.architectureOptions, requireWetWallRisers: event.target.checked } })} />Require shared shaft coverage for every bathroom</label>
           </fieldset>
 
           <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">

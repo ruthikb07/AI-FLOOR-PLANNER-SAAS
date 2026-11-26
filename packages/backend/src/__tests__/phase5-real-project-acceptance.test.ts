@@ -11,6 +11,7 @@ import {
   Direction,
   EXACT_SQMM_PER_SQFT,
   PLUMBING_RISER_TAG,
+  SHARED_PLUMBING_RISER_TAG,
   RoomType,
   exchangeRevision,
   rectToPolygon,
@@ -48,8 +49,14 @@ beforeAll(async () => {
   if (evidence) await mkdir(evidence, { recursive: true });
 });
 
+async function requestLiveReference(config: MultiSheetApartmentConfig, provider: ReturnType<typeof createGeminiProvider>) {
+  const result = await handleProjectGeneration({ config, seed: 1 }, { gemini: provider });
+  expect(result.status, JSON.stringify((result.json as { error?: unknown }).error)).toBe(200);
+  return result.json as { building: Building; proposal: ArchitecturalProposal; telemetry: AIProposalTelemetry };
+}
+
 it.skipIf(process.env.RUN_PHASE51_LIVE_REFERENCE !== '1')(
-  'verifies measured canonical influence and precedence with the live Gemini runtime', async () => {
+  'verifies measured canonical influence and cache replay with the live Gemini runtime', async () => {
     const gemini = createGeminiProvider(resolveServiceConfig());
     expect(gemini, 'LIVE_PROVIDER_VERIFICATION_PENDING: no authorized runtime credential').toBeTruthy();
     const referenceName = 'floor_typical.png';
@@ -59,14 +66,9 @@ it.skipIf(process.env.RUN_PHASE51_LIVE_REFERENCE !== '1')(
       ...BASE_BRIEF, projectId: 'phase51-live-reference', autoExploreNovelShape: true, numTypicalFloors: 1,
       aiPrompt: 'Create cross-ventilated apartments with no open-to-sky ducts. Where feasible, follow the attached reference for core location, circulation, and apartment organization.',
     };
-    async function request(config: MultiSheetApartmentConfig, provider = gemini) {
-      const result = await handleProjectGeneration({ config, seed: 1 }, { gemini: provider });
-      expect(result.status, JSON.stringify((result.json as { error?: unknown }).error)).toBe(200);
-      return result.json as { building: Building; proposal: ArchitecturalProposal; telemetry: AIProposalTelemetry };
-    }
-    const without = await request(brief);
-    const withImage = await request({ ...brief, referenceImage });
-    const repeat = await request({ ...brief, referenceImage });
+    const without = await requestLiveReference(brief, gemini);
+    const withImage = await requestLiveReference({ ...brief, referenceImage }, gemini);
+    const repeat = await requestLiveReference({ ...brief, referenceImage }, gemini);
     const difference = compareCanonicalBuildingAlternatives(without.building, withImage.building);
     for (const result of [without, withImage]) {
       expect(result.telemetry).toMatchObject({ interpretationSource: 'GEMINI', invocationMode: 'LIVE_PROVIDER' });
@@ -81,26 +83,39 @@ it.skipIf(process.env.RUN_PHASE51_LIVE_REFERENCE !== '1')(
     console.info('Live reference comparison', JSON.stringify({
       without: without.telemetry, withImage: withImage.telemetry, repeat: repeat.telemetry,
       extractedGraph: withImage.proposal.referenceSpatialGraph, difference,
+      canonicalVariants: [without.building, withImage.building].map(building => ({
+        variant: building.metadata.generationReport?.selectedVariant, shape: building.metadata.generationBrief?.buildingMassingShape,
+      })),
     }));
     expect(difference.meaningful).toBe(true);
     expect(repeat.telemetry).toMatchObject({ invocationMode: 'CACHED_PROVIDER_RESPONSE', cacheHit: true, apiCallCount: 0 });
     expect(repeat.telemetry.tokenUsage?.totalTokens).toBe(0);
     expect(repeat.building.metadata.generationBrief?.physicalLayoutHash).toBe(withImage.building.metadata.generationBrief?.physicalLayoutHash);
+  }, 180_000,
+);
 
+it.skipIf(process.env.RUN_PHASE51_LIVE_REFERENCE !== '1')(
+  'verifies measured canonical influence precedence for a locked brief', async () => {
+    const gemini = createGeminiProvider(resolveServiceConfig());
+    expect(gemini, 'LIVE_PROVIDER_VERIFICATION_PENDING: no authorized runtime credential').toBeTruthy();
     const survey = {
       points: [{ x: -250.25, y: 312.75 }, { x: 39749.75, y: 1512.75 }, { x: 38449.75, y: 34312.75 }, { x: 549.75, y: 33312.75 }],
       sweepsDeg: [0, 0, 0, 0], roadEdge: 2, edgeSetbacksMm: [1900, 2200, 3200, 2050],
     };
     const lockedBrief: MultiSheetApartmentConfig = {
-      ...brief, autoExploreNovelShape: false, buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
+      ...BASE_BRIEF, projectId: 'phase51-live-reference-locked', numTypicalFloors: 1,
+      autoExploreNovelShape: false, buildingMassingShape: 'COMPACT_DOUBLE_LOADED',
       lockedMassingShape: 'COMPACT_DOUBLE_LOADED', surveyBoundary: survey,
       aiPrompt: 'No OTS. Require a central core and retain the locked compact rectangular massing. Read the reference core position independently even if it differs.',
     };
-    const measured = await request(lockedBrief, null);
+    const measured = await requestLiveReference(lockedBrief, null);
     const measuredUnits = measured.building.metadata.generationReport!.floorAreas![0]!.units;
-    const locked = await request({ ...lockedBrief, referenceImage, requireAreaTargets: true, areaAcceptanceTolerancePercent: 3,
+    const splitImage = await readFile(new URL('../__fixtures__/phase5-split-courtyard-reference.png', import.meta.url));
+    const splitReference = { name: 'phase5-split-courtyard-reference.png', mimeType: 'image/png',
+      dataUrl: 'data:image/png;base64,' + splitImage.toString('base64') };
+    const locked = await requestLiveReference({ ...lockedBrief, referenceImage: splitReference, requireAreaTargets: true, areaAcceptanceTolerancePercent: 3,
       units: lockedBrief.units!.map((unit, index) => ({ ...unit, targetCarpetSqFt: measuredUnits[index]!.carpetMm2 / EXACT_SQMM_PER_SQFT })),
-    });
+    }, gemini);
     console.info('Live reference precedence', JSON.stringify({ telemetry: locked.telemetry, graph: locked.proposal.referenceSpatialGraph }));
     expect(locked.telemetry).toMatchObject({ interpretationSource: 'GEMINI', referenceDisposition: 'VISION_INLINE_ATTACHED' });
     expect(locked.proposal.corePlacement).toBe('CENTRAL');
@@ -615,16 +630,22 @@ describe('Phase 5 real-project acceptance', () => {
         expect(outdoorWindow(kitchen.id)).toBe(true);
       }
       expect(entryDirections.size).toBeGreaterThan(1);
-      expect(risers).toHaveLength(8);
-      expect(risers).toHaveLength(floor.rooms.filter(room => room.type === RoomType.Bathroom).length);
+      expect(risers).toHaveLength(2);
+      const baths = floor.rooms.filter(room => room.type === RoomType.Bathroom);
+      const served = risers.flatMap(riser => riser.tags.filter(tag => tag.startsWith(PLUMBING_RISER_TAG)));
+      expect(served.sort()).toEqual(baths.map(bath => PLUMBING_RISER_TAG + bath.tags.find(tag => tag.startsWith('apt-room:'))!.slice('apt-room:'.length)).sort());
       expect(floor.rooms.some(room => room.name.includes('MEP / Plumbing Duct'))).toBe(false);
       for (const riser of risers) {
-        const tag = riser.tags.find(t => t.startsWith(PLUMBING_RISER_TAG))!;
-        const bath = floor.rooms.find(room => room.tags.includes('apt-room:' + tag.slice(PLUMBING_RISER_TAG.length)))!;
-        expect(bath.boundary.points.length).toBe(6);
-        expect(outdoorWindow(bath.id)).toBe(true);
-        expect(polygonIntersectionArea(bath.boundary, riser.boundary)).toBeLessThan(0.001);
-        expect(riser.unitId).toBe(bath.unitId);
+        expect(riser.tags).toContain(SHARED_PLUMBING_RISER_TAG);
+        expect(riser.unitId).toBeUndefined();
+        const servedBaths = baths.filter(bath => bath.tags.some(tag => tag.startsWith('apt-room:') &&
+          riser.tags.includes(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length))));
+        expect(new Set(servedBaths.map(bath => bath.unitId)).size).toBe(2);
+        for (const bath of baths) {
+          expect(bath.boundary.points).toHaveLength(4);
+          expect(outdoorWindow(bath.id)).toBe(true);
+          expect(polygonIntersectionArea(bath.boundary, riser.boundary)).toBeLessThan(0.001);
+        }
         expect(floor.doors.some(door => door.connectsRooms.includes(riser.id))).toBe(false);
         expect(floor.windows.some(window => walls.get(window.wallId)?.roomIds.includes(riser.id))).toBe(false);
         expect(floor.furniture?.some(item => item.roomId === riser.id)).toBe(false);
@@ -638,7 +659,22 @@ describe('Phase 5 real-project acceptance', () => {
     });
     expect(coordinates[0]).toEqual(coordinates[1]);
     const svg = exportSVG(building, defaultExportOptions(floors[0]!.id));
-    expect(svg.match(/<title>Plumbing riser<\/title>/g)).toHaveLength(8);
+    expect(svg.match(/<title>Shared plumbing shaft<\/title>/g)).toHaveLength(2);
+    const stiltConnections = building.mepEngineering!.verticalStacks.filter(stack => stack.terminatesAtStiltCollector);
+    expect(stiltConnections).toHaveLength(0);
+    expect(building.mepEngineering?.drainageEconomy).toMatchObject({
+      sharedShaftCount: 2,
+      routingStatus: 'SCHEMATIC_UNSIZED',
+      collectorTerminatesTowardsRoad: stiltConnections.length > 0,
+      unconnectedRiserCount: 2 - stiltConnections.length,
+    });
+    expect(building.mepEngineering!.drainageEconomy!.totalDrainagePipeLengthMm).toBeGreaterThan(0);
+    const typMep = building.mepEngineering!.floors.find(plan => plan.floorId === floors[0]!.id)!;
+    expect(typMep.runs.some(run => run.kind === 'SP' && run.slopeRatio === '1:60' && (run.lengthMm ?? 0) > 0)).toBe(true);
+    expect(typMep.runs.some(run => run.kind === 'WP' && run.slopeRatio === '1:50' && (run.lengthMm ?? 0) > 0)).toBe(true);
+    const stiltFloor = building.floors.find(floor => floor.floorUse === 'STILT_PARKING')!;
+    const stiltMep = building.mepEngineering!.floors.find(plan => plan.floorId === stiltFloor.id)!;
+    expect(stiltMep.runs.some(run => run.kind === 'SP' && run.diameterMm === 160 && run.slopeRatio === '1:80')).toBe(stiltConnections.length > 0);
     expect(svg.match(/class="stair-up-route"/g)).toHaveLength(2);
     expect(svg).toContain('>CENTRAL COURTYARD</text>');
     expect(svg).toContain('>OPEN TO SKY</text>');
@@ -659,7 +695,7 @@ describe('Phase 5 real-project acceptance', () => {
       ...BASE_BRIEF, projectId: 'wet-wall-tight-baths', plotWidthMm: 42000, plotDepthMm: 36000,
       aiPrompt: 'Use an open-to-sky courtyard with naturally ventilated interior toilets where possible.',
       units: BASE_BRIEF.units!.map((unit, index) => ({ ...unit, bhkType: index % 2 ? '3BHK' : '2BHK' })),
-      architectureOptions: { coordinatedWetWallLayout: true, preferExteriorLiving: true },
+      architectureOptions: { coordinatedWetWallLayout: true, preferExteriorLiving: true, wetWallRiserSizeMm: { widthMm: 5000, depthMm: 5000 } },
     };
     const response = await post('/projects/generate', { config });
     const result = await response.json() as { building?: Building; error?: unknown };
@@ -672,7 +708,6 @@ describe('Phase 5 real-project acceptance', () => {
       expect(missing?.elementIds.length).toBeGreaterThan(0);
       const risers = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)));
       const stacks = building.mepEngineering!.verticalStacks.filter(stack => stack.floorIds.includes(floor.id));
-      expect(stacks.length).toBeGreaterThan(0);
       expect(stacks.map(stack => stack.position)).toEqual(risers.map(room => ({ x: room.x + room.width / 2, y: room.y + room.height / 2 })));
       const mep = building.mepEngineering!.floors.find(plan => plan.floorId === floor.id)!;
       expect(mep.runs.some(run => run.roomId && missing?.elementIds.includes(run.roomId))).toBe(false);

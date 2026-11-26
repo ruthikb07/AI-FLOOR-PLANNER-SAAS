@@ -54,6 +54,7 @@ import {
   Direction,
   PlotShape,
   PLUMBING_RISER_TAG,
+  SHARED_PLUMBING_RISER_TAG,
   PLUMBING_RESERVATION_NOTE_TAG,
   isArchitecturalGenerationOptions,
   createDynamicApartmentManifest,
@@ -1545,8 +1546,7 @@ export function solveTypicalFloorSheet(
 
   const coordinateRisers = config.architectureOptions?.coordinatedWetWallLayout || config.architectureOptions?.requireWetWallRisers;
   const structure = coordinateRisers
-    ? reserveWetWallRisers(initialStructure, config.architectureOptions?.wetWallRiserSizeMm,
-      config.architectureOptions?.preferSharedWetWallRisers) : initialStructure;
+    ? reserveWetWallRisers(initialStructure, config.architectureOptions?.wetWallRiserSizeMm) : initialStructure;
   const includeDiningHall = config.includeDiningHall ?? true;
   const diningToLivingRedirect = new Map<string, string>();
   const rooms: Room[] = [];
@@ -1616,7 +1616,7 @@ export function solveTypicalFloorSheet(
   for (const el of structure.corridors) addRoom({ ...el, tags: [...(el.tags ?? []), 'core:corridor'] }, RoomType.Corridor);
   const flatByRoomId = new Map(structure.flats.flatMap(flat => flat.rooms.map(room => [room.id, flat.id] as const)));
   for (const el of structure.shafts) {
-    const served = el.tags?.find(tag => tag.startsWith(PLUMBING_RISER_TAG));
+    const served = el.tags?.includes(SHARED_PLUMBING_RISER_TAG) ? undefined : el.tags?.find(tag => tag.startsWith(PLUMBING_RISER_TAG));
     addRoom(el, RoomType.ServiceShaft, served ? flatByRoomId.get(served.slice(PLUMBING_RISER_TAG.length)) : undefined);
   }
 
