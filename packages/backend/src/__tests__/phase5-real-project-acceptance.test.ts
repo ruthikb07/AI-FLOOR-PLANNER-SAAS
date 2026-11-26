@@ -11,6 +11,7 @@ import {
   Direction,
   EXACT_SQMM_PER_SQFT,
   PLUMBING_RISER_TAG,
+  SHARED_PLUMBING_RISER_TAG,
   RoomType,
   exchangeRevision,
   rectToPolygon,
@@ -615,16 +616,22 @@ describe('Phase 5 real-project acceptance', () => {
         expect(outdoorWindow(kitchen.id)).toBe(true);
       }
       expect(entryDirections.size).toBeGreaterThan(1);
-      expect(risers).toHaveLength(8);
-      expect(risers).toHaveLength(floor.rooms.filter(room => room.type === RoomType.Bathroom).length);
+      expect(risers).toHaveLength(2);
+      const baths = floor.rooms.filter(room => room.type === RoomType.Bathroom);
+      const served = risers.flatMap(riser => riser.tags.filter(tag => tag.startsWith(PLUMBING_RISER_TAG)));
+      expect(served.sort()).toEqual(baths.map(bath => PLUMBING_RISER_TAG + bath.tags.find(tag => tag.startsWith('apt-room:'))!.slice('apt-room:'.length)).sort());
       expect(floor.rooms.some(room => room.name.includes('MEP / Plumbing Duct'))).toBe(false);
       for (const riser of risers) {
-        const tag = riser.tags.find(t => t.startsWith(PLUMBING_RISER_TAG))!;
-        const bath = floor.rooms.find(room => room.tags.includes('apt-room:' + tag.slice(PLUMBING_RISER_TAG.length)))!;
-        expect(bath.boundary.points.length).toBe(6);
-        expect(outdoorWindow(bath.id)).toBe(true);
-        expect(polygonIntersectionArea(bath.boundary, riser.boundary)).toBeLessThan(0.001);
-        expect(riser.unitId).toBe(bath.unitId);
+        expect(riser.tags).toContain(SHARED_PLUMBING_RISER_TAG);
+        expect(riser.unitId).toBeUndefined();
+        const servedBaths = baths.filter(bath => bath.tags.some(tag => tag.startsWith('apt-room:') &&
+          riser.tags.includes(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length))));
+        expect(new Set(servedBaths.map(bath => bath.unitId)).size).toBe(2);
+        for (const bath of baths) {
+          expect(bath.boundary.points).toHaveLength(4);
+          expect(outdoorWindow(bath.id)).toBe(true);
+          expect(polygonIntersectionArea(bath.boundary, riser.boundary)).toBeLessThan(0.001);
+        }
         expect(floor.doors.some(door => door.connectsRooms.includes(riser.id))).toBe(false);
         expect(floor.windows.some(window => walls.get(window.wallId)?.roomIds.includes(riser.id))).toBe(false);
         expect(floor.furniture?.some(item => item.roomId === riser.id)).toBe(false);
@@ -638,7 +645,8 @@ describe('Phase 5 real-project acceptance', () => {
     });
     expect(coordinates[0]).toEqual(coordinates[1]);
     const svg = exportSVG(building, defaultExportOptions(floors[0]!.id));
-    expect(svg.match(/<title>Plumbing riser<\/title>/g)).toHaveLength(8);
+    expect(svg.match(/<title>Shared plumbing shaft<\/title>/g)).toHaveLength(2);
+    expect(building.mepEngineering?.verticalStacks.every(stack => !stack.terminatesAtStiltCollector)).toBe(true);
     expect(svg.match(/class="stair-up-route"/g)).toHaveLength(2);
     expect(svg).toContain('>CENTRAL COURTYARD</text>');
     expect(svg).toContain('>OPEN TO SKY</text>');
@@ -672,7 +680,6 @@ describe('Phase 5 real-project acceptance', () => {
       expect(missing?.elementIds.length).toBeGreaterThan(0);
       const risers = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)));
       const stacks = building.mepEngineering!.verticalStacks.filter(stack => stack.floorIds.includes(floor.id));
-      expect(stacks.length).toBeGreaterThan(0);
       expect(stacks.map(stack => stack.position)).toEqual(risers.map(room => ({ x: room.x + room.width / 2, y: room.y + room.height / 2 })));
       const mep = building.mepEngineering!.floors.find(plan => plan.floorId === floor.id)!;
       expect(mep.runs.some(run => run.roomId && missing?.elementIds.includes(run.roomId))).toBe(false);

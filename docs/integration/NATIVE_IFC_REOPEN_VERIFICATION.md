@@ -25,3 +25,5 @@ The first rotated and curved import check treated a FreeCAD wall compound as wal
 The saved courtyard and rotunda documents preserved all 1,473 imported GUIDs, IFC classes and associated canonical object, floor and host properties. All eight storey elevations matched the canonical values at 0 mm error. The remaining manifest entries were virtual open passages, with 24 in the courtyard and 16 in the rotunda. The native solids retain those cuts.
 
 Local evidence is under `%LOCALAPPDATA%\RHPlanner\phase5-2`, including `freecad-native-final.json`, `freecad-padding-and-courtyard.json`, `freecad-browser-spaces.json`, `native-all-aperture-probe.json`, `native-id-elevation-probe.json` and the reopened `freecad-native\courtyard.FCStd`.
+
+After the operator moved the design to shared shafts outside bathrooms, FreeCAD reimported the new production IFC4 with an exact artifact digest. It resolved all four shared-shaft GUIDs across two residential floors as `IfcSpace` and recovered their exact canonical footprints. The imported document and receipt are in `shared-plumbing-native\wet-wall-residential.FCStd` and `shared-plumbing-native.json`.

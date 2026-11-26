@@ -300,7 +300,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     }
 
     const requiredRiserShortfall = options?.requireWetWallRisers
-      ? reserveWetWallRisers(assembled.structure, options.wetWallRiserSizeMm, options.preferSharedWetWallRisers).flats
+      ? reserveWetWallRisers(assembled.structure, options.wetWallRiserSizeMm).flats
         .flatMap(flat => flat.rooms).filter(room => room.tags?.some(tag => tag.startsWith(PLUMBING_RESERVATION_NOTE_TAG))).length
       : undefined;
     const score = scoreCandidate({

@@ -266,7 +266,7 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   await page.getByLabel('Number of lifts').selectOption('2');
   await page.getByLabel('Internal open-to-sky space').selectOption('REQUIRED');
   await page.getByRole('checkbox', { name: 'Prefer exterior living' }).check();
-  await page.getByRole('checkbox', { name: 'Coordinate wet-wall risers' }).check();
+  await page.getByRole('checkbox', { name: 'Reserve shared plumbing shafts outside bathrooms' }).check();
   await page.getByRole('button', { name: 'Continue to Step 04' }).click();
   const request = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'), { timeout: 90_000 });
   await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
@@ -280,7 +280,10 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;
   expect(floor.rooms.find(room => room.tags.includes('shaft:central-court'))?.openToSky).toBe(true);
   expect(floor.canonicalStaircases).toHaveLength(2);
-  expect(floor.rooms.filter(room => room.tags.some(tag => tag.startsWith('plumbing:serves:'))).length).toBeGreaterThanOrEqual(4);
+  const risers = floor.rooms.filter(room => room.tags.includes('plumbing:shared-riser'));
+  expect(risers).toHaveLength(2);
+  expect(risers.every(riser => !riser.unitId)).toBe(true);
+  expect(risers.flatMap(riser => riser.tags.filter(tag => tag.startsWith('plumbing:serves:')))).toHaveLength(8);
   const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
   await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 45_000 });
   await gallery.getByRole('img', { name: /Plan preview/ }).first().screenshot({ path: info.outputPath('coordinated-wet-wall-plan.png') });

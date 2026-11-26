@@ -9,3 +9,5 @@ The GitHub Actions `Opt-in Live AI & Native Interop Verification` workflow has a
 ## Phase 5.2
 
 Phase 5.2 dispatched the existing workflow with `phase5_reference_only` enabled after operator authorization and again after confirmation. Both jobs stopped before provider creation because the runner received an empty credential. The authenticated repository-admin API listed zero Actions repository secrets after the retry. The live reference and provider-assisted BIM classification gates remain pending. [First run](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45807072428) [Retry](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45808322542)
+
+A focused dispatch on the Phase 5.2 checkpoint reproduced the missing-credential result. The repository secret metadata still listed zero entries, and the job made zero live calls. [Release branch replay](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45815401111)

@@ -112,7 +112,7 @@ it('blocks mandatory closure failure on a real generated model with a detached e
 
 it('rejects a shifted architectural riser even when the geometry audit and generation report are stale', async () => {
   const accepted = await executeAuditedPlanningPipeline({ ...config, plotWidthMm: 38000, plotDepthMm: 32000,
-    structuralLayoutMode: 'DEFERRED', numTypicalFloors: 2, architectureOptions: { coordinatedWetWallLayout: true } });
+    structuralLayoutMode: 'DEFERRED', numTypicalFloors: 2, architectureOptions: { coordinatedWetWallLayout: true, coreArrangement: 'SPLIT_COURTYARD' } });
   const floor = accepted.building.floors.filter(item => item.apartmentUnits?.length)[1]!;
   const shaft = floor.rooms.find(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)))!;
   expect(shaft).toBeDefined();
@@ -124,6 +124,17 @@ it('rejects a shifted architectural riser even when the geometry audit and gener
     expect.objectContaining({ code: 'WET_WALL_RISER_ALIGNMENT_MISMATCH' }),
   ]));
   expect(() => requireAcceptedGeneration({ building: invalid, validationReport: accepted.validationReport })).toThrow(/riser footprints/i);
+
+  const bath = floor.rooms.find(room => room.type === RoomType.Bathroom)!;
+  const dx = bath.x + 100 - shaft.x;
+  const dy = bath.y + 100 - shaft.y;
+  const insideBath = { ...shaft, x: shaft.x + dx, y: shaft.y + dy,
+    boundary: { points: shaft.boundary.points.map(p => ({ x: p.x + dx, y: p.y + dy })) } };
+  const obstructed = { ...invalid, floors: invalid.floors.map(item => item.id === floor.id
+    ? { ...item, rooms: item.rooms.map(room => room.id === shaft.id ? insideBath : room) } : item) };
+  expect(generationBlockingFindings(obstructed, accepted.validationReport)).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'SHARED_PLUMBING_RESERVATION_INVALID' }),
+  ]));
 }, 30_000);
 
 it('sizes opposing stairs, lift shafts, court and clear circulation for a taller site', async () => {
@@ -159,7 +170,7 @@ it('refuses required chases that do not fit and reports each named wet room', as
   expect(result.status).toBe(422);
   expect(result.json).not.toHaveProperty('building');
   expect(result.json).toMatchObject({ error: { findings: expect.arrayContaining([
-    expect.objectContaining({ code: 'WET_WALL_RISER_REQUIRED', message: expect.stringMatching(/Flat.+(?:Bathroom|Toilet):.+minimum bathroom area/i) }),
+    expect.objectContaining({ code: 'WET_WALL_RISER_REQUIRED', message: expect.stringMatching(/Flat.+(?:Bathroom|Toilet):.+No shared service pocket/i) }),
   ]) } });
 }, 60_000);
 

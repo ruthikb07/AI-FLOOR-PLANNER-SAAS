@@ -1,33 +1,43 @@
 import { expect, it } from 'vitest';
-import { PLUMBING_RISER_TAG, rectToPolygon } from '@ai-floor-planner/core';
-import { polygonArea, polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
-import type { ApartmentPlanRoom, ApartmentPlanStructure } from '../interpretation/apartment-plan';
+import { PLUMBING_RESERVATION_NOTE_TAG, PLUMBING_RISER_TAG, rectToPolygon, SHARED_PLUMBING_RISER_TAG } from '@ai-floor-planner/core';
+import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
 import { reserveWetWallRisers } from '../mep/wet-wall-risers';
 
-function structure(rooms: readonly ApartmentPlanRoom[]): ApartmentPlanStructure {
-  return { source: 'DETERMINISTIC_SCHEMATIC', boundary: rectToPolygon(0, 0, 8000, 8000).points,
-    flats: [{ id: 'flat', label: 'Flat', unitType: '2BHK', rect: { x: 500, y: 500, width: 6000, height: 5000 }, rooms }],
-    commonRooms: [], ungroupedRooms: [], lifts: [], stairs: [], lobbies: [], corridors: [], shafts: [], openings: [] };
+function structure(count: number): ApartmentPlanStructure {
+  const flats = Array.from({ length: count }, (_, index) => {
+    const id = `flat-${index}`;
+    const rect = { x: (index % 2) * 2000, y: index < 2 ? 2000 : 5600, width: 2000, height: 2000 };
+    const points = rectToPolygon(rect.x, rect.y, rect.width, rect.height).points;
+    return { id, label: id, unitType: '1BHK', rect, rooms: [{ id: id + '-bath', name: 'Bath', type: 'bathroom', rect, polygonPoints: points }] };
+  });
+  return { source: 'DETERMINISTIC_SCHEMATIC', boundary: rectToPolygon(0, 0, 8000, 8000).points, flats,
+    commonRooms: [], ungroupedRooms: [], lifts: [], stairs: [], lobbies: [], corridors: [], openings: [],
+    shafts: [{ id: 'side-vent', name: 'Open inter-flat vent', rect: { x: 0, y: 4000, width: 4000, height: 1600 },
+      architecturalRole: 'OPEN_TO_SKY_VOID', tags: ['shaft:ots', 'shaft:interflat'], assignedFlatId: null },
+    { id: 'court', name: 'Central court', rect: { x: 4000, y: 3000, width: 2500, height: 3000 },
+      architecturalRole: 'OPEN_TO_SKY_VOID', tags: ['shaft:ots', 'shaft:central-court'], assignedFlatId: null }],
+  };
 }
 
-it('reserves a custom rectangular chase from a viable convex corner on an orthogonal wet-room polygon', () => {
-  const points = [{ x: 1000, y: 1000 }, { x: 4000, y: 1000 }, { x: 4000, y: 3000 },
-    { x: 3400, y: 3000 }, { x: 3400, y: 3600 }, { x: 1000, y: 3600 }];
-  const room = { id: 'bath', name: 'Bath', type: 'bathroom', rect: { x: 1000, y: 1000, width: 3000, height: 2600 }, polygonPoints: points };
-  const result = reserveWetWallRisers(structure([room]), { widthMm: 550, depthMm: 750 });
-  expect(result.shafts).toHaveLength(1);
-  const { x, y, width, height } = result.shafts[0]!.rect;
-  const bath = { points: result.flats[0]!.rooms[0]!.polygonPoints! };
-  expect(width * height).toBe(550 * 750);
-  expect(polygonArea(bath)).toBe(polygonArea({ points }) - width * height);
-  expect(polygonIntersectionArea(bath, rectToPolygon(x, y, width, height))).toBe(0);
+it.each([2, 3, 4])('serves %i nearby flats from one perimeter shaft without changing wet rooms or using the court', count => {
+  const original = structure(count);
+  const result = reserveWetWallRisers(original, { widthMm: 550, depthMm: 750 });
+  const shafts = result.shafts.filter(shaft => shaft.tags?.includes(SHARED_PLUMBING_RISER_TAG));
+  expect(shafts).toHaveLength(1);
+  expect(shafts[0]?.rect).toEqual({ x: 0, y: 4000, width: 550, height: 1600 });
+  expect(shafts[0]?.assignedFlatId).toBeNull();
+  expect(shafts[0]?.tags).toEqual(expect.arrayContaining(original.flats.map(flat => PLUMBING_RISER_TAG + flat.rooms[0]!.id)));
+  expect(result.flats).toEqual(original.flats);
+  expect(result.shafts.find(shaft => shaft.id === 'court')).toEqual(original.shafts[1]);
+  expect(result.shafts.find(shaft => shaft.id === 'side-vent')?.rect.width).toBe(3450);
 });
 
-it('can serve two adjacent baths with a single chase and preserves their individual identities', () => {
-  const rooms = [800, 3300].map((x, index) => ({ id: `bath-${index}`, name: `Bath ${index}`, type: 'bathroom',
-    rect: { x, y: 1500, width: 2500, height: 2400 } }));
-  const result = reserveWetWallRisers(structure(rooms), undefined, true);
-  expect(result.shafts).toHaveLength(1);
-  expect(result.shafts[0]?.tags).toEqual(rooms.map(room => PLUMBING_RISER_TAG + room.id));
-  expect(result.flats[0]?.rooms[1]).toEqual(rooms[1]);
+it('names unserved bathrooms when only the central court could fit the duct', () => {
+  const original = structure(4);
+  const result = reserveWetWallRisers({ ...original, shafts: [original.shafts[1]!] });
+  expect(result.shafts).toEqual([original.shafts[1]]);
+  for (const [index, flat] of result.flats.entries()) {
+    expect(flat.rooms[0]?.polygonPoints).toEqual(original.flats[index]!.rooms[0]!.polygonPoints);
+    expect(flat.rooms[0]?.tags?.[0]).toMatch(PLUMBING_RESERVATION_NOTE_TAG);
+  }
 });
