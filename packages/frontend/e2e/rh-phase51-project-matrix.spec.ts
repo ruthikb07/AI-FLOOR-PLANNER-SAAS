@@ -303,9 +303,15 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   const [ifc, file] = await Promise.all([ifcResponse, download]);
   expect(ifc.status()).toBe(200);
   const { manifest } = await ifc.json() as { manifest: IfcExchangeManifest };
-  const source = ifc.request().postDataJSON().source;
-  expect(manifest.source).toEqual(source);
-  expect(createHash('sha256').update(await readFile((await file.path())!)).digest('hex')).toBe(manifest.artifactSha256);
+  const exportedRequest = ifc.request().postDataJSON() as { building: Building; source: IfcExchangeManifest['source'] };
+  expect(manifest.source).toEqual(exportedRequest.source);
+  const ifcBytes = await readFile((await file.path())!);
+  expect(createHash('sha256').update(ifcBytes).digest('hex')).toBe(manifest.artifactSha256);
+  await Promise.all([
+    writeFile(info.outputPath('courtyard.ifc'), ifcBytes),
+    writeFile(info.outputPath('courtyard.manifest.json'), JSON.stringify(manifest)),
+    writeFile(info.outputPath('courtyard.building.json'), JSON.stringify(exportedRequest.building)),
+  ]);
   const riserIds = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith('plumbing:serves:'))).map(room => room.id);
   expect(riserIds.every(id => manifest.elements.some(element => element.canonicalId === id))).toBe(true);
   await bim.getByRole('button', { name: 'Show 3D model' }).click();
@@ -328,20 +334,27 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   await expect(tower).not.toHaveAttribute('data-visible-furniture-categories', /dining_set/);
 
   const controls = createGenerationControlState();
-  const movable = floor.furniture?.find(item => {
+  const furniture = floor.furniture ?? [];
+  let movement: { item: typeof furniture[number]; expected: typeof furniture[number] } | undefined;
+  for (const item of furniture) {
     try {
       const moved = editFurniturePlacement(building, controls, floor.id, item.id, { dxMm: 100 });
-      editFurniturePlacement(moved, controls, floor.id, item.id, { rotateQuarterTurn: true });
-      return true;
-    } catch { return false; }
-  });
-  if (!movable) throw new Error('The fixture has no furniture with clearance for the requested move and rotation.');
+      const rotated = editFurniturePlacement(moved, controls, floor.id, item.id, { rotateQuarterTurn: true });
+      const expected = rotated.floors.find(candidate => candidate.id === floor.id)?.furniture?.find(candidate => candidate.id === item.id);
+      if (expected) {
+        movement = { item, expected };
+        break;
+      }
+    } catch { /* Try a piece with sufficient clearance. */ }
+  }
+  if (!movement) throw new Error('The fixture has no furniture with clearance for the requested move and rotation.');
+  const { item: movable, expected } = movement;
   const placement = page.getByRole('region', { name: 'Furniture placement' });
   await placement.getByLabel('Furniture on this floor').selectOption(movable.id);
   await placement.getByRole('button', { name: 'East 100 mm' }).click();
   await expect(placement.getByText(`${Math.round(movable.xMm + 100)} mm east`, { exact: false })).toBeVisible();
   await placement.getByRole('button', { name: 'Rotate 90°' }).click();
-  const readback = `${Math.round(movable.xMm + 100)} mm east · ${Math.round(movable.yMm)} mm south · ${(movable.rotationDeg + 90) % 360}°`;
+  const readback = `${Math.round(expected.xMm)} mm east · ${Math.round(expected.yMm)} mm south · ${expected.rotationDeg}°`;
   await expect(placement.getByText(readback, { exact: true })).toBeVisible();
   await expect(placement.getByRole('status')).toHaveText('Placement applied.');
 });
