@@ -19,6 +19,7 @@
  */
 
 import type {
+  ArchitecturalGenerationOptions,
   ApartmentBhkType,
   BuildingMassingShape,
   Direction,
@@ -115,6 +116,8 @@ export interface SelectTopologyInput {
   readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly includeStudyRoom?: boolean;
   readonly coordinatedWetWallLayout?: boolean;
+  readonly architectureOptions?: ArchitecturalGenerationOptions;
+  readonly maximumStoreyRiseMm?: number;
 }
 
 export interface SelectedTopology {
@@ -157,6 +160,8 @@ export function selectProductionTopology(input: SelectTopologyInput): SelectedTo
     galleryCoordinationMode: input.galleryCoordinationMode,
     includeStudyRoom: input.includeStudyRoom,
     coordinatedWetWallLayout: input.coordinatedWetWallLayout,
+    architectureOptions: input.architectureOptions,
+    maximumStoreyRiseMm: input.maximumStoreyRiseMm,
   });
 
   input.onEvaluated?.(result);

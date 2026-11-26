@@ -338,6 +338,7 @@ export interface BuildingMetadata {
     readonly generationSeed?: number;
     readonly requireAreaTargets?: boolean;
     readonly coordinatedWetWallLayout?: boolean;
+    readonly architectureOptions?: import('./architectural-elements').ArchitecturalGenerationOptions;
     readonly topologyHash?: string;
     readonly archetype?: string;
     readonly buildingMassingShape?: string;

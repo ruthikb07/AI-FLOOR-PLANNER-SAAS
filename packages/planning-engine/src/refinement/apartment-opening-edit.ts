@@ -9,7 +9,7 @@ import {
   projectOnSegment,
   safeCanonicalOpeningGeometry,
 } from '@ai-floor-planner/geometry-engine';
-import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { architecturalRequirementFindings, validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 import { measureAreaTarget, measureResidentialFloorAreas } from '../apartment/apartment-area-targets';
 import { physicalLayoutHash } from '../topology/physical-layout-fingerprint';
 import { GeometryValidator } from '../validator/geometry-validator';
@@ -229,6 +229,8 @@ export function acceptApartmentFloorEdit(building: Building, editedFloor: Floor)
     .audit(next, false).report;
   const blockingGeometry = geometry.errors.find(issue => issue.severity === 'CRITICAL' && !issue.autoCorrected);
   if (blockingGeometry) throw new Error(blockingGeometry.description);
+  const requirement = architecturalRequirementFindings(next)[0];
+  if (requirement) throw new Error(requirement.description);
   const closure = validateApartmentClosure({ ...next, floors: [next.floors.find(f => f.id === floorId)!] });
   const issue = closure.issues.find(item => item.severity === 'error');
   if (issue) throw new Error(issue.message);

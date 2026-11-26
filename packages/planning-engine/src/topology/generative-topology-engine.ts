@@ -23,13 +23,15 @@
  * an alternative, and never presents a mirror image as a second design.
  */
 
-import type {
-  ApartmentBhkType,
-  Direction,
-  DynamicApartmentManifest,
-  GalleryCoordinationMode,
-  IrregularPlotBoundary,
-  Setbacks,
+import {
+  PLUMBING_RESERVATION_NOTE_TAG,
+  type ArchitecturalGenerationOptions,
+  type ApartmentBhkType,
+  type Direction,
+  type DynamicApartmentManifest,
+  type GalleryCoordinationMode,
+  type IrregularPlotBoundary,
+  type Setbacks,
 } from '@ai-floor-planner/core';
 import type { ExtractedRoom } from '../interpretation/extraction';
 import type { ApartmentPlanStructure } from '../interpretation/apartment-plan';
@@ -50,6 +52,7 @@ import {
 } from './topology-families';
 import { getShapeCatalogEntry } from '../catalog/shape-catalog';
 import { assembleStructureFromPartition } from './plan-assembler';
+import { reserveWetWallRisers } from '../mep/wet-wall-risers';
 import {
   ROOM_SLICING_ARCHETYPES,
   type RoomSlicingArchetypeId,
@@ -114,6 +117,8 @@ export interface GenerateConceptsInput {
   readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly includeStudyRoom?: boolean;
   readonly coordinatedWetWallLayout?: boolean;
+  readonly architectureOptions?: ArchitecturalGenerationOptions;
+  readonly maximumStoreyRiseMm?: number;
 }
 
 export interface RejectedCandidate {
@@ -168,11 +173,19 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
   const maxCandidates = input.maxCandidates ?? 24;
   const timeBudgetMs = input.timeBudgetMs ?? 20_000;
 
-  const program = interpretArchitecturalIntent({
+  const intent = interpretArchitecturalIntent({
     prompt: input.aiPrompt,
     flatsPerFloor: input.flatsPerFloor,
     unitTypes: input.unitTypes,
   });
+  const options = input.architectureOptions;
+  const program: ArchitecturalProgram = options ? { ...intent, mandatory: {
+    ...intent.mandatory,
+    ...(!intent.mandatory.stairCountRequired && options.stairCount && { stairCount: options.stairCount, stairCountRequired: true }),
+    ...(!intent.mandatory.singleLiftRequired && options.liftCount === 1 && { singleLift: true, singleLiftRequired: true }),
+    ...(!intent.mandatory.ventilationStrategy && options.openToSky === 'PROHIBITED' && { ventilationStrategy: 'PERIMETER_ONLY' }),
+    ...(!intent.mandatory.ventilationStrategy && options.openToSky === 'REQUIRED' && { ventilationStrategy: 'CENTRAL_COURTYARD' }),
+  } } : intent;
 
   const validation = validateProgram(program);
   if (!validation.valid) {
@@ -207,7 +220,8 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
     program,
     unitCarpetTargetsSqFt: input.unitCarpetTargetsSqFt,
     unitGrossAreasMm2: input.unitGrossAreasMm2,
-    preferSplitCourtyard: input.coordinatedWetWallLayout,
+    architectureOptions: options,
+    maximumStoreyRiseMm: input.maximumStoreyRiseMm,
     enableMacroShapes: Boolean(effectiveMassingShape && effectiveMassingShape !== 'COMPACT_DOUBLE_LOADED'),
   });
 
@@ -273,6 +287,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         galleryCoordinationMode: input.galleryCoordinationMode,
         includeStudyRoom: input.includeStudyRoom,
         coordinatedWetWallLayout: input.coordinatedWetWallLayout,
+        preferExteriorLiving: options?.preferExteriorLiving,
       });
     } catch (error) {
       rejected.push({
@@ -284,12 +299,18 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       continue;
     }
 
+    const requiredRiserShortfall = options?.requireWetWallRisers
+      ? reserveWetWallRisers(assembled.structure, options.wetWallRiserSizeMm, options.preferSharedWetWallRisers).flats
+        .flatMap(flat => flat.rooms).filter(room => room.tags?.some(tag => tag.startsWith(PLUMBING_RESERVATION_NOTE_TAG))).length
+      : undefined;
     const score = scoreCandidate({
       structure: assembled.structure,
       partition: topology.partition,
       program,
       flatsWithoutEntrance: assembled.flatsWithoutEntrance,
       coordinatedWetWallLayout: input.coordinatedWetWallLayout,
+      preferExteriorLiving: options?.preferExteriorLiving,
+      requiredRiserShortfall,
     });
 
     if (!score.feasible) {

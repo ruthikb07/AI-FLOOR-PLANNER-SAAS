@@ -903,6 +903,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
           }
         }
         renderer.shadowMap.needsUpdate = true;
+        renderer.domElement.dataset.floorSeparationM = explodeCurrentGapRef.current.toFixed(3);
         explodeAnimating = Math.abs(targetGap - explodeCurrentGapRef.current) > 0.002;
       }
 
@@ -2129,6 +2130,7 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     runtime.renderer.domElement.dataset.visibleFurnitureCategories = ALL_FURNITURE_CATEGORY_IDS.filter(category =>
       floorRecords.some(record => record.group.visible && record.layers.furnitureByCategory[category].visible
         && record.layers.furnitureByCategory[category].children.length > 0)).join(',');
+    runtime.renderer.domElement.dataset.visibleFloorCount = String(floorRecords.filter(record => record.group.visible).length);
     runtime.requestRender(0);
   }, [activeFloorId, enabledFurnitureCategories, floorMode, layers, linkedSpanStoreys, projection, sectionCut, viewMode, buildingGeometryKey]);
 

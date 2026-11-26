@@ -166,3 +166,7 @@ The actual Antigravity worktree and its Phase 5A, Phase 5B and pending Phase 5C 
 The continuation added production HTTP, persisted-revision, IFC and GLB verification for the nine-brief suite. Phase 6 awaits the acceptance gates documented in the [Phase 5 acceptance report](../integration/PHASE5_ACCEPTANCE.md).
 
 Continue from [Phase 5.1 acceptance](../integration/PHASE5_1_FINAL_ACCEPTANCE.md) on `fix/phase5-final-acceptance`. The Phase 5 anchor is `c2caa172881db01a47117f688a796ab7c1893fee`. Complete the recorded acceptance gates before starting Phase 6.
+
+## Phase 5.2
+
+The dedicated `fix/phase5-release-candidate` branch continues from `3369a634ad9c5dd6aea7577e3118420b1e9cb621`. See [Phase 5.2 evidence](../integration/PHASE5_2_RELEASE_CANDIDATE.md) for the release disposition, live provider attempts, FreeCAD native imports and browser verification.

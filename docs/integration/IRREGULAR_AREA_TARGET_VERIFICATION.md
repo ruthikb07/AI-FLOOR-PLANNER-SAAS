@@ -16,3 +16,7 @@ Both targets remain advisory misses. The acceptance test checks functional audit
 | Independent 42.8 × 34 m brief, East road | 715.11 | 1,057.16 | 1,409.23 | 1,789.59 |
 
 Each candidate came from seed 2 and passed the canonical meaningful-diversity comparison and all four 3% checks. The original Phase 5 replay correctly refused 819.4 ft² for Flat 1. Strict alternative generation now searches a window of at most four seeds with the original constraints and exclusion hashes. An exhausted search returns the number of attempted seeds and a refusal. Studio checks the actual site and locked footprints and cores before publishing an alternative. A full-project operation refuses when the editor has protected rooms, floors or cores. Local protected regeneration remains available within its supported scope.
+
+## Phase 5.2
+
+Phase 5.2 measures complete advisory rectangular schedules when the accepted baseline materially exceeds the requested carpet. A bounded search adjusts plate and unit capacity and retains the accepted geometry when no trial improves the maximum relative error. It preserves a realized requested massing or split arrangement. The 5% advisory objective remains separate from a strict target tolerance.

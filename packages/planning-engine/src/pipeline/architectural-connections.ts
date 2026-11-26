@@ -60,6 +60,8 @@ const hostFits = (w: Wall, p: { x: number; y: number }) => {
 /** New-generation finalization only. Loading historical projects never invokes this. */
 export function coordinateArchitecturalStairs(building: Building): Building {
   const ordered = [...building.floors].sort((a, b) => a.level - b.level);
+  const splitCore = ordered.some(floor => floor.rooms.some(room => room.tags.includes('shaft:central-court')));
+  const dimensions = splitCore ? building.metadata.generationBrief?.architectureOptions?.coreDimensions : undefined;
   const elevations = new Map<string, number>();
   let z = 0;
   for (const f of ordered) {
@@ -195,9 +197,10 @@ export function coordinateArchitecturalStairs(building: Building): Building {
         host,
         rise,
         id,
-        useWideFlight ? 1500 : 1200,
-        useWideFlight ? 158 : 175,
+        splitCore ? dimensions?.flightWidthMm ?? 1200 : useWideFlight ? 1500 : 1200,
+        splitCore ? dimensions?.maxRiserMm ?? 175 : useWideFlight ? 158 : 175,
         position,
+        splitCore ? Math.max(dimensions?.flightWidthMm ?? 1200, dimensions?.landingDepthMm ?? 0) : undefined,
       );
       canonicalStaircases.push(canonical);
       return {

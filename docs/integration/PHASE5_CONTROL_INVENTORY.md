@@ -35,3 +35,7 @@ The retained Windows browser traces add 488 distinct observed DOM control entrie
 | ETABS | Prior ETABS 23.3.2 independently reopened two revision-bound native EDB files in model-only scope. |
 
 See the historical [Phase 5 acceptance evidence](PHASE5_ACCEPTANCE.md) for the native export links and provenance.
+
+## Phase 5.2
+
+Phase 5.2 groups the earlier DOM inventory into 26 functional action families with explicit evidence and outstanding combinations. The [structured control matrix](PHASE5_2_CONTROL_MATRIX.json) records observed outcomes. The wizard exposes independent circulation, OTS, exterior-living and plumbing controls.

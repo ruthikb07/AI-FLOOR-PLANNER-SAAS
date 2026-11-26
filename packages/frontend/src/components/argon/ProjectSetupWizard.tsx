@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type {
+  ArchitecturalGenerationOptions,
   AuthorityType,
   BuildingMassingShape,
   CongestionZone,
@@ -74,6 +75,7 @@ export interface ProjectSetupWizardData {
   includeDiningHall?: boolean;
   includeStudyRoom?: boolean;
   coordinatedWetWallLayout?: boolean;
+  architectureOptions?: ArchitecturalGenerationOptions;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };

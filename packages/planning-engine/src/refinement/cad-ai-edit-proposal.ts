@@ -20,7 +20,7 @@ import {
   polygonArea,
   projectOnSegment,
 } from '@ai-floor-planner/geometry-engine';
-import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { architecturalRequirementFindings, validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 import { GeometryValidator } from '../validator/geometry-validator';
 import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import { acceptApartmentFloorEdit, editApartmentOpening } from './apartment-opening-edit';
@@ -425,6 +425,8 @@ function verifyProposedBuilding(
   if (!closureValid) {
     return { ok: false, summary, error: closureError!.message };
   }
+  const requirement = architecturalRequirementFindings(after)[0];
+  if (requirement) return { ok: false, summary, error: requirement.description };
   return { ok: true, summary };
 }
 

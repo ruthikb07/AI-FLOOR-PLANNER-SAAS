@@ -60,7 +60,7 @@ import {
   sharedEdge,
   sutherlandHodgmanClip,
 } from '@ai-floor-planner/geometry-engine';
-import { validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
+import { architecturalRequirementFindings, validateApartmentClosure } from '@ai-floor-planner/constraint-engine';
 import { GeometryValidator } from '../validator/geometry-validator';
 import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import { acceptApartmentFloorEdit } from './apartment-opening-edit';
@@ -2065,6 +2065,8 @@ function assembleAndValidateEditedFloor(params: {
     accepted = finalNext;
   }
 
+  const requirement = architecturalRequirementFindings(accepted)[0];
+  if (requirement) return { error: requirement.description };
   const afterFloor = accepted.floors.find(f => f.id === floor.id)!;
   const quality = auditFloorFunctionalQuality(afterFloor);
   if (!quality.passed) {

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "inventoryBaseline": { "observedDomEntries": 488, "distinctTestIds": 155, "commit": "3369a634ad9c5dd6aea7577e3118420b1e9cb621" },
+  "meaning": "Verified covers the cited observable result. Partial covers representative actions or scopes with additional combinations open. DOM visibility alone is excluded.",
+  "families": [
+    { "id": "welcome_wizard", "status": "verified", "evidence": ["rh-survey-setup", "rh-studio-workflow"], "observed": "Wizard navigation reaches the correct step and publishes the accepted program." },
+    { "id": "survey", "status": "verified", "evidence": ["rh-survey-setup"], "observed": "Desktop and mobile editing, DXF, history, exact signed vertices, closure refusal and curved-survey scope guard." },
+    { "id": "building_configuration", "status": "partial", "evidence": ["rh-phase51-project-matrix"], "observed": "Generation carries flat mix, storeys and stilt parking. Individual redevelopment and program combinations remain open." },
+    { "id": "area_room_targets", "status": "partial", "evidence": ["rh-phase51-project-matrix", "phase5-real-project-acceptance"], "observed": "Strict target, tolerance, infeasibility refusal and alternative acceptance are exercised. All per-room target combinations remain open." },
+    { "id": "core_ots_exposure_risers", "status": "partial", "evidence": ["generation-acceptance-repair", "phase5-real-project-acceptance"], "observed": "HTTP checks exercise exact counts, no-OTS precedence, configurable geometry and mandatory or advisory riser behavior." },
+    { "id": "massing_alternatives", "status": "partial", "evidence": ["rh-phase51-project-matrix", "phase5-real-project-acceptance"], "observed": "Distinct alternatives, refusal when near-identical, and a locked massing mismatch. Individual priority control effects remain open." },
+    { "id": "protected_regeneration", "status": "verified", "evidence": ["rh-phase4a-cad-workflow", "rh-phase5-unified-studio"], "observed": "Supported Flat 2 edit carries matching protected digests and changes only the allowed revision." },
+    { "id": "wall_edit", "status": "verified", "evidence": ["rh-repair"], "observed": "A supported partition moves exactly 50 mm and keeps protected geometry." },
+    { "id": "door_edit", "status": "partial", "evidence": ["rh-phase4a-cad-workflow", "phase5b-cad-bim-intelligence"], "observed": "Hosted door edits are tested. All Door Tool behaviors and host types remain open." },
+    { "id": "window_edit", "status": "verified", "evidence": ["rh-repair", "rh-phase4a-cad-workflow"], "observed": "Hosted edited window fits, respects the floor lock, and persists its exact revision." },
+    { "id": "cad_drafting", "status": "partial", "evidence": ["rh-phase4a-cad-workflow"], "observed": "Drafting change persists with canonical geometry unchanged. Every drafting operation has separate coverage needs." },
+    { "id": "bim_queries", "status": "partial", "evidence": ["rh-phase5-unified-studio", "rh-phase4b-bim-workflow"], "observed": "Deterministic area query and selection carry exact window identity and quantity. Live provider classification remains open." },
+    { "id": "alignment_coordination", "status": "partial", "evidence": ["rh-phase4b-bim-workflow"], "observed": "Reference alignment and a wall clash are exercised. Unsupported representations remain explicitly scoped." },
+    { "id": "furniture_categories", "status": "partial", "evidence": ["rh-phase5-unified-studio"], "observed": "Rendered furniture categories change after enabling cutaway and hiding the master bed." },
+    { "id": "furniture_move_rotate", "status": "partial", "evidence": ["FurniturePlacementControls", "auto-furnish-apartment"], "observed": "Canonical edit and collision checks exist. Production-browser mutation evidence is required before closure." },
+    { "id": "dining", "status": "partial", "evidence": ["building-3d-customizer"], "observed": "Category wiring exists. Production geometry visibility is tracked separately." },
+    { "id": "lighting", "status": "partial", "evidence": ["rh-phase5-unified-studio"], "observed": "Night changes the rendered scene. All lighting combinations remain open." },
+    { "id": "camera", "status": "partial", "evidence": ["rh-studio-workflow"], "observed": "Orbit and both projection choices were exercised. Preset and fit combinations remain open." },
+    { "id": "floor_isolation", "status": "partial", "evidence": ["rh-phase51-project-matrix", "floor-isometric-editor"], "observed": "Isometric route draws the selected floor. Remaining isolate and multi-storey combinations are open." },
+    { "id": "tower_3d", "status": "verified", "evidence": ["rh-studio-workflow", "rh-phase5-unified-studio"], "observed": "Canonical geometry draws, orbit works, and BIM selection highlights the same window." },
+    { "id": "sections", "status": "partial", "evidence": ["rh-studio-workflow", "rh-phase5-unified-studio"], "observed": "A live section and a furniture cutaway operate. Section variants remain open." },
+    { "id": "exploded_view", "status": "partial", "evidence": ["building-3d-customizer"], "observed": "Slider updates the requested scene state. Full rendered displacement verification remains open." },
+    { "id": "undo_redo", "status": "verified", "evidence": ["rh-phase5-unified-studio"], "observed": "Undo and redo restore the exact prior and edited revision." },
+    { "id": "save_reload", "status": "verified", "evidence": ["rh-studio-workflow", "rh-phase5-unified-studio"], "observed": "Disk save reads back the same project, revision and digest after reload." },
+    { "id": "revision_archives", "status": "verified", "evidence": ["rh-repair"], "observed": "The archived record is found by project identity and retains its original revision." },
+    { "id": "exports", "status": "partial", "evidence": ["rh-phase51-project-matrix", "rh-studio-workflow", "PHASE5_CONTROL_INVENTORY.md"], "observed": "Revision-matched IFC and GLB transfers. Earlier native format evidence remains scoped to its fixtures. The full format-by-scope product matrix remains open." }
+  ]
+}
