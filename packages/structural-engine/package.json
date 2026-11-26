@@ -1,0 +1,33 @@
+{
+  "name": "@ai-floor-planner/structural-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Embedded Awatif v3.4.0 C++/Eigen WebAssembly 3D Frame Structural Solver, Reference Sparse Solver, Modal/Seismic Engine, Indian Code RCC & Foundation Design, Defect Detection, and Global Reanalysis Optimizer",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build && node ./scripts/copy-wasm-assets.mjs",
+    "build:wasm": "node ./scripts/build-awatif-wasm.mjs",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ --ignore-pattern \"src/wasm/lSolver.js\" --no-error-on-unmatched-pattern",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@ai-floor-planner/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "5.5.4",
+    "vitest": "2.0.5"
+  }
+}

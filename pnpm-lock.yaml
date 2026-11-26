@@ -356,6 +356,22 @@ importers:
         specifier: 2.0.5
         version: 2.0.5(@types/node@20.19.43)(jsdom@26.1.0)
 
+  packages/structural-engine:
+    dependencies:
+      '@ai-floor-planner/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.0
+        version: 20.19.43
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+      vitest:
+        specifier: 2.0.5
+        version: 2.0.5(@types/node@20.19.43)(jsdom@26.1.0)
+
 packages:
 
   '@alloc/quick-lru@5.3.0':
