@@ -37,10 +37,10 @@ it('retains the primary model failure and applies only validated attached-image 
   const provider = new GeminiProvider({
     apiKey: 'test-credential', model: 'primary', fallbackModel: 'fallback',
     retryPolicy: { maxRetries: 0 },
-    fetchImplementation: async url => String(url).includes('/primary:')
+    fetchImplementation: async (url, request) => String(url).includes('/primary:')
       ? new Response('primary unavailable', { status: 503 })
       : Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({
-        noOts: true, buildingMassingShape: 'COMPACT_DOUBLE_LOADED', referenceSpatialGraph: graph,
+        noOts: !String(request?.body).includes('allow ventilation shafts'), buildingMassingShape: 'COMPACT_DOUBLE_LOADED', referenceSpatialGraph: graph,
       }) }] } }] }),
   });
   const withoutImage = await generateArchitecturalProposal(provider, { config, seed: 1 });
@@ -49,15 +49,23 @@ it('retains the primary model failure and applies only validated attached-image 
     modelUsed: 'fallback', fallbackTriggered: true, providerErrorCode: 'HTTP_503', interpretationSource: 'GEMINI',
     referenceImageUsedForGeometry: false,
   });
-  const withImage = await generateArchitecturalProposal(provider, {
-    config: { ...config, referenceImage: { name: 'reference.png', mimeType: 'image/png', dataUrl: 'data:image/png;base64,aW1hZ2U=' } },
-    seed: 1,
-  });
+  const referenceImage = { name: 'reference.png', mimeType: 'image/png', dataUrl: 'data:image/png;base64,aW1hZ2U=' };
+  const withImage = await generateArchitecturalProposal(provider, { config: { ...config, referenceImage }, seed: 1 });
   expect(withImage.proposal.referenceSpatialGraph?.relativeRoomCentroids).toEqual([]);
-  expect(withImage.enrichedConfig.preferredArchetype).toBe('MIRRORED_WET_CORE_STACK');
+  expect(withImage.enrichedConfig.preferredArchetype).toBe('CENTRAL_LIVING_SPLIT_BEDROOMS');
   expect(withImage.enrichedConfig.aiPrompt).toContain(config.aiPrompt);
-  expect(withImage.telemetry.referenceGuidanceApplied).toEqual(['WET_CORE_CLUSTERING']);
+  expect(withImage.telemetry.referenceGuidanceApplied).toEqual([]);
+  expect(withImage.telemetry.referenceGuidanceRejected).toContain('WET_CORE_CLUSTERING was excluded by the perimeter-only ventilation requirement.');
+  expect(withImage.telemetry.conflictsDetected).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'REFERENCE_OVERRIDDEN_BY_BRIEF' }),
+  ]));
   expect(withImage.proposal.noOts).toBe(true);
+  const allowed = await generateArchitecturalProposal(provider, {
+    config: { ...config, aiPrompt: 'Keep a central lift core and allow ventilation shafts.', referenceImage }, seed: 1,
+  });
+  expect(allowed.proposal.noOts).toBe(false);
+  expect(allowed.enrichedConfig.preferredArchetype).toBe('MIRRORED_WET_CORE_STACK');
+  expect(allowed.telemetry.referenceGuidanceApplied).toContain('WET_CORE_CLUSTERING');
 });
 
 const live = process.env.RUN_LIVE_AI_TESTS === '1' && !!process.env.GEMINI_API_KEY;

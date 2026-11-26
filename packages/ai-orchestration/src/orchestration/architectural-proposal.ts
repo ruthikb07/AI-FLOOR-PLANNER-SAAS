@@ -1185,6 +1185,11 @@ export async function generateArchitecturalProposal(
         ? ['WET_CORE_CLUSTERING']
         : []),
     ];
+    const referenceGuidanceRejected = [
+      ...rejectedReferenceGuidance,
+      ...(rg?.wetCoreClustering === 'SHARED_SHAFT' && proposal.noOts && !input.config.preferredArchetype
+        ? ['WET_CORE_CLUSTERING was excluded by the perimeter-only ventilation requirement.'] : []),
+    ];
 
     const baselineDeterministic = defaultProposalForConfig(input.config, seed);
     const aiChangedProposal =
@@ -1210,8 +1215,8 @@ export async function generateArchitecturalProposal(
       referenceDisposition: classifiedRef.disposition,
       referenceImageUsedForGeometry: referenceGuidanceApplied.length > 0,
       referenceGuidanceApplied,
-      ...(rejectedReferenceGuidance.length > 0
-        ? { referenceGuidanceRejected: rejectedReferenceGuidance }
+      ...(referenceGuidanceRejected.length > 0
+        ? { referenceGuidanceRejected }
         : {}),
       influencedGeometry: aiChangedProposal,
       ...(interpretedRequirements.conflicts.length > 0
