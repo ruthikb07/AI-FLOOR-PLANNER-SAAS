@@ -36,6 +36,7 @@ jobs:
       - name: Install dependencies from frozen lockfile
         run: pnpm install --frozen-lockfile
       - name: Production build
+        id: production_build
         run: pnpm build
       - name: Typecheck
         run: pnpm typecheck
@@ -52,17 +53,22 @@ jobs:
       - name: Backend integration tests
         run: pnpm --filter @ai-floor-planner/backend run test:integration
       - name: Install Chromium
+        id: chromium_install
+        if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
         run: pnpm --filter @ai-floor-planner/frontend exec playwright install --with-deps chromium
       - name: Production Chromium E2E repair & CAD Studio tests
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
         env:
           RH_TEST_SOFTWARE_ORBIT_BUDGET: '1'
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair
       - name: Real Chromium WebGL context recovery tests
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:webgl
       - name: Phase 5.1 Chromium project acceptance evidence
+        if: ${{ !cancelled() && steps.chromium_install.outcome == 'success' }}
         env:
           RH_TEST_PROJECT_MATRIX: '1'
-        run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair rh-phase51-project-matrix.spec.ts --output "$RUNNER_TEMP/rh-phase51-browser"
+        run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair rh-phase51-project-matrix.spec.ts rh-survey-setup.spec.ts --output "$RUNNER_TEMP/rh-phase51-browser"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

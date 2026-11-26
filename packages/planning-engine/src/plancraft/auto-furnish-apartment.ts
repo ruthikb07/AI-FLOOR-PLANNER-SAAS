@@ -193,6 +193,7 @@ export function furnishRoom(
       const renderedFootprint = { points: bounds.points.map(point => rotatePoint(point, rot, center)) };
       if (doorSweeps.some(sweep => polygonsOverlap(sweep, renderedFootprint))) return;
     }
+    if (type === 'bed' && !buildFurniturePolygonContainmentGuard(room, clampedX, clampedY, w, d, rot)) return;
 
     // Strict furniture-to-furniture non-overlap & bed-to-wardrobe >= 650 mm aisle check
     const isCounterAppliance =
@@ -400,11 +401,24 @@ export function furnishRoom(
         }
       }
       if (!items.some(i => i.roomId === room.id && i.type === 'bed')) {
-        const bW = Math.min(1200, rw - 350);
-        const bD = Math.min(1900, rh - 350);
-        const bX = Math.max(innerMinX, rx + (rw - bW) / 2);
-        const bY = Math.max(innerMinY, ry + 200);
-        addItem('bed', bX, bY, bW, bD, 0, 'NORTH', true);
+        // Test compact mattress positions that retain the exact physical swing and room boundary.
+        const alignments = [0, 0.5, 1, 0.25, 0.75];
+        const bedLayouts = [1200, 1000, 900].flatMap(width => [
+          { w: width, d: 1900, rot: 0 as const },
+          { w: 1900, d: width, rot: 0 as const },
+        ]);
+        for (const { w, d, rot } of bedLayouts) {
+          if (w > innerMaxX - innerMinX || d > innerMaxY - innerMinY) continue;
+          for (const u of alignments) {
+            for (const v of alignments) {
+              addItem('bed', innerMinX + (innerMaxX - innerMinX - w) * u,
+                innerMinY + (innerMaxY - innerMinY - d) * v, w, d, rot, undefined, true);
+              if (items.length > 0) break;
+            }
+            if (items.length > 0) break;
+          }
+          if (items.length > 0) break;
+        }
       }
     }
 

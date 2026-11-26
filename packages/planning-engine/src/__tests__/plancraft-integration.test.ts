@@ -336,8 +336,8 @@ describe('Plancraft Integration Suite', () => {
 
         for (const br of bedRooms) {
           const brFurn = floor.furniture!.filter(f => f.roomId === br.id);
-          expect(brFurn.some(f => f.type === 'bed')).toBe(true);
-          expect(brFurn.some(f => f.type === 'wardrobe')).toBe(true);
+          expect(brFurn.some(f => f.type === 'bed'), `${tc.name} / ${br.name} (${br.width} × ${br.height} mm) requires a bed`).toBe(true);
+          expect(brFurn.some(f => f.type === 'wardrobe'), `${tc.name} / ${br.name} requires a wardrobe`).toBe(true);
         }
 
         for (const k of kitchens) {

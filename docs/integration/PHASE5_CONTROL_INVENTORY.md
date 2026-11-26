@@ -2,6 +2,8 @@
 
 Control evidence is scoped to the cited production browser workflow. Rows with partial evidence remain open for individual control-level acceptance.
 
+The retained Windows browser traces add 488 distinct observed DOM control entries, including 155 explicit test IDs, in `control-inventory-observed-traces.json` under the Phase 5.1 evidence directory. These are observations of rendered DOM states across the traces. The table records the actions with outcome evidence.
+
 | Workspace and control | Expected action and observed result | Evidence or remaining scope |
 | --- | --- | --- |
 | Brief, survey editor | Edit/import measured boundaries, maintain history, designate frontage, return precise validation | `rh-survey-setup` exercised desktop editing, mobile fractional input and DXF, exact generation, failed closure and curved survey DXF. |

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Building } from '@ai-floor-planner/core';
+import { writeFile } from 'node:fs/promises';
 
 const url = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
@@ -221,7 +222,10 @@ test('the wizard generates and saves a canonical oblique survey', async ({ page,
 });
 
 
-test('the wizard refuses a carpet program larger than the entire site', async ({ page, request }) => {
+test('the wizard refuses a carpet program larger than the entire site', async ({ page, request }, info) => {
+  const start = Date.now();
+  const browserErrors: string[] = [];
+  page.on('pageerror', error => browserErrors.push(error.message));
   await page.addInitScript(() => localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
     plotWidthM: 18, plotDepthM: 20, floorsCount: 1, hasStiltParking: false,
     flatsPerFloor: 6, bhkCounts: { '1BHK': 0, '2BHK': 0, '3BHK': 0, '4BHK': 6 },
@@ -247,4 +251,11 @@ test('the wizard refuses a carpet program larger than the entire site', async ({
   expect(payload.error.code).toBe('CARPET_TARGETS_EXCEED_ENVELOPE');
   await expect(page.getByRole('dialog', { name: 'Generation needs attention' })).toContainText(/exceeds the entire/i);
   await expect(page.getByRole('region', { name: 'Massing studies gallery' })).toHaveCount(0);
+  expect(browserErrors).toEqual([]);
+  await writeFile(info.outputPath('acceptance.json'), JSON.stringify({
+    id: 9, name: 'Infeasible requirements', status: 'verified_refusal', wizardInput: 'pass',
+    httpStatus: result.status(), refusal: payload.error, requestedCarpetSqFt: sent.config.units.map((unit: { targetCarpetSqFt: number }) => unit.targetCarpetSqFt),
+    tolerancePercent: sent.config.areaAcceptanceTolerancePercent, publishedBuilding: false, browserErrors,
+    processingMs: { total: Date.now() - start },
+  }, null, 2));
 });
