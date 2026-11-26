@@ -534,7 +534,9 @@ describe('Phase 5 real-project acceptance', () => {
   }, 60_000);
 
   it('generates facade-oriented flats with modeled bathroom risers aligned to the MEP stacks', async () => {
-    const config = { ...BASE_BRIEF, projectId: 'wet-wall-risers', architectureOptions: { coordinatedWetWallLayout: true } };
+    const config: MultiSheetApartmentConfig = { ...BASE_BRIEF, projectId: 'wet-wall-risers', architectureOptions: {
+      coordinatedWetWallLayout: true, preferExteriorLiving: true, coreArrangement: 'SPLIT_COURTYARD',
+    } };
     const response = await post('/projects/generate', { config });
     const result = await response.json() as { building?: Building; error?: unknown };
     expect(response.status, JSON.stringify(result.error)).toBe(200);
@@ -643,6 +645,12 @@ describe('Phase 5 real-project acceptance', () => {
     if (evidence) {
       await writeFile(join(evidence, 'wet-wall-residential.building.json'), JSON.stringify(building));
       await writeFile(join(evidence, 'wet-wall-residential.svg'), svg);
+      const source = exchangeRevision(building);
+      const exported = await post('/export/ifc', { building, source });
+      const ifc = await exported.json() as { manifest: IfcExchangeArtifact['manifest']; contentBase64: string };
+      expect(exported.status).toBe(200);
+      await writeFile(join(evidence, 'wet-wall-residential.ifc'), Buffer.from(ifc.contentBase64, 'base64'));
+      await writeFile(join(evidence, 'wet-wall-residential.manifest.json'), JSON.stringify(ifc.manifest));
     }
   }, 90_000);
 
@@ -651,7 +659,7 @@ describe('Phase 5 real-project acceptance', () => {
       ...BASE_BRIEF, projectId: 'wet-wall-tight-baths', plotWidthMm: 42000, plotDepthMm: 36000,
       aiPrompt: 'Use an open-to-sky courtyard with naturally ventilated interior toilets where possible.',
       units: BASE_BRIEF.units!.map((unit, index) => ({ ...unit, bhkType: index % 2 ? '3BHK' : '2BHK' })),
-      architectureOptions: { coordinatedWetWallLayout: true },
+      architectureOptions: { coordinatedWetWallLayout: true, preferExteriorLiving: true },
     };
     const response = await post('/projects/generate', { config });
     const result = await response.json() as { building?: Building; error?: unknown };

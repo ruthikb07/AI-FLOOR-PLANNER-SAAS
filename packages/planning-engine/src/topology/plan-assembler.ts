@@ -106,6 +106,7 @@ export interface AssembleInput {
   readonly setbacksMm?: Setbacks;
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly coordinatedWetWallLayout?: boolean;
+  readonly preferExteriorLiving?: boolean;
 }
 
 export interface AssembledPlan {
@@ -197,7 +198,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
     const entries = circulation
       .map(c => ({ c, shared: sharedEdgeLength(worldBox, c.box) }))
       .sort((a, b) => b.shared - a.shared);
-    const ranked = input.coordinatedWetWallLayout ? entries.flatMap(candidate => {
+    const ranked = input.preferExteriorLiving ? entries.flatMap(candidate => {
       if (candidate.shared < 1250) return [];
       const edge = sharedAccessEdge(worldBox, candidate.c.box);
       if (!edge) return [];
@@ -303,7 +304,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       localExposure,
     };
     let sliced = sliceFlatRooms(sliceInput);
-    if (input.coordinatedWetWallLayout && entry?.shared) {
+    if (input.preferExteriorLiving && entry?.shared) {
       const layoutScore = (candidate: typeof sliced) => {
         const rooms = candidate.rooms.map(room => ({ room, box: frame.toWorld(rectToBox(room.rect)) }));
         const exterior = ({ box }: typeof rooms[number]) => projectsToOutsideFace(box, worldBox, partition.builtOutline);

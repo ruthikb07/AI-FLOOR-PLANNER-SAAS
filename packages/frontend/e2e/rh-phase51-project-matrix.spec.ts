@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { EXACT_SQMM_PER_SQFT, RoomType, rectToPolygon, type Building, type IfcExchangeManifest, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { createGenerationControlState, EXACT_SQMM_PER_SQFT, RoomType, rectToPolygon, type Building, type IfcExchangeManifest, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
 import { isDoorSwingClear, openingFitsApartmentWall, polygonBoundingBox, rotatePoint } from '@ai-floor-planner/geometry-engine';
-import { auditFloorFunctionalQuality, compareCanonicalBuildingAlternatives } from '@ai-floor-planner/planning-engine';
+import { auditFloorFunctionalQuality, compareCanonicalBuildingAlternatives, editFurniturePlacement } from '@ai-floor-planner/planning-engine';
 
 test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
 
@@ -261,12 +261,18 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   await page.getByTestId('cta-new-construction').click();
   await page.getByLabel('Project Title / Estate', { exact: false }).fill('Wet-wall coordination study');
   for (const step of [2, 3]) await page.getByRole('button', { name: 'Continue to Step 0' + step }).click();
-  await page.getByRole('checkbox', { name: 'Prefer exterior living and wet-wall risers' }).check();
+  await page.getByLabel('Core arrangement').selectOption('SPLIT_COURTYARD');
+  await page.getByLabel('Number of stairs').selectOption('2');
+  await page.getByLabel('Number of lifts').selectOption('2');
+  await page.getByLabel('Internal open-to-sky space').selectOption('REQUIRED');
+  await page.getByRole('checkbox', { name: 'Prefer exterior living' }).check();
+  await page.getByRole('checkbox', { name: 'Coordinate wet-wall risers' }).check();
   await page.getByRole('button', { name: 'Continue to Step 04' }).click();
   const request = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'), { timeout: 90_000 });
   await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
   const response = await request;
-  expect(response.request().postDataJSON().config.architectureOptions.coordinatedWetWallLayout).toBe(true);
+  expect(response.request().postDataJSON().config.architectureOptions).toMatchObject({ coreArrangement: 'SPLIT_COURTYARD',
+    stairCount: 2, liftCount: 2, openToSky: 'REQUIRED', preferExteriorLiving: true, coordinatedWetWallLayout: true });
   expect(response.status()).toBe(200);
   const { building } = await response.json() as { building: Building };
   expect(building.metadata.generationBrief?.coordinatedWetWallLayout).toBe(true);
@@ -278,4 +284,64 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
   await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 45_000 });
   await gallery.getByRole('img', { name: /Plan preview/ }).first().screenshot({ path: info.outputPath('coordinated-wet-wall-plan.png') });
+  await gallery.getByRole('button', { name: 'Open in CAD' }).click();
+  await page.getByRole('button', { name: floor.name, exact: true }).first().click();
+  await page.getByTestId('toggle-precision-cad-studio').click();
+  await page.getByTestId('cad-ai-instruction-input').fill('Regenerate only Flat 2 while keeping the remaining flats unchanged');
+  const proposalResponse = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/cad/edit-proposal'));
+  await page.getByTestId('cad-ai-preview-btn').click();
+  const proposal = (await (await proposalResponse).json()).proposal;
+  expect(proposal.status).toBe('PREVIEW_READY');
+  expect(proposal.invarianceProof.passed).toBe(true);
+  expect(proposal.invarianceProof.beforeProtectedDigest).toBe(proposal.invarianceProof.afterProtectedDigest);
+
+  await page.getByTestId('nav-bim').click();
+  const bim = page.getByRole('region', { name: 'RH Planner — BIM Studio' });
+  const ifcResponse = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/export/ifc'));
+  const download = page.waitForEvent('download');
+  await bim.getByRole('button', { name: 'Export IFC4' }).click();
+  const [ifc, file] = await Promise.all([ifcResponse, download]);
+  expect(ifc.status()).toBe(200);
+  const { manifest } = await ifc.json() as { manifest: IfcExchangeManifest };
+  const source = ifc.request().postDataJSON().source;
+  expect(manifest.source).toEqual(source);
+  expect(createHash('sha256').update(await readFile((await file.path())!)).digest('hex')).toBe(manifest.artifactSha256);
+  const riserIds = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith('plumbing:serves:'))).map(room => room.id);
+  expect(riserIds.every(id => manifest.elements.some(element => element.canonicalId === id))).toBe(true);
+  await bim.getByRole('button', { name: 'Show 3D model' }).click();
+  const bimCanvas = bim.getByTestId('bim-model').locator('canvas');
+  await expect(bimCanvas).toHaveAttribute('data-visible-floor-count', '1');
+  await bim.getByRole('button', { name: 'Explode', exact: true }).click();
+  await expect(bimCanvas).toHaveAttribute('data-visible-floor-count', String(building.floors.length));
+  await expect(bimCanvas).toHaveAttribute('data-floor-separation-m', /^(?:[1-9]\d*\.\d+|0\.(?!000)\d{3})$/);
+
+  await page.getByTestId('nav-building_3d').click();
+  const tower = page.locator('.three-building-scene canvas').first();
+  await expect(tower).toHaveAttribute('data-draw-calls', /^[1-9]\d*$/, { timeout: 45_000 });
+  await page.getByTestId('tab-furniture').click();
+  const cutaway = page.getByTestId('btn-toggle-furniture-cutaway');
+  if (await cutaway.getAttribute('aria-pressed') !== 'true') await cutaway.click();
+  const dining = page.getByTestId('furniture-opt-dining_set');
+  if (await dining.getAttribute('aria-pressed') !== 'true') await dining.click();
+  await expect(tower).toHaveAttribute('data-visible-furniture-categories', /dining_set/);
+  await dining.click();
+  await expect(tower).not.toHaveAttribute('data-visible-furniture-categories', /dining_set/);
+
+  const controls = createGenerationControlState();
+  const movable = floor.furniture?.find(item => {
+    try {
+      const moved = editFurniturePlacement(building, controls, floor.id, item.id, { dxMm: 100 });
+      editFurniturePlacement(moved, controls, floor.id, item.id, { rotateQuarterTurn: true });
+      return true;
+    } catch { return false; }
+  });
+  if (!movable) throw new Error('The fixture has no furniture with clearance for the requested move and rotation.');
+  const placement = page.getByRole('region', { name: 'Furniture placement' });
+  await placement.getByLabel('Furniture on this floor').selectOption(movable.id);
+  await placement.getByRole('button', { name: 'East 100 mm' }).click();
+  await expect(placement.getByText(`${Math.round(movable.xMm + 100)} mm east`, { exact: false })).toBeVisible();
+  await placement.getByRole('button', { name: 'Rotate 90°' }).click();
+  const readback = `${Math.round(movable.xMm + 100)} mm east · ${Math.round(movable.yMm)} mm south · ${(movable.rotationDeg + 90) % 360}°`;
+  await expect(placement.getByText(readback, { exact: true })).toBeVisible();
+  await expect(placement.getByRole('status')).toHaveText('Placement applied.');
 });

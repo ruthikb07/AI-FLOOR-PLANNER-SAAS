@@ -6,7 +6,7 @@ import { createGenerationReport } from './generation-report';
 import type { GenerateConceptsResult } from '../topology/generative-topology-engine';
 import { architecturalSpaceRole, withArchitecturalElements, parseMixedUnitProgram, mixedUnitSpecs } from '@ai-floor-planner/core';
 import type { BuildingMassingShape } from '@ai-floor-planner/core';
-import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
+import { architecturalRequirementFindings, generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
 /**
  * Multi-Sheet Apartment Project Engine (Phase 1C).
  *
@@ -54,6 +54,8 @@ import {
   Direction,
   PlotShape,
   PLUMBING_RISER_TAG,
+  PLUMBING_RESERVATION_NOTE_TAG,
+  isArchitecturalGenerationOptions,
   createDynamicApartmentManifest,
   DEFAULT_SITE_AMENITIES,
   DEFAULT_STILT_AMENITIES,
@@ -1517,6 +1519,7 @@ export function solveTypicalFloorSheet(
       floorVariant: options?.floorVariant,
       includeStudyRoom: config.includeStudyRoom ?? false,
       coordinatedWetWallLayout: config.architectureOptions?.coordinatedWetWallLayout,
+      preferExteriorLiving: config.architectureOptions?.preferExteriorLiving,
       roadAccessSides: config.roadAccessSides,
       setbacksMm: config.setbacksMm,
       irregularPlotBoundary: config.irregularPlotBoundary,
@@ -1540,8 +1543,10 @@ export function solveTypicalFloorSheet(
       lotAllotmentMode: config.lotAllotmentMode,
     });
 
-  const structure = config.architectureOptions?.coordinatedWetWallLayout
-    ? reserveWetWallRisers(initialStructure) : initialStructure;
+  const coordinateRisers = config.architectureOptions?.coordinatedWetWallLayout || config.architectureOptions?.requireWetWallRisers;
+  const structure = coordinateRisers
+    ? reserveWetWallRisers(initialStructure, config.architectureOptions?.wetWallRiserSizeMm,
+      config.architectureOptions?.preferSharedWetWallRisers) : initialStructure;
   const includeDiningHall = config.includeDiningHall ?? true;
   const diningToLivingRedirect = new Map<string, string>();
   const rooms: Room[] = [];
@@ -1674,7 +1679,7 @@ export function solveTypicalFloorSheet(
       });
     const extWalls = walls.filter(w =>
       (w.wallUse === 'EXTERNAL' || hasOtsShaftWall(w) ||
-        (isBath && !config.architectureOptions?.coordinatedWetWallLayout && w.wallUse === 'SHAFT') ||
+        (isBath && !coordinateRisers && w.wallUse === 'SHAFT') ||
         (!isBath && r.spaceUse === 'UNIT' && hasOutdoorBalconyWall(w))) &&
       w.boundaryRole !== 'OPEN_BOUNDARY' &&
       w.boundaryRole !== 'PARAPET' &&
@@ -2681,6 +2686,9 @@ export function solveMultiSheetApartmentProject(
     readonly unitGrossAreasMm2?: readonly number[];
   },
 ): MultiSheetApartmentResult {
+  if (rawConfig.architectureOptions !== undefined && !isArchitecturalGenerationOptions(rawConfig.architectureOptions)) {
+    throw new Error('Invalid architectural options. Choose supported counts and positive whole-millimetre dimensions.');
+  }
   const resolvedCategory = rawConfig.planCategory ?? inferPlanCategoryFromPrompt(rawConfig.aiPrompt);
   const explicitPromptShape = inferShapeIdFromPrompt(rawConfig.aiPrompt);
   const explicitOrAutoShape = rawConfig.lockedMassingShape ?? (
@@ -2801,10 +2809,13 @@ export function solveMultiSheetApartmentProject(
   const specifiedUnits = config.units ?? [];
   // On an irregular site, complete advisory unit targets also guide how much of the surveyed capacity to occupy.
   const fitAdvisoryIrregularArea = Boolean(irregularSite && !config.requireAreaTargets);
-  const aggregateCarpetTargetSqFt = (config.requireAreaTargets || fitAdvisoryIrregularArea) && specifiedUnits.length === config.flatsPerFloor
+  const completeCarpetTarget = specifiedUnits.length === config.flatsPerFloor
     && specifiedUnits.every(unit => unit.targetCarpetSqFt && unit.targetCarpetSqFt > 0)
     ? specifiedUnits.reduce((total, unit) => total + (unit.targetCarpetSqFt ?? 0), 0)
     : undefined;
+  const sizeAdvisoryRectangle = !irregularSite && !config.requireAreaTargets && recovery?.areaEnvelopeScale !== undefined;
+  const aggregateCarpetTargetSqFt = (config.requireAreaTargets || fitAdvisoryIrregularArea || sizeAdvisoryRectangle)
+    ? completeCarpetTarget : undefined;
   const explicitTargetSqFt = config.targetAreaSqFt ?? promptIntent?.mandatory.targetAreaSqFt;
   const effectiveTargetSqFt = explicitTargetSqFt ?? aggregateCarpetTargetSqFt;
   const effectiveAreaScope: AreaTargetScope | undefined =
@@ -2824,7 +2835,7 @@ export function solveMultiSheetApartmentProject(
     liftCount: promptIntent?.mandatory.singleLift ? 1 : 2 });
   const minimumProgramGrossM2 = (config.units ?? []).reduce((area, unit) =>
     area + (FLAT_AREA_BOUNDS_SQM[unit.bhkType]?.min ?? 0), 0) + coreAcross * coreRun / 1e6;
-  if ((!recovery?.unitGrossAreasMm2 || fitAdvisoryIrregularArea) && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
+  if ((!recovery?.unitGrossAreasMm2 || fitAdvisoryIrregularArea || sizeAdvisoryRectangle) && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
     const coreW = 7800;
     const bedroomBalconiesRequested = promptIntent?.preferences.bedroomBalconies === 'ALL_BEDROOMS';
     const minHabitableW = Math.min(permissibleEnvelope.w,
@@ -2944,6 +2955,8 @@ export function solveMultiSheetApartmentProject(
     galleryCoordinationMode: resolvedGalleryMode,
     includeStudyRoom: config.includeStudyRoom ?? false,
     coordinatedWetWallLayout: config.architectureOptions?.coordinatedWetWallLayout,
+    architectureOptions: config.architectureOptions,
+    maximumStoreyRiseMm: Math.max(stackParams.floorToFloorHeightMm, stackParams.hasStilt ? stackParams.stiltHeightMm : 0),
   });
 
   if (!topology && config.rejectedTopologyHashes?.length) {
@@ -3083,7 +3096,8 @@ export function solveMultiSheetApartmentProject(
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
         requireAreaTargets: config.requireAreaTargets,
-        ...(config.architectureOptions?.coordinatedWetWallLayout && { coordinatedWetWallLayout: true }),
+        ...((config.architectureOptions?.coordinatedWetWallLayout || config.architectureOptions?.requireWetWallRisers) && { coordinatedWetWallLayout: true }),
+        ...(config.architectureOptions && { architectureOptions: config.architectureOptions }),
         includeWindowChajjas: config.includeWindowChajjas ?? true,
         staggeredBalconies: resolvedGalleryMode === 'DOUBLE_HEIGHT_STAGGER',
         galleryCoordinationMode: resolvedGalleryMode,
@@ -3241,12 +3255,6 @@ export function solveMultiSheetApartmentProject(
     return issues.map(description => ({ code: 'MANDATORY_BRIEF_UNMET', source: 'GENERATION' as const,
       severity: 'CRITICAL' as const, description, floorId: floor.id, elementIds: [floor.id] }));
   });
-  const riserFootprint = (floor: Floor | undefined) => JSON.stringify((floor?.rooms ?? []).flatMap(room => {
-    const tag = room.tags.find(value => value.startsWith(PLUMBING_RISER_TAG));
-    return tag ? [[tag, room.x, room.y, room.width, room.height]] : [];
-  }).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
-  const firstResidential = validatedBuilding.floors.find(floor => floor.apartmentUnits?.length);
-  const referenceRisers = config.architectureOptions?.coordinatedWetWallLayout ? riserFootprint(firstResidential) : undefined;
   const generationReport = createGenerationReport(validatedBuilding, validationReport, {
     strategy: !topology ? 'LEGACY_FALLBACK' : topology.chosen.score.feasible ? 'VALIDATED_TOPOLOGY' : 'BEST_EFFORT_TOPOLOGY',
     selectedFamily: topology?.chosen.familyId,
@@ -3258,20 +3266,16 @@ export function solveMultiSheetApartmentProject(
     areaTargetDiagnostic: schedule.areaTargetDiagnostic,
   }, [
     ...mandatoryFindings,
+    ...architecturalRequirementFindings(validatedBuilding),
     ...(config.architectureOptions?.coordinatedWetWallLayout ? validatedBuilding.floors.flatMap<Omit<ApartmentGenerationViolation, 'rank'>>(floor => {
       if (!floor.apartmentUnits?.length) return [];
-      if (riserFootprint(floor) !== referenceRisers) return [{
-        code: 'WET_WALL_RISER_ALIGNMENT_MISMATCH', source: 'GENERATION' as const, severity: 'CRITICAL' as const,
-        description: 'The architectural riser positions could not be carried through every residential storey.',
-        floorId: floor.id, elementIds: [floor.id],
-      }];
+      if (config.architectureOptions?.requireWetWallRisers) return [];
       const reservations = new Set(floor.rooms.flatMap(room => room.tags.filter(tag => tag.startsWith(PLUMBING_RISER_TAG))));
       const missing = floor.rooms.filter(room => room.type === RoomType.Bathroom && !room.tags.some(tag =>
         tag.startsWith('apt-room:') && reservations.has(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length))));
-      if (!missing.length) return [];
-      return [{ code: 'WET_WALL_RISER_RESERVATION_INCOMPLETE', source: 'GENERATION' as const, severity: 'WARNING' as const,
-        description: 'Some wet rooms had no riser reservation that preserved room area and opening clearance.',
-        floorId: floor.id, elementIds: missing.map(room => room.id) }];
+      return missing.map(room => ({ code: 'WET_WALL_RISER_RESERVATION_INCOMPLETE', source: 'GENERATION' as const, severity: 'WARNING' as const,
+        description: `${room.name}: ${room.tags.find(tag => tag.startsWith(PLUMBING_RESERVATION_NOTE_TAG))?.slice(PLUMBING_RESERVATION_NOTE_TAG.length) ?? 'No coordinated architectural reservation was found.'}`,
+        floorId: floor.id, elementIds: [room.id] }));
     }) : []),
     ...(mixedCountConflict ? [{
       code: 'MANDATORY_BRIEF_UNMET', source: 'GENERATION' as const, severity: 'CRITICAL' as const,
@@ -3367,19 +3371,42 @@ export function solveMultiSheetApartmentProject(
   const areaError = (candidate: MultiSheetApartmentResult) => Math.max(0, ...(candidate.schedule.floorAreas ?? [])
     .flatMap(floor => floor.units.map(unit => unit.target
       ? Math.abs(unit.target.achievedAreaSqFt / unit.target.requestedAreaSqFt - 1) : 0)));
+  const nonAreaBlockers = (candidate: MultiSheetApartmentResult) => generationBlockingFindings(candidate.building, candidate.validationReport)
+    .filter(finding => finding.code !== 'AREA_TARGET_UNMET').length;
+  const respectsMassing = (candidate: MultiSheetApartmentResult) => !config.buildingMassingShape ||
+    candidate.building.metadata.generationBrief?.buildingMassingShape === config.buildingMassingShape;
+  const requestedSplitSelected = config.architectureOptions?.coreArrangement === 'SPLIT_COURTYARD' &&
+    finalResult.generationReport?.selectedVariant === 'courtyard:opposed-stair-lift-pairs';
+  const initialCarpet = finalResult.schedule.floorAreas?.[0]?.carpetMm2 ?? 0;
+  const targetCarpetMm2 = (completeCarpetTarget ?? 0) * SQUARE_METRES_PER_SQUARE_FOOT * 1e6;
+  if (!irregularSite && !config.requireAreaTargets && !explicitTargetSqFt && !recovery?.skipComplianceGate &&
+      targetCarpetMm2 > 0 && initialCarpet > targetCarpetMm2 * 1.15 && areaError(finalResult) > 0.05) {
+    const grossAreas = specifiedUnits.map(unit => unit.targetCarpetSqFt! * SQUARE_METRES_PER_SQUARE_FOOT * 1e6 / 0.8 + 9e6);
+    for (const [scale, axis] of [[1, 'BOTH'], [0.93, 'RUN'], [0.93, 'BOTH'], [1.07, 'BOTH']] as const) {
+      try {
+        const proposed = solveMultiSheetApartmentProject(rawConfig, undefined,
+          { skipComplianceGate: true, unitGrossAreasMm2: grossAreas, areaEnvelopeScale: scale, areaScaleAxis: axis });
+        if (respectsMassing(proposed) && (!requestedSplitSelected ||
+            proposed.generationReport?.selectedVariant === 'courtyard:opposed-stair-lift-pairs') &&
+            nonAreaBlockers(proposed) <= nonAreaBlockers(finalResult) &&
+            areaError(proposed) < areaError(finalResult)) {
+          const audited = attachCompliance(proposed, 1);
+          if (!audited.compliance.passed) continue;
+          ({ result: finalResult, compliance: finalCompliance } = audited);
+          if (areaError(proposed) <= 0.05) break;
+        }
+      } catch { /* Try the other bounded envelope dimensions. */ }
+    }
+  }
   if (aggregateCarpetTargetSqFt && explicitTargetSqFt === undefined && !recovery?.unitGrossAreasMm2
       && !recovery?.legacyOnly && (!recovery?.skipComplianceGate || Boolean(config.requireAreaTargets && config.rejectedTopologyHashes?.length)) &&
       aggregateCarpetTargetSqFt * SQUARE_METRES_PER_SQUARE_FOOT * (1 - tolerance) < permissibleEnvelope.w * permissibleEnvelope.h / 1e6) {
-    const nonAreaBlockers = (candidate: MultiSheetApartmentResult) =>
-      generationBlockingFindings(candidate.building, candidate.validationReport)
-        .filter(finding => finding.code !== 'AREA_TARGET_UNMET').length;
     if (areaError(finalResult) > tolerance) {
       const targetMm2 = specifiedUnits.map(unit => unit.targetCarpetSqFt! * SQUARE_METRES_PER_SQUARE_FOOT * 1e6);
       let grossAreas = targetMm2.map(area => area / 0.8 + 9e6);
       const initialGross = grossAreas.reduce((sum, area) => sum + area, 0);
       const targetTotal = targetMm2.reduce((sum, area) => sum + area, 0);
       const scaleToCapacity = (value: number) => Math.max(0.75, Math.min(1.25, value));
-      const initialCarpet = finalResult.schedule.floorAreas?.[0]?.carpetMm2 ?? 0;
       let areaEnvelopeScale = fitAdvisoryIrregularArea && initialCarpet > 0
         ? scaleToCapacity(Math.sqrt(targetTotal / initialCarpet)) : undefined;
       let previousError = Infinity;

@@ -38,3 +38,7 @@ The active worktree is `C:/Users/ruthi/rh-planner-phase5`. The canonical editor 
 The production generation route preserves the exact-survey guard. The legacy irregular polygon and the CAD import path have separate coverage. Required per-flat carpet requests receive a pre-solver diagnostic when their combined lower-tolerance bound exceeds the entire rectangular plot. Browser BIM queries and the assistant API refuse unresolved explicit scopes.
 
 The [Phase 5.1 acceptance record](../integration/PHASE5_1_FINAL_ACCEPTANCE.md) continues from the verified Phase 5 anchor on `fix/phase5-final-acceptance`. It tracks exact surveyed geometry, irregular area objectives, strict alternatives and outstanding Windows, live and native verification.
+
+## Phase 5.2
+
+Phase 5.2 continues from `3369a634ad9c5dd6aea7577e3118420b1e9cb621` in `C:/Users/ruthi/rh-planner-phase5` on `fix/phase5-release-candidate`. The canonical model carries stair/lift counts, OTS constraints, clear passage width and chase ownership. [Current evidence](../integration/PHASE5_2_RELEASE_CANDIDATE.md)

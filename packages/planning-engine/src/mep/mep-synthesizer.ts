@@ -415,7 +415,7 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
       for (const [key, stack] of stackByKey) {
         if (reservationsOnly && !activeStackKeys.has(key)) continue;
         stack.floorIds.push(floor.id);
-        fb.sym('PLUMB_SHAFT', center(stack.box), { widthMm: stack.box.w, depthMm: stack.box.h, label: 'PLUMB SHAFT 600x900' });
+        fb.sym('PLUMB_SHAFT', center(stack.box), { widthMm: stack.box.w, depthMm: stack.box.h, label: `PLUMB SHAFT ${stack.box.w}x${stack.box.h}` });
       }
       for (const k of floor.rooms.filter(isKitchen)) {
         const options = reservationsOnly

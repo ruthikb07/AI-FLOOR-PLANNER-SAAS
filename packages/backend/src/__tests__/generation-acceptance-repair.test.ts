@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import {
   DEFAULT_SITE_AMENITIES, DEFAULT_STILT_AMENITIES, DEFAULT_TERRACE_AMENITIES,
-  Direction, type MultiSheetApartmentConfig,
+  Direction, PLUMBING_RISER_TAG, RoomType, type Building, type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
-import { generationBlockingFindings } from '@ai-floor-planner/constraint-engine';
+import { generationBlockingFindings, minimumCommonPassageWidthMm, requireAcceptedGeneration } from '@ai-floor-planner/constraint-engine';
 import { executeAuditedPlanningPipeline } from '@ai-floor-planner/planning-engine';
 import { handleProjectGeneration } from '../api/generation-routes.js';
 
@@ -109,3 +109,68 @@ it('blocks mandatory closure failure on a real generated model with a detached e
   expect(generationBlockingFindings(audit.building, audit.validationReport))
     .toEqual(expect.arrayContaining([expect.objectContaining({ code: 'OPENING_HOST_INVALID' })]));
 }, 30_000);
+
+it('rejects a shifted architectural riser even when the geometry audit and generation report are stale', async () => {
+  const accepted = await executeAuditedPlanningPipeline({ ...config, plotWidthMm: 38000, plotDepthMm: 32000,
+    structuralLayoutMode: 'DEFERRED', numTypicalFloors: 2, architectureOptions: { coordinatedWetWallLayout: true } });
+  const floor = accepted.building.floors.filter(item => item.apartmentUnits?.length)[1]!;
+  const shaft = floor.rooms.find(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)))!;
+  expect(shaft).toBeDefined();
+  const shifted = { ...shaft, x: shaft.x + 50, boundary: { points: shaft.boundary.points.map(p => ({ ...p, x: p.x + 50 })) } };
+  const invalid = { ...accepted.building, floors: accepted.building.floors.map(item => item === floor
+    ? { ...item, rooms: floor.rooms.map(room => room === shaft ? shifted : room) } : item) };
+  expect(accepted.validationReport.isValid).toBe(true);
+  expect(generationBlockingFindings(invalid, accepted.validationReport)).toEqual(expect.arrayContaining([
+    expect.objectContaining({ code: 'WET_WALL_RISER_ALIGNMENT_MISMATCH' }),
+  ]));
+  expect(() => requireAcceptedGeneration({ building: invalid, validationReport: accepted.validationReport })).toThrow(/riser footprints/i);
+}, 30_000);
+
+it('sizes opposing stairs, lift shafts, court and clear circulation for a taller site', async () => {
+  const dimensions = { flightWidthMm: 1300, maxRiserMm: 170, treadDepthMm: 280, landingDepthMm: 1400,
+    liftShaftWidthMm: 2300, liftShaftDepthMm: 2400, circulationWidthMm: 2200, courtyardWidthMm: 3600 };
+  const result = await handleProjectGeneration({ config: { ...config, plotWidthMm: 44000, plotDepthMm: 37000,
+    structuralLayoutMode: 'DEFERRED', numTypicalFloors: 2, floorToFloorHeightMm: 3600, stiltHeightMm: 3000,
+    architectureOptions: { coreArrangement: 'SPLIT_COURTYARD', stairCount: 2, liftCount: 2, openToSky: 'REQUIRED', coreDimensions: dimensions },
+  } }, { gemini: null });
+  const payload = result.json as { building?: Building; error?: unknown };
+  expect(result.status, JSON.stringify(payload.error)).toBe(200);
+  expect(payload.building!.metadata.generationReport?.selectedVariant).toBe('courtyard:opposed-stair-lift-pairs');
+  for (const floor of payload.building!.floors.filter(floor => floor.apartmentUnits?.length)) {
+    expect(floor.canonicalStaircases).toHaveLength(2);
+    for (const stair of floor.canonicalStaircases ?? []) {
+      expect(stair.clearWidthMm).toBeGreaterThanOrEqual(dimensions.flightWidthMm);
+      expect(stair.treadWidthMm).toBeGreaterThanOrEqual(dimensions.treadDepthMm);
+      expect(floor.floorHeight / stair.riserCount).toBeLessThanOrEqual(dimensions.maxRiserMm);
+    }
+    expect(floor.rooms.filter(room => room.type === RoomType.Lift).map(room => [room.width, room.height])).toEqual([[2300, 2400], [2300, 2400]]);
+    expect(floor.rooms.find(room => room.tags.includes('shaft:central-court'))?.width).toBe(3600);
+    for (const passage of floor.rooms.filter(room => room.tags.includes('core:corridor'))) {
+      expect(minimumCommonPassageWidthMm(floor, passage)).toBeGreaterThanOrEqual(2200);
+    }
+    expect(floor.rooms.some(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)))).toBe(false);
+  }
+}, 60_000);
+
+it('refuses required chases that do not fit and reports each named wet room', async () => {
+  const result = await handleProjectGeneration({ config: { ...config, plotWidthMm: 38000, plotDepthMm: 32000,
+    structuralLayoutMode: 'DEFERRED', architectureOptions: { requireWetWallRisers: true, wetWallRiserSizeMm: { widthMm: 5000, depthMm: 5000 } },
+  } }, { gemini: null });
+  expect(result.status).toBe(422);
+  expect(result.json).not.toHaveProperty('building');
+  expect(result.json).toMatchObject({ error: { findings: expect.arrayContaining([
+    expect.objectContaining({ code: 'WET_WALL_RISER_REQUIRED', message: expect.stringMatching(/Flat.+(?:Bathroom|Toilet):.+minimum bathroom area/i) }),
+  ]) } });
+}, 60_000);
+
+it('enforces stair and lift counts and no-OTS input before accepting the courtyard preference', async () => {
+  const result = await handleProjectGeneration({ config: { ...config, plotWidthMm: 38000, plotDepthMm: 32000,
+    structuralLayoutMode: 'DEFERRED', architectureOptions: { coreArrangement: 'SPLIT_COURTYARD', stairCount: 1, liftCount: 1, openToSky: 'PROHIBITED' },
+  } }, { gemini: null });
+  const payload = result.json as { building?: Building; error?: unknown };
+  expect(result.status, JSON.stringify(payload.error)).toBe(200);
+  const floor = payload.building!.floors.find(floor => floor.apartmentUnits?.length)!;
+  expect(floor.rooms.filter(room => room.type === RoomType.Staircase)).toHaveLength(1);
+  expect(floor.rooms.filter(room => room.type === RoomType.Lift)).toHaveLength(1);
+  expect(floor.rooms.filter(room => room.openToSky && !room.tags.includes('recess:perimeter'))).toHaveLength(0);
+}, 60_000);

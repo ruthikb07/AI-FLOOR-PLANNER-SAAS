@@ -40,7 +40,7 @@ import {
   splitX,
   splitY,
 } from './rect-frame';
-import type { BuildingMassingShape } from '@ai-floor-planner/core';
+import type { ArchitecturalGenerationOptions, BuildingMassingShape } from '@ai-floor-planner/core';
 import type { ArchitecturalProgram } from './architectural-intent';
 
 export type { BuildingMassingShape };
@@ -168,7 +168,8 @@ export interface TopologyContext {
   readonly flatsPerFloor: 1 | 2 | 3 | 4 | 5 | 6;
   readonly program: ArchitecturalProgram;
   readonly enableMacroShapes?: boolean;
-  readonly preferSplitCourtyard?: boolean;
+  readonly architectureOptions?: ArchitecturalGenerationOptions;
+  readonly maximumStoreyRiseMm?: number;
 }
 
 export interface TopologyCandidate {
@@ -1943,46 +1944,63 @@ const splitCore: FamilyBuilder = ctx => {
  * light and air; the cost is the built area the court consumes and the longer
  * circulation perimeter the loop requires.
  */
-const splitCourtyard: FamilyBuilder = ({ envelope: env, flatsPerFloor, program, preferSplitCourtyard }) => {
-  if (!preferSplitCourtyard || flatsPerFloor !== 4 || program.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
+const splitCourtyard: FamilyBuilder = ({ envelope: env, flatsPerFloor, program, architectureOptions, maximumStoreyRiseMm = 3150 }) => {
+  if (architectureOptions?.coreArrangement !== 'SPLIT_COURTYARD' || flatsPerFloor < 2 || program.mandatory.ventilationStrategy === 'PERIMETER_ONLY' ||
       program.mandatory.singleLiftRequired || (program.mandatory.stairCountRequired && program.mandatory.stairCount !== 2)) return [];
 
   const variantId = 'courtyard:opposed-stair-lift-pairs';
   const label = 'Central open-to-sky court with two stair and lift cores';
-  const spine = CORE_BOUNDS.corridorStandard;
-  const stairWidth = CORE_BOUNDS.stairWidthMax;
-  const stairRun = 5000;
-  const courtWidth = 3200;
-  const courtRun = stairRun + CORE_BOUNDS.liftDepth;
-  const islandWidth = 2 * stairWidth + courtWidth;
+  const dimensions = architectureOptions.coreDimensions;
+  const flightWidth = dimensions?.flightWidthMm ?? 1200;
+  const riser = dimensions?.maxRiserMm ?? 175;
+  const tread = dimensions?.treadDepthMm ?? 300;
+  const landing = Math.max(flightWidth, dimensions?.landingDepthMm ?? flightWidth);
+  const risersPerFlight = Math.ceil(maximumStoreyRiseMm / (2 * riser));
+  const stairRun = Math.ceil(((risersPerFlight - 1) * tread + 2 * landing + 150) / 100) * 100;
+  const stairWidth = Math.max(CORE_BOUNDS.stairWidthMax, 2 * flightWidth + 350);
+  const liftWidth = dimensions?.liftShaftWidthMm ?? CORE_BOUNDS.liftWidthMax;
+  const liftDepth = dimensions?.liftShaftDepthMm ?? CORE_BOUNDS.liftDepth;
+  const coreWidth = Math.max(stairWidth, liftWidth);
+  // Two 230 mm boundary walls can each occupy half of the centreline cell.
+  const spine = dimensions?.circulationWidthMm === undefined ? CORE_BOUNDS.corridorStandard : dimensions.circulationWidthMm + 230;
+  const courtWidth = dimensions?.courtyardWidthMm ?? Math.min(3200, Math.max(CORE_BOUNDS.otsMinSpan, snap10(env.w * 0.12)));
+  const courtRun = stairRun + liftDepth;
+  const islandWidth = 2 * coreWidth + courtWidth;
   const bandWidth = islandWidth + 2 * spine;
   const westWingWidth = snap10((env.w - bandWidth) / 2);
-  const northDepth = snap10(env.h / 2);
+  const westCount = Math.ceil(flatsPerFloor / 2);
+  const eastCount = flatsPerFloor - westCount;
   const recessDepth = snap10((env.h - courtRun - 2 * spine) / 2);
-  if (westWingWidth < FLAT_BOUNDS.minSpanMm || Math.min(northDepth, env.h - northDepth) < FLAT_BOUNDS.minRunMm || recessDepth < 1000) {
-    return [{ variantId, label, rationale: '', reasons: ['The plot cannot accommodate four usable flats, a central court, and two separated stairs and lifts.'] }];
+  if (westWingWidth < FLAT_BOUNDS.minSpanMm || Math.floor(env.h / westCount) < FLAT_BOUNDS.minRunMm || recessDepth < 1000) {
+    return [{ variantId, label, rationale: '', reasons: ['The plot cannot fit the requested flats, courtyard, and separated stairs and lifts.'] }];
   }
 
   const [westWing, band, eastWing] = splitX(env, [westWingWidth, bandWidth, 0]) as [Box2D, Box2D, Box2D];
   const [westSpine, island, eastSpine] = splitX(band, [spine, islandWidth, 0]) as [Box2D, Box2D, Box2D];
   const [northRecess, northLink, midRow, southLink, southRecess] =
     splitY(island, [recessDepth, spine, courtRun, spine, 0]) as [Box2D, Box2D, Box2D, Box2D, Box2D];
-  const [westCore, court, eastCore] = splitX(midRow, [stairWidth, courtWidth, 0]) as [Box2D, Box2D, Box2D];
+  const [westCore, court, eastCore] = splitX(midRow, [coreWidth, courtWidth, 0]) as [Box2D, Box2D, Box2D];
   const [westStair, westLiftRow] = splitY(westCore, [stairRun, 0]) as [Box2D, Box2D];
-  const [eastLiftRow, eastStair] = splitY(eastCore, [CORE_BOUNDS.liftDepth, 0]) as [Box2D, Box2D];
-  const [westLift, westShaft] = splitX(westLiftRow, [CORE_BOUNDS.liftWidthMax, 0]) as [Box2D, Box2D];
-  const [eastShaft, eastLift] = splitX(eastLiftRow, [stairWidth - CORE_BOUNDS.liftWidthMax, 0]) as [Box2D, Box2D];
+  const [eastLiftRow, eastStair] = splitY(eastCore, [liftDepth, 0]) as [Box2D, Box2D];
+  const westLift = { ...westLiftRow, w: liftWidth };
+  const eastLift = { ...eastLiftRow, x: eastLiftRow.x + coreWidth - liftWidth, w: liftWidth };
+  const surplus = coreWidth - liftWidth > 0 ? [
+    { ...westLiftRow, x: westLiftRow.x + liftWidth, w: coreWidth - liftWidth },
+    { ...eastLiftRow, w: coreWidth - liftWidth },
+  ] : [];
+  const splitWing = (wing: Box2D, count: number) => count === 1 ? [wing]
+    : splitY(wing, [...Array<number>(count - 1).fill(snap10(wing.h / count)), 0]);
   return [{ variantId, label,
     rationale: 'One stair and one lift stand on each side of a central open-to-sky court. Two common cross-links join the side spines, and the stairs enter from opposite landings.',
     partition: {
       familyId: 'CENTRAL_COURTYARD', variantId, massingShape: 'COMPACT_DOUBLE_LOADED', envelope: env, builtOutline: env,
-      flatBoxes: [...splitY(westWing, [northDepth, 0]), ...splitY(eastWing, [northDepth, 0])],
-      accessEdgeForFlat: ['EAST', 'EAST', 'WEST', 'WEST'],
+      flatBoxes: [...splitWing(westWing, westCount), ...splitWing(eastWing, eastCount)],
+      accessEdgeForFlat: [...Array<AccessEdge>(westCount).fill('EAST'), ...Array<AccessEdge>(eastCount).fill('WEST')],
       corridorBoxes: [westSpine, eastSpine, northLink, southLink], lobbyBoxes: [],
       liftBoxes: [westLift, eastLift], stairBoxes: [westStair, eastStair], coreBoxes: [westCore, eastCore],
-      shaftBoxes: [court, westShaft, eastShaft, northRecess, southRecess],
-      shaftRoles: ['OPEN_TO_SKY_VOID', 'SERVICE_SHAFT', 'SERVICE_SHAFT', 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
-      shaftTags: [['shaft:ots', 'shaft:central-court'], [], [], ['recess:perimeter'], ['recess:perimeter']],
+      shaftBoxes: [court, ...surplus, northRecess, southRecess],
+      shaftRoles: ['OPEN_TO_SKY_VOID', ...surplus.map(() => 'SERVICE_SHAFT' as const), 'OPEN_TO_SKY_VOID', 'OPEN_TO_SKY_VOID'],
+      shaftTags: [['shaft:ots', 'shaft:central-court'], ...surplus.map(() => []), ['recess:perimeter'], ['recess:perimeter']],
     },
   }];
 };

@@ -21,3 +21,7 @@ The four-flat, two-storey production fixture yielded eight reservations per stor
 The four-flat layout now also prefers a 3.2 × 7.2 m central open-to-sky court with one lift and one stair on each side. Two 2.4 m nominal cross-corridors close the route around the court. The residential checks traverse actual open wall boundaries from every flat entrance to both stairs. Both modeled stair bays have 1,325 mm flights, floor and mid-landings, and coordinated access from the common circulation. The stair locations and court stack through the stilt and terrace. Terrace stair exits lead to circulation vestibules, with the water tank in a separate roof zone. Detailed fire and egress approval remains open.
 
 No Phase 6 changes are included.
+
+## Phase 5.2
+
+The verified Phase 5.1 anchor is `3369a634ad9c5dd6aea7577e3118420b1e9cb621`. Read [Phase 5.2 release-candidate evidence](PHASE5_2_RELEASE_CANDIDATE.md) for subsequent verification.

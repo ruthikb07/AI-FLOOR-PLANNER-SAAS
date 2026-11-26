@@ -63,6 +63,7 @@ export type HardConstraintId =
   | 'CORE_REACHABLE_FROM_CIRCULATION'
   | 'REQUIRED_CORE_PLACEMENT_HONOURED'
   | 'REQUIRED_VENTILATION_STRATEGY_HONOURED'
+  | 'REQUIRED_WET_WALL_RISERS_FEASIBLE'
   | 'EXACT_FLAT_COUNT';
 
 export interface HardConstraintResult {
@@ -124,6 +125,8 @@ export interface ScoreInput {
   readonly program: ArchitecturalProgram;
   readonly flatsWithoutEntrance: readonly string[];
   readonly coordinatedWetWallLayout?: boolean;
+  readonly preferExteriorLiving?: boolean;
+  readonly requiredRiserShortfall?: number;
 }
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
@@ -159,6 +162,11 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
 
   // ── Hard constraints ────────────────────────────────────────────────────
   const hardConstraints: HardConstraintResult[] = [];
+  if (input.requiredRiserShortfall !== undefined) hardConstraints.push({
+    id: 'REQUIRED_WET_WALL_RISERS_FEASIBLE', satisfied: input.requiredRiserShortfall === 0,
+    detail: input.requiredRiserShortfall ? `${input.requiredRiserShortfall} required wet rooms could not fit a chase.`
+      : 'Every requested wet room has an architectural chase reservation.',
+  });
 
   hardConstraints.push({
     id: 'EXACT_FLAT_COUNT',
@@ -339,7 +347,7 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     score: clamp01((daylightRatio - 0.5) / 0.45),
     explanation: `${daylit.length} of ${habitable.length} habitable rooms touch the external facade (${(daylightRatio * 100).toFixed(0)}%)`,
   });
-  if (input.coordinatedWetWallLayout) {
+  if (input.preferExteriorLiving) {
     const publicRooms = allRooms.filter(room => room.type === 'living' || room.type === 'kitchen');
     const publicOnFacade = publicRooms.filter(room => onFacade(room, env)).length;
     const interiorWetRooms = wetRooms.filter(room => !onFacade(room, env)).length;
@@ -517,7 +525,7 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     hardConstraints,
     objectives,
     weightedTotal,
-    emphasized: input.coordinatedWetWallLayout
+    emphasized: input.preferExteriorLiving
       ? ['WET_WALL_LAYOUT', ...PRIORITY_EMPHASIS[program.preferences.priority]]
       : PRIORITY_EMPHASIS[program.preferences.priority],
     bedroomQualityTier,

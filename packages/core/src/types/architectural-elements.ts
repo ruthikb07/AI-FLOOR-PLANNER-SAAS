@@ -62,9 +62,29 @@ export interface ArchitecturalFloorModel {
   };
   readonly statutoryStatus: "NOT_VERIFIED";
 }
+export interface CorePlanningDimensions {
+  readonly flightWidthMm?: number;
+  readonly maxRiserMm?: number;
+  readonly treadDepthMm?: number;
+  readonly landingDepthMm?: number;
+  readonly liftShaftWidthMm?: number;
+  readonly liftShaftDepthMm?: number;
+  readonly circulationWidthMm?: number;
+  readonly courtyardWidthMm?: number;
+}
+
 export interface ArchitecturalGenerationOptions {
   readonly guardHeightMm?: number;
   readonly coordinatedWetWallLayout?: boolean;
+  readonly preferExteriorLiving?: boolean;
+  readonly coreArrangement?: 'AUTO' | 'SPLIT_COURTYARD';
+  readonly stairCount?: 1 | 2;
+  readonly liftCount?: 1 | 2;
+  readonly openToSky?: 'AUTO' | 'REQUIRED' | 'PROHIBITED';
+  readonly coreDimensions?: CorePlanningDimensions;
+  readonly requireWetWallRisers?: boolean;
+  readonly preferSharedWetWallRisers?: boolean;
+  readonly wetWallRiserSizeMm?: { readonly widthMm: number; readonly depthMm: number };
   readonly liftSystem?:
     | "UNSPECIFIED"
     | "MACHINE_ROOM_LESS"
@@ -72,3 +92,21 @@ export interface ArchitecturalGenerationOptions {
 }
 
 export const PLUMBING_RISER_TAG = 'plumbing:serves:';
+export const PLUMBING_RESERVATION_NOTE_TAG = 'plumbing:reservation-note:';
+
+export function isArchitecturalGenerationOptions(value: unknown): value is ArchitecturalGenerationOptions {
+  const record = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+  const dimension = (v: unknown) => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+  if (!record(value)) return false;
+  const oneOf = (v: unknown, domain: readonly unknown[]) => v === undefined || domain.includes(v);
+  const coreKeys: readonly (keyof CorePlanningDimensions)[] = ['flightWidthMm', 'maxRiserMm', 'treadDepthMm', 'landingDepthMm',
+    'liftShaftWidthMm', 'liftShaftDepthMm', 'circulationWidthMm', 'courtyardWidthMm'];
+  return ['coordinatedWetWallLayout', 'preferExteriorLiving', 'requireWetWallRisers', 'preferSharedWetWallRisers'].every(key =>
+    value[key] === undefined || typeof value[key] === 'boolean') &&
+    oneOf(value.coreArrangement, ['AUTO', 'SPLIT_COURTYARD']) && oneOf(value.openToSky, ['AUTO', 'REQUIRED', 'PROHIBITED']) &&
+    oneOf(value.stairCount, [1, 2]) && oneOf(value.liftCount, [1, 2]) &&
+    (value.coreDimensions === undefined || (record(value.coreDimensions) && Object.entries(value.coreDimensions).every(([key, d]) =>
+      coreKeys.some(known => known === key) && (d === undefined || dimension(d))))) &&
+    (value.wetWallRiserSizeMm === undefined || (record(value.wetWallRiserSizeMm) &&
+      dimension(value.wetWallRiserSizeMm.widthMm) && dimension(value.wetWallRiserSizeMm.depthMm)));
+}

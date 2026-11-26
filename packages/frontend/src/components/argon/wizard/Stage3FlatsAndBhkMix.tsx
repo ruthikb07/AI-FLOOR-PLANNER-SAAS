@@ -243,14 +243,37 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
             })}
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={Boolean(wizard.coordinatedWetWallLayout)} onChange={event =>
-              updateWizard({ coordinatedWetWallLayout: event.target.checked })} />
-            Prefer exterior living and wet-wall risers
-          </label>
-          {wizard.flatsPerFloor === 4 && (
-            <p className="text-xs text-argon-muted">Also prefers a stair and lift on each side of a central open-to-sky court when the brief and site allow it.</p>
-          )}
+          <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">
+            <legend className="px-1 text-sm font-semibold">Core and wet rooms</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">Core arrangement
+                <select value={wizard.architectureOptions?.coreArrangement ?? 'AUTO'} onChange={event =>
+                  updateWizard({ architectureOptions: { ...wizard.architectureOptions, coreArrangement: event.target.value === 'SPLIT_COURTYARD' ? 'SPLIT_COURTYARD' : 'AUTO' } })}>
+                  <option value="AUTO">Automatic</option><option value="SPLIT_COURTYARD">Prefer split courtyard</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">Internal open-to-sky space
+                <select value={wizard.architectureOptions?.openToSky ?? 'AUTO'} onChange={event => {
+                  const value = event.target.value;
+                  updateWizard({ architectureOptions: { ...wizard.architectureOptions, openToSky: value === 'REQUIRED' || value === 'PROHIBITED' ? value : 'AUTO' } });
+                }}><option value="AUTO">Automatic</option><option value="REQUIRED">Required</option><option value="PROHIBITED">Prohibited</option></select>
+              </label>
+              {(['stairCount', 'liftCount'] as const).map(key => (
+                <label key={key} className="grid gap-1 text-sm">{key === 'stairCount' ? 'Number of stairs' : 'Number of lifts'}
+                  <select value={wizard.architectureOptions?.[key] ?? ''} onChange={event => {
+                    const value = event.target.value;
+                    updateWizard({ architectureOptions: { ...wizard.architectureOptions, [key]: value === '1' ? 1 : value === '2' ? 2 : undefined } });
+                  }}><option value="">Automatic</option><option value="1">1</option><option value="2">2</option></select>
+                </label>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(wizard.architectureOptions?.preferExteriorLiving)} onChange={event =>
+              updateWizard({ architectureOptions: { ...wizard.architectureOptions, preferExteriorLiving: event.target.checked } })} />Prefer exterior living</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wizard.architectureOptions?.coordinatedWetWallLayout ?? Boolean(wizard.coordinatedWetWallLayout)} onChange={event =>
+              updateWizard({ architectureOptions: { ...wizard.architectureOptions, coordinatedWetWallLayout: event.target.checked } })} />Coordinate wet-wall risers</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(wizard.architectureOptions?.requireWetWallRisers)} onChange={event =>
+              updateWizard({ architectureOptions: { ...wizard.architectureOptions, requireWetWallRisers: event.target.checked } })} />Require a riser for every bathroom</label>
+          </fieldset>
 
           <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">
             <legend className="px-1 text-sm font-semibold">Carpet area acceptance</legend>

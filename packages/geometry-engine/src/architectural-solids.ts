@@ -138,6 +138,7 @@ export function proposeArchitecturalStair(
   targetFlightWidth = 1200,
   targetRiser = 175,
   accessCenter?: Point,
+  minimumLandingDepthMm?: number,
 ): CanonicalStaircase {
   const points = room.boundary.points;
   const x = Math.min(...points.map((p) => p.x)),
@@ -182,7 +183,7 @@ export function proposeArchitecturalStair(
   );
   const riserCount = 2 * Math.ceil(rise / (2 * targetRiser)),
     count = riserCount / 2,
-    nominalLanding = targetFlightWidth >= 1500 ? flightWidth : Math.min(targetFlightWidth, flightWidth),
+    nominalLanding = minimumLandingDepthMm ?? (targetFlightWidth >= 1500 ? flightWidth : Math.min(targetFlightWidth, flightWidth)),
     landing =
       depth - 2 * nominalLanding >= (count - 1) * 200
         ? nominalLanding

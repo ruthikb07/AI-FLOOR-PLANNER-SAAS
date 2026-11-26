@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type {
+  ArchitecturalGenerationOptions,
   AuthorityType,
   BuildingMassingShape,
   CongestionZone,
@@ -70,6 +71,7 @@ export interface WizardState {
   includeDiningHall: boolean;
   includeStudyRoom: boolean;
   coordinatedWetWallLayout?: boolean;
+  architectureOptions?: ArchitecturalGenerationOptions;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
@@ -501,6 +503,7 @@ export const studioStoreActions = {
         includeDiningHall: wizard.includeDiningHall ?? true,
         includeStudyRoom: wizard.includeStudyRoom ?? false,
         coordinatedWetWallLayout: wizard.coordinatedWetWallLayout ?? false,
+        architectureOptions: wizard.architectureOptions,
         aiPrompt: wizard.aiPrompt,
         referenceSketchName: wizard.referenceSketchName,
         referenceImage: wizard.referenceImage,
