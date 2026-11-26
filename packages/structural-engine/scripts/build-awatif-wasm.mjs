@@ -45,6 +45,7 @@ const args = [
   '-sMODULARIZE=1',
   '-sEXPORT_ES6=1',
   '-sALLOW_MEMORY_GROWTH=1',
+  '-sSTACK_SIZE=4194304',
   '-sENVIRONMENT=web,worker,node',
   '-sEXPORTED_FUNCTIONS=["_lSolve","_malloc","_free"]',
   '-sEXPORTED_RUNTIME_METHODS=["HEAPF64","HEAP32","HEAPU8","HEAPU32"]',

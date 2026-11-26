@@ -703,12 +703,26 @@ function designSingleBeam(
     meta.steelGrade,
   );
 
-  const maxUtilization = Number(Math.max(utilFlexure, utilShear, utilDeflection).toFixed(3));
+  const ductileBeamWidthViolation =
+    ductileIS13920 &&
+    meta.category !== 'PLINTH_BEAM' &&
+    (meta.widthMm < 200 || meta.widthMm / meta.depthMm < 0.3);
+
+  const maxUtilization = Number(
+    Math.max(
+      utilFlexure,
+      utilShear,
+      utilDeflection,
+      ductileBeamWidthViolation ? 200 / Math.max(1, meta.widthMm) : 0,
+    ).toFixed(3),
+  );
   const passed =
     utilFlexure <= 1.0 &&
     tauV <= tauCMax &&
     utilShear <= 1.0 &&
+    utilDeflection <= 1.0 &&
     maxSlsDeflMm <= allowDeflMm &&
+    !ductileBeamWidthViolation &&
     !hogFlex.sectionCapacityExceeded &&
     !sagFlex.sectionCapacityExceeded;
 

@@ -270,9 +270,29 @@ export function synthesizeCanonicalStructuralSystem(
     }
   }
 
-  // Floor boundary corners, primary room corners (excluding tiny balconies from column drops!), and load-bearing wall endpoints
+  const subdivideSpanIfUnframed = (p0: Point, p1: Point) => {
+    const dx = p1.x - p0.x;
+    const dy = p1.y - p0.y;
+    const len = Math.hypot(dx, dy);
+    if (len <= maxColSpacingMm) return;
+    // Check if any existing stack already splits this segment near the middle!
+    const hasInteriorSupport = stacks.some((s) => {
+      const t = ((s.xMm - p0.x) * dx + (s.yMm - p0.y) * dy) / (len * len);
+      if (t <= 0.18 || t >= 0.82) return false;
+      const perp = Math.abs((s.xMm - p0.x) * dy - (s.yMm - p0.y) * dx) / len;
+      return perp <= 550;
+    });
+    if (hasInteriorSupport) return;
+    const segs = Math.ceil(len / maxColSpacingMm);
+    for (let k = 1; k < segs; k++) {
+      addCandidatePoint(p0.x + (dx * k) / segs, p0.y + (dy * k) / segs);
+    }
+  };
+
+  // Floor boundary corners, room corners, and wall endpoints FIRST, then subdivide remaining long unframed spans!
   const refFloor = sortedFloors[0]!;
-  for (const pt of refFloor.boundary?.points ?? []) {
+  const boundaryPts = refFloor.boundary?.points ?? [];
+  for (const pt of boundaryPts) {
     addCandidatePoint(pt.x, pt.y);
   }
   for (const floor of sortedFloors) {
@@ -284,18 +304,10 @@ export function synthesizeCanonicalStructuralSystem(
         wall.wallUse === 'UNIT_SEPARATION' ||
         wall.thickness >= 180;
       if (!isStructuralWall) continue;
-      const dx = wall.endPoint.x - wall.startPoint.x;
-      const dy = wall.endPoint.y - wall.startPoint.y;
-      const len = Math.hypot(dx, dy);
+      const len = Math.hypot(wall.endPoint.x - wall.startPoint.x, wall.endPoint.y - wall.startPoint.y);
       if (len < 600) continue;
       addCandidatePoint(wall.startPoint.x, wall.startPoint.y);
       addCandidatePoint(wall.endPoint.x, wall.endPoint.y);
-      if (len > maxColSpacingMm) {
-        const segs = Math.ceil(len / maxColSpacingMm);
-        for (let k = 1; k < segs; k++) {
-          addCandidatePoint(wall.startPoint.x + (dx * k) / segs, wall.startPoint.y + (dy * k) / segs);
-        }
-      }
     }
 
     for (const room of floor.rooms ?? []) {
@@ -313,6 +325,24 @@ export function synthesizeCanonicalStructuralSystem(
         addCandidatePoint(b.maxX, b.minY);
         addCandidatePoint(b.maxX, b.maxY);
         addCandidatePoint(b.minX, b.maxY);
+      }
+    }
+  }
+
+  // Now subdivide any perimeter boundary edges or structural walls that STILL exceed maxColSpacingMm without an interior column!
+  for (let i = 0; i < boundaryPts.length; i++) {
+    subdivideSpanIfUnframed(boundaryPts[i]!, boundaryPts[(i + 1) % boundaryPts.length]!);
+  }
+  for (const floor of sortedFloors) {
+    for (const wall of floor.walls ?? []) {
+      const isStructuralWall =
+        wall.loadBearing ||
+        wall.wallUse === 'EXTERNAL' ||
+        wall.wallUse === 'CORE' ||
+        wall.wallUse === 'UNIT_SEPARATION' ||
+        wall.thickness >= 180;
+      if (isStructuralWall) {
+        subdivideSpanIfUnframed(wall.startPoint, wall.endPoint);
       }
     }
   }

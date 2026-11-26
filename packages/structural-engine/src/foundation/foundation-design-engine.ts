@@ -653,14 +653,41 @@ function designCombinedTwoColumnFooting(
   const colSpacingMm = Math.max(1000, Math.hypot(spanXMm, spanYMm));
 
   const ov = overrides.byId?.[footingId];
-  const reqAreaM2 = (pTotSls * 1.15) / Math.max(40, geo.safeBearingCapacityKPa * 0.88);
-  const longLenMm = ov
+  const reqAreaM2 = (pTotSls * 1.15) / Math.max(40, geo.safeBearingCapacityKPa * 0.85);
+  let longLenMm = ov
     ? Math.max(ov.lengthXMm, ov.widthYMm)
     : Math.max(colSpacingMm + 1400, roundUp50(Math.sqrt(reqAreaM2 * 1.8) * 1000));
-  const shortWidMm = ov
+  let shortWidMm = ov
     ? Math.min(ov.lengthXMm, ov.widthYMm)
     : Math.max(1300, roundUp50((reqAreaM2 / (longLenMm / 1000)) * 1000));
-  const thickMm = ov ? ov.thicknessMm : Math.max(450, roundUp50(colSpacingMm / 7.5));
+  let thickMm = ov ? ov.thicknessMm : Math.max(450, roundUp50(colSpacingMm / 7.5));
+
+  if (!ov) {
+    for (let iter = 0; iter < 10; iter++) {
+      const dTry = thickMm - 66;
+      const aTry = (longLenMm / 1000) * (shortWidMm / 1000);
+      const swTry =
+        aTry *
+        ((thickMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3 +
+          Math.max(0, geo.foundationDepthBelowGroundM - thickMm / 1000) * geo.soilUnitWeightKnM3);
+      const qTry = (pTotSls + swTry) / aTry;
+      const quPerM = puTot / (longLenMm / 1000);
+      const tau1Try =
+        (quPerM * Math.max(0.05, (longLenMm - colSpacingMm) / 2000 - dTry / 1000) * 1000) /
+        (shortWidMm * dTry);
+      const tauPTry =
+        (Math.max(s1.puKn, s2.puKn) * 0.85 * 1000) /
+        Math.max(1, 2 * (s1.colDepthMm + dTry + s1.colWidthMm + dTry) * dTry);
+      if (qTry > geo.safeBearingCapacityKPa * 0.96) {
+        shortWidMm += 150;
+        longLenMm += 150;
+      } else if (tau1Try > 0.34 || tauPTry > 0.23 * Math.sqrt(fck)) {
+        thickMm += 50;
+      } else {
+        break;
+      }
+    }
+  }
 
   const lxMm = isAlongX ? longLenMm : shortWidMm;
   const wyMm = isAlongX ? shortWidMm : longLenMm;

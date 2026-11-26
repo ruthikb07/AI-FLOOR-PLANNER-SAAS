@@ -10,6 +10,8 @@ export * from './loads/indian-load-assembler.js';
 export * from './codes/indian-code-rules.js';
 export * from './rcc/rcc-design-engine.js';
 export * from './foundation/foundation-design-engine.js';
+export * from './detailing/bbs-and-quantities.js';
+export * from './optimization/defect-and-optimizer.js';
 export type {
   StructuralWorkerRequest,
   StructuralWorkerResponse,

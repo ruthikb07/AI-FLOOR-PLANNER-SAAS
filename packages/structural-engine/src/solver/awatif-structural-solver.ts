@@ -742,16 +742,33 @@ export class AwatifStructuralSolver implements StructuralSolver {
         }
       }
 
-      const wasmOut = solveAwatifWasmRaw({
-        nodes: rawNodes,
-        elements: rawElements,
-        supports: rawSupports,
-        loads: rawLoads,
-        elementsProps: rawProps,
-        releases: rawReleases,
-      });
+      let wasmOut: ReturnType<typeof solveAwatifWasmRaw> | null = null;
+      try {
+        wasmOut = solveAwatifWasmRaw({
+          nodes: rawNodes,
+          elements: rawElements,
+          supports: rawSupports,
+          loads: rawLoads,
+          elementsProps: rawProps,
+          releases: rawReleases,
+        });
+      } catch (err) {
+        if (err instanceof AwatifSolverError && err.code === 'WASM_RUNTIME_ABORT') {
+          // Upstream prebuilt lSolver.wasm uses a 64 KB C stack that can overflow inside Eigen::SparseLU
+          // on large multi-storey supernodes; transparently fall back to exact TS Sparse-LU and re-init WASM!
+          executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
+          backendFallbackReason = 'UPSTREAM_WASM_STACK_LIMIT_EXCEEDED_ON_LARGE_MESH';
+          warnings.push(
+            'Large frame mesh exceeded upstream lSolver.wasm 64 KB C-stack in Eigen::SparseLU; solved transparently via verified TypeScript Sparse-LU solver.',
+          );
+          void initAwatifWasm().catch(() => {});
+        } else {
+          throw err;
+        }
+      }
 
-      wasmHeapBytesAllocated = wasmOut.wasmHeapBytesAllocated;
+      if (wasmOut) {
+        wasmHeapBytesAllocated = wasmOut.wasmHeapBytesAllocated;
 
       // Extract exact translational displacements [ux, uy, uz] directly from Awatif C++ Eigen::SparseLU
       for (let i = 0; i < numNodes; i++) {
@@ -855,7 +872,10 @@ export class AwatifStructuralSolver implements StructuralSolver {
           1,
         );
       }
-    } else {
+      }
+    }
+
+    if (executionBackend === 'TYPESCRIPT_SPARSE_LU_REFERENCE') {
       // Pure TypeScript Sparse-LU Reference Solver
       const globalToFree = new Int32Array(totalDofs).fill(-1);
       const freeToGlobal: number[] = [];
