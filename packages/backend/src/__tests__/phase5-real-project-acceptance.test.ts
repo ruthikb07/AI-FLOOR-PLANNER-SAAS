@@ -559,10 +559,11 @@ describe('Phase 5 real-project acceptance', () => {
         expect(openingFitsApartmentWall(host, door.position, door.width)).toBe(true);
         expect(host.startPoint.y).toBe(host.endPoint.y);
         if (floor.floorUse !== 'ROOF') expect(host.boundaryRole).toBe('OPEN_BOUNDARY');
-        const flight = floor.canonicalStaircases?.find(staircase => staircase.id.startsWith(`${stair.id}:`))!;
+        const flight = floor.canonicalStaircases?.find(staircase => staircase.id.startsWith(`${stair.id}:`));
+        if (!flight?.floorLanding) throw new Error(`Missing canonical flights and landing for ${stair.id}`);
         expect(flight.clearWidthMm).toBeGreaterThanOrEqual(1200);
         expect(flight.treadWidthMm).toBeGreaterThanOrEqual(270);
-        const parts = [flight.flight1, flight.flight2, flight.midLanding, flight.floorLanding!];
+        const parts = [flight.flight1, flight.flight2, flight.midLanding, flight.floorLanding];
         expect(parts.reduce((area, part) => area + polygonArea(part), 0) / polygonArea(stair.boundary)).toBeGreaterThan(0.85);
       }
       if (floor.floorUse !== 'ROOF') {
