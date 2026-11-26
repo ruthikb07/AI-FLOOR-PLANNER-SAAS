@@ -1,6 +1,6 @@
 # Native IFC reopen verification
 
-**PARTIAL.** FreeCAD 1.1.4 opened IFC4 files on Windows in Phase 5.2. The rectangular and exact surveyed examples passed the sampled aperture checks. The rotated and curved example still has occupied samples at canonical apertures.
+**VERIFIED FOR THE TESTED ARCHITECTURAL EXPORTS.** FreeCAD 1.1.4 imported the representative IFC4 files on Windows. The native checks covered exact surveyed geometry, straight and curved hosts, a four-storey central courtyard, both stairs and lift shafts, slab openings, and schematic plumbing reservations.
 
 ## Phase 5.1 baseline
 
@@ -18,8 +18,10 @@ The first native imports reopened the exact oblique survey and open-stilt multi-
 
 The exact surveyed site matched all signed canonical vertices in the embedded IFC footprint after applying the documented coordinate transform and allowing ring winding reversal. Native wall solids cleared all 55 sampled door and window opening centers in that model. The rectangular wet-wall export and the IFC exported by the production browser each cleared all 181 sampled hosted aperture centers.
 
-The browser export opened as a four-storey model with 893 GUID-bearing objects and a matching file digest. All four courtyard slab center samples were clear. A second FreeCAD session reopened the saved native document and matched the six lift shaft and 16 plumbing reservation footprints to the canonical model by GUID. It recovered two stair assemblies on each storey, including the terrace stair headhouses. The six full stairs each returned 18 native solids and two embedded IFC flight bodies. FreeCAD presents the flight geometry under the parent objects. The lift and riser exports describe reservations using `IfcSpace` geometry.
+The browser export opened as a four-storey model with 893 GUID-bearing objects and a matching file digest. All four courtyard slab center samples were clear. A second FreeCAD session reopened the saved native document and matched the six lift shaft and 16 plumbing reservation footprints to the canonical model by GUID. It recovered two stair assemblies on each storey, including the terrace stair headhouses. The six full stairs each returned 18 native solids and two embedded IFC flight bodies. All 12 full-stair landing and both roof-access landing footprints matched the native solids within 0.01 mm. The canonical projection ends at the roof landing. FreeCAD presents the flight geometry under the parent objects. The lift and riser exports describe reservations using `IfcSpace` geometry.
 
-In the rotated and curved fixture, 63 of 87 opening center samples were clear. The 24 occupied samples included rotated straight openings and curved-host windows. Increasing cutter depth in a local experiment reduced the clear count to 59, so that change was discarded. The clean schema readback is recorded independently from these native geometry results.
+The first rotated and curved import check treated a FreeCAD wall compound as wall material and reported 24 occupied opening centers. A follow-up isolated the actual host and fill solids. All 87 host openings then cleared their canonical centers, including 16 curved-host openings. The saved native compounds also cleared samples near both wall faces. At the initially occupied centers, the solid in the wall compound belonged to the imported door leaf or glazing. The original IFC exporter was retained. The independent schema readback covers a separate gate.
 
-Local evidence is under `%LOCALAPPDATA%\RHPlanner\phase5-2`, including `freecad-native-final.json`, `freecad-padding-and-courtyard.json`, `freecad-browser-spaces.json` and the reopened `freecad-native\courtyard.FCStd`.
+The saved courtyard and rotunda documents preserved all 1,473 imported GUIDs, IFC classes and associated canonical object, floor and host properties. All eight storey elevations matched the canonical values at 0 mm error. The remaining manifest entries were virtual open passages, with 24 in the courtyard and 16 in the rotunda. The native solids retain those cuts.
+
+Local evidence is under `%LOCALAPPDATA%\RHPlanner\phase5-2`, including `freecad-native-final.json`, `freecad-padding-and-courtyard.json`, `freecad-browser-spaces.json`, `native-all-aperture-probe.json`, `native-id-elevation-probe.json` and the reopened `freecad-native\courtyard.FCStd`.
