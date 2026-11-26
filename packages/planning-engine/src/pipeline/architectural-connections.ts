@@ -120,6 +120,7 @@ export function coordinateArchitecturalStairs(building: Building): Building {
     let doors = [...f.doors];
     const canonicalStaircases: CanonicalStaircase[] = [];
     const openStairHostWallIds = new Set<string>();
+    const stairHostWallIds = new Set<string>();
     const stairs = f.rooms.filter(stairRoom).map((r, index) => {
       const key = coreKey(r),
         position = templates.get(key)!;
@@ -127,6 +128,7 @@ export function coordinateArchitecturalStairs(building: Building): Building {
       const host = hosts.find(w => openingFitsApartmentWall(w, position, 1200))
         ?? hosts.find(w => hostFits(w, position));
       if (!host) throw new Error(`STAIR_ACCESS_HOST_MISSING: ${r.id}`);
+      stairHostWallIds.add(host.id);
       const role = r.architecturalRole;
       if (
         f.floorUse !== 'ROOF' &&
@@ -222,11 +224,11 @@ export function coordinateArchitecturalStairs(building: Building): Building {
     });
     return {
       ...f,
-      walls: openStairHostWallIds.size
+      walls: stairHostWallIds.size
         ? f.walls.map(w =>
             openStairHostWallIds.has(w.id)
-              ? { ...w, boundaryRole: 'OPEN_BOUNDARY' as const, heightMm: 0 }
-              : w,
+              ? { ...w, boundaryRole: 'OPEN_BOUNDARY' as const, heightMm: 0, hasOpening: true }
+              : stairHostWallIds.has(w.id) ? { ...w, hasOpening: true } : w,
           )
         : f.walls,
       elevationMm: elevations.get(f.id),

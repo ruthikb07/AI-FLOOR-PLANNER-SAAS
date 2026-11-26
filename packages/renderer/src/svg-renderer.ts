@@ -399,9 +399,22 @@ function renderRooms(
       }
       continue;
     }
+    if (labelsOnly && room.tags?.includes('shaft:central-court')) {
+      if (showLabels) {
+        const center = polygonCentroid(room.boundary);
+        const fontSize = Math.max(6, Math.min(12, scaleToScreen(room.width * 0.09, transform)));
+        for (const [i, line] of ['CENTRAL COURTYARD', 'OPEN TO SKY'].entries()) {
+          const anchor = worldToScreen({ x: center.x, y: center.y + (i - 0.5) * 340 }, transform);
+          elements.push(`<text x="${anchor.x.toFixed(1)}" y="${anchor.y.toFixed(1)}" font-size="${fontSize.toFixed(1)}" fill="#1e293b" text-anchor="middle" dominant-baseline="central" data-room-name="${escapeXml(room.name)}">${line}</text>`);
+        }
+      }
+      continue;
+    }
     if (labelsOnly && (showLabels || showAreas)) {
       const annotation = roomAnnotation(room);
-      let labelCenter = { x: annotation.center.x, y: annotation.center.y };
+      const stair = room.type === RoomType.Staircase && floor.floorUse !== 'ROOF'
+        ? floor.canonicalStaircases?.find(staircase => staircase.id.startsWith(`${room.id}:`)) : undefined;
+      let labelCenter = stair ? polygonCentroid(stair.midLanding) : { x: annotation.center.x, y: annotation.center.y };
       const roomFurn = (floor.furniture ?? []).filter(
         f => f.roomId === room.id && ['bed', 'king_bed', 'queen_bed', 'single_bed', 'sectional_sofa', 'l_sofa', 'sofa', 'dining_table'].includes(f.type),
       );

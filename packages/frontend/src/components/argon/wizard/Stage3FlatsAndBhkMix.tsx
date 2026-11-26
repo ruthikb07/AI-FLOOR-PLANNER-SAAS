@@ -248,6 +248,9 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
               updateWizard({ coordinatedWetWallLayout: event.target.checked })} />
             Prefer exterior living and wet-wall risers
           </label>
+          {wizard.flatsPerFloor === 4 && (
+            <p className="text-xs text-argon-muted">Also prefers a stair and lift on each side of a central open-to-sky court when the brief and site allow it.</p>
+          )}
 
           <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">
             <legend className="px-1 text-sm font-semibold">Carpet area acceptance</legend>

@@ -20,7 +20,7 @@ import {
   type IfcExchangeArtifact,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
-import { isDoorSwingClear, polygonArea, polygonIntersectionArea, rotatePoint } from '@ai-floor-planner/geometry-engine';
+import { architecturalSlabCutouts, isDoorSwingClear, openingFitsApartmentWall, polygonArea, polygonIntersectionArea, rotatePoint } from '@ai-floor-planner/geometry-engine';
 import {
   auditArchitecturalElementRealism,
   auditFloorFunctionalQuality,
@@ -539,8 +539,42 @@ describe('Phase 5 real-project acceptance', () => {
     const result = await response.json() as { building?: Building; error?: unknown };
     expect(response.status, JSON.stringify(result.error)).toBe(200);
     const building = result.building!;
+    expect(building.metadata.generationReport?.selectedVariant).toBe('courtyard:opposed-stair-lift-pairs');
     const floors = building.floors.filter(floor => floor.apartmentUnits?.length);
     expect(floors).toHaveLength(2);
+    const courtyardFootprints = building.floors.map(floor => {
+      const court = floor.rooms.find(room => room.tags.includes('shaft:central-court'))!;
+      expect(court.openToSky).toBe(true);
+      expect(architecturalSlabCutouts(floor)).toContainEqual(court.boundary);
+      const stairs = floor.rooms.filter(room => room.type === RoomType.Staircase).sort((a, b) => a.x - b.x);
+      expect(stairs).toHaveLength(2);
+      expect(stairs[0]!.x + stairs[0]!.width).toBe(court.x);
+      expect(stairs[1]!.x).toBe(court.x + court.width);
+      for (const stair of stairs) {
+        const door = floor.doors.find(door => door.connectsRooms.includes(stair.id))!;
+        const host = floor.walls.find(wall => wall.id === door.wallId)!;
+        const landing = floor.rooms.find(room => door.connectsRooms.includes(room.id) && room.id !== stair.id)!;
+        expect(landing.type).toBe(RoomType.Corridor);
+        expect(host.hasOpening).toBe(true);
+        expect(openingFitsApartmentWall(host, door.position, door.width)).toBe(true);
+        expect(host.startPoint.y).toBe(host.endPoint.y);
+        if (floor.floorUse !== 'ROOF') expect(host.boundaryRole).toBe('OPEN_BOUNDARY');
+        const flight = floor.canonicalStaircases?.find(staircase => staircase.id.startsWith(`${stair.id}:`))!;
+        expect(flight.clearWidthMm).toBeGreaterThanOrEqual(1200);
+        expect(flight.treadWidthMm).toBeGreaterThanOrEqual(270);
+        const parts = [flight.flight1, flight.flight2, flight.midLanding, flight.floorLanding!];
+        expect(parts.reduce((area, part) => area + polygonArea(part), 0) / polygonArea(stair.boundary)).toBeGreaterThan(0.85);
+      }
+      if (floor.floorUse !== 'ROOF') {
+        const lifts = floor.rooms.filter(room => room.type === RoomType.Lift).sort((a, b) => a.x - b.x);
+        expect(lifts).toHaveLength(2);
+        expect(lifts[0]!.x + lifts[0]!.width).toBeLessThanOrEqual(court.x);
+        expect(lifts[1]!.x).toBeGreaterThanOrEqual(court.x + court.width);
+        for (const lift of lifts) expect(floor.doors.some(door => door.connectsRooms.includes(lift.id))).toBe(true);
+      }
+      return court.boundary;
+    });
+    expect(courtyardFootprints.every(footprint => JSON.stringify(footprint) === JSON.stringify(courtyardFootprints[0]))).toBe(true);
     const coordinates = floors.map(floor => {
       const risers = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)));
       const rooms = new Map(floor.rooms.map(room => [room.id, room]));
@@ -558,6 +592,16 @@ describe('Phase 5 real-project acceptance', () => {
         const entry = doors[0]!;
         const room = entry.connectsRooms.map(id => rooms.get(id)).find(inside => inside?.unitId === unit.id)!;
         expect([RoomType.Living, RoomType.Foyer, RoomType.Dining]).toContain(room.type);
+        const reached = new Set(entry.connectsRooms.filter(id => rooms.get(id)?.spaceUse === 'COMMON'));
+        for (const id of reached) {
+          for (const wall of floor.walls.filter(wall => wall.boundaryRole === 'OPEN_BOUNDARY' && wall.roomIds.includes(id))) {
+            for (const neighbour of wall.roomIds) {
+              const adjacent = rooms.get(neighbour);
+              if (adjacent?.spaceUse === 'COMMON' || adjacent?.type === RoomType.Staircase) reached.add(neighbour);
+            }
+          }
+        }
+        expect(floor.rooms.filter(room => room.type === RoomType.Staircase && reached.has(room.id))).toHaveLength(2);
         const host = walls.get(entry.wallId)!;
         entryDirections.add(Math.abs(host.startPoint.x - host.endPoint.x) < 1
           ? (room.x + room.width / 2 > entry.position.x ? 'WEST' : 'EAST')
@@ -592,6 +636,9 @@ describe('Phase 5 real-project acceptance', () => {
     expect(coordinates[0]).toEqual(coordinates[1]);
     const svg = exportSVG(building, defaultExportOptions(floors[0]!.id));
     expect(svg.match(/<title>Plumbing riser<\/title>/g)).toHaveLength(8);
+    expect(svg.match(/class="stair-up-route"/g)).toHaveLength(2);
+    expect(svg).toContain('>CENTRAL COURTYARD</text>');
+    expect(svg).toContain('>OPEN TO SKY</text>');
     if (evidence) {
       await writeFile(join(evidence, 'wet-wall-residential.building.json'), JSON.stringify(building));
       await writeFile(join(evidence, 'wet-wall-residential.svg'), svg);

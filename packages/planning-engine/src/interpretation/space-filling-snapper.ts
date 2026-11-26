@@ -1302,9 +1302,10 @@ export function sliceFlatRooms(params: {
       Math.min(corridorBox.y + corridorBox.h, corridorHostEndY) - Math.max(corridorBox.y, corridorHostStartY);
     const fullWidthKitchen = corridorOverlapFront >= 1250;
 
+    const minGalleryDepth = APARTMENT_BALCONY_MIN_CLEAR_DEPTH_MM + APARTMENT_BALCONY_CENTRELINE_ALLOWANCE_MM;
     const useLShapedOpenLiving =
       fullWidthKitchen &&
-      livingZoneW >= 4800 &&
+      livingZoneW >= 3600 + minGalleryDepth &&
       livingZoneW < 6600 &&
       box.h >= 9400;
 
@@ -1415,10 +1416,10 @@ export function sliceFlatRooms(params: {
 
     if (useLShapedOpenLiving) {
       // Open-Plan L-Shaped Living–Dining Zone for 4,800–6,590 mm public zones (e.g. 3BHK flats):
-      // Front exterior band: Living Room (>= 3,600 mm wide) beside Sit-out Gallery (>= 1,200 mm wide).
+      // Fit the clear gallery depth plus its wall-centreline allowance beside the living room.
       // Middle band: Full-width Open-Plan Dining & Family Hall (>= 3,000 mm deep, <= 2.0:1) wrapping Living + Gallery.
       // Rear OTS band: Proportionate OTS-ventilated Kitchen (>= 2,400 mm, <= 2.0:1) + Pantry/Utility.
-      const livW_L = Math.max(3600, Math.min(livingZoneW - 1200, snap10(livingZoneW * 0.68)));
+      const livW_L = Math.max(3600, Math.min(livingZoneW - minGalleryDepth, snap10(livingZoneW * 0.68)));
       const galW_L = livingZoneW - livW_L;
       const leftIsLivL = corridorIsEast ? galleryOnCorridorSide : !galleryOnCorridorSide;
       const livX_L = leftIsLivL ? livingZoneX : livingZoneX + galW_L;

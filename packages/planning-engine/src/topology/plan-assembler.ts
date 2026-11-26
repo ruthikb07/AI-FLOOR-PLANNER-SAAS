@@ -477,6 +477,7 @@ export function assembleStructureFromPartition(input: AssembleInput): AssembledP
       architecturalRole: role,
       name: isPerimeterRecess
         ? 'Perimeter Courtyard Setback Recess'
+        : tags?.includes('shaft:central-court') ? 'Central Open-to-Sky Courtyard'
         : role === 'OPEN_TO_SKY_VOID'
           ? 'Open-to-Sky Court / Light and Air Void'
           : `Core Service Shaft 0${i + 1}`,

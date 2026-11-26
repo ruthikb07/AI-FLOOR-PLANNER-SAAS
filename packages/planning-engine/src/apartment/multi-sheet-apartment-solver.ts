@@ -935,6 +935,7 @@ export function solveStiltParkingSheet(
   }
   const stiltCorridor = rooms.find(r => r.id === 'stilt__corridor_spine')!;
   const stiltLobby = rooms.find(r => r.id === 'stilt__core_lobby') ?? stiltCorridor;
+  const splitCourt = macro.shaftTags?.some(tags => tags.includes('shaft:central-court'));
 
   for (let s = 0; s < macro.shaftBoxes.length; s++) {
     const shaft = createBoxRoom({
@@ -1393,6 +1394,26 @@ export function solveStiltParkingSheet(
       });
       (hostWall as { hasOpening: boolean }).hasOpening = true;
     }
+  }
+
+  if (splitCourt) {
+    const circulation = rooms.filter(room => room.tags.includes('core:corridor'));
+    const addCoreOpening = (from: Room, to: Room, width: number, type: DoorType) => {
+      const opening = createConnectingDoor(`door:${from.id}:${to.id}`, roomToBox(from), roomToBox(to), width);
+      if (!opening) return false;
+      const position = { x: opening.rect.x + opening.rect.width / 2, y: opening.rect.y + opening.rect.height / 2 };
+      const host = walls.find(wall => wall.roomIds.includes(from.id) && wall.roomIds.includes(to.id) &&
+        openingFitsApartmentWall(wall, position, width));
+      if (!host) return false;
+      doors.push({ id: opening.id, wallId: host.id, floorId, position, width, height: 2100, type,
+        swingDirection: SwingDirection.Inward, connectsRooms: [from.id, to.id] });
+      (host as { hasOpening: boolean }).hasOpening = true;
+      return true;
+    };
+    for (const lift of rooms.filter(room => room.type === RoomType.Lift)) {
+      circulation.some(landing => addCoreOpening(landing, lift, 900, DoorType.Sliding));
+    }
+    circulation.forEach((from, i) => circulation.slice(i + 1).forEach(to => addCoreOpening(from, to, 1500, DoorType.OpenPassage)));
   }
 
   // 6. Structural RCC Columns (S-COLS): Deduplicated, sequentially numbered C1..CN, zero balcony outer corners
@@ -2121,8 +2142,11 @@ export function solveTerraceSheet(
   // the tank goes over the first circulation run instead.
   const terraceLobbyBoxes = macroLobbyBoxes(macro);
   const terraceCorridorBoxes = macroCorridorBoxes(macro);
-  const tankBox = terraceLobbyBoxes[0] ?? terraceCorridorBoxes[0]!;
-  const tankTookCorridor = !terraceLobbyBoxes.length;
+  const splitCourt = macro.shaftTags?.some(tags => tags.includes('shaft:central-court'));
+  const westBox = macro.flatBoxes[0]!;
+  const tankDepth = 3000;
+  const tankBox = splitCourt ? { ...westBox, h: tankDepth } : terraceLobbyBoxes[0] ?? terraceCorridorBoxes[0]!;
+  const tankTookCorridor = !splitCourt && !terraceLobbyBoxes.length;
 
   rooms.push(createBoxRoom({
     id: 'terrace__ohwt_tank',
@@ -2179,14 +2203,13 @@ export function solveTerraceSheet(
   }
 
   // 2. West Rooftop: Solar PV Array Zone
-  const westBox = macro.flatBoxes[0]!;
   rooms.push(
     createBoxRoom({
       id: 'terrace__solar_pv_array',
       name: 'Rooftop Solar PV Array & Inverter Deck',
       type: RoomType.Terrace,
       spaceUse: 'OUTDOOR',
-      box: westBox,
+      box: splitCourt ? { ...westBox, y: westBox.y + tankDepth, h: westBox.h - tankDepth } : westBox,
       floorId,
       tags: ['terrace:solar'],
     }),

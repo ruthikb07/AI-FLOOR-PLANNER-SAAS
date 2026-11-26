@@ -270,7 +270,10 @@ test('enables facade-oriented layout with wet-wall risers in the wizard', async 
   expect(response.status()).toBe(200);
   const { building } = await response.json() as { building: Building };
   expect(building.metadata.generationBrief?.coordinatedWetWallLayout).toBe(true);
+  expect(building.metadata.generationReport?.selectedVariant).toBe('courtyard:opposed-stair-lift-pairs');
   const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;
+  expect(floor.rooms.find(room => room.tags.includes('shaft:central-court'))?.openToSky).toBe(true);
+  expect(floor.canonicalStaircases).toHaveLength(2);
   expect(floor.rooms.filter(room => room.tags.some(tag => tag.startsWith('plumbing:serves:'))).length).toBeGreaterThanOrEqual(4);
   const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
   await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 45_000 });
