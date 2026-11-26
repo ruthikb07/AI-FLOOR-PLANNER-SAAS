@@ -68,8 +68,23 @@ export interface MepRun {
   readonly discipline: MepDiscipline;
   readonly layer: MepEngineeringCadLayer;
   readonly diameterMm?: number;
+  /** Nominal schematic fall target. Hydraulic sizing and available fall are unverified. */
+  readonly slopeRatio?: string;
+  /** Plan centerline run length in millimetres. */
+  readonly lengthMm?: number;
   readonly points: readonly Point2D[];
   readonly roomId?: string;
+}
+
+export interface DrainageEconomySummary {
+  readonly routingStatus: 'SCHEMATIC_UNSIZED';
+  readonly sharedShaftCount: number;
+  readonly servedWetRoomCount: number;
+  readonly consolidatedBranchRuns: number;
+  readonly totalDrainagePipeLengthMm: number;
+  readonly collectorSlopeRatio?: string;
+  readonly collectorTerminatesTowardsRoad: boolean;
+  readonly unconnectedRiserCount: number;
 }
 
 export type CeilingZoneKind = 'COVE_GYPSUM' | 'GRID_600' | 'PELMET';
@@ -117,6 +132,7 @@ export interface CoordinatedMepEngineeringPlan {
     readonly floorIds: readonly string[];
     readonly terminatesAtStiltCollector: boolean;
   }[];
+  readonly drainageEconomy?: DrainageEconomySummary;
   readonly summary: Readonly<Record<string, number>>;
 }
 

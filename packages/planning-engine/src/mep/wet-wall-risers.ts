@@ -6,7 +6,9 @@ import type {
 export const PLUMB_SHAFT_MIN = { widthMm: 600, depthMm: 900 } as const;
 // Concept screening for nearby rooms. Actual developed pipe length is checked during MEP design.
 const MAX_SCHEMATIC_REACH_MM = 8000;
+const MAX_LOW_DENSITY_REACH_MM = 28000;
 const MIN_REMAINING_OUTDOOR_SPAN_MM = 1500;
+const MIN_REMAINING_COMMON_SPAN_MM = 1600;
 const EPSILON = 0.001;
 const isBathroom = (room: ApartmentPlanRoom) => room.type === 'bathroom' || room.type === 'common_toilet';
 
@@ -83,13 +85,13 @@ export function reserveWetWallRisers(
     if (slot.tags?.includes('shaft:central-court')) return [];
     const isRecess = slot.tags?.includes('recess:perimeter');
     const isVent = slot.tags?.includes('shaft:ots') || slot.architecturalRole === 'OPEN_TO_SKY_VOID';
-    const isInterflat = interflatVents.includes(slot) || (isVent &&
-      interflatVents.some(vent => sharedEdge(vent.rect, slot.rect) >= MIN_REMAINING_OUTDOOR_SPAN_MM));
+    const isPeripheralVent = interflatVents.includes(slot) || (isVent &&
+      (facade(slot.rect) || interflatVents.some(vent => sharedEdge(vent.rect, slot.rect) >= MIN_REMAINING_OUTDOOR_SPAN_MM)));
     const fitsService = !isVent && Math.min(slot.rect.width, slot.rect.height) >= Math.min(widthMm, depthMm) &&
       Math.max(slot.rect.width, slot.rect.height) >= Math.max(widthMm, depthMm);
     const footprints = isRecess
       ? [...cornerPockets(slot.rect, widthMm, depthMm), ...cornerPockets(slot.rect, depthMm, widthMm)]
-      : isInterflat
+      : isPeripheralVent
         ? endPockets(slot.rect, widthMm, depthMm).map(({ rect, remainder }) => ({ rect, remainders: [remainder] }))
         : fitsService ? [{ rect: slot.rect, remainders: [] }] : [];
     return footprints.flatMap(pocket => {
@@ -97,9 +99,10 @@ export function reserveWetWallRisers(
         ? 'common' : facade(pocket.rect) ? 'perimeter' : undefined;
       if (!edge || occupied.some(room => overlap(room.rect, pocket.rect)) ||
           structure.openings.some(opening => separation(opening.rect, pocket.rect) < 150)) return [];
+      const reachLimitMm = flatBaths.length <= 3 ? MAX_LOW_DENSITY_REACH_MM : MAX_SCHEMATIC_REACH_MM;
       const served = flatBaths.flatMap(flat => {
         const distance = Math.max(...flat.rooms.map(bath => separation(bath.rect, pocket.rect)));
-        return distance <= MAX_SCHEMATIC_REACH_MM ? [{ ...flat, distance }] : [];
+        return distance <= reachLimitMm ? [{ ...flat, distance }] : [];
       }).sort((a, b) => a.distance - b.distance);
       return [{ ...pocket, slot, edge, served }];
     });
@@ -119,7 +122,11 @@ export function reserveWetWallRisers(
     for (const flat of choice.served) servedFlats.add(flat.id);
     const flatLabel = choice.served.length === 1 ? '1 flat' : `${choice.served.length} flats`;
     selected.set(choice.slot.id, [
-      ...choice.remainders.map((rect, index) => ({ ...choice.slot, id: index === 0 ? choice.slot.id : `${choice.slot.id}_remaining_${index}`, rect })),
+      ...choice.remainders.map((rect, index) => ({
+        ...choice.slot,
+        id: index === 0 ? choice.slot.id : `${choice.slot.id}_remaining_${index}`,
+        rect,
+      })),
       { id: `${choice.slot.id}__shared_plumbing`, name: `Shared Plumbing Shaft ${selected.size + 1} · ${flatLabel}`,
         rect: choice.rect, assignedFlatId: null,
         architecturalRole: 'SERVICE_SHAFT', tags: [SHARED_PLUMBING_RISER_TAG, `plumbing:access-edge:${choice.edge}`,
@@ -127,9 +134,65 @@ export function reserveWetWallRisers(
     ]);
   }
 
+  let updatedCorridors = structure.corridors;
+  let updatedLobbies = structure.lobbies;
+  const extraCommonShafts: ApartmentCoreElement[] = [];
+
+  // Fallback for compact 2/3-flat topologies with no peripheral OTS shafts:
+  // carve a clean rectangular service chase from a dead-end of a common corridor/lobby without touching bathrooms or doors.
+  if (selected.size === 0 && common.length > 0) {
+    const criticalNeighbors = [...structure.lifts, ...structure.stairs, ...structure.flats, ...common];
+    const commonCandidates = common.flatMap(slot => {
+      const otherOccupied = occupied.filter(r => r.id !== slot.id);
+      return endPockets(slot.rect, widthMm, depthMm).flatMap(({ rect, remainder }) => {
+        const remLong = Math.max(remainder.width, remainder.height);
+        if (remLong < MIN_REMAINING_COMMON_SPAN_MM) return [];
+        if (otherOccupied.some(room => overlap(room.rect, rect))) return [];
+        if (structure.openings.some(opening => separation(opening.rect, rect) < 100)) return [];
+        if (criticalNeighbors.some(nb => nb.id !== slot.id && sharedEdge(nb.rect, slot.rect) > EPSILON &&
+          sharedEdge(nb.rect, remainder) < Math.min(900, sharedEdge(nb.rect, slot.rect)))) return [];
+        const edge = facade(rect) ? 'perimeter' : 'common';
+        const served = flatBaths.flatMap(flat => {
+          const distance = Math.max(...flat.rooms.map(bath => separation(bath.rect, rect)));
+          return distance <= MAX_LOW_DENSITY_REACH_MM ? [{ ...flat, distance }] : [];
+        }).sort((a, b) => a.distance - b.distance).slice(0, 4);
+        return served.length >= minimumGroupSize ? [{ slot, rect, remainder, edge, served }] : [];
+      });
+    }).sort((a, b) =>
+      b.served.length - a.served.length ||
+      (a.edge === 'perimeter' ? 0 : 1) - (b.edge === 'perimeter' ? 0 : 1) ||
+      a.served.reduce((sum, flat) => sum + flat.distance, 0) - b.served.reduce((sum, flat) => sum + flat.distance, 0) ||
+      a.rect.width * a.rect.height - b.rect.width * b.rect.height,
+    );
+
+    const bestCommon = commonCandidates[0];
+    if (bestCommon) {
+      for (const flat of bestCommon.served) servedFlats.add(flat.id);
+      const flatLabel = bestCommon.served.length === 1 ? '1 flat' : `${bestCommon.served.length} flats`;
+      const updateSlot = (item: ApartmentCoreElement): ApartmentCoreElement =>
+        item.id !== bestCommon.slot.id ? item : { ...item, rect: bestCommon.remainder };
+      updatedCorridors = structure.corridors.map(updateSlot);
+      updatedLobbies = structure.lobbies.map(updateSlot);
+      extraCommonShafts.push({
+        id: `${bestCommon.slot.id}__shared_plumbing`,
+        name: `Shared Plumbing Shaft 1 · ${flatLabel}`,
+        rect: bestCommon.rect,
+        assignedFlatId: null,
+        architecturalRole: 'SERVICE_SHAFT',
+        tags: [
+          SHARED_PLUMBING_RISER_TAG,
+          `plumbing:access-edge:${bestCommon.edge}`,
+          ...bestCommon.served.flatMap(flat => flat.rooms.map(room => PLUMBING_RISER_TAG + room.id)),
+        ],
+      });
+    }
+  }
+
   const unserved = 'No shared service pocket with a common or perimeter access edge is close enough to serve this flat without using bathroom area.';
   return { ...structure,
-    shafts: structure.shafts.flatMap(slot => selected.get(slot.id) ?? [slot]),
+    corridors: updatedCorridors,
+    lobbies: updatedLobbies,
+    shafts: [...structure.shafts.flatMap(slot => selected.get(slot.id) ?? [slot]), ...extraCommonShafts],
     flats: structure.flats.map(flat => servedFlats.has(flat.id) ? flat : { ...flat, rooms: flat.rooms.map(room =>
       isBathroom(room) ? { ...room, tags: [...(room.tags ?? []), PLUMBING_RESERVATION_NOTE_TAG + unserved] } : room) }),
   };

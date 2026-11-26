@@ -26,9 +26,11 @@ import {
   type MepSymbol,
   type MepSymbolKind,
   type Point,
+  type Polygon,
   type Room,
   type Wall,
 } from '@ai-floor-planner/core';
+import { pointInPolygon } from '@ai-floor-planner/geometry-engine';
 import { PLUMB_SHAFT_MIN } from './wet-wall-risers';
 
 interface Box { x: number; y: number; w: number; h: number }
@@ -119,14 +121,18 @@ class FloorBuilder {
     return s;
   }
   run(kind: MepRun['kind'], points: Point[], extra: Partial<MepRun> = {}): void {
-    if (points.length < 2) return;
+    const distinct = points.filter((p, idx, arr) => idx === 0 || p.x !== arr[idx - 1]!.x || p.y !== arr[idx - 1]!.y);
+    if (distinct.length < 2) return;
     const electrical = kind === 'WIRING_LOOP';
+    const defaultSlope = kind === 'SP' ? '1:60' : kind === 'WP' ? '1:50' : undefined;
     this.runs.push({
       id: this.id(kind.toLowerCase()), kind,
       discipline: electrical ? 'ELECTRICAL' : 'PLUMBING',
       layer: electrical ? 'M-ELEC-WIRE' : 'M-PLUMB-PIPE',
-      points: points.map(p => ({ x: r10(p.x), y: r10(p.y) })),
+      points: distinct,
+      lengthMm: polylineLengthMm(distinct),
       ...(kind === 'SP' ? { diameterMm: 110 } : kind === 'WP' ? { diameterMm: 75 } : kind === 'CWS' || kind === 'HWS' ? { diameterMm: 20 } : {}),
+      ...(defaultSlope ? { slopeRatio: defaultSlope } : {}),
       ...extra,
     });
   }
@@ -222,26 +228,157 @@ function synthesizeUnitElectrical(fb: FloorBuilder, floor: Floor, unitRooms: Roo
 
 const isBalconyLike = (r: Room) => r.type === RoomType.Balcony;
 
-function synthesizeUnitPlumbing(fb: FloorBuilder, unitRooms: Room[], unitId: string, shafts: Map<string, Box>, sharedChases: boolean): void {
+function polylineLengthMm(points: readonly Point[]): number {
+  let sum = 0;
+  for (let i = 1; i < points.length; i++) {
+    sum += Math.hypot(points[i]!.x - points[i - 1]!.x, points[i]!.y - points[i - 1]!.y);
+  }
+  return sum;
+}
+
+function clampPointToBox(target: Point, box: Box, insetMm = 100): Point {
+  const ix = Math.min(insetMm, box.w / 2);
+  const iy = Math.min(insetMm, box.h / 2);
+  return {
+    x: Math.max(box.x + ix, Math.min(box.x + box.w - ix, target.x)),
+    y: Math.max(box.y + iy, Math.min(box.y + box.h - iy, target.y)),
+  };
+}
+
+function segmentCrossesBoxInterior(a: Point, b: Point, box: Box, margin = 0.001): boolean {
+  const minX = box.x + margin;
+  const maxX = box.x + box.w - margin;
+  const minY = box.y + margin;
+  const maxY = box.y + box.h - margin;
+  if (minX >= maxX || minY >= maxY) return false;
+  if (Math.abs(a.x - b.x) < 1) {
+    if (a.x <= minX || a.x >= maxX) return false;
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return Math.min(y1, maxY) > Math.max(y0, minY);
+  }
+  if (Math.abs(a.y - b.y) < 1) {
+    if (a.y <= minY || a.y >= maxY) return false;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    return Math.min(x1, maxX) > Math.max(x0, minX);
+  }
+  return false;
+}
+
+function routeIsClear(pts: readonly Point[], obstacles: readonly Box[], domain: Polygon): boolean {
+  if (!pts.every(point => pointInPolygon(point, domain))) return false;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]!, b = pts[i]!;
+    if (a.x === b.x && a.y === b.y) continue;
+    if (a.x !== b.x && a.y !== b.y) return false;
+    if (obstacles.some(obs => segmentCrossesBoxInterior(a, b, obs))) return false;
+    // A segment can enter a concave outdoor notch even when its endpoints are inside.
+    const horizontal = a.y === b.y;
+    const from = horizontal ? a.x : a.y;
+    const to = horizontal ? b.x : b.y;
+    const fixed = horizontal ? a.y : a.x;
+    const cuts = [0, 1];
+    for (const [index, p] of domain.points.entries()) {
+      const q = domain.points[(index + 1) % domain.points.length]!;
+      const pFixed = horizontal ? p.y : p.x, qFixed = horizontal ? q.y : q.x;
+      if (pFixed === qFixed || fixed < Math.min(pFixed, qFixed) || fixed > Math.max(pFixed, qFixed)) continue;
+      const pAlong = horizontal ? p.x : p.y, qAlong = horizontal ? q.x : q.y;
+      const t = (pAlong + (fixed - pFixed) / (qFixed - pFixed) * (qAlong - pAlong) - from) / (to - from);
+      if (t > 0 && t < 1) cuts.push(t);
+    }
+    cuts.sort((x, y) => x - y);
+    for (let j = 1; j < cuts.length; j++) {
+      const t = (cuts[j - 1]! + cuts[j]!) / 2;
+      if (!pointInPolygon({ x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) }, domain)) return false;
+    }
+  }
+  return true;
+}
+
+function floorPipeObstacles(floor: Floor): Box[] {
+  return floor.rooms
+    .filter(room =>
+      (room.type === RoomType.Staircase ||
+        room.type === RoomType.Lift ||
+        room.openToSky === true ||
+        room.architecturalRole === 'OPEN_TO_SKY_VOID' ||
+        room.architecturalRole === 'VEHICLE_AISLE') &&
+      !room.tags.includes(SHARED_PLUMBING_RISER_TAG) &&
+      !room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)),
+    )
+    .map(roomBox);
+}
+
+/**
+ * Selects an economical single-elbow (or perimeter-skirted) orthogonal route
+ * avoiding staircases, lift shafts, and open-to-sky courtyards.
+ */
+function chooseEconomicalDrainRoute(from: Point, to: Point, obstacles: readonly Box[], domain: Polygon): Point[] | undefined {
+  const elbows: Point[][] = [[from, { x: to.x, y: from.y }, to], [from, { x: from.x, y: to.y }, to]];
+  const direct = elbows.find(route => routeIsClear(route, obstacles, domain));
+  if (direct) return direct;
+  return obstacles.flatMap(obs => [
+      [from, { x: obs.x - 150, y: from.y }, { x: obs.x - 150, y: to.y }, to],
+      [from, { x: obs.x + obs.w + 150, y: from.y }, { x: obs.x + obs.w + 150, y: to.y }, to],
+      [from, { x: from.x, y: obs.y - 150 }, { x: to.x, y: obs.y - 150 }, to],
+      [from, { x: from.x, y: obs.y + obs.h + 150 }, { x: to.x, y: obs.y + obs.h + 150 }, to],
+    ]).filter(route => routeIsClear(route, obstacles, domain))
+    .sort((a, b) => polylineLengthMm(a) - polylineLengthMm(b))[0];
+}
+
+function synthesizeUnitPlumbing(
+  fb: FloorBuilder,
+  unitRooms: Room[],
+  unitId: string,
+  shafts: Map<string, Box>,
+  sharedChases: boolean,
+  obstacles: readonly Box[],
+): void {
   for (const room of unitRooms) {
     const b = roomBox(room);
     if (isWetTrapRoom(room)) fb.sym('FT', { x: b.x + b.w / 2, y: b.y + b.h / 2 }, { roomId: room.id, unitId });
     if (!isBath(room) && !isKitchen(room)) continue;
     const shaft = shafts.get(room.id);
-    if (!shaft || sharedChases) continue;
+    if (!shaft) continue;
+    if (sharedChases) {
+      const route = (from: Point, to: Point) => chooseEconomicalDrainRoute(from, to, obstacles, fb.floor.boundary);
+      if (isBath(room)) {
+        const nt = fb.sym('NT', { x: b.x + b.w * 0.7, y: b.y + b.h * 0.7 }, { roomId: room.id, unitId, label: 'NT (SHOWER)' });
+        const wc = { x: b.x + b.w * 0.25, y: b.y + b.h - 450 };
+        const basin = { x: b.x + b.w * 0.75, y: b.y + 350 };
+        const soilTarget = clampPointToBox(wc, shaft, 120);
+        const wasteTarget = clampPointToBox(nt.position, shaft, 120);
+        const soil = route(wc, soilTarget);
+        const waste = route(nt.position, wasteTarget);
+        const basinBranch = route(basin, nt.position);
+        if (soil) fb.run('SP', soil, { roomId: room.id });
+        if (waste && basinBranch) fb.run('WP', [...basinBranch, ...waste], { roomId: room.id });
+        if (soil) fb.run('CWS', [...soil].reverse(), { roomId: room.id });
+      } else {
+        const sink = { x: b.x + b.w / 2, y: b.y + 350 };
+        const sinkTarget = clampPointToBox(sink, shaft, 120);
+        const waste = route(sink, sinkTarget);
+        if (waste) {
+          fb.run('WP', waste, { roomId: room.id });
+          fb.run('CWS', [...waste].reverse(), { roomId: room.id });
+        }
+      }
+      continue;
+    }
     const sc = center(shaft);
     if (isBath(room)) {
       const nt = fb.sym('NT', { x: b.x + b.w * 0.7, y: b.y + b.h * 0.7 }, { roomId: room.id, unitId, label: 'NT (SHOWER)' });
       const wc = { x: b.x + b.w * 0.25, y: b.y + b.h - 450 };
       const basin = { x: b.x + b.w * 0.75, y: b.y + 350 };
-      fb.run('SP', [wc, { x: wc.x, y: sc.y }, sc], { roomId: room.id });
-      fb.run('WP', [basin, { x: basin.x, y: sc.y }, sc], { roomId: room.id });
-      fb.run('WP', [nt.position, { x: nt.position.x, y: sc.y }, sc], { roomId: room.id });
+      fb.run('SP', [wc, { x: wc.x, y: sc.y }, sc], { roomId: room.id, slopeRatio: '1:60' });
+      fb.run('WP', [basin, { x: basin.x, y: sc.y }, sc], { roomId: room.id, slopeRatio: '1:50' });
+      fb.run('WP', [nt.position, { x: nt.position.x, y: sc.y }, sc], { roomId: room.id, slopeRatio: '1:50' });
       fb.run('CWS', [sc, { x: sc.x + 120, y: wc.y }, wc], { roomId: room.id });
       fb.run('HWS', [sc, { x: sc.x - 120, y: basin.y }, basin], { roomId: room.id });
     } else {
       const sink = { x: b.x + b.w / 2, y: b.y + 350 };
-      fb.run('WP', [sink, { x: sink.x, y: sc.y }, sc], { roomId: room.id });
+      fb.run('WP', [sink, { x: sink.x, y: sc.y }, sc], { roomId: room.id, slopeRatio: '1:50' });
       fb.run('CWS', [sc, { x: sc.x, y: sink.y }, sink], { roomId: room.id });
     }
   }
@@ -379,7 +516,7 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
       stackByKey.set(key, { box, floorIds: [] });
     }
   }
-  const stiltFloor = floors.find(isStilt);
+  const collectedStacks = new Set<string>();
   const plans: FloorMepEngineeringPlan[] = [];
   for (const floor of floors) {
     const fb = new FloorBuilder(floor);
@@ -407,27 +544,56 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
         const nearest = options.sort((a, b) => dist(center(a), kitchenCenter) - dist(center(b), kitchenCenter))[0];
         if (nearest) stackBoxes.set(k.id, nearest);
       }
+      const obstacles = floorPipeObstacles(floor);
       const byUnit = new Map<string, Room[]>();
       for (const r of floor.rooms.filter(x => x.unitId)) byUnit.set(r.unitId!, [...(byUnit.get(r.unitId!) ?? []), r]);
       for (const [unitId, unitRooms] of byUnit) {
         synthesizeUnitElectrical(fb, floor, unitRooms, unitId);
-        synthesizeUnitPlumbing(fb, unitRooms, unitId, stackBoxes, sharedChases);
+        const unrelatedRooms = sharedChases ? floor.rooms.filter(room => room.unitId && room.unitId !== unitId).map(roomBox) : [];
+        synthesizeUnitPlumbing(fb, unitRooms, unitId, stackBoxes, sharedChases, [...obstacles, ...unrelatedRooms]);
       }
       synthesizeCeilings(fb, floor, [...floor.rooms]);
       synthesizeCantilevers(fb, floor);
       synthesizeFire(fb, floor, false);
     } else if (isStilt(floor)) {
       synthesizeFire(fb, floor, true);
-      // A shared architectural reservation carries no surveyed sewer or coordinated collector route.
-      const stacks = sharedChases ? [] : [...stackByKey.values()];
-      for (const stack of stacks) {
-        stack.floorIds.push(floor.id);
-        fb.sym('PLUMB_SHAFT', center(stack.box), { widthMm: stack.box.w, depthMm: stack.box.h, label: 'STACK TO COLLECTOR' });
-      }
+      const stacks = [...stackByKey.entries()];
       if (stacks.length >= 1) {
-        const pts = stacks.map(s => center(s.box)).sort((a, b) => a.x - b.x || a.y - b.y);
-        const collectorY = Math.min(...floor.boundary.points.map(p => p.y)) + 300;
-        fb.run('SP', [...pts.map(p => ({ x: p.x, y: collectorY })), ...(pts.length === 1 ? [{ x: pts[0]!.x + 1000, y: collectorY }] : [])]);
+        const bPts = building.site.plotBoundary.points;
+        const minX = Math.min(...bPts.map(p => p.x));
+        const maxX = Math.max(...bPts.map(p => p.x));
+        const minY = Math.min(...bPts.map(p => p.y));
+        const maxY = Math.max(...bPts.map(p => p.y));
+        const facing = building.site.roadFacing.toUpperCase();
+        const stiltObstacles = floorPipeObstacles(floor);
+        const vertical = facing === 'EAST' || facing === 'WEST';
+        const along = (point: Point) => vertical ? point.y : point.x;
+        const lo = vertical ? minY : minX;
+        const hi = vertical ? maxY : maxX;
+        const projectToCollector = (coordinate: number) => vertical
+          ? { x: facing === 'EAST' ? maxX - 250 : minX + 250, y: coordinate }
+          : { x: coordinate, y: facing === 'NORTH' ? minY + 250 : maxY - 250 };
+        const connections = stacks.flatMap(([key, stack]) => {
+          const p = center(stack.box);
+          const junction = projectToCollector(Math.max(lo + 250, Math.min(hi - 250, along(p))));
+          const route = chooseEconomicalDrainRoute(p, junction, stiltObstacles, building.site.plotBoundary);
+          return route ? [{ key, stack, junction, route }] : [];
+        }).sort((a, b) => along(a.junction) - along(b.junction));
+        if (connections.length) {
+          const junctions = connections.map(item => item.junction);
+          const end = along(junctions[junctions.length - 1]!);
+          const approach = Math.min(hi - 50, end + 1000);
+          const trunk = [...junctions, projectToCollector(approach)];
+          if (polylineLengthMm(trunk) > 0 && routeIsClear(trunk, stiltObstacles, building.site.plotBoundary)) {
+            fb.run('SP', trunk, { diameterMm: 160, slopeRatio: '1:80' });
+            for (const { key, stack, route } of connections) {
+              collectedStacks.add(key);
+              stack.floorIds.push(floor.id);
+              fb.run('SP', route, { diameterMm: 110 });
+              fb.sym('PLUMB_SHAFT', center(stack.box), { widthMm: stack.box.w, depthMm: stack.box.h, label: 'STACK TO PROPOSED COLLECTOR' });
+            }
+          }
+        }
       }
     }
     plans.push(fb.build());
@@ -435,6 +601,18 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
 
   const all = plans.flatMap(p => p.symbols);
   const count = (k: MepSymbolKind) => all.filter(s => s.kind === k).length;
+  const drainageRuns = plans.flatMap(p => p.runs.filter(r => r.kind === 'SP' || r.kind === 'WP'));
+  const residentialDrainageRuns = plans
+    .filter(p => residential.some(rf => rf.id === p.floorId))
+    .flatMap(p => p.runs.filter(r => r.kind === 'SP' || r.kind === 'WP'));
+  const soilRooms = new Set(residentialDrainageRuns.filter(r => r.kind === 'SP').map(r => r.roomId));
+  const wasteRooms = new Set(residentialDrainageRuns.filter(r => r.kind === 'WP').map(r => r.roomId));
+  const servedWetRoomCount = residential.reduce((sum, floor) => sum + floor.rooms.filter(room =>
+    wasteRooms.has(room.id) && (isKitchen(room) || (isBath(room) && soilRooms.has(room.id)))).length, 0);
+  const sharedShaftCount = reference
+    ? reference.rooms.filter(r => r.tags.includes(SHARED_PLUMBING_RISER_TAG)).length
+    : 0;
+
   return {
     schemaVersion: 'RH-MEP-3.0',
     status: 'COORDINATION_PROPOSAL_NOT_CERTIFIED',
@@ -443,8 +621,22 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
       id: `stack_${i + 1}_${key.replace('|', '_')}`,
       position: center(s.box), widthMm: s.box.w, depthMm: s.box.h,
       floorIds: s.floorIds,
-      terminatesAtStiltCollector: Boolean(stiltFloor && s.floorIds.includes(stiltFloor.id)),
+      terminatesAtStiltCollector: collectedStacks.has(key),
     })),
+    ...(stackByKey.size > 0
+      ? {
+          drainageEconomy: {
+            routingStatus: 'SCHEMATIC_UNSIZED',
+            sharedShaftCount,
+            servedWetRoomCount,
+            consolidatedBranchRuns: residentialDrainageRuns.length,
+            totalDrainagePipeLengthMm: drainageRuns.reduce((sum, r) => sum + (r.lengthMm ?? 0), 0),
+            ...(collectedStacks.size > 0 ? { collectorSlopeRatio: '1:80' } : {}),
+            collectorTerminatesTowardsRoad: collectedStacks.size > 0,
+            unconnectedRiserCount: stackByKey.size - collectedStacks.size,
+          },
+        }
+      : {}),
     summary: {
       distributionBoards: count('DB'), fans: count('FAN'), downlights: count('DL'), switchboards: count('SB') + count('SB_2WAY'),
       sockets16A: count('SOCKET_16A'), geysers: count('GY'), acIndoorUnits: count('AC_IDU'),

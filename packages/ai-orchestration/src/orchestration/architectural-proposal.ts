@@ -279,9 +279,18 @@ export const ARCHITECTURAL_PROPOSAL_SCHEMA: Record<string, unknown> = {
     ...CORE_PROPOSAL_PROPERTIES,
     referenceSpatialGraph: {
       type: 'object',
+      description: 'Visual spatial topology observed strictly in the attached reference floor-plan image, independent of text brief overrides.',
       properties: {
-        detectedCorePosition: { type: 'string', enum: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'] },
-        detectedCorridorAxis: { type: 'string', enum: ['HORIZONTAL', 'VERTICAL', 'RING'] },
+        detectedCorePosition: {
+          type: 'string',
+          enum: ['CENTRAL', 'NORTH', 'SOUTH', 'EAST', 'WEST', 'SPLIT'],
+          description: 'Visual core layout in the attached image only: SPLIT when two staircases (e.g. main and secondary fire stairs) are separated across a lobby/spine/courtyard or lifts and stairs sit on separate edges; NORTH/SOUTH/EAST/WEST when single core abuts an outer edge; CENTRAL only when one compact stair+lift block sits together at center.',
+        },
+        detectedCorridorAxis: {
+          type: 'string',
+          enum: ['HORIZONTAL', 'VERTICAL', 'RING'],
+          description: 'Primary circulation/void organization in the image: RING if an internal courtyard/atrium or loop lobby is present; VERTICAL if spine runs top-to-bottom; HORIZONTAL if left-to-right.',
+        },
         relativeRoomCentroids: {
           type: 'array',
           items: {
@@ -382,12 +391,22 @@ function detectExplicitPromptShape(prompt: string): BuildingMassingShape | undef
                                           : undefined;
 }
 
+const EXPLICIT_NO_OTS_RE =
+  /\b(?:no|without|exclude|omit|zero)\s+(?:any\s+)?(?:ots|open[\s-]to[\s-]sky)\b|\bperimeter[\s-]only\b/;
+
+const COURTYARD_DEPENDENT_SHAPES = new Set<BuildingMassingShape>([
+  'U_SHAPE_COURTYARD',
+  'O_SHAPE_PERIMETER_COURT',
+  'ROTUNDA_COURTYARD',
+  'TRIANGULAR_ATRIUM',
+]);
+
 export function defaultProposalForConfig(
   config: MultiSheetApartmentConfig,
   seed: number,
 ): ArchitecturalProposal {
   const prompt = normalizeBriefSpelling(config.aiPrompt).toLowerCase();
-  const explicitlyNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b|\bperimeter\s+only\b/.test(prompt);
+  const explicitlyNoOts = EXPLICIT_NO_OTS_RE.test(prompt);
   const explicitlyOts = !explicitlyNoOts && /\bopen[- ]to[- ]sky\b|\bots\b|\bcourtyard\b/.test(prompt);
   const explicitlyNoBalcony = /\bno\s+balcon|\bwithout\s+balcon|\bexclude\s+balcon|\bzero\s+balcon/.test(prompt);
   const properSpaceUtilization = /\bproper\s+space\s+utiliz|\bspace\s+utilization\b|\befficient\s+space\b|\bno\s+(?:empty|wasted|giant)\s+(?:void|gap|strip)/.test(prompt);
@@ -469,9 +488,10 @@ function sanitizeProposalWithPromptGuardrails(
   const base = defaultProposalForConfig(config, seed);
   if (!raw) return { proposal: base, rejectedReferenceGuidance: [] };
   const prompt = normalizeBriefSpelling(config.aiPrompt).toLowerCase();
-  const explicitlyNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b/.test(prompt);
+  const explicitlyNoOts = EXPLICIT_NO_OTS_RE.test(prompt);
   const explicitlyCentral = /\bcentral\s+lift|\bcentral\s+core/.test(prompt);
   const explicitlyNoBalcony = /\bno\s+balcon|\bwithout\s+balcon|\bexclude\s+balcon|\bzero\s+balcon/.test(prompt);
+  const explicitPromptShape = detectExplicitPromptShape(prompt);
   const rejectedReferenceGuidance: string[] = [];
 
   const family = typeof raw.preferredTopologyFamily === 'string'
@@ -487,13 +507,19 @@ function sanitizeProposalWithPromptGuardrails(
         ? (raw.preferredArchetype as RoomSlicingArchetypeId)
         : base.preferredArchetype;
 
-  const buildingMassingShape =
+  const rawMassingShape: BuildingMassingShape =
     config.buildingMassingShape
       ? config.buildingMassingShape
       : typeof raw.buildingMassingShape === 'string'
         && (BUILDING_MASSING_SHAPES.includes(raw.buildingMassingShape as BuildingMassingShape) || raw.buildingMassingShape.startsWith('PARAM_'))
         ? (raw.buildingMassingShape as BuildingMassingShape)
         : base.buildingMassingShape;
+
+  const noOts = explicitlyNoOts ? true : typeof raw.noOts === 'boolean' ? raw.noOts : base.noOts;
+  const buildingMassingShape: BuildingMassingShape =
+    noOts && !config.buildingMassingShape && !explicitPromptShape && COURTYARD_DEPENDENT_SHAPES.has(rawMassingShape)
+      ? 'COMPACT_DOUBLE_LOADED'
+      : rawMassingShape;
 
   const planCategory =
     config.planCategory
@@ -513,7 +539,6 @@ function sanitizeProposalWithPromptGuardrails(
       ? (raw.corePlacement as ArchitecturalProposal['corePlacement'])
       : base.corePlacement;
 
-  const noOts = explicitlyNoOts ? true : typeof raw.noOts === 'boolean' ? raw.noOts : base.noOts;
   const ventilationStrategy = noOts
     ? 'PERIMETER_ONLY'
     : typeof raw.ventilationStrategy === 'string' && ['PERIMETER_ONLY', 'SIDE_SHAFTS', 'CENTRAL_COURTYARD'].includes(raw.ventilationStrategy)
@@ -713,7 +738,7 @@ export function interpretStructuredBriefRequirements(
   }
 
   // Conflict 2: NO OTS vs explicit courtyard / OTS request in same prompt
-  const promptHasNoOts = /\bno\s+ots\b|\bwithout\s+ots\b|\bexclude\s+ots\b/.test(prompt);
+  const promptHasNoOts = EXPLICIT_NO_OTS_RE.test(prompt);
   const promptRequestsCourtyard = /\bcentral\s+(?:open[- ]to[- ]sky\s+)?courtyard\b|\bwith\s+ots\s+courtyard\b/.test(prompt);
   if (promptHasNoOts && promptRequestsCourtyard) {
     conflicts.push({
@@ -788,7 +813,7 @@ export function interpretStructuredBriefRequirements(
     });
   }
 
-  // Reference image vs explicit core brief conflict
+  // Reference image vs explicit brief conflict (core placement or OTS courtyard exclusion)
   if (
     proposal.referenceSpatialGraph?.detectedCorePosition &&
     /\b(?:central\s+lift|central\s+core|lifts?|stairs?|staircases?)\b/.test(prompt) &&
@@ -798,6 +823,15 @@ export function interpretStructuredBriefRequirements(
       code: 'REFERENCE_OVERRIDDEN_BY_BRIEF',
       resolution: 'EXPLICIT_BRIEF_PRECEDENCE',
       message: `Explicit brief core placement (${proposal.corePlacement}) overrides reference image core hint (${proposal.referenceSpatialGraph.detectedCorePosition}).`,
+    });
+  } else if (
+    proposal.referenceSpatialGraph?.detectedCorridorAxis === 'RING' &&
+    promptHasNoOts
+  ) {
+    conflicts.push({
+      code: 'REFERENCE_OVERRIDDEN_BY_BRIEF',
+      resolution: 'EXPLICIT_BRIEF_PRECEDENCE',
+      message: 'Explicit NO OTS brief constraint overrides reference image courtyard-ring organization.',
     });
   }
 
@@ -1050,10 +1084,10 @@ export async function generateArchitecturalProposal(
     const effectiveArchetype =
       seed > 1 && rejected.length > 0 && proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
         ? ROOM_SLICING_ARCHETYPES[(seed - 1) % ROOM_SLICING_ARCHETYPES.length]!
-        : rg?.wetCoreClustering === 'SHARED_SHAFT' &&
-          !input.config.preferredArchetype &&
-          proposal.preferredArchetype === ROOM_SLICING_ARCHETYPES[0]
+        : rg?.wetCoreClustering === 'SHARED_SHAFT' && !proposal.noOts && !input.config.preferredArchetype
         ? 'MIRRORED_WET_CORE_STACK'
+        : proposal.noOts && !input.config.preferredArchetype && proposal.preferredArchetype === 'MIRRORED_WET_CORE_STACK'
+        ? ROOM_SLICING_ARCHETYPES[0]!
         : proposal.preferredArchetype;
     const promptExplicitlyRequestsNovelShape =
       /\b(?:cruciform|h[\s-]?shape|u[\s-]?shape|l[\s-]?shape|pinwheel|stepped|courtyard|crescent|curved|arc|rotunda|circular|oval|triskele|triang|hex|octa|pentagon|trapezoid|chevron|z[\s-]?shape|t[\s-]?shape)\b/i.test(
@@ -1077,6 +1111,12 @@ export async function generateArchitecturalProposal(
           !proposal.noOts &&
           proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
         ? 'U_SHAPE_COURTYARD'
+        : rg &&
+          (rg.detectedCorridorAxis === 'VERTICAL' || rg.detectedCorridorAxis === 'RING') &&
+          Boolean(input.config.autoExploreNovelShape) &&
+          !input.config.lockedMassingShape &&
+          proposal.buildingMassingShape === 'COMPACT_DOUBLE_LOADED'
+        ? 'H_SHAPE_WING'
         : proposal.buildingMassingShape);
 
     const finalProposal: ArchitecturalProposal = {
@@ -1086,6 +1126,10 @@ export async function generateArchitecturalProposal(
     };
 
     const basePrompt = (input.config.aiPrompt ?? '').trim();
+    const promptHasExplicitCorePlacement =
+      /\b(?:(?:central|centre|center|split|north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|flanking|opposing|single|one|two|three|1|2|3)\s+(?:[a-z-]+\s+){0,2}(?:lifts?|elevators?|stairs?|staircases?|cores?|vertical\s+circulation)|(?:lifts?|stairs?|staircases?)\s+(?:positioned\s+)?on\s+(?:both|either)\s+sides?)\b/i.test(
+        basePrompt,
+      );
     const synthesizedClauses: string[] = [];
     if (telemetryBase.interpretationSource === 'GEMINI' || rg) {
       if (
@@ -1108,10 +1152,7 @@ export async function generateArchitecturalProposal(
           synthesizedClauses.push('Larger kitchen.');
         }
       }
-      if (
-        rg &&
-        !/\b(?:lifts?|elevators?|stairs?|staircases?|cores?|vertical\s+circulation)\b/i.test(basePrompt)
-      ) {
+      if (rg && !promptHasExplicitCorePlacement) {
         if (rg.detectedCorePosition === 'CENTRAL') {
           synthesizedClauses.push('Central lift core.');
         } else if (rg.detectedCorePosition === 'SPLIT') {
@@ -1129,10 +1170,18 @@ export async function generateArchitecturalProposal(
       proposal.buildingMassingShape !== effectiveMassingShape
         ? ['COURTYARD_CIRCULATION']
         : []),
+      ...(rg &&
+      (rg.detectedCorridorAxis === 'VERTICAL' || rg.detectedCorridorAxis === 'RING') &&
+      Boolean(input.config.autoExploreNovelShape) &&
+      !input.config.buildingMassingShape &&
+      effectiveMassingShape === 'H_SHAPE_WING' &&
+      proposal.buildingMassingShape !== effectiveMassingShape
+        ? ['CORRIDOR_AXIS']
+        : []),
       ...(rg?.wetCoreClustering === 'SHARED_SHAFT' &&
+      !proposal.noOts &&
       !input.config.preferredArchetype &&
-      effectiveArchetype === 'MIRRORED_WET_CORE_STACK' &&
-      proposal.preferredArchetype !== effectiveArchetype
+      effectiveArchetype === 'MIRRORED_WET_CORE_STACK'
         ? ['WET_CORE_CLUSTERING']
         : []),
     ];
@@ -1206,6 +1255,8 @@ export async function generateArchitecturalProposal(
       preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
       buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
       lockedMassingShape: input.config.lockedMassingShape ?? input.config.buildingMassingShape,
+      ...(referenceGuidanceApplied.some(hint => hint === 'CORRIDOR_AXIS' || hint === 'COURTYARD_CIRCULATION') &&
+        { autoExploreNovelShape: false }),
       centerBuildingInEnvelope:
         input.config.centerBuildingInEnvelope ?? finalProposal.centerBuildingInEnvelope,
       ...(promptMentionsArea &&
@@ -1307,7 +1358,7 @@ export async function generateArchitecturalProposal(
     input.config.buildingMassingShape ? `LockedShape:${input.config.buildingMassingShape}` : '',
     `Brief:"${fullBrief}"`,
     imagePart
-      ? 'Reference image attached: populate referenceSpatialGraph (detectedCorePosition, detectedCorridorAxis, relativeRoomCentroids in [0..1], balconyEdges, wetCoreClustering).'
+      ? 'Reference image attached: populate referenceSpatialGraph strictly from the visual image independent of brief overrides (detectedCorePosition: use SPLIT when two staircases/cores are separated across a lobby/spine or NORTH/SOUTH/EAST/WEST when offset to an edge; detectedCorridorAxis; relativeRoomCentroids in [0..1]; balconyEdges; wetCoreClustering).'
       : '',
     seed > 1 ? `Variant #${seed}: choose distinct archetype/massing from excluded layouts.` : '',
   ]
