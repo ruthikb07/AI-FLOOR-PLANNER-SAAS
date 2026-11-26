@@ -4,18 +4,22 @@ The browser matrix runs against production Vite preview and the bundled backend 
 
 The matrix stores per-project JSON and plan captures in its Playwright output directory. The repository [matrix summary](PHASE5_FULL_BROWSER_MATRIX.json) records the evidence status of every requested scenario. Candidate selection, strict search, protected edits, IFC digest and version-matched disk readback are asserted only for the scenarios that exercise those controls. The browser functional audit records room-access and circulation warnings even when the floor passes the hard geometry audit.
 
-| Case | Project or outcome |
-| --- | --- |
-| 1 | Residential bungalow |
-| 2 | Compact apartment, including internal travel routes |
-| 3 | Exact oblique survey, candidate selection and signed-coordinate disk readback |
-| 4 | Four-flat mixed BHK, including protected Flat 2 edit |
-| 5 | Four unequal strict targets and bounded alternative search |
-| 6 | Six-flat high-density floor, including internal and common access |
-| 7 | Multi-storey open stilt and protected Flat 2 edit |
-| 8 | Reference attachment, with live verification pending |
-| 9 | Infeasible 13,200 ft² program on an 18 × 20 m plot |
+| Case | Production Chromium result | Visual review |
+| --- | --- | --- |
+| 1 Residential bungalow | Workspace workflow, distinct study and IFC provenance passed | Four-bedroom arrangement and private passage visible. The stair/lift provision remains substantial for a single residence. |
+| 2 Compact apartment | Workspace workflow and distinct study passed. Zero modeled furniture/door intersections. | Two flats on one shared spine with tight turns near the wet rooms. |
+| 3 Exact oblique survey | Signed coordinates matched in the request, canonical site and disk readback. A near-duplicate study was withheld. | Two flats open onto a shared spine. The building stays axis-aligned within the measured site. |
+| 4 Four-flat mixed BHK | Distinct study and protected Flat 2 CAD edit passed with matching protected digests. | Four unit entries flank a central stair/lift spine. |
+| 5 Strict unequal targets | All initial and alternative targets passed the 3% checks. A distinct second study was published. | The stepped floor shows visibly unequal unit sizes and a continuous common route. |
+| 6 Six-flat high density | Workspace workflow, distinct study and IFC provenance passed. Zero modeled furniture/door intersections. | The tightest modeled lift-lobby box is 1,200 mm. The plan has six entrances along the central access spine. |
+| 7 Multi-storey open stilt | Protected Flat 2 CAD edit, distinct study, IFC digest and save/reload passed in the focused replay. | The residential capture shows four units around the central spine. The browser confirmed a modeled parking storey. |
+| 8 Reference attachment | Deterministic attachment, distinct study and workspace workflow passed. Live influence remains pending. | Repeated two-bedroom bays around a central spine. The attachment did not undergo live interpretation. |
+| 9 Infeasible requirements | The wizard displayed HTTP 422 for 13,200 ft² of required carpet on an 18 × 20 m plot. No gallery or canonical building was published. | Refusal was observed in the wizard. |
 
 All eight new production HTTP floor drawings were reviewed as full-size Chromium renders. The compact plan shows two private passage boxes with 1,590 mm short spans and a 2,400 mm shared spine. The six-flat plan shows 2,100 mm private passage boxes, 2,400 mm common spines, and a 1,200 mm short span at the tightest lift lobby. Those measurements are canonical bounding-box spans. Finished wall-to-wall widths and local obstructions require separate clearance review.
 
-The overlay review reproduced five door/furniture intersections in the compact model and one bedroom-door intersection in the six-flat model. The final regenerated models pass the actual connected-door swing polygon check for both fixtures. The solver now furnishes the final coordinated floor after door repairs and rejects any candidate intersecting its modeled sweep. The browser matrix retains door host checks, swing-intersection records and per-project screenshots. The first browser pilot verified the bungalow's wizard, CAD selection, BIM window schedule, both 3D views, IFC receipt and digest, saved revision, and reload.
+The overlay review reproduced five door/furniture intersections in the compact model and one bedroom-door intersection in the six-flat model. The final regenerated models pass the actual connected-door swing polygon check for both fixtures. The solver now furnishes the final coordinated floor after door repairs and rejects furniture intersecting its modeled sweep. The eight browser plan captures were reviewed. Their measured first-residential-floor host-fit and furniture-swing checks returned zero findings.
+
+The initial 13-test matrix passed 12 tests. The multi-storey case checked the gallery before the browser worker finished handling the accepted HTTP response. The focused replay passed after checking the worker outcome. The cases jointly exercise wizard input, result selection, alternatives, BIM/window quantities, Floor 3D, Tower 3D, revision-bound IFC4 and persisted reload. Protected edits were exercised in the mixed and stilt projects. Other project/control and export-format combinations remain outside this matrix. Several advisory rectangular area requests remain materially above their targets. The JSON records both requested and achieved values.
+
+Visual review also identified a riser coordination gap. In cases 5 and 6, the long central strips are modeled as common lift lobbies and circulation. Four smaller central reservations are labeled “MEP / Plumbing Duct.” The distances from bathroom edges to the nearest such reservations range from 8.5 to 17.4 m and 12.9 to 19.8 m, respectively. The schematic plumbing stacks are independently placed at wet-room corners. The architectural and schematic MEP layouts require reconciliation before acceptance.

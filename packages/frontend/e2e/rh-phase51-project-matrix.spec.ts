@@ -149,6 +149,9 @@ for (const fixture of fixtures) {
         row.alternativeHttpStatus = alternativeResponse.status();
         if (alternativeResponse.ok()) {
           const next = (await alternativeResponse.json()).building as Building;
+          // The HTTP receipt arrives before the browser worker finishes verification and projection.
+          await expect(page.getByRole('dialog', { name: 'Generating your building' })).toBeHidden({ timeout: 45_000 });
+          await expect(failure).toBeHidden();
           if (strict) {
             expect(next.metadata.generationReport?.floorAreas?.every(nextFloor => nextFloor.units.length === flats &&
               nextFloor.units.every(unit => unit.target?.status === 'ACHIEVED' && unit.target.tolerancePercent === 3))).toBe(true);
