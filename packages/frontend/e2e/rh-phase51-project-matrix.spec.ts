@@ -248,3 +248,31 @@ for (const fixture of fixtures) {
     }
   });
 }
+
+test('enables facade-oriented layout with wet-wall risers in the wizard', async ({ page }, info) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.addInitScript(() => localStorage.setItem('argon_studio_store_wizard_v1', JSON.stringify({
+    plotWidthM: 38, plotDepthM: 32, floorsCount: 2, hasStiltParking: true, roadFacing: 'South',
+    authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
+    flatsPerFloor: 4, bhkCounts: { '1BHK': 0, '2BHK': 4, '3BHK': 0, '4BHK': 0 }, aiPrompt: '',
+  })));
+  await page.goto('/');
+  await page.getByTestId('cta-new-construction').click();
+  await page.getByLabel('Project Title / Estate', { exact: false }).fill('Wet-wall coordination study');
+  for (const step of [2, 3]) await page.getByRole('button', { name: 'Continue to Step 0' + step }).click();
+  await page.getByRole('checkbox', { name: 'Prefer exterior living and wet-wall risers' }).check();
+  await page.getByRole('button', { name: 'Continue to Step 04' }).click();
+  const request = page.waitForResponse(response => response.url().endsWith('/api/v1/projects/generate'), { timeout: 90_000 });
+  await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
+  const response = await request;
+  expect(response.request().postDataJSON().config.architectureOptions.coordinatedWetWallLayout).toBe(true);
+  expect(response.status()).toBe(200);
+  const { building } = await response.json() as { building: Building };
+  expect(building.metadata.generationBrief?.coordinatedWetWallLayout).toBe(true);
+  const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;
+  expect(floor.rooms.filter(room => room.tags.some(tag => tag.startsWith('plumbing:serves:'))).length).toBeGreaterThanOrEqual(4);
+  const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
+  await expect(gallery.getByRole('img', { name: /Plan preview/ }).first()).toBeVisible({ timeout: 45_000 });
+  await gallery.getByRole('img', { name: /Plan preview/ }).first().screenshot({ path: info.outputPath('coordinated-wet-wall-plan.png') });
+});

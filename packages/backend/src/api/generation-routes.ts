@@ -62,6 +62,7 @@ function parseGenerationRequest(body: unknown): {
   const measured = rawConfig.surveyBoundary != null;
   const positive = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value) && value > 0;
   const setbacks = rawConfig.setbacksMm;
+  const wetWallLayout = isRecord(rawConfig.architectureOptions) ? rawConfig.architectureOptions.coordinatedWetWallLayout : undefined;
   const flats = Number(rawConfig.flatsPerFloor);
   const floors = Number(rawConfig.numTypicalFloors);
   if (
@@ -88,6 +89,7 @@ function parseGenerationRequest(body: unknown): {
         (unit.targetCarpetSqFt !== undefined && !positive(unit.targetCarpetSqFt)),
     ) ||
     (rawConfig.requireAreaTargets !== undefined && typeof rawConfig.requireAreaTargets !== 'boolean') ||
+    (wetWallLayout !== undefined && typeof wetWallLayout !== 'boolean') ||
     (rawConfig.areaAcceptanceTolerancePercent !== undefined &&
       (!Number.isFinite(rawConfig.areaAcceptanceTolerancePercent) ||
         Number(rawConfig.areaAcceptanceTolerancePercent) < 0 ||

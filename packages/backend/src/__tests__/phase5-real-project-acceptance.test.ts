@@ -10,6 +10,8 @@ import {
   DEFAULT_TERRACE_AMENITIES,
   Direction,
   EXACT_SQMM_PER_SQFT,
+  PLUMBING_RISER_TAG,
+  RoomType,
   exchangeRevision,
   rectToPolygon,
   type AIProposalTelemetry,
@@ -18,7 +20,7 @@ import {
   type IfcExchangeArtifact,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
-import { isDoorSwingClear, polygonArea, rotatePoint } from '@ai-floor-planner/geometry-engine';
+import { isDoorSwingClear, polygonArea, polygonIntersectionArea, rotatePoint } from '@ai-floor-planner/geometry-engine';
 import {
   auditArchitecturalElementRealism,
   auditFloorFunctionalQuality,
@@ -530,4 +532,94 @@ describe('Phase 5 real-project acceptance', () => {
     expect(primary.alternatives.length).toBeGreaterThanOrEqual(2);
     expect(primary.alternatives.some(alt => /\d+/.test(alt.summary))).toBe(true);
   }, 60_000);
+
+  it('generates facade-oriented flats with modeled bathroom risers aligned to the MEP stacks', async () => {
+    const config = { ...BASE_BRIEF, projectId: 'wet-wall-risers', architectureOptions: { coordinatedWetWallLayout: true } };
+    const response = await post('/projects/generate', { config });
+    const result = await response.json() as { building?: Building; error?: unknown };
+    expect(response.status, JSON.stringify(result.error)).toBe(200);
+    const building = result.building!;
+    const floors = building.floors.filter(floor => floor.apartmentUnits?.length);
+    expect(floors).toHaveLength(2);
+    const coordinates = floors.map(floor => {
+      const risers = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)));
+      const rooms = new Map(floor.rooms.map(room => [room.id, room]));
+      const walls = new Map(floor.walls.map(wall => [wall.id, wall]));
+      const outdoorWindow = (roomId: string) => floor.windows.some(window => {
+        const wall = walls.get(window.wallId);
+        return window.roomId === roomId && (wall?.wallUse === 'EXTERNAL' ||
+          wall?.roomIds.some(id => rooms.get(id)?.openToSky));
+      });
+      const entryDirections = new Set<string>();
+      for (const unit of floor.apartmentUnits!) {
+        const doors = floor.doors.filter(door => door.connectsRooms.some(id => rooms.get(id)?.unitId === unit.id) &&
+          door.connectsRooms.some(id => rooms.get(id)?.spaceUse === 'COMMON'));
+        expect(doors).toHaveLength(1);
+        const entry = doors[0]!;
+        const room = entry.connectsRooms.map(id => rooms.get(id)).find(inside => inside?.unitId === unit.id)!;
+        expect([RoomType.Living, RoomType.Foyer, RoomType.Dining]).toContain(room.type);
+        const host = walls.get(entry.wallId)!;
+        entryDirections.add(Math.abs(host.startPoint.x - host.endPoint.x) < 1
+          ? (room.x + room.width / 2 > entry.position.x ? 'WEST' : 'EAST')
+          : (room.y + room.height / 2 > entry.position.y ? 'NORTH' : 'SOUTH'));
+        const living = floor.rooms.find(room => room.unitId === unit.id && room.type === RoomType.Living)!;
+        const kitchen = floor.rooms.find(room => room.unitId === unit.id && room.type === RoomType.Kitchen)!;
+        expect(floor.windows.some(window => window.roomId === living.id && walls.get(window.wallId)?.wallUse === 'EXTERNAL')).toBe(true);
+        expect(outdoorWindow(kitchen.id)).toBe(true);
+      }
+      expect(entryDirections.size).toBeGreaterThan(1);
+      expect(risers).toHaveLength(8);
+      expect(risers).toHaveLength(floor.rooms.filter(room => room.type === RoomType.Bathroom).length);
+      expect(floor.rooms.some(room => room.name.includes('MEP / Plumbing Duct'))).toBe(false);
+      for (const riser of risers) {
+        const tag = riser.tags.find(t => t.startsWith(PLUMBING_RISER_TAG))!;
+        const bath = floor.rooms.find(room => room.tags.includes('apt-room:' + tag.slice(PLUMBING_RISER_TAG.length)))!;
+        expect(bath.boundary.points.length).toBe(6);
+        expect(outdoorWindow(bath.id)).toBe(true);
+        expect(polygonIntersectionArea(bath.boundary, riser.boundary)).toBeLessThan(0.001);
+        expect(riser.unitId).toBe(bath.unitId);
+        expect(floor.doors.some(door => door.connectsRooms.includes(riser.id))).toBe(false);
+        expect(floor.windows.some(window => walls.get(window.wallId)?.roomIds.includes(riser.id))).toBe(false);
+        expect(floor.furniture?.some(item => item.roomId === riser.id)).toBe(false);
+        const aligned = building.mepEngineering?.verticalStacks.find(stack => stack.floorIds.includes(floor.id) &&
+          Math.abs(stack.position.x - riser.x - riser.width / 2) <= 5 && Math.abs(stack.position.y - riser.y - riser.height / 2) <= 5);
+        expect(aligned).toBeDefined();
+      }
+      expect(auditFloorFunctionalQuality(floor).passed).toBe(true);
+      expect(computeFloorEfficiencyBreakdown(floor).isPlanarConserved).toBe(true);
+      return risers.map(room => room.boundary.points);
+    });
+    expect(coordinates[0]).toEqual(coordinates[1]);
+    const svg = exportSVG(building, defaultExportOptions(floors[0]!.id));
+    expect(svg.match(/<title>Plumbing riser<\/title>/g)).toHaveLength(8);
+    if (evidence) {
+      await writeFile(join(evidence, 'wet-wall-residential.building.json'), JSON.stringify(building));
+      await writeFile(join(evidence, 'wet-wall-residential.svg'), svg);
+    }
+  }, 90_000);
+
+  it('reports tight wet rooms and only draws stacks with architectural reservations', async () => {
+    const config: MultiSheetApartmentConfig = {
+      ...BASE_BRIEF, projectId: 'wet-wall-tight-baths', plotWidthMm: 42000, plotDepthMm: 36000,
+      aiPrompt: 'Use an open-to-sky courtyard with naturally ventilated interior toilets where possible.',
+      units: BASE_BRIEF.units!.map((unit, index) => ({ ...unit, bhkType: index % 2 ? '3BHK' : '2BHK' })),
+      architectureOptions: { coordinatedWetWallLayout: true },
+    };
+    const response = await post('/projects/generate', { config });
+    const result = await response.json() as { building?: Building; error?: unknown };
+    expect(response.status, JSON.stringify(result.error)).toBe(200);
+    const building = result.building!;
+    for (const floor of building.floors.filter(floor => floor.apartmentUnits?.length)) {
+      const missing = building.metadata.generationReport?.violations.find(issue =>
+        issue.floorId === floor.id && issue.code === 'WET_WALL_RISER_RESERVATION_INCOMPLETE');
+      expect(missing?.severity).toBe('WARNING');
+      expect(missing?.elementIds.length).toBeGreaterThan(0);
+      const risers = floor.rooms.filter(room => room.tags.some(tag => tag.startsWith(PLUMBING_RISER_TAG)));
+      const stacks = building.mepEngineering!.verticalStacks.filter(stack => stack.floorIds.includes(floor.id));
+      expect(stacks.length).toBeGreaterThan(0);
+      expect(stacks.map(stack => stack.position)).toEqual(risers.map(room => ({ x: room.x + room.width / 2, y: room.y + room.height / 2 })));
+      const mep = building.mepEngineering!.floors.find(plan => plan.floorId === floor.id)!;
+      expect(mep.runs.some(run => run.roomId && missing?.elementIds.includes(run.roomId))).toBe(false);
+    }
+  }, 90_000);
 });

@@ -29,6 +29,7 @@ import {
   type MultiSheetApartmentResult,
   type CoordinatedApartmentSheet,
   type ApartmentProjectSchedule,
+  type ApartmentGenerationViolation,
   type AreaTargetDiagnostic,
   type AreaTargetScope,
   type SheetLedgerAudit,
@@ -52,6 +53,7 @@ import {
   WindowType,
   Direction,
   PlotShape,
+  PLUMBING_RISER_TAG,
   createDynamicApartmentManifest,
   DEFAULT_SITE_AMENITIES,
   DEFAULT_STILT_AMENITIES,
@@ -59,6 +61,7 @@ import {
 } from '@ai-floor-planner/core';
 import { repairApartmentPlan, healFloorGeometryForCompliance } from '../repair/apartment-error-repair';
 import { populateCanonicalFurniture } from '../plancraft/auto-furnish-apartment.js';
+import { reserveWetWallRisers } from '../mep/wet-wall-risers';
 import { MIN_PROVISIONAL_COLUMN_SPACING_MM } from '../structural/provisional-column-host';
 import {
   deriveCornerLockedStructuralColumns,
@@ -937,7 +940,7 @@ export function solveStiltParkingSheet(
     const shaft = createBoxRoom({
       id: `stilt__shaft_${s + 1}`,
       architecturalRole: macro.shaftRoles?.[s],
-      name: macro.shaftRoles?.[s] === 'OPEN_TO_SKY_VOID' ? 'Open-to-sky courtyard at stilt' : `MEP Service Shaft 0${s + 1}`,
+      name: macro.shaftRoles?.[s] === 'OPEN_TO_SKY_VOID' ? 'Open-to-sky courtyard at stilt' : `Core Service Shaft 0${s + 1}`,
       type: RoomType.ServiceShaft,
       spaceUse: 'SERVICE',
       box: macro.shaftBoxes[s]!,
@@ -1481,7 +1484,7 @@ export function solveTypicalFloorSheet(
   const resolvedGalleryMode =
     config.galleryCoordinationMode ??
     (config.staggeredBalconies === true ? 'DOUBLE_HEIGHT_STAGGER' : 'STACKED_RIBBON');
-  const structure = topology
+  const initialStructure = topology
     ? assembleStructureFromPartition({
       partition: topology.chosen.partition,
       program: topology.result.program,
@@ -1492,6 +1495,7 @@ export function solveTypicalFloorSheet(
       galleryCoordinationMode: resolvedGalleryMode,
       floorVariant: options?.floorVariant,
       includeStudyRoom: config.includeStudyRoom ?? false,
+      coordinatedWetWallLayout: config.architectureOptions?.coordinatedWetWallLayout,
       roadAccessSides: config.roadAccessSides,
       setbacksMm: config.setbacksMm,
       irregularPlotBoundary: config.irregularPlotBoundary,
@@ -1515,6 +1519,8 @@ export function solveTypicalFloorSheet(
       lotAllotmentMode: config.lotAllotmentMode,
     });
 
+  const structure = config.architectureOptions?.coordinatedWetWallLayout
+    ? reserveWetWallRisers(initialStructure) : initialStructure;
   const includeDiningHall = config.includeDiningHall ?? true;
   const diningToLivingRedirect = new Map<string, string>();
   const rooms: Room[] = [];
@@ -1530,7 +1536,7 @@ export function solveTypicalFloorSheet(
         architecturalRole: r.architecturalRole,
         name: r.name,
         type: rType,
-        spaceUse: rType === RoomType.Balcony ? 'OUTDOOR' : unitId ? 'UNIT' : rType === RoomType.ServiceShaft ? 'SERVICE' : (rType === RoomType.Lift || rType === RoomType.Staircase) ? 'CORE' : 'COMMON',
+        spaceUse: rType === RoomType.Balcony ? 'OUTDOOR' : rType === RoomType.ServiceShaft ? 'SERVICE' : unitId ? 'UNIT' : (rType === RoomType.Lift || rType === RoomType.Staircase) ? 'CORE' : 'COMMON',
         planningZone: r.planningZone,
         box: { x: r.rect.x, y: r.rect.y, w: r.rect.width, h: r.rect.height },
         ...(r.polygonPoints ? { polygonPoints: r.polygonPoints } : {}),
@@ -1582,7 +1588,11 @@ export function solveTypicalFloorSheet(
   for (const el of structure.stairs) addRoom(el, RoomType.Staircase);
   for (const el of structure.lobbies) addRoom({ ...el, tags: [...(el.tags ?? []), 'core:lobby'] }, RoomType.Corridor);
   for (const el of structure.corridors) addRoom({ ...el, tags: [...(el.tags ?? []), 'core:corridor'] }, RoomType.Corridor);
-  for (const el of structure.shafts) addRoom(el, RoomType.ServiceShaft);
+  const flatByRoomId = new Map(structure.flats.flatMap(flat => flat.rooms.map(room => [room.id, flat.id] as const)));
+  for (const el of structure.shafts) {
+    const served = el.tags?.find(tag => tag.startsWith(PLUMBING_RISER_TAG));
+    addRoom(el, RoomType.ServiceShaft, served ? flatByRoomId.get(served.slice(PLUMBING_RISER_TAG.length)) : undefined);
+  }
 
   const boundary = rectPolygon(envelope.x, envelope.y, envelope.w, envelope.h);
   const walls = generateApartmentWalls(rooms, floorId, boundary, true, config.architectureOptions?.guardHeightMm);
@@ -1642,7 +1652,9 @@ export function solveTypicalFloorSheet(
           (w.wallUse === 'INTERNAL_PARTITION' && r.type === RoomType.Kitchen && owner.type === RoomType.Utility);
       });
     const extWalls = walls.filter(w =>
-      (w.wallUse === 'EXTERNAL' || (isBath && w.wallUse === 'SHAFT') || hasOtsShaftWall(w) || (!isBath && r.spaceUse === 'UNIT' && hasOutdoorBalconyWall(w))) &&
+      (w.wallUse === 'EXTERNAL' || hasOtsShaftWall(w) ||
+        (isBath && !config.architectureOptions?.coordinatedWetWallLayout && w.wallUse === 'SHAFT') ||
+        (!isBath && r.spaceUse === 'UNIT' && hasOutdoorBalconyWall(w))) &&
       w.boundaryRole !== 'OPEN_BOUNDARY' &&
       w.boundaryRole !== 'PARAPET' &&
       w.roomIds.includes(r.id),
@@ -2908,6 +2920,7 @@ export function solveMultiSheetApartmentProject(
     irregularPlotBoundary: config.irregularPlotBoundary,
     galleryCoordinationMode: resolvedGalleryMode,
     includeStudyRoom: config.includeStudyRoom ?? false,
+    coordinatedWetWallLayout: config.architectureOptions?.coordinatedWetWallLayout,
   });
 
   if (!topology && config.rejectedTopologyHashes?.length) {
@@ -3047,6 +3060,7 @@ export function solveMultiSheetApartmentProject(
         referenceImage: config.referenceImage ? { name: config.referenceImage.name, mimeType: config.referenceImage.mimeType } : undefined,
         units: config.units ?? [],
         requireAreaTargets: config.requireAreaTargets,
+        ...(config.architectureOptions?.coordinatedWetWallLayout && { coordinatedWetWallLayout: true }),
         includeWindowChajjas: config.includeWindowChajjas ?? true,
         staggeredBalconies: resolvedGalleryMode === 'DOUBLE_HEIGHT_STAGGER',
         galleryCoordinationMode: resolvedGalleryMode,
@@ -3204,6 +3218,12 @@ export function solveMultiSheetApartmentProject(
     return issues.map(description => ({ code: 'MANDATORY_BRIEF_UNMET', source: 'GENERATION' as const,
       severity: 'CRITICAL' as const, description, floorId: floor.id, elementIds: [floor.id] }));
   });
+  const riserFootprint = (floor: Floor | undefined) => JSON.stringify((floor?.rooms ?? []).flatMap(room => {
+    const tag = room.tags.find(value => value.startsWith(PLUMBING_RISER_TAG));
+    return tag ? [[tag, room.x, room.y, room.width, room.height]] : [];
+  }).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+  const firstResidential = validatedBuilding.floors.find(floor => floor.apartmentUnits?.length);
+  const referenceRisers = config.architectureOptions?.coordinatedWetWallLayout ? riserFootprint(firstResidential) : undefined;
   const generationReport = createGenerationReport(validatedBuilding, validationReport, {
     strategy: !topology ? 'LEGACY_FALLBACK' : topology.chosen.score.feasible ? 'VALIDATED_TOPOLOGY' : 'BEST_EFFORT_TOPOLOGY',
     selectedFamily: topology?.chosen.familyId,
@@ -3215,6 +3235,21 @@ export function solveMultiSheetApartmentProject(
     areaTargetDiagnostic: schedule.areaTargetDiagnostic,
   }, [
     ...mandatoryFindings,
+    ...(config.architectureOptions?.coordinatedWetWallLayout ? validatedBuilding.floors.flatMap<Omit<ApartmentGenerationViolation, 'rank'>>(floor => {
+      if (!floor.apartmentUnits?.length) return [];
+      if (riserFootprint(floor) !== referenceRisers) return [{
+        code: 'WET_WALL_RISER_ALIGNMENT_MISMATCH', source: 'GENERATION' as const, severity: 'CRITICAL' as const,
+        description: 'The architectural riser positions could not be carried through every residential storey.',
+        floorId: floor.id, elementIds: [floor.id],
+      }];
+      const reservations = new Set(floor.rooms.flatMap(room => room.tags.filter(tag => tag.startsWith(PLUMBING_RISER_TAG))));
+      const missing = floor.rooms.filter(room => room.type === RoomType.Bathroom && !room.tags.some(tag =>
+        tag.startsWith('apt-room:') && reservations.has(PLUMBING_RISER_TAG + tag.slice('apt-room:'.length))));
+      if (!missing.length) return [];
+      return [{ code: 'WET_WALL_RISER_RESERVATION_INCOMPLETE', source: 'GENERATION' as const, severity: 'WARNING' as const,
+        description: 'Some wet rooms had no riser reservation that preserved room area and opening clearance.',
+        floorId: floor.id, elementIds: missing.map(room => room.id) }];
+    }) : []),
     ...(mixedCountConflict ? [{
       code: 'MANDATORY_BRIEF_UNMET', source: 'GENERATION' as const, severity: 'CRITICAL' as const,
       description: `The brief names ${parsedMixed!.length} flats but the sized unit schedule has ${existingTypes.length} slots. Match the prompt and schedule to preserve every carpet target.`,

@@ -45,6 +45,7 @@ export type ObjectiveId =
   | 'FACADE_ALLOCATION'
   | 'CORE_EFFICIENCY'
   | 'ROOM_PROPORTION'
+  | 'WET_WALL_LAYOUT'
   | 'PREFERENCE_SATISFACTION';
 
 export interface ObjectiveScore {
@@ -113,6 +114,7 @@ const PRESENTATION_WEIGHTS: Record<ObjectiveId, number> = {
   FACADE_ALLOCATION: 2.0,
   CORE_EFFICIENCY: 1.0,
   ROOM_PROPORTION: 1.0,
+  WET_WALL_LAYOUT: 1.0,
   PREFERENCE_SATISFACTION: 1.5,
 };
 
@@ -121,6 +123,7 @@ export interface ScoreInput {
   readonly partition: TopologyPartition;
   readonly program: ArchitecturalProgram;
   readonly flatsWithoutEntrance: readonly string[];
+  readonly coordinatedWetWallLayout?: boolean;
 }
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
@@ -172,7 +175,8 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
   });
 
   // A bathroom is ventilated when it touches the envelope or a real shaft/void.
-  const ventSpaces = structure.shafts.map(s => rectBox(s.rect));
+  const ventSpaces = structure.shafts.filter(shaft => !input.coordinatedWetWallLayout || shaft.architecturalRole === 'OPEN_TO_SKY_VOID')
+    .map(s => rectBox(s.rect));
   const wetRooms = allRooms.filter(isWet);
   const unventilated = wetRooms.filter(room => {
     if (onFacade(room, env)) return false;
@@ -335,6 +339,16 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     score: clamp01((daylightRatio - 0.5) / 0.45),
     explanation: `${daylit.length} of ${habitable.length} habitable rooms touch the external facade (${(daylightRatio * 100).toFixed(0)}%)`,
   });
+  if (input.coordinatedWetWallLayout) {
+    const publicRooms = allRooms.filter(room => room.type === 'living' || room.type === 'kitchen');
+    const publicOnFacade = publicRooms.filter(room => onFacade(room, env)).length;
+    const interiorWetRooms = wetRooms.filter(room => !onFacade(room, env)).length;
+    objectives.push({
+      id: 'WET_WALL_LAYOUT',
+      score: 0.7 * publicOnFacade / Math.max(1, publicRooms.length) + 0.3 * interiorWetRooms / Math.max(1, wetRooms.length),
+      explanation: `${publicOnFacade}/${publicRooms.length} living rooms and kitchens touch the facade; ${interiorWetRooms}/${wetRooms.length} wet rooms are interior.`,
+    });
+  }
 
   const otsArea = otsAreaOf(partition);
   const wetVentilatedByFacade = wetRooms.filter(r => onFacade(r, env)).length;
@@ -503,7 +517,9 @@ export function scoreCandidate(input: ScoreInput): CandidateScore {
     hardConstraints,
     objectives,
     weightedTotal,
-    emphasized: PRIORITY_EMPHASIS[program.preferences.priority],
+    emphasized: input.coordinatedWetWallLayout
+      ? ['WET_WALL_LAYOUT', ...PRIORITY_EMPHASIS[program.preferences.priority]]
+      : PRIORITY_EMPHASIS[program.preferences.priority],
     bedroomQualityTier,
   };
 }

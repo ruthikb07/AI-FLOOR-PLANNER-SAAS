@@ -62,6 +62,7 @@ export interface ApartmentPlanRoom {
   readonly type: string;
   readonly rect: ApartmentRectMm;
   readonly planningZone?: Room["planningZone"];
+  readonly polygonPoints?: readonly import('@ai-floor-planner/core').Point[];
   readonly bathroomOwnerRoomId?: string;
 }
 

@@ -49,7 +49,8 @@ export function createArgonRequest(data: ProjectSetupWizardData, projectId: stri
 
   return {
     structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
-    architectureOptions: { liftSystem: 'UNSPECIFIED' },
+    architectureOptions: { liftSystem: 'UNSPECIFIED',
+      ...(data.coordinatedWetWallLayout && { coordinatedWetWallLayout: true }) },
     regulatoryContext: {
       authorityType: data.authorityType, congestionZone: data.congestionZone,
       roadWidthM: data.roadWidthM, plotAreaSqm: survey ? survey.boundary.areaMm2 / 1e6 : data.plotWidthM * data.plotDepthM,

@@ -73,6 +73,7 @@ export interface ProjectSetupWizardData {
   galleryCoordinationMode?: GalleryCoordinationMode;
   includeDiningHall?: boolean;
   includeStudyRoom?: boolean;
+  coordinatedWetWallLayout?: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };

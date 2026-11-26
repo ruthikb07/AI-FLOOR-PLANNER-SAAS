@@ -1,4 +1,4 @@
-import { architecturalBoundaryRole, architecturalSpaceRole, WallType, type Room, type Wall, type Polygon, type Point } from '@ai-floor-planner/core';
+import { architecturalBoundaryRole, architecturalSpaceRole, PLUMBING_RISER_TAG, WallType, type Room, type Wall, type Polygon, type Point } from '@ai-floor-planner/core';
 import { polygonSignedArea, containsPolygon } from './polygon';
 import { matchEdgeToArcSpec } from './curves';
 
@@ -135,7 +135,9 @@ export function generateApartmentWalls(rooms: readonly Room[], floorId: string, 
       const hasPerimeterRecess = uniqueRooms.some(r => architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' && r.tags?.includes('recess:perimeter'));
       const external = ids.length === 1 || (nonVoidOwners.length === 1 && hasPerimeterRecess);
       const isUnitSeparation = unitIds.length > 1;
-      const isInternalShaftRoom = (r: Room) => !r.tags?.includes('recess:perimeter') && (r.spaceUse === 'SERVICE' || r.spaceUse === 'VOID' || architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' || architecturalSpaceRole(r) === 'SERVICE_SHAFT');
+      const isInternalShaftRoom = (r: Room) => !r.tags?.includes('recess:perimeter') &&
+        !r.tags?.some(tag => tag.startsWith(PLUMBING_RISER_TAG)) &&
+        (r.spaceUse === 'SERVICE' || r.spaceUse === 'VOID' || architecturalSpaceRole(r) === 'OPEN_TO_SKY_VOID' || architecturalSpaceRole(r) === 'SERVICE_SHAFT');
       const ventilates = owners.some(e => isInternalShaftRoom(e.room));
       const effectiveUses = hasPerimeterRecess ? nonVoidOwners.map(r => r.spaceUse) : uses;
       const use: NonNullable<Wall['wallUse']> = isUnitSeparation ? 'UNIT_SEPARATION' : ventilates ? 'SHAFT' : effectiveUses.includes('OUTDOOR') ? 'BALCONY' : effectiveUses.includes('CORE') ? 'CORE' : effectiveUses.includes('COMMON') && unitIds.length ? 'COMMON_CORRIDOR' : external ? 'EXTERNAL' : 'INTERNAL_PARTITION';

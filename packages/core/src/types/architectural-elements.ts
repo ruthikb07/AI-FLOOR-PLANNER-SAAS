@@ -64,8 +64,11 @@ export interface ArchitecturalFloorModel {
 }
 export interface ArchitecturalGenerationOptions {
   readonly guardHeightMm?: number;
+  readonly coordinatedWetWallLayout?: boolean;
   readonly liftSystem?:
     | "UNSPECIFIED"
     | "MACHINE_ROOM_LESS"
     | "MACHINE_ROOM_REQUIRED";
 }
+
+export const PLUMBING_RISER_TAG = 'plumbing:serves:';

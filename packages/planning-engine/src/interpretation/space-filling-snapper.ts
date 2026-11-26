@@ -371,7 +371,7 @@ export function solveOrthogonalSpaceFillingApartment(
     architecturalRole: b.w >= 3500 && b.h >= 3500 ? 'OPEN_TO_SKY_VOID' : 'SERVICE_SHAFT',
     name: (b.w >= 3500 && b.h >= 3500)
       ? 'Internal Open-to-Sky (OTS) Central Courtyard / Atrium'
-      : `MEP / Plumbing Duct 0${i + 1}`,
+      : `Core Service Shaft 0${i + 1}`,
     rect: { x: b.x, y: b.y, width: b.w, height: b.h },
     assignedFlatId: null,
   }));

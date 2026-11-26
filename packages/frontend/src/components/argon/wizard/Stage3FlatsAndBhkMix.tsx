@@ -243,6 +243,12 @@ export const Stage3FlatsAndBhkMix: React.FC = () => {
             })}
           </div>
 
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={Boolean(wizard.coordinatedWetWallLayout)} onChange={event =>
+              updateWizard({ coordinatedWetWallLayout: event.target.checked })} />
+            Prefer exterior living and wet-wall risers
+          </label>
+
           <fieldset className="grid gap-3 rounded-lg border border-argon-border px-3 py-2">
             <legend className="px-1 text-sm font-semibold">Carpet area acceptance</legend>
             <label className="flex items-center gap-2 text-sm">

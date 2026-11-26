@@ -102,6 +102,7 @@ export function furnishRoom(
   if (
     room.type === RoomType.Balcony ||
     room.type === RoomType.Utility ||
+    room.type === RoomType.ServiceShaft ||
     room.type === RoomType.Corridor ||
     room.type === RoomType.Foyer ||
     /BALCONY|SIT[ -]?OUT|TERRACE|PASSAGE|CORRIDOR|FOYER|VESTIBULE|LOBBY|AISLE/.test(rName)

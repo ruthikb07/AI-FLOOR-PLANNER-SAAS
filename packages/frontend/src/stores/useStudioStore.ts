@@ -69,6 +69,7 @@ export interface WizardState {
   galleryCoordinationMode: GalleryCoordinationMode;
   includeDiningHall: boolean;
   includeStudyRoom: boolean;
+  coordinatedWetWallLayout?: boolean;
   aiPrompt: string;
   referenceSketchName?: string;
   referenceImage?: { name: string; mimeType: string; dataUrl: string };
@@ -499,6 +500,7 @@ export const studioStoreActions = {
         staggeredBalconies: (wizard.galleryCoordinationMode ?? 'DOUBLE_HEIGHT_STAGGER') === 'DOUBLE_HEIGHT_STAGGER',
         includeDiningHall: wizard.includeDiningHall ?? true,
         includeStudyRoom: wizard.includeStudyRoom ?? false,
+        coordinatedWetWallLayout: wizard.coordinatedWetWallLayout ?? false,
         aiPrompt: wizard.aiPrompt,
         referenceSketchName: wizard.referenceSketchName,
         referenceImage: wizard.referenceImage,

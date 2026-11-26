@@ -113,6 +113,7 @@ export interface GenerateConceptsInput {
   readonly irregularPlotBoundary?: IrregularPlotBoundary;
   readonly galleryCoordinationMode?: GalleryCoordinationMode;
   readonly includeStudyRoom?: boolean;
+  readonly coordinatedWetWallLayout?: boolean;
 }
 
 export interface RejectedCandidate {
@@ -269,6 +270,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
         irregularPlotBoundary: input.irregularPlotBoundary,
         galleryCoordinationMode: input.galleryCoordinationMode,
         includeStudyRoom: input.includeStudyRoom,
+        coordinatedWetWallLayout: input.coordinatedWetWallLayout,
       });
     } catch (error) {
       rejected.push({
@@ -285,6 +287,7 @@ export function generateDesignConcepts(input: GenerateConceptsInput): GenerateCo
       partition: topology.partition,
       program,
       flatsWithoutEntrance: assembled.flatsWithoutEntrance,
+      coordinatedWetWallLayout: input.coordinatedWetWallLayout,
     });
 
     if (!score.feasible) {
