@@ -2765,7 +2765,8 @@ export function solveMultiSheetApartmentProject(
 
   const specifiedUnits = config.units ?? [];
   // On an irregular site, complete advisory unit targets also guide how much of the surveyed capacity to occupy.
-  const aggregateCarpetTargetSqFt = (config.requireAreaTargets || irregularSite) && specifiedUnits.length === config.flatsPerFloor
+  const fitAdvisoryIrregularArea = Boolean(irregularSite && !config.requireAreaTargets);
+  const aggregateCarpetTargetSqFt = (config.requireAreaTargets || fitAdvisoryIrregularArea) && specifiedUnits.length === config.flatsPerFloor
     && specifiedUnits.every(unit => unit.targetCarpetSqFt && unit.targetCarpetSqFt > 0)
     ? specifiedUnits.reduce((total, unit) => total + (unit.targetCarpetSqFt ?? 0), 0)
     : undefined;
@@ -2788,7 +2789,7 @@ export function solveMultiSheetApartmentProject(
     liftCount: promptIntent?.mandatory.singleLift ? 1 : 2 });
   const minimumProgramGrossM2 = (config.units ?? []).reduce((area, unit) =>
     area + (FLAT_AREA_BOUNDS_SQM[unit.bhkType]?.min ?? 0), 0) + coreAcross * coreRun / 1e6;
-  if ((!recovery?.unitGrossAreasMm2 || irregularSite) && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
+  if ((!recovery?.unitGrossAreasMm2 || fitAdvisoryIrregularArea) && effectiveTargetSqFt !== undefined && effectiveTargetSqFt > 0 && effectiveAreaScope) {
     const coreW = 7800;
     const bedroomBalconiesRequested = promptIntent?.preferences.bedroomBalconies === 'ALL_BEDROOMS';
     const minHabitableW = Math.min(permissibleEnvelope.w,
@@ -3079,12 +3080,10 @@ export function solveMultiSheetApartmentProject(
     updatedAt: new Date().toISOString(),
   };
 
-  const buildingWithFurniture = populateCanonicalFurniture(rawBuilding);
-
   // Architectural generation defers structure by default. Callers requesting
   // coordinated preliminary framing pass `structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE'`.
   const deferredStructure = config.structuralLayoutMode !== 'PROVISIONAL_EXISTING_PROFILE';
-  const architecturalBuilding = deferredStructure ? { ...buildingWithFurniture, floors: buildingWithFurniture.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...buildingWithFurniture.metadata, tags: [...(buildingWithFurniture.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : buildingWithFurniture;
+  const architecturalBuilding = deferredStructure ? { ...rawBuilding, floors: rawBuilding.floors.map(f => ({ ...f, columns: [], beams: [] })), beams: [], metadata: { ...rawBuilding.metadata, tags: [...(rawBuilding.metadata.tags ?? []), 'STRUCTURAL_DESIGN_DEFERRED'] } } : rawBuilding;
   const placedStructure = deferredStructure ? architecturalBuilding : synthesizeStructuralFraming(architecturalBuilding);
   const auditOptions = { autoCorrect: false, columnMergeThresholdMm: MIN_PROVISIONAL_COLUMN_SPACING_MM };
   const audit = validateAndRepairBuildingGeometry(placedStructure, auditOptions);
@@ -3294,10 +3293,17 @@ export function solveMultiSheetApartmentProject(
     (recovery?.complianceAttempt ?? 0) + 1,
   );
 
-  const finalizeWithMep = (res: MultiSheetApartmentResult): MultiSheetApartmentResult => ({
-    ...res,
-    building: res.building.mepEngineering ? res.building : withMepEngineering(res.building),
-  });
+  const finalizeWithMep = (res: MultiSheetApartmentResult): MultiSheetApartmentResult => {
+    if (recovery?.skipComplianceGate) return res;
+    // Geometry recovery can move openings, so furnish the final accepted floor and synchronize its sheet.
+    const furnished = populateCanonicalFurniture(res.building);
+    const byId = new Map(furnished.floors.map(floor => [floor.id, floor]));
+    return {
+      ...res,
+      sheets: res.sheets.map(sheet => sheet.floor ? { ...sheet, floor: byId.get(sheet.floor.id) ?? sheet.floor } : sheet),
+      building: furnished.mepEngineering ? furnished : withMepEngineering(furnished),
+    };
+  };
 
   const tolerance = (config.areaAcceptanceTolerancePercent ?? 5) / 100;
   const areaError = (candidate: MultiSheetApartmentResult) => Math.max(0, ...(candidate.schedule.floorAreas ?? [])
@@ -3316,10 +3322,10 @@ export function solveMultiSheetApartmentProject(
       const targetTotal = targetMm2.reduce((sum, area) => sum + area, 0);
       const scaleToCapacity = (value: number) => Math.max(0.75, Math.min(1.25, value));
       const initialCarpet = finalResult.schedule.floorAreas?.[0]?.carpetMm2 ?? 0;
-      let areaEnvelopeScale = irregularSite && initialCarpet > 0
+      let areaEnvelopeScale = fitAdvisoryIrregularArea && initialCarpet > 0
         ? scaleToCapacity(Math.sqrt(targetTotal / initialCarpet)) : undefined;
       let previousError = Infinity;
-      for (let attempt = 0; attempt < (irregularSite ? 6 : 4); attempt++) {
+      for (let attempt = 0; attempt < (fitAdvisoryIrregularArea ? 6 : 4); attempt++) {
         try {
           const sized = solveMultiSheetApartmentProject(rawConfig, undefined,
             { skipComplianceGate: true, unitGrossAreasMm2: grossAreas, areaEnvelopeScale });
@@ -3330,7 +3336,7 @@ export function solveMultiSheetApartmentProject(
           }
           const floor = sized.schedule.floorAreas?.[0];
           const measured = floor?.units;
-          if (!measured || measured.length !== grossAreas.length || (!irregularSite && error >= previousError - 0.0001)) break;
+          if (!measured || measured.length !== grossAreas.length || (!fitAdvisoryIrregularArea && error >= previousError - 0.0001)) break;
           previousError = error;
           grossAreas = grossAreas.map((gross, index) => Math.max(targetMm2[index]!,
             gross + (targetMm2[index]! - measured[index]!.carpetMm2) / 0.8));
@@ -3443,7 +3449,7 @@ export function solveMultiSheetApartmentProject(
         const nextBlocked = generationBlockingFindings(nextEvaluated.building, nextEvaluated.validationReport).length;
         const currentBlocked = generationBlockingFindings(finalResult.building, finalResult.validationReport).length;
         const isBetter = nextBlocked < currentBlocked || (nextBlocked === currentBlocked && (
-          !(irregularSite && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult)
+          !(fitAdvisoryIrregularArea && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult)
         ) && (
           nextCompliance.score > finalCompliance.score ||
           (nextCompliance.score === finalCompliance.score &&
@@ -3454,7 +3460,7 @@ export function solveMultiSheetApartmentProject(
           finalCompliance = nextCompliance;
         }
         if (nextCompliance.passed && nextBlocked === 0 &&
-          (!(irregularSite && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult))) {
+          (!(fitAdvisoryIrregularArea && aggregateCarpetTargetSqFt) || areaError(nextEvaluated) <= areaError(finalResult))) {
           return finalizeWithMep(nextEvaluated);
         }
       } catch {
@@ -3464,7 +3470,7 @@ export function solveMultiSheetApartmentProject(
   }
 
   if (topology && !topology.chosen.score.feasible && !recovery?.legacyOnly && !config.rejectedTopologyHashes?.length &&
-    !(irregularSite && aggregateCarpetTargetSqFt) &&
+    !(fitAdvisoryIrregularArea && aggregateCarpetTargetSqFt) &&
     finalResult.building.metadata.generationBrief?.buildingMassingShape !== 'PINWHEEL_CLUSTER') {
     // One bounded comparison after repair. Never replace a previously conserved
     // solution with an unassigned/overlapping candidate solely to avoid fallback.

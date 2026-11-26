@@ -12,6 +12,6 @@ The baseline was `c2caa172881db01a47117f688a796ab7c1893fee` on `feat/phase5-prof
 | E | Existing 300-second workflow plus isolated disk storage, configured loopback ports and project-specific archive assertions. [Performance evidence](PHASE5_PERFORMANCE_REPORT.md) |
 | F and G | Production browser matrix and per-control evidence identify verified and open scope. [Browser matrix](PHASE5_FULL_BROWSER_MATRIX.md) [Control and export inventory](PHASE5_CONTROL_INVENTORY.md) |
 | H | Independent IFC parser coverage retained. Desktop IFC verification remains open. [Native IFC status](NATIVE_IFC_REOPEN_VERIFICATION.md) |
-| I and J | Existing checks are retained. The dedicated branch uses the independent Chromium, planning and IFC jobs. |
+| I and J | The first dedicated-branch run passed the 288-case benchmark and 22 independent IFC readbacks. The combined job found a regression in the historical strict oblique brief. Its three strict-site variants passed locally after limiting the new envelope feedback to advisory targets. [First Phase 5.1 run](https://github.com/ruthikb07/AI-FLOOR-PLANNER-SAAS/actions/runs/45657646226) |
 
 No Phase 6 changes are included.

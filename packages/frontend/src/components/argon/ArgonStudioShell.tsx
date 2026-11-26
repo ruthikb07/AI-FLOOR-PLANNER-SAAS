@@ -38,6 +38,7 @@ import { exportProjectAsJsonFile, projectStorage } from '../../services/storage'
 import {
   buildAlternativeExhaustionExplanation,
   compareCanonicalBuildingAlternatives,
+  resolveExplorationConfigFromControls,
   verifyAlternativeRespectsControls,
   coordinateBuildingFacade,
   evaluateStudioLayoutScore,
@@ -369,13 +370,21 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         }
       };
       if (target !== 'intake') assertUnlocked();
+      const requestedConfig = {
+        ...createArgonRequest(data, projectId),
+        generationSeed: seed,
+        rejectedTopologyHashes: [...rejectedHashes],
+      };
+      const config = target === 'compare' && (alternativeControls?.preserveCore || alternativeControls?.preserveExteriorFootprint)
+        ? resolveExplorationConfigFromControls({ ...requestedConfig, autoExploreNovelShape: false }, before, {
+          preserveCore: alternativeControls.preserveCore,
+          preserveExteriorFootprint: alternativeControls.preserveExteriorFootprint,
+          changeInternalLayout: alternativeControls.changeInternalLayout,
+        }, seed, concepts.filter(concept => concept.building.projectId === projectId).map(concept => concept.building))
+        : requestedConfig;
       const result = await planInWorker({
         generationRunId: crypto.randomUUID(),
-        config: {
-          ...createArgonRequest(data, projectId),
-          generationSeed: seed,
-          rejectedTopologyHashes: [...rejectedHashes],
-        },
+        config,
       }, controller.signal, setPipelineProgress);
       if (activeRun.current !== controller) return;
       if (editor.engine.getBuilding() !== before) {
@@ -423,7 +432,9 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
         if (duplicateMatch) {
           setConceptNotice(
             buildAlternativeExhaustionExplanation(prior.length, prior.length + 1, {
-              preserveExteriorFootprint: Boolean(data.buildingMassingShape && data.buildingMassingShape !== 'AUTO'),
+              ...alternativeControls,
+              preserveExteriorFootprint: alternativeControls?.preserveExteriorFootprint ||
+                Boolean(data.buildingMassingShape && data.buildingMassingShape !== 'AUTO'),
             }),
           );
         } else {

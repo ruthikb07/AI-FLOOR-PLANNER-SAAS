@@ -26,7 +26,7 @@ import {
   type Room,
   type SiteZone,
 } from '@ai-floor-planner/core';
-import { pointInPolygon, polygonBoundingBox, segmentIntersection } from '@ai-floor-planner/geometry-engine';
+import { computeDoorSwingPolygon, pointInPolygon, polygonBoundingBox, polygonsOverlap, rotatePoint, segmentIntersection } from '@ai-floor-planner/geometry-engine';
 import { buildFurniturePolygonContainmentGuard } from '../catalog/shape-geometry-synthesizer';
 
 interface DoorClearanceBox {
@@ -111,6 +111,10 @@ export function furnishRoom(
   const areaM2 = room.area / 1_000_000;
 
   const doorBoxes = getRoomDoorClearanceBoxes(room, floor);
+  const doorSweeps = floor.doors.filter(door => door.connectsRooms.includes(room.id)).flatMap(door => {
+    const host = floor.walls.find(wall => wall.id === door.wallId);
+    return host ? [computeDoorSwingPolygon(door, host)] : [];
+  });
 
   // Compute each room's Inner Clear Box by shrinking the room centerline inward
   // by wallThickness / 2 + clearance (85 mm for tiled bathroom partitions, 155 mm for main rooms)
@@ -178,6 +182,16 @@ export function furnishRoom(
     // Check door clearance collision
     if (!force && collidesWithDoorClearance(candBox, doorBoxes)) {
       return;
+    }
+    if (doorSweeps.length) {
+      const x = Math.round(clampedX);
+      const y = Math.round(clampedY);
+      const width = Math.round(w);
+      const depth = Math.round(d);
+      const center = { x: x + width / 2, y: y + depth / 2 };
+      const bounds = rectToPolygon(x, y, width, depth);
+      const renderedFootprint = { points: bounds.points.map(point => rotatePoint(point, rot, center)) };
+      if (doorSweeps.some(sweep => polygonsOverlap(sweep, renderedFootprint))) return;
     }
 
     // Strict furniture-to-furniture non-overlap & bed-to-wardrobe >= 650 mm aisle check

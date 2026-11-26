@@ -54,6 +54,8 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter @ai-floor-planner/frontend exec playwright install --with-deps chromium
       - name: Production Chromium E2E repair & CAD Studio tests
+        env:
+          RH_TEST_SOFTWARE_ORBIT_BUDGET: '1'
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:repair
       - name: Real Chromium WebGL context recovery tests
         run: pnpm --filter @ai-floor-planner/frontend run test:e2e:webgl

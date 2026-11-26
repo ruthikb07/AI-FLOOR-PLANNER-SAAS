@@ -210,6 +210,7 @@ test('the wizard generates and saves a canonical oblique survey', async ({ page,
   const diskSave = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/api/v1/local-projects'));
   await page.getByTestId('topbar-save-local').click();
   expect((await diskSave).status()).toBe(200);
+  await expect(page.getByTestId('local-save-toast')).toContainText('to local disk');
   const restored = await request.get('/api/v1/local-projects/' + payload.building.projectId);
   expect(restored.ok()).toBe(true);
   const persisted = await restored.json() as { building: Building };

@@ -730,10 +730,13 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
       ? String(rawGl.getParameter(dbgInfo.UNMASKED_RENDERER_WEBGL) ?? '')
       : String(rawGl.getParameter(rawGl.RENDERER) ?? '');
     const isSoftwareWebGL = /swiftshader|llvmpipe|software|basic render driver/i.test(unmaskedRenderer);
+    let orbitInteraction = false;
+    let reducedOrbitBuffer = false;
     const resizeDrawingBuffer = (width: number, height: number) => {
-      // Keep CSS dimensions and camera aspect while bounding SwiftShader fill cost.
+      // Software orbit trades back-buffer resolution for responsive input.
+      const pixelBudget = reducedOrbitBuffer ? 180_000 : 500_000;
       const pixelRatio = isSoftwareWebGL
-        ? Math.min(1, Math.sqrt(500_000 / (width * height)))
+        ? Math.min(1, Math.sqrt(pixelBudget / (width * height)))
         : Math.min(window.devicePixelRatio || 1, 1.5);
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(width, height);
@@ -911,6 +914,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
         remainingFrames -= 1;
       }
 
+      if (isSoftwareWebGL) {
+        const useOrbitBuffer = orbitInteraction || (reducedOrbitBuffer && remainingFrames > 0);
+        if (useOrbitBuffer !== reducedOrbitBuffer) {
+          reducedOrbitBuffer = useOrbitBuffer;
+          resizeDrawingBuffer(Math.max(1, host.clientWidth), Math.max(1, host.clientHeight));
+        }
+      }
+
       if (renderNow() && (remainingFrames > 0 || explodeAnimating)) {
         rafId = requestAnimationFrame(tick);
       }
@@ -948,8 +959,14 @@ export const ThreeBuildingScene: React.FC<ThreeBuildingSceneProps> = ({
     const onControlsChange = () => {
       if (!updatingOrbit) scheduleRender();
     };
-    const onControlsStart = () => scheduleRender(24);
-    const onControlsEnd = () => scheduleRender(16);
+    const onControlsStart = () => {
+      orbitInteraction = true;
+      scheduleRender(24);
+    };
+    const onControlsEnd = () => {
+      orbitInteraction = false;
+      scheduleRender(16);
+    };
     controls.addEventListener('change', onControlsChange);
     controls.addEventListener('start', onControlsStart);
     controls.addEventListener('end', onControlsEnd);

@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { EXACT_SQMM_PER_SQFT, type Building, type IfcExchangeManifest, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { EXACT_SQMM_PER_SQFT, RoomType, rectToPolygon, type Building, type IfcExchangeManifest, type MultiSheetApartmentConfig } from '@ai-floor-planner/core';
+import { isDoorSwingClear, openingFitsApartmentWall, polygonBoundingBox, rotatePoint } from '@ai-floor-planner/geometry-engine';
 import { auditFloorFunctionalQuality, compareCanonicalBuildingAlternatives } from '@ai-floor-planner/planning-engine';
 
 test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
@@ -9,6 +10,7 @@ test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader'] } });
 const fixtures = [
   { id: 1, name: 'Residential bungalow', width: 28, depth: 24, floors: 2, mix: [0, 0, 0, 1], bungalow: true },
   { id: 2, name: 'Compact apartment', width: 18.5, depth: 25, floors: 1, mix: [0, 2, 0, 0] },
+  { id: 3, name: 'Exact oblique survey', width: 39, depth: 34, floors: 1, mix: [0, 2, 0, 0], survey: true },
   { id: 4, name: 'Four-flat mixed BHK', width: 38, depth: 32, floors: 1, mix: [0, 2, 2, 0], stilt: true },
   { id: 5, name: 'Strict unequal targets', width: 42, depth: 34, floors: 1, mix: [0, 2, 2, 0], stilt: true, strict: true },
   { id: 6, name: 'Six-flat high density', width: 50, depth: 40, floors: 1, mix: [0, 6, 0, 0], stilt: true },
@@ -22,7 +24,7 @@ for (const fixture of fixtures) {
     const errors: string[] = [];
     const times: Record<string, number> = {};
     const row: Record<string, unknown> = { id: fixture.id, name: fixture.name, browserErrors: errors, processingMs: times,
-      surveyPreservation: 'not_applicable', furnitureClearance: 'unverified',
+      surveyPreservation: 'not_applicable',
       protectedRegeneration: 'not_run', cadEditing: 'not_run', visualReview: 'pending_review',
     };
     const start = Date.now();
@@ -40,12 +42,20 @@ for (const fixture of fixtures) {
         flatsPerFloor: flats, hasStiltParking: 'stilt' in fixture, roadFacing: 'South',
         authorityType: 'MUNICIPAL_CORPORATION', congestionZone: 'NON_CONGESTED',
         planCategory: 'bungalow' in fixture ? 'LUXURY_VILLA_BUNGALOW' : 'HIGH_RISE_APARTMENT',
+        buildingMassingShape: 'survey' in fixture ? 'COMPACT_DOUBLE_LOADED' : 'AUTO',
         bhkCounts: { '1BHK': fixture.mix[0], '2BHK': fixture.mix[1], '3BHK': fixture.mix[2], '4BHK': fixture.mix[3] },
         aiPrompt: '',
       });
       await page.goto('/');
       await page.getByTestId('cta-new-construction').click();
       await page.getByLabel('Project Title / Estate', { exact: false }).fill(fixture.name);
+      if ('survey' in fixture) {
+        await page.getByRole('button', { name: 'Surveyed boundary' }).click();
+        await page.getByLabel('Starting outline').selectOption('trapezoid');
+        await page.getByLabel('East A (m)').fill('-0.125');
+        await page.getByLabel('East A (m)').press('Tab');
+        await page.getByLabel('Road-facing edge').selectOption('2');
+      }
       for (const step of [2, 3]) await page.getByRole('button', { name: 'Continue to Step 0' + step }).click();
       const strict = 'strict' in fixture;
       const strictTargets = [720, 1050, 1420, 1750];
@@ -67,8 +77,13 @@ for (const fixture of fixtures) {
       await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
       const response = await generation;
       const { config } = response.request().postDataJSON() as { config: MultiSheetApartmentConfig };
-      expect(config).toMatchObject({ projectName: fixture.name, plotWidthMm: fixture.width * 1000,
-        plotDepthMm: fixture.depth * 1000, numTypicalFloors: fixture.floors, flatsPerFloor: flats });
+      expect(config).toMatchObject({ projectName: fixture.name, numTypicalFloors: fixture.floors, flatsPerFloor: flats });
+      if ('survey' in fixture) {
+        expect(config.surveyBoundary).toMatchObject({ points: expect.any(Array), roadEdge: 2 });
+        expect(config.surveyBoundary?.points[0]).toEqual({ x: -125, y: 0 });
+      } else {
+        expect(config).toMatchObject({ plotWidthMm: fixture.width * 1000, plotDepthMm: fixture.depth * 1000 });
+      }
       if (strict) expect(config.units?.map(unit => unit.targetCarpetSqFt)).toEqual(strictTargets);
       row.wizardInput = 'pass';
       row.requestedCarpetSqFt = config.units?.map(unit => unit.targetCarpetSqFt);
@@ -82,6 +97,10 @@ for (const fixture of fixtures) {
       const generated = await response.json() as { building: Building; validationReport: { isValid: boolean }; telemetry: { solverLatencyMs: number } };
       const { building } = generated;
       expect(generated.validationReport.isValid).toBe(true);
+      if ('survey' in fixture) {
+        expect(building.site.plotBoundary.points).toEqual(config.surveyBoundary?.points);
+        row.surveyPreservation = 'exact_signed_vertices';
+      }
       const floor = building.floors.find(candidate => candidate.apartmentUnits?.length)!;
       expect(floor.apartmentUnits).toHaveLength(flats);
       if ('stilt' in fixture) expect(building.floors.some(candidate => candidate.floorUse === 'STILT_PARKING')).toBe(true);
@@ -94,6 +113,28 @@ for (const fixture of fixtures) {
       const functional = auditFloorFunctionalQuality(floor);
       row.roomAccessAndCirculation = functional;
       expect(functional.passed, JSON.stringify(functional.findings)).toBe(true);
+      row.corridorBoundingBoxSpansMm = floor.rooms.filter(room => room.type === RoomType.Corridor).map(room => {
+        const bounds = polygonBoundingBox(room.boundary);
+        return { id: room.id, unitId: room.unitId, minimumBoxSpanMm: Math.min(bounds.width, bounds.height) };
+      });
+      const wallById = new Map(floor.walls.map(wall => [wall.id, wall]));
+      const poorFit = [...floor.doors, ...floor.windows].filter(opening => {
+        const host = wallById.get(opening.wallId);
+        return !host || !openingFitsApartmentWall(host, opening.position, opening.width);
+      });
+      const furniture = (floor.furniture ?? []).map(item => {
+        const origin = { x: item.xMm + item.widthMm / 2, y: item.yMm + item.depthMm / 2 };
+        const bounds = rectToPolygon(item.xMm, item.yMm, item.widthMm, item.depthMm);
+        return { roomId: item.roomId, boundary: { points: bounds.points.map(point => rotatePoint(point, item.rotationDeg, origin)) } };
+      });
+      const furnitureDoorIntersections = floor.doors.filter(door => {
+        const host = wallById.get(door.wallId);
+        const obstacles = furniture.filter(item => door.connectsRooms.includes(item.roomId)).map(item => item.boundary);
+        return host && !isDoorSwingClear(door, host, obstacles);
+      }).map(door => door.id);
+      row.openingClearance = { checkedHostFits: floor.doors.length + floor.windows.length, failedHostFits: poorFit.map(opening => opening.id) };
+      row.furnitureInterference = { furnitureCount: furniture.length, doorsWithModeledSwingIntersection: furnitureDoorIntersections };
+      expect(poorFit).toEqual([]);
       mark('generation');
 
       const gallery = page.getByRole('region', { name: 'Massing studies gallery' });
@@ -101,13 +142,17 @@ for (const fixture of fixtures) {
       await expect(preview).toBeVisible({ timeout: 45_000 });
       await preview.screenshot({ path: info.outputPath('plan.png') });
       row.visualReview = 'plan_captured';
-      if (strict) {
+      {
         const alternative = page.waitForResponse(candidate => candidate.url().endsWith('/api/v1/projects/generate'), { timeout: 100_000 });
         await gallery.getByRole('button', { name: 'Generate Massing Alternative' }).click();
         const alternativeResponse = await alternative;
         row.alternativeHttpStatus = alternativeResponse.status();
         if (alternativeResponse.ok()) {
           const next = (await alternativeResponse.json()).building as Building;
+          if (strict) {
+            expect(next.metadata.generationReport?.floorAreas?.every(nextFloor => nextFloor.units.length === flats &&
+              nextFloor.units.every(unit => unit.target?.status === 'ACHIEVED' && unit.target.tolerancePercent === 3))).toBe(true);
+          }
           const comparison = compareCanonicalBuildingAlternatives(building, next);
           row.topologyDiversity = comparison;
           if (comparison.meaningful) {
@@ -123,8 +168,6 @@ for (const fixture of fixtures) {
           await failure.getByRole('button', { name: 'Close' }).click();
         }
         await gallery.getByRole('button', { name: /Study 1/ }).click();
-      } else {
-        row.topologyDiversity = 'not_run';
       }
       await gallery.getByRole('button', { name: 'Open in CAD' }).click();
       row.candidateSelection = 'pass';
@@ -180,11 +223,13 @@ for (const fixture of fixtures) {
         candidate.url().endsWith('/api/v1/local-projects'));
       await page.getByTestId('topbar-save-local').click();
       expect((await saving).status()).toBe(200);
+      await expect(page.getByTestId('local-save-toast')).toContainText('to local disk');
       const restored = await request.get('/api/v1/local-projects/' + building.projectId);
       expect(restored.ok()).toBe(true);
       const saved = await restored.json() as { digest: string; building: Building };
       expect(saved.digest).toBe(manifest.source.sha256);
       expect(saved.building.version).toBe(manifest.source.revision);
+      if ('survey' in fixture) expect(saved.building.site.plotBoundary.points).toEqual(config.surveyBoundary?.points);
       await page.reload();
       await expect(page.getByTestId('project-switcher-trigger')).toContainText(fixture.name);
       row.saveReloadAndRevision = 'pass';

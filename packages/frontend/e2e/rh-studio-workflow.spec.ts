@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test';
 import type { Building } from '@ai-floor-planner/core';
 import { readFile } from 'node:fs/promises';
 
+const direct3D11 = process.platform === 'win32' && process.env.RH_TEST_DIRECT3D11 === '1';
 test.use({
-  launchOptions: { args: ['--enable-unsafe-swiftshader'] },
+  launchOptions: { args: direct3D11 ? ['--use-angle=d3d11', '--disable-software-rasterizer'] : ['--enable-unsafe-swiftshader'] },
   // Continuous screenshots force pixel readbacks during software WebGL orbit.
   trace: { mode: 'retain-on-failure', screenshots: false },
 });
@@ -109,17 +110,20 @@ test('current studio workflow through reference, massing and export', async ({ p
     const { width, height, dataset } = canvas as HTMLCanvasElement;
     return { width, height, softwareRasterizer: dataset.softwareRasterizer === 'true' };
   });
+  if (direct3D11) expect(rendering.softwareRasterizer).toBe(false);
   if (rendering.softwareRasterizer) expect(rendering.width * rendering.height).toBeLessThanOrEqual(500_000);
   markStage('tower_3d_first_frame');
   const box = (await tower.boundingBox())!;
   await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.45);
   await tower.evaluate(element => {
-    const metrics = { renders: 0, maxPerFrame: 0 };
+    const canvas = element as HTMLCanvasElement;
+    const metrics = { renders: 0, maxPerFrame: 0, minimumBufferPixels: canvas.width * canvas.height };
     let frameWrites = 0;
     let sampleFrames = 0;
     const observer = new MutationObserver(records => {
       metrics.renders += records.length;
       frameWrites += records.length;
+      metrics.minimumBufferPixels = Math.min(metrics.minimumBufferPixels, canvas.width * canvas.height);
     });
     observer.observe(element, { attributeFilter: ['data-draw-calls'] });
     const frame = () => {
@@ -134,12 +138,21 @@ test('current studio workflow through reference, massing and export', async ({ p
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.53, box.y + box.height * 0.5, { steps: 12 });
   await page.mouse.up();
-  const stats = () => page.evaluate(() => (window as Window & { towerMetrics?: { renders: number; maxPerFrame: number } }).towerMetrics!);
+  const stats = () => page.evaluate(() => (window as Window & {
+    towerMetrics?: { renders: number; maxPerFrame: number; minimumBufferPixels: number };
+  }).towerMetrics!);
   await expect.poll(async () => (await stats()).renders, { timeout: 25_000 }).toBeGreaterThan(8);
   const atOrbit = await stats();
   await page.waitForTimeout(1_250);
   const afterOrbit = await stats();
   expect(afterOrbit.maxPerFrame).toBe(1);
+  if (rendering.softwareRasterizer && process.env.RH_TEST_SOFTWARE_ORBIT_BUDGET === '1') {
+    expect(afterOrbit.minimumBufferPixels).toBeLessThanOrEqual(180_000);
+    await expect.poll(() => tower.evaluate(element => {
+      const canvas = element as HTMLCanvasElement;
+      return canvas.width * canvas.height;
+    }), { timeout: 25_000 }).toBe(rendering.width * rendering.height);
+  }
   markStage('tower_3d_orbit');
   console.log('RH_TOWER_OBSERVED', {
     atOrbit,

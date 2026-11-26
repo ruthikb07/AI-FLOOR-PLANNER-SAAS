@@ -11,13 +11,14 @@ import {
   Direction,
   EXACT_SQMM_PER_SQFT,
   exchangeRevision,
+  rectToPolygon,
   type AIProposalTelemetry,
   type Building,
   type ExportOptions,
   type IfcExchangeArtifact,
   type MultiSheetApartmentConfig,
 } from '@ai-floor-planner/core';
-import { polygonArea } from '@ai-floor-planner/geometry-engine';
+import { isDoorSwingClear, polygonArea, rotatePoint } from '@ai-floor-planner/geometry-engine';
 import {
   auditArchitecturalElementRealism,
   auditFloorFunctionalQuality,
@@ -354,6 +355,21 @@ describe('Phase 5 real-project acceptance', () => {
       expect(Math.abs(eff.planarDeltaMm2)).toBeLessThan(0.001);
       const func = auditFloorFunctionalQuality(residentialFloor);
       expect(func.passed).toBe(true);
+      if (briefName === '2-compact-tight-urban-plot' || briefName === '6-high-density-six-flats') {
+        const furniture = residentialFloor.furniture ?? [];
+        expect(furniture.length).toBeGreaterThan(0);
+        const obstacles = furniture.map(item => {
+          const center = { x: item.xMm + item.widthMm / 2, y: item.yMm + item.depthMm / 2 };
+          const footprint = rectToPolygon(item.xMm, item.yMm, item.widthMm, item.depthMm);
+          return { roomId: item.roomId, boundary: { points: footprint.points.map(point => rotatePoint(point, item.rotationDeg, center)) } };
+        });
+        const blocked = residentialFloor.doors.filter(door => {
+          const host = residentialFloor.walls.find(wall => wall.id === door.wallId);
+          return host && !isDoorSwingClear(door, host,
+            obstacles.filter(item => door.connectsRooms.includes(item.roomId)).map(item => item.boundary));
+        });
+        expect(blocked.map(door => door.id)).toEqual([]);
+      }
 
       // 2. Architectural element realism (balcony parapets, open stilt parking, door jamb returns, 0 unrequested machine rooms)
       for (const floor of building.floors) {
