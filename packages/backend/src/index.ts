@@ -55,7 +55,13 @@ export {
   loadLocalProject,
   readLocalProjectSourceCad,
   deleteLocalProject,
+  listProjectEngineeringDocuments,
+  saveProjectEngineeringDocument,
+  loadProjectEngineeringDocument,
+  deleteProjectEngineeringDocument,
   type LocalProjectManifest,
   type SaveLocalProjectInput,
   type LoadedLocalProject,
+  type ProjectEngineeringDocumentMeta,
+  type SaveProjectEngineeringDocumentInput,
 } from './services/local-project-store.js';

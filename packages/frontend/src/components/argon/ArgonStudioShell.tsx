@@ -66,6 +66,9 @@ import {
 
 const LazyBuilding3DCustomizer = lazy(() => import('./Building3DCustomizer'));
 const BimStudio = lazy(() => import('./BimStudio'));
+const CotaWorkspace = lazy(() => import('./CotaWorkspace'));
+const ModelCoordinationWorkspace = lazy(() => import('./ModelCoordinationWorkspace'));
+const ProjectFilesWorkspace = lazy(() => import('./ProjectFilesWorkspace'));
 const ProjectSetupWizard = lazy(async () => ({ default: (await import('./ProjectSetupWizard')).ProjectSetupWizard }));
 const StructuralCADWorkspace = lazy(async () => ({ default: (await import('./StructuralCADWorkspace')).StructuralCADWorkspace }));
 const ExportCenterWorkspace = lazy(async () => ({ default: (await import('./ExportCenterWorkspace')).ExportCenterWorkspace }));
@@ -75,10 +78,13 @@ export type ArgonWorkspaceId =
   | 'concepts'
   | 'library'
   | 'cad_2d'
+  | 'pro_cad'
   | 'edit_plan'
   | 'isometric'
   | 'building_3d'
   | 'bim'
+  | 'coordination'
+  | 'project_files'
   | 'structural_cad'
   | 'engineering'
   | 'export';
@@ -88,10 +94,13 @@ const workspaceTitles: Record<ArgonWorkspaceId, string> = {
   concepts: 'Massing Studies',
   library: 'Recent Projects',
   cad_2d: '2D Architectural CAD',
+  pro_cad: 'Professional CAD 2D/3D',
   edit_plan: 'Wall & Room Editor',
   isometric: 'Floor Cutaway 3D',
   building_3d: 'Tower 3D',
   bim: 'BIM Studio',
+  coordination: 'Model Coordination & BCF',
+  project_files: 'Project Files & Revisions',
   structural_cad: 'Structural Framing',
   engineering: 'Code Compliance',
   export: 'Drawings & BIM Exports',
@@ -278,8 +287,11 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
     { id: 'isometric', label: 'Floor 3D', modeGroup: 'Design', icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'building_3d', label: 'Tower 3D', modeGroup: 'Design', icon: <Box className="w-3.5 h-3.5" /> },
     { id: 'cad_2d', label: '2D CAD', modeGroup: 'Drafting', icon: <DraftingCompass className="w-3.5 h-3.5" /> },
+    { id: 'pro_cad', label: 'Pro CAD', modeGroup: 'Drafting', icon: <DraftingCompass className="w-3.5 h-3.5" /> },
     { id: 'edit_plan', label: 'Edit Plan', modeGroup: 'Drafting', icon: <Edit3 className="w-3.5 h-3.5" /> },
     { id: 'bim', label: 'BIM Studio', modeGroup: 'BIM Coordination', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'coordination', label: 'Coordination', modeGroup: 'BIM Coordination', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'project_files', label: 'Files', modeGroup: 'BIM Coordination', icon: <FolderOpen className="w-3.5 h-3.5" /> },
     { id: 'engineering', label: 'Compliance', modeGroup: 'BIM Coordination', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
     { id: 'export', label: 'Exports', modeGroup: 'BIM Coordination', icon: <Download className="w-3.5 h-3.5" /> },
     { id: 'structural_cad', label: 'Structural', modeGroup: 'Structural', icon: <Building2 className="w-3.5 h-3.5" /> },
@@ -1084,6 +1096,16 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
                 canRegenerate={Boolean(projectBrief) || Boolean(studio.isBhkMixValid)}
               />
             )}
+            {activeWorkspace === 'pro_cad' && (
+              <Suspense fallback={<p role="status" className="p-4">Opening Professional CAD 2D/3D…</p>}>
+                <CotaWorkspace
+                  editor={editor}
+                  theme={studio.studioTheme}
+                  onOpen2DCad={() => setActiveWorkspace('cad_2d')}
+                  onOpenBim={() => setActiveWorkspace('bim')}
+                />
+              </Suspense>
+            )}
             {activeWorkspace === 'edit_plan' && (
               <InteractivePlanEditorPage
                 editor={editor}
@@ -1135,8 +1157,27 @@ export const ArgonStudioShell: React.FC<ArgonStudioShellProps> = ({
             {activeWorkspace === 'bim' && (
               <Suspense fallback={<p role="status" className="p-4">Opening BIM Studio…</p>}>
                 {editor.activeFloor ? <BimStudio key={editor.building.projectId} editor={editor}
-                  onOpenCad={() => { setPrecisionFromBim(true); setActiveWorkspace('cad_2d'); }} />
+                  onOpenCad={() => { setPrecisionFromBim(true); setActiveWorkspace('cad_2d'); }}
+                  onOpenProCad={() => setActiveWorkspace('pro_cad')}
+                  onOpenCoordination={() => setActiveWorkspace('coordination')} />
                   : <p>Open an accepted building to inspect BIM quantities.</p>}
+              </Suspense>
+            )}
+            {activeWorkspace === 'coordination' && (
+              <Suspense fallback={<p role="status" className="p-4">Opening Model Coordination…</p>}>
+                <ModelCoordinationWorkspace
+                  editor={editor}
+                  onOpenBim={() => setActiveWorkspace('bim')}
+                  onOpenProCad={() => setActiveWorkspace('pro_cad')}
+                />
+              </Suspense>
+            )}
+            {activeWorkspace === 'project_files' && (
+              <Suspense fallback={<p role="status" className="p-4">Opening Project Engineering Files…</p>}>
+                <ProjectFilesWorkspace
+                  editor={editor}
+                  onNavigateWorkspace={ws => setActiveWorkspace(ws)}
+                />
               </Suspense>
             )}
             {activeWorkspace === 'structural_cad' && (

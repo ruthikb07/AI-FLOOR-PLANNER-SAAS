@@ -278,3 +278,158 @@ export function deleteLocalProject(rawId: string): boolean {
   fs.rmSync(projDir, { recursive: true, force: true });
   return true;
 }
+
+export type ProjectEngineeringDocKind =
+  | 'cota_drawing'
+  | 'openbim_session'
+  | 'bcf_archive'
+  | 'ids_report'
+  | 'cobie_package'
+  | 'cad_reference'
+  | 'bim_reference'
+  | 'plot_pdf';
+
+export type ProjectEngineeringDocProvenance =
+  | 'authored_cota'
+  | 'authored_openbim'
+  | 'imported_external'
+  | 'exported_deliverable';
+
+export interface ProjectEngineeringDocumentMeta {
+  readonly docId: string;
+  readonly projectId: string;
+  readonly buildingId: string;
+  readonly floorId?: string;
+  readonly kind: ProjectEngineeringDocKind;
+  readonly name: string;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly canonicalRevision: number;
+  readonly canonicalDigest?: string;
+  readonly provenance: ProjectEngineeringDocProvenance;
+  readonly byteSize: number;
+  readonly sha256: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface SaveProjectEngineeringDocumentInput {
+  readonly docId?: string;
+  readonly buildingId: string;
+  readonly floorId?: string;
+  readonly kind: ProjectEngineeringDocKind;
+  readonly name: string;
+  readonly fileName: string;
+  readonly mimeType?: string;
+  readonly canonicalRevision: number;
+  readonly canonicalDigest?: string;
+  readonly provenance: ProjectEngineeringDocProvenance;
+  readonly contentText?: string;
+  readonly contentBase64?: string;
+}
+
+const VALID_DOC_KINDS = new Set<ProjectEngineeringDocKind>([
+  'cota_drawing',
+  'openbim_session',
+  'bcf_archive',
+  'ids_report',
+  'cobie_package',
+  'cad_reference',
+  'bim_reference',
+  'plot_pdf',
+]);
+
+export function isValidEngineeringDocKind(v: unknown): v is ProjectEngineeringDocKind {
+  return typeof v === 'string' && VALID_DOC_KINDS.has(v as ProjectEngineeringDocKind);
+}
+
+export function listProjectEngineeringDocuments(rawProjectId: string): ProjectEngineeringDocumentMeta[] {
+  const root = resolveLocalProjectsRoot();
+  const { projDir } = resolveProjectDir(root, rawProjectId);
+  const indexFile = path.join(projDir, 'documents', 'index.json');
+  if (!fs.existsSync(indexFile)) return [];
+  try {
+    const parsed = JSON.parse(fs.readFileSync(indexFile, 'utf8')) as ProjectEngineeringDocumentMeta[];
+    return Array.isArray(parsed)
+      ? parsed.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveProjectEngineeringDocument(
+  rawProjectId: string,
+  input: SaveProjectEngineeringDocumentInput,
+): ProjectEngineeringDocumentMeta {
+  const root = resolveLocalProjectsRoot();
+  ensureDir(root);
+  const { projectId, projDir } = resolveProjectDir(root, rawProjectId);
+  const docId = input.docId && isLocalProjectId(input.docId) ? input.docId : `doc-${randomUUID().slice(0, 12)}`;
+  if (!isLocalProjectId(docId)) throw new Error('Invalid engineering document id.');
+
+  const docsDir = path.join(projDir, 'documents');
+  ensureDir(docsDir);
+
+  const bytes =
+    input.contentBase64 !== undefined
+      ? Buffer.from(input.contentBase64, 'base64')
+      : Buffer.from(input.contentText ?? '', 'utf8');
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  const now = new Date().toISOString();
+
+  const existingList = listProjectEngineeringDocuments(projectId);
+  const prev = existingList.find(d => d.docId === docId);
+
+  const meta: ProjectEngineeringDocumentMeta = {
+    docId,
+    projectId,
+    buildingId: input.buildingId || projectId,
+    ...(input.floorId ? { floorId: input.floorId } : {}),
+    kind: input.kind,
+    name: (input.name || input.fileName || docId).slice(0, 200),
+    fileName: sanitizeFileName(input.fileName || `${docId}.dat`),
+    mimeType: input.mimeType || 'application/octet-stream',
+    canonicalRevision: Number.isFinite(input.canonicalRevision) ? input.canonicalRevision : 1,
+    ...(input.canonicalDigest ? { canonicalDigest: input.canonicalDigest } : {}),
+    provenance: input.provenance,
+    byteSize: bytes.byteLength,
+    sha256,
+    createdAt: prev?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  writeAtomically(path.join(docsDir, `${docId}.bin`), bytes);
+  const nextList = [meta, ...existingList.filter(d => d.docId !== docId)];
+  writeAtomically(path.join(docsDir, 'index.json'), JSON.stringify(nextList, null, 2));
+  return meta;
+}
+
+export function loadProjectEngineeringDocument(
+  rawProjectId: string,
+  rawDocId: string,
+): { meta: ProjectEngineeringDocumentMeta; bytes: Buffer } | null {
+  if (!isLocalProjectId(rawDocId)) return null;
+  const root = resolveLocalProjectsRoot();
+  const { projectId, projDir } = resolveProjectDir(root, rawProjectId);
+  const list = listProjectEngineeringDocuments(projectId);
+  const meta = list.find(d => d.docId === rawDocId);
+  if (!meta) return null;
+  const binPath = path.join(projDir, 'documents', `${meta.docId}.bin`);
+  if (!fs.existsSync(binPath)) return null;
+  return { meta, bytes: fs.readFileSync(binPath) };
+}
+
+export function deleteProjectEngineeringDocument(rawProjectId: string, rawDocId: string): boolean {
+  if (!isLocalProjectId(rawDocId)) return false;
+  const root = resolveLocalProjectsRoot();
+  const { projectId, projDir } = resolveProjectDir(root, rawProjectId);
+  const docsDir = path.join(projDir, 'documents');
+  const existing = listProjectEngineeringDocuments(projectId);
+  if (!existing.some(d => d.docId === rawDocId)) return false;
+  const next = existing.filter(d => d.docId !== rawDocId);
+  ensureDir(docsDir);
+  writeAtomically(path.join(docsDir, 'index.json'), JSON.stringify(next, null, 2));
+  fs.rmSync(path.join(docsDir, `${rawDocId}.bin`), { force: true });
+  return true;
+}

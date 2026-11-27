@@ -24,9 +24,13 @@ import type { SurveyDraft } from '../services/survey-draft';
 export type ArgonWorkspaceId =
   | 'setup'
   | 'cad_2d'
+  | 'pro_cad'
   | 'edit_plan'
   | 'isometric'
   | 'building_3d'
+  | 'bim'
+  | 'coordination'
+  | 'project_files'
   | 'structural_cad'
   | 'engineering'
   | 'export';

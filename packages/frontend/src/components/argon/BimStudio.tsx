@@ -16,6 +16,7 @@ import { runWorkerTask } from '../../services/worker-task';
 import type { BimClash, ClashResolutionStatus, findBimClashes } from '../../services/bim-clash';
 import { queryBimSchedule, type BimQueryResponse } from '../../services/bim-query';
 import { ThreeBuildingScene } from '../model-3d/ThreeBuildingScene';
+import { OpenBimEngineeringPanel } from './OpenBimEngineeringPanel';
 import './bim-studio.css';
 
 const categories: Array<[BimKind | 'all', string]> = [
@@ -33,7 +34,17 @@ function download(content: BlobPart, mime: string, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function BimStudio({ editor, onOpenCad }: { editor: EditorContextValue; onOpenCad: () => void }) {
+export default function BimStudio({
+  editor,
+  onOpenCad,
+  onOpenProCad,
+  onOpenCoordination,
+}: {
+  editor: EditorContextValue;
+  onOpenCad: () => void;
+  onOpenProCad?: () => void;
+  onOpenCoordination?: () => void;
+}) {
   const { building, activeFloor, selection, switchFloor, selectEntity, clearSelection } = editor;
   const [filter, setFilter] = useState<BimKind | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -281,6 +292,8 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
       <div><h1>RH Planner — BIM Studio</h1><p>Canonical revision {source.revision} · {source.sha256.slice(0, 12)} · IFC4</p></div>
       <div className="rh-bim-controls">
         <button type="button" onClick={onOpenCad}>Precision CAD</button>
+        {onOpenProCad && <button type="button" onClick={onOpenProCad}>Professional CAD</button>}
+        {onOpenCoordination && <button type="button" onClick={onOpenCoordination}>Model Coordination</button>}
         <button type="button" disabled={Boolean(busy)} onClick={() => void exportIfc()}>Export IFC4</button>
         {manifest && <button type="button" onClick={() => download(JSON.stringify(manifest, null, 2), 'application/json', 'rh-planner-ifc-manifest.json')}>Download manifest</button>}
         {busy && <button type="button" onClick={() => { operation.current?.abort(); setBusy(undefined); setNotice('Operation cancelled.'); }}>Cancel {busy}</button>}
@@ -454,6 +467,7 @@ export default function BimStudio({ editor, onOpenCad }: { editor: EditorContext
           </div>}
         </>}
       </section>
+      <OpenBimEngineeringPanel editor={editor} />
       <p className="rh-bim-review">Geometric schedules and reference checks · Professional review required</p>
     </>}
   </section>;

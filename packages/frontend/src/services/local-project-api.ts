@@ -219,3 +219,197 @@ export async function deleteLocalDiskProject(projectId: string): Promise<void> {
   });
   await parseJsonResponse<{ ok: true }>(res);
 }
+
+export type ProjectEngineeringDocKind =
+  | 'cota_drawing'
+  | 'openbim_session'
+  | 'bcf_archive'
+  | 'ids_report'
+  | 'cobie_package'
+  | 'cad_reference'
+  | 'bim_reference'
+  | 'plot_pdf';
+
+export type ProjectEngineeringDocProvenance =
+  | 'authored_cota'
+  | 'authored_openbim'
+  | 'imported_external'
+  | 'exported_deliverable';
+
+export interface ProjectEngineeringDocumentMeta {
+  readonly docId: string;
+  readonly projectId: string;
+  readonly buildingId: string;
+  readonly floorId?: string;
+  readonly kind: ProjectEngineeringDocKind;
+  readonly name: string;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly canonicalRevision: number;
+  readonly canonicalDigest?: string;
+  readonly provenance: ProjectEngineeringDocProvenance;
+  readonly byteSize: number;
+  readonly sha256: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface SaveProjectEngineeringDocumentPayload {
+  readonly docId?: string;
+  readonly buildingId: string;
+  readonly floorId?: string;
+  readonly kind: ProjectEngineeringDocKind;
+  readonly name: string;
+  readonly fileName: string;
+  readonly mimeType?: string;
+  readonly canonicalRevision: number;
+  readonly canonicalDigest?: string;
+  readonly provenance: ProjectEngineeringDocProvenance;
+  readonly contentText?: string;
+  readonly contentBase64?: string;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+export function uint8ToBase64(bytes: Uint8Array): string {
+  return bytesToBase64(bytes);
+}
+
+export function base64ToUint8(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+const LOCAL_DOCS_FALLBACK_PREFIX = 'rh_unified_docs_v1:';
+
+function readLocalFallbackDocs(projectId: string): Record<string, { meta: ProjectEngineeringDocumentMeta; contentBase64: string; contentText?: string }> {
+  try {
+    const raw = localStorage.getItem(`${LOCAL_DOCS_FALLBACK_PREFIX}${projectId}`);
+    return raw ? (JSON.parse(raw) as Record<string, { meta: ProjectEngineeringDocumentMeta; contentBase64: string; contentText?: string }>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalFallbackDocs(
+  projectId: string,
+  map: Record<string, { meta: ProjectEngineeringDocumentMeta; contentBase64: string; contentText?: string }>,
+): void {
+  try {
+    localStorage.setItem(`${LOCAL_DOCS_FALLBACK_PREFIX}${projectId}`, JSON.stringify(map));
+  } catch {
+    // Ignore storage quota limits in browser fallback
+  }
+}
+
+export async function listProjectEngineeringDocuments(projectId: string): Promise<ProjectEngineeringDocumentMeta[]> {
+  try {
+    const res = await fetch(`/api/v1/local-projects/${encodeURIComponent(projectId)}/documents`);
+    if (res.ok) {
+      const data = (await res.json()) as { ok: true; documents: ProjectEngineeringDocumentMeta[] };
+      const localMap = readLocalFallbackDocs(projectId);
+      const byId = new Map<string, ProjectEngineeringDocumentMeta>();
+      for (const d of Object.values(localMap)) byId.set(d.meta.docId, d.meta);
+      for (const d of data.documents ?? []) byId.set(d.docId, d);
+      return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+  } catch {
+    // Offline static preview fallback
+  }
+  return Object.values(readLocalFallbackDocs(projectId))
+    .map(v => v.meta)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export async function saveProjectEngineeringDocument(
+  projectId: string,
+  payload: SaveProjectEngineeringDocumentPayload,
+): Promise<ProjectEngineeringDocumentMeta> {
+  const docId = payload.docId || `doc-${Date.now().toString(36)}`;
+  const b64 =
+    payload.contentBase64 ??
+    bytesToBase64(new TextEncoder().encode(payload.contentText ?? ''));
+  const now = new Date().toISOString();
+  const fallbackMap = readLocalFallbackDocs(projectId);
+  const fallbackMeta: ProjectEngineeringDocumentMeta = {
+    docId,
+    projectId,
+    buildingId: payload.buildingId,
+    ...(payload.floorId ? { floorId: payload.floorId } : {}),
+    kind: payload.kind,
+    name: payload.name,
+    fileName: payload.fileName,
+    mimeType: payload.mimeType ?? 'application/octet-stream',
+    canonicalRevision: payload.canonicalRevision,
+    ...(payload.canonicalDigest ? { canonicalDigest: payload.canonicalDigest } : {}),
+    provenance: payload.provenance,
+    byteSize: Math.floor((b64.length * 3) / 4),
+    sha256: `local-${docId}`,
+    createdAt: fallbackMap[docId]?.meta.createdAt ?? now,
+    updatedAt: now,
+  };
+  fallbackMap[docId] = {
+    meta: fallbackMeta,
+    contentBase64: b64,
+    ...(payload.contentText !== undefined ? { contentText: payload.contentText } : {}),
+  };
+  writeLocalFallbackDocs(projectId, fallbackMap);
+
+  try {
+    const res = await fetch(`/api/v1/local-projects/${encodeURIComponent(projectId)}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, docId }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { ok: true; document: ProjectEngineeringDocumentMeta };
+      fallbackMap[docId] = { ...fallbackMap[docId]!, meta: data.document };
+      writeLocalFallbackDocs(projectId, fallbackMap);
+      return data.document;
+    }
+  } catch {
+    // Offline fallback already persisted
+  }
+  return fallbackMeta;
+}
+
+export async function loadProjectEngineeringDocument(
+  projectId: string,
+  docId: string,
+): Promise<{ document: ProjectEngineeringDocumentMeta; contentBase64: string; contentText?: string } | null> {
+  try {
+    const res = await fetch(
+      `/api/v1/local-projects/${encodeURIComponent(projectId)}/documents/${encodeURIComponent(docId)}`,
+    );
+    if (res.ok) {
+      return (await res.json()) as { document: ProjectEngineeringDocumentMeta; contentBase64: string; contentText?: string };
+    }
+  } catch {
+    // Fall back to local cache
+  }
+  const hit = readLocalFallbackDocs(projectId)[docId];
+  return hit ? { document: hit.meta, contentBase64: hit.contentBase64, contentText: hit.contentText } : null;
+}
+
+export async function deleteProjectEngineeringDocument(projectId: string, docId: string): Promise<void> {
+  const fallbackMap = readLocalFallbackDocs(projectId);
+  delete fallbackMap[docId];
+  writeLocalFallbackDocs(projectId, fallbackMap);
+  try {
+    await fetch(
+      `/api/v1/local-projects/${encodeURIComponent(projectId)}/documents/${encodeURIComponent(docId)}`,
+      { method: 'DELETE' },
+    );
+  } catch {
+    // Ignore when offline
+  }
+}

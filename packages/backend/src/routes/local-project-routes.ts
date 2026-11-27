@@ -2,13 +2,19 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { buildingInputError, isRecord, validCadUpload } from '../api/http-input.js';
 import {
   deleteLocalProject,
+  deleteProjectEngineeringDocument,
+  isValidEngineeringDocKind,
   listLocalProjects,
+  listProjectEngineeringDocuments,
   loadLocalProject,
+  loadProjectEngineeringDocument,
   readLocalProjectSourceCad,
   saveLocalProject,
+  saveProjectEngineeringDocument,
   isLocalProjectId,
   LocalProjectRevisionConflict,
   type SaveLocalProjectInput,
+  type SaveProjectEngineeringDocumentInput,
 } from '../services/local-project-store.js';
 
 type ReadBodyFn = (request: IncomingMessage) => Promise<string>;
@@ -96,6 +102,79 @@ export async function handleLocalProjectRoute(
     });
     response.end(cad.bytes);
     return true;
+  }
+
+  const docsListMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)\/documents$/);
+  if (docsListMatch) {
+    const id = decodeURIComponent(docsListMatch[1]!);
+    if (!isLocalProjectId(id)) {
+      sendJson(response, 400, { error: { code: 'INVALID_PROJECT_ID', message: 'Project ID is invalid.' } });
+      return true;
+    }
+    if (method === 'GET') {
+      sendJson(response, 200, { ok: true, documents: listProjectEngineeringDocuments(id) });
+      return true;
+    }
+    if (method === 'POST') {
+      const raw = await readBody(request);
+      let body: unknown;
+      try {
+        body = JSON.parse(raw);
+      } catch {
+        sendJson(response, 400, { error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } });
+        return true;
+      }
+      if (!isRecord(body) || !isValidEngineeringDocKind(body.kind) || typeof body.fileName !== 'string') {
+        sendJson(response, 400, { error: { code: 'INVALID_DOCUMENT', message: 'Provide valid document kind and fileName.' } });
+        return true;
+      }
+      const saved = saveProjectEngineeringDocument(id, body as unknown as SaveProjectEngineeringDocumentInput);
+      sendJson(response, 200, { ok: true, document: saved });
+      return true;
+    }
+  }
+
+  const docItemMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)\/documents\/([^/]+)$/);
+  if (docItemMatch) {
+    const id = decodeURIComponent(docItemMatch[1]!);
+    const docId = decodeURIComponent(docItemMatch[2]!);
+    if (!isLocalProjectId(id) || !isLocalProjectId(docId)) {
+      sendJson(response, 400, { error: { code: 'INVALID_ID', message: 'Project or document ID is invalid.' } });
+      return true;
+    }
+    if (method === 'GET') {
+      const loaded = loadProjectEngineeringDocument(id, docId);
+      if (!loaded) {
+        sendJson(response, 404, { error: { code: 'DOCUMENT_NOT_FOUND', message: 'Engineering document not found.' } });
+        return true;
+      }
+      if (url.searchParams.get('download') === '1') {
+        response.writeHead(200, {
+          'Content-Type': loaded.meta.mimeType,
+          'Content-Length': String(loaded.bytes.length),
+          'Content-Disposition': `attachment; filename="${loaded.meta.fileName}"`,
+        });
+        response.end(loaded.bytes);
+        return true;
+      }
+      const isText = /^(application\/json|text\/|application\/xml|application\/dxf)/i.test(loaded.meta.mimeType);
+      sendJson(response, 200, {
+        ok: true,
+        document: loaded.meta,
+        contentBase64: loaded.bytes.toString('base64'),
+        ...(isText ? { contentText: loaded.bytes.toString('utf8') } : {}),
+      });
+      return true;
+    }
+    if (method === 'DELETE') {
+      const removed = deleteProjectEngineeringDocument(id, docId);
+      if (!removed) {
+        sendJson(response, 404, { error: { code: 'DOCUMENT_NOT_FOUND', message: 'Engineering document not found.' } });
+        return true;
+      }
+      sendJson(response, 200, { ok: true, deleted: docId });
+      return true;
+    }
   }
 
   const itemMatch = pathname.match(/^\/api\/v1\/local-projects\/([^/]+)$/);

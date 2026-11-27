@@ -1,0 +1,4011 @@
+import type { WindowPlane } from '../core/commands/selectionSets'
+import { lineSpan } from '../core/geom/xline'
+import { solidThreads, threadHelixSegments } from '../core/thread/geometry'
+import { frozenLayerIds, hiddenLayerIds, layerEditable, layerVisible } from '../core/layers/visibility'
+import type { Deferred } from '../core/geom/tangency'
+import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
+import type { Pt, Vec3 } from '../core/math'
+import type { AttDisp, BlockDef, DimensionEntity, Entity, Layer, MeshEntity, SolidEntity } from '../core/document/types'
+import { PREVIEW_COLORS, type PreviewShape } from '../core/preview'
+import { ExpandMemo, expandEntities } from '../core/editing/block'
+import { entityOutline } from '../core/editing/bounds'
+import { meshEdgeBox } from '../core/editing/mesh'
+import { computeSnap, type Acquisition, type SnapResult, type SnapType } from '../core/snap/SnapService'
+import { computeTracking } from '../core/snap/tracking'
+import { singleOsnap, type OsnapConfig, type OsnapOverride } from '../core/snap/osnap'
+import { segmentsOfEntity } from '../core/snap/segments'
+import { dimDisplay } from '../core/dimension/dimGeometry'
+import { isWorldUcs, ORTHO_UCS, orthoUcs, sameUcs, ucsZ, WORLD_UCS, type OrthoUcsName, type Ucs } from '../core/ucs'
+import { sysvars } from '../core/commands/sysvars'
+import { isSmall, lodActive, sizeSignature, type SizeSig } from '../core/render/lod'
+import { faceUcsAt, type FaceHit } from '../core/editing/faceUcs'
+import { rayFaces, solidPending, solidTopology } from '../core/editing/topology'
+import { DEFAULT_VISUAL_STYLE, type CameraMode, type ViewName, type VisualStyle } from '../core/view'
+import { CameraController } from './CameraController'
+import { displaySolidEdges, displaySolidGeometry, displaySolidTopology, previewSolidGeometry } from './csg'
+import { meshRender, type MeshRender } from './meshBuffers'
+import { pointMarkTexture } from './pointMarks'
+import { lineSpans, rangedRaycast } from './rangedRaycast'
+import { ellipsePoints } from '../core/geom/ellipse'
+import { arcBasis, tessellateArc } from '../core/geom/arc'
+import { polylinePoints } from '../core/geom/polyline'
+import { BASELINE_DROP, attdefText, cssFontStack, fitToWidth, fontMetrics, lineSpacingOf, textAxes, textCorners, textStrokePolylines, textTop } from '../core/geom/text'
+import { entityGrips, type Grip } from '../core/editing/grips'
+import { viewportRing } from '../core/layout/viewport'
+import { evaluateFields, fieldSegments, hasFields, type FieldContext } from '../core/fields/fields'
+import { RANK_ATTR, rankArray, rankScale, rankStep, ranked } from './drawRank'
+import { entityPattern, type LinetypeContext } from '../core/linetype/linetypes'
+import { entityDashes, linetypePaths, type DashResult } from '../core/linetype/dash'
+import { hatchFrame, hatchRegions, hatchRings, hatchStrokesCached, isSolidHatch, to3, type Ring } from '../core/hatch/geometry'
+import { isWide, polylineBand } from '../core/geom/plineWidth'
+import type { HatchEntity, ImageEntity, NoteEntity, NoteProps, RegionEntity } from '../core/document/types'
+import { regionPolylines, regionSegments } from '../core/region/region'
+import { imageClip, imageFileName, imagePoint, imageRing, imageUv } from '../core/geom/image'
+import { isDoubleTap, isTap, pinchStep, touchConfig, TOUCH_AIM_OFFSET, type TouchPt } from './touchGesture'
+import { NOTE_COLORS, fitNoteText, notePoint, noteRing } from '../core/geom/note'
+import { shadeTriangleCount, shadeTriangles } from '../core/projection/shade'
+
+/** Distancia máxima (px) del cursor a una línea para tomarla con un clic. */
+const PICK_LINE_PX = 10
+/** Una línea a esta distancia (px) está "justo debajo" del cursor y gana a las que sólo entran por la tolerancia. */
+const PICK_EXACT_PX = 3
+/** Arrastre (px) por debajo del cual soltar el botón sigue siendo un clic, y no una ventana de selección. */
+const CLICK_SLOP_PX = 12
+
+/** Distancia de `p` al segmento a→b. */
+function distToSegment(p: Pt, a: Pt, b: Pt): number {
+  const ab = { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z }
+  const L = ab.x * ab.x + ab.y * ab.y + ab.z * ab.z
+  const t = L > 0 ? Math.max(0, Math.min(1, ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y + (p.z - a.z) * ab.z) / L)) : 0
+  return Math.hypot(p.x - a.x - ab.x * t, p.y - a.y - ab.y * t, p.z - a.z - ab.z * t)
+}
+
+export interface ViewportData {
+  revision: number
+  entities: Entity[]
+  /** Tabla de bloques (para expandir las inserciones a geometría de mundo). */
+  blocks: BlockDef[]
+  layers: Layer[]
+  selection: string[]
+  gridSnap: boolean
+  gridStep: number
+  /** Grilla visible (GRID, F7); sin el dato, visible. Sólo el viewport del modelo la dibuja. */
+  gridOn?: boolean
+  esnap: boolean
+  ucs: Ucs
+  osnap: OsnapConfig
+  /** Override de snap de un solo uso (cen/end/mid/…), o null. */
+  osnapOverride: OsnapOverride | null
+  /** Punto base del prompt activo (rubber-band), para perpendicular/tangent. */
+  snapBase: Pt | null
+  /** Hay un prompt esperando un punto/distancia → activar object snap y previsualización. */
+  pointPrompt: boolean
+  /** El prompt de punto elige objetos (TRIM/EXTEND): sin object snap. */
+  noSnap?: boolean
+  /** Color del rubber-band, ya elegido para contrastar con la capa actual y el fondo. */
+  previewColor: number
+  /** Object snap tracking activo (OTRACK / F11). */
+  otrack: boolean
+  /** Rastreo polar (POLAR / F10): incremento de ángulo en grados, o ausente si está apagado. */
+  polarAng?: number
+  /** UCS dinámica habilitada en este momento (primer punto de un comando de dibujo). */
+  ducs?: boolean
+  /** Contexto de los campos de los textos (`%<\AcVar …>%`); sin él se muestran tal cual. */
+  fields?: FieldContext
+  /** ATTDISP del dibujo (atributos de bloque visibles). */
+  attdisp?: AttDisp
+  /** Escala de anotación de este viewport (cotas anotativas): unidades de dibujo por mm de papel. */
+  annoScale?: number
+  /** Tipos de línea del dibujo con la escala de este espacio; sin él, todo continuo. */
+  linetypes?: LinetypeContext
+  /**
+   * Entidades que sólo dan snaps (no se dibujan ni se seleccionan): en el papel, el modelo visto por los
+   * viewports (trans-espacial). Un clic que captura un snap de una de ellas la toma como objeto.
+   */
+  snapExtras?: Entity[]
+  /** Geometría en curso del comando (tramos de una PLINE todavía sin guardar): sólo da snaps. */
+  snapLive?: Entity[]
+  /** ORTHO activo (los cruces de la recta de ortho con los objetos dan INT). */
+  ortho?: boolean
+  /**
+   * Grosores de línea en pantalla (layouts): unidades del dibujo por mm de papel (1 en el papel; 1/escala en un
+   * viewport flotante). Sin él (espacio modelo) las líneas son finas.
+   */
+  lwUnitsPerMm?: number
+  /**
+   * Grosores en el modelo con LWDISPLAY (LWT): píxeles de pantalla por mm, fijos con el zoom (como el CAD clásico,
+   * que en el modelo los muestra en píxeles). Hasta 0,25 mm quedan finas.
+   */
+  lwPxPerMm?: number
+}
+
+/**
+ * LWDISPLAY en el modelo: píxeles por mm de grosor. Las de hasta 0,25 mm quedan de un píxel y las más gruesas se ven
+ * en proporción (0,40 mm = 4 px, 1 mm = 10 px), sin cambiar con el zoom.
+ */
+export const MODEL_LW_PX_PER_MM = 10
+
+export interface RectPx {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+export interface ViewportCallbacks {
+  onPointerMove?: (world: Pt) => void
+  /** `snapped` = el punto quedó fijado por un object snap (no grilla): El CAD clásico lo hace ganar a ORTHO.
+   *  `shift` = se clickeó con Shift → resta de la selección en vez de sumar. */
+  onClick?: (world: Pt, pickedId: string | null, snapped: boolean, shift: boolean, raw: Pt, deferred?: Deferred, face?: Ucs) => void
+  /** Caja de selección en píxeles de pantalla; `crossing` = arrastre derecha→izquierda;
+   *  `shift` = resta lo encerrado de la selección. */
+  onBoxSelect?: (rectPx: RectPx, crossing: boolean, shift: boolean) => void
+  /** Un clic sobre un grip lo activa e inicia su edición (el punto final se fija luego). */
+  onGripActivate?: (entityId: string, grip: Grip) => void
+  /** La vista cambió la UCS del viewport (UCSORTHO): el store espeja la del activo. */
+  onUcsChange?: (ucs: Ucs, name?: string) => void
+  /** Doble clic sobre una entidad: la selecciona y abre la paleta de Propiedades. */
+  onEntityDoubleClick?: (entityId: string, world: Pt) => void
+  /** Clic derecho con un prompt de comando activo = Enter (CAD clásico). Devuelve true si lo consumió. */
+  onRightClickCommand?: () => boolean
+  /** ¿Hay un comando en curso? Entonces la selección sólo se resalta: sin grips (como el CAD clásico). */
+  isCommandActive?: () => boolean
+  /** Clic derecho sin arrastrar (sin prompt activo): menú contextual en (clientX, clientY). */
+  onContextMenu?: (clientX: number, clientY: number, world: Pt) => void
+  isSelectMode?: () => boolean
+  /**
+   * ¿Un clic sólo elige objetos (sin comando ni pedido en curso)? Entonces su punto no se usa y no se busca el snap (en
+   * un ensamble grande, armar el índice de snaps demoraba el primer clic de selección).
+   */
+  isPickOnly?: () => boolean
+  /** Ventana o cruce pedido con W/C: la ventana se abre aunque el clic caiga sobre un objeto y su tipo es fijo. */
+  selectionArea?: () => 'window' | 'crossing' | null
+  onCameraChange?: (az: number, el: number, mode: CameraMode) => void
+  /** Se invoca cuando este viewport recibe interacción (para marcarlo como activo). */
+  onActivate?: () => void
+  /** Cualquier cambio de cámara (pan, zoom, órbita o tamaño): el layout reubica hoja y viewports. */
+  onViewChange?: () => void
+  /** Doble clic sin entidad bajo el cursor (en el papel: entrar/salir de MSPACE). */
+  onEmptyDoubleClick?: (world: Pt) => void
+  /** Clic derecho en el modo Realtime de ZOOM/PAN: menú del CAD clásico. */
+  onRealtimeMenu?: (clientX: number, clientY: number) => void
+  /** Con la navegación bloqueada (viewport *display locked*), la rueda y el pan se derivan al papel. */
+  onLockedWheel?: (e: WheelEvent) => void
+  onLockedPan?: (dx: number, dy: number) => void
+  /** Toque corto en la vista mobile (sin comando que pida un punto): la entidad bajo el dedo, o null. */
+  onTapPick?: (id: string | null) => void
+}
+
+/**
+ * Clase de viewport: `model` = panel del espacio modelo; `paper` = hoja de un layout (fondo
+ * transparente sobre la hoja HTML, vista TOP fija, sin grilla); `floating` = viewport flotante de un
+ * layout (fondo de papel, sin grilla, siempre ortográfico; su cámara la fija la entidad VIEWPORT).
+ */
+export type ViewportKind = 'model' | 'paper' | 'floating'
+
+/** Estado de cámara exportable (para sincronizar un viewport flotante con su entidad). */
+export interface CameraState {
+  target: Vec3
+  az: number
+  el: number
+  radius: number
+  /** Proyección (sólo paneles del modelo; los flotantes son siempre ortográficos). */
+  mode?: CameraMode
+  /** "Arriba" de una vista en planta de una UCS (PLAN); ausente = el de la orientación. */
+  up?: Vec3
+}
+
+/** Vistas que recuerda ZOOM Previous por viewport (en el CAD clásico: 10). */
+export const VIEW_HISTORY = 10
+
+const BG_COLOR = 0x1e1e1e
+const HIGHLIGHT = 0x00e5ff
+/** Textos más chicos que esto (en px de alto) no se dibujan; y no más que tantos a la vez (ver `updateTextLabels`). */
+const MIN_TEXT_PX = 3
+/** Desde cuántos objetos un cambio de selección se resalta encima en vez de rehacer los lotes. */
+const BIG_DRAWING = 5000
+/** Desde qué distancia al origen del dibujo se dibuja relativo a un origen propio (ver `Viewport.origin`). */
+const ORIGIN_FAR = 20_000
+/** Espera de un toque antes de elegir: el tiempo en que un segundo toque lo vuelve doble (ver `isDoubleTap`). */
+const TAP_SELECT_MS = 360
+const MAX_TEXT_LABELS = 3000
+/** Color de la hoja de papel de los layouts. */
+export const PAPER_COLOR = '#ffffff'
+/** Caras sombreadas de color 7 sobre el papel (el negro no deja ver el sombreado). */
+const FACE_ON_PAPER = '#b8b8b8'
+
+/** Acumuladores de geometría fusionada por material (batching para modelos pesados). */
+interface MeshBatch { pos: number[]; nor: number[]; ranges: { s: number; id: string }[]; n: number }
+interface LineBatch { pos: number[]; ranges: { s: number; id: string }[]; n: number }
+/** Orden de los textos de trazo: encima de todo el dibujo. */
+const TEXT_ORDER = 0.75
+
+/** Material de un lote: `#rrggbb`, o `#rrggbbaa` si es transparente (se mezcla de verdad con lo de abajo). */
+function paint(hex: string): { color: THREE.Color; transparent?: boolean; opacity?: number } {
+  const color = new THREE.Color(hex.slice(0, 7))
+  return hex.length > 7 ? { color, transparent: true, opacity: parseInt(hex.slice(7, 9), 16) / 255 } : { color }
+}
+/**
+ * Lote de caras sombreadas: las piezas se juntan recién al crear la geometría, en arreglos del tamaño justo (antes se
+ * copiaban número por número a listas que ocupaban el doble). `n` cuenta índices (tres por triángulo).
+ */
+interface FaceBatch { parts: { pos: ArrayLike<number>; nor: ArrayLike<number>; idx?: Uint32Array }[]; ranges: { s: number; id: string }[]; n: number; verts: number }
+/** Lote de aristas de sólidos y mallas, en tramos que se juntan al crear la geometría. */
+interface EdgeBatch { parts: ArrayLike<number>[]; ranges: { s: number; id: string }[]; n: number }
+const joinParts = (parts: ArrayLike<number>[], size: number): Float32Array => {
+  const out = new Float32Array(size)
+  let at = 0
+  for (const p of parts) {
+    out.set(p, at)
+    at += p.length
+  }
+  return out
+}
+/**
+ * La grilla va debajo de todo: se dibuja primero y no escribe profundidad. Antes, con el orden de
+ * capas negativo se dibujaba después de las entidades y tapaba las líneas que caían justo sobre
+ * una línea de la grilla (un rectángulo en múltiplos del paso, los ejes).
+ */
+function underlayGrid(g: THREE.GridHelper): THREE.GridHelper {
+  g.renderOrder = -1e9
+  const mats = Array.isArray(g.material) ? g.material : [g.material]
+  for (const m of mats) m.depthWrite = false
+  return g
+}
+
+/** Puntos de los tipos de línea y patrones (elementos de largo 0). */
+interface PointBatch { pos: number[]; rank: number[] }
+
+/**
+ * Regiones de relleno de un sombreado en triángulos de mundo (regla par-impar con sus agujeros).
+ */
+function hatchTriangles(e: HatchEntity | RegionEntity): number[] {
+  const f = hatchFrame(e.props)
+  const out: number[] = []
+  for (const g of hatchRegions(hatchRings(e.props, f))) {
+    const contour = g.outer.map(([x, y]) => new THREE.Vector2(x, y))
+    const holes = g.holes.map((h: Ring) => h.map(([x, y]) => new THREE.Vector2(x, y)))
+    const all = [...g.outer, ...g.holes.flat()]
+    for (const tri of THREE.ShapeUtils.triangulateShape(contour, holes)) {
+      for (const k of tri) out.push(...to3(all[k], f))
+    }
+  }
+  return out
+}
+/**
+ * Caras sombreadas apenas corridas hacia atrás en profundidad: lo que se dibuja sobre ellas en el mismo
+ * plano (aristas, cotas y textos sobre una cara) gana sin pelear con la malla.
+ */
+const FACE_OFFSET = { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }
+/** Programas de shader que se mantienen vivos sin uso (ver `releaseMaterial`). */
+const KEPT_PROGRAMS = 24
+const GRIP_COLOR = 0x1a6fff // grip en reposo (azul el CAD clásico)
+const GRIP_HOVER = 0x33ff66 // grip bajo el cursor
+
+export class Viewport {
+  private readonly renderer: THREE.WebGLRenderer
+  private readonly scene = new THREE.Scene()
+  private readonly controller = new CameraController()
+  private readonly entityGroup = new THREE.Group()
+  /**
+   * Resaltado de la selección en los dibujos grandes: lo elegido se dibuja encima de los lotes en vez de rehacerlos (en
+   * un ensamble de 48 mil objetos, tocar una pieza tardaba segundos). Ver `syncScene`.
+   */
+  private readonly selOverlay = new THREE.Group()
+  /** Selección con la que se armaron los lotes la última vez. */
+  private batchedSelKey = ''
+  /** Mallas de los bloques de la expansión anterior: un redibujo reusa sus triángulos y aristas (ver `meshBuffers`). */
+  private readonly expandMemo = new ExpandMemo()
+  /** Centro de lo seleccionado: la órbita gira alrededor de él, como 3DORBIT con objetos elegidos. */
+  private orbitPivot: THREE.Vector3 | null = null
+  /**
+   * Origen de lo dibujado: las posiciones de las entidades van a la placa de video relativas a él (y su grupo se ubica
+   * ahí). La placa guarda 7 cifras: un plano georreferenciado (millones de metros) perdía los centímetros y sus líneas
+   * salían escalonadas. Cerca del origen del dibujo queda en (0, 0, 0). Ver `pickOrigin`.
+   */
+  private readonly origin = new THREE.Vector3()
+  /** Contornos de las superficies curvas de los sólidos, según la vista (no se seleccionan). */
+  private readonly silhouetteGroup = new THREE.Group()
+  private silhouetteKey = ''
+  private silhouetteMs = 0
+  private readonly previewGroup = new THREE.Group()
+  private readonly snapGroup = new THREE.Group()
+  /** UCS dinámica (DUCS): cara plana de un sólido bajo el cursor y su resaltado. */
+  private ducsFace: FaceHit | null = null
+  private readonly ducsGroup = new THREE.Group()
+  private readonly gripGroup = new THREE.Group()
+  /** Grips visibles (de las entidades seleccionadas) con su entidad de origen, para hit-test. */
+  private grips: { grip: Grip; entityId: string }[] = []
+  private hoverGrip = -1
+  /** Se presionó el botón sobre un grip: el próximo `up` (sin arrastre) lo activa. */
+  private gripArmed = false
+  // El rubber-band se dibuja SIEMPRE sobre la escena (sin depth-test) y último en el orden de
+  // render, como en el CAD clásico: lo que se está dibujando no queda tapado por sólidos ni por líneas.
+  private readonly previewMaterial = new THREE.LineBasicMaterial({
+    color: PREVIEW_COLORS[0],
+    depthTest: false,
+    depthWrite: false,
+  })
+  /** Marcador del snap: siempre encima de la geometría (en 3D un sólido no lo tapa). */
+  private readonly snapMaterial = new THREE.LineBasicMaterial({ color: 0x33ff99, depthTest: false, depthWrite: false })
+  /** Líneas de alineación del tracking: punteadas, siempre visibles (como el CAD clásico). */
+  private readonly trackMaterial = new THREE.LineDashedMaterial({
+    color: 0x33ff99,
+    dashSize: 6,
+    gapSize: 4,
+    depthTest: false,
+    depthWrite: false,
+    opacity: 0.9,
+    transparent: true,
+  })
+  /**
+   * Grips en reposo y bajo el cursor: los mismos en cada cuadro (se rehacen en cada uno mientras hay algo elegido; uno
+   * nuevo por cuadro recompilaba su programa al orbitar con una pieza seleccionada).
+   */
+  private readonly gripMaterials = new Map([GRIP_COLOR, GRIP_HOVER].map((c) => [c, new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true })]))
+  /** Un material por programa de shader, para que el programa no se destruya (ver `releaseMaterial`). */
+  private readonly keptMaterials = new Map<string, THREE.Material>()
+  /** Materiales compartidos por los overlays: viven lo que el viewport (se liberan en `dispose`). */
+  private readonly overlayMaterials = new Set<THREE.Material>([this.previewMaterial, this.snapMaterial, this.trackMaterial, ...this.gripMaterials.values()])
+  private readonly raycaster = new THREE.Raycaster()
+  private previewProvider: ((cursor: Pt) => PreviewShape[]) | null = null
+  private data: ViewportData | null = null
+  private snapResult: SnapResult = { point: { x: 0, y: 0, z: 0 }, type: null }
+  private readonly lastWorldRaw: Pt = { x: 0, y: 0, z: 0 }
+  private readonly lastWorld: Pt = { x: 0, y: 0, z: 0 }
+  private width = 1
+  private height = 1
+  private lastRevision = -1
+  private lastSelectionKey = ''
+  /** Hay textos con campos: un cambio del contexto (nombre del layout, fecha, escala…) los re-evalúa. */
+  private hasFieldTexts = false
+  private lastFieldsKey = ''
+  private lastCamKey = ''
+  private lastOrient = ''
+  /** Render on-demand: solo se dibuja cuando algo cambió (cámara, datos, selección, snap, preview…). */
+  private dirty = true
+  /** Texturas de las imágenes raster por sus datos; las que una reconstrucción deja de usar se liberan en la próxima. */
+  private imageTextures = new Map<string, { tex: THREE.Texture; seen: number }>()
+  private rebuildSeq = 0
+  /** Entidades expandidas (bloques resueltos), cacheadas por revisión. */
+  private expanded: Entity[] | null = null
+  /** Dibujo por tamaño en pantalla: activo, clase de cada pieza (true = punto) y balde de zoom. */
+  private lodOn = false
+  private lodSmall = new Map<string, boolean>()
+  private lodBucket = ''
+  /** Por entidad: orden de dibujo de su capa (mayor = más arriba) y su posición en la lista. */
+  private pickOrder = new Map<string, { o: number; i: number }>()
+  /** Orden de dibujo de cada objeto (ver drawRank.ts) y el paso de profundidad por rango. */
+  private rankOf: (id: string) => number = () => 0
+  private rankK = rankStep(1)
+  /** Esferas envolventes (mundo) por entidad expandida, para el culling espacial del snap. */
+  private snapSpheres: { c: THREE.Vector3; r: number }[] | null = null
+  private raf = 0
+  private dragging: 'pan' | 'orbit' | 'forbit' | 'rtzoom' | null = null
+  /** Historial de vistas para ZOOM Previous. */
+  private viewHistory: CameraState[] = []
+  private lastWheelAt = 0
+  private lastMiddleDown = 0
+  /** Modo Realtime de ZOOM/PAN: el arrastre con el botón izquierdo navega. */
+  private realtime: 'zoom' | 'pan' | 'orbit' | 'forbit' | 'corbit' | null = null
+  /** 3DCORBIT: giro que sigue después de soltar (px por cuadro). */
+  private spin: { dx: number; dy: number } | null = null
+  private lastDrag = { dx: 0, dy: 0 }
+  /** Vista al entrar en Realtime (*Zoom Original*). */
+  private realtimeOrigin: CameraState | null = null
+  private readonly lastPan = new THREE.Vector2()
+  /** Dónde se apretó el botón derecho (para distinguir clic de arrastre de órbita). */
+  private rightDown: [number, number] | null = null
+  /** Dedos apoyados (pointerId → posición de pantalla) y gesto en curso (ver `touchGesture.ts`). */
+  private touches = new Map<number, TouchPt>()
+  private touchGesture: 'none' | 'mouse' | 'nav' | 'aim' | 'pinch' | 'ended' = 'none'
+  private touchStart: (TouchPt & { t: number }) | null = null
+  private lastTap: (TouchPt & { t: number }) | null = null
+  /** Toque simple pendiente de confirmar (si llega un segundo, era un doble toque). */
+  private tapTimer: ReturnType<typeof setTimeout> | undefined
+  /** Apuntando con el dedo: el object snap captura más lejos (el dedo no es tan preciso como el mouse). */
+  private touchAim = false
+  private aimEl: HTMLDivElement | null = null
+  /** Entidades que dan snaps (visibles + extras del papel); se recalcula con los datos. */
+  private snapList: Entity[] | null = null
+  private readonly keyLight = new THREE.DirectionalLight(0xffffff, 2.2)
+  private readonly fillLight = new THREE.DirectionalLight(0xffffff, 0.35)
+  private snapListKey = ''
+  /** Líneas con grosor de los layouts (la fina queda para el pick). */
+  private wideLines: { thin: THREE.LineSegments; wide: LineSegments2; mm: number }[] = []
+  private lineweightZoom = -1
+  /** Objetos que se ven pero no se seleccionan (capas congeladas o bloqueadas). */
+  private unpickable = new Set<string>()
+  private snapLiveRef: Entity[] | undefined
+  /** Escala de anotación con la que se dibujaron las cotas anotativas (cambia con la escala del viewport). */
+  private lastAnnoScale: number | undefined = undefined
+  private readonly lastPx: [number, number] = [0, 0]
+  /** Último cursor en coordenadas de cliente (para el rayo de los snaps de caras). */
+  private lastClient: [number, number] | null = null
+  private boxStartPx: [number, number] | null = null
+  /** Texturas del papel de las notas rápidas, por contenido. */
+  private readonly noteTextures = new Map<string, THREE.CanvasTexture>()
+  /** Primera esquina de la ventana en el dibujo: si se hace zoom o pan a mitad de la selección, la esquina la sigue. */
+  private boxStartWorld: THREE.Vector3 | null = null
+  /** Ventana de selección abierta por un clic en vacío: espera el clic de la esquina opuesta. */
+  private boxPending = false
+  private curPx: [number, number] = [0, 0]
+  private draggingBox = false
+  private boxActive = false
+  private readonly boxEl: HTMLDivElement
+  /** Icono de la UCS: SVG sobre el canvas, sólo en el modelo. */
+  private readonly ucsIconEl: SVGSVGElement | null = null
+  private ucsIconKey = ''
+  private dimLabels: { el: HTMLDivElement; pos: THREE.Vector3; height: number }[] = []
+  /**
+   * Textos en pantalla: cada uno crea su elemento recién cuando se ve y tiene un tamaño que se puede leer, y lo suelta al
+   * salir (un ensamble con 45 mil atributos creaba 45 mil elementos y no entraba en la memoria de un teléfono).
+   */
+  private textLabels: { el: HTMLDivElement | null; make: () => HTMLDivElement; pos: THREE.Vector3; height: number; u: THREE.Vector3; v: THREE.Vector3; justify: string; widthFactor: number; em: number }[] = []
+  private grid!: THREE.GridHelper
+  private bgColor = new THREE.Color(BG_COLOR)
+  private visualStyle: VisualStyle = DEFAULT_VISUAL_STYLE
+  /** UCS propio del viewport (cada panel mantiene el suyo). */
+  private ucs: Ucs = { ...WORLD_UCS }
+  /** Puntos adquiridos para el object snap tracking (máx. 3, como el CAD clásico). */
+  private tracked: Pt[] = []
+  /** Rectas/arcos adquiridos para EXT y PAR, y la pausa en curso sobre uno. */
+  private osnapAcq: Acquisition[] = []
+  private acqKey = ''
+  private acqSince = 0
+  private acqDone = false
+  /** Líneas de alineación vigentes (se dibujan punteadas mientras el tracking captura). */
+  private trackLines: [Pt, Pt][] = []
+  /** Hover sostenido sobre un snap: clave del punto, instante inicial y si ya se consumió. */
+  private hoverKey = ''
+  private hoverSince = 0
+  private hoverConsumed = false
+  /** Estado anterior del prompt de punto: al terminar un comando se sueltan los puntos adquiridos. */
+  private lastPointPrompt = false
+  /** Estado del prompt de punto (activo y punto base) del último tick: si cambia, se re-dibuja. */
+  private lastPromptKey = ''
+  private readonly ro: ResizeObserver
+  /** Navegación bloqueada: rueda/pan se derivan por callback (viewport *display locked*). */
+  private navLocked = false
+  /** Hoja del layout (mm), incluida en ZOOM Extents del papel. */
+  private sheet: { w: number; h: number } | null = null
+
+  constructor(
+    private readonly container: HTMLElement,
+    private readonly cb: ViewportCallbacks = {},
+    readonly kind: ViewportKind = 'model',
+  ) {
+    const paper = kind === 'paper'
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: paper })
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    if (kind === 'model') this.scene.background = new THREE.Color(BG_COLOR)
+    else {
+      // Papel: transparente sobre la hoja HTML; flotante: fondo de papel. El "tinte" (color 7 → negro,
+      // estilo hidden) se calcula contra el blanco del papel.
+      this.bgColor = new THREE.Color(PAPER_COLOR)
+      this.scene.background = paper ? null : new THREE.Color(PAPER_COLOR)
+      if (paper) this.renderer.setClearColor(0x000000, 0)
+      this.controller.minRadius = 1e-4
+      this.controller.maxRadius = 1e9
+    }
+
+    this.grid = underlayGrid(new THREE.GridHelper(1000, 100, 0x444444, 0x2a2a2a))
+    this.grid.visible = kind === 'model'
+    this.orientGrid()
+    this.scene.add(this.grid)
+    // Iluminación por defecto como el CAD clásico: dos luces distantes que siguen a la cámara (ver `aimLights`), así
+    // las caras con distinta orientación nunca quedan del mismo tono, se mire desde donde se mire.
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.45))
+    this.scene.add(this.keyLight, this.keyLight.target, this.fillLight, this.fillLight.target)
+    this.scene.add(this.entityGroup, this.selOverlay, this.silhouetteGroup, this.previewGroup, this.snapGroup, this.gripGroup, this.ducsGroup)
+    this.ducsGroup.renderOrder = 11
+    // Overlays por encima de la geometría: preview < glifos de snap < grips.
+    this.previewGroup.renderOrder = 10
+    this.snapGroup.renderOrder = 11
+    this.gripGroup.renderOrder = 12
+
+    container.appendChild(this.renderer.domElement)
+    this.renderer.domElement.style.display = 'block'
+    // El buffer va en píxeles físicos (setPixelRatio); el tamaño en pantalla lo fija el contenedor. Sin esto,
+    // en pantallas de alta densidad (retina, escala 150–200 %) el canvas se veía al doble y recortado.
+    this.renderer.domElement.style.width = '100%'
+    this.renderer.domElement.style.height = '100%'
+    this.renderer.domElement.style.touchAction = 'none'
+
+    this.boxEl = document.createElement('div')
+    this.boxEl.style.cssText =
+      'position:absolute;pointer-events:none;display:none;border:1px solid;background:rgba(255,255,255,0.06);z-index:5'
+    container.appendChild(this.boxEl)
+    if (kind === 'model') {
+      this.ucsIconEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      this.ucsIconEl.setAttribute('data-testid', 'ucs-icon')
+      this.ucsIconEl.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:visible'
+      container.appendChild(this.ucsIconEl)
+    }
+
+    this.attachEvents()
+    this.ro = new ResizeObserver(() => this.resize())
+    this.ro.observe(container)
+    this.resize()
+    // El primer cuadro va en el próximo frame: sus callbacks (cámara, modo de selección…) pueden referirse al
+    // viewport que todavía se está construyendo (`const vp = new Viewport(…)` del componente).
+    this.raf = requestAnimationFrame(this.tick)
+  }
+
+  setProvider(provider: () => ViewportData): void {
+    this.provider = provider
+  }
+  private provider: (() => ViewportData) | null = null
+
+  setPreviewProvider(provider: (cursor: Pt) => PreviewShape[]): void {
+    this.previewProvider = provider
+  }
+
+  /** Aplica el tema visual: fondo de la escena y colores de la grilla. */
+  setTheme(t: { background: string; gridMajor: string; gridMinor: string }): void {
+    if (this.kind !== 'model') return // la hoja es blanca con cualquier tema
+    this.bgColor = new THREE.Color(t.background)
+    this.scene.background = new THREE.Color(t.background)
+    this.scene.remove(this.grid)
+    this.grid.geometry.dispose()
+    const mat = this.grid.material
+    if (Array.isArray(mat)) mat.forEach((m) => m.dispose())
+    else mat.dispose()
+    const visible = this.grid.visible
+    this.grid = underlayGrid(new THREE.GridHelper(1000, 100, new THREE.Color(t.gridMajor), new THREE.Color(t.gridMinor)))
+    this.grid.visible = visible
+    this.orientGrid()
+    this.scene.add(this.grid)
+    this.invalidate()
+  }
+
+  /** Estilo visual del viewport (2D/3D wireframe, shaded, shaded+edges, hidden). */
+  setVisualStyle(mode: VisualStyle): void {
+    if (this.visualStyle === mode) return
+    this.visualStyle = mode
+    this.lastRevision = -1 // fuerza el rebuild en el próximo tick
+  }
+
+  /** Fuerza el redibujo/regeneración de la escena en el próximo tick (REDRAW/REGEN). */
+  forceRebuild(): void {
+    this.lastRevision = -1
+    this.lastSelectionKey = '\u0000'
+  }
+
+  /** UCS propio del viewport. */
+  getUcs(): Ucs {
+    return this.ucs
+  }
+  setUcs(ucs: Ucs): void {
+    this.ucs = ucs
+    this.orientGrid() // la grilla se reubica/reorienta con el UCS
+    this.updateUcsIcon()
+    this.invalidate()
+  }
+
+  /**
+   * Icono de la UCS (UCSICON): ejes X (rojo), Y (verde) y Z (azul) en proyección paralela. Con el
+   * bit "origen" se dibuja en el origen de la UCS si entra en pantalla; si no, abajo a la izquierda. "W"
+   * marca la UCS universal; una cruz roja, que el plano XY se ve de canto (el lápiz roto del CAD clásico).
+   */
+  updateUcsIcon(force = false): void {
+    const el = this.ucsIconEl
+    if (!el) return
+    if (force) this.ucsIconKey = ''
+    const flags = sysvars.UCSICON
+    const cam = this.controller.camera
+    cam.updateMatrixWorld()
+    const o = this.ucs.origin
+    const at = flags & 2 ? this.controller.project(new THREE.Vector3(o.x, o.y, o.z)) : null
+    const m = 40
+    const inside = at && at[0] > m && at[0] < this.width - m && at[1] > m && at[1] < this.height - m
+    const [cx, cy] = inside ? at : [34, this.height - 34]
+    const rot = new THREE.Matrix3().setFromMatrix4(cam.matrixWorldInverse)
+    const key = `${flags}|${cx.toFixed(1)},${cy.toFixed(1)}|${cam.matrixWorldInverse.elements.map((v) => v.toFixed(4)).join(',')}|${this.ucs.x}|${this.ucs.y}`
+    if (key === this.ucsIconKey) return
+    this.ucsIconKey = key
+    if (!(flags & 1)) {
+      el.innerHTML = ''
+      return
+    }
+    const L = 30
+    const axes: Array<[Vec3, string, string]> = [
+      [this.ucs.x, '#e05a5a', 'X'],
+      [this.ucs.y, '#5ac85a', 'Y'],
+      [ucsZ(this.ucs), '#5a8cff', 'Z'],
+    ]
+    const parts = axes.map(([d, color, label]) => {
+      const v = new THREE.Vector3(...d).applyMatrix3(rot)
+      const [ex, ey] = [cx + v.x * L, cy - v.y * L]
+      if (Math.hypot(v.x, v.y) < 0.08) return '' // eje de punta: no se dibuja
+      const [lx, ly] = [cx + v.x * (L + 9), cy - v.y * (L + 9)]
+      return (
+        `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="${color}" stroke-width="2"/>` +
+        `<text x="${lx}" y="${ly}" fill="${color}" font-size="10" font-family="monospace" text-anchor="middle" dominant-baseline="middle">${label}</text>`
+      )
+    })
+    if (isWorldUcs(this.ucs)) parts.push(`<text x="${cx + 7}" y="${cy + 12}" fill="#c8c8c8" font-size="9" font-family="monospace">W</text>`)
+    if (this.edgeOn()) parts.push(`<line x1="${cx - 8}" y1="${cy - 8}" x2="${cx + 8}" y2="${cy + 8}" stroke="#ff4040" stroke-width="2"/>`)
+    el.innerHTML = parts.join('')
+  }
+
+  setView(name: ViewName): void {
+    if (this.kind === 'paper') return // el papel siempre se mira en planta
+    this.recordView()
+    this.controller.setView(name)
+    if (this.kind === 'floating') this.controller.setMode('ortho') // la escala exige proyección paralela
+    // UCSORTHO (D2): las vistas ortogonales activan su UCS ortogonal; las isométricas no.
+    if (sysvars.UCSORTHO && name in ORTHO_UCS) {
+      const u = orthoUcs(name as OrthoUcsName)
+      if (!sameUcs(u, this.ucs)) {
+        this.setUcs(u)
+        // Nombre del CAD clásico de la UCS ortogonal (*FRONT*…); la de TOP es la universal.
+        this.cb.onUcsChange?.(u, name === 'TOP' ? 'World' : name[0] + name.slice(1).toLowerCase())
+      }
+    }
+    this.orientGrid()
+    this.fitExtents() // al fijar una vista, encuadrar el contenido (estilo CAD clásico)
+  }
+  /** Vista desde una dirección (arista o esquina del cubo desplegado): no cambia la UCS y encuadra. */
+  setViewDir(az: number, el: number): void {
+    if (this.kind === 'paper') return
+    this.recordView()
+    this.controller.setAngles(az, el)
+    if (this.kind === 'floating') this.controller.setMode('ortho')
+    this.orientGrid()
+    this.fitExtents()
+  }
+
+  /** Vista en planta de una UCS (PLAN/UCSFOLLOW): mira por −Z con su Y hacia arriba y encuadra. */
+  planView(u: Ucs): void {
+    if (this.kind === 'paper') return
+    this.recordView()
+    this.controller.setPlan(ucsZ(u), [...u.y] as [number, number, number])
+    this.orientGrid()
+    this.fitExtents()
+  }
+
+  /** Derecha y arriba de la pantalla en mundo (para `UCS View`). */
+  viewAxes(): { right: Vec3; up: Vec3 } {
+    const cam = this.controller.camera
+    cam.updateMatrixWorld()
+    const r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0)
+    const u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1)
+    return { right: [r.x, r.y, r.z], up: [u.x, u.y, u.z] }
+  }
+
+  setMode(mode: CameraMode): void {
+    if (this.kind !== 'model') return
+    this.controller.setMode(mode)
+  }
+
+  /** Cámara actual (objetivo, orientación y alto visible). */
+  getCamera(): CameraState {
+    const c = this.controller
+    const up = c.fixedUp
+    return { target: [c.target.x, c.target.y, c.target.z], az: c.az, el: c.el, radius: c.radius, mode: c.mode, ...(up ? { up } : {}) }
+  }
+
+  // --- Navegación ---------------------------------------------------------------------------
+
+  /**
+   * Avisa que la vista está por cambiar, con la vista de antes: UNDO/REDO deshacen los cambios de
+   * vista como en el CAD clásico. Lo asigna el store al registrar el viewport.
+   */
+  onViewRecorded: ((before: CameraState, ucs: Ucs) => void) | null = null
+  /** Panel al que corresponde ("<paneles>-<índice>" del modelo, "paper:<layout>"): su vista se guarda con el dibujo. */
+  paneKey: string | null = null
+
+  /** Guarda la vista actual en el historial (antes de cambiarla), sin repetir la última. */
+  recordView(): void {
+    const s = this.getCamera()
+    this.onViewRecorded?.(s, this.getUcs())
+    const last = this.viewHistory[this.viewHistory.length - 1]
+    if (last && JSON.stringify(last) === JSON.stringify(s)) return
+    this.viewHistory.push(s)
+    if (this.viewHistory.length > VIEW_HISTORY) this.viewHistory.shift()
+  }
+
+  /** ZOOM Previous: vuelve a la vista anterior. false si no hay. */
+  zoomPrevious(): boolean {
+    const s = this.viewHistory.pop()
+    if (!s) return false
+    this.onViewRecorded?.(this.getCamera(), this.getUcs())
+    this.applyCamera(s)
+    return true
+  }
+
+  /** Cantidad de vistas anteriores guardadas. */
+  get previousViews(): number {
+    return this.viewHistory.length
+  }
+
+  /** Alto visible actual (unidades de mundo), para `ZOOM Center` y `nX`. */
+  viewHeight(): number {
+    return this.controller.viewHeight
+  }
+
+  /** ZOOM Center: centro y alto visible. */
+  /** Encuadra un rectángulo de la vista actual (centro en el mundo, ancho y alto visibles): entra entero. */
+  fitViewRect(center: Pt, width: number, height: number): void {
+    this.recordView()
+    this.controller.target.set(center.x, center.y, center.z)
+    this.controller.viewHeight = Math.max(height, width / (this.width / Math.max(1, this.height)))
+    this.controller.update()
+    this.invalidate()
+  }
+
+  zoomCenter(c: Pt, height: number): void {
+    this.recordView()
+    this.controller.target.set(c.x, c.y, c.z)
+    this.controller.viewHeight = height
+    this.invalidate()
+  }
+
+  /** ZOOM nX: el alto visible se divide por `f`, desde el centro de la vista. */
+  zoomScale(f: number): void {
+    if (!(f > 0)) return
+    this.recordView()
+    this.controller.viewHeight = this.controller.viewHeight / f
+    this.invalidate()
+  }
+
+  /** Encuadra una caja (ZOOM Object/All). */
+  zoomBox(min: Vec3, max: Vec3): void {
+    this.recordView()
+    this.controller.fitBounds(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)), 1.05)
+    this.invalidate()
+  }
+
+  /** -PAN: desplaza el dibujo `d` (la vista se mueve al revés). */
+  panBy(d: Vec3): void {
+    this.recordView()
+    this.controller.target.set(this.controller.target.x - d[0], this.controller.target.y - d[1], this.controller.target.z - d[2])
+    this.controller.update()
+    this.invalidate()
+  }
+
+  /** Rectángulo visible en el plano del objetivo: centro, ejes de pantalla y tamaño (ZOOM Dynamic). */
+  viewRect(): { center: Vec3; right: Vec3; up: Vec3; width: number; height: number } {
+    const { right, up } = this.viewAxes()
+    const h = this.controller.viewHeight
+    const t = this.controller.target
+    return { center: [t.x, t.y, t.z], right, up, width: (h * this.controller.pxWidth) / this.controller.pxHeight, height: h }
+  }
+
+  /** Caja de lo dibujado (la extensión), o null si no hay nada. */
+  extentsBox(): { min: Vec3; max: Vec3 } | null {
+    const d = (this.data = this.provider?.() ?? this.data)
+    if (d) this.syncScene(d)
+    const box = this.contentBox()
+    if (box.isEmpty() || ![box.min.x, box.min.y, box.min.z, box.max.x, box.max.y, box.max.z].every(isFinite)) return null
+    return { min: [box.min.x, box.min.y, box.min.z], max: [box.max.x, box.max.y, box.max.z] }
+  }
+
+  /**
+   * ¿Rige el orden de dibujo? Mirando en planta del mundo o de la UCS (y en el papel). En una vista 3D manda la
+   * profundidad real (ver `drawRank.ts`).
+   */
+  private drawOrderOn(): boolean {
+    if (this.kind !== 'model' || this.isPlanView()) return true
+    const v = this.controller.viewDirection()
+    const z = ucsZ(this.ucs)
+    return Math.abs(z[0] * v.x + z[1] * v.y + z[2] * v.z) > 0.9998
+  }
+
+  /** ¿La vista mira en planta (a lo largo de ±Z del mundo)? */
+  isPlanView(): boolean {
+    return Math.abs(Math.abs(this.controller.el) - Math.PI / 2) < 0.02
+  }
+
+  /** Rectángulo del XY del mundo que se ve en el viewport (para PLOT ▸ Display); null si no está en planta. */
+  displayRect(): { minX: number; minY: number; maxX: number; maxY: number } | null {
+    if (!this.isPlanView()) return null
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
+    const xs: number[] = []
+    const ys: number[] = []
+    for (const [nx, ny] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const out = new THREE.Vector3()
+      if (!this.controller.rayFromNdc(nx, ny).intersectPlane(plane, out)) return null
+      xs.push(out.x)
+      ys.push(out.y)
+    }
+    return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) }
+  }
+
+  /** Modo Realtime (ZOOM ↵ / PAN): `null` sale. */
+  setRealtime(mode: 'zoom' | 'pan' | 'orbit' | 'forbit' | 'corbit' | null): void {
+    this.spin = null
+    if (mode && !this.realtime) {
+      this.realtimeOrigin = this.getCamera()
+      this.recordView()
+    }
+    this.realtime = mode
+    this.renderer.domElement.style.cursor = mode === 'zoom' ? 'zoom-in' : mode === 'pan' ? 'grab' : mode ? 'move' : ''
+  }
+
+  /** *Zoom Original*: la vista al entrar en Realtime. */
+  realtimeOriginal(): void {
+    if (this.realtimeOrigin) this.applyCamera(this.realtimeOrigin)
+  }
+
+  /** Aplica una vista guardada (sin registrarla). */
+  private applyCamera(s: CameraState): void {
+    this.setCamera(s)
+  }
+
+  /** Vista que encuadra la ventana `a`–`b`, sin aplicarla ni registrarla (-VIEW Window). */
+  windowState(a: Pt, b: Pt): CameraState {
+    const saved = this.getCamera()
+    this.fitWindow(a, b)
+    const s = this.getCamera()
+    this.setCamera(saved)
+    return s
+  }
+
+  /** UNDO/REDO de una vista: la aplica sin registrarla en el historial ni en la pila de deshacer. */
+  undoView(s: CameraState): void {
+    this.applyCamera(s)
+  }
+
+  /** Restaura una vista guardada (-VIEW Restore), registrando la actual para ZOOM Previous. */
+  restoreView(s: CameraState): void {
+    this.recordView()
+    this.applyCamera(s)
+  }
+
+  /**
+   * Fija la cámara desde afuera: viewport flotante ← su entidad VIEWPORT (siempre ortográfica) o panel
+   * del modelo que se restaura al volver de un layout.
+   */
+  setCamera(s: CameraState): void {
+    const c = this.controller
+    c.target.set(s.target[0], s.target[1], s.target[2])
+    c.az = s.az
+    c.el = s.el
+    c.radius = s.radius
+    c.mode = this.kind === 'model' ? (s.mode ?? 'ortho') : 'ortho'
+    c.fixedUp = s.up ?? null
+    c.update()
+    this.orientGrid()
+    this.invalidate()
+  }
+
+  /** Bloquea la navegación propia (rueda/pan se derivan a `onLockedWheel`/`onLockedPan`). */
+  setNavLocked(locked: boolean): void {
+    this.navLocked = locked
+  }
+
+  /** Hoja del layout en mm (el papel la incluye en ZOOM Extents). */
+  setSheet(w: number, h: number): void {
+    this.sheet = { w, h }
+  }
+
+  /** Zoom de rueda hacia el punto de pantalla indicado (también lo usa el papel para la rueda derivada). */
+  wheelZoom(clientX: number, clientY: number, deltaY: number): void {
+    // Una tanda de rueda (sin pausa de 0,4 s) es un solo paso de ZOOM Previous.
+    const now = performance.now()
+    if (now - this.lastWheelAt > 400) this.recordView()
+    this.lastWheelAt = now
+    // ZOOMFACTOR (3–100, 60 = 1,1 por paso) y ZOOMWHEEL (1 = rueda hacia adelante aleja), como el CAD clásico.
+    const k = 1 + Math.min(100, Math.max(3, sysvars.ZOOMFACTOR)) / 600
+    const out = (deltaY > 0) !== (sysvars.ZOOMWHEEL === 1)
+    this.zoomAt(clientX, clientY, out ? k : 1 / k)
+  }
+
+  /** Zoom (`f > 1` aleja) que mantiene fijo el punto de pantalla indicado (rueda y pinza). */
+  private zoomAt(clientX: number, clientY: number, f: number): void {
+    const [nx, ny] = this.ndc(clientX, clientY)
+    const before = this.worldOnViewPlane(nx, ny)
+    this.controller.zoom(f)
+    const after = this.worldOnViewPlane(nx, ny)
+    // Mantiene fijo el punto bajo el cursor en CUALQUIER vista (usa un plano que enfrenta la cámara a través del
+    // target, no el plano Z=0).
+    if (before && after) {
+      this.controller.target.add(before.sub(after))
+      this.controller.update()
+    }
+  }
+
+  /** Pan en píxeles de pantalla. */
+  panPx(dx: number, dy: number): void {
+    this.controller.pan(dx, dy)
+  }
+
+  /** Proyecta un punto de mundo a píxeles del canvas (para selección/snap en el store). */
+  project(p: Pt): [number, number] | null {
+    return this.controller.project(new THREE.Vector3(p.x, p.y, p.z))
+  }
+
+  /** Encuadra todo el contenido dibujado (ZOOM Extents). */
+  zoomExtents(): void {
+    this.recordView()
+    this.fitExtents()
+  }
+
+  private fitExtents(): void {
+    const d = (this.data = this.provider?.() ?? this.data)
+    if (d) this.syncScene(d)
+    const box = this.contentBox()
+    if (this.sheet) box.union(new THREE.Box3(new THREE.Vector3(0, 0, -1), new THREE.Vector3(this.sheet.w, this.sheet.h, 1)))
+    // Bounds vacíos o NO finitos (una geometría degenerada puede dar NaN) → no romper la cámara.
+    const finite =
+      isFinite(box.min.x) && isFinite(box.min.y) && isFinite(box.min.z) &&
+      isFinite(box.max.x) && isFinite(box.max.y) && isFinite(box.max.z)
+    if (box.isEmpty() || !finite) {
+      this.controller.target.set(0, 0, 0)
+      this.controller.radius = 200
+      this.controller.update()
+      return
+    }
+    this.controller.fitBounds(box)
+  }
+
+  /** Caja de lo dibujado. Una línea infinita cuenta por sus dos puntos, no por lo que se prolonga. */
+  private contentBox(): THREE.Box3 {
+    const list = this.expanded
+    if (!list?.some((e) => e.type === 'LINE' && e.props.extend)) return new THREE.Box3().setFromObject(this.entityGroup)
+    const box = new THREE.Box3()
+    for (const e of list) for (const poly of entityOutline(e)) for (const p of poly) box.expandByPoint(new THREE.Vector3(p.x, p.y, p.z))
+    return box
+  }
+
+  /** Encuadra el rectángulo definido por dos puntos de mundo (ZOOM Window). */
+  zoomWindow(a: Pt, b: Pt): void {
+    this.recordView()
+    this.fitWindow(a, b)
+  }
+
+  /** Ejes de la pantalla en el mundo: el plano en que el usuario ve una ventana indicada con el mouse. */
+  viewPlane(): WindowPlane {
+    const cam = this.controller.camera
+    cam.updateMatrixWorld(true)
+    const r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0)
+    const up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1)
+    return { u: [r.x, r.y, r.z], v: [up.x, up.y, up.z] }
+  }
+
+  /** Encuadra la ventana de esquinas `a` y `b` tal como se ve en pantalla, en cualquier vista. */
+  private fitWindow(a: Pt, b: Pt): void {
+    if (this.controller.mode === 'persp') {
+      const min = new THREE.Vector3(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.min(a.z, b.z) - 1)
+      const max = new THREE.Vector3(Math.max(a.x, b.x), Math.max(a.y, b.y), Math.max(a.z, b.z) + 1)
+      this.controller.fitBounds(new THREE.Box3(min, max), 1.02)
+      return
+    }
+    const { u, v } = this.viewPlane()
+    const d = [b.x - a.x, b.y - a.y, b.z - a.z]
+    const w = Math.abs(d[0] * u[0] + d[1] * u[1] + d[2] * u[2])
+    const h = Math.abs(d[0] * v[0] + d[1] * v[1] + d[2] * v[2])
+    if (Math.max(w, h) < 1e-9) return
+    this.controller.target.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+    this.controller.viewHeight = Math.max(h, (w * this.height) / Math.max(1, this.width)) * 1.02 // casi sin margen
+    this.invalidate()
+  }
+
+  private attachEvents(): void {
+    const el = this.renderer.domElement
+    el.addEventListener('pointermove', this.onPointerMove)
+    el.addEventListener('dblclick', this.onDoubleClick)
+    el.addEventListener('pointerdown', this.onPointerDown)
+    el.addEventListener('pointerup', this.onPointerUp)
+    el.addEventListener('pointercancel', this.onTouchCancel)
+    el.addEventListener('wheel', this.onWheel, { passive: false })
+    el.addEventListener('contextmenu', (e) => e.preventDefault())
+  }
+
+  /** Coordenadas de píxel relativas al canvas (origen arriba-izquierda). */
+  /** Posición en la página (px) de un punto del dibujo, o null si no se proyecta. */
+  pageOf(p: Vec3): [number, number] | null {
+    const q = this.controller.project(new THREE.Vector3(p[0] - this.origin.x, p[1] - this.origin.y, p[2] - this.origin.z))
+    if (!q) return null
+    const r = this.container.getBoundingClientRect()
+    return [r.left + q[0], r.top + q[1]]
+  }
+
+  /** Punto del dibujo bajo `px`, en el plano del objetivo de la cámara (perpendicular a la vista). */
+  private worldOfPx(px: [number, number]): THREE.Vector3 | null {
+    const c = this.controller
+    if (!this.width || !this.height) return null
+    const ray = c.rayFromNdc((px[0] / this.width) * 2 - 1, 1 - (px[1] / this.height) * 2)
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(c.camera.getWorldDirection(new THREE.Vector3()), c.target)
+    return ray.intersectPlane(plane, new THREE.Vector3())
+  }
+
+  private pxOf(clientX: number, clientY: number): [number, number] {
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    return [clientX - rect.left, clientY - rect.top]
+  }
+
+  private onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerType === 'touch' && this.touchMove(e)) return
+    // Botón derecho: hasta moverse unos píxeles es un clic (menú contextual), no una órbita.
+    const rd = this.rightDown
+    if (this.dragging && rd && Math.hypot(e.clientX - rd[0], e.clientY - rd[1]) >= 4) this.rightDown = null
+    if (this.dragging && !this.rightDown) {
+      const dx = e.clientX - this.lastPan.x
+      const dy = e.clientY - this.lastPan.y
+      this.lastPan.set(e.clientX, e.clientY)
+      if (this.navLocked) {
+        if (this.dragging === 'pan') this.cb.onLockedPan?.(dx, dy)
+      } else if (this.dragging === 'pan') this.controller.pan(dx, dy)
+      else if (this.dragging === 'rtzoom') {
+        // Zoom Realtime: subir medio alto de la ventana acerca al doble (bajar, aleja), desde el centro.
+        this.controller.zoom(Math.pow(2, dy / Math.max(1, this.controller.pxHeight / 2)))
+      } else if (this.dragging === 'forbit') this.controller.freeOrbit(dx, dy)
+      else this.orbitView(dx, dy)
+      this.lastDrag = { dx, dy }
+    }
+    const px = this.pxOf(e.clientX, e.clientY)
+    this.lastPx[0] = px[0]
+    this.lastPx[1] = px[1]
+    this.lastClient = [e.clientX, e.clientY]
+    this.updateDucs(e.clientX, e.clientY)
+    const raw = this.screenToWorld(e.clientX, e.clientY)
+    this.lastWorldRaw.x = raw.x
+    this.lastWorldRaw.y = raw.y
+    this.lastWorldRaw.z = raw.z
+    // Object snap solo durante un prompt de punto (como el CAD clásico) → el hover en reposo no cuesta nada.
+    const snapped = this.needSnap() ? this.snapAt(raw) : { point: raw, type: null as SnapType | null }
+    this.snapResult = snapped
+    this.updateTrackingAcquisition()
+    this.updateOsnapAcquisition()
+    this.lastWorld.x = snapped.point.x
+    this.lastWorld.y = snapped.point.y
+    this.lastWorld.z = snapped.point.z
+    if (this.draggingBox && this.boxStartPx) {
+      this.curPx = px
+      const d = Math.hypot(px[0] - this.boxStartPx[0], px[1] - this.boxStartPx[1])
+      if (d > 4) this.boxActive = true
+    }
+    // Hover de grips: resalta el grip bajo el cursor (verde). El cursor sigue siendo la cruz, como el CAD clásico
+    // (antes aparecía la mano del navegador encima de la cruz).
+    const prev = this.hoverGrip
+    this.hoverGrip = this.grips.length ? this.gripAt(px) : -1
+    if (this.hoverGrip !== prev) this.invalidate()
+    // Re-dibuja solo si algo sigue al cursor: snap, rubber-band de comando, arrastre o caja de selección.
+    if (this.dragging || this.draggingBox || this.data?.pointPrompt || this.needSnap()) this.invalidate()
+    this.cb.onPointerMove?.(snapped.point)
+  }
+
+  /** Índice del grip cuyo centro proyectado cae más cerca del cursor (dentro del umbral), o −1. */
+  private gripAt(px: [number, number]): number {
+    let best = -1
+    let bestD = 9
+    for (let i = 0; i < this.grips.length; i++) {
+      const pr = this.controller.project(new THREE.Vector3(...this.grips[i].grip.point))
+      if (!pr) continue
+      const d = Math.hypot(pr[0] - px[0], pr[1] - px[1])
+      if (d <= bestD) {
+        bestD = d
+        best = i
+      }
+    }
+    return best
+  }
+
+  private onDoubleClick = (e: MouseEvent): void => {
+    // Vista mobile: el doble toque es zoom extents (el navegador igual manda un doble clic, que no edita nada acá).
+    if (e.button !== 0 || touchConfig.mode === 'mobile') return
+    const id = this.pickAt(e.clientX, e.clientY)
+    const world = this.screenToWorld(e.clientX, e.clientY)
+    if (id) this.cb.onEntityDoubleClick?.(id, world)
+    else this.cb.onEmptyDoubleClick?.(world)
+  }
+
+  private onPointerDown = (e: PointerEvent): void => {
+    if (e.pointerType === 'touch' && this.touchDown(e)) {
+      e.preventDefault() // sin los eventos de mouse de compatibilidad (el doble toque no es un doble clic)
+      return
+    }
+    this.cb.onActivate?.() // este viewport pasa a ser el activo
+    if (this.realtime && e.button === 2) {
+      // Realtime: el clic derecho abre el menú del CAD clásico (Exit/Pan/Zoom/…).
+      e.preventDefault()
+      this.cb.onRealtimeMenu?.(e.clientX, e.clientY)
+      return
+    }
+    if (this.realtime && e.button === 0) {
+      this.spin = null // un clic detiene la órbita continua
+      this.dragging = this.realtime === 'zoom' ? 'rtzoom' : this.realtime === 'pan' ? 'pan' : this.realtime === 'forbit' ? 'forbit' : 'orbit'
+      this.lastPan.set(e.clientX, e.clientY)
+      this.renderer.domElement.setPointerCapture(e.pointerId)
+      if (this.realtime === 'pan') this.renderer.domElement.style.cursor = 'grabbing'
+      e.preventDefault()
+      return
+    }
+    if (e.button === 1) {
+      // Doble clic con el botón central: ZOOM Extents (CAD clásico).
+      const now = performance.now()
+      if (now - this.lastMiddleDown < 350) {
+        this.lastMiddleDown = 0
+        this.zoomExtents()
+        this.invalidate()
+        e.preventDefault()
+        return
+      }
+      this.lastMiddleDown = now
+    }
+    if (e.button === 2 && this.cb.onRightClickCommand?.()) {
+      // Clic derecho con un prompt activo actúa como Enter (p. ej. TRIM: "todas las aristas cortan").
+      e.preventDefault()
+      return
+    }
+    if (e.button === 1 || e.button === 2) {
+      // El CAD clásico: botón central = PAN, Shift + central = ORBIT; botón derecho = ORBIT.
+      // El papel no orbita: cualquier arrastre lo desplaza.
+      this.dragging = (e.button === 2 || e.shiftKey) && this.kind !== 'paper' ? 'orbit' : 'pan'
+      if (!this.navLocked) this.recordView() // ZOOM Previous vuelve a la vista de antes del arrastre
+      this.lastPan.set(e.clientX, e.clientY)
+      this.rightDown = e.button === 2 ? [e.clientX, e.clientY] : null
+      this.renderer.domElement.setPointerCapture(e.pointerId)
+      e.preventDefault()
+      return
+    }
+    if (e.button === 0 && this.cb.isSelectMode?.()) {
+      // Si el cursor está sobre un grip de la selección, se "arma": el próximo click lo activa
+      // (no se inicia una caja de selección).
+      if (!this.cb.isCommandActive?.() && this.gripAt(this.pxOf(e.clientX, e.clientY)) >= 0) {
+        this.gripArmed = true
+        return
+      }
+      if (this.boxPending) return // el clic que cierra la ventana se resuelve al soltar
+      this.boxStartPx = this.pxOf(e.clientX, e.clientY)
+      this.boxStartWorld = this.worldOfPx(this.boxStartPx)
+      this.curPx = this.boxStartPx
+      this.draggingBox = true
+      this.boxActive = false
+    }
+  }
+
+  /** Un dedo se apoya. Devuelve true si el gesto lo maneja el viewport (si no, sigue como botón izquierdo). */
+  private touchDown(e: PointerEvent): boolean {
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    try {
+      this.renderer.domElement.setPointerCapture(e.pointerId)
+    } catch {
+      // Puntero que ya no existe (se levantó el dedo antes de procesar el evento): sigue sin captura.
+    }
+    if (this.touches.size === 2) {
+      // Segundo dedo: pinza. Se descarta lo que había empezado el primero (ventana de selección, mira de medir).
+      this.cancelSingleTouch()
+      this.touchGesture = 'pinch'
+      if (!this.navLocked) this.recordView()
+      return true
+    }
+    if (this.touches.size > 2) return true
+    this.cb.onActivate?.()
+    this.touchStart = { x: e.clientX, y: e.clientY, t: performance.now() }
+    if (touchConfig.mode === 'editor') {
+      this.touchGesture = 'mouse'
+      return false
+    }
+    // Datos al día: el prompt de punto puede haber empezado después del último cuadro.
+    if ((this.data = this.provider?.() ?? this.data)?.pointPrompt) {
+      this.touchGesture = 'aim'
+      this.touchAim = true
+      this.aimAt(e.clientX, e.clientY)
+      return true
+    }
+    this.touchGesture = 'nav'
+    this.lastPan.set(e.clientX, e.clientY)
+    if (!this.navLocked) this.recordView()
+    return true
+  }
+
+  private touchMove(e: PointerEvent): boolean {
+    const prev = this.touches.get(e.pointerId)
+    if (!prev) return this.touchGesture !== 'mouse' && this.touchGesture !== 'none'
+    const cur = { x: e.clientX, y: e.clientY }
+    if (this.touchGesture === 'pinch') {
+      const other = [...this.touches.entries()].find(([id]) => id !== e.pointerId)?.[1]
+      this.touches.set(e.pointerId, cur)
+      if (!other) return true
+      const step = pinchStep(prev, other, cur, other)
+      if (this.navLocked) this.cb.onLockedPan?.(step.pan.x, step.pan.y)
+      else {
+        this.zoomAt(step.mid.x, step.mid.y, step.zoom)
+        this.controller.pan(step.pan.x, step.pan.y)
+      }
+      this.invalidate()
+      return true
+    }
+    this.touches.set(e.pointerId, cur)
+    if (this.touchGesture === 'mouse' || this.touchGesture === 'none') return false
+    if (this.touchGesture === 'aim') this.aimAt(e.clientX, e.clientY)
+    else if (this.touchGesture === 'nav') {
+      const dx = e.clientX - this.lastPan.x
+      const dy = e.clientY - this.lastPan.y
+      this.lastPan.set(e.clientX, e.clientY)
+      if (this.navLocked) this.cb.onLockedPan?.(dx, dy)
+      else if (this.kind !== 'model' || touchConfig.oneFinger === 'pan') this.controller.pan(dx, dy)
+      else this.orbitView(dx, dy)
+      this.invalidate()
+    }
+    return true
+  }
+
+  private touchUp(e: PointerEvent): boolean {
+    if (!this.touches.delete(e.pointerId)) return this.touchGesture !== 'mouse'
+    if (this.renderer.domElement.hasPointerCapture(e.pointerId)) this.renderer.domElement.releasePointerCapture(e.pointerId)
+    const g = this.touchGesture
+    if (this.touches.size) {
+      // Queda un dedo de una pinza: se ignora hasta levantarlo (seguir con él daría un salto).
+      if (g === 'pinch') this.touchGesture = 'ended'
+      return true
+    }
+    this.touchGesture = 'none'
+    const start = this.touchStart
+    this.touchStart = null
+    if (g === 'mouse') return false
+    if (g === 'aim') {
+      // Se fija el punto bajo la mira, como un clic del mouse ahí.
+      this.hideAim()
+      const at = { clientX: e.clientX, clientY: e.clientY - TOUCH_AIM_OFFSET, button: 0, shiftKey: false, pointerId: e.pointerId } as PointerEvent
+      this.onPointerUp(at)
+      this.touchAim = false
+      return true
+    }
+    if (g === 'nav') {
+      this.invalidate() // siluetas pendientes de la órbita
+      const end = { x: e.clientX, y: e.clientY, t: performance.now() }
+      if (start && isTap(start, end)) {
+        if (isDoubleTap(this.lastTap, end)) {
+          this.lastTap = null
+          clearTimeout(this.tapTimer) // el doble toque sólo encuadra: no elige
+          if (!this.navLocked) {
+            this.zoomExtents()
+            this.invalidate()
+          }
+        } else {
+          this.lastTap = end
+          // Un toque elige la pieza bajo el dedo (o vacía la selección si no hay nada), pasado el tiempo de un doble toque.
+          const { clientX, clientY } = e
+          clearTimeout(this.tapTimer)
+          if (this.cb.onTapPick && !this.navLocked) this.tapTimer = setTimeout(() => this.cb.onTapPick?.(this.pickAt(clientX, clientY)), TAP_SELECT_MS)
+        }
+      }
+    }
+    return true
+  }
+
+  private onTouchCancel = (e: PointerEvent): void => {
+    if (e.pointerType !== 'touch') return
+    this.touches.delete(e.pointerId)
+    if (this.touches.size) return
+    this.cancelSingleTouch()
+    this.touchGesture = 'none'
+  }
+
+  /** Descarta lo que hacía un dedo solo: ventana de selección del editor o mira de medir. */
+  private cancelSingleTouch(): void {
+    this.hideAim()
+    this.touchAim = false
+    this.gripArmed = false
+    this.draggingBox = false
+    this.boxPending = false
+    this.boxActive = false
+    this.boxStartPx = null
+    this.boxStartWorld = null
+    this.boxEl.style.display = 'none'
+  }
+
+  /** Mira de medir: el punto que se toca queda por encima del dedo; el object snap se busca ahí. */
+  private aimAt(clientX: number, clientY: number): void {
+    const y = clientY - TOUCH_AIM_OFFSET
+    this.onPointerMove({ clientX, clientY: y } as PointerEvent)
+    if (!this.aimEl) {
+      const el = document.createElement('div')
+      el.className = 'touch-aim'
+      el.setAttribute('data-testid', 'touch-aim')
+      this.container.appendChild(el)
+      this.aimEl = el
+    }
+    const [px, py] = this.pxOf(clientX, y)
+    this.aimEl.style.display = 'block'
+    this.aimEl.style.left = `${px}px`
+    this.aimEl.style.top = `${py}px`
+    this.aimEl.style.height = `${TOUCH_AIM_OFFSET}px`
+  }
+
+  private hideAim(): void {
+    if (this.aimEl) this.aimEl.style.display = 'none'
+  }
+
+  /** Cierra sin seleccionar la ventana abierta con un clic (Esc). */
+  cancelPendingBox(): void {
+    if (!this.boxPending) return
+    this.boxPending = false
+    this.boxActive = false
+    this.boxStartPx = null
+    this.boxStartWorld = null
+    this.boxEl.style.display = 'none'
+  }
+
+  private onPointerUp = (e: PointerEvent): void => {
+    if (e.pointerType === 'touch' && this.touchUp(e)) return
+    if (this.realtime && e.button === 0 && this.dragging) {
+      // 3DCORBIT: al soltar en movimiento, la vista sigue girando con esa velocidad hasta el próximo clic.
+      if (this.realtime === 'corbit' && Math.hypot(this.lastDrag.dx, this.lastDrag.dy) > 0.5) this.spin = { ...this.lastDrag }
+      this.dragging = null
+      this.renderer.domElement.releasePointerCapture(e.pointerId)
+      if (this.realtime === 'pan') this.renderer.domElement.style.cursor = 'grab'
+      return
+    }
+    if (this.dragging && (e.button === 1 || e.button === 2)) {
+      this.dragging = null
+      this.invalidate() // siluetas pendientes de la órbita
+      this.renderer.domElement.releasePointerCapture(e.pointerId)
+      const down = this.rightDown
+      this.rightDown = null
+      // Clic derecho sin arrastre: menú contextual (la órbita sólo cambió unos píxeles, se mantiene).
+      if (e.button === 2 && down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) {
+        this.cb.onContextMenu?.(e.clientX, e.clientY, this.screenToWorld(e.clientX, e.clientY))
+      }
+      return
+    }
+    if (e.button === 0 && this.gripArmed) {
+      // Un clic sobre un grip lo activa e inicia la edición (define el punto final luego).
+      this.gripArmed = false
+      const gi = this.gripAt(this.pxOf(e.clientX, e.clientY))
+      if (gi >= 0 && this.grips[gi]) {
+        this.cb.onGripActivate?.(this.grips[gi].entityId, this.grips[gi].grip)
+        return
+      }
+      // El cursor se salió del grip: cae al comportamiento normal de click.
+    }
+    if (e.button === 0) {
+      const start = this.boxStartPx
+      const cur0 = this.pxOf(e.clientX, e.clientY)
+      // Lo que hay bajo el cursor se busca una sola vez por clic (el rayo recorre todos los lotes).
+      let hit: string | null | undefined
+      const picked = (): string | null => (hit === undefined ? (hit = this.pickAt(e.clientX, e.clientY)) : hit)
+      // Clic simple en vacío en modo selección: abre la ventana (la otra esquina va con el próximo clic).
+      const forced = this.cb.selectionArea?.() ?? null
+      // Un clic sostenido o con un temblor del mouse sigue siendo un clic: ni cierra una ventana ni pierde el objeto.
+      if (!this.boxPending && this.boxActive && start && Math.hypot(cur0[0] - start[0], cur0[1] - start[1]) < CLICK_SLOP_PX) this.boxActive = false
+      if (!this.boxPending && !this.boxActive && start && this.cb.isSelectMode?.() && (forced || !picked())) {
+        this.boxPending = true
+        this.boxActive = true
+        this.draggingBox = true
+        this.curPx = cur0
+        this.updateBox()
+        return
+      }
+      if (this.boxPending) this.boxPending = false
+      if (this.boxActive && this.boxStartPx) {
+        const cur = this.pxOf(e.clientX, e.clientY)
+        this.cb.onBoxSelect?.(
+          {
+            minX: Math.min(this.boxStartPx[0], cur[0]),
+            maxX: Math.max(this.boxStartPx[0], cur[0]),
+            minY: Math.min(this.boxStartPx[1], cur[1]),
+            maxY: Math.max(this.boxStartPx[1], cur[1]),
+          },
+          forced ? forced === 'crossing' : cur[0] < this.boxStartPx[0], // derecha→izquierda = crossing
+          e.shiftKey,
+        )
+      } else {
+        this.updateDucs(e.clientX, e.clientY)
+        const raw = this.screenToWorld(e.clientX, e.clientY)
+        // Un clic de selección no usa su punto (desde el papel sí busca el snap: el objeto del modelo tocado es el elegido).
+        const pickOnly = this.cb.isPickOnly?.() && !this.data?.snapExtras?.length
+        const snap: SnapResult = pickOnly ? { point: raw, type: null } : this.snapAt(raw)
+        const snapped = snap.type !== null && snap.type !== 'grid'
+        const deferred: Deferred | undefined = snap.deferred ? { ...snap.deferred, hint: [snap.point.x, snap.point.y, snap.point.z] } : undefined
+        // Snap sobre geometría del modelo vista desde el papel: ese es el objeto tocado (trans-espacial).
+        const extra = snapped && snap.owner && this.data?.snapExtras?.some((x) => x.id === snap.owner) ? snap.owner : null
+        this.cb.onClick?.(snap.point, extra ?? picked(), snapped, e.shiftKey, raw, deferred, this.ducsFace?.ucs)
+      }
+      this.boxStartPx = null
+      this.boxStartWorld = null
+    this.boxStartWorld = null
+      this.draggingBox = false
+      this.boxActive = false
+      this.boxEl.style.display = 'none'
+    }
+  }
+
+  /** Dibuja/oculta el rectángulo de goma (overlay HTML en píxeles, correcto en cualquier vista). */
+  private updateBox(): void {
+    if (!this.boxActive || !this.boxStartPx) {
+      this.boxEl.style.display = 'none'
+      return
+    }
+    const [sx, sy] = this.boxStartPx
+    const [cx, cy] = this.curPx
+    const forced = this.cb.selectionArea?.() ?? null
+    const crossing = forced ? forced === 'crossing' : cx < sx
+    this.boxEl.style.display = 'block'
+    this.boxEl.style.left = `${Math.min(sx, cx)}px`
+    this.boxEl.style.top = `${Math.min(sy, cy)}px`
+    this.boxEl.style.width = `${Math.abs(cx - sx)}px`
+    this.boxEl.style.height = `${Math.abs(cy - sy)}px`
+    this.boxEl.style.borderStyle = crossing ? 'dashed' : 'solid'
+    this.boxEl.style.borderColor = crossing ? '#33ff66' : '#3399ff'
+  }
+
+  private onWheel = (e: WheelEvent): void => {
+    e.preventDefault()
+    if (this.navLocked) this.cb.onLockedWheel?.(e)
+    else this.wheelZoom(e.clientX, e.clientY, e.deltaY)
+  }
+
+  /** Punto de mundo bajo (nx,ny) sobre el plano que pasa por el target y enfrenta la cámara. */
+  private worldOnViewPlane(nx: number, ny: number): THREE.Vector3 | null {
+    const ray = this.controller.rayFromNdc(nx, ny)
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+      this.controller.viewDirection(),
+      this.controller.target,
+    )
+    const out = new THREE.Vector3()
+    return ray.intersectPlane(plane, out) ? out : null
+  }
+
+  /**
+   * Trayectoria que sigue el cursor (una sola línea de tracking, polar, EXT o PAR): su origen y la dirección hacia el
+   * cursor. Un número tecleado da el punto a esa distancia sobre ella.
+   */
+  trackPath(): { origin: Pt; dir: Pt } | null {
+    const { type, point } = this.snapResult
+    if (!this.data?.pointPrompt || (type !== 'tracking' && type !== 'extension' && type !== 'parallel') || this.trackLines.length !== 1) return null
+    const o = this.trackLines[0][0]
+    const v = { x: point.x - o.x, y: point.y - o.y, z: point.z - o.z }
+    const len = Math.hypot(v.x, v.y, v.z)
+    return len > 1e-9 ? { origin: o, dir: { x: v.x / len, y: v.y / len, z: v.z / len } } : null
+  }
+
+  /**
+   * Color de las aristas de sólidos y mallas según el estilo visual: negras en Shaded with edges; en Shaded, un tono
+   * más oscuro de la pieza (se distinguen las piezas sin recargar); en alambre y oculto, el de la pieza.
+   */
+  private edgeHex(hex: string): string {
+    return this.visualStyle === 'shadedEdges' ? '#111111' : this.visualStyle === 'shaded' ? darkerHex(hex, 0.55) : hex
+  }
+
+  /** Rayo del cursor en mundo, para los snaps de caras de sólidos. */
+  private cursorRay(): { o: Vec3; d: Vec3 } | undefined {
+    if (!this.lastClient) return undefined
+    const ray = this.controller.rayFromNdc(...this.ndc(...this.lastClient))
+    return { o: [ray.origin.x, ray.origin.y, ray.origin.z], d: [ray.direction.x, ray.direction.y, ray.direction.z] }
+  }
+
+  private ndc(clientX: number, clientY: number): [number, number] {
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    return [((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1)]
+  }
+
+  /**
+   * Plano de dibujo: el XY de la UCS del viewport, por su origen (CAD clásico). Si la vista lo mira
+   * de canto (< ~1°), el plano perpendicular a la vista por el origen de la UCS (desvío D3: en el CAD clásico los
+   * puntos quedan indefinidos).
+   */
+  private edgeOn(): boolean {
+    const z = ucsZ(this.ucs)
+    const v = this.controller.viewDirection()
+    return Math.abs(z[0] * v.x + z[1] * v.y + z[2] * v.z) < 0.02
+  }
+
+  /** Normal del eje del mundo más cercano a la vista, hacia el observador (respaldo de vista de canto). */
+  private viewAxisNormal(): Vec3 {
+    const v = this.controller.viewDirection()
+    const [ax, ay, az] = [Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)]
+    const n: Vec3 = az >= ax && az >= ay ? [0, 0, 1] : ay >= ax ? [0, 1, 0] : [1, 0, 0]
+    return n[0] * v.x + n[1] * v.y + n[2] * v.z > 0 ? [-n[0], -n[1], -n[2]] : n
+  }
+
+  /** Normal del plano de dibujo: la Z de la UCS (eje de extrusión de primitivas, normal de círculos…). */
+  constructionNormal(): Vec3 {
+    return this.edgeOn() ? this.viewAxisNormal() : ucsZ(this.ucs)
+  }
+
+  /** Normal de la anotación nueva: con la UCS 3D es la misma Z de la UCS. */
+  facingNormal(): Vec3 {
+    return this.constructionNormal()
+  }
+
+  /** Rayo de picking por el punto de mundo `p`: origen, dirección unitaria y ~8 px de tolerancia. */
+  viewRay(p: Pt): { origin: Vec3; dir: Vec3; tol: number } {
+    const v = new THREE.Vector3(p.x, p.y, p.z).project(this.controller.camera)
+    const { origin: o, direction: d } = this.controller.rayFromNdc(v.x, v.y)
+    return { origin: [o.x, o.y, o.z], dir: [d.x, d.y, d.z], tol: 8 * (this.controller.worldPerPx() || 1) }
+  }
+
+  /** Orienta la grilla al plano de dibujo (el XY de la UCS, con su X) y la ubica en el origen de la UCS. */
+  private orientGrid(): void {
+    const n = this.constructionNormal()
+    // GridHelper nace en el plano XZ (normal +Y): local X → X de la UCS, local Y → normal, local Z → −Y.
+    const ux = this.edgeOn() ? arcBasis(n).u : this.ucs.x
+    const x = new THREE.Vector3(...ux)
+    const y = new THREE.Vector3(...n)
+    const z = new THREE.Vector3().crossVectors(x, y)
+    this.grid.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z))
+    const o = this.ucs.origin
+    this.grid.position.set(o.x, o.y, o.z)
+  }
+
+  /**
+   * UCS dinámica (UCSDETECT): durante el primer punto de un comando de dibujo, la cara plana de
+   * un sólido bajo el cursor fija temporalmente el plano de dibujo y se resalta (como el CAD clásico).
+   */
+  private updateDucs(clientX: number, clientY: number): void {
+    const prev = this.ducsFace
+    this.ducsFace = null
+    if (this.kind === 'model' && this.data?.ducs) {
+      const layers = new Map(this.data.layers.map((l) => [l.id, l]))
+      const solids = this.data.entities.filter((e) => e.type === 'SOLID3D' && layerEditable(layers.get(e.layer)))
+      if (solids.length) {
+        const [nx, ny] = this.ndc(clientX, clientY)
+        const ray = this.controller.rayFromNdc(nx, ny)
+        const hit = faceUcsAt(solids, [ray.origin.x, ray.origin.y, ray.origin.z], [ray.direction.x, ray.direction.y, ray.direction.z], 0, this.ucs.x)
+        if (hit?.planar) this.ducsFace = hit
+      }
+    }
+    const key = (f: FaceHit | null) => (f ? `${f.solidId}|${f.face}` : '')
+    if (key(prev) === key(this.ducsFace)) return
+    this.disposeGroup(this.ducsGroup)
+    if (this.ducsFace) {
+      const pos: number[] = []
+      for (const l of this.ducsFace.outline) for (let i = 0; i + 1 < l.length; i++) pos.push(...l[i], ...l[i + 1])
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(pos))
+      const seg = new THREE.LineSegments(g, new THREE.LineDashedMaterial({ color: 0x55c8ff, dashSize: 4 * (this.controller.worldPerPx() || 1), gapSize: 3 * (this.controller.worldPerPx() || 1), depthTest: false }))
+      seg.computeLineDistances()
+      this.ducsGroup.add(seg)
+    }
+    this.invalidate()
+  }
+
+  private constructionPlane(): THREE.Plane {
+    // UCS dinámica: el cursor se mueve sobre la cara plana del sólido que tiene debajo.
+    const u = this.ducsFace?.ucs ?? null
+    const base = !u && this.data?.pointPrompt ? this.data.snapBase : null
+    const o = u ? u.origin : (base ?? this.ucs.origin)
+    const origin = new THREE.Vector3(o.x, o.y, o.z)
+    const n = u ? ucsZ(u) : base ? this.basePlaneNormal() : this.constructionNormal()
+    return new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(n[0], n[1], n[2]), origin)
+  }
+
+  /**
+   * Con punto base (MOVE, COPY, el segundo punto de una línea…) el cursor corre por el plano que pasa por él: el XY de la
+   * UCS a la altura del punto (lo que se mueve no salta a z = 0 al orbitar) o, si la vista está casi de costado
+   * (menos de ~20° sobre ese plano), el plano vertical de la UCS que más mira a la cámara.
+   */
+  private basePlaneNormal(): Vec3 {
+    const v = this.controller.viewDirection()
+    const along = (a: Vec3) => Math.abs(a[0] * v.x + a[1] * v.y + a[2] * v.z)
+    const z = ucsZ(this.ucs)
+    if (along(z) >= 0.34) return z
+    return along(this.ucs.x) >= along(this.ucs.y) ? this.ucs.x : this.ucs.y
+  }
+
+  screenToWorld(clientX: number, clientY: number): Pt {
+    const [nx, ny] = this.ndc(clientX, clientY)
+    const ray = this.controller.rayFromNdc(nx, ny)
+    const out = new THREE.Vector3()
+    if (ray.intersectPlane(this.constructionPlane(), out)) return { x: out.x, y: out.y, z: out.z }
+    return { x: this.lastWorldRaw.x, y: this.lastWorldRaw.y, z: this.lastWorldRaw.z }
+  }
+
+  /** Imagen de la vista (PNG, lado mayor ≤ `max` px) para el agente: se dibuja y se lee en el mismo paso. */
+  captureImage(max = 1024): string {
+    rankScale.value = this.drawOrderOn() ? 1 : 0
+    this.renderer.render(this.scene, this.controller.camera)
+    const src = this.renderer.domElement
+    const k = Math.min(1, max / Math.max(src.width, src.height))
+    if (k >= 1) return src.toDataURL('image/png')
+    const c = document.createElement('canvas')
+    c.width = Math.round(src.width * k)
+    c.height = Math.round(src.height * k)
+    c.getContext('2d')?.drawImage(src, 0, 0, c.width, c.height)
+    return c.toDataURL('image/png')
+  }
+
+  /** Posiciones de mundo (x, y, z seguidas) relativas al origen de lo dibujado. */
+  private shifted(arr: ArrayLike<number>): Float32Array {
+    const { x, y, z } = this.origin
+    const out = new Float32Array(arr.length)
+    for (let i = 0; i + 2 < arr.length; i += 3) {
+      out[i] = arr[i] - x
+      out[i + 1] = arr[i + 1] - y
+      out[i + 2] = arr[i + 2] - z
+    }
+    return out
+  }
+
+  /** Atributo de posiciones para la placa de video (relativas al origen). */
+  private local(arr: ArrayLike<number>): THREE.BufferAttribute {
+    return new THREE.BufferAttribute(this.shifted(arr), 3)
+  }
+
+  /** Geometría de una lista de puntos de mundo, relativa al origen (vistas previas, snaps, grips). */
+  private localGeometry(pts: THREE.Vector3[]): THREE.BufferGeometry {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(pts.flatMap((p) => [p.x, p.y, p.z])))
+    return g
+  }
+
+  /**
+   * Elige el origen de lo dibujado: el centro (redondeado) de una muestra de las entidades, si el dibujo está lejos de
+   * (0, 0, 0); si no, el propio origen. Sólo cambia si el dibujo se fue lejos del actual (un comando no rehace todo).
+   */
+  private pickOrigin(entities: Entity[]): void {
+    const box = new THREE.Box3()
+    const step = Math.max(1, Math.floor(entities.length / 256))
+    for (let i = 0; i < entities.length; i += step) {
+      const e = entities[i]
+      const sig = sizeSignature(e)
+      if (sig) box.expandByPoint(new THREE.Vector3(sig.c[0], sig.c[1], sig.c[2]))
+      else for (const path of entityOutline(e)) for (const p of path.slice(0, 2)) if (Number.isFinite(p.x) && Number.isFinite(p.y)) box.expandByPoint(new THREE.Vector3(p.x, p.y, p.z ?? 0))
+    }
+    if (box.isEmpty()) return
+    const c = box.getCenter(new THREE.Vector3())
+    const far = Math.max(Math.abs(c.x), Math.abs(c.y), Math.abs(c.z)) > ORIGIN_FAR
+    const want = far ? new THREE.Vector3(Math.round(c.x / 1000) * 1000, Math.round(c.y / 1000) * 1000, Math.round(c.z / 1000) * 1000) : new THREE.Vector3()
+    if (want.distanceTo(this.origin) <= ORIGIN_FAR) return
+    this.origin.copy(want)
+    for (const g of [this.entityGroup, this.selOverlay, this.silhouetteGroup, this.previewGroup, this.snapGroup, this.gripGroup, this.ducsGroup]) {
+      g.position.copy(this.origin)
+      g.updateMatrixWorld(true)
+    }
+  }
+
+  /** Órbita de la vista: alrededor de lo seleccionado si hay algo elegido, si no alrededor del centro de la vista. */
+  private orbitView(dx: number, dy: number): void {
+    if (this.orbitPivot) this.controller.orbitAbout(dx, dy, this.orbitPivot)
+    else this.controller.orbit(dx, dy)
+  }
+
+  /** Centro de la caja de lo seleccionado (null sin selección). */
+  private selectionCenter(ids: string[]): THREE.Vector3 | null {
+    if (!ids.length) return null
+    const want = new Set(ids)
+    const box = new THREE.Box3()
+    for (const e of this.expanded ?? []) {
+      if (!want.has(e.id)) continue
+      const sig = sizeSignature(e)
+      if (sig) {
+        box.expandByPoint(new THREE.Vector3(sig.c[0] - sig.r, sig.c[1] - sig.r, sig.c[2] - sig.r))
+        box.expandByPoint(new THREE.Vector3(sig.c[0] + sig.r, sig.c[1] + sig.r, sig.c[2] + sig.r))
+      } else for (const path of entityOutline(e)) for (const p of path) box.expandByPoint(new THREE.Vector3(p.x, p.y, p.z ?? 0))
+    }
+    return box.isEmpty() ? null : box.getCenter(new THREE.Vector3())
+  }
+
+  /** Resalta la selección encima de los lotes (armados sin selección), sin rehacerlos. */
+  private showSelectionOverlay(selection: string[], layers: Layer[]): void {
+    this.disposeGroup(this.selOverlay)
+    if (!selection.length) return
+    const want = new Set(selection)
+    const layerMap = new Map(layers.map((l) => [l.id, l]))
+    const from = this.entityGroup.children.length
+    for (const e of this.expanded ?? []) if (want.has(e.id)) this.buildEntity(e, layerMap, want)
+    // Lo recién armado pasa al grupo del resaltado: encima de todo y fuera del pick (el lote ya tiene la pieza).
+    for (const c of this.entityGroup.children.slice(from)) {
+      if (c.userData.raster) {
+        // Los píxeles de una imagen ya están debajo del dibujo: encima taparían todo. Se resalta su marco.
+        this.entityGroup.remove(c)
+        const m = c as THREE.Mesh
+        m.geometry.dispose()
+        ;(m.material as THREE.Material).dispose()
+        continue
+      }
+      c.traverse((o) => (o.renderOrder = 1))
+      this.selOverlay.add(c)
+    }
+  }
+
+  pickAt(clientX: number, clientY: number): string | null {
+    this.raycaster.params.Line = { threshold: PICK_LINE_PX * this.controller.worldPerPx() }
+    this.raycaster.params.Points = { threshold: PICK_LINE_PX * this.controller.worldPerPx() }
+    // El pick ve las dos caras de cada triángulo (una booleana puede dejar caras invertidas) y usa esferas
+    // envolventes al día (un sólido recalculado conserva la geometría con otra forma): si no, a veces un clic
+    // sobre un sólido no lo tomaba y había que seleccionarlo con una ventana.
+    const sides = new Map<THREE.Material, THREE.Side>()
+    this.entityGroup.traverse((o) => {
+      const m = o as THREE.Mesh
+      if (!m.isMesh) return
+      if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere() // sólo las nuevas (antes: todas en cada clic)
+      for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
+        if (!sides.has(mat)) sides.set(mat, mat.side)
+        mat.side = THREE.DoubleSide
+      }
+    })
+    const cast = (x: number, y: number) => {
+      const [nx, ny] = this.ndc(x, y)
+      this.raycaster.setFromCamera(new THREE.Vector2(nx, ny), this.controller.camera)
+      this.raycaster.ray.copy(this.controller.rayFromNdc(nx, ny)) // desde el plano near (ver `rayFromNdc`)
+      return this.raycaster.intersectObjects(this.entityGroup.children, true)
+    }
+    let hits = cast(clientX, clientY)
+    // Un rayo que pasa justo por una arista de la teselación (p. ej. el vértice superior de un cilindro
+    // horizontal visto en planta, en x = 0) puede no tocar ningún triángulo por redondeo: se reintenta
+    // corrido un píxel.
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (hits.length) break
+      hits = cast(clientX + dx, clientY + dy)
+    }
+    sides.forEach((side, mat) => (mat.side = side))
+    const found: { id: string; h: THREE.Intersection }[] = []
+    for (const h of hits) {
+      // Geometría fusionada (batch): resolver el id por el rango del triángulo/segmento impactado.
+      let id: string | null
+      if (h.object.userData.pointIds) id = (h.object.userData.pointIds as string[])[h.index ?? -1] ?? null
+      else if (h.object.userData.ranges) id = this.resolveRange(h.object, h)
+      else {
+        let obj: THREE.Object3D | null = h.object
+        while (obj && !obj.userData.entityId) obj = obj.parent
+        id = (obj?.userData.entityId as string | undefined) ?? null
+      }
+      // Las capas congeladas o bloqueadas se ven pero no se seleccionan: el clic sigue hacia lo que está detrás.
+      if (id && !this.unpickable.has(id)) found.push({ id, h })
+    }
+    if (found.length === 0) return this.solidUnder(clientX, clientY)
+    // Orden de capas: entre lo que está a la misma profundidad (p. ej. todo el dibujo 2D) gana
+    // la capa de más arriba; dentro de la capa, lo más cercano al cursor y después lo más nuevo.
+    const tol = 3 * this.controller.worldPerPx() + 1e-9
+    const [cx, cy] = this.pxOf(clientX, clientY)
+    const px = (p: THREE.Vector3): number => {
+      const pr = this.controller.project(p)
+      return pr ? Math.hypot(pr[0] - cx, pr[1] - cy) : Infinity
+    }
+    // La tolerancia es generosa: una línea lejana del cursor sólo cuenta si no hay nada justo debajo de él.
+    const under = found.filter((f) => (f.h.face && !f.h.object.userData.lowPick) || px(f.h.point) <= PICK_EXACT_PX)
+    const pool = under.length ? under : found
+    const near = pool.filter((f) => f.h.distance <= pool[0].h.distance + tol)
+    // El relleno de un sombreado sólo gana si no hay una línea cerca del cursor.
+    const low = (f: { h: THREE.Intersection }): number => (f.h.object.userData.lowPick ? 1 : 0)
+    near.sort((a, b) => {
+      if (low(a) !== low(b)) return low(a) - low(b)
+      const oa = this.pickOrder.get(a.id)
+      const ob = this.pickOrder.get(b.id)
+      return (ob?.o ?? -Infinity) - (oa?.o ?? -Infinity) || px(a.h.point) - px(b.h.point) || (ob?.i ?? 0) - (oa?.i ?? 0)
+    })
+    return near[0].id
+  }
+
+  /**
+   * Sólido bajo el cursor por sus caras (topología), para un clic dentro de la pieza aunque no se dibujen sus caras
+   * (estilos de alambre) o la malla no se haya impactado.
+   */
+  private solidUnder(clientX: number, clientY: number): string | null {
+    const d = this.data
+    if (!d) return null
+    const solids = d.entities.filter((e) => e.type === 'SOLID3D' && !this.unpickable.has(e.id) && layerVisible(d.layers.find((l) => l.id === e.layer)))
+    if (!solids.length) return null
+    const [nx, ny] = this.ndc(clientX, clientY)
+    const ray = this.controller.rayFromNdc(nx, ny)
+    const o: Vec3 = [ray.origin.x, ray.origin.y, ray.origin.z]
+    const dir: Vec3 = [ray.direction.x, ray.direction.y, ray.direction.z]
+    let best: { id: string; t: number } | null = null
+    for (const e of solids) {
+      if (e.type !== 'SOLID3D') continue
+      const topo = displaySolidTopology(e.props)
+      if (!topo) continue
+      for (const h of rayFaces(topo, o, dir)) if (!best || h.t < best.t) best = { id: e.id, t: h.t }
+    }
+    return best?.id ?? null
+  }
+
+  private resize(): void {
+    this.width = Math.max(1, this.container.clientWidth)
+    this.height = Math.max(1, this.container.clientHeight)
+    this.renderer.setSize(this.width, this.height, false)
+    this.lineweightZoom = -1
+    this.controller.setSize(this.width, this.height)
+  }
+
+  /** Marca la escena como "sucia" → se re-dibuja en el próximo tick. */
+  /** Pide redibujar en el próximo cuadro (el render es a demanda). */
+  invalidate(): void {
+    this.dirty = true
+  }
+
+  /** ¿El snap está activo ahora? (solo durante un prompt de punto/distancia, como el CAD clásico). */
+  private needSnap(): boolean {
+    const d = this.data
+    return !!d && d.pointPrompt && !d.noSnap && (d.esnap || d.osnapOverride !== null || d.otrack || !!(d.polarAng && d.snapBase && !d.ortho))
+  }
+
+  private entities(): Entity[] {
+    const d = this.data
+    if (!d) return []
+    if (!this.expanded) this.expanded = expandEntities(d.entities, d.blocks, { attdisp: d.attdisp, skipLayers: frozenLayerIds(d.layers), memo: this.expandMemo })
+    return this.expanded
+  }
+
+  /** Esfera envolvente (mundo) de una entidad, para descartarla rápido si está lejos del cursor. */
+  private snapSpheresFor(ents: Entity[]): { c: THREE.Vector3; r: number }[] {
+    if (this.snapSpheres && this.snapSpheres.length === ents.length) return this.snapSpheres
+    const out = ents.map((e) => {
+      if (e.type === 'MESH3D') {
+        // La caja de sus aristas, recordada por su lista de vértices (no se recorren sus miles de aristas de nuevo).
+        const b = meshEdgeBox(e.props)
+        if (!b) return { c: new THREE.Vector3(), r: Infinity }
+        return { c: new THREE.Vector3((b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2), r: Math.hypot(b[3] - b[0], b[4] - b[1], b[5] - b[2]) / 2 }
+      }
+      let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+      for (const poly of entityOutline(e)) {
+        for (const p of poly) {
+          minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); minZ = Math.min(minZ, p.z)
+          maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); maxZ = Math.max(maxZ, p.z)
+        }
+      }
+      // Sin contorno, o infinita → nunca se descarta.
+      if (!isFinite(minX) || (e.type === 'LINE' && e.props.extend)) return { c: new THREE.Vector3(), r: Infinity }
+      const c = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
+      return { c, r: Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) / 2 }
+    })
+    this.snapSpheres = out
+    return out
+  }
+
+  /** Punto a proyectar por el snap (miles por movimiento del cursor: sin un vector nuevo cada uno). */
+  private readonly snapScratch = new THREE.Vector3()
+
+  /** Todo lo que usa `controller.project` (matrices de la cámara y tamaño), exacto: si no cambia, proyecta igual. */
+  private projectionKey(): string {
+    const cam = this.controller.camera
+    return `${cam.matrixWorldInverse.elements.join(',')}|${cam.projectionMatrix.elements.join(',')}|${this.controller.pxWidth}x${this.controller.pxHeight}`
+  }
+
+  private snapAt(raw: Pt): SnapResult {
+    // Datos al día: entre un comando que cambia capas y el próximo frame el cursor ya puede pedir snaps.
+    const d = (this.data = this.provider?.() ?? this.data)
+    if (!d) return { point: raw, type: null }
+    const override = d.osnapOverride
+    // Las capas apagadas o congeladas no dan snaps: la lista se rehace si cambian los datos o la visibilidad.
+    const hidden = hiddenLayerIds(d.layers)
+    const listKey = `${d.revision}|${[...hidden].join(',')}|${d.snapExtras?.length ?? 0}`
+    if (this.snapListKey !== listKey || this.snapLiveRef !== d.snapLive) {
+      this.snapLiveRef = d.snapLive
+      this.snapListKey = listKey
+      this.snapList = null
+      this.snapSpheres = null
+    }
+    if (!this.snapList) {
+      const vis = hidden.size ? this.entities().filter((e) => !hidden.has(e.layer)) : this.entities()
+      // Las regiones dan los snaps de sus rectas y arcos, como polilíneas cerradas con su id.
+      const own = vis.some((e) => e.type === 'REGION') ? vis.flatMap((e) => (e.type === 'REGION' ? regionPolylines(e) : [e])) : vis
+      // Los bloques llegan expandidos; el INSERT original va además sólo para su punto de inserción (INS).
+      const inserts = d.entities.filter((e) => e.type === 'INSERT' && !hidden.has(e.layer))
+      this.snapList = own.concat(d.snapExtras ?? [], d.snapLive ?? [], inserts)
+    }
+    const all = this.snapList
+    // Culling espacial: solo las entidades cuya esfera proyectada cae cerca del cursor (clave para
+    // modelos pesados: evita generar candidatos de snap sobre miles de objetos lejanos).
+    const spheres = this.snapSpheresFor(all)
+    const wpp = this.controller.worldPerPx() || 1
+    const [cx, cy] = this.lastPx
+    const near: Entity[] = []
+    const persp = this.controller.mode === 'persp'
+    const cam = this.controller.camera.position
+    const camDist = cam.distanceTo(this.controller.target)
+    for (let i = 0; i < all.length; i++) {
+      const s = spheres[i]
+      if (!isFinite(s.r)) { near.push(all[i]); continue }
+      const pr = this.controller.project(s.c)
+      // En perspectiva lo cercano se ve más grande que a la distancia del objetivo (y su centro puede quedar detrás de
+      // la cámara con los vértices a la vista): el radio en pantalla se escala, o una pieza cercana se quedaba sin snaps.
+      const k = persp ? camDist / Math.max(cam.distanceTo(s.c) - s.r, camDist * 0.01) : 1
+      if (!pr) {
+        if (persp) near.push(all[i])
+        continue
+      }
+      if (Math.hypot(pr[0] - cx, pr[1] - cy) <= (s.r / wpp) * k + (this.touchAim ? 32 : 16)) near.push(all[i])
+    }
+    const result = computeSnap(raw, near, {
+      gridSnap: d.gridSnap,
+      gridStep: d.gridStep,
+      esnap: override ? true : d.esnap,
+      ucs: d.ucs,
+      osnap: override ? singleOsnap(override) : d.osnap,
+      explicitOsnap: !!override,
+      base: d.snapBase,
+      cursorPx: this.lastPx,
+      pixelThreshold: this.touchAim ? 24 : 10,
+      project: (p) => this.controller.project(this.snapScratch.set(p.x, p.y, p.z)),
+      depth: (p) => this.controller.camera.position.distanceTo(new THREE.Vector3(p.x, p.y, p.z)),
+      acquired: this.osnapAcq,
+      ray: this.cursorRay(),
+      viewKey: this.projectionKey(),
+    })
+
+    // INT/APPINT sobre el tramo en curso: con ORTHO la dirección del rubber-band queda fija y se marcan sus cruces
+    // con los objetos cercanos (las intersecciones "que se vienen" mientras se dibuja).
+    const os = override ? singleOsnap(override) : d.osnap
+    if (d.ortho && d.snapBase && (override || d.esnap) && (os.intersection || os.apparentIntersection)) {
+      const hit = this.orthoCrossing(raw, d.snapBase, near)
+      // Gana el marcador más cercano al cursor (p. ej. el cruce con un círculo antes que su centro).
+      const px = (p: Pt) => {
+        const pr = this.controller.project(new THREE.Vector3(p.x, p.y, p.z))
+        return pr ? Math.hypot(pr[0] - this.lastPx[0], pr[1] - this.lastPx[1]) : Infinity
+      }
+      if (hit && (result.type === null || result.type === 'grid' || px(hit) < px(result.point))) {
+        this.trackLines = []
+        return { point: hit, type: 'intersection' }
+      }
+    }
+
+    // Object snap tracking: los osnaps directos ganan; el tracking sólo actúa cuando no hay captura
+    // (o sólo hay grilla), como en el CAD clásico.
+    this.trackLines = []
+    // Rastreo polar (POLAR): cerca (10 px) de un múltiplo de POLARANG desde el punto base, el cursor corre por ese
+    // rayo, punteado, y lo tecleado como distancia va en esa dirección. Los osnaps directos ganan.
+    if (d.polarAng && d.snapBase && d.pointPrompt && !d.ortho && (result.type === null || result.type === 'grid')) {
+      const polar = this.polarTrack(raw, d.snapBase, d.polarAng)
+      if (polar) {
+        this.trackLines = [polar.line]
+        return { point: polar.point, type: 'tracking' }
+      }
+    }
+    if (d.otrack && this.tracked.length > 0 && (result.type === null || result.type === 'grid')) {
+      const track = computeTracking(raw, this.tracked, {
+        cursorPx: this.lastPx,
+        project: (p) => this.controller.project(new THREE.Vector3(p.x, p.y, p.z)),
+        pixelThreshold: 10,
+        axes: this.trackingAxes(),
+        entities: near,
+        lineLength: 400 * (this.controller.worldPerPx() || 1),
+      })
+      if (track) {
+        this.trackLines = track.lines
+        return { point: track.point, type: 'tracking' }
+      }
+    }
+    this.trackLines = result.lines ?? [] // la prolongación (EXT) o la paralela (PAR)
+    return result
+  }
+
+  /**
+   * Cruce de la recta de ORTHO desde `base` (el eje de la UCS más cercano a la dirección del cursor) con los
+   * objetos, si cae a menos de 10 px del cursor. Rectas exactas; círculos y arcos, analíticos.
+   */
+  private orthoCrossing(raw: Pt, base: Pt, ents: Entity[]): Pt | null {
+    const asPt = (a: Vec3): Pt => ({ x: a[0], y: a[1], z: a[2] })
+    const [ux, uy] = [asPt(this.ucs.x), asPt(this.ucs.y)]
+    const d = { x: raw.x - base.x, y: raw.y - base.y, z: raw.z - base.z }
+    const dotv = (a: Pt, b: Pt) => a.x * b.x + a.y * b.y + a.z * b.z
+    const dir = Math.abs(dotv(d, ux)) >= Math.abs(dotv(d, uy)) ? ux : uy
+    const along = (t: number): Pt => ({ x: base.x + dir.x * t, y: base.y + dir.y * t, z: base.z + dir.z * t })
+    const cursorT = dotv(d, dir)
+    const cands: number[] = []
+    for (const e of ents) {
+      if ((e.type === 'CIRCLE' || e.type === 'ARC') && Math.abs(e.props.normal?.[2] ?? 1) > 1 - 1e-9 && Math.abs(dir.z) < 1e-9) {
+        // |base + t·dir − c|² = r² (en el plano XY).
+        const [cx, cy] = e.props.center
+        const fx = base.x - cx
+        const fy = base.y - cy
+        const b = fx * dir.x + fy * dir.y
+        const disc = b * b - (fx * fx + fy * fy - e.props.radius * e.props.radius)
+        if (disc < 0) continue
+        for (const t of [-b - Math.sqrt(disc), -b + Math.sqrt(disc)]) {
+          if (e.type === 'ARC') {
+            const p = along(t)
+            const segs = segmentsOfEntity(e)
+            const onArc = segs.some(([a, q]) => distToSegment(p, a, q) < e.props.radius * 0.02)
+            if (!onArc) continue
+          }
+          cands.push(t)
+        }
+        continue
+      }
+      for (const [a, q] of segmentsOfEntity(e)) {
+        // Recta base+t·dir contra el segmento a→q, en el plano de la UCS.
+        const ex = { x: q.x - a.x, y: q.y - a.y, z: q.z - a.z }
+        const n = { x: dir.y * ex.z - dir.z * ex.y, y: dir.z * ex.x - dir.x * ex.z, z: dir.x * ex.y - dir.y * ex.x }
+        const nn = dotv(n, n)
+        if (nn < 1e-18) continue // paralelos
+        const w = { x: a.x - base.x, y: a.y - base.y, z: a.z - base.z }
+        const c1 = { x: w.y * ex.z - w.z * ex.y, y: w.z * ex.x - w.x * ex.z, z: w.x * ex.y - w.y * ex.x }
+        const c2 = { x: w.y * dir.z - w.z * dir.y, y: w.z * dir.x - w.x * dir.z, z: w.x * dir.y - w.y * dir.x }
+        const t = dotv(c1, n) / nn
+        const s = dotv(c2, n) / nn
+        if (s < -1e-9 || s > 1 + 1e-9) continue
+        const p = along(t)
+        const pq = { x: a.x + ex.x * s, y: a.y + ex.y * s, z: a.z + ex.z * s }
+        if (Math.hypot(p.x - pq.x, p.y - pq.y, p.z - pq.z) > 1e-6 * Math.max(1, Math.hypot(ex.x, ex.y, ex.z))) continue // se cruzan en el espacio
+        cands.push(t)
+      }
+    }
+    let best: Pt | null = null
+    let bestPx = 10
+    const c0 = along(cursorT)
+    const cur = this.controller.project(new THREE.Vector3(c0.x, c0.y, c0.z))
+    if (!cur) return null
+    for (const t of cands) {
+      if (Math.abs(t) < 1e-9) continue // el propio punto base
+      const p = along(t)
+      const pr = this.controller.project(new THREE.Vector3(p.x, p.y, p.z))
+      if (!pr) continue
+      const dpx = Math.hypot(pr[0] - cur[0], pr[1] - cur[1])
+      if (dpx <= bestPx) {
+        bestPx = dpx
+        best = p
+      }
+    }
+    return best
+  }
+
+  /** Ejes (mundo) de las alineaciones de tracking: los ejes X/Y de la UCS del viewport. */
+  /** Rayo polar más cercano al cursor desde `base` (en el plano de la UCS), si pasa a menos de 10 px. */
+  private polarTrack(raw: Pt, base: Pt, stepDeg: number): { point: Pt; line: [Pt, Pt] } | null {
+    const [ux, uy] = this.trackingAxes()
+    const d = { x: raw.x - base.x, y: raw.y - base.y, z: raw.z - base.z }
+    const lx = d.x * ux.x + d.y * ux.y + d.z * ux.z
+    const ly = d.x * uy.x + d.y * uy.y + d.z * uy.z
+    if (Math.hypot(lx, ly) < 1e-9) return null
+    const step = (Math.max(0.1, stepDeg) * Math.PI) / 180
+    const a = Math.round(Math.atan2(ly, lx) / step) * step
+    const dir = { x: ux.x * Math.cos(a) + uy.x * Math.sin(a), y: ux.y * Math.cos(a) + uy.y * Math.sin(a), z: ux.z * Math.cos(a) + uy.z * Math.sin(a) }
+    const t = d.x * dir.x + d.y * dir.y + d.z * dir.z
+    if (t <= 0) return null
+    const point = { x: base.x + dir.x * t, y: base.y + dir.y * t, z: base.z + dir.z * t }
+    const pp = this.controller.project(new THREE.Vector3(point.x, point.y, point.z))
+    if (!pp || Math.hypot(pp[0] - this.lastPx[0], pp[1] - this.lastPx[1]) > 10) return null
+    const far = t + 400 * (this.controller.worldPerPx() || 1)
+    return { point, line: [base, { x: base.x + dir.x * far, y: base.y + dir.y * far, z: base.z + dir.z * far }] }
+  }
+
+  private trackingAxes(): [Pt, Pt] {
+    const [x, y] = [this.ucs.x, this.ucs.y]
+    return [{ x: x[0], y: x[1], z: x[2] }, { x: y[0], y: y[1], z: y[2] }]
+  }
+
+  /**
+   * Adquisición de puntos para el tracking: detenerse (~600 ms) sobre un punto de snap lo adquiere;
+   * volver a detenerse sobre uno adquirido lo libera (CAD clásico). Máximo 3 puntos vivos.
+   */
+  private updateTrackingAcquisition(): void {
+    const d = this.data
+    if (!d?.otrack || !d.pointPrompt) return
+    const { type, point } = this.snapResult
+    if (!type || type === 'grid' || type === 'tracking') {
+      this.hoverKey = ''
+      this.hoverConsumed = false
+      return
+    }
+    const key = `${point.x.toFixed(4)},${point.y.toFixed(4)},${point.z.toFixed(4)}`
+    const now = performance.now()
+    if (key !== this.hoverKey) {
+      this.hoverKey = key
+      this.hoverSince = now
+      this.hoverConsumed = false
+      return
+    }
+    if (this.hoverConsumed || now - this.hoverSince < 600) return
+    this.hoverConsumed = true
+    const i = this.tracked.findIndex((p) => `${p.x.toFixed(4)},${p.y.toFixed(4)},${p.z.toFixed(4)}` === key)
+    if (i >= 0) this.tracked.splice(i, 1) // ya estaba: se libera
+    else {
+      this.tracked.push({ x: point.x, y: point.y, z: point.z })
+      if (this.tracked.length > 3) this.tracked.shift()
+    }
+    this.invalidate()
+  }
+
+  /** Orienta las luces respecto de la cámara: la principal desde arriba a la izquierda del observador, la de relleno
+   *  desde abajo a la derecha. */
+  private aimLights(): void {
+    const cam = this.controller.camera
+    const place = (l: THREE.DirectionalLight, x: number, y: number, z: number) => {
+      l.position.set(x, y, z).applyQuaternion(cam.quaternion).add(cam.position)
+      l.target.position.copy(cam.position)
+      l.target.updateMatrixWorld()
+    }
+    place(this.keyLight, -0.45, 0.6, 1)
+    place(this.fillLight, 0.6, -0.5, 0.4)
+  }
+
+  /**
+   * EXT y PAR (CAD clásico): detenerse (~500 ms) sobre el extremo de una recta o de un arco adquiere su prolongación;
+   * sobre una recta, con punto base, adquiere su dirección para la paralela. Detenerse otra vez lo libera.
+   */
+  private updateOsnapAcquisition(): void {
+    const d = this.data
+    const os = d?.osnapOverride ? singleOsnap(d.osnapOverride) : d?.osnap
+    if (!d?.pointPrompt || !os || !(os.extension || os.parallel) || !(d.esnap || d.osnapOverride)) return
+    const { type, point, under } = this.snapResult
+    let acq: Acquisition | null = null
+    const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)
+    if (under && os.extension && type === 'endpoint') {
+      if (under.seg) {
+        const [a, b] = under.seg
+        acq = dist(point, b) <= dist(point, a) ? { kind: 'extension', from: a, to: b } : { kind: 'extension', from: b, to: a }
+      } else if (under.arc) acq = { kind: 'arcExtension', arc: under.arc, at: point }
+    } else if (under?.seg && os.parallel && d.snapBase && (type === null || type === 'nearest' || type === 'grid')) {
+      acq = { kind: 'parallel', a: under.seg[0], b: under.seg[1] }
+    }
+    const keyOf = (q: Acquisition): string =>
+      q.kind === 'arcExtension' ? `a${q.arc.center.join(',')}|${q.arc.radius}|${q.at.x},${q.at.y},${q.at.z}` : q.kind === 'extension' ? `e${q.to.x},${q.to.y},${q.to.z}|${q.from.x},${q.from.y},${q.from.z}` : `p${q.a.x},${q.a.y},${q.a.z}|${q.b.x},${q.b.y},${q.b.z}`
+    const key = acq ? keyOf(acq) : ''
+    const now = performance.now()
+    if (key !== this.acqKey) {
+      this.acqKey = key
+      this.acqSince = now
+      this.acqDone = false
+      return
+    }
+    if (!acq || this.acqDone || now - this.acqSince < 500) return
+    this.acqDone = true
+    const i = this.osnapAcq.findIndex((q) => keyOf(q) === key)
+    if (i >= 0) this.osnapAcq.splice(i, 1)
+    else {
+      this.osnapAcq.push(acq)
+      if (this.osnapAcq.length > 4) this.osnapAcq.shift()
+    }
+    this.invalidate()
+  }
+
+  /** Limpia los puntos adquiridos (al terminar el comando o con ESC). */
+  clearTracking(): void {
+    this.osnapAcq = []
+    this.acqKey = ''
+    if (this.tracked.length === 0 && this.trackLines.length === 0) return
+    this.tracked = []
+    this.trackLines = []
+    this.invalidate()
+  }
+
+  private disposeGroup(group: THREE.Group): void {
+    group.traverse((obj) => {
+      const any = obj as unknown as { geometry?: THREE.BufferGeometry; material?: THREE.Material | THREE.Material[] }
+      if (!obj.userData.cachedGeom) any.geometry?.dispose()
+      // Los materiales compartidos de los overlays (preview, snap, tracking) se reutilizan en el próximo
+      // cuadro: liberarlos obligaría a recompilar su programa en cada movimiento del cursor.
+      if (any.material && !this.overlayMaterials.has(any.material as THREE.Material)) {
+        if (Array.isArray(any.material)) any.material.forEach((m) => this.releaseMaterial(m))
+        else this.releaseMaterial(any.material)
+      }
+    })
+    group.clear()
+  }
+
+  /**
+   * Libera un material, salvo el primero de cada programa de shader, que se guarda: liberar el último material de un
+   * programa lo destruye y el próximo igual lo vuelve a compilar (al elegir y soltar piezas, al rehacer los lotes tras
+   * cada comando). Los guardados más viejos se liberan pasado un tope.
+   */
+  private releaseMaterial(m: THREE.Material): void {
+    for (const k of this.keptMaterials.values()) if (k === m) return
+    const key = (this.renderer.properties.get(m) as { currentProgram?: { cacheKey?: string } }).currentProgram?.cacheKey
+    if (key === undefined || this.keptMaterials.has(key) || (m as { map?: unknown }).map) {
+      m.dispose()
+      return
+    }
+    this.keptMaterials.set(key, m)
+    if (this.keptMaterials.size > KEPT_PROGRAMS) {
+      const [oldest, old] = this.keptMaterials.entries().next().value!
+      this.keptMaterials.delete(oldest)
+      old.dispose()
+    }
+  }
+
+  private entityLinePoints(e: Entity): THREE.Vector3[] | null {
+    switch (e.type) {
+      case 'POINT':
+        return null // se dibuja con su marca (pointsLayer), no como línea
+      case 'LINE': {
+        const [a, b] = lineSpan(e.props)
+        return [new THREE.Vector3(...a), new THREE.Vector3(...b)]
+      }
+      case 'CIRCLE':
+        // En el plano de su normal (círculos en cualquier UCS).
+        return tessellateArc({ ...e.props, startAngle: 0, endAngle: 0 }, 96).map((p) => new THREE.Vector3(p[0], p[1], p[2]))
+      case 'ARC':
+        // Tesselación proporcional al barrido: un arco chico no gasta los 96 del círculo completo.
+        return tessellateArc(e.props).map((v) => new THREE.Vector3(...v))
+      case 'ELLIPSE':
+        return ellipsePoints(e.props, 96, true).map((v) => new THREE.Vector3(...v))
+      case 'RECTANGLE': {
+        const [x, y, z] = e.props.corner
+        const w = e.props.width
+        const h = e.props.height
+        return [
+          new THREE.Vector3(x, y, z),
+          new THREE.Vector3(x + w, y, z),
+          new THREE.Vector3(x + w, y + h, z),
+          new THREE.Vector3(x, y + h, z),
+          new THREE.Vector3(x, y, z),
+        ]
+      }
+      case 'POLYLINE':
+        // `polylinePoints` tessela los tramos con bulge y ya cierra el anillo si corresponde.
+        return polylinePoints(e.props).map((v) => new THREE.Vector3(...v))
+      case 'SPLINE': {
+        if (e.props.controlPoints.length < 2) return null
+        const cps = e.props.controlPoints.map((v) => new THREE.Vector3(...v))
+        return new THREE.CatmullRomCurve3(cps).getPoints(Math.max(32, cps.length * 16))
+      }
+      case 'VIEWPORT':
+        return viewportRing(e.props).map((v) => new THREE.Vector3(...v))
+      case 'IMAGE':
+        return imageRing(e.props).map((v) => new THREE.Vector3(...v))
+      case 'NOTE':
+        return noteRing(e.props).map((v) => new THREE.Vector3(...v))
+      case 'ATTDEF':
+        return null
+      case 'SOLID3D':
+      case 'MESH3D':
+      case 'DIMENSION':
+      case 'TEXT':
+      case 'INSERT':
+      case 'HATCH':
+      case 'SHADE':
+      case 'REGION':
+        return null
+    }
+  }
+
+  /**
+   * Cota: líneas, rellenos (flechas) y el texto vectorial como trazos en el plano de la cota,
+   * así escala con el zoom igual que el resto del dibujo (sin overlay HTML ni tamaño mínimo).
+   */
+  private buildDimension(e: DimensionEntity, color: THREE.Color): THREE.Object3D {
+    const fields = this.data?.fields
+    const t = e.props.textOverride
+    const props = fields && t && hasFields(t) ? { ...e.props, textOverride: evaluateFields(t, fields) } : e.props
+    const d = dimDisplay(props, { annoScale: this.data?.annoScale })
+    // Object3D y no Group: un Group reinicia el `groupOrder` de three y rompería el orden de capas.
+    const group = new THREE.Object3D()
+    group.userData.entityId = e.id
+    const pts: number[] = []
+    for (const [s, en] of d.lines) pts.push(s[0], s[1], s[2], en[0], en[1], en[2])
+    // Con fuente TrueType (la de su estilo de texto en el plano) el texto va con esa fuente; con tolerancias o unidades
+    // alternativas, en trazos (se arman con ellos).
+    const st = props.style
+    const ttf = !!props.textFont && !!d.text.value && !d.text.value.includes('\n') && !st.DIMTOL && !st.DIMLIM && !st.DIMALT
+    if (ttf) {
+      const n = d.normal ?? [0, 0, 1]
+      const { u: u0, v: v0 } = arcBasis(n)
+      const dir = d.text.dir
+      const rotation = Math.atan2(dir[0] * v0[0] + dir[1] * v0[1] + dir[2] * v0[2], dir[0] * u0[0] + dir[1] * u0[1] + dir[2] * u0[2])
+      const h = d.text.height
+      // El centro del texto en `pos`: arriba de la caja, 0.6 alto más arriba (línea base a 1.1, mayúsculas de 1).
+      const position: Vec3 = [0, 1, 2].map((i) => d.text.pos[i] + d.text.up[i] * h * 0.6) as Vec3
+      this.buildText({ id: e.id, type: 'TEXT', layer: e.layer, props: { position, text: d.text.value, height: h, rotation, justify: 'center', normal: n, kind: 'mtext', font: props.textFont } }, color, false)
+    } else for (const s2 of d.textStrokes) for (let i = 0; i + 1 < s2.length; i++) pts.push(...s2[i], ...s2[i + 1])
+    if (pts.length > 0) {
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(pts))
+      const lines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }))
+      lines.userData.entityId = e.id
+      group.add(lines)
+    }
+    const tri: number[] = []
+    for (const poly of d.fills) for (let i = 1; i + 1 < poly.length; i++) tri.push(...poly[0], ...poly[i], ...poly[i + 1])
+    if (tri.length > 0) {
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(tri))
+      const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }))
+      mesh.userData.entityId = e.id
+      group.add(mesh)
+    }
+    return group
+  }
+
+  /** Construye una entidad TEXT: overlay HTML (texto visible que escala con el zoom) + un plano
+   *  invisible sobre su caja para poder seleccionarlo con click (pickAt). */
+  /** Texto: su etiqueta (bajo demanda) y su caja de selección (en el lote `pick`, o una malla propia si no hay lote). */
+  private buildText(e: import('../core/document/types').TextEntity, color: THREE.Color, selected: boolean, pick?: MeshBatch, strokes?: LineBatch): void {
+    const fields = this.data?.fields
+    const segments = fields && hasFields(e.props.text) ? fieldSegments(e.props.text, fields) : null
+    // Con campos: la caja de selección se mide sobre el texto evaluado.
+    // Un texto con celda (rótulo) se encaja con su valor final.
+    const t = fitToWidth(segments ? { ...e.props, text: segments.map((s) => s.text).join('') } : e.props)
+    const runsOk = !!t.runs && t.runs.map((r) => r.s).join('') === t.text
+    if (t.stroke && !runsOk) {
+      // Fuente de un trazo (las SHX del plano): líneas en el dibujo, como el texto de las cotas.
+      const pos: number[] = []
+      for (const pl of textStrokePolylines(t)) for (let i = 0; i + 1 < pl.length; i++) pos.push(...pl[i], ...pl[i + 1])
+      if (strokes) {
+        strokes.ranges.push({ s: strokes.n, id: e.id })
+        for (let i = 0; i < pos.length; i++) strokes.pos.push(pos[i])
+        strokes.n += pos.length / 3
+      } else if (pos.length) {
+        const g = new THREE.BufferGeometry()
+        g.setAttribute('position', this.local(pos))
+        const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: selected ? new THREE.Color('#00e5ff') : color }))
+        l.userData.entityId = e.id
+        this.entityGroup.add(l)
+      }
+    }
+    // La fuente del texto (las TrueType del plano, con alternativas de las mismas medidas) o la de Cota.
+    const font = t.font ? `font-family:${cssFontStack(t.font)};` : 'font-family:monospace;'
+    // Como en el CAD clásico, el alto es el de las mayúsculas: la fuente va a alto / (mayúscula / em), con el interlineado
+    // del texto; y la etiqueta se corre para que la línea base caiga donde la pone la caja (`BASELINE_DROP`).
+    const fm = fontMetrics(t.font)
+    const em = t.height / fm.cap
+    const lh = lineSpacingOf(t) * fm.cap
+    const baselineAt = ((lh - fm.asc - fm.desc) / 2 + fm.asc) * em
+    const lift = baselineAt - BASELINE_DROP * t.height
+    const css =
+      `position:absolute;pointer-events:none;white-space:pre;${font}${t.bold ? 'font-weight:bold;' : ''}${t.italic ? 'font-style:italic;' : ''}line-height:${lh};` +
+      `text-align:${t.justify};transform-origin:top left;color:${selected ? '#00e5ff' : '#' + color.getHexString()};z-index:4`
+    const make = (): HTMLDivElement => {
+      const el = document.createElement('div')
+      if (segments) {
+        // FIELDDISPLAY=1: los campos evaluados llevan fondo gris (sólo en pantalla, no se plotea).
+        for (const s of segments) {
+          const span = document.createElement('span')
+          span.textContent = s.text
+          if (s.field) span.style.background = 'rgba(140,140,140,0.45)'
+          el.appendChild(span)
+        }
+      } else if (t.runs && t.runs.map((r) => r.s).join('') === t.text) {
+        // Formato dentro del texto (MTEXT importado): un tramo por cambio de negrita, fuente, alto o color.
+        for (const r of t.runs) {
+          const span = document.createElement('span')
+          span.textContent = r.s
+          span.style.fontWeight = r.b ? 'bold' : 'normal'
+          span.style.fontStyle = r.i ? 'italic' : 'normal'
+          if (r.u) span.style.textDecoration = 'underline'
+          if (r.f) span.style.fontFamily = cssFontStack(r.f)
+          if (r.h) span.style.fontSize = `${r.h}em`
+          if (r.c && !selected) span.style.color = r.c
+          el.appendChild(span)
+        }
+      } else el.textContent = t.text
+      el.style.cssText = css
+      return el
+    }
+    const ax = textAxes(t)
+    if (!(t.stroke && !runsOk)) {
+      this.textLabels.push({
+        el: null,
+        make,
+        pos: new THREE.Vector3(...textTop(t)).addScaledVector(new THREE.Vector3(...ax.v), lift),
+        height: t.height,
+        u: new THREE.Vector3(...ax.u),
+        v: new THREE.Vector3(...ax.v),
+        justify: t.justify,
+        widthFactor: t.widthFactor && t.widthFactor > 0 ? t.widthFactor : 1,
+        em,
+      })
+    }
+    // Plano invisible (2 triángulos sobre la caja) para selección por click.
+    const c = textCorners(t)
+    const pos = [...c[0], ...c[1], ...c[2], ...c[0], ...c[2], ...c[3]]
+    if (pick) {
+      pick.ranges.push({ s: pick.n, id: e.id })
+      pick.pos.push(...pos)
+      pick.n += 6
+      return
+    }
+    const geom = new THREE.BufferGeometry()
+    geom.setAttribute('position', this.local(pos))
+    const mesh = new THREE.Mesh(
+      geom,
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
+    )
+    mesh.userData.entityId = e.id
+    this.entityGroup.add(mesh)
+  }
+
+  private clearTextLabels(): void {
+    for (const l of this.textLabels) l.el?.remove()
+    this.textLabels = []
+  }
+
+  private updateTextLabels(): void {
+    const wpp = this.controller.worldPerPx()
+    const [w, h] = [this.width || 1, this.height || 1]
+    let shown = 0
+    for (const l of this.textLabels) {
+      // Fuera de la pantalla (con un margen: el texto sigue a la derecha de su punto), o de menos de 3 px de alto, como
+      // en el CAD clásico no se lee: no se crea su elemento. Con muchísimos a la vista, los primeros 3000.
+      const px = l.height / wpp >= MIN_TEXT_PX && shown < MAX_TEXT_LABELS ? this.controller.project(l.pos) : null
+      if (!px || px[0] < -w || px[0] > 2 * w || px[1] < -h || px[1] > 2 * h) {
+        if (l.el) {
+          l.el.remove()
+          l.el = null
+        }
+        continue
+      }
+      shown++
+      if (!l.el) {
+        l.el = l.make()
+        this.container.appendChild(l.el)
+      }
+      const font = Math.max(7, l.em / wpp)
+      l.el.style.fontSize = `${font}px`
+      l.el.style.left = `${px[0]}px`
+      l.el.style.top = `${px[1]}px`
+      const ax = l.justify === 'right' ? '-100%' : l.justify === 'center' ? '-50%' : '0'
+      // Los ejes reales del texto (dirección `u` y "arriba" `v`, en su plano) proyectados a la pantalla
+      //: en cualquier vista y UCS el texto se ve con su giro, su escorzo y, visto de atrás,
+      // espejado como en el CAD clásico. Un px local equivale a `height / font` unidades de mundo.
+      const k = l.em / font
+      const pu = this.controller.project(l.pos.clone().addScaledVector(l.u, l.height))
+      const pv = this.controller.project(l.pos.clone().addScaledVector(l.v, l.height))
+      if (pu && pv) {
+        const s = k / l.height
+        // El factor de ancho estira o angosta las letras a lo largo de su renglón.
+        const [a, b] = [(pu[0] - px[0]) * s * l.widthFactor, (pu[1] - px[1]) * s * l.widthFactor]
+        const [c, d] = [-(pv[0] - px[0]) * s, -(pv[1] - px[1]) * s]
+        l.el.style.transform = `matrix(${a},${b},${c},${d},0,0) translate(${ax},0)`
+      } else l.el.style.transform = `scaleX(${l.widthFactor}) translate(${ax},0)`
+    }
+  }
+
+  private clearDimLabels(): void {
+    for (const l of this.dimLabels) l.el.remove()
+    this.dimLabels = []
+  }
+
+  /**
+   * Construye un grupo malla+aristas de sólido/mesh según el estilo visual del viewport.
+   * `sharedGeom` = true cuando `geom` pertenece al cache CSG (no debe liberarse).
+   */
+  private styledSolidGroup(
+    geom: THREE.BufferGeometry,
+    color: THREE.Color,
+    selected: boolean,
+    id: string,
+    sharedGeom: boolean,
+    edgePositions?: Float32Array,
+  ): THREE.Object3D {
+    const style = this.visualStyle
+    const showMesh = style === 'shaded' || style === 'shadedEdges' || style === 'hidden'
+    // También en Shaded (con un tono más oscuro de la pieza): sin aristas, piezas del mismo color no se distinguían.
+    const showEdges = true
+    const group = new THREE.Object3D() // no Group: ver buildDimension (orden de capas)
+    group.userData.entityId = id
+
+    if (showMesh) {
+      // 'hidden': malla del color de fondo (oculta las aristas traseras por profundidad).
+      // Sin iluminación: las caras son del color plano del fondo (blanco en el papel), como el CAD clásico.
+      const material =
+        style === 'hidden'
+          ? new THREE.MeshBasicMaterial({ color: this.bgColor, ...FACE_OFFSET })
+          : new THREE.MeshStandardMaterial({ color: new THREE.Color(this.faceHex('#' + color.getHexString())), metalness: 0.1, roughness: 0.75, flatShading: false, ...FACE_OFFSET })
+      const mesh = new THREE.Mesh(geom, material)
+      mesh.userData.entityId = id
+      if (sharedGeom) mesh.userData.cachedGeom = true
+      group.add(mesh)
+    }
+    if (showEdges) {
+      // Aristas oscuras sobre superficie sombreada; en wireframe/hidden, del color de la entidad.
+      const edgeColor = selected ? HIGHLIGHT : new THREE.Color(this.edgeHex('#' + color.getHexString()))
+      let eg: THREE.BufferGeometry
+      if (edgePositions) {
+        eg = new THREE.BufferGeometry()
+        eg.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3))
+      } else eg = new THREE.EdgesGeometry(geom, 30) // 30°: oculta el facetado de paredes curvas
+      const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: edgeColor }))
+      edges.userData.entityId = id
+      group.add(edges)
+    }
+    // Si la malla no se muestra y la geometría es propia (no del cache), liberarla.
+    if (!showMesh && !sharedGeom) geom.dispose()
+    return group
+  }
+
+  private buildSolid(e: SolidEntity, color: THREE.Color, selected: boolean): THREE.Object3D {
+    const g = this.styledSolidGroup(displaySolidGeometry(e.props), color, selected, e.id, true, displaySolidEdges(e.props))
+    g.position.copy(this.origin).negate() // su geometría (compartida con el CSG) está en coordenadas del dibujo
+    return g
+  }
+
+  /** Geometría indexada (con normales) de una malla poligonal (MESH3D). */
+  private meshGeometry(props: MeshEntity['props']): THREE.BufferGeometry {
+    const geom = new THREE.BufferGeometry()
+    const pos: number[] = []
+    for (const v of props.vertices) pos.push(v[0], v[1], v[2])
+    const idx: number[] = []
+    for (const f of props.faces) for (let i = 1; i + 1 < f.length; i++) idx.push(f[0], f[i], f[i + 1])
+    geom.setAttribute('position', this.local(pos))
+    geom.setIndex(idx)
+    geom.computeVertexNormals()
+    return geom
+  }
+
+  private readonly meshCache = new WeakMap<object, MeshRender & { edges: Float32Array; faces: unknown; at: string }>()
+  /**
+   * Triángulos indexados, normales y aristas de más de 30° de una malla, por su lista de vértices: deshacer o rehacer
+   * copia el dibujo pero comparte esas listas, así que no se vuelven a calcular.
+   */
+  private meshBuffers(props: MeshEntity['props']): MeshRender & { edges: Float32Array } {
+    let m = this.meshCache.get(props.vertices)
+    const at = `${this.origin.x},${this.origin.y},${this.origin.z}`
+    if (!m || m.faces !== props.faces || m.at !== at) {
+      const g = this.meshGeometry(props) // relativa al origen, como las aristas que salen de ella
+      const eg = new THREE.EdgesGeometry(g, 30)
+      m = { ...meshRender(props.vertices, props.faces, 30, [this.origin.x, this.origin.y, this.origin.z]), edges: Float32Array.from(eg.getAttribute('position').array as ArrayLike<number>), faces: props.faces, at }
+      eg.dispose()
+      g.dispose()
+      this.meshCache.set(props.vertices, m)
+    }
+    return m
+  }
+
+  private buildMesh(e: MeshEntity, color: THREE.Color, selected: boolean): THREE.Object3D {
+    // Las aristas, las ya calculadas para los lotes (las mismas: de la misma geometría): resaltar una pieza no las rehace.
+    return this.styledSolidGroup(this.meshGeometry(e.props), color, selected, e.id, false, this.meshBuffers(e.props).edges)
+  }
+
+  /** Tamaño en píxeles de una esfera vista desde la cámara (perspectiva: según su distancia). */
+  private sizePx(c: Vec3, r: number): number {
+    return (2 * r) / (this.controller.worldPerPxAt({ x: c[0], y: c[1], z: c[2] }) || 1)
+  }
+
+  /**
+   * Clasifica sólidos y mallas en "punto" o "completa". Devuelve true si alguna pieza cambió de
+   * clase (entonces hay que reconstruir los lotes).
+   */
+  private classifyLod(entities: Entity[]): boolean {
+    const minPx = sysvars.RENDERMINPX
+    this.lodOn = lodActive(entities, minPx)
+    if (!this.lodOn) {
+      const had = this.lodSmall.size > 0
+      this.lodSmall.clear()
+      return had
+    }
+    let changed = false
+    const next = new Map<string, boolean>()
+    for (const e of entities) {
+      const sig = sizeSignature(e)
+      if (!sig || !isFinite(sig.r)) continue
+      // D3: la firma viaja con el dibujo (se guarda en el .cota con la clave de su contenido).
+      if ((e as { size?: SizeSig }).size?.k !== sig.k) (e as { size?: SizeSig }).size = sig
+      const prev = this.lodSmall.get(e.id)
+      const small = isSmall(this.sizePx(sig.c, sig.r), minPx, prev)
+      if (small) next.set(e.id, true)
+      if ((prev ?? false) !== small) changed = true
+    }
+    if (next.size !== this.lodSmall.size) changed = true
+    this.lodSmall = next
+    return changed
+  }
+
+  private rebuild(entities: Entity[], layers: Layer[], selection: Set<string>, own: Entity[] = entities): void {
+    for (const [k, t] of this.imageTextures) {
+      if (t.seen >= this.rebuildSeq) continue
+      t.tex.dispose()
+      this.imageTextures.delete(k)
+    }
+    this.rebuildSeq++
+    this.classifyLod(entities)
+    this.lodBucket = this.lodBucketKey()
+    this.disposeGroup(this.entityGroup)
+    this.clearDimLabels()
+    this.clearTextLabels()
+    const layerMap = new Map(layers.map((l) => [l.id, l]))
+    // Orden de dibujo, como el CAD clásico: el de la lista (lo que va después, encima). Cada vértice lleva el rango de
+    // su objeto y el shader lo acerca a la cámara (drawRank.ts), así el orden no depende del lote. Los textos van
+    // encima de todo (como los de fuente, que son HTML) y lo seleccionado arriba de todo. En 3D manda la profundidad.
+    const n = entities.length
+    // Los cuerpos 3D (sólidos y mallas) no entran en el orden: ni en planta una pieza de abajo debe tapar a una de arriba.
+    const rank = new Map(entities.map((e, i) => [e.id, isBody(e) ? 0 : (e.type === 'TEXT' || e.type === 'ATTDEF' ? n : 0) + i + 1]))
+    const top = 2 * n + 2
+    this.rankOf = (id) => rank.get(id) ?? 0
+    this.rankK = rankStep(top)
+    this.pickOrder = new Map(entities.map((e, i) => [e.id, { o: rank.get(e.id)!, i }]))
+    /** Asigna el orden a lo que `buildEntity` acaba de agregar. */
+    const individual = (e: Entity): void => {
+      const from = this.entityGroup.children.length
+      this.buildEntity(e, layerMap, selection)
+      const sel = selection.has(e.id)
+      for (const c of this.entityGroup.children.slice(from))
+        c.traverse((o) => {
+          o.renderOrder = sel ? 1 : 0
+          this.rankObject(o, sel && !o.userData.raster && !isBody(e) ? top : this.rankOf(e.id))
+        })
+    }
+    const style = this.visualStyle
+    const showMesh = style === 'shaded' || style === 'shadedEdges' || style === 'hidden'
+    const showEdges = true // en Shaded, más oscuras que la pieza (ver `edgeHex`)
+    // Batches por material (clave = color): fusionan la geometría estática (no seleccionada) para bajar
+    // de miles de draw calls a unas pocas decenas → orbit fluido en modelos pesados. `ranges` mapea
+    // cada tramo de vértices a su entityId (para el pick).
+    const meshB = new Map<string, FaceBatch>()
+    const edgeB = new Map<string, EdgeBatch>()
+    const lineB = new Map<string, LineBatch>()
+    const pointB = new Map<string, PointBatch>()
+    /** Recorridos completos (invisibles) de lo que se dibuja con trazos: el pick toma también los huecos. */
+    const pickB = new Map<string, LineBatch>()
+    /** Piezas chicas dibujadas como un punto: posiciones, color e id de cada una (para el pick). */
+    const lodB = new Map<string, { pos: number[]; ids: string[] }>()
+    const markB = new Map<string, { pos: number[]; ids: string[] }>()
+    /** Rellenos de sombreados (sólidos visibles; los de patrón, invisibles para el pick). */
+    const fillB = new Map<string, MeshBatch>()
+    /** Cajas de selección de los textos. */
+    const textPickB = new Map<string, MeshBatch>()
+    const ltCtx = this.data?.linetypes
+    const layerOf = (id: string) => layerMap.get(id)
+    const getMesh = (k: string): FaceBatch => { let b = meshB.get(k); if (!b) { b = { parts: [], ranges: [], n: 0, verts: 0 }; meshB.set(k, b) } return b }
+    const getEdges = (k: string): EdgeBatch => { let b = edgeB.get(k); if (!b) { b = { parts: [], ranges: [], n: 0 }; edgeB.set(k, b) } return b }
+    const getLine = (m: Map<string, LineBatch>, k: string): LineBatch => { let b = m.get(k); if (!b) { b = { pos: [], ranges: [], n: 0 }; m.set(k, b) } return b }
+    const getPoints = (m: Map<string, PointBatch>, k: string): PointBatch => { let b = m.get(k); if (!b) { b = { pos: [], rank: [] }; m.set(k, b) } return b }
+    const bgHex = '#' + this.bgColor.getHexString()
+    // Grosor de capa (mm; 0 = Default, 0.25 mm) en los layouts y, con LWDISPLAY, en el modelo.
+    const lwShown = !!(this.data?.lwUnitsPerMm || this.data?.lwPxPerMm)
+    const lwKey = (l: Layer | undefined, own?: number): string => (lwShown ? `|${(own !== undefined && own >= 0 ? own : l?.lineWeight) || 0.25}` : '')
+    this.wideLines = []
+    // Transparentes: un lote por tramo seguido del mismo color, en el orden de dibujo; se pintan después de lo opaco y
+    // la profundidad (rango) decide qué queda encima.
+    let seeSeq = 0
+    let seeLast = ''
+    const seeOrder = (k: string): string => {
+      if (k !== seeLast) [seeSeq, seeLast] = [seeSeq + 1, k]
+      return String(seeSeq * 1e-6)
+    }
+
+    // Lo que se puede elegir lo decide la capa del objeto del dibujo: una inserción, por la suya (como el CAD clásico), no
+    // por las de sus piezas, que al desarmarla para dibujar llevan su id. Con una sola pieza en una capa apagada o
+    // bloqueada, la inserción entera quedaba sin poder elegirse aunque se vieran sus otras piezas.
+    this.unpickable = new Set(own.filter((e) => !layerEditable(layerMap.get(e.layer))).map((e) => e.id))
+    for (const e of entities) {
+      try {
+        const layer = layerMap.get(e.layer)
+        if (!layerVisible(layer)) continue
+        const selected = selection.has(e.id)
+        const colorHex = this.entityHex(layer, e)
+
+        if (!selected && (e.type === 'TEXT' || e.type === 'ATTDEF')) {
+          // Su caja de selección va a un lote invisible (una sola malla para miles de textos).
+          const k = `0|${colorHex}|pick`
+          let b = textPickB.get(k)
+          if (!b) textPickB.set(k, (b = { pos: [], nor: [], ranges: [], n: 0 }))
+          const t = e.type === 'TEXT' ? e : { id: e.id, type: 'TEXT' as const, layer: e.layer, props: attdefText(e.props) }
+          // Con la fuente de un trazo, sus trazos van a un lote de líneas encima del dibujo (como los textos con fuente,
+          // que se ven por encima de todo) y de las máscaras.
+          this.buildText(t, new THREE.Color(colorHex), false, b, getLine(lineB, `${TEXT_ORDER}|${colorHex}`))
+          continue
+        }
+        // Individuales: seleccionadas (resaltado), anotaciones y polilíneas anchas.
+        if ((selected && e.type !== 'SHADE') || e.type === 'DIMENSION' || e.type === 'TEXT' || e.type === 'ATTDEF') {
+          individual(e)
+          continue
+        }
+        if (e.type === 'IMAGE') {
+          individual(e) // el marco va con su capa; los píxeles, debajo de todo el dibujo (es un fondo)
+          continue
+        }
+        if (e.type === 'NOTE') {
+          individual(e) // papel con textura y leaders: se arma aparte
+          continue
+        }
+        if (e.type === 'SHADE') {
+          // Debajo de todo lo de su capa (las líneas de la vista quedan encima).
+          const from = this.entityGroup.children.length
+          this.buildEntity(e, layerMap, selection)
+          for (const c of this.entityGroup.children.slice(from)) c.traverse((o) => this.rankObject(o, this.rankOf(e.id)))
+          continue
+        }
+        const ro = 0
+        if (e.type === 'POINT') {
+          const k = `${ro}|${colorHex}`
+          let b = markB.get(k)
+          if (!b) markB.set(k, (b = { pos: [], ids: [] }))
+          b.pos.push(...e.props.position)
+          b.ids.push(e.id)
+          continue
+        }
+        if ((e.type === 'SOLID3D' || e.type === 'MESH3D') && this.lodSmall.get(e.id)) {
+          // Más chica que RENDERMINPX: un punto en su centro, sin evaluar su CSG.
+          const sig = sizeSignature(e)!
+          const k = `${ro}|${colorHex}`
+          let b = lodB.get(k)
+          if (!b) lodB.set(k, (b = { pos: [], ids: [] }))
+          b.pos.push(sig.c[0], sig.c[1], sig.c[2])
+          b.ids.push(e.id)
+          continue
+        }
+        if (e.type === 'MESH3D') {
+          // Triángulos, normales y aristas de la malla, calculados una vez por malla (cambiar de vista o de zoom no los
+          // rehace: un modelo grande tardaba segundos en cada cambio).
+          const m = this.meshBuffers(e.props)
+          if (showMesh) {
+            const b = getMesh(`${ro}|${style === 'hidden' ? `${bgHex}|flat` : this.faceHex(colorHex)}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            b.parts.push(m)
+            b.n += m.idx.length
+            b.verts += m.pos.length / 3
+          }
+          if (showEdges && m.edges.length) {
+            const b = getEdges(`${ro}|${this.edgeHex(colorHex)}${lwKey(layer, e.lineWeight)}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            b.parts.push(m.edges)
+            b.n += m.edges.length / 3
+          }
+          continue
+        }
+        if (e.type === 'SOLID3D') {
+          const g = displaySolidGeometry(e.props)
+          if (showMesh) {
+            const ng = g.index ? g.toNonIndexed() : g
+            if (!ng.getAttribute('normal')) ng.computeVertexNormals()
+            const p = ng.getAttribute('position')
+            const nr = ng.getAttribute('normal')
+            const b = getMesh(`${ro}|${style === 'hidden' ? `${bgHex}|flat` : this.faceHex(colorHex)}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            b.parts.push({ pos: this.origin.lengthSq() ? this.shifted(p.array as ArrayLike<number>) : (p.array as ArrayLike<number>), nor: nr.array as ArrayLike<number> })
+            b.n += p.count
+            b.verts += p.count
+            if (ng !== g) ng.dispose()
+          }
+          if (showEdges) {
+            const pa: ArrayLike<number> = displaySolidEdges(e.props)
+            const b = getEdges(`${ro}|${this.edgeHex(colorHex)}${lwKey(layer, e.lineWeight)}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            b.parts.push(this.origin.lengthSq() ? this.shifted(pa) : pa)
+            b.n += pa.length / 3
+          }
+          if (solidThreads(e.props).length) {
+            // Textura de rosca (THREAD): hélices de paso real sobre las caras roscadas, más oscuras que la pieza.
+            const b = getLine(lineB, `${ro}|${threadHex(colorHex)}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            for (const t of solidThreads(e.props)) {
+              const seg = threadHelixSegments(t)
+              for (let i = 0; i < seg.length; i++) b.pos.push(seg[i])
+              b.n += seg.length / 3
+            }
+          }
+          continue
+        }
+        if (e.type === 'HATCH') {
+          // En su lugar del orden de dibujo. Una máscara (WIPEOUT) tapa lo que va antes; los textos quedan encima.
+          // Con transparencia se mezcla de verdad con lo de abajo, como el CAD clásico: va en su propio lote.
+          const see = (e.transparency ?? 0) > 0 && !e.props.wipeout
+          const hex = see ? this.layerHex(layer, e.color) + Math.round((1 - Math.min(1, e.transparency!)) * 255).toString(16).padStart(2, '0') : colorHex
+          const hro = (part: string): string | number => (see ? seeOrder(`${part}|${hex}`) : ro)
+          const strokes = hatchStrokesCached(e.props)
+          if (strokes.segs.length) {
+            const b = getLine(lineB, `${hro('l')}|${hex}`)
+            b.ranges.push({ s: b.n, id: e.id })
+            for (const [a, c] of strokes.segs) b.pos.push(a[0], a[1], a[2], c[0], c[1], c[2])
+            b.n += strokes.segs.length * 2
+          }
+          for (const d of strokes.dots) {
+            const pb = getPoints(pointB, `${hro('p')}|${hex}`)
+            pb.pos.push(d[0], d[1], d[2])
+            pb.rank.push(this.rankOf(e.id))
+          }
+          const tris = hatchTriangles(e)
+          if (tris.length) {
+            // Una máscara (WIPEOUT) se rellena con el color del fondo: tapa lo de las capas de abajo.
+            const k = e.props.wipeout ? `${ro}|${bgHex}|mask` : isSolidHatch(e.props) ? `${hro('f')}|${hex}|solid` : `${ro}|${colorHex}|pick`
+            let b = fillB.get(k)
+            if (!b) fillB.set(k, (b = { pos: [], nor: [], ranges: [], n: 0 }))
+            b.ranges.push({ s: b.n, id: e.id })
+            for (let i = 0; i < tris.length; i++) b.pos.push(tris[i])
+            b.n += tris.length / 3
+          }
+          continue
+        }
+        if (e.type === 'POLYLINE' && isWide(e.props)) {
+          individual(e) // banda rellena
+          continue
+        }
+        if (e.type === 'REGION') {
+          // El contorno con su capa y color; en los estilos sombreados, además la cara (como la de un sólido).
+          const b = getLine(lineB, `${ro}|${colorHex}${lwKey(layer, e.lineWeight)}`)
+          b.ranges.push({ s: b.n, id: e.id })
+          for (const seg of regionSegments(e)) {
+            b.pos.push(...seg)
+            b.n += 2
+          }
+          if (showMesh) {
+            const tris = hatchTriangles(e)
+            const n = hatchFrame(e.props).n
+            const nor = new Float32Array(tris.length)
+            for (let i = 0; i < nor.length; i += 3) nor.set(n, i)
+            const m = getMesh(`${ro}|${style === 'hidden' ? `${bgHex}|flat` : this.faceHex(colorHex)}`)
+            m.ranges.push({ s: m.n, id: e.id })
+            m.parts.push({ pos: this.origin.lengthSq() ? this.shifted(tris) : tris, nor })
+            m.n += tris.length / 3
+            m.verts += tris.length / 3
+          }
+          continue
+        }
+        const dashes = ltCtx ? entityDashes(e, entityPattern(e, layerOf, ltCtx), ltCtx.plinegen) : null
+        if (dashes) {
+          // Tipo de línea: los trazos al lote visible; el recorrido entero, invisible, para el pick.
+          const b = getLine(lineB, `${ro}|${colorHex}${lwKey(layer, e.lineWeight)}`)
+          b.ranges.push({ s: b.n, id: e.id })
+          for (const d of dashes.dashes) for (let i = 0; i + 1 < d.length; i++) {
+            b.pos.push(d[i][0], d[i][1], d[i][2], d[i + 1][0], d[i + 1][1], d[i + 1][2])
+            b.n += 2
+          }
+          for (const d of dashes.dots) {
+            const pb = getPoints(pointB, `${ro}|${colorHex}`)
+            pb.pos.push(d[0], d[1], d[2])
+            pb.rank.push(this.rankOf(e.id))
+          }
+          const pk = getLine(pickB, `${ro}|${colorHex}`)
+          pk.ranges.push({ s: pk.n, id: e.id })
+          for (const path of linetypePaths(e, ltCtx?.plinegen) ?? []) for (let i = 0; i + 1 < path.length; i++) {
+            pk.pos.push(path[i][0], path[i][1], path[i][2], path[i + 1][0], path[i + 1][1], path[i + 1][2])
+            pk.n += 2
+          }
+          continue
+        }
+        const verts = this.entityLinePoints(e)
+        if (!verts || verts.length < 2) continue
+        const b = getLine(lineB, `${ro}|${colorHex}${lwKey(layer, e.lineWeight)}`)
+        b.ranges.push({ s: b.n, id: e.id })
+        for (let i = 0; i + 1 < verts.length; i++) {
+          const a = verts[i]
+          const c = verts[i + 1]
+          b.pos.push(a.x, a.y, a.z, c.x, c.y, c.z)
+        }
+        b.n += (verts.length - 1) * 2
+      } catch (err) {
+        // Una entidad malformada no debe romper el rebuild ni congelar el viewport.
+        console.warn(`Cota: no se pudo construir la entidad ${e.id} (${e.type}); se omite.`, err)
+      }
+    }
+
+    if (showMesh) for (const [k, b] of meshB) this.addMeshBatch(b, k)
+    if (showEdges) for (const [k, b] of edgeB) this.addLineBatch({ pos: joinParts(b.parts, b.n * 3), ranges: b.ranges, n: b.n }, k)
+    for (const [k, b] of lineB) this.addLineBatch(b, k)
+    for (const [k, b] of pointB) this.addPointBatch(b, k)
+    for (const [k, b] of pickB) this.addLineBatch(b, k, true)
+    for (const [k, b] of fillB) this.addFillBatch(b, k)
+    for (const [k, b] of textPickB) this.addFillBatch(b, k, false)
+    for (const [k, b] of lodB) this.addLodPoints(b, k)
+    for (const [k, b] of markB) this.addPointMarks(b, k)
+  }
+
+  /** POINT: su marca según PDMODE, del tamaño de PDSIZE (se ajusta al zoom en `updateLineweights`). */
+  private addPointMarks(b: { pos: number[]; ids: string[] }, key: string): void {
+    const [ro, colorHex] = key.split('|')
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(b.pos))
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(Float32Array.from(b.ids, (id) => this.rankOf(id)), 1))
+    const mat = ranked(new THREE.PointsMaterial({ color: new THREE.Color(colorHex), size: this.pointMarkPx(), sizeAttenuation: false, map: pointMarkTexture(sysvars.PDMODE), transparent: true, alphaTest: 0.35 }), this.rankK)
+    const pts = new THREE.Points(g, mat)
+    pts.renderOrder = Number(ro)
+    pts.userData.pointIds = b.ids
+    pts.userData.pointMark = true
+    this.entityGroup.add(pts)
+  }
+
+  /** Lado en píxeles de la marca de los POINT (PDSIZE del CAD clásico). */
+  private pointMarkPx(): number {
+    const h = this.renderer.domElement.clientHeight || 600
+    const s = sysvars.PDSIZE
+    const px = s > 0 ? s / (this.controller.worldPerPx() || 1) : s < 0 ? (h * -s) / 100 : h * 0.05
+    return Math.max(4, Math.min(256, px))
+  }
+
+  /** Piezas chicas: 2 px, seleccionables (el pick resuelve el id por el índice del punto). */
+  private addLodPoints(b: { pos: number[]; ids: string[] }, key: string): void {
+    const [ro, colorHex] = key.split('|')
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(b.pos))
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(Float32Array.from(b.ids, (id) => this.rankOf(id)), 1))
+    const pts = new THREE.Points(g, ranked(new THREE.PointsMaterial({ color: new THREE.Color(colorHex), size: 3, sizeAttenuation: false }), this.rankK))
+    pts.renderOrder = Number(ro)
+    pts.userData.pointIds = b.ids
+    this.entityGroup.add(pts)
+  }
+
+  /** Balde de zoom para reclasificar (cada 25 % de cambio; en perspectiva también al mover la cámara). */
+  private lodBucketKey(): string {
+    const c = this.controller
+    const z = Math.round(Math.log(c.worldPerPx() || 1) / Math.log(1.25))
+    if (c.mode === 'ortho') return `${z}`
+    const p = c.camera.position
+    const step = (c.radius || 1) / 4
+    return `${z}|${Math.round(p.x / step)},${Math.round(p.y / step)},${Math.round(p.z / step)}`
+  }
+
+  /** Rango de dibujo constante para un objeto armado aparte (seleccionado, cota, imagen…). */
+  private rankObject(o: THREE.Object3D, r: number): void {
+    const m = o as THREE.Mesh
+    if (!m.geometry || !m.material || Array.isArray(m.material)) return
+    if (o instanceof LineSegments2) {
+      const n = (m.geometry as THREE.InstancedBufferGeometry).instanceCount
+      if (Number.isFinite(n) && n > 0) m.geometry.setAttribute('instanceRank', new THREE.InstancedBufferAttribute(new Float32Array(n).fill(r), 1))
+      ranked(m.material, this.rankK, true)
+      return
+    }
+    const count = m.geometry.getAttribute('position')?.count ?? 0
+    if (!count) return
+    m.geometry.setAttribute(RANK_ATTR, new THREE.BufferAttribute(new Float32Array(count).fill(r), 1))
+    ranked(m.material, this.rankK)
+  }
+
+  /** Puntos de los tipos de línea/patrones: 1 px fijo (como el punto del CAD clásico), no seleccionables. */
+  private addPointBatch(b: PointBatch, key: string): void {
+    if (!b.pos.length) return
+    const [ro, colorHex] = key.split('|')
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(b.pos))
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(Float32Array.from(b.rank), 1))
+    const pts = new THREE.Points(g, ranked(new THREE.PointsMaterial({ ...paint(colorHex), size: 1, sizeAttenuation: false }), this.rankK))
+    pts.renderOrder = Number(ro)
+    pts.raycast = () => {} // el pick lo resuelve el recorrido invisible
+    this.entityGroup.add(pts)
+  }
+
+  /**
+   * Relleno de sombreados: `solid` se ve; `pick` es invisible y sólo sirve para seleccionar un
+   * sombreado haciendo clic dentro. Ambos pierden contra las líneas cercanas al cursor (`lowPick`).
+   */
+  private addFillBatch(b: MeshBatch, key: string, lowPick = true): void {
+    if (!b.pos.length) return
+    const [ro, colorHex, kind] = key.split('|')
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(b.pos))
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(rankArray(b.pos.length / 3, b.ranges, this.rankOf), 1))
+    const visible = kind === 'solid' || kind === 'mask'
+    // Un relleno o una máscara tapa lo que va antes en el orden de dibujo, aunque esté en el mismo plano.
+    const mesh = new THREE.Mesh(g, ranked(new THREE.MeshBasicMaterial({ ...paint(colorHex), side: THREE.DoubleSide, visible }), this.rankK))
+    mesh.userData.ranges = b.ranges
+    mesh.userData.rangeKind = 'mesh'
+    if (lowPick) mesh.userData.lowPick = true
+    mesh.renderOrder = Number(ro)
+    this.entityGroup.add(mesh)
+  }
+
+  /** Crea una malla fusionada (un draw call) a partir de un batch, con `ranges` para el pick. La clave
+   *  del lote es `orden|color`: el orden de la capa pasa a `renderOrder`. */
+  private addMeshBatch(b: FaceBatch, key: string): void {
+    if (b.n === 0) return
+    const [ro, colorHex, flat] = key.split('|')
+    const pos = new Float32Array(b.verts * 3)
+    const nor = new Float32Array(b.verts * 3)
+    const idx = new Uint32Array(b.n)
+    const rk = new Float32Array(b.verts)
+    let v = 0
+    let w = 0
+    let r = 0
+    /** Por parte (una por pieza): primer índice, cantidad de índices, primer vértice y cantidad de vértices. */
+    const spans: number[] = []
+    for (const p of b.parts) {
+      pos.set(p.pos, v * 3)
+      nor.set(p.nor, v * 3)
+      const count = p.pos.length / 3
+      while (r + 1 < b.ranges.length && b.ranges[r + 1].s <= w) r++
+      rk.fill(b.ranges[r] ? this.rankOf(b.ranges[r].id) : 0, v, v + count)
+      const w0 = w
+      if (p.idx) for (let i = 0; i < p.idx.length; i++) idx[w++] = p.idx[i] + v
+      else for (let i = 0; i < count; i++) idx[w++] = v + i
+      spans.push(w0, w - w0, v, count)
+      v += count
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    g.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(rk, 1))
+    g.setIndex(new THREE.BufferAttribute(idx, 1))
+    const mesh = new THREE.Mesh(
+      g,
+      // De las dos caras: una cara de una malla leída que quedara al revés se ve igual, con la luz del lado que se mira.
+      ranked(
+        flat
+          ? new THREE.MeshBasicMaterial({ color: new THREE.Color(colorHex), side: THREE.DoubleSide, ...FACE_OFFSET }) // estilo hidden: sin luz
+          : new THREE.MeshStandardMaterial({ color: new THREE.Color(colorHex), metalness: 0.1, roughness: 0.75, side: THREE.DoubleSide, ...FACE_OFFSET }),
+        this.rankK,
+      ),
+    )
+    mesh.userData.ranges = b.ranges
+    mesh.userData.rangeKind = 'mesh'
+    mesh.renderOrder = Number(ro)
+    // El pick recorre sólo las piezas que el rayo toca (ver `rangedRaycast`).
+    mesh.userData.spans = spans
+    mesh.raycast = rangedRaycast
+    this.entityGroup.add(mesh)
+  }
+
+  /** Crea un LineSegments fusionado (un draw call) a partir de un batch, con `ranges` para el pick.
+   *  `pickOnly`: invisible (recorrido completo de una línea con trazos). */
+  private addLineBatch(b: LineBatch | { pos: Float32Array; ranges: LineBatch['ranges']; n: number }, key: string, pickOnly = false): void {
+    if (b.pos.length === 0) return
+    const [ro, colorHex, lw] = key.split('|')
+    // Los tramos ya juntados (Float32Array) vienen relativos al origen; las listas, en coordenadas del dibujo.
+    const pos = b.pos instanceof Float32Array ? b.pos : this.shifted(b.pos)
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    const rk = rankArray(pos.length / 3, b.ranges, this.rankOf)
+    g.setAttribute(RANK_ATTR, new THREE.BufferAttribute(rk, 1))
+    const seg = new THREE.LineSegments(g, ranked(new THREE.LineBasicMaterial({ ...paint(colorHex), visible: !pickOnly }), this.rankK))
+    seg.userData.ranges = b.ranges
+    seg.userData.rangeKind = 'line'
+    seg.renderOrder = Number(ro)
+    // El pick recorre sólo los tramos de las piezas cerca del rayo (ver `rangedRaycast`).
+    const spans = lineSpans(b.ranges, pos.length / 3)
+    if (spans) {
+      seg.userData.spans = spans
+      seg.raycast = rangedRaycast
+    }
+    this.entityGroup.add(seg)
+    if (lw && !pickOnly && (this.data?.lwUnitsPerMm || this.data?.lwPxPerMm)) {
+      // Línea con grosor (en píxeles según el zoom): se ve en lugar de la fina, que queda para el pick.
+      const wg = new LineSegmentsGeometry().setPositions(pos)
+      wg.setAttribute('instanceRank', new THREE.InstancedBufferAttribute(Float32Array.from({ length: rk.length / 2 }, (_, i) => rk[2 * i]), 1))
+      const mat = ranked(new LineMaterial({ ...paint(colorHex), color: new THREE.Color(colorHex.slice(0, 7)).getHex(), linewidth: 1 }), this.rankK, true)
+      mat.resolution.set(this.width, this.height)
+      const wide = new LineSegments2(wg, mat)
+      wide.renderOrder = Number(ro)
+      wide.raycast = () => {}
+      wide.visible = false
+      this.entityGroup.add(wide)
+      this.wideLines.push({ thin: seg, wide, mm: Number(lw) })
+    }
+    this.lineweightZoom = -1
+  }
+
+  /**
+   * Grosores en pantalla: cada línea con grosor mide `mm` de papel al zoom actual; por debajo de 1,5 px se dibuja la
+   * línea fina (como el CAD clásico, que no baja de un píxel).
+   */
+  private updateLineweights(): void {
+    // Los POINT con PDSIZE en unidades de dibujo cambian de tamaño en pantalla con el zoom.
+    if (sysvars.PDSIZE > 0) {
+      const px = this.pointMarkPx()
+      for (const o of this.entityGroup.children) if (o.userData.pointMark) ((o as THREE.Points).material as THREE.PointsMaterial).size = px
+    }
+    const units = this.data?.lwUnitsPerMm
+    const pxPerMm = units ? 0 : this.data?.lwPxPerMm
+    if (!this.wideLines.length || !(units || pxPerMm)) return
+    const wpp = pxPerMm ? 1 : this.controller.worldPerPx() || 1
+    if (wpp === this.lineweightZoom) return
+    this.lineweightZoom = wpp
+    for (const w of this.wideLines) {
+      const px = pxPerMm ? (w.mm > 0.25 ? w.mm * pxPerMm : 0) : (w.mm * units!) / wpp
+      const show = px > 1.5
+      w.wide.visible = show
+      ;(w.thin.material as THREE.LineBasicMaterial).visible = !show
+      if (show) {
+        const m = w.wide.material as LineMaterial
+        m.linewidth = px
+        m.resolution.set(this.width, this.height)
+      }
+    }
+  }
+
+  /** Resuelve el entityId de un impacto de raycast sobre una geometría fusionada (búsqueda binaria). */
+  private resolveRange(obj: THREE.Object3D, hit: THREE.Intersection): string | null {
+    const ranges = obj.userData.ranges as { s: number; id: string }[] | undefined
+    if (!ranges) return null
+    const v = obj.userData.rangeKind === 'mesh' ? (hit.faceIndex ?? -1) * 3 : hit.index ?? -1
+    if (v < 0) return null
+    let lo = 0
+    let hi = ranges.length - 1
+    let ans = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (ranges[mid].s <= v) { ans = mid; lo = mid + 1 } else hi = mid - 1
+    }
+    return ans >= 0 ? ranges[ans].id : null
+  }
+
+  private lightBg(): boolean {
+    const { r, g, b } = this.bgColor
+    return 0.299 * r + 0.587 * g + 0.114 * b > 0.6
+  }
+
+  /** Color de dibujo: el blanco (color 7 del CAD clásico) se dibuja negro sobre fondos claros (papel). */
+  /**
+   * Color 7 del CAD clásico ("blanco/negro"): una capa blanca se ve negra sobre fondo claro (modo claro, papel) y una
+   * negra se ve blanca sobre fondo oscuro. Los demás colores se muestran tal cual, como en el CAD clásico.
+   */
+  private ink(hex: string): string {
+    const h = hex.toLowerCase()
+    if (h === '#ffffff' || h === '#fff') return this.lightBg() ? '#000000' : hex
+    if (h === '#000000' || h === '#000') return this.lightBg() ? hex : '#ffffff'
+    return hex
+  }
+
+  /**
+   * Color con que se ve una capa: el color 7 según el fondo y las bloqueadas atenuadas (como LAYLOCKFADECTL 50); se
+   * ven y dan snaps. Las congeladas no se dibujan (como las apagadas).
+   */
+  /** Color con que se ve una entidad: el suyo o el de su capa, mezclado con el fondo según su transparencia. */
+  private entityHex(layer: Layer | undefined, e: Entity): string {
+    const hex = this.layerHex(layer, e.color)
+    const t = e.transparency
+    if (!t || t <= 0) return hex
+    const k = Math.min(1, t)
+    const bg = '#' + this.bgColor.getHexString()
+    const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16)
+    const mix = [0, 1, 2].map((i) => Math.round(ch(hex, i) * (1 - k) + ch(bg, i) * k))
+    return '#' + mix.map((v) => v.toString(16).padStart(2, '0')).join('')
+  }
+
+  private layerHex(layer: Layer | undefined, own?: string): string {
+    // Color propio del objeto, o el de su capa (ByLayer); las bloqueadas se atenúan igual.
+    const hex = this.ink((own?.startsWith('#') ? own : undefined) ?? layer?.color ?? '#ffffff')
+    if (!layer?.locked) return hex
+    return '#' + new THREE.Color(hex).lerp(new THREE.Color(this.bgColor), 0.5).getHexString()
+  }
+
+  /**
+   * Contornos (siluetas) de las caras curvas de los sólidos vistos desde la cámara: donde una superficie suave pasa de
+   * mirar al observador a darle la espalda (los lados de un cilindro, el borde de una esfera o de un tubo barrido).
+   * Se recalculan al cambiar la vista; si es costoso, sólo cuando se suelta la órbita.
+   */
+  private updateSilhouettes(): void {
+    const d = this.data
+    const style = this.visualStyle
+    const cam = this.controller.camera
+    const persp = this.controller.mode !== 'ortho'
+    const dir = new THREE.Vector3()
+    cam.getWorldDirection(dir)
+    const q = (v: number) => Math.round(v * 2000)
+    const key = d ? `${style}|${this.lastRevision}|${this.lastSelectionKey}|${q(dir.x)},${q(dir.y)},${q(dir.z)}${persp ? `|${q(cam.position.x)},${q(cam.position.y)},${q(cam.position.z)}` : ''}` : ''
+    if (key === this.silhouetteKey) return
+    if (key && this.dragging && this.silhouetteMs > 30) return // pesado: se actualiza al terminar de orbitar
+    this.silhouetteKey = key
+    this.disposeGroup(this.silhouetteGroup)
+    if (!key || !d) return
+    const t0 = performance.now()
+    const layers = new Map(d.layers.map((l) => [l.id, l]))
+    const sel = new Set(d.selection)
+    const byColor = new Map<string, number[]>()
+    const toViewer = dir.clone().negate()
+    for (const e of this.entities()) {
+      if (e.type !== 'SOLID3D' || this.lodSmall.get(e.id)) continue
+      const layer = layers.get(e.layer)
+      if (!layerVisible(layer) || solidPending(e.props)) continue // en boceto: sin siluetas hasta el resultado exacto
+      const topo = solidTopology(e.props)
+      if (!topo) continue
+      const { verts, normals, triFace, links } = topo
+      const hex = sel.has(e.id) ? '#' + new THREE.Color(HIGHLIGHT).getHexString() : this.edgeHex(this.layerHex(layer, e.color))
+      let out = byColor.get(hex)
+      if (!out) byColor.set(hex, (out = []))
+      for (const [ta, tb, a, b] of links) {
+        if (triFace[ta] !== triFace[tb]) continue // entre caras distintas: arista viva, ya dibujada
+        const [na, nb] = [normals[ta], normals[tb]]
+        if (na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2] > 1 - 1e-9) continue // misma faceta plana
+        const [pa, pb] = [verts[a], verts[b]]
+        let v = toViewer
+        if (persp) v = new THREE.Vector3((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2).sub(cam.position).negate()
+        const da = na[0] * v.x + na[1] * v.y + na[2] * v.z
+        const db = nb[0] * v.x + nb[1] * v.y + nb[2] * v.z
+        if (da > 0 !== db > 0) out.push(pa[0], pa[1], pa[2], pb[0], pb[1], pb[2])
+      }
+    }
+    for (const [hex, pos] of byColor) {
+      if (!pos.length) continue
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(pos))
+      const seg = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: new THREE.Color(hex) }))
+      seg.raycast = () => {}
+      this.silhouetteGroup.add(seg)
+    }
+    this.silhouetteMs = performance.now() - t0
+  }
+
+  /** Caras sombreadas: el negro del color 7 sobre papel se aclara a gris para que se lea el sombreado. */
+  private faceHex(hex: string): string {
+    return hex === '#000000' && this.lightBg() ? FACE_ON_PAPER : hex
+  }
+
+  /** Construye una entidad y la agrega al grupo (aislada para poder capturar errores por entidad). */
+  private buildEntity(e: Entity, layerMap: Map<string, Layer>, selection: Set<string>): void {
+    {
+      const layer = layerMap.get(e.layer)
+      if (!layerVisible(layer)) return
+      const selected = selection.has(e.id)
+      const color = new THREE.Color(selected ? HIGHLIGHT : this.entityHex(layer, e))
+      if (e.type === 'SOLID3D') {
+        this.entityGroup.add(this.buildSolid(e, color, selected))
+        return
+      }
+      if (e.type === 'MESH3D') {
+        this.entityGroup.add(this.buildMesh(e, color, selected))
+        return
+      }
+      if (e.type === 'DIMENSION') {
+        this.entityGroup.add(this.buildDimension(e, color))
+        return
+      }
+      if (e.type === 'TEXT') {
+        this.buildText(e, color, selected)
+        return
+      }
+      if (e.type === 'ATTDEF') {
+        // Suelto se ve su tag (dentro de un bloque lo reemplaza el valor del atributo).
+        this.buildText({ id: e.id, type: 'TEXT', layer: e.layer, props: attdefText(e.props) }, color, selected)
+        return
+      }
+      if (e.type === 'HATCH') {
+        this.entityGroup.add(this.buildHatch(e, color))
+        return
+      }
+      if (e.type === 'REGION') {
+        this.entityGroup.add(this.buildRegion(e, color))
+        return
+      }
+      if (e.type === 'SHADE') {
+        this.entityGroup.add(this.buildShade(e, selected))
+        return
+      }
+      if (e.type === 'IMAGE') this.buildImage(e, color, selected) // y después su marco, como cualquier contorno
+      if (e.type === 'NOTE') this.buildNote(e, color) // el papel y sus leaders; después su marco
+      const vertices = this.entityLinePoints(e)
+      if (!vertices || vertices.length < 2) return
+      if (e.type === 'POLYLINE' && isWide(e.props)) this.entityGroup.add(this.buildBand(e.id, polylineBand(e.props), color))
+      const ltCtx = this.data?.linetypes
+      const dashes = ltCtx ? entityDashes(e, entityPattern(e, (id) => layerMap.get(id), ltCtx), ltCtx.plinegen) : null
+      if (dashes) {
+        this.entityGroup.add(this.buildDashes(e, dashes, color, linetypePaths(e, ltCtx?.plinegen) ?? []))
+        return
+      }
+      const geom = new THREE.BufferGeometry()
+      geom.setAttribute('position', this.local(vertices.flatMap((v) => [v.x, v.y, v.z])))
+      const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color }))
+      line.userData.entityId = e.id
+      this.entityGroup.add(line)
+    }
+  }
+
+  /** Trazos de un tipo de línea (individual: seleccionado) con su recorrido invisible para el pick. */
+  private buildDashes(e: Entity, d: DashResult, color: THREE.Color, paths: Vec3[][]): THREE.Object3D {
+    const group = new THREE.Object3D()
+    group.userData.entityId = e.id
+    const seg = (polys: Vec3[][], visible: boolean): THREE.LineSegments => {
+      const pos: number[] = []
+      for (const p of polys) for (let i = 0; i + 1 < p.length; i++) pos.push(...p[i], ...p[i + 1])
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(pos))
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, visible }))
+      l.userData.entityId = e.id
+      return l
+    }
+    group.add(seg(d.dashes, true), seg(paths, false))
+    if (d.dots.length) {
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(d.dots.flat()))
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({ color, size: 1, sizeAttenuation: false }))
+      pts.raycast = () => {}
+      group.add(pts)
+    }
+    return group
+  }
+
+  /** Banda rellena de una polilínea ancha. */
+  private buildBand(id: string, quads: Vec3[][], color: THREE.Color): THREE.Object3D {
+    const pos: number[] = []
+    for (const q of quads) pos.push(...q[0], ...q[1], ...q[2], ...q[0], ...q[2], ...q[3])
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(pos))
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, ...FACE_OFFSET }))
+    mesh.userData.entityId = id
+    return mesh
+  }
+
+  /** Sombreado individual (seleccionado): líneas del patrón y relleno (visible si es SOLID). */
+  /**
+   * Sombreado de una vista de dibujo: triángulos con su color, pintados en orden (de atrás hacia
+   * adelante, sin prueba de profundidad) y debajo de las líneas de la vista.
+   */
+  /**
+   * Imagen raster: los píxeles en un polígono con textura (el recorte, triangulado) que no se elige con el cursor (se
+   * elige por el marco, como en el CAD clásico). Sin el archivo adjunto queda el nombre dentro del marco.
+   */
+  /** Textura del papel de una nota (color, esquina doblada, cruz para cerrar y texto ajustado), cacheada por contenido. */
+  private noteTexture(p: NoteProps): THREE.CanvasTexture {
+    const H = 384
+    const W = Math.max(96, Math.min(1536, Math.round((H * p.size[0]) / Math.max(p.size[1], 1e-9))))
+    const key = `${p.color}|${W}|${p.text}`
+    const hit = this.noteTextures.get(key)
+    if (hit) return hit
+    const cv = document.createElement('canvas')
+    cv.width = W
+    cv.height = H
+    const g = cv.getContext('2d')!
+    const c = NOTE_COLORS[p.color] ?? NOTE_COLORS.yellow
+    const f = Math.min(W, H) * 0.16
+    // Papel sin la esquina inferior derecha, que va doblada.
+    g.fillStyle = c.paper
+    g.beginPath()
+    g.moveTo(0, 0)
+    g.lineTo(W, 0)
+    g.lineTo(W, H - f)
+    g.lineTo(W - f, H)
+    g.lineTo(0, H)
+    g.closePath()
+    g.fill()
+    const grad = g.createLinearGradient(0, 0, 0, H)
+    grad.addColorStop(0, 'rgba(255,255,255,0.18)')
+    grad.addColorStop(1, 'rgba(0,0,0,0.06)')
+    g.fillStyle = grad
+    g.fill()
+    g.fillStyle = c.fold
+    g.beginPath()
+    g.moveTo(W, H - f)
+    g.lineTo(W - f, H - f)
+    g.lineTo(W - f, H)
+    g.closePath()
+    g.fill()
+    // Cruz para cerrar, arriba a la derecha.
+    const x = Math.min(W, H) * 0.09
+    const m = Math.min(W, H) * 0.05
+    g.strokeStyle = c.ink
+    g.globalAlpha = 0.55
+    g.lineWidth = Math.max(2, x * 0.18)
+    g.beginPath()
+    g.moveTo(W - m - x, m)
+    g.lineTo(W - m, m + x)
+    g.moveTo(W - m, m)
+    g.lineTo(W - m - x, m + x)
+    g.stroke()
+    g.globalAlpha = 1
+    // Texto ajustado al espacio libre (debajo de la franja de la cruz).
+    const fit = fitNoteText(p.text, [W, H])
+    if (fit.lines.length) {
+      const px = fit.em * H
+      g.fillStyle = c.ink
+      g.textBaseline = 'top'
+      g.font = `${px}px "Segoe Print", "Bradley Hand", "Comic Sans MS", "Noto Sans", sans-serif`
+      fit.lines.forEach((line, i) => g.fillText(line, W * 0.07, H * 0.2 + i * px * 1.25, W * 0.86))
+    }
+    const tex = new THREE.CanvasTexture(cv)
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.anisotropy = 4
+    if (this.noteTextures.size > 200) {
+      for (const t of this.noteTextures.values()) t.dispose()
+      this.noteTextures.clear()
+    }
+    this.noteTextures.set(key, tex)
+    return tex
+  }
+
+  /** Nota rápida: el papel (con su textura) sobre su plano y sus leaders con punta de flecha. */
+  private buildNote(e: NoteEntity, color: THREE.Color): void {
+    const p = e.props
+    const pos = [notePoint(p, 0, 0), notePoint(p, 1, 0), notePoint(p, 1, 1), notePoint(p, 0, 1)].flat()
+    const geom = new THREE.BufferGeometry()
+    geom.setAttribute('position', this.local(pos))
+    geom.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2))
+    geom.setIndex([0, 1, 2, 0, 2, 3])
+    const mat = new THREE.MeshBasicMaterial({
+      map: this.noteTexture(p),
+      transparent: true,
+      alphaTest: 0.05,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    })
+    const mesh = new THREE.Mesh(geom, mat)
+    mesh.userData.entityId = e.id
+    this.entityGroup.add(mesh)
+    if (!p.leaders?.length) return
+    const n = [p.u[1] * p.v[2] - p.u[2] * p.v[1], p.u[2] * p.v[0] - p.u[0] * p.v[2], p.u[0] * p.v[1] - p.u[1] * p.v[0]]
+    const head = Math.min(p.size[0], p.size[1]) * 0.08
+    const seg: number[] = []
+    for (const l of p.leaders) {
+      const a = notePoint(p, l.at[0], l.at[1])
+      const d = [l.to[0] - a[0], l.to[1] - a[1], l.to[2] - a[2]]
+      const len = Math.hypot(d[0], d[1], d[2])
+      if (len < 1e-9) continue
+      const dir = d.map((x) => x / len)
+      let side = [dir[1] * n[2] - dir[2] * n[1], dir[2] * n[0] - dir[0] * n[2], dir[0] * n[1] - dir[1] * n[0]]
+      const sl = Math.hypot(side[0], side[1], side[2]) || 1
+      side = side.map((x) => x / sl)
+      const b = (k: number) => [l.to[0] - dir[0] * head + side[0] * head * 0.35 * k, l.to[1] - dir[1] * head + side[1] * head * 0.35 * k, l.to[2] - dir[2] * head + side[2] * head * 0.35 * k]
+      seg.push(...a, ...l.to, ...l.to, ...b(1), ...l.to, ...b(-1))
+    }
+    const lg = new THREE.BufferGeometry()
+    lg.setAttribute('position', this.local(seg))
+    const lines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color }))
+    lines.userData.entityId = e.id
+    this.entityGroup.add(lines)
+  }
+
+  private buildImage(e: ImageEntity, color: THREE.Color, selected: boolean): void {
+    const p = e.props
+    const tex = p.data ? this.imageTexture(p.data) : null
+    if (!tex) {
+      // En la esquina de inserción (abajo a la izquierda), como venía el rótulo antes de leer la imagen.
+      const a = p.origin
+      const w = Math.hypot(...p.u) * p.size[0]
+      const h = Math.hypot(...p.v) * p.size[1]
+      const size = Math.max(Math.min(w, h) / 20, 1e-6)
+      const ux = p.u[0] / (Math.hypot(...p.u) || 1), uy = p.u[1] / (Math.hypot(...p.u) || 1)
+      const position: Vec3 = [a[0] + size * (ux - uy), a[1] + size * (uy + ux), a[2]]
+      const name = imageFileName(p)
+      if (name) this.buildText({ id: e.id, type: 'TEXT', layer: e.layer, props: { position, text: name, height: size, rotation: Math.atan2(uy, ux), justify: 'left', normal: [0, 0, 1], kind: 'text' } }, color, selected)
+      return
+    }
+    const clip = imageClip(p)
+    const tris = THREE.ShapeUtils.triangulateShape(clip.map(([x, y]) => new THREE.Vector2(x, -y)), [])
+    const pos: number[] = []
+    const uv: number[] = []
+    for (const [x, y] of clip) {
+      pos.push(...imagePoint(p, x, y))
+      uv.push(...imageUv(p, x, y))
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(pos))
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+    g.setIndex(tris.flat())
+    // Opaca (una transparente se dibujaría después de todas las líneas y las taparía): el desvanecido mezcla con el
+    // color del fondo y lo transparente de un PNG se recorta.
+    const fade = Math.max(0, Math.min(100, p.fade ?? 0)) / 100
+    const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, depthWrite: false }) // seleccionada se resalta su marco
+    if (fade > 0) {
+      const bg = this.bgColor.clone()
+      mat.onBeforeCompile = (sh) => {
+        sh.uniforms.uFade = { value: fade }
+        sh.uniforms.uBg = { value: bg }
+        sh.fragmentShader = sh.fragmentShader
+          .replace('void main() {', 'uniform float uFade;\nuniform vec3 uBg;\nvoid main() {')
+          .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, uBg, uFade);')
+      }
+      mat.customProgramCacheKey = () => 'image-fade'
+    }
+    const mesh = new THREE.Mesh(g, mat)
+    mesh.raycast = () => {}
+    mesh.userData.raster = true
+    this.entityGroup.add(mesh)
+  }
+
+  /** Textura de unos datos de imagen; se carga en segundo plano y redibuja al llegar. Muy grande, se achica. */
+  private imageTexture(data: string): THREE.Texture {
+    const hit = this.imageTextures.get(data)
+    if (hit) {
+      hit.seen = this.rebuildSeq
+      return hit.tex
+    }
+    const tex = new THREE.Texture()
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy())
+    this.imageTextures.set(data, { tex, seen: this.rebuildSeq })
+    const img = new Image()
+    img.onload = () => {
+      const max = Math.min(this.renderer.capabilities.maxTextureSize, 8192)
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight))
+      if (k < 1) {
+        const c = document.createElement('canvas')
+        c.width = Math.max(1, Math.floor(img.naturalWidth * k))
+        c.height = Math.max(1, Math.floor(img.naturalHeight * k))
+        c.getContext('2d')?.drawImage(img, 0, 0, c.width, c.height)
+        tex.image = c
+      } else tex.image = img
+      tex.needsUpdate = true
+      this.invalidate()
+    }
+    img.src = data
+    return tex
+  }
+
+  private buildShade(e: Extract<Entity, { type: 'SHADE' }>, selected: boolean): THREE.Object3D {
+    const g = new THREE.BufferGeometry()
+    // Un sombreado indexado se expande: cada triángulo lleva su color (sombreado plano).
+    g.setAttribute('position', this.local(shadeTriangles(e.props)))
+    const col: number[] = []
+    const n = shadeTriangleCount(e.props)
+    // Los colores son los del papel (sRGB, como en el PDF): los colores de vértice van en lineal, si no la pantalla
+    // los mostraba más claros que el plano impreso.
+    const c = new THREE.Color()
+    for (let i = 0; i < n; i++) {
+      const k = selected ? 0.6 : 1
+      c.setRGB((e.props.colors[i * 3] ?? 0.7) * k, (e.props.colors[i * 3 + 1] ?? 0.7) * k, Math.min(1, (e.props.colors[i * 3 + 2] ?? 0.7) * k + (selected ? 0.35 : 0)), THREE.SRGBColorSpace)
+      for (let v = 0; v < 3; v++) col.push(c.r, c.g, c.b)
+    }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+    // Los triángulos ya vienen en el orden de pintado exacto (`orderShade`): se pintan en ese orden, sin prueba de
+    // profundidad y antes que el resto. Con la profundidad (una milésima del modelo, debajo del papel) no alcanzaba la
+    // precisión del búfer y las caras tapadas asomaban en vetas (el costado de cada elemento de un radiador).
+    const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, depthTest: false, depthWrite: false }))
+    mesh.renderOrder = -1
+    mesh.userData.entityId = e.id
+    mesh.userData.lowPick = true // como el relleno de un sombreado: una línea cercana gana el pick
+    return mesh
+  }
+
+  /** Región: su contorno y, en los estilos sombreados, la cara semitransparente con el color de resaltado. */
+  private buildRegion(e: RegionEntity, color: THREE.Color): THREE.Object3D {
+    const group = new THREE.Object3D()
+    group.userData.entityId = e.id
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', this.local(regionSegments(e).flat()))
+    const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }))
+    l.userData.entityId = e.id
+    group.add(l)
+    const style = this.visualStyle
+    if (style === 'shaded' || style === 'shadedEdges' || style === 'hidden') {
+      const fg = new THREE.BufferGeometry()
+      fg.setAttribute('position', this.local(hatchTriangles(e)))
+      const mesh = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.6, ...FACE_OFFSET }))
+      mesh.userData.entityId = e.id
+      group.add(mesh)
+    }
+    return group
+  }
+
+  private buildHatch(e: HatchEntity, color: THREE.Color): THREE.Object3D {
+    const group = new THREE.Object3D()
+    group.userData.entityId = e.id
+    const s = hatchStrokesCached(e.props)
+    if (s.segs.length) {
+      const pos: number[] = []
+      for (const [a, b] of s.segs) pos.push(...a, ...b)
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(pos))
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }))
+      l.userData.entityId = e.id
+      group.add(l)
+    }
+    if (s.dots.length) {
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(s.dots.flat()))
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({ color, size: 1, sizeAttenuation: false }))
+      pts.raycast = () => {}
+      group.add(pts)
+    }
+    const tris = hatchTriangles(e)
+    if (tris.length) {
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', this.local(tris))
+      // Seleccionado: el relleno sólido se ve con el color de resaltado pero semitransparente.
+      const solid = isSolidHatch(e.props)
+      const mesh = new THREE.Mesh(
+        g,
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, visible: solid, transparent: solid, opacity: 0.6, ...FACE_OFFSET }),
+      )
+      mesh.userData.entityId = e.id
+      mesh.userData.lowPick = true
+      group.add(mesh)
+    }
+    return group
+  }
+
+  /**
+   * Trazos del marcador de un snap, en el plano de la **pantalla** (ejes derecha/arriba de la cámara): en
+   * FRONT, RIGHT o una isométrica se ve igual que en planta, como en el CAD clásico. `r` en unidades de
+   * mundo a la distancia del punto.
+   */
+  private glyphPoints(type: SnapType, c: Pt, r: number): Pt[][] {
+    const cam = this.controller.camera
+    cam.updateMatrixWorld()
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize()
+    const up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize()
+    const p = (x: number, y: number): Pt => ({
+      x: c.x + right.x * x + up.x * y,
+      y: c.y + right.y * x + up.y * y,
+      z: c.z + right.z * x + up.z * y,
+    })
+    switch (type) {
+      case 'endpoint':
+        return [[p(-r, -r), p(r, -r), p(r, r), p(-r, r), p(-r, -r)]]
+      case 'midpoint':
+        return [[p(-r, -r), p(r, -r), p(0, r), p(-r, -r)]]
+      case 'center': {
+        const seg: Pt[] = []
+        for (let i = 0; i <= 24; i++) {
+          const a = (i / 24) * Math.PI * 2
+          seg.push(p(r * Math.cos(a), r * Math.sin(a)))
+        }
+        return [seg]
+      }
+      case 'quadrant':
+        return [[p(0, r), p(r, 0), p(0, -r), p(-r, 0), p(0, r)]]
+      case 'intersection':
+        return [[p(-r, -r), p(r, r)], [p(-r, r), p(r, -r)]]
+      case 'apparentIntersection':
+        // Aspa dentro de una caja (el CAD clásico la distingue así de la intersección real).
+        return [
+          [p(-r, -r), p(r, r)],
+          [p(-r, r), p(r, -r)],
+          [p(-r, -r), p(r, -r), p(r, r), p(-r, r), p(-r, -r)],
+        ]
+      case 'tracking':
+        // Cruz de alineación.
+        return [[p(-r, 0), p(r, 0)], [p(0, -r), p(0, r)]]
+      case 'perpendicular':
+        return [[p(-r, -r), p(r, -r)], [p(0, -r), p(0, r)]]
+      case 'tangent': {
+        const seg: Pt[] = []
+        for (let i = 0; i <= 24; i++) {
+          const a = (i / 24) * Math.PI * 2
+          seg.push(p(r * Math.cos(a), r * Math.sin(a)))
+        }
+        return [seg, [p(-r, r), p(r, r)]]
+      }
+      case 'geometricCenter': {
+        // Círculo con un asterisco (el centroide del CAD clásico).
+        const seg: Pt[] = []
+        for (let i = 0; i <= 24; i++) {
+          const a = (i / 24) * Math.PI * 2
+          seg.push(p(r * Math.cos(a), r * Math.sin(a)))
+        }
+        const k = r * 0.6
+        return [seg, [p(-k, 0), p(k, 0)], [p(0, -k), p(0, k)], [p(-k, -k), p(k, k)], [p(-k, k), p(k, -k)]]
+      }
+      case 'node': {
+        const seg: Pt[] = []
+        for (let i = 0; i <= 24; i++) {
+          const a = (i / 24) * Math.PI * 2
+          seg.push(p(r * Math.cos(a), r * Math.sin(a)))
+        }
+        return [seg, [p(-r, -r), p(r, r)], [p(-r, r), p(r, -r)]]
+      }
+      case 'nearest':
+        return [[p(-r, -r), p(r, -r), p(-r, r), p(r, r), p(-r, -r)]]
+      case 'extension':
+        return [[p(-r, 0), p(r, 0)], [p(0, -r), p(0, r)], [p(-r * 0.4, -r * 0.4), p(r * 0.4, r * 0.4)]]
+      case 'parallel':
+        return [[p(-r, -r * 0.3), p(r * 0.3, r)], [p(-r * 0.3, -r), p(r, r * 0.3)]]
+      case 'faceCenter':
+        // Cuadro con un punto (centro de cara).
+        return [[p(-r, -r), p(r, -r), p(r, r), p(-r, r), p(-r, -r)], [p(-r * 0.2, 0), p(r * 0.2, 0)], [p(0, -r * 0.2), p(0, r * 0.2)]]
+      case 'facePerpendicular':
+        return [[p(-r, -r), p(r, -r)], [p(0, -r), p(0, r)], [p(-r, -r), p(-r * 0.4, -r * 0.4), p(r, -r * 0.4)]]
+      case 'faceNearest':
+        return [[p(-r, -r), p(r, -r), p(-r, r), p(r, r), p(-r, -r)], [p(-r, 0), p(r, 0)]]
+      case 'insertion':
+        // Dos cuadrados encimados (el marcador del CAD clásico).
+        return [[p(-r, 0), p(0, 0), p(0, r), p(-r, r), p(-r, 0)], [p(0, -r), p(r, -r), p(r, 0), p(0, 0), p(0, -r)]]
+      case 'grid':
+        return [[p(-r, 0), p(r, 0)], [p(0, -r), p(0, r)]]
+    }
+  }
+
+  /** Un puntito de largo `len` corrido (dx, dy) en el plano de la pantalla desde `c`. */
+  private glyphOffsetDots(c: Pt, dx: number, dy: number, len: number): Pt[][] {
+    const cam = this.controller.camera
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize()
+    const up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize()
+    const at = (x: number, y: number): Pt => ({ x: c.x + right.x * x + up.x * y, y: c.y + right.y * x + up.y * y, z: c.z + right.z * x + up.z * y })
+    return [[at(dx, dy), at(dx + len, dy)]]
+  }
+
+  private updateSnapGlyph(): void {
+    this.disposeGroup(this.snapGroup)
+    // Marcas "+" de los puntos adquiridos para el tracking y sus líneas de alineación.
+    if ((this.data?.otrack || this.data?.polarAng) && this.data.pointPrompt) {
+      for (const tp of this.data.otrack ? this.tracked : []) {
+        for (const seg of this.glyphPoints('tracking', tp, 5 * this.controller.worldPerPxAt(tp))) {
+          const geom = this.localGeometry(seg.map((p) => new THREE.Vector3(p.x, p.y, p.z)))
+          this.snapGroup.add(new THREE.Line(geom, this.snapMaterial))
+        }
+      }
+      for (const [a, b] of this.trackLines) {
+        const geom = this.localGeometry([
+          new THREE.Vector3(a.x, a.y, a.z),
+          new THREE.Vector3(b.x, b.y, b.z),
+        ])
+        const line = new THREE.Line(geom, this.trackMaterial)
+        line.computeLineDistances() // necesario para el punteado
+        this.snapGroup.add(line)
+      }
+    }
+    // Marcas de lo adquirido para EXT ("+" en el extremo) y PAR (el símbolo sobre la recta).
+    if (this.data?.pointPrompt) {
+      for (const q of this.osnapAcq) {
+        const at = q.kind === 'parallel' ? { x: (q.a.x + q.b.x) / 2, y: (q.a.y + q.b.y) / 2, z: (q.a.z + q.b.z) / 2 } : q.kind === 'extension' ? q.to : q.at
+        for (const seg of this.glyphPoints(q.kind === 'parallel' ? 'parallel' : 'tracking', at, 4 * this.controller.worldPerPxAt(at))) {
+          this.snapGroup.add(new THREE.Line(this.localGeometry(seg.map((p) => new THREE.Vector3(p.x, p.y, p.z))), this.snapMaterial))
+        }
+      }
+      if (!(this.data.otrack || this.data.polarAng)) {
+        for (const [a, b] of this.trackLines) {
+          const line = new THREE.Line(this.localGeometry([new THREE.Vector3(a.x, a.y, a.z), new THREE.Vector3(b.x, b.y, b.z)]), this.trackMaterial)
+          line.computeLineDistances()
+          this.snapGroup.add(line)
+        }
+      }
+    }
+    const { type, point } = this.snapResult
+    if (!type || !this.needSnap()) return
+    const at = this.controller.worldPerPxAt(point)
+    const segs = this.glyphPoints(type, point, 7 * at)
+    if (this.snapResult.deferred) {
+      // Diferido: tres puntitos a la derecha del marcador, como el "…" del CAD clásico.
+      for (let i = 0; i < 3; i++) {
+        segs.push(...this.glyphOffsetDots(point, (10 + i * 4) * at, -7 * at, at))
+      }
+    }
+    for (const seg of segs) {
+      const geom = this.localGeometry(seg.map((p) => new THREE.Vector3(p.x, p.y, p.z)))
+      this.snapGroup.add(new THREE.Line(geom, this.snapMaterial))
+    }
+  }
+
+  private updatePreview(): void {
+    this.disposeGroup(this.previewGroup)
+    // Color de contraste: evita que el rubber-band se confunda con la capa actual o con el fondo.
+    const wanted = this.data?.previewColor
+    if (wanted !== undefined && this.previewMaterial.color.getHex() !== wanted) {
+      this.previewMaterial.color.setHex(wanted)
+    }
+    const shapes = this.previewProvider?.(this.lastWorld) ?? []
+    for (const s of shapes) {
+      if (s.kind === 'line') {
+        const geom = this.localGeometry([
+          new THREE.Vector3(s.a.x, s.a.y, s.a.z),
+          new THREE.Vector3(s.b.x, s.b.y, s.b.z),
+        ])
+        this.previewGroup.add(new THREE.Line(geom, this.previewMaterial))
+      } else if (s.kind === 'circle' && s.radius > 0) {
+        // En el plano de la normal (un círculo en FRONT queda vertical); sin normal, en XY.
+        const { u, v } = arcBasis(s.normal)
+        const pts = Array.from({ length: 97 }, (_, i) => {
+          const a = (i / 96) * Math.PI * 2
+          const [c, sn] = [Math.cos(a) * s.radius, Math.sin(a) * s.radius]
+          return new THREE.Vector3(s.center.x + u[0] * c + v[0] * sn, s.center.y + u[1] * c + v[1] * sn, s.center.z + u[2] * c + v[2] * sn)
+        })
+        this.previewGroup.add(new THREE.Line(this.localGeometry(pts), this.previewMaterial))
+      } else if (s.kind === 'polyline' && s.points.length >= 2) {
+        const pts = s.points.map((p) => new THREE.Vector3(p.x, p.y, p.z))
+        this.previewGroup.add(new THREE.Line(this.localGeometry(pts), this.previewMaterial))
+      } else if (s.kind === 'solid') {
+        const g = previewSolidGeometry(s.props)
+        if (!g) continue
+        // Sombreado translúcido del color del rubber-band (respeta la profundidad del modelo) + sus aristas vivas.
+        const fill = new THREE.Mesh(
+          g,
+          new THREE.MeshLambertMaterial({ color: this.previewMaterial.color, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide }),
+        )
+        const edges = new THREE.EdgesGeometry(g, 30)
+        const outline = new THREE.LineSegments(edges, this.previewMaterial)
+        // La geometría del sólido (del CSG) está en coordenadas del dibujo: se corre al revés del origen.
+        for (const o of [fill, outline]) o.position.copy(this.origin).negate()
+        this.previewGroup.add(fill, outline)
+      }
+    }
+  }
+
+  /** Máximo de grips dibujados a la vez (evita costo con selecciones enormes). */
+  private static readonly MAX_GRIPS = 400
+
+  /** Dibuja un cuadrado de grip encarado a la cámara en el punto `p` (siempre por encima). */
+  private addGripSquare(p: THREE.Vector3, color: number, right: THREE.Vector3, up: THREE.Vector3, s: number): void {
+    const a = p.clone().addScaledVector(right, -s).addScaledVector(up, -s)
+    const b = p.clone().addScaledVector(right, s).addScaledVector(up, -s)
+    const c = p.clone().addScaledVector(right, s).addScaledVector(up, s)
+    const dd = p.clone().addScaledVector(right, -s).addScaledVector(up, s)
+    const geom = this.localGeometry([a, b, c, a, c, dd])
+    const mesh = new THREE.Mesh(geom, this.gripMaterials.get(color) ?? new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true }))
+    mesh.renderOrder = 999
+    this.gripGroup.add(mesh)
+  }
+
+  /**
+   * Recalcula y dibuja los grips de las entidades seleccionadas (cuadrados encarados a la cámara,
+   * siempre visibles). Solo en modo selección. Mantiene `this.grips` para el hit-test del cursor.
+   * Al iniciar la edición el prompt del motor toma el control (modo selección off) y los grips se ocultan;
+   * el fantasma de la deformación lo dibuja la previsualización del comando.
+   */
+  private updateGrips(): void {
+    this.disposeGroup(this.gripGroup)
+    const cam = this.controller.camera
+    // La matriz de cámara la refresca render(); updateGrips corre ANTES, así que la forzamos aquí
+    // para que el billboard encare la vista ACTUAL (si no, los grips quedan orientados a la vista previa).
+    cam.updateMatrixWorld(true)
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0)
+    const up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1)
+    const s = 4.5 * this.controller.worldPerPx()
+
+    const d = this.data
+    const selectMode = (this.cb.isSelectMode?.() ?? true) && !this.cb.isCommandActive?.()
+    if (!d || !selectMode || d.selection.length === 0) {
+      this.grips = []
+      this.hoverGrip = -1
+      return
+    }
+    const layerMap = new Map(d.layers.map((l) => [l.id, l]))
+    const sel = new Set(d.selection)
+    const list: { grip: Grip; entityId: string }[] = []
+    for (const e of d.entities) {
+      if (!sel.has(e.id)) continue
+      const layer = layerMap.get(e.layer)
+      if (!layerVisible(layer)) continue
+      for (const grip of entityGrips(e)) {
+        list.push({ grip, entityId: e.id })
+        if (list.length >= Viewport.MAX_GRIPS) break
+      }
+      if (list.length >= Viewport.MAX_GRIPS) break
+    }
+    this.grips = list
+    if (this.hoverGrip >= list.length) this.hoverGrip = -1
+
+    for (let i = 0; i < list.length; i++) {
+      const color = i === this.hoverGrip ? GRIP_HOVER : GRIP_COLOR
+      this.addGripSquare(new THREE.Vector3(...list[i].grip.point), color, right, up, s)
+    }
+  }
+
+  /** Reposiciona las etiquetas de cota y ajusta su tamaño de fuente al zoom (texto en unidades de mundo). */
+  private updateDimLabels(): void {
+    const wpp = this.controller.worldPerPx()
+    for (const l of this.dimLabels) {
+      const px = this.controller.project(l.pos)
+      if (!px) {
+        l.el.style.display = 'none'
+        continue
+      }
+      l.el.style.display = 'block'
+      l.el.style.left = `${px[0]}px`
+      l.el.style.top = `${px[1]}px`
+      l.el.style.fontSize = `${Math.max(7, l.height / wpp)}px`
+    }
+  }
+
+  /** Reconstruye la escena si los datos cambiaron: cada cuadro y, antes de encuadrar, ZOOM Extents (al abrir un dibujo
+   *  el encuadre llega antes que el primer cuadro con los datos nuevos). */
+  private syncScene(data: ViewportData): void {
+    const selKey = data.selection.join(',')
+    const fieldsKey = this.hasFieldTexts && data.fields ? JSON.stringify(data.fields) : this.lastFieldsKey
+    const sameData = data.revision === this.lastRevision && fieldsKey === this.lastFieldsKey && data.annoScale === this.lastAnnoScale
+    if (sameData && selKey !== this.lastSelectionKey && this.batchedSelKey === '' && (this.expanded?.length ?? 0) > BIG_DRAWING && this.overlayable(data.selection)) {
+      // Dibujo grande y sólo cambió la selección: se resalta encima, sin rehacer los lotes.
+      this.lastSelectionKey = selKey
+      this.showSelectionOverlay(data.selection, data.layers)
+      this.orbitPivot = this.selectionCenter(data.selection)
+      this.invalidate()
+      return
+    }
+    if (data.revision !== this.lastRevision || selKey !== this.lastSelectionKey || fieldsKey !== this.lastFieldsKey || data.annoScale !== this.lastAnnoScale) {
+      this.lastRevision = data.revision
+      this.lastAnnoScale = data.annoScale
+      this.lastSelectionKey = selKey
+      // Una inserción en una capa congelada no se ve entera, aunque su contenido esté en otras capas (CAD clásico).
+      this.expanded = expandEntities(data.entities, data.blocks, { attdisp: data.attdisp, skipLayers: frozenLayerIds(data.layers), memo: this.expandMemo })
+      this.snapList = null
+      this.hasFieldTexts = this.expanded.some(
+        (e) => (e.type === 'TEXT' && hasFields(e.props.text)) || (e.type === 'DIMENSION' && !!e.props.textOverride && hasFields(e.props.textOverride)),
+      )
+      this.lastFieldsKey = this.hasFieldTexts && data.fields ? JSON.stringify(data.fields) : ''
+      this.snapSpheres = null // el índice espacial de snap se reconstruye con los datos nuevos
+      this.pickOrigin(this.expanded)
+      this.disposeGroup(this.selOverlay)
+      this.rebuild(this.expanded, data.layers, new Set(data.selection), data.entities)
+      this.batchedSelKey = selKey
+      this.orbitPivot = this.selectionCenter(data.selection)
+      this.invalidate()
+    }
+  }
+
+  /** ¿Se puede resaltar sin rehacer los lotes? Los textos y las cotas llevan etiquetas propias: con ellos, no. */
+  private overlayable(ids: string[]): boolean {
+    const want = new Set(ids)
+    return !(this.expanded ?? []).some((e) => want.has(e.id) && (e.type === 'TEXT' || e.type === 'ATTDEF' || e.type === 'DIMENSION'))
+  }
+
+  private tick = (): void => {
+    // Todo el cuerpo va protegido: un error puntual (geometría degenerada, etc.) NUNCA debe
+    // detener el loop de animación y congelar el viewport. Pase lo que pase, se re-agenda el RAF.
+    try {
+      this.data = this.provider?.() ?? null
+      if (this.spin && !this.dragging) {
+        this.orbitView(this.spin.dx, this.spin.dy)
+        this.invalidate()
+      }
+      // Fuera del primer punto de un comando de dibujo, la UCS dinámica no aplica: se borra el resaltado.
+      if (this.ducsFace && !this.data?.ducs) {
+        this.ducsFace = null
+        this.disposeGroup(this.ducsGroup)
+        this.invalidate()
+      }
+      const data = this.data
+      // Adquisición de puntos para el tracking: el cursor "en reposo" no genera eventos de puntero,
+      // así que el conteo del hover se evalúa en el loop (barato: sólo compara una clave).
+      const prompting = !!data?.pointPrompt
+      // Al empezar o terminar un prompt de punto se descarta el último snap: uno viejo (de otro comando o de una
+      // capa que ya se apagó) no debe adquirirse para el tracking aunque el cursor no se mueva.
+      if (prompting !== this.lastPointPrompt) {
+        const w = this.lastWorldRaw
+        this.snapResult = { point: { x: w.x, y: w.y, z: w.z }, type: null }
+        this.hoverKey = ''
+        this.hoverConsumed = false
+      }
+      this.updateTrackingAcquisition()
+    this.updateOsnapAcquisition()
+      // Al terminar el comando (se cierra el prompt de punto) se sueltan los puntos adquiridos,
+      // como hace el CAD clásico: el tracking vive dentro de una operación.
+      if (this.lastPointPrompt && !prompting) this.clearTracking()
+      this.lastPointPrompt = prompting
+      // El rubber-band depende del prompt: al cancelar (ESC), terminar o avanzar a otro punto (aunque el
+      // cursor no se mueva) se vuelve a dibujar, así no queda un trazo provisorio colgado en pantalla.
+      // GRID / F7: la grilla del modelo se muestra u oculta.
+      const gridVisible = this.kind === 'model' && data?.gridOn !== false
+      if (this.grid.visible !== gridVisible) {
+        this.grid.visible = gridVisible
+        this.invalidate()
+      }
+      const base = data?.snapBase
+      const promptKey = prompting ? (base ? `${base.x},${base.y},${base.z}` : '-') : ''
+      if (promptKey !== this.lastPromptKey) {
+        this.lastPromptKey = promptKey
+        this.invalidate()
+      }
+      if (data) this.syncScene(data)
+
+      // Cambio de cámara (orientación + pan + zoom + tamaño) → re-dibujar.
+      const c = this.controller
+      const camKey = `${c.az.toFixed(4)},${c.el.toFixed(4)},${c.mode},${c.target.x.toFixed(3)},${c.target.y.toFixed(3)},${c.target.z.toFixed(3)},${c.radius.toFixed(3)},${this.width}x${this.height}`
+      if (camKey !== this.lastCamKey) {
+        this.lastCamKey = camKey
+        this.invalidate()
+        const orient = `${c.az.toFixed(4)},${c.el.toFixed(4)},${c.mode}`
+        if (orient !== this.lastOrient) {
+          this.lastOrient = orient
+          this.orientGrid() // la grilla sigue el plano de construcción de la vista
+          this.cb.onCameraChange?.(c.az, c.el, c.mode)
+        }
+        this.cb.onViewChange?.()
+        this.updateUcsIcon()
+        // Zoom o pan a mitad de una ventana de selección: la primera esquina queda donde estaba en el dibujo.
+        if (this.boxStartWorld && this.boxStartPx) this.boxStartPx = this.controller.project(this.boxStartWorld) ?? this.boxStartPx
+        // al cambiar el zoom de forma apreciable, las piezas pueden cambiar de clase.
+        if (this.lodOn && this.expanded && data) {
+          const bucket = this.lodBucketKey()
+          if (bucket !== this.lodBucket) {
+            this.lodBucket = bucket
+            if (this.classifyLod(this.expanded)) {
+              this.rebuild(this.expanded, data.layers, new Set(data.selection), data.entities)
+              this.lodBucket = this.lodBucketKey()
+            }
+          }
+        }
+      }
+
+      // Render ON-DEMAND: solo cuando algo cambió (clave para modelos pesados en reposo).
+      if (this.dirty) {
+        this.updateSnapGlyph()
+        this.updateBox()
+        this.updatePreview()
+        this.updateGrips()
+        this.updateDimLabels()
+        this.updateTextLabels()
+        this.aimLights()
+        this.updateLineweights()
+        this.updateSilhouettes()
+        rankScale.value = this.drawOrderOn() ? 1 : 0
+        this.renderer.render(this.scene, this.controller.camera)
+        this.dirty = false
+      }
+    } catch (err) {
+      console.warn('Cota: render loop error (continuing).', err)
+    } finally {
+      this.raf = requestAnimationFrame(this.tick)
+    }
+  }
+
+  dispose(): void {
+    cancelAnimationFrame(this.raf)
+    clearTimeout(this.tapTimer)
+    this.ro.disconnect()
+    this.disposeGroup(this.entityGroup)
+    this.disposeGroup(this.selOverlay)
+    for (const t of this.imageTextures.values()) t.tex.dispose()
+    this.imageTextures.clear()
+    this.disposeGroup(this.previewGroup)
+    this.disposeGroup(this.snapGroup)
+    this.disposeGroup(this.gripGroup)
+    this.clearDimLabels()
+    this.clearTextLabels()
+    for (const m of this.overlayMaterials) m.dispose()
+    for (const m of this.keptMaterials.values()) m.dispose()
+    this.keptMaterials.clear()
+    this.renderer.dispose()
+    if (this.boxEl.parentElement === this.container) this.container.removeChild(this.boxEl)
+    if (this.ucsIconEl?.parentElement === this.container) this.container.removeChild(this.ucsIconEl)
+    if (this.renderer.domElement.parentElement === this.container) {
+      this.container.removeChild(this.renderer.domElement)
+    }
+  }
+}
+
+/** Color de la textura de rosca: el de la pieza, oscurecido. */
+function threadHex(hex: string): string {
+  return darkerHex(hex, 0.45)
+}
+
+/** El color `hex` oscurecido (cada canal × `k`). */
+function darkerHex(hex: string, k: number): string {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16)
+  if (!Number.isFinite(n)) return '#555555'
+  const c = (v: number) => Math.round(v * k).toString(16).padStart(2, '0')
+  return `#${c((n >> 16) & 255)}${c((n >> 8) & 255)}${c(n & 255)}`
+}
+
+/** Sólido o malla 3D: en pantalla manda su profundidad real, no el orden de dibujo. */
+function isBody(e: Entity): boolean {
+  return e.type === 'SOLID3D' || e.type === 'MESH3D'
+}
