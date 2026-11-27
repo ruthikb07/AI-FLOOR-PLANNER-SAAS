@@ -12,10 +12,12 @@ import {
   exportStructuralEngineeringDxf,
   exportStructuralIfc4Step,
   MANDATORY_STRUCTURAL_DISCLAIMER,
+  snapshotDrawingApprovalStatus,
   snapshotSolverBackends,
   type ConcreteGrade,
   type FootingSizingOverrides,
   type FoundationSystemPreference,
+  type FrameSynthesisOptions,
   type FullStructuralEvaluationSnapshot,
   type OptimizationObjectiveMode,
   type ReviewedStructuralInputs,
@@ -311,13 +313,47 @@ export async function handleStructuralRoute(
           sendJson(response, 400, { error: { code: 'INVALID_OPTIMIZATION_OPTIONS', message: 'Select a supported objective and one to ten iterations.' } });
           return true;
         }
+        const targetPhysicalMemberIds = Array.isArray(body.targetPhysicalMemberIds)
+          ? body.targetPhysicalMemberIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+          : undefined;
+        const initialSectionOverrides = isRecord(body.initialSectionOverrides)
+          ? (body.initialSectionOverrides as FrameSynthesisOptions['sectionOverrides'])
+          : undefined;
+        const initialRebarOverrides = isRecord(body.initialRebarOverrides)
+          ? (body.initialRebarOverrides as FrameSynthesisOptions['rebarOverrides'])
+          : undefined;
+        const initialSlabOverridesMm = isRecord(body.initialSlabOverridesMm)
+          ? (body.initialSlabOverridesMm as FrameSynthesisOptions['slabThicknessOverridesMm'])
+          : undefined;
+        const initialFootingOverrides = isRecord(body.initialFootingOverrides)
+          ? (body.initialFootingOverrides as FootingSizingOverrides['byId'])
+          : undefined;
+
         const optimization = await engine.optimizeReviewedBuilding({
-          building, inputs: parsedInputs, mode, foundationPreference: foundationPref, maxIterations,
+          building,
+          inputs: parsedInputs,
+          mode,
+          targetPhysicalMemberIds,
+          initialSectionOverrides,
+          initialRebarOverrides,
+          initialSlabOverridesMm,
+          initialFootingOverrides,
+          foundationPreference: foundationPref,
+          maxIterations,
         });
-        const evaluationId = rememberEvaluation({ snapshot: optimization.after, inputs: parsedInputs, name });
+        const previewOnly = body.previewOnly === true;
+        const evaluationId = previewOnly
+          ? undefined
+          : rememberEvaluation({ snapshot: optimization.after, inputs: parsedInputs, name });
         sendJson(response, 200, {
-          evaluationId, disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER,
-          optimization: { ...optimization, before: summarizeEvaluation(optimization.before), after: summarizeEvaluation(optimization.after) },
+          evaluationId,
+          previewOnly,
+          disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER,
+          optimization: {
+            ...optimization,
+            before: summarizeEvaluation(optimization.before),
+            after: summarizeEvaluation(optimization.after),
+          },
         });
         return true;
       }
@@ -326,14 +362,7 @@ export async function handleStructuralRoute(
       const snapshot = await engine.analyzeReviewedBuilding(building, parsedInputs, { footingOverrides });
       evaluation = { snapshot, inputs: parsedInputs, name };
       if (action === 'analyze') {
-        const lifecycleStatus =
-          snapshot.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT'
-            ? 'INPUT_REVIEW_REQUIRED'
-            : snapshot.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE'
-              ? 'UNSUPPORTED_SCOPE'
-              : snapshot.criticalDefectCount === 0 && snapshot.rccDesign.allPassed && snapshot.foundationDesign.allPassed
-                ? 'DESIGN_CHECKS_PASSED'
-                : 'DESIGN_FAILED';
+        const lifecycleStatus = snapshot.designLifecycleStatus;
         const evaluationId = rememberEvaluation(evaluation);
         response.setHeader('X-Structural-Evaluation-Id', evaluationId);
         sendJson(response, 200, { evaluationId, lifecycleStatus, disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER, snapshot: summarizeEvaluation(snapshot) });
@@ -378,6 +407,7 @@ export async function handleStructuralRoute(
     if (action === 'drawings') {
       const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
       const revision = snapshot.system.sourceArchitecturalSha256;
+      const approvalStatus = snapshotDrawingApprovalStatus(snapshot);
 
       if (format === 'dxf') {
         const dxf = exportStructuralEngineeringDxf(snapshot, name);
@@ -386,6 +416,7 @@ export async function handleStructuralRoute(
           'Content-Type': 'application/dxf; charset=utf-8',
           'Content-Length': String(buf.length),
           'X-Structural-Source-Revision': revision,
+          'X-Structural-Approval-Status': approvalStatus,
           'Content-Disposition': `attachment; filename="${safeName}_structural.dxf"`,
         });
         response.end(buf);
@@ -399,6 +430,7 @@ export async function handleStructuralRoute(
           'Content-Type': 'application/x-step; charset=utf-8',
           'Content-Length': String(buf.length),
           'X-Structural-Source-Revision': revision,
+          'X-Structural-Approval-Status': approvalStatus,
           'Content-Disposition': `attachment; filename="${safeName}_structural.ifc"`,
         });
         response.end(buf);
@@ -414,13 +446,13 @@ export async function handleStructuralRoute(
           'Content-Type': pdf.mimeType,
           'Content-Length': String(pdf.data.length),
           'X-Structural-Source-Revision': revision,
+          'X-Structural-Approval-Status': approvalStatus,
           'Content-Disposition': `attachment; filename="${pdf.filename}"`,
           'X-CAD-Pages': String(pdf.pageCount),
         });
         response.end(Buffer.from(pdf.data));
         return true;
       }
-
     }
 
     if (action === 'assistant') {

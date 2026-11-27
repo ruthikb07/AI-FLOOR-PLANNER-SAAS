@@ -56,12 +56,20 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [previewModal, setPreviewModal] = useState<{ url: string; title: string; text?: string } | null>(null);
+  const [selectedCadHint, setSelectedCadHint] = useState<{
+    kind: 'COLUMN' | 'BEAM';
+    xMm: number;
+    yMm: number;
+    floorId: string;
+    label: string;
+  } | null>(null);
 
   const controller = useRef(new AbortController());
   useEffect(() => {
     const next = new AbortController();
     controller.current = next;
     setPreviewModal(null);
+    setSelectedCadHint(null);
     setBusy(false);
     setStatusMessage('');
     return () => next.abort();
@@ -248,6 +256,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
           <StructuralAnalysisPanel
             building={building}
             reportBusy={busy}
+            initialSelectedCoordinate={selectedCadHint}
             onDownloadReportPdf={() => void exportStructuralArtifact('structural-report-pdf', 'download')}
           />
         </div>
@@ -454,9 +463,20 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
                           stroke={strokeColor}
                           strokeWidth={viewMode === 'BEAM_FRAMING' ? beam.widthMm : Math.round(beam.widthMm * 0.65)}
                           strokeLinecap="square"
+                          className="cursor-pointer"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setSelectedCadHint({
+                              kind: 'BEAM',
+                              xMm: (beam.startPoint.x + beam.endPoint.x) / 2,
+                              yMm: (beam.startPoint.y + beam.endPoint.y) / 2,
+                              floorId: activeFloor?.id ?? '',
+                              label: `${beam.type} Beam (${beam.widthMm}×${beam.depthMm} mm)`,
+                            });
+                          }}
                         >
                           <title>
-                            {beam.type} · {beam.widthMm} × {beam.depthMm} mm
+                            {beam.type} · {beam.widthMm} × {beam.depthMm} mm (Click to inspect/optimize)
                           </title>
                         </line>
                       );
@@ -467,7 +487,20 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
                 {/* Corner-Locked RCC Columns */}
                 <g id="columns-layer">
                   {columns.map((column) => (
-                    <g key={column.id}>
+                    <g
+                      key={column.id}
+                      className="cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setSelectedCadHint({
+                          kind: 'COLUMN',
+                          xMm: column.position.x,
+                          yMm: column.position.y,
+                          floorId: activeFloor?.id ?? '',
+                          label: `Column ${column.gridReference ?? column.id} (${column.width}×${column.depth} mm)`,
+                        });
+                      }}
+                    >
                       <rect
                         x={column.position.x - column.width / 2}
                         y={column.position.y - column.depth / 2}
@@ -592,6 +625,19 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
                 <Activity className="h-3.5 w-3.5" />
                 Open Full Structural Analysis
               </button>
+              {selectedCadHint && (
+                <div className="mt-2 rounded-lg border border-amber-400/40 bg-amber-500/10 p-2.5 text-[11px] font-mono space-y-1.5">
+                  <div className="font-bold text-amber-200">Selected: {selectedCadHint.label}</div>
+                  <button
+                    type="button"
+                    data-testid="struct-cad-inspect-member-btn"
+                    onClick={() => setViewMode('STRUCTURAL_ANALYSIS')}
+                    className="w-full rounded bg-sky-500/25 border border-sky-400/50 px-2 py-1 text-[11px] font-semibold text-sky-200 hover:bg-sky-500/35 cursor-pointer"
+                  >
+                    Inspect &amp; Optimize Member in Awatif Studio →
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Color Legend */}

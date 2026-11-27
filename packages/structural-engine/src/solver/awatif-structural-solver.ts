@@ -1,13 +1,15 @@
 /**
- * @ai-floor-planner/structural-engine — Awatif Integrated 3D Frame Structural Solver
+ * @ai-floor-planner/structural-engine — Awatif Integrated 3D Frame Structural Solver (Milestone 5.1 Gate 1)
  *
  * Implements the typed `StructuralSolver` contract:
  * - Primary execution backend: `'AWATIF_CPP_WASM'` (`lSolver.wasm` compiled from Awatif v3.4.0 `lSolver.cpp` + Eigen::SparseLU)
- * - Reference execution backend: `'TYPESCRIPT_SPARSE_LU_REFERENCE'` (transparent pure-TS sparse solver)
+ *   using multi-RHS batch factorization (`solveAwatifWasmBatchRaw` -> `_lSolveBatch`) so all load cases and all
+ *   load combinations share ONE SparseLU symbolic/numeric factorization and receive exact 6-DOF displacements directly from C++.
+ * - Reference execution backend: `'TYPESCRIPT_SPARSE_LU_REFERENCE'` (transparent pure-TS sparse solver).
  * - Exact equivalent nodal load vector `F_eq = F_nodal - sum(T^T * f_FEF_condensed)` so `lSolver.wasm`
- *   solves exact Euler-Bernoulli distributed & point member loads on 1-element or subdivided spans!
- * - Exact post-WASM rotational DOF recovery (`K_rr * theta = F_r - K_rt * u_t_wasm`) and 11-station
- *   internal force & deflection recovery (`N, Vy, Vz, Mx, My, Mz, uy, uz`) + global 6-DOF equilibrium verification!
+ *   solves exact Euler-Bernoulli distributed & point member loads on 1-element or subdivided spans.
+ * - Multi-station (11-point + critical zero-shear extrema) internal force, chord-relative deflection,
+ *   root-relative cantilever deflection, and global 6-DOF equilibrium verification.
  * - Explicitly refuses unsupported nonlinear / shell / response-spectrum / P-Delta methods.
  */
 
@@ -25,7 +27,6 @@ import type {
   NodalPointLoad,
   SingleCaseSolveResult,
   SixDofRestraint,
-  SixDofVector,
   SolverAnalyzeOptions,
   SolverDiagnostics,
   StructuralSolver,
@@ -39,8 +40,9 @@ import {
   initAwatifWasm,
   isAwatifWasmInitialized,
   resetAwatifWasm,
-  solveAwatifWasmRaw,
+  solveAwatifWasmBatchRaw,
   type RawAwatifElementProps,
+  type WasmMemoryTelemetry,
 } from '../wasm/awatif-wasm-bridge.js';
 import {
   build12x12Transformation,
@@ -49,10 +51,10 @@ import {
   condenseLocalStiffnessAndFef,
   elementLengthAndLambda,
   evaluateMemberStations,
+  factorReducedLinearSystem,
   multiplyDense,
   multiplyMatVec,
   recoverEffectiveLocalDisplacements,
-  factorReducedLinearSystem,
   transformGlobalVectorToLocal,
   transposeDense,
 } from '../math/frame-mechanics.js';
@@ -77,11 +79,6 @@ export class StructuralValidationFailedError extends Error {
   }
 }
 
-interface ReducedFactorizations {
-  reference?: ReturnType<typeof factorReducedLinearSystem>;
-  rotations?: ReturnType<typeof factorReducedLinearSystem>;
-}
-
 interface PreparedElementCache {
   readonly element: AnalyticalFrameElement;
   readonly lengthM: number;
@@ -94,6 +91,21 @@ interface PreparedElementCache {
   readonly dofMap: readonly number[];
   readonly normalizedBetaDeg: number;
   readonly wasmCompatible: boolean;
+}
+
+interface PreparedLoadingTask {
+  readonly kind: 'CASE' | 'COMBO';
+  readonly id: string;
+  readonly name: string;
+  readonly nodalLoads: readonly NodalPointLoad[];
+  readonly memberUniformLoads: readonly MemberUniformLoad[];
+  readonly memberPointLoads: readonly MemberPointLoad[];
+  readonly trapByEl: Map<number, { q0: Vec3Meters; q1: Vec3Meters }[]>;
+  readonly ptByEl: Map<number, { aM: number; force: Vec3Meters }[]>;
+  readonly fNodalGlobal: Float64Array;
+  readonly fEquivalentGlobal: Float64Array;
+  readonly fFefUncondensedByEl: number[][];
+  readonly fFefCondensedByEl: number[][];
 }
 
 export class AwatifStructuralSolver implements StructuralSolver {
@@ -240,17 +252,12 @@ export class AwatifStructuralSolver implements StructuralSolver {
     return issues;
   }
 
-  /**
-   * Subdivides frame elements if `subdivisionsPerMember > 1` while preserving end releases
-   * only on the extreme physical member ends and splitting distributed/point loads accurately!
-   */
   public assembleModel(model: AnalyticalFrameModel): AnalyticalFrameModel {
     const sub = Math.max(1, Math.floor(model.subdivisionsPerMember ?? 1));
     if (sub === 1) return model;
 
     const nodes = [...model.nodes];
     const elements: AnalyticalFrameElement[] = [];
-    // Map original elementIndex -> list of { newElementIndex, sStart, sEnd }
     const elementSplitMap = new Map<number, { newIdx: number; s0: number; s1: number }[]>();
 
     for (const el of model.elements) {
@@ -384,8 +391,8 @@ export class AwatifStructuralSolver implements StructuralSolver {
       throw new StructuralValidationFailedError(issues);
     }
 
-    let preferredBackend = options.preferredBackend ?? 'AWATIF_CPP_WASM';
-    if (preferredBackend === 'AWATIF_CPP_WASM' && !isAwatifWasmInitialized()) {
+    const requestedBackend = options.preferredBackend ?? 'AWATIF_CPP_WASM';
+    if (requestedBackend === 'AWATIF_CPP_WASM' && !isAwatifWasmInitialized()) {
       await this.initialize();
     }
 
@@ -396,36 +403,25 @@ export class AwatifStructuralSolver implements StructuralSolver {
     const solveLoadCases = options.solveLoadCases ?? true;
     const solveCombinations = options.solveCombinations ?? true;
 
-    let runtimeFallbackReason: string | undefined;
-    const factorizations: ReducedFactorizations = {};
-    const recordBackend = (result: SingleCaseSolveResult) => {
-      if (result.diagnostics.backendFallbackReason === 'AWATIF_WASM_RUNTIME_ABORT') {
-        runtimeFallbackReason = result.diagnostics.backendFallbackReason;
-        preferredBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
-      }
-    };
-
-    const loadCaseResults: Record<string, SingleCaseSolveResult> = {};
+    const tasks: PreparedLoadingTask[] = [];
     if (solveLoadCases) {
       for (const lc of model.loadCases) {
         if (this.cancelled) throw new Error('Structural analysis cancelled.');
-        loadCaseResults[lc.id] = this.solveSingleLoading(
-          model,
-          preparedElements,
-          lc.id,
-          lc.name,
-          lc.nodalLoads,
-          lc.memberUniformLoads,
-          lc.memberPointLoads ?? [],
-          preferredBackend,
-          factorizations,
-          runtimeFallbackReason,
+        tasks.push(
+          this.prepareLoadingTask(
+            model,
+            preparedElements,
+            'CASE',
+            lc.id,
+            lc.name,
+            lc.nodalLoads,
+            lc.memberUniformLoads,
+            lc.memberPointLoads ?? [],
+          ),
         );
-        recordBackend(loadCaseResults[lc.id]!);
       }
     }
 
-    const combinationResults: Record<string, SingleCaseSolveResult> = {};
     if (solveCombinations) {
       const caseById = new Map(model.loadCases.map((c) => [c.id, c]));
       for (const combo of model.combinations) {
@@ -478,19 +474,223 @@ export class AwatifStructuralSolver implements StructuralSolver {
           }
         }
 
-        combinationResults[combo.id] = this.solveSingleLoading(
-          model,
-          preparedElements,
-          combo.id,
-          combo.name,
-          combinedNodal,
-          combinedUniform,
-          combinedPoint,
-          preferredBackend,
-          factorizations,
-          runtimeFallbackReason,
+        tasks.push(
+          this.prepareLoadingTask(
+            model,
+            preparedElements,
+            'COMBO',
+            combo.id,
+            combo.name,
+            combinedNodal,
+            combinedUniform,
+            combinedPoint,
+          ),
         );
-        recordBackend(combinationResults[combo.id]!);
+      }
+    }
+
+    const numNodes = model.nodes.length;
+    const totalDofs = numNodes * 6;
+    const fixedDof = new Uint8Array(totalDofs);
+    let restrainedDofs = 0;
+    for (let i = 0; i < numNodes; i++) {
+      const r = model.nodes[i]!.restraint;
+      if (!r) continue;
+      for (let c = 0; c < 6; c++) {
+        if (r[c]) {
+          fixedDof[i * 6 + c] = 1;
+          restrainedDofs++;
+        }
+      }
+    }
+    const freeDofs = totalDofs - restrainedDofs;
+
+    const allWasmCompatible = preparedElements.every((p) => p.wasmCompatible);
+    let executionBackend: StructuralSolverBackend = requestedBackend;
+    let backendFallbackReason: string | undefined;
+    const baseWarnings: string[] = [];
+
+    if (requestedBackend === 'AWATIF_CPP_WASM' && !allWasmCompatible) {
+      executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
+      backendFallbackReason = 'NON_ORTHOGONAL_LOCAL_AXIS_OR_TORSION_RELEASE';
+      baseWarnings.push(
+        'Model contains non-orthogonal member roll angles (beta % 90 !== 0) on asymmetric sections or torsional releases; routed transparently to exact 3D TypeScript Sparse-LU solver.',
+      );
+    }
+
+    const uGlobalByTask: Float64Array[] = [];
+    const residualByTask: number[] = [];
+    let wasmTelemetry: WasmMemoryTelemetry | null = null;
+
+    if (tasks.length > 0 && executionBackend === 'AWATIF_CPP_WASM') {
+      const rawNodes = model.nodes.map((n) => n.positionM);
+      const rawElements = model.elements.map(
+        (el) => [el.startNodeIndex, el.endNodeIndex] as const,
+      );
+      const rawSupports = new Map<number, SixDofRestraint>();
+      for (let i = 0; i < numNodes; i++) {
+        const r = model.nodes[i]!.restraint;
+        if (r && r.some(Boolean)) rawSupports.set(i, r);
+      }
+
+      const orderedElementProps: RawAwatifElementProps[] = [];
+      const rawReleases = new Map<number, readonly [boolean, boolean, boolean, boolean]>();
+
+      for (let i = 0; i < preparedElements.length; i++) {
+        const prep = preparedElements[i]!;
+        const sec = prep.element.section;
+        const swapped90 =
+          Math.abs(prep.normalizedBetaDeg - 90) < 1e-6 ||
+          Math.abs(prep.normalizedBetaDeg - 270) < 1e-6;
+        orderedElementProps.push({
+          elasticity: sec.elasticityKPa,
+          area: sec.areaM2,
+          momentInertiaZ: swapped90 ? sec.momentInertiaYM4 : sec.momentInertiaZM4,
+          momentInertiaY: swapped90 ? sec.momentInertiaZM4 : sec.momentInertiaYM4,
+          shearModulus: sec.shearModulusKPa,
+          torsionalConstant: sec.torsionalConstantM4,
+        });
+
+        if (prep.element.releases) {
+          const rel = prep.element.releases;
+          const flags: readonly [boolean, boolean, boolean, boolean] = swapped90
+            ? [rel.rzStart, rel.ryStart, rel.rzEnd, rel.ryEnd]
+            : [rel.ryStart, rel.rzStart, rel.ryEnd, rel.rzEnd];
+          if (flags.some(Boolean)) rawReleases.set(i, flags);
+        }
+      }
+
+      const batchOut = solveAwatifWasmBatchRaw({
+        nodes: rawNodes,
+        elements: rawElements,
+        supports: rawSupports,
+        orderedElementProps,
+        releases: rawReleases,
+        rhsVectors: tasks.map((t) => t.fEquivalentGlobal),
+      });
+      wasmTelemetry = batchOut.telemetry;
+
+      for (let tIdx = 0; tIdx < tasks.length; tIdx++) {
+        const uCase = batchOut.deformationsByCase[tIdx]!;
+        for (let d = 0; d < totalDofs; d++) {
+          if (fixedDof[d]) uCase[d] = 0;
+          const v = uCase[d]!;
+          if (!Number.isFinite(v) || Math.abs(v) > 1e5) {
+            throw new AwatifSolverError(
+              'SINGULAR_STIFFNESS_MATRIX',
+              'Unbounded mechanism displacement detected in Eigen::SparseLU solution (near-zero rigid-body pivot).',
+              1,
+            );
+          }
+        }
+        const relRes = this.computeGlobalFreeResidual(
+          preparedElements,
+          fixedDof,
+          uCase,
+          tasks[tIdx]!.fEquivalentGlobal,
+        );
+        if (!Number.isFinite(relRes) || relRes > 1e-3) {
+          throw new AwatifSolverError(
+            'SINGULAR_STIFFNESS_MATRIX',
+            `Ill-conditioned or singular structural system rejected (relative residual ${relRes}).`,
+            1,
+          );
+        }
+        uGlobalByTask.push(uCase);
+        residualByTask.push(relRes);
+      }
+    } else if (tasks.length > 0 && executionBackend === 'TYPESCRIPT_SPARSE_LU_REFERENCE') {
+      const globalToFree = new Int32Array(totalDofs).fill(-1);
+      const freeToGlobal: number[] = [];
+      for (let d = 0; d < totalDofs; d++) {
+        if (!fixedDof[d]) {
+          globalToFree[d] = freeToGlobal.length;
+          freeToGlobal.push(d);
+        }
+      }
+
+      let refFactor: ReturnType<typeof factorReducedLinearSystem>;
+      try {
+        const triplets: { r: number; c: number; v: number }[] = [];
+        for (const prep of preparedElements) {
+          for (let r = 0; r < 12; r++) {
+            const fr = globalToFree[prep.dofMap[r]!]!;
+            if (fr < 0) continue;
+            for (let c = 0; c < 12; c++) {
+              const fc = globalToFree[prep.dofMap[c]!]!;
+              const kv = prep.kGlobal[r]![c]!;
+              if (fc >= 0 && kv !== 0) {
+                triplets.push({ r: fr, c: fc, v: kv });
+              }
+            }
+          }
+        }
+        refFactor = factorReducedLinearSystem(freeToGlobal.length, triplets);
+      } catch (err) {
+        throw new AwatifSolverError('SINGULAR_STIFFNESS_MATRIX', (err as Error).message, 1);
+      }
+
+      for (let tIdx = 0; tIdx < tasks.length; tIdx++) {
+        const rhsFree = new Float64Array(freeToGlobal.length);
+        const fEq = tasks[tIdx]!.fEquivalentGlobal;
+        for (let i = 0; i < freeToGlobal.length; i++) {
+          rhsFree[i] = fEq[freeToGlobal[i]!]!;
+        }
+        try {
+          const tsSolved = refFactor(rhsFree);
+          if (!Number.isFinite(tsSolved.relativeResidual) || tsSolved.relativeResidual > 1e-3) {
+            throw new Error('Reference solver stiffness residual exceeded the acceptance limit.');
+          }
+          const uCase = new Float64Array(totalDofs);
+          for (let i = 0; i < freeToGlobal.length; i++) {
+            const v = tsSolved.solution[i]!;
+            if (!Number.isFinite(v) || Math.abs(v) > 1e5) {
+              throw new Error('Unbounded mechanism displacement detected in reference solution.');
+            }
+            uCase[freeToGlobal[i]!] = v;
+          }
+          uGlobalByTask.push(uCase);
+          residualByTask.push(tsSolved.relativeResidual);
+        } catch (err) {
+          const code = (err as { code?: string }).code;
+          if (code === 'LOAD_ON_UNSTABLE_DOF') {
+            throw new AwatifSolverError('LOAD_ON_UNSTABLE_DOF', (err as Error).message, 3);
+          }
+          throw new AwatifSolverError('SINGULAR_STIFFNESS_MATRIX', (err as Error).message, 1);
+        }
+      }
+    }
+
+    const loadCaseResults: Record<string, SingleCaseSolveResult> = {};
+    const combinationResults: Record<string, SingleCaseSolveResult> = {};
+    const perTaskSolveShareMs =
+      tasks.length > 0 && wasmTelemetry ? wasmTelemetry.cppSolveDurationMs / tasks.length : 0;
+
+    for (let tIdx = 0; tIdx < tasks.length; tIdx++) {
+      if (this.cancelled) throw new Error('Structural analysis cancelled.');
+      const task = tasks[tIdx]!;
+      const tPost0 = performance.now();
+      const singleRes = this.postProcessTaskResult({
+        model,
+        prepared: preparedElements,
+        task,
+        uGlobal: uGlobalByTask[tIdx]!,
+        relativeStiffnessResidual: residualByTask[tIdx]!,
+        requestedBackend,
+        executionBackend,
+        backendFallbackReason,
+        freeDofs,
+        restrainedDofs,
+        wasmTelemetry,
+        factorizationReusedCount: tasks.length,
+        extraSolveMs: perTaskSolveShareMs,
+        warnings: baseWarnings,
+        tPost0,
+      });
+      if (task.kind === 'CASE') {
+        loadCaseResults[task.id] = singleRes;
+      } else {
+        combinationResults[task.id] = singleRes;
       }
     }
 
@@ -530,14 +730,14 @@ export class AwatifStructuralSolver implements StructuralSolver {
     resetAwatifWasm();
   }
 
-  // ─── Internal Matrix Preparation & Dual-Backend Solve ───────────────────────
+  // ─── Internal Matrix Preparation, Equivalent Nodal Loads & Post-Processing ──
 
   private prepareElements(model: AnalyticalFrameModel): PreparedElementCache[] {
     return model.elements.map((el) => {
       const n0 = model.nodes[el.startNodeIndex]!.positionM;
       const n1 = model.nodes[el.endNodeIndex]!.positionM;
       const rawBeta = el.localAxisAngleDeg ?? 0;
-      const normBeta = (((rawBeta % 360) + 360) % 360);
+      const normBeta = ((rawBeta % 360) + 360) % 360;
       const { lengthM, lambda3x3 } = elementLengthAndLambda(n0, n1, rawBeta);
       const T12 = build12x12Transformation(lambda3x3);
       const T12Transposed = transposeDense(T12);
@@ -554,8 +754,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
         for (let c = 0; c < 6; c++) dofMap.push(nIdx * 6 + c);
       }
 
-      // Awatif lSolver.cpp uses fixed (n0, n1) local axes without roll angle beta and only 4 bending releases [ry0,rz0,ry1,rz1]:
-      // - Orthogonal rolls (0, 90, 180, 270 deg) or isotropic bending (Iy === Iz) with no torsional releases are 100% representable in lSolver.wasm!
       const isOrthogonalRoll =
         Math.abs(normBeta) < 1e-6 ||
         Math.abs(normBeta - 90) < 1e-6 ||
@@ -582,24 +780,19 @@ export class AwatifStructuralSolver implements StructuralSolver {
     });
   }
 
-  private solveSingleLoading(
+  private prepareLoadingTask(
     model: AnalyticalFrameModel,
     prepared: readonly PreparedElementCache[],
-    caseOrComboId: string,
+    kind: 'CASE' | 'COMBO',
+    id: string,
     name: string,
     nodalLoads: readonly NodalPointLoad[],
     memberUniformLoads: readonly MemberUniformLoad[],
     memberPointLoads: readonly MemberPointLoad[],
-    preferredBackend: StructuralSolverBackend,
-    factorizations: ReducedFactorizations,
-    priorRuntimeFallback?: string,
-  ): SingleCaseSolveResult {
-    const t0 = performance.now();
+  ): PreparedLoadingTask {
     const numNodes = model.nodes.length;
     const totalDofs = numNodes * 6;
-    const warnings: string[] = [];
 
-    // Group member loads per element
     const trapByEl = new Map<number, { q0: Vec3Meters; q1: Vec3Meters }[]>();
     const ptByEl = new Map<number, { aM: number; force: Vec3Meters }[]>();
 
@@ -635,7 +828,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
       ptByEl.set(pl.elementIndex, list);
     }
 
-    // Assemble direct nodal load vector F_nodal AND condensed FEF equivalent nodal load vector F_eq
     const fNodalGlobal = new Float64Array(totalDofs);
     for (const nl of nodalLoads) {
       if (nl.nodeIndex < 0 || nl.nodeIndex >= numNodes) continue;
@@ -646,18 +838,18 @@ export class AwatifStructuralSolver implements StructuralSolver {
     const fEquivalentGlobal = new Float64Array(fNodalGlobal);
     const fFefUncondensedByEl: number[][] = [];
     const fFefCondensedByEl: number[][] = [];
+    const zero12 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
     for (let i = 0; i < prepared.length; i++) {
       const prep = prepared[i]!;
-      const traps = trapByEl.get(i) ?? [];
-      const pts = ptByEl.get(i) ?? [];
-      if (traps.length === 0 && pts.length === 0) {
-        const zeros = new Array<number>(12).fill(0);
-        fFefUncondensedByEl.push(zeros);
-        fFefCondensedByEl.push(zeros);
+      const traps = trapByEl.get(i);
+      const pts = ptByEl.get(i);
+      if (!traps && !pts) {
+        fFefUncondensedByEl.push(zero12);
+        fFefCondensedByEl.push(zero12);
         continue;
       }
-      const fUncond = computeUncondensedLocalFef(prep.lengthM, traps, pts);
+      const fUncond = computeUncondensedLocalFef(prep.lengthM, traps ?? [], pts ?? []);
       const { fFefCondensed } = condenseLocalStiffnessAndFef(
         prep.kUncondensed,
         fUncond,
@@ -666,287 +858,65 @@ export class AwatifStructuralSolver implements StructuralSolver {
       fFefUncondensedByEl.push(fUncond);
       fFefCondensedByEl.push(fFefCondensed);
 
-      // Equivalent nodal load added to global RHS is -T^T * f_FEF_condensed
       const fFefGlobal = multiplyMatVec(prep.T12Transposed, fFefCondensed);
       for (let d = 0; d < 12; d++) {
         fEquivalentGlobal[prep.dofMap[d]!] -= fFefGlobal[d]!;
       }
     }
 
-    // Identify restrained DOFs
-    const fixedDof = new Uint8Array(totalDofs);
-    let restrainedDofs = 0;
-    for (let i = 0; i < numNodes; i++) {
-      const r = model.nodes[i]!.restraint;
-      if (!r) continue;
-      for (let c = 0; c < 6; c++) {
-        if (r[c]) {
-          fixedDof[i * 6 + c] = 1;
-          restrainedDofs++;
-        }
-      }
-    }
-    const freeDofs = totalDofs - restrainedDofs;
+    return {
+      kind,
+      id,
+      name,
+      nodalLoads,
+      memberUniformLoads,
+      memberPointLoads,
+      trapByEl,
+      ptByEl,
+      fNodalGlobal,
+      fEquivalentGlobal,
+      fFefUncondensedByEl,
+      fFefCondensedByEl,
+    };
+  }
 
-    // Determine execution backend
-    const allWasmCompatible = prepared.every((p) => p.wasmCompatible);
-    let executionBackend: StructuralSolverBackend = preferredBackend;
-    let backendFallbackReason = priorRuntimeFallback;
-    if (priorRuntimeFallback) warnings.push('A preceding load case aborted in Awatif WASM. This case used the TypeScript sparse reference solver.');
+  private postProcessTaskResult(params: {
+    readonly model: AnalyticalFrameModel;
+    readonly prepared: readonly PreparedElementCache[];
+    readonly task: PreparedLoadingTask;
+    readonly uGlobal: Float64Array;
+    readonly relativeStiffnessResidual: number;
+    readonly requestedBackend: StructuralSolverBackend;
+    readonly executionBackend: StructuralSolverBackend;
+    readonly backendFallbackReason?: string;
+    readonly freeDofs: number;
+    readonly restrainedDofs: number;
+    readonly wasmTelemetry: WasmMemoryTelemetry | null;
+    readonly factorizationReusedCount: number;
+    readonly extraSolveMs: number;
+    readonly warnings: readonly string[];
+    readonly tPost0: number;
+  }): SingleCaseSolveResult {
+    const {
+      model,
+      prepared,
+      task,
+      uGlobal,
+      relativeStiffnessResidual,
+      requestedBackend,
+      executionBackend,
+      backendFallbackReason,
+      freeDofs,
+      restrainedDofs,
+      wasmTelemetry,
+      factorizationReusedCount,
+      extraSolveMs,
+      warnings,
+      tPost0,
+    } = params;
+    const numNodes = model.nodes.length;
+    const totalDofs = numNodes * 6;
 
-    if (preferredBackend === 'AWATIF_CPP_WASM' && !allWasmCompatible) {
-      executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
-      backendFallbackReason = 'NON_ORTHOGONAL_LOCAL_AXIS_OR_TORSION_RELEASE';
-      warnings.push(
-        'Model contains non-orthogonal member roll angles (beta % 90 !== 0) on asymmetric sections or torsional releases; routed transparently to exact 3D TypeScript Sparse-LU solver.',
-      );
-    }
-
-    const uGlobal = new Float64Array(totalDofs);
-    let wasmHeapBytesAllocated = 0;
-    let relativeStiffnessResidual = 0;
-
-    if (executionBackend === 'AWATIF_CPP_WASM') {
-      const rawNodes = model.nodes.map((n) => n.positionM);
-      const rawElements = model.elements.map(
-        (el) => [el.startNodeIndex, el.endNodeIndex] as const,
-      );
-      const rawSupports = new Map<number, SixDofRestraint>();
-      for (let i = 0; i < numNodes; i++) {
-        const r = model.nodes[i]!.restraint;
-        if (r && r.some(Boolean)) rawSupports.set(i, r);
-      }
-
-      const rawLoads = new Map<number, SixDofVector>();
-      for (let i = 0; i < numNodes; i++) {
-        const base = i * 6;
-        const v0 = fEquivalentGlobal[base]!;
-        const v1 = fEquivalentGlobal[base + 1]!;
-        const v2 = fEquivalentGlobal[base + 2]!;
-        const v3 = fEquivalentGlobal[base + 3]!;
-        const v4 = fEquivalentGlobal[base + 4]!;
-        const v5 = fEquivalentGlobal[base + 5]!;
-        if (
-          Math.abs(v0) > 1e-15 ||
-          Math.abs(v1) > 1e-15 ||
-          Math.abs(v2) > 1e-15 ||
-          Math.abs(v3) > 1e-15 ||
-          Math.abs(v4) > 1e-15 ||
-          Math.abs(v5) > 1e-15
-        ) {
-          rawLoads.set(i, [v0, v1, v2, v3, v4, v5]);
-        }
-      }
-
-      const rawProps = new Map<number, RawAwatifElementProps>();
-      const rawReleases = new Map<number, readonly [boolean, boolean, boolean, boolean]>();
-
-      for (let i = 0; i < prepared.length; i++) {
-        const prep = prepared[i]!;
-        const sec = prep.element.section;
-        const swapped90 =
-          Math.abs(prep.normalizedBetaDeg - 90) < 1e-6 ||
-          Math.abs(prep.normalizedBetaDeg - 270) < 1e-6;
-        rawProps.set(i, {
-          elasticity: sec.elasticityKPa,
-          area: sec.areaM2,
-          momentInertiaZ: swapped90 ? sec.momentInertiaYM4 : sec.momentInertiaZM4,
-          momentInertiaY: swapped90 ? sec.momentInertiaZM4 : sec.momentInertiaYM4,
-          shearModulus: sec.shearModulusKPa,
-          torsionalConstant: sec.torsionalConstantM4,
-        });
-
-        if (prep.element.releases) {
-          const rel = prep.element.releases;
-          const flags: readonly [boolean, boolean, boolean, boolean] = swapped90
-            ? [rel.rzStart, rel.ryStart, rel.rzEnd, rel.ryEnd]
-            : [rel.ryStart, rel.rzStart, rel.ryEnd, rel.rzEnd];
-          if (flags.some(Boolean)) rawReleases.set(i, flags);
-        }
-      }
-
-      let wasmOut: ReturnType<typeof solveAwatifWasmRaw> | null = null;
-      try {
-        wasmOut = solveAwatifWasmRaw({
-          nodes: rawNodes,
-          elements: rawElements,
-          supports: rawSupports,
-          loads: rawLoads,
-          elementsProps: rawProps,
-          releases: rawReleases,
-        });
-      } catch (err) {
-        if (err instanceof AwatifSolverError && err.code === 'WASM_RUNTIME_ABORT') {
-          executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
-          backendFallbackReason = 'AWATIF_WASM_RUNTIME_ABORT';
-          warnings.push(err.message + ' This case used the TypeScript sparse reference solver.');
-        } else {
-          throw err;
-        }
-      }
-
-      if (wasmOut) {
-        wasmHeapBytesAllocated = wasmOut.wasmHeapBytesAllocated;
-
-      // Extract exact translational displacements [ux, uy, uz] directly from Awatif C++ Eigen::SparseLU
-      for (let i = 0; i < numNodes; i++) {
-        const p0 = model.nodes[i]!.positionM;
-        const ux = fixedDof[i * 6] ? 0 : wasmOut.positionsFlat[i * 3]! - p0[0];
-        const uy = fixedDof[i * 6 + 1] ? 0 : wasmOut.positionsFlat[i * 3 + 1]! - p0[1];
-        const uz = fixedDof[i * 6 + 2] ? 0 : wasmOut.positionsFlat[i * 3 + 2]! - p0[2];
-        if (
-          !Number.isFinite(ux) ||
-          !Number.isFinite(uy) ||
-          !Number.isFinite(uz) ||
-          Math.max(Math.abs(ux), Math.abs(uy), Math.abs(uz)) > 1e5
-        ) {
-          throw new AwatifSolverError(
-            'SINGULAR_STIFFNESS_MATRIX',
-            'Unbounded mechanism displacement detected in Eigen::SparseLU solution (near-zero rigid-body pivot).',
-            1,
-          );
-        }
-        uGlobal[i * 6] = ux;
-        uGlobal[i * 6 + 1] = uy;
-        uGlobal[i * 6 + 2] = uz;
-      }
-
-      // Recover exact nodal rotational DOFs [rx, ry, rz] from rotational equilibrium K_rr * u_r = F_r - K_rt * u_t_wasm
-      const freeRotIndices: number[] = [];
-      const globalToFreeRot = new Int32Array(totalDofs).fill(-1);
-      for (let i = 0; i < numNodes; i++) {
-        for (let c = 3; c < 6; c++) {
-          const gdof = i * 6 + c;
-          if (!fixedDof[gdof]) {
-            globalToFreeRot[gdof] = freeRotIndices.length;
-            freeRotIndices.push(gdof);
-          }
-        }
-      }
-
-      if (freeRotIndices.length > 0) {
-        const rotRhs = new Float64Array(freeRotIndices.length);
-        for (let rIdx = 0; rIdx < freeRotIndices.length; rIdx++) {
-          rotRhs[rIdx] = fEquivalentGlobal[freeRotIndices[rIdx]!]!;
-        }
-        const rotTriplets: { r: number; c: number; v: number }[] = [];
-
-        for (const prep of prepared) {
-          for (let r = 0; r < 12; r++) {
-            const gRow = prep.dofMap[r]!;
-            const rotRow = globalToFreeRot[gRow]!;
-            if (rotRow < 0) continue;
-            for (let c = 0; c < 12; c++) {
-              const kv = prep.kGlobal[r]![c]!;
-              if (kv === 0) continue;
-              const gCol = prep.dofMap[c]!;
-              const isTransCol = (gCol % 6) < 3;
-              if (isTransCol) {
-                rotRhs[rotRow] -= kv * uGlobal[gCol]!;
-              } else {
-                const rotCol = globalToFreeRot[gCol]!;
-                if (rotCol >= 0 && !factorizations.rotations) {
-                  rotTriplets.push({ r: rotRow, c: rotCol, v: kv });
-                }
-              }
-            }
-          }
-        }
-
-        try {
-          factorizations.rotations ??= factorReducedLinearSystem(freeRotIndices.length, rotTriplets);
-          const rotSolved = factorizations.rotations(rotRhs);
-          for (let rIdx = 0; rIdx < freeRotIndices.length; rIdx++) {
-            const rotVal = rotSolved.solution[rIdx]!;
-            if (!Number.isFinite(rotVal) || Math.abs(rotVal) > 1e5) {
-              throw new AwatifSolverError(
-                'SINGULAR_STIFFNESS_MATRIX',
-                'Unbounded rotational mechanism detected in frame system.',
-                1,
-              );
-            }
-            uGlobal[freeRotIndices[rIdx]!] = rotVal;
-          }
-        } catch (err) {
-          if (err instanceof AwatifSolverError) throw err;
-          const code = (err as { code?: string }).code;
-          if (code === 'LOAD_ON_UNSTABLE_DOF') {
-            throw new AwatifSolverError('LOAD_ON_UNSTABLE_DOF', (err as Error).message, 3);
-          }
-          throw new AwatifSolverError('SINGULAR_STIFFNESS_MATRIX', (err as Error).message, 1);
-        }
-      }
-
-      // Compute full free-DOF stiffness residual ||K_ff u_f - F_f|| / ||F_f|| to verify WASM + rotational recovery!
-      relativeStiffnessResidual = this.computeGlobalFreeResidual(
-        prepared,
-        fixedDof,
-        uGlobal,
-        fEquivalentGlobal,
-      );
-      if (!Number.isFinite(relativeStiffnessResidual) || relativeStiffnessResidual > 1e-3) {
-        throw new AwatifSolverError(
-          'SINGULAR_STIFFNESS_MATRIX',
-          `Ill-conditioned or singular structural system rejected (relative residual ${relativeStiffnessResidual}).`,
-          1,
-        );
-      }
-      }
-    }
-
-    if (executionBackend === 'TYPESCRIPT_SPARSE_LU_REFERENCE') {
-      // Pure TypeScript Sparse-LU Reference Solver
-      const globalToFree = new Int32Array(totalDofs).fill(-1);
-      const freeToGlobal: number[] = [];
-      for (let d = 0; d < totalDofs; d++) {
-        if (!fixedDof[d]) {
-          globalToFree[d] = freeToGlobal.length;
-          freeToGlobal.push(d);
-        }
-      }
-
-      const rhsFree = new Float64Array(freeToGlobal.length);
-      for (let i = 0; i < freeToGlobal.length; i++) {
-        rhsFree[i] = fEquivalentGlobal[freeToGlobal[i]!]!;
-      }
-
-      try {
-        if (!factorizations.reference) {
-          const triplets: { r: number; c: number; v: number }[] = [];
-          for (const prep of prepared) {
-            for (let r = 0; r < 12; r++) {
-              const fr = globalToFree[prep.dofMap[r]!]!;
-              if (fr < 0) continue;
-              for (let c = 0; c < 12; c++) {
-                const fc = globalToFree[prep.dofMap[c]!]!;
-                const kv = prep.kGlobal[r]![c]!;
-                if (fc >= 0 && kv !== 0) {
-                  triplets.push({ r: fr, c: fc, v: kv });
-                }
-              }
-            }
-          }
-
-          factorizations.reference = factorReducedLinearSystem(freeToGlobal.length, triplets);
-        }
-        const tsSolved = factorizations.reference(rhsFree);
-        if (!Number.isFinite(tsSolved.relativeResidual) || tsSolved.relativeResidual > 1e-3) {
-          throw new Error('Reference solver stiffness residual exceeded the acceptance limit.');
-        }
-        for (let i = 0; i < freeToGlobal.length; i++) {
-          uGlobal[freeToGlobal[i]!] = tsSolved.solution[i]!;
-        }
-        relativeStiffnessResidual = tsSolved.relativeResidual;
-      } catch (err) {
-        const code = (err as { code?: string }).code;
-        if (code === 'LOAD_ON_UNSTABLE_DOF') {
-          throw new AwatifSolverError('LOAD_ON_UNSTABLE_DOF', (err as Error).message, 3);
-        }
-        throw new AwatifSolverError('SINGULAR_STIFFNESS_MATRIX', (err as Error).message, 1);
-      }
-    }
-
-    // Build displacements
     const displacements: NodalDisplacementRecord[] = model.nodes.map((node, i) => {
       const ux = uGlobal[i * 6]!;
       const uy = uGlobal[i * 6 + 1]!;
@@ -967,7 +937,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
       };
     });
 
-    // Recover total member internal forces, stations, AND global nodal reaction accumulation
     const globalInternalNodalForces = new Float64Array(totalDofs);
     const memberForces: MemberInternalForcesRecord[] = [];
 
@@ -976,15 +945,14 @@ export class AwatifStructuralSolver implements StructuralSolver {
       const dxGlobal = prep.dofMap.map((d) => uGlobal[d]!);
       const dLocalNodal = multiplyMatVec(prep.T12, dxGlobal);
       const fLocalHomogeneous = multiplyMatVec(prep.kCondensed, dLocalNodal);
-      const fFefCond = fFefCondensedByEl[i]!;
-      const fFefUncond = fFefUncondensedByEl[i]!;
+      const fFefCond = task.fFefCondensedByEl[i]!;
+      const fFefUncond = task.fFefUncondensedByEl[i]!;
 
       const fLocalTotal = new Array<number>(12);
       for (let d = 0; d < 12; d++) {
         fLocalTotal[d] = fLocalHomogeneous[d]! + fFefCond[d]!;
       }
 
-      // Enforce exact zero on released rotational DOFs
       const rel = prep.element.releases;
       if (rel) {
         if (rel.rxStart) fLocalTotal[3] = 0;
@@ -995,7 +963,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
         if (rel.rzEnd) fLocalTotal[11] = 0;
       }
 
-      // Transform total member end action to global coordinates for reaction & equilibrium recovery
       const fGlobalElement = multiplyMatVec(prep.T12Transposed, fLocalTotal);
       for (let d = 0; d < 12; d++) {
         globalInternalNodalForces[prep.dofMap[d]!] += fGlobalElement[d]!;
@@ -1013,12 +980,13 @@ export class AwatifStructuralSolver implements StructuralSolver {
         section: prep.element.section,
         localEndActionsKnM: fLocalTotal,
         effectiveLocalDisplacements: dEff,
-        trapezoidalLoadsLocal: trapByEl.get(i) ?? [],
-        pointLoadsLocal: ptByEl.get(i) ?? [],
+        trapezoidalLoadsLocal: task.trapByEl.get(i) ?? [],
+        pointLoadsLocal: task.ptByEl.get(i) ?? [],
       });
 
       let maxComp = 0, maxTens = 0, maxVy = 0, maxVz = 0, maxMx = 0;
-      let maxPosMy = 0, maxNegMy = 0, maxPosMz = 0, maxNegMz = 0, maxDefl = 0;
+      let maxPosMy = 0, maxNegMy = 0, maxPosMz = 0, maxNegMz = 0;
+      let maxDefl = 0, maxChordDefl = 0, maxRootRelDefl = 0;
 
       for (const st of stations) {
         if (st.axialAwatifKn > maxComp) maxComp = st.axialAwatifKn;
@@ -1032,6 +1000,20 @@ export class AwatifStructuralSolver implements StructuralSolver {
         if (st.momentMzKnM < maxNegMz) maxNegMz = st.momentMzKnM;
         const deflMag = Math.hypot(st.localDeflectionM[0], st.localDeflectionM[1]);
         if (deflMag > maxDefl) maxDefl = deflMag;
+        if (st.relativeChordDeflectionM) {
+          const chordMag = Math.hypot(
+            st.relativeChordDeflectionM[0],
+            st.relativeChordDeflectionM[1],
+          );
+          if (chordMag > maxChordDefl) maxChordDefl = chordMag;
+        }
+        if (st.rootRelativeDeflectionM) {
+          const rootMag = Math.hypot(
+            st.rootRelativeDeflectionM[0],
+            st.rootRelativeDeflectionM[1],
+          );
+          if (rootMag > maxRootRelDefl) maxRootRelDefl = rootMag;
+        }
       }
 
       memberForces.push({
@@ -1061,11 +1043,12 @@ export class AwatifStructuralSolver implements StructuralSolver {
           maxNegativeMzKnM: maxNegMz,
           maxAbsMzKnM: Math.max(Math.abs(maxPosMz), Math.abs(maxNegMz)),
           maxLocalDeflectionM: maxDefl,
+          maxRelativeChordDeflectionM: maxChordDefl,
+          maxRootRelativeDeflectionM: maxRootRelDefl,
         },
       });
     }
 
-    // Recover 6-DOF reactions at restrained nodes: R = K*u + F_FEF_global - F_nodal
     const reactions: SupportReactionRecord[] = [];
     for (let i = 0; i < numNodes; i++) {
       const node = model.nodes[i]!;
@@ -1075,7 +1058,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
       const rxVec: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
       for (let c = 0; c < 6; c++) {
         if (r[c]) {
-          rxVec[c] = globalInternalNodalForces[base + c]! - fNodalGlobal[base + c]!;
+          rxVec[c] = globalInternalNodalForces[base + c]! - task.fNodalGlobal[base + c]!;
         }
       }
       reactions.push({
@@ -1085,20 +1068,19 @@ export class AwatifStructuralSolver implements StructuralSolver {
       });
     }
 
-    // Independent Global Equilibrium Audit (sum of ALL applied nodal + member loads + reactions === 0, AND moments about origin === 0!)
     const equilibrium = this.computeGlobalEquilibriumAudit(
       model,
       prepared,
-      nodalLoads,
-      memberUniformLoads,
-      memberPointLoads,
+      task.nodalLoads,
+      task.memberUniformLoads,
+      task.memberPointLoads,
       reactions,
       relativeStiffnessResidual,
     );
 
-    const solveDurationMs = performance.now() - t0;
+    const solveDurationMs = extraSolveMs + (performance.now() - tPost0);
     const diag: SolverDiagnostics = {
-      requestedBackend: priorRuntimeFallback ? 'AWATIF_CPP_WASM' : preferredBackend,
+      requestedBackend,
       executionBackend,
       backendFallbackReason,
       nodeCount: numNodes,
@@ -1107,14 +1089,17 @@ export class AwatifStructuralSolver implements StructuralSolver {
       freeDofs,
       restrainedDofs,
       solveDurationMs,
-      wasmHeapBytesAllocated,
+      wasmHeapBytesAllocated: wasmTelemetry?.wasmHeapBytesAllocated ?? 0,
+      wasmLinearMemoryBytes: wasmTelemetry?.wasmLinearMemoryBytesAfter,
+      wasmStackCapacityBytes: wasmTelemetry?.wasmStackCapacityBytes,
+      factorizationReusedCount,
       warnings,
     };
     this.lastDiagnostics = diag;
 
     return {
-      caseOrComboId,
-      name,
+      caseOrComboId: task.id,
+      name: task.name,
       displacements,
       reactions,
       memberForces,
@@ -1164,7 +1149,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
       fxApp += force[0];
       fyApp += force[1];
       fzApp += force[2];
-      // r x F + M
       mxApp += pos[1] * force[2] - pos[2] * force[1] + moment[0];
       myApp += pos[2] * force[0] - pos[0] * force[2] + moment[1];
       mzApp += pos[0] * force[1] - pos[1] * force[0] + moment[2];
@@ -1202,8 +1186,6 @@ export class AwatifStructuralSolver implements StructuralSolver {
       const q0G = ul.coordinateSystem === 'GLOBAL' ? ul.qStartKnPerM : toGlobal(ul.qStartKnPerM);
       const q1G = ul.coordinateSystem === 'GLOBAL' ? qEndRaw : toGlobal(qEndRaw);
 
-      // Split trapezoidal load into two exact resultants: uniform part q0G at midpoint (s=1/2)
-      // and triangular part (q1G - q0G) at centroid s=2/3!
       const fUniform: Vec3Meters = [q0G[0] * L, q0G[1] * L, q0G[2] * L];
       const posHalf: Vec3Meters = [
         0.5 * (p0[0] + p1[0]),

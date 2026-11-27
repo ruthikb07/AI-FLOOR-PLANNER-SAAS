@@ -58,6 +58,12 @@ export interface IS1893SeismicParameters {
 
 export interface EquivalentStaticSeismicResult {
   readonly capabilityClassification: StructuralCapabilityClassification;
+  /** Explicit mathematical formulation tag (Gate 8): distinguishes reduced-order storey translational condensation from full 3D coupled dynamic analysis. */
+  readonly modalFormulation: 'REDUCED_ORDER_STOREY_TRANSLATIONAL_RAYLEIGH_RITZ';
+  readonly unsupportedDynamicCapabilities: readonly string[];
+  readonly orthogonalityMaxError: number;
+  readonly totalModalMassParticipationXPct: number;
+  readonly totalModalMassParticipationYPct: number;
   readonly totalSeismicWeightWKn: number;
   readonly empiricalPeriodTaXSec: number;
   readonly empiricalPeriodTaYSec: number;
@@ -185,6 +191,9 @@ export async function analyzeModalAndSeismicFrame(params: {
 
   const nGrp = groups.length;
   const modes: ModalModeResult[] = [];
+  let orthogonalityMaxError = 0;
+  let totalModalMassParticipationXPct = 0;
+  let totalModalMassParticipationYPct = 0;
 
   if (nGrp > 0) {
     const probeCases = groups.map((g, idx) => ({
@@ -239,12 +248,38 @@ export async function analyzeModalAndSeismicFrame(params: {
     }
 
     const { eigenvalues, eigenvectors } = symmetricJacobiEigen(D);
+    // Verify eigenvector orthonormality (psi_p^T * psi_q == delta_pq => phi_p^T * M * phi_q == delta_pq)
+    for (let p = 0; p < nGrp; p++) {
+      for (let q = p; q < nGrp; q++) {
+        let dot = 0;
+        for (let r = 0; r < nGrp; r++) {
+          dot += eigenvectors[r]![p]! * eigenvectors[r]![q]!;
+        }
+        const target = p === q ? 1.0 : 0.0;
+        orthogonalityMaxError = Math.max(orthogonalityMaxError, Math.abs(dot - target));
+      }
+    }
+
     const indices = Array.from({ length: nGrp }, (_, i) => i).sort(
       (a, b) => eigenvalues[b]! - eigenvalues[a]!,
     );
 
     const totalMassX = groups.filter((g) => g.dir === 0).reduce((s, g) => s + g.totalMass, 0);
     const totalMassY = groups.filter((g) => g.dir === 1).reduce((s, g) => s + g.totalMass, 0);
+
+    for (let colIdx = 0; colIdx < indices.length; colIdx++) {
+      const col = indices[colIdx]!;
+      if (eigenvalues[col]! <= 1e-14) continue;
+      let gx = 0, gy = 0;
+      for (let i = 0; i < nGrp; i++) {
+        const g = groups[i]!;
+        const psi = eigenvectors[i]![col]!;
+        if (g.dir === 0) gx += psi * Math.sqrt(g.totalMass);
+        else gy += psi * Math.sqrt(g.totalMass);
+      }
+      if (totalMassX > 0) totalModalMassParticipationXPct += ((gx * gx) / totalMassX) * 100;
+      if (totalMassY > 0) totalModalMassParticipationYPct += ((gy * gy) / totalMassY) * 100;
+    }
 
     const maxModes = Math.min(params.maxModes ?? 6, indices.length);
     for (let mIdx = 0; mIdx < maxModes; mIdx++) {
@@ -349,6 +384,17 @@ export async function analyzeModalAndSeismicFrame(params: {
 
   return {
     capabilityClassification: 'FULLY_INTERNAL_VERIFIED',
+    modalFormulation: 'REDUCED_ORDER_STOREY_TRANSLATIONAL_RAYLEIGH_RITZ',
+    unsupportedDynamicCapabilities: [
+      '3D_TORSIONAL_COUPLED_MODAL_EIGEN',
+      'MULTI_MODE_CQC_RESPONSE_SPECTRUM',
+      'SHELL_DIAPHRAGM_FEM',
+      'SECOND_ORDER_P_DELTA',
+      'NONLINEAR_TIME_HISTORY',
+    ],
+    orthogonalityMaxError,
+    totalModalMassParticipationXPct: Number(totalModalMassParticipationXPct.toFixed(4)),
+    totalModalMassParticipationYPct: Number(totalModalMassParticipationYPct.toFixed(4)),
     totalSeismicWeightWKn: totalWeightKn,
     empiricalPeriodTaXSec: taX,
     empiricalPeriodTaYSec: taY,

@@ -1,19 +1,16 @@
 /**
  * @ai-floor-planner/structural-engine — Deterministic Structural Defect Detector &
- * Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Phases A13, A14, A15)
+ * Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Milestone 5.1 Gates 2, 6, 8 & 9)
  *
  * Strictly enforces:
  * 1. Canonical architectural geometry invariance (`canonicalBuildingHash(building)` verified unchanged!).
- * 2. Mandatory global full-frame reanalysis (`AwatifStructuralSolver` WASM) after EVERY member/footing resize,
- *    recomputing self-weight, modal seismic masses, stiffness redistribution, base reactions, RCC checks,
- *    foundation bearing/punching checks, and BBS/BOQ quantities!
- * 3. Supports all 6 optimization modes:
- *    - `BALANCED`
- *    - `MIN_CONCRETE`
- *    - `MIN_STEEL`
- *    - `MIN_COST`
- *    - `MAX_CLEARANCE`
- *    - `SIMPLIFIED_CONSTRUCTION`
+ * 2. Physical-member targeting (`targetPhysicalMemberIds?: readonly string[]`) AND mechanism-driven remediation:
+ *    - Upgrades rebar diameter/count/stirrup spacing FIRST when concrete section capacity (`Mu_lim`, `tau_c,max`, `L/d`) is adequate.
+ *    - Enlarges width/depth or concrete grade (`M25 -> M30 -> M35 -> M40`) according to governing flexure/shear/deflection/biaxial axis.
+ *    - Never relaxes design code limits or hides unsupported checks (`UNSUPPORTED_REQUIRED_CHECK`).
+ * 3. Mandatory global full-frame reanalysis (`AwatifStructuralSolver` C++/WASM) after EVERY modification,
+ *    recalculating self-weight, modal seismic masses, stiffness redistribution, base reactions, RCC checks,
+ *    foundation checks, and consolidated BBS/BOQ quantities!
  */
 
 import { canonicalBuildingHash, type Building } from '@ai-floor-planner/core';
@@ -22,6 +19,7 @@ import {
   synthesizeCanonicalStructuralSystem,
   type ConcreteGrade,
   type FrameSynthesisOptions,
+  type RebarOverrideSpec,
   type SynthesizedStructuralSystem,
 } from '../assembly/canonical-frame-assembler.js';
 import {
@@ -53,13 +51,31 @@ export type OptimizationObjectiveMode =
   | 'MAX_CLEARANCE'
   | 'SIMPLIFIED_CONSTRUCTION';
 
+export type DesignEvaluationStatus =
+  | 'ANALYZED'
+  | 'DESIGN_FAILED'
+  | 'UNSUPPORTED_REQUIRED_CHECK'
+  | 'INPUT_REVIEW_REQUIRED'
+  | 'DESIGN_CHECKS_PASSED';
+
 export interface StructuralDefectRecord {
   readonly defectId: string;
+  readonly physicalMemberId: string;
+  readonly analyticalElementId?: string;
   readonly memberId: string;
-  readonly memberCategory: 'BEAM' | 'COLUMN' | 'SLAB' | 'STAIR' | 'FOOTING' | 'STOREY_DRIFT' | 'ARCHITECTURAL_CLASH';
+  readonly memberCategory:
+    | 'BEAM'
+    | 'COLUMN'
+    | 'SLAB'
+    | 'STAIR'
+    | 'FOOTING'
+    | 'STOREY_DRIFT'
+    | 'ARCHITECTURAL_CLASH'
+    | 'UNSUPPORTED_SCOPE';
   readonly storey: string;
   readonly locationDescription: string;
   readonly governingCombination: string;
+  readonly governingStationM?: number;
   readonly demand: string;
   readonly capacity: string;
   readonly utilizationRatio: number;
@@ -82,6 +98,8 @@ export interface StoreyDriftCheckRecord {
 }
 
 export interface FullStructuralEvaluationSnapshot {
+  readonly designLifecycleStatus: DesignEvaluationStatus;
+  readonly unsupportedChecks: readonly string[];
   readonly system: SynthesizedStructuralSystem;
   readonly loadTakeoff: LoadTakeoffBreakdown;
   readonly solveEnvelope: AnalyticalSolveEnvelope;
@@ -95,10 +113,14 @@ export interface FullStructuralEvaluationSnapshot {
 }
 
 export type StructuralCaseSummary = Pick<
-  AnalyticalSolveEnvelope['combinationResults'][string], 'name' | 'diagnostics' | 'equilibrium'
+  AnalyticalSolveEnvelope['combinationResults'][string],
+  'name' | 'diagnostics' | 'equilibrium'
 >;
 
-export type StructuralEvaluationSummary = Omit<FullStructuralEvaluationSnapshot, 'solveEnvelope' | 'rccDesign' | 'foundationDesign'> & {
+export type StructuralEvaluationSummary = Omit<
+  FullStructuralEvaluationSnapshot,
+  'solveEnvelope' | 'rccDesign' | 'foundationDesign'
+> & {
   readonly rccDesign: {
     readonly [Key in keyof CompleteRccDesignSummary]: CompleteRccDesignSummary[Key] extends readonly (infer Row)[]
       ? readonly Omit<Row, 'ruleChecks'>[]
@@ -113,30 +135,46 @@ export type StructuralEvaluationSummary = Omit<FullStructuralEvaluationSnapshot,
   };
 };
 
+export interface MemberModificationRecord {
+  readonly physicalMemberId: string;
+  readonly category: 'BEAM' | 'COLUMN' | 'SLAB' | 'FOOTING';
+  readonly governingFailure: string;
+  readonly previousDimensionsAndRebar: string;
+  readonly proposedDimensionsAndRebar: string;
+}
+
 export interface OptimizationIterationTrace {
   readonly iteration: number;
   readonly modifiedMemberIds: readonly string[];
+  readonly modifiedMembersDetail: readonly MemberModificationRecord[];
   readonly changeSummary: readonly string[];
   /** Always true: every candidate change triggers full 3D global stiffness reassembly & Awatif WASM solve! */
   readonly globalReanalysisExecuted: true;
   readonly solverExecutionBackend: string;
   readonly wasmSolveDurationMs: number;
+  readonly failedMemberCountBefore: number;
+  readonly failedMemberCountAfter: number;
   readonly criticalDefectCountAfter: number;
+  readonly maxUtilizationBefore: number;
   readonly maxUtilizationAfter: number;
   readonly netConcreteVolumeM3: number;
+  readonly foundationConcreteVolumeM3: number;
   readonly totalSteelWeightKg: number;
   readonly indicativeCostInr: number;
+  readonly architecturalProtectionSha256: string;
 }
 
 export interface StructuralOptimizationResult {
   readonly status:
     | 'OPTIMIZED_VERIFIED'
+    | 'TARGET_OPTIMIZED_GLOBAL_REANALYZED'
     | 'ALREADY_OPTIMAL'
     | 'INPUT_REVIEW_REQUIRED'
     | 'UNSUPPORTED_SCOPE'
     | 'OPTIMIZATION_EXHAUSTED'
     | 'INFEASIBLE_WITHOUT_ARCHITECTURAL_CHANGE';
   readonly mode: OptimizationObjectiveMode;
+  readonly targetPhysicalMemberIds?: readonly string[];
   readonly architecturalGeometryProtected: boolean;
   readonly preOptimizationArchSha256: string;
   readonly postOptimizationArchSha256: string;
@@ -144,6 +182,7 @@ export interface StructuralOptimizationResult {
   readonly after: FullStructuralEvaluationSnapshot;
   readonly iterations: readonly OptimizationIterationTrace[];
   readonly sectionOverridesApplied: NonNullable<FrameSynthesisOptions['sectionOverrides']>;
+  readonly rebarOverridesApplied: Readonly<Record<string, RebarOverrideSpec>>;
   readonly slabOverridesApplied: NonNullable<FrameSynthesisOptions['slabThicknessOverridesMm']>;
   readonly footingOverridesApplied: NonNullable<FootingSizingOverrides['byId']>;
   readonly deltaSummary: {
@@ -161,7 +200,6 @@ export type StructuralOptimizationSummary = Omit<StructuralOptimizationResult, '
   readonly after: StructuralEvaluationSummary;
 };
 
-
 /**
  * Evaluates IS 1893 (Part 1): 2016 Cl. 7.11.1 Storey Drift Limit (`<= 0.004 * h_s`) across lateral combinations.
  */
@@ -169,10 +207,16 @@ export function evaluateStoreyDrifts(
   system: SynthesizedStructuralSystem,
   solveEnvelope: AnalyticalSolveEnvelope,
 ): StoreyDriftCheckRecord[] {
-  // Group non-foundation nodes by elevation
+  // Use column stack nodes (excluding mid-span beam sub-nodes) grouped by storey elevation!
+  const colEndNodes = new Set<number>();
+  for (const col of system.physicalModel.columns) {
+    colEndNodes.add(col.endAnalyticalNodeIndex);
+  }
+
   const elevMap = new Map<number, { floorId: string; nodeIndices: number[] }>();
   for (const n of system.nodes) {
     if (n.positionM[2] <= 0.05) continue;
+    if (colEndNodes.size > 0 && !colEndNodes.has(n.index)) continue;
     const zRound = Math.round(n.positionM[2] * 100) / 100;
     const cur = elevMap.get(zRound) ?? { floorId: n.floorId ?? `Z_${zRound}`, nodeIndices: [] };
     cur.nodeIndices.push(n.index);
@@ -194,8 +238,6 @@ export function evaluateStoreyDrifts(
     const zCur = sortedZ[idx]!;
     const zPrev = idx === 0 ? 0 : sortedZ[idx - 1]!;
     const hStoreyMm = Math.round((zCur - zPrev) * 1000);
-    // IS 1893:2016 Cl. 7.11.1: storey drift in any storey due to minimum specified design lateral force
-    // with partial load factor 1.0 shall not exceed 0.004 times storey height!
     const allowDriftMm = 0.004 * hStoreyMm;
 
     const curNodes = elevMap.get(zCur)!.nodeIndices;
@@ -206,7 +248,6 @@ export function evaluateStoreyDrifts(
     let govCombo = activeCombos[0]?.[0] ?? 'SLS_10_DL_LL';
 
     for (const [comboId, res] of activeCombos) {
-      // Scale ULS 1.2/1.5 lateral combos to 1.0x unfactored design lateral force equivalent for Cl. 7.11.1 check
       const factorScale = comboId.startsWith('ULS_15') ? 1 / 1.5 : comboId.startsWith('ULS_12') ? 1 / 1.2 : 1.0;
 
       const avgUxCur =
@@ -249,9 +290,6 @@ export function evaluateStoreyDrifts(
   return records;
 }
 
-/**
- * Deterministic Structural Defect Detector (Phase A13).
- */
 export function detectStructuralDefects(params: {
   readonly system: SynthesizedStructuralSystem;
   readonly storeyDriftChecks: readonly StoreyDriftCheckRecord[];
@@ -261,10 +299,10 @@ export function detectStructuralDefects(params: {
   const { system, storeyDriftChecks, rccDesign, foundationDesign } = params;
   const defects: StructuralDefectRecord[] = [];
 
-  // 1. Architectural-structural clashes (doors, windows, stairs, low headroom)
   for (const cl of system.clashes) {
     defects.push({
       defectId: `DEF_${cl.id}`,
+      physicalMemberId: cl.structuralMemberId,
       memberId: cl.structuralMemberId,
       memberCategory: 'ARCHITECTURAL_CLASH',
       storey: cl.floorId,
@@ -283,39 +321,61 @@ export function detectStructuralDefects(params: {
     });
   }
 
-  // 2. Beam flexure, shear, torsion & deflection failures
   for (const bm of rccDesign.beams) {
-    if (bm.status === 'FAILED') {
+    if (bm.status === 'UNSUPPORTED') {
+      defects.push({
+        defectId: `DEF_UNSUP_${bm.physicalMemberId}`,
+        physicalMemberId: bm.physicalMemberId,
+        analyticalElementId: bm.governingAnalyticalElementId,
+        memberId: bm.elementId,
+        memberCategory: 'UNSUPPORTED_SCOPE',
+        storey: bm.floorId,
+        locationDescription: `${bm.category} L=${bm.clearSpanMm} mm, D=${bm.depthMm} mm`,
+        governingCombination: bm.governingComboId,
+        governingStationM: bm.governingStationPhysicalM,
+        demand: `L/D = ${(bm.clearSpanMm / bm.depthMm).toFixed(2)}`,
+        capacity: 'L/D >= 2.0 for Euler-Bernoulli beam theory',
+        utilizationRatio: bm.maxUtilization,
+        clause: 'IS 456:2000 Cl. 29.1 (Deep Beam Boundary)',
+        severity: 'CRITICAL',
+        explanation: `Physical beam ${bm.physicalMemberId} has L/D < 2.0 and falls under IS 456 Cl. 29 deep-beam strut-and-tie rules (outside linear plane-section beam scope).`,
+        proposedCorrection: 'Revise column spacing to eliminate short deep transfer span or perform specialized strut-and-tie design.',
+      });
+    } else if (bm.status === 'FAILED') {
       const reason =
         bm.nominalShearStressMPa > bm.maxShearLimitTauCMaxMPa
           ? `Nominal shear stress (${bm.nominalShearStressMPa} MPa) exceeds IS 456 Table 20 tau_c,max (${bm.maxShearLimitTauCMaxMPa} MPa)`
-          : bm.slsDeflectionMm > bm.slsAllowableDeflectionMm
-            ? `Serviceability deflection (${bm.slsDeflectionMm} mm) exceeds allowable (${bm.slsAllowableDeflectionMm} mm)`
-            : `Flexural/shear demand (${Math.max(bm.equivalentHoggingMeKnM, bm.equivalentSaggingMeKnM)} kN·m, ${bm.equivalentShearVeKn} kN) exceeds section ${bm.widthMm}x${bm.depthMm} mm capacity`;
+          : bm.slsDeflectionMm > bm.slsAllowableDeflectionMm || bm.utilizationDeflection > 1.0
+            ? `Chord-relative serviceability deflection (${bm.slsDeflectionMm} mm) or L/d ratio exceeds IS 456 Cl. 23.2.1 limit (${bm.slsAllowableDeflectionMm} mm)`
+            : `Flexural/shear demand (Me=${Math.max(bm.equivalentHoggingMeKnM, bm.equivalentSaggingMeKnM)} kN·m, Ve=${bm.equivalentShearVeKn} kN) exceeds section ${bm.widthMm}x${bm.depthMm} mm capacity`;
 
       defects.push({
-        defectId: `DEF_BM_${bm.elementId}`,
+        defectId: `DEF_BM_${bm.physicalMemberId}`,
+        physicalMemberId: bm.physicalMemberId,
+        analyticalElementId: bm.governingAnalyticalElementId,
         memberId: bm.elementId,
         memberCategory: 'BEAM',
         storey: bm.floorId,
         locationDescription: `${bm.category} span ${bm.clearSpanMm} mm`,
         governingCombination: bm.governingComboId,
+        governingStationM: bm.governingStationPhysicalM,
         demand: `Me=${Math.max(bm.equivalentHoggingMeKnM, bm.equivalentSaggingMeKnM)} kN·m, Ve=${bm.equivalentShearVeKn} kN, defl=${bm.slsDeflectionMm} mm`,
         capacity: `Mu_lim=${bm.muLimKnM} kN·m, tau_c,max=${bm.maxShearLimitTauCMaxMPa} MPa, allowDefl=${bm.slsAllowableDeflectionMm} mm`,
         utilizationRatio: bm.maxUtilization,
         clause: 'IS 456:2000 Cl. 23.2.1, 38.1, 40.1 & IS 13920:2016 Cl. 6',
         severity: bm.maxUtilization > 1.15 ? 'CRITICAL' : 'MAJOR',
         explanation: reason,
-        proposedCorrection: `Increase beam section from ${bm.widthMm}x${bm.depthMm} mm to ${Math.max(bm.widthMm, 250)}x${bm.depthMm + 75} mm and rerun global frame analysis.`,
+        proposedCorrection: `Optimize ${bm.physicalMemberId} (${bm.widthMm}x${bm.depthMm} mm -> ${Math.max(bm.widthMm, 250)}x${bm.depthMm + 75} mm or rebar upgrade) and rerun global frame analysis.`,
       });
     }
   }
 
-  // 3. Column biaxial P-Mx-My, slenderness & IS 13920 ductile dimension failures
   for (const col of rccDesign.columns) {
     if (col.status === 'FAILED') {
       defects.push({
-        defectId: `DEF_COL_${col.elementId}`,
+        defectId: `DEF_COL_${col.physicalMemberId}`,
+        physicalMemberId: col.physicalMemberId,
+        analyticalElementId: col.governingAnalyticalElementId,
         memberId: col.elementId,
         memberCategory: 'COLUMN',
         storey: col.floorId,
@@ -332,11 +392,11 @@ export function detectStructuralDefects(params: {
     }
   }
 
-  // 4. Slab flexure / L/d failures
   for (const sl of rccDesign.slabs) {
     if (sl.status === 'FAILED') {
       defects.push({
-        defectId: `DEF_SLAB_${sl.panelId}`,
+        defectId: `DEF_SLAB_${sl.physicalMemberId}`,
+        physicalMemberId: sl.physicalMemberId,
         memberId: sl.panelId,
         memberCategory: 'SLAB',
         storey: sl.floorId,
@@ -353,11 +413,11 @@ export function detectStructuralDefects(params: {
     }
   }
 
-  // 5. Storey drift failures
   for (const dr of storeyDriftChecks) {
     if (!dr.isCompliant) {
       defects.push({
         defectId: `DEF_DRIFT_${dr.floorId}`,
+        physicalMemberId: dr.floorId,
         memberId: dr.floorId,
         memberCategory: 'STOREY_DRIFT',
         storey: dr.floorId,
@@ -368,29 +428,31 @@ export function detectStructuralDefects(params: {
         utilizationRatio: dr.utilizationRatio,
         clause: 'IS 1893 (Part 1): 2016 Cl. 7.11.1',
         severity: 'CRITICAL',
-        explanation: `Inter-storey lateral drift exceeds 0.004 * hs seismic serviceability limit.`,
+        explanation: 'Inter-storey lateral drift exceeds 0.004 * hs seismic serviceability limit.',
         proposedCorrection: 'Increase lateral stiffness of columns and primary frame beams on this storey and below.',
       });
     }
   }
 
-  // 6. Foundation bearing, punching, one-way shear, or uplift failures
   for (const ft of foundationDesign.footings) {
     if (ft.status === 'FAILED') {
       defects.push({
         defectId: `DEF_FOOT_${ft.footingId}`,
+        physicalMemberId: ft.footingId,
         memberId: ft.footingId,
         memberCategory: 'FOOTING',
         storey: 'FOUNDATION',
         locationDescription: `Plan (${ft.centerXMm}, ${ft.centerYMm}) mm`,
-        governingCombination: 'SLS / ULS Envelope',
-        demand: `q_max=${ft.maxSoilPressureKPa} kPa, tau_punch=${ft.punchingShearStressMPa} MPa`,
-        capacity: `SBC=${ft.allowableBearingPressureKPa} kPa, tau_punch_cap=${ft.punchingShearCapacityMPa} MPa`,
+        governingCombination: `${ft.governingSlsComboId} / ${ft.governingUlsComboId}`,
+        demand: `q_net=${ft.maxSoilPressureKPa} kPa, s_i=${ft.estimatedSettlementMm} mm, tau_punch=${ft.punchingShearStressMPa} MPa`,
+        capacity: `SBC=${ft.allowableBearingPressureKPa} kPa, allowSettle=${ft.allowableSettlementMm} mm, tau_punch_cap=${ft.punchingShearCapacityMPa} MPa`,
         utilizationRatio: ft.maxUtilization,
-        clause: 'IS 1904:1986 Cl. 7.1 & IS 456:2000 Cl. 34.2 / 31.6.3',
+        clause: 'IS 1904:1986 Cl. 7.1, IS 8009 Pt 1 & IS 456:2000 Cl. 34.2 / 31.6.3',
         severity: 'CRITICAL',
-        explanation: `Foundation ${ft.footingId} (${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} mm) exceeds soil bearing capacity, punching shear, or uplift limits.`,
-        proposedCorrection: `Widen footing plan to ${ft.lengthXMm + 300}x${ft.widthYMm + 300} mm and increase thickness to ${ft.thicknessMm + 100} mm (or upgrade to Combined/Raft foundation).`,
+        explanation:
+          ft.infeasibilityDiagnostic ??
+          `Foundation ${ft.footingId} (${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} mm) exceeds soil bearing capacity, settlement, or punching shear limits.`,
+        proposedCorrection: `Widen footing plan to ${ft.lengthXMm + 300}x${ft.widthYMm + 300} mm and/or thicken to ${ft.thicknessMm + 100} mm (or upgrade foundation system).`,
       });
     }
   }
@@ -398,9 +460,6 @@ export function detectStructuralDefects(params: {
   return defects;
 }
 
-/**
- * Executes a single complete end-to-end structural synthesis + Awatif WASM FEA + RCC + Foundation + BBS + Defect evaluation.
- */
 export async function evaluateFullBuildingStructuralSystem(params: {
   readonly building: Building;
   readonly inputs: ReviewedStructuralInputs;
@@ -415,7 +474,9 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     concreteGrade: params.inputs.concreteGrade,
     steelGrade: params.inputs.steelGrade,
     ductileDetailing: params.inputs.ductileDetailingIS13920,
-    foundationDepthBelowPlinthMm: params.inputs.geotechnical ? params.inputs.geotechnical.foundationDepthBelowGroundM * 1000 : undefined,
+    foundationDepthBelowPlinthMm: params.inputs.geotechnical
+      ? params.inputs.geotechnical.foundationDepthBelowGroundM * 1000
+      : undefined,
     ...params.synthesisOptions,
   });
 
@@ -429,7 +490,12 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   });
 
   const storeyDriftChecks = evaluateStoreyDrifts(system, solveEnvelope);
-  const rccDesign = runCompleteRccDesign(system, params.inputs, solveEnvelope);
+  const rccDesign = runCompleteRccDesign(
+    system,
+    params.inputs,
+    solveEnvelope,
+    params.synthesisOptions?.rebarOverrides,
+  );
   const foundationDesign = runFoundationDesign(
     system,
     params.inputs,
@@ -444,9 +510,30 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     foundationDesign,
   });
 
+  const unsupportedChecks: string[] = [];
+  if (foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
+    unsupportedChecks.push(`Foundation type '${foundationDesign.selectedStrategy}' requires unsupported Winkler FEM / SSI.`);
+  }
+  if (rccDesign.unsupportedMemberCount > 0) {
+    unsupportedChecks.push(
+      `${rccDesign.unsupportedMemberCount} deep-beam member(s) (L/D < 2.0) require IS 456 Cl. 29 nonlinear strut-and-tie analysis.`,
+    );
+  }
+
   const criticalDefectCount = defects.filter(
     (d) => d.severity === 'CRITICAL' || d.severity === 'MAJOR',
   ).length;
+
+  let designLifecycleStatus: DesignEvaluationStatus;
+  if (unsupportedChecks.length > 0) {
+    designLifecycleStatus = 'UNSUPPORTED_REQUIRED_CHECK';
+  } else if (foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
+    designLifecycleStatus = criticalDefectCount > 0 ? 'DESIGN_FAILED' : 'INPUT_REVIEW_REQUIRED';
+  } else if (criticalDefectCount === 0 && rccDesign.allPassed && foundationDesign.allPassed) {
+    designLifecycleStatus = 'DESIGN_CHECKS_PASSED';
+  } else {
+    designLifecycleStatus = 'DESIGN_FAILED';
+  }
 
   const allUtils = [
     ...rccDesign.beams.map((b) => b.maxUtilization),
@@ -459,6 +546,8 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     allUtils.length > 0 ? Number(Math.max(...allUtils).toFixed(3)) : 0;
 
   return {
+    designLifecycleStatus,
+    unsupportedChecks,
     system,
     loadTakeoff,
     solveEnvelope,
@@ -479,30 +568,41 @@ function nextHigherGrade(grade: ConcreteGrade): ConcreteGrade {
 }
 
 /**
- * Closed-Loop Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Phases A14 & A15).
+ * Closed-Loop Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Gates 6 & 9).
+ * Supports both full-building remediation/economy AND single/selected physical-member optimization!
  */
 export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   readonly building: Building;
   readonly inputs: ReviewedStructuralInputs;
   readonly mode?: OptimizationObjectiveMode;
+  readonly targetPhysicalMemberIds?: readonly string[];
+  readonly synthesisOptions?: Omit<
+    FrameSynthesisOptions,
+    'sectionOverrides' | 'rebarOverrides' | 'slabThicknessOverridesMm'
+  >;
   readonly initialSectionOverrides?: FrameSynthesisOptions['sectionOverrides'];
+  readonly initialRebarOverrides?: FrameSynthesisOptions['rebarOverrides'];
   readonly initialSlabOverridesMm?: FrameSynthesisOptions['slabThicknessOverridesMm'];
   readonly initialFootingOverrides?: FootingSizingOverrides['byId'];
   readonly foundationPreference?: FoundationSystemPreference;
   readonly maxIterations?: number;
 }): Promise<StructuralOptimizationResult> {
   const mode = params.mode ?? 'BALANCED';
-  const maxIterations = Math.max(1, Math.min(10, params.maxIterations ?? 6));
+  const targetSet =
+    params.targetPhysicalMemberIds && params.targetPhysicalMemberIds.length > 0
+      ? new Set(params.targetPhysicalMemberIds)
+      : null;
+  const maxIterations = Math.max(1, Math.min(10, params.maxIterations ?? (targetSet ? 3 : 6)));
   const solver = new AwatifStructuralSolver();
   await solver.initialize();
 
-  // Record Canonical Architectural Hash BEFORE optimization to prove 100% architectural invariance!
   const preArchSha256 = canonicalBuildingHash(params.building);
 
   let sectionOverrides: Record<
     string,
     { widthMm: number; depthMm: number; concreteGrade?: ConcreteGrade }
   > = { ...(params.initialSectionOverrides ?? {}) };
+  let rebarOverrides: Record<string, RebarOverrideSpec> = { ...(params.initialRebarOverrides ?? {}) };
   let slabOverrides: Record<string, number> = { ...(params.initialSlabOverridesMm ?? {}) };
   let footingOverrides: Record<
     string,
@@ -514,7 +614,9 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     building: params.building,
     inputs: params.inputs,
     synthesisOptions: {
+      ...params.synthesisOptions,
       sectionOverrides,
+      rebarOverrides,
       slabThicknessOverridesMm: slabOverrides,
       structuralRevision: 1,
     },
@@ -525,153 +627,335 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   let current = before;
   const iterations: OptimizationIterationTrace[] = [];
 
+  const isTargetAllowed = (id: string) => !targetSet || targetSet.has(id);
+
   for (let iter = 1; iter <= maxIterations; iter++) {
     const modifiedIds = new Set<string>();
+    const modifiedDetails: MemberModificationRecord[] = [];
     const changeSummary: string[] = [];
+
     const previousSections = { ...sectionOverrides };
+    const previousRebar = { ...rebarOverrides };
     const previousSlabs = { ...slabOverrides };
     const previousFootings = { ...footingOverrides };
     const previousFoundationPreference = activeFoundationPref;
 
-    // Step A: Remediate all structural defects (Beams, Columns, Slabs, Storey Drift, Footings)
+    const failedBeforeIter =
+      current.rccDesign.failedMemberCount +
+      current.foundationDesign.footings.filter((f) => f.status === 'FAILED').length;
+    const maxUtilBeforeIter = current.maxMemberUtilization;
+
+    // Step A: Mechanism-Driven Remediation of Failing Physical Members
     for (const bm of current.rccDesign.beams) {
-      if (bm.status === 'FAILED') {
+      if (!isTargetAllowed(bm.physicalMemberId)) continue;
+      if (bm.status === 'FAILED' || (targetSet && targetSet.has(bm.physicalMemberId) && iter === 1)) {
         const curW = bm.widthMm;
         const curD = bm.depthMm;
-        if (mode === 'MAX_CLEARANCE') {
-          // Prefer widening beam & upgrading concrete grade before increasing depth to preserve ceiling clearance!
-          const newW = Math.min(450, curW + 75);
-          const newD = curW >= 400 ? Math.min(750, curD + 50) : curD + 25;
+        const prevDesc = `${curW}x${curD} mm (${bm.concreteGrade}), Top ${bm.topBarsSupport.label}, Bot ${bm.bottomBarsMidspan.label}, Stirrups ${bm.stirrups.label}`;
+
+        const maxMe = Math.max(bm.equivalentHoggingMeKnM, bm.equivalentSaggingMeKnM);
+        const shearCrushing = bm.nominalShearStressMPa > bm.maxShearLimitTauCMaxMPa;
+        const deflFailing = bm.utilizationDeflection > 1.0 || bm.slsDeflectionMm > bm.slsAllowableDeflectionMm;
+        const shearStirrupOnly =
+          !shearCrushing && !deflFailing && bm.utilizationShear > 1.0 && bm.utilizationFlexure <= 1.0;
+        const rebarOnlyFeasible =
+          !shearCrushing &&
+          !deflFailing &&
+          bm.utilizationFlexure > 1.0 &&
+          maxMe <= bm.muLimKnM * 1.15 &&
+          curW >= 250 &&
+          !rebarOverrides[bm.physicalMemberId];
+
+        let govFailure = 'Combined Flexure/Shear';
+        let nextDesc = '';
+
+        const maxEulerDepthMm =
+          bm.category === 'CANTILEVER_BEAM'
+            ? 750
+            : Math.max(250, Math.min(850, Math.floor((bm.clearSpanMm * 0.48) / 25) * 25));
+
+        if (shearStirrupOnly && !rebarOverrides[bm.physicalMemberId]?.stirrupSpacingMm) {
+          govFailure = `Shear Stirrup Demand (Ve=${bm.equivalentShearVeKn} kN)`;
+          const tighterSpacing = Math.max(65, bm.stirrups.spacingHingeZoneMm - 20);
+          rebarOverrides[bm.physicalMemberId] = {
+            ...rebarOverrides[bm.physicalMemberId],
+            stirrupSpacingMm: tighterSpacing,
+          };
+          nextDesc = `${curW}x${curD} mm (${bm.concreteGrade}), Stirrup spacing -> ${tighterSpacing} mm`;
+        } else if (rebarOnlyFeasible) {
+          govFailure = `Flexural Steel Demand (Me=${maxMe} kN·m)`;
+          const nextDia = bm.topBarsSupport.barDiaMm < 20 ? 20 : 25;
+          const nextCount = Math.min(6, bm.topBarsSupport.barCount + 1);
+          rebarOverrides[bm.physicalMemberId] = { barDiaMm: nextDia, barCount: nextCount };
+          nextDesc = `${curW}x${curD} mm (${bm.concreteGrade}), Rebar -> ${nextCount}-T${nextDia}`;
+        } else if (mode === 'MAX_CLEARANCE') {
+          govFailure = deflFailing
+            ? `SLS Deflection (${bm.slsDeflectionMm} mm)`
+            : shearCrushing
+              ? `Shear Crushing (${bm.nominalShearStressMPa} MPa)`
+              : `Flexure/Clearance`;
+          const newW = Math.min(600, curW + 75);
+          const newD = Math.min(
+            maxEulerDepthMm,
+            curW >= 375 || deflFailing ? curD + 50 : curD + 25,
+          );
           const newGr = nextHigherGrade(bm.concreteGrade);
-          sectionOverrides[bm.elementId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
-          changeSummary.push(`${bm.elementId}: ${curW}x${curD} (${bm.concreteGrade}) -> ${newW}x${newD} (${newGr})`);
+          delete rebarOverrides[bm.physicalMemberId];
+          sectionOverrides[bm.physicalMemberId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
+          nextDesc = `${newW}x${newD} mm (${newGr}) [MAX_CLEARANCE]`;
         } else {
+          govFailure = shearCrushing
+            ? `Web Shear Crushing (${bm.nominalShearStressMPa} > ${bm.maxShearLimitTauCMaxMPa} MPa)`
+            : deflFailing
+              ? `Chord Deflection (${bm.slsDeflectionMm} > ${bm.slsAllowableDeflectionMm} mm)`
+              : `Section Flexure/Shear (${bm.maxUtilization})`;
           const stepD = bm.maxUtilization > 1.35 ? 100 : 50;
-          const newD = Math.min(850, curD + stepD);
-          const newW = newD >= 550 ? Math.max(curW, 300) : Math.max(curW, 250);
-          const newGr = newD >= 750 ? nextHigherGrade(bm.concreteGrade) : bm.concreteGrade;
-          sectionOverrides[bm.elementId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
-          changeSummary.push(`${bm.elementId}: ${curW}x${curD} -> ${newW}x${newD} mm`);
+          // Never exceed maxEulerDepthMm (prevents creating L/D < 2.0 deep beams & runaway short-span shear stiffness!)
+          const newD = Math.min(maxEulerDepthMm, curD + stepD);
+          const depthCapped = newD <= curD;
+          const stepW = shearCrushing || depthCapped ? 100 : newD >= 550 ? 50 : 25;
+          const newW = Math.min(
+            750,
+            Math.max(curW + (shearCrushing || depthCapped ? stepW : 0), 300, Math.ceil((newD * 0.35) / 25) * 25),
+          );
+          const newGr =
+            newD >= 650 || shearCrushing || depthCapped
+              ? nextHigherGrade(bm.concreteGrade)
+              : bm.concreteGrade;
+          delete rebarOverrides[bm.physicalMemberId];
+          sectionOverrides[bm.physicalMemberId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
+          nextDesc = `${newW}x${newD} mm (${newGr})`;
         }
-        modifiedIds.add(bm.elementId);
+
+        modifiedIds.add(bm.physicalMemberId);
+        modifiedDetails.push({
+          physicalMemberId: bm.physicalMemberId,
+          category: 'BEAM',
+          governingFailure: govFailure,
+          previousDimensionsAndRebar: prevDesc,
+          proposedDimensionsAndRebar: nextDesc,
+        });
+        changeSummary.push(`${bm.physicalMemberId}: ${prevDesc} -> ${nextDesc}`);
       }
     }
 
     for (const col of current.rccDesign.columns) {
-      if (col.status === 'FAILED') {
+      if (!isTargetAllowed(col.physicalMemberId)) continue;
+      if (col.status === 'FAILED' || (targetSet && targetSet.has(col.physicalMemberId) && iter === 1)) {
         const minReq = params.inputs.ductileDetailingIS13920 ? 300 : 230;
+        const prevDesc = `${col.widthMm}x${col.depthMm} mm (${col.concreteGrade}), ${col.longitudinalBars.label}`;
         const muxRatio =
           col.designMuxWithEccentricityAndSlendernessKnM / Math.max(1, col.capacityMux1AtPuKnM);
         const muyRatio =
           col.designMuyWithEccentricityAndSlendernessKnM / Math.max(1, col.capacityMuy1AtPuKnM);
         const stepX = col.maxUtilization > 1.35 || muxRatio >= muyRatio ? 75 : 50;
         const stepY = col.maxUtilization > 1.35 || muyRatio >= muxRatio * 0.8 ? 75 : 50;
-        const newW = Math.min(750, Math.max(minReq, col.widthMm + stepY));
-        const newD = Math.min(850, Math.max(minReq, col.depthMm + stepX));
+        const newW = Math.min(800, Math.max(minReq, col.widthMm + stepY));
+        const newD = Math.min(900, Math.max(minReq, col.depthMm + stepX));
         const newGr =
           col.maxUtilization > 1.2 || newD >= 650 || newW >= 550
             ? nextHigherGrade(col.concreteGrade)
             : col.concreteGrade;
-        sectionOverrides[col.elementId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
-        modifiedIds.add(col.elementId);
-        changeSummary.push(`${col.elementId}: ${col.widthMm}x${col.depthMm} -> ${newW}x${newD} mm (${newGr})`);
+
+        sectionOverrides[col.physicalMemberId] = { widthMm: newW, depthMm: newD, concreteGrade: newGr };
+        const nextDesc = `${newW}x${newD} mm (${newGr})`;
+        modifiedIds.add(col.physicalMemberId);
+        modifiedDetails.push({
+          physicalMemberId: col.physicalMemberId,
+          category: 'COLUMN',
+          governingFailure: `Biaxial P-Mx-My Interaction (${col.biaxialInteractionRatio}) under ${col.governingComboId}`,
+          previousDimensionsAndRebar: prevDesc,
+          proposedDimensionsAndRebar: nextDesc,
+        });
+        changeSummary.push(`${col.physicalMemberId}: ${col.widthMm}x${col.depthMm} -> ${newW}x${newD} mm (${newGr})`);
       }
     }
 
-    // Storey drift stiffening
-    for (const dr of current.storeyDriftChecks) {
-      if (!dr.isCompliant) {
-        for (const col of current.rccDesign.columns) {
-          if (col.floorId === dr.floorId && !modifiedIds.has(col.elementId)) {
-            const newD = Math.min(800, col.depthMm + 75);
-            const newW = Math.min(600, col.widthMm + 50);
-            sectionOverrides[col.elementId] = { widthMm: newW, depthMm: newD, concreteGrade: col.concreteGrade };
-            modifiedIds.add(col.elementId);
-            changeSummary.push(`${col.elementId}: stiffened to ${newW}x${newD} mm for storey drift`);
+    if (!targetSet) {
+      for (const dr of current.storeyDriftChecks) {
+        if (!dr.isCompliant) {
+          for (const col of current.rccDesign.columns) {
+            if (col.floorId === dr.floorId && !modifiedIds.has(col.physicalMemberId)) {
+              const stepCol = dr.utilizationRatio > 1.12 ? 100 : 75;
+              const newD = Math.min(900, col.depthMm + stepCol);
+              const newW = Math.min(750, col.widthMm + (dr.utilizationRatio > 1.12 ? 75 : 50));
+              const newGr = dr.utilizationRatio > 1.08 ? nextHigherGrade(col.concreteGrade) : col.concreteGrade;
+              sectionOverrides[col.physicalMemberId] = {
+                widthMm: newW,
+                depthMm: newD,
+                concreteGrade: newGr,
+              };
+              modifiedIds.add(col.physicalMemberId);
+              modifiedDetails.push({
+                physicalMemberId: col.physicalMemberId,
+                category: 'COLUMN',
+                governingFailure: `Storey Drift (${Math.max(dr.maxDriftXMm, dr.maxDriftYMm)} > ${dr.allowableDriftMm} mm)`,
+                previousDimensionsAndRebar: `${col.widthMm}x${col.depthMm} mm (${col.concreteGrade})`,
+                proposedDimensionsAndRebar: `${newW}x${newD} mm (${newGr})`,
+              });
+              changeSummary.push(`${col.physicalMemberId}: stiffened to ${newW}x${newD} mm (${newGr}) for storey drift`);
+            }
           }
         }
       }
     }
 
     for (const sl of current.rccDesign.slabs) {
+      if (!isTargetAllowed(sl.physicalMemberId)) continue;
       if (sl.status === 'FAILED') {
         const reqScale = Math.max(1.12, sl.maxUtilization * 1.06);
-        const stepMm = Math.max(25, Math.ceil(((sl.thicknessMm * reqScale - sl.thicknessMm) / 25)) * 25);
+        const stepMm = Math.max(25, Math.ceil((sl.thicknessMm * reqScale - sl.thicknessMm) / 25) * 25);
         const newT = Math.min(300, sl.thicknessMm + stepMm);
-        slabOverrides[sl.panelId] = newT;
-        modifiedIds.add(sl.panelId);
-        changeSummary.push(`${sl.panelId}: thickness ${sl.thicknessMm} -> ${newT} mm`);
+        slabOverrides[sl.physicalMemberId] = newT;
+        modifiedIds.add(sl.physicalMemberId);
+        modifiedDetails.push({
+          physicalMemberId: sl.physicalMemberId,
+          category: 'SLAB',
+          governingFailure: `Span/Depth or Flexure (L/d=${sl.spanOverDepthActual} > ${sl.spanOverDepthAllowable})`,
+          previousDimensionsAndRebar: `${sl.thicknessMm} mm`,
+          proposedDimensionsAndRebar: `${newT} mm`,
+        });
+        changeSummary.push(`${sl.physicalMemberId}: thickness ${sl.thicknessMm} -> ${newT} mm`);
       }
     }
 
     for (const ft of current.foundationDesign.footings) {
+      if (!isTargetAllowed(ft.footingId)) continue;
       if (ft.status === 'FAILED') {
-        if (ft.bearingUtilization > 1.35 && current.foundationDesign.footings.length >= 4 && activeFoundationPref === 'AUTO') {
+        if (
+          (ft.bearingUtilization > 1.25 || iter >= 3) &&
+          current.foundationDesign.footings.length >= 4 &&
+          activeFoundationPref === 'AUTO' &&
+          !targetSet
+        ) {
           activeFoundationPref = 'RIGID_RAFT';
           modifiedIds.add('RAFT_MAIN');
-          changeSummary.push(`Foundation upgraded to RIGID_RAFT due to high soil pressure utilization (${ft.bearingUtilization})`);
+          modifiedDetails.push({
+            physicalMemberId: 'RAFT_MAIN',
+            category: 'FOOTING',
+            governingFailure: `Isolated/Combined Bearing or Overlap Limit (util=${ft.maxUtilization})`,
+            previousDimensionsAndRebar: `${ft.typology} ${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} mm`,
+            proposedDimensionsAndRebar: 'RIGID_RAFT foundation system',
+          });
+          changeSummary.push(
+            `Foundation upgraded to RIGID_RAFT due to soil pressure/pad overlap utilization (${ft.maxUtilization})`,
+          );
           break;
         }
-        const addPlan = ft.bearingUtilization > 1.0 ? 350 : 150;
-        const addThick = ft.punchingUtilization > 1.0 || ft.oneWayShearUtilization > 1.0 ? 100 : 50;
+        const addPlan = ft.bearingUtilization > 1.0 || ft.settlementUtilization > 1.0 ? 550 : 200;
+        const addThick = ft.punchingUtilization > 1.0 || ft.oneWayShearUtilization > 1.0 ? 125 : 75;
+        const nextL = ft.lengthXMm + addPlan;
+        const nextW = ft.widthYMm + addPlan;
+        const nextT = ft.thicknessMm + addThick;
         footingOverrides[ft.footingId] = {
-          lengthXMm: ft.lengthXMm + addPlan,
-          widthYMm: ft.widthYMm + addPlan,
-          thicknessMm: ft.thicknessMm + addThick,
+          lengthXMm: nextL,
+          widthYMm: nextW,
+          thicknessMm: nextT,
         };
         modifiedIds.add(ft.footingId);
-        changeSummary.push(
-          `${ft.footingId}: enlarged to ${ft.lengthXMm + addPlan}x${ft.widthYMm + addPlan}x${ft.thicknessMm + addThick} mm`,
-        );
+        modifiedDetails.push({
+          physicalMemberId: ft.footingId,
+          category: 'FOOTING',
+          governingFailure:
+            ft.bearingUtilization > 1.0
+              ? `Soil Bearing (${ft.maxSoilPressureKPa} > ${ft.allowableBearingPressureKPa} kPa)`
+              : `Punching/Shear (${ft.punchingShearStressMPa} MPa)`,
+          previousDimensionsAndRebar: `${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} mm`,
+          proposedDimensionsAndRebar: `${nextL}x${nextW}x${nextT} mm`,
+        });
+        changeSummary.push(`${ft.footingId}: enlarged to ${nextL}x${nextW}x${nextT} mm`);
       }
     }
 
-    // Step B: When zero structural failures remain, apply Objective-Specific Economy / Clearance / Standardization pass!
-    if (modifiedIds.size === 0 && current.criticalDefectCount === 0 && iter === 1) {
+    // Step B: When zero structural failures remain and not restricted to a single failing target, run Objective Economy Pass!
+    if (!targetSet && modifiedIds.size === 0 && current.criticalDefectCount === 0 && iter === 1) {
       if (mode === 'MIN_CONCRETE' || mode === 'MIN_COST' || mode === 'BALANCED') {
-        // Trim overly conservative beams/columns with utilization < 0.42 while respecting ductile minimums!
         for (const bm of current.rccDesign.beams) {
           if (bm.maxUtilization < 0.42 && bm.depthMm >= 375 && bm.category === 'BEAM') {
             const newD = Math.max(300, bm.depthMm - 50);
-            sectionOverrides[bm.elementId] = { widthMm: bm.widthMm, depthMm: newD, concreteGrade: bm.concreteGrade };
-            modifiedIds.add(bm.elementId);
-            changeSummary.push(`${bm.elementId}: trimmed depth ${bm.depthMm} -> ${newD} mm (${mode})`);
+            sectionOverrides[bm.physicalMemberId] = {
+              widthMm: bm.widthMm,
+              depthMm: newD,
+              concreteGrade: bm.concreteGrade,
+            };
+            modifiedIds.add(bm.physicalMemberId);
+            modifiedDetails.push({
+              physicalMemberId: bm.physicalMemberId,
+              category: 'BEAM',
+              governingFailure: `Low Utilization Economy Trim (${bm.maxUtilization})`,
+              previousDimensionsAndRebar: `${bm.widthMm}x${bm.depthMm} mm`,
+              proposedDimensionsAndRebar: `${bm.widthMm}x${newD} mm`,
+            });
+            changeSummary.push(`${bm.physicalMemberId}: trimmed depth ${bm.depthMm} -> ${newD} mm (${mode})`);
           }
         }
       } else if (mode === 'MIN_STEEL') {
-        // Slightly deepen high-steel beams (+50 mm lever arm) to cut longitudinal rebar demand!
         for (const bm of current.rccDesign.beams) {
           if (bm.utilizationFlexure > 0.72 && bm.depthMm <= 600 && bm.category === 'BEAM') {
             const newD = bm.depthMm + 50;
-            sectionOverrides[bm.elementId] = { widthMm: bm.widthMm, depthMm: newD, concreteGrade: bm.concreteGrade };
-            modifiedIds.add(bm.elementId);
-            changeSummary.push(`${bm.elementId}: deepened ${bm.depthMm} -> ${newD} mm to reduce rebar steel`);
+            sectionOverrides[bm.physicalMemberId] = {
+              widthMm: bm.widthMm,
+              depthMm: newD,
+              concreteGrade: bm.concreteGrade,
+            };
+            modifiedIds.add(bm.physicalMemberId);
+            modifiedDetails.push({
+              physicalMemberId: bm.physicalMemberId,
+              category: 'BEAM',
+              governingFailure: `Rebar Tonnage Reduction (Flexure Util ${bm.utilizationFlexure})`,
+              previousDimensionsAndRebar: `${bm.widthMm}x${bm.depthMm} mm`,
+              proposedDimensionsAndRebar: `${bm.widthMm}x${newD} mm`,
+            });
+            changeSummary.push(`${bm.physicalMemberId}: deepened ${bm.depthMm} -> ${newD} mm to reduce rebar steel`);
           }
         }
       } else if (mode === 'MAX_CLEARANCE') {
-        // Reduce beam depths where headroom warning or deep beams exist, compensating with width/grade!
         for (const bm of current.rccDesign.beams) {
           if (bm.depthMm >= 425 && bm.maxUtilization < 0.78 && bm.category === 'BEAM') {
             const newD = Math.max(325, bm.depthMm - 50);
             const newW = Math.min(350, bm.widthMm + 25);
-            sectionOverrides[bm.elementId] = {
+            const nextGr = nextHigherGrade(bm.concreteGrade);
+            sectionOverrides[bm.physicalMemberId] = {
               widthMm: newW,
               depthMm: newD,
-              concreteGrade: nextHigherGrade(bm.concreteGrade),
+              concreteGrade: nextGr,
             };
-            modifiedIds.add(bm.elementId);
-            changeSummary.push(`${bm.elementId}: shallow clearance section ${newW}x${newD} mm`);
+            modifiedIds.add(bm.physicalMemberId);
+            modifiedDetails.push({
+              physicalMemberId: bm.physicalMemberId,
+              category: 'BEAM',
+              governingFailure: 'Headroom Clearance Optimization',
+              previousDimensionsAndRebar: `${bm.widthMm}x${bm.depthMm} mm (${bm.concreteGrade})`,
+              proposedDimensionsAndRebar: `${newW}x${newD} mm (${nextGr})`,
+            });
+            changeSummary.push(`${bm.physicalMemberId}: shallow clearance section ${newW}x${newD} mm`);
           }
         }
       } else if (mode === 'SIMPLIFIED_CONSTRUCTION') {
-        // Standardize floor beams on each floor to the 90th-percentile depth so formwork shuttering sizes are uniform!
-        const maxBmD = Math.max(...current.rccDesign.beams.filter((b) => b.category === 'BEAM').map((b) => b.depthMm), 350);
-        const maxBmW = Math.max(...current.rccDesign.beams.filter((b) => b.category === 'BEAM').map((b) => b.widthMm), 230);
+        const maxBmD = Math.max(
+          ...current.rccDesign.beams.filter((b) => b.category === 'BEAM').map((b) => b.depthMm),
+          350,
+        );
+        const maxBmW = Math.max(
+          ...current.rccDesign.beams.filter((b) => b.category === 'BEAM').map((b) => b.widthMm),
+          230,
+        );
         for (const bm of current.rccDesign.beams) {
           if (bm.category === 'BEAM' && (bm.depthMm !== maxBmD || bm.widthMm !== maxBmW)) {
-            sectionOverrides[bm.elementId] = { widthMm: maxBmW, depthMm: maxBmD, concreteGrade: bm.concreteGrade };
-            modifiedIds.add(bm.elementId);
-            changeSummary.push(`${bm.elementId}: standardized formwork size ${maxBmW}x${maxBmD} mm`);
+            sectionOverrides[bm.physicalMemberId] = {
+              widthMm: maxBmW,
+              depthMm: maxBmD,
+              concreteGrade: bm.concreteGrade,
+            };
+            modifiedIds.add(bm.physicalMemberId);
+            modifiedDetails.push({
+              physicalMemberId: bm.physicalMemberId,
+              category: 'BEAM',
+              governingFailure: 'Formwork Shuttering Standardization',
+              previousDimensionsAndRebar: `${bm.widthMm}x${bm.depthMm} mm`,
+              proposedDimensionsAndRebar: `${maxBmW}x${maxBmD} mm`,
+            });
+            changeSummary.push(`${bm.physicalMemberId}: standardized formwork size ${maxBmW}x${maxBmD} mm`);
           }
         }
       }
@@ -686,7 +970,9 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
       building: params.building,
       inputs: params.inputs,
       synthesisOptions: {
+        ...params.synthesisOptions,
         sectionOverrides,
+        rebarOverrides,
         slabThicknessOverridesMm: slabOverrides,
         structuralRevision: iter + 1,
       },
@@ -694,9 +980,10 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
       solver,
     });
 
-    // If an economy trim inadvertently introduced a new failure, revert and stop cleanly!
+    // Guard: ensure previously passing members remain acceptable when running economy trims!
     if (current.criticalDefectCount === 0 && candidateEval.criticalDefectCount > 0) {
       sectionOverrides = previousSections;
+      rebarOverrides = previousRebar;
       slabOverrides = previousSlabs;
       footingOverrides = previousFootings;
       activeFoundationPref = previousFoundationPreference;
@@ -704,23 +991,36 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     }
 
     current = candidateEval;
+    const failedAfterIter =
+      current.rccDesign.failedMemberCount +
+      current.foundationDesign.footings.filter((f) => f.status === 'FAILED').length;
     const firstComboRes = Object.values(current.solveEnvelope.combinationResults)[0];
+    const iterArchHash = canonicalBuildingHash(params.building);
+
     iterations.push({
       iteration: iter,
       modifiedMemberIds: Array.from(modifiedIds),
+      modifiedMembersDetail: modifiedDetails,
       changeSummary,
       globalReanalysisExecuted: true,
       solverExecutionBackend: firstComboRes?.diagnostics.executionBackend ?? 'UNAVAILABLE',
       wasmSolveDurationMs: Number(current.solveEnvelope.totalSolveDurationMs.toFixed(2)),
+      failedMemberCountBefore: failedBeforeIter,
+      failedMemberCountAfter: failedAfterIter,
       criticalDefectCountAfter: current.criticalDefectCount,
+      maxUtilizationBefore: maxUtilBeforeIter,
       maxUtilizationAfter: current.maxMemberUtilization,
       netConcreteVolumeM3: current.detailingAndBoq.quantities.netConcreteVolumeM3,
+      foundationConcreteVolumeM3: current.detailingAndBoq.quantities.concreteByCategoryM3.footings,
       totalSteelWeightKg: current.detailingAndBoq.quantities.totalSteelWeightKg,
       indicativeCostInr: current.detailingAndBoq.quantities.indicativeStructuralCostInr,
+      architecturalProtectionSha256: iterArchHash,
     });
 
-    if (current.criticalDefectCount === 0 && before.criticalDefectCount > 0) {
-      // Converged from failed to fully verified safe state!
+    if (targetSet) {
+      const targetStillFailing = current.defects.some((d) => targetSet.has(d.physicalMemberId));
+      if (!targetStillFailing) break;
+    } else if (current.criticalDefectCount === 0 && before.criticalDefectCount > 0) {
       break;
     }
   }
@@ -730,12 +1030,27 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
 
   const hasArchClashError = current.system.clashes.some((c) => c.severity === 'ERROR');
   let status: StructuralOptimizationResult['status'];
-  if (current.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
+  if (current.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' && current.rccDesign.allPassed) {
     status = 'INPUT_REVIEW_REQUIRED';
-  } else if (current.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
+  } else if (
+    current.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE' ||
+    current.rccDesign.unsupportedMemberCount > 0
+  ) {
     status = 'UNSUPPORTED_SCOPE';
-  } else if (archProtected && current.rccDesign.allPassed && current.foundationDesign.allPassed && current.criticalDefectCount === 0) {
+  } else if (
+    archProtected &&
+    current.rccDesign.allPassed &&
+    current.foundationDesign.allPassed &&
+    current.criticalDefectCount === 0
+  ) {
     status = iterations.length === 0 ? 'ALREADY_OPTIMAL' : 'OPTIMIZED_VERIFIED';
+  } else if (
+    targetSet &&
+    archProtected &&
+    iterations.length > 0 &&
+    !current.defects.some((d) => targetSet.has(d.physicalMemberId))
+  ) {
+    status = 'TARGET_OPTIMIZED_GLOBAL_REANALYZED';
   } else if (hasArchClashError) {
     status = 'INFEASIBLE_WITHOUT_ARCHITECTURAL_CHANGE';
   } else {
@@ -745,6 +1060,7 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   return {
     status,
     mode,
+    targetPhysicalMemberIds: targetSet ? Array.from(targetSet) : undefined,
     architecturalGeometryProtected: archProtected,
     preOptimizationArchSha256: preArchSha256,
     postOptimizationArchSha256: postArchSha256,
@@ -752,6 +1068,7 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     after: current,
     iterations,
     sectionOverridesApplied: sectionOverrides,
+    rebarOverridesApplied: rebarOverrides,
     slabOverridesApplied: slabOverrides,
     footingOverridesApplied: footingOverrides,
     deltaSummary: {

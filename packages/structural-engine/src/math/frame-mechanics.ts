@@ -462,6 +462,9 @@ export function evaluateMemberStations(params: {
       uz += (pt.force[2] * gFixed) / EIy;
     }
 
+    const chordUy = (1 - s) * dEff[1]! + s * dEff[7]!;
+    const chordUz = (1 - s) * dEff[2]! + s * dEff[8]!;
+
     return {
       s,
       xM: x,
@@ -473,6 +476,8 @@ export function evaluateMemberStations(params: {
       momentMyKnM,
       momentMzKnM,
       localDeflectionM: [uy, uz],
+      relativeChordDeflectionM: [uy - chordUy, uz - chordUz],
+      rootRelativeDeflectionM: [uy - dEff[1]!, uz - dEff[2]!],
     };
   });
 }
