@@ -30,7 +30,7 @@ import {
   type Room,
   type Wall,
 } from '@ai-floor-planner/core';
-import { pointInPolygon } from '@ai-floor-planner/geometry-engine';
+import { pointInPolygon, polygonIntersectionArea } from '@ai-floor-planner/geometry-engine';
 import { PLUMB_SHAFT_MIN } from './wet-wall-risers';
 
 interface Box { x: number; y: number; w: number; h: number }
@@ -517,6 +517,8 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
     }
   }
   const collectedStacks = new Set<string>();
+  const protectedOutlets = new Map<string, { floorId: string; roomId: string; roomName: string }>();
+  const stiltFloor = floors.find(isStilt);
   const plans: FloorMepEngineeringPlan[] = [];
   for (const floor of floors) {
     const fb = new FloorBuilder(floor);
@@ -575,6 +577,15 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
           : { x: coordinate, y: facing === 'NORTH' ? minY + 250 : maxY - 250 };
         const connections = stacks.flatMap(([key, stack]) => {
           const p = center(stack.box);
+          const chase = { points: rectOutline(stack.box) };
+          const courtyard = floor.rooms.find(room =>
+            (room.openToSky || room.architecturalRole === 'OPEN_TO_SKY_VOID') &&
+            polygonIntersectionArea(chase, room.boundary) > 0,
+          );
+          if (courtyard) {
+            protectedOutlets.set(key, { floorId: floor.id, roomId: courtyard.id, roomName: courtyard.name });
+            return [];
+          }
           const junction = projectToCollector(Math.max(lo + 250, Math.min(hi - 250, along(p))));
           const route = chooseEconomicalDrainRoute(p, junction, stiltObstacles, building.site.plotBoundary);
           return route ? [{ key, stack, junction, route }] : [];
@@ -617,12 +628,31 @@ export function synthesizeMepEngineering(building: Building): CoordinatedMepEngi
     schemaVersion: 'RH-MEP-3.0',
     status: 'COORDINATION_PROPOSAL_NOT_CERTIFIED',
     floors: plans,
-    verticalStacks: [...stackByKey.entries()].map(([key, s], i) => ({
+    verticalStacks: [...stackByKey.entries()].map(([key, s], i) => {
+      const outlet = protectedOutlets.get(key);
+      const connected = collectedStacks.has(key);
+      const diagnostic = outlet ? {
+        status: 'INFEASIBLE' as const,
+        code: 'PROTECTED_OPEN_TO_SKY' as const,
+        floorId: outlet.floorId,
+        protectedRoomId: outlet.roomId,
+        message: `The projected service chase intersects the protected stilt void "${outlet.roomName}". A continuous reserved chase outside this void is required.`,
+      } : {
+        status: 'INFEASIBLE' as const,
+        code: stiltFloor ? 'NO_CLEAR_COLLECTOR_ROUTE' as const : 'NO_STILT_FLOOR' as const,
+        floorId: stiltFloor?.id,
+        message: stiltFloor
+          ? 'No clear schematic path from this stack to the road-side stilt collector was found.'
+          : 'There is no stilt floor for the proposed collector connection.',
+      };
+      return {
       id: `stack_${i + 1}_${key.replace('|', '_')}`,
       position: center(s.box), widthMm: s.box.w, depthMm: s.box.h,
       floorIds: s.floorIds,
-      terminatesAtStiltCollector: collectedStacks.has(key),
-    })),
+      terminatesAtStiltCollector: connected,
+      ...(connected ? {} : { stiltConnectionDiagnostic: diagnostic }),
+      };
+    }),
     ...(stackByKey.size > 0
       ? {
           drainageEconomy: {

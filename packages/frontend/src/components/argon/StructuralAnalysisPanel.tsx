@@ -6,13 +6,17 @@ import {
   type SteelGradeCode,
 } from '@ai-floor-planner/planning-engine';
 import {
+  buildColumnPerimeterBarCoordinates,
   MANDATORY_STRUCTURAL_DISCLAIMER,
   type FoundationSystemPreference,
+  type SectionCapacityBackend,
   type SingleCaseSolveResult,
   type StructuralEvaluationSummary,
+  type StructuralRegenerationSummary,
   type OptimizationObjectiveMode,
   type ReviewedStructuralInputs,
   type StructuralOptimizationSummary,
+  type StructuralSolverBackend,
 } from '@ai-floor-planner/structural-engine';
 import {
   Activity,
@@ -76,6 +80,8 @@ interface AnalysisRequest {
   readonly building: Building;
   readonly reviewedInputs: ReviewedStructuralInputs;
   readonly foundationPreference: FoundationSystemPreference;
+  readonly preferredSolverBackend: StructuralSolverBackend;
+  readonly sectionCapacityBackend: SectionCapacityBackend;
 }
 
 function triggerDownload(blob: Blob, filename: string) {
@@ -127,21 +133,21 @@ const RebarCrossSectionSvg: React.FC<{
       barCircles.push({ cx: x0 + t * (x1 - x0), cy: y1 - rBot, r: rBot, fill: '#38BDF8' });
     }
   } else {
-    const nCol = Math.max(4, Math.min(16, topOrLongBars.barCount));
-    const rCol = Math.max(3.2, (topOrLongBars.barDiaMm * scale) / 2);
-    // Distribute symmetrically around perimeter (4 corners + intermediate bars)
-    barCircles.push(
-      { cx: x0 + rCol, cy: y0 + rCol, r: rCol, fill: '#F59E0B' },
-      { cx: x1 - rCol, cy: y0 + rCol, r: rCol, fill: '#F59E0B' },
-      { cx: x1 - rCol, cy: y1 - rCol, r: rCol, fill: '#F59E0B' },
-      { cx: x0 + rCol, cy: y1 - rCol, r: rCol, fill: '#F59E0B' },
-    );
-    const rem = nCol - 4;
-    const perFace = Math.floor(rem / 2);
-    for (let i = 1; i <= perFace; i++) {
-      const t = i / (perFace + 1);
-      barCircles.push({ cx: x0 + rCol, cy: y0 + t * (y1 - y0), r: rCol, fill: '#FDE68A' });
-      barCircles.push({ cx: x1 - rCol, cy: y0 + t * (y1 - y0), r: rCol, fill: '#FDE68A' });
+    const layout = buildColumnPerimeterBarCoordinates({
+      widthMm,
+      depthMm,
+      clearCoverMm: 40,
+      barDiaMm: topOrLongBars.barDiaMm,
+      totalBarCount: topOrLongBars.barCount,
+    });
+    const rCol = Math.max(3.0, (layout.barDiaMm * scale) / 2);
+    for (const bar of layout.bars) {
+      barCircles.push({
+        cx: pad + bar.xMm * scale,
+        cy: pad + (depthMm - bar.yMm) * scale,
+        r: rCol,
+        fill: bar.locationRole === 'CORNER' ? '#F59E0B' : '#FDE68A',
+      });
     }
   }
 
@@ -198,8 +204,13 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
   const [foundationDepthM, setFoundationDepthM] = useState('');
   const [soilUnitWeight, setSoilUnitWeight] = useState('');
   const [settlementLimit, setSettlementLimit] = useState('');
+  const [subgradeModulusRaw, setSubgradeModulusRaw] = useState('');
+  const [bearingBasis, setBearingBasis] = useState<'' | 'NET' | 'GROSS'>('');
+  const [groundwaterDepth, setGroundwaterDepth] = useState('');
   const [geotechReference, setGeotechReference] = useState('');
   const [foundationPref, setFoundationPref] = useState<FoundationSystemPreference>('AUTO');
+  const [preferredSolverBackend, setPreferredSolverBackend] = useState<StructuralSolverBackend>('AWATIF_CPP_WASM');
+  const [sectionCapacityBackend, setSectionCapacityBackend] = useState<SectionCapacityBackend>('RH_IS456_ANALYTICAL');
   const [windEnabled, setWindEnabled] = useState<boolean>(true);
   const [activeSubTab, setActiveSubTab] = useState<ScheduleSubTab>('COLUMNS');
 
@@ -216,6 +227,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     request: AnalysisRequest;
     evaluationId: string;
     snapshot: StructuralEvaluationSummary;
+    regeneration: StructuralRegenerationSummary;
   } | null>(null);
   const [analysisRetry, setAnalysisRetry] = useState(0);
   const [feaBusy, setFeaBusy] = useState<boolean>(false);
@@ -271,6 +283,15 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     ? ([parsedSbc, depth, unitWeight, settlement, geotechReference.trim()] as const)
     : ([0, 0, 0, 0, ''] as const);
 
+  const parsedSubgradeKs = Number(subgradeModulusRaw);
+  const validSubgradeKs =
+    subgradeModulusRaw.trim().length > 0 && Number.isFinite(parsedSubgradeKs) && parsedSubgradeKs > 100
+      ? parsedSubgradeKs
+      : undefined;
+  const parsedGroundwaterDepth = Number(groundwaterDepth);
+  const reviewedGroundwaterDepth = groundwaterDepth.trim() && Number.isFinite(parsedGroundwaterDepth) && parsedGroundwaterDepth >= 0
+    ? parsedGroundwaterDepth : undefined;
+
   const reviewedInputs: ReviewedStructuralInputs = useMemo(
     () => ({
       concreteGrade,
@@ -300,6 +321,9 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             foundationDepthBelowGroundM: appliedDepth,
             soilUnitWeightKnM3: appliedUnitWeight,
             allowableSettlementMm: appliedSettlement,
+            ...(validSubgradeKs !== undefined ? { subgradeModulusKnM3: validSubgradeKs } : {}),
+            ...(bearingBasis ? { bearingCapacityBasis: bearingBasis } : {}),
+            ...(reviewedGroundwaterDepth !== undefined ? { waterTableDepthBelowGroundM: reviewedGroundwaterDepth } : {}),
             reportReference: appliedReport,
           }
         : null,
@@ -314,13 +338,22 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       appliedDepth,
       appliedUnitWeight,
       appliedSettlement,
+      validSubgradeKs,
+      bearingBasis,
+      reviewedGroundwaterDepth,
       appliedReport,
     ],
   );
 
   const analysisRequest = useMemo<AnalysisRequest>(
-    () => ({ building, reviewedInputs, foundationPreference: foundationPref }),
-    [building, reviewedInputs, foundationPref],
+    () => ({
+      building,
+      reviewedInputs,
+      foundationPreference: foundationPref,
+      preferredSolverBackend,
+      sectionCapacityBackend,
+    }),
+    [building, reviewedInputs, foundationPref, preferredSolverBackend, sectionCapacityBackend],
   );
 
   // Strict stale-result invalidation whenever geometry or reviewed inputs change
@@ -331,9 +364,13 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     setOptimization(null);
     setMemberOptPreview(null);
     const delay = window.setTimeout(() => {
-      requestStructural<{ evaluationId: string; snapshot: StructuralEvaluationSummary }>(
+      requestStructural<{
+        evaluationId: string;
+        snapshot: StructuralEvaluationSummary;
+        regeneration: StructuralRegenerationSummary;
+      }>(
         'analyze',
-        analysisRequest,
+        { ...analysisRequest, regenerate: true },
         abort.signal,
       )
         .then((result) => {
@@ -361,6 +398,8 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
   const activeOptimization = optimization?.request === analysisRequest ? optimization : null;
   const activePreview = memberOptPreview?.request === analysisRequest ? memberOptPreview : null;
   const optResult = activeOptimization?.result;
+  const regeneration = activeAnalysis?.regeneration;
+  const activeOverrides = optResult ?? regeneration?.overrides;
   const activeSnap = optResult?.after ?? activeAnalysis?.snapshot;
   const evaluationId = activeOptimization?.evaluationId ?? activeAnalysis?.evaluationId;
   const caseId = activeSnap?.solveEnvelope.combinationResults[selectedComboId]
@@ -462,7 +501,8 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     ) {
       return {
         statusCode: 'UNSUPPORTED_REQUIRED_CHECK',
-        label: 'UNSUPPORTED_REQUIRED_CHECK',
+        label: Object.values(activeSnap.loadTakeoff.unassignedGravityKnByCase ?? {}).some(force => force > 0)
+          ? 'INCOMPLETE GRAVITY LOAD PATHS' : 'UNSUPPORTED_REQUIRED_CHECK',
         cls: 'bg-violet-500/20 text-violet-200 border-violet-400/50',
       };
     }
@@ -480,9 +520,16 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     }
     if (activeSnap.designLifecycleStatus === 'DESIGN_CHECKS_PASSED') {
       return {
-        statusCode: 'DESIGN_CHECKS_PASSED',
-        label: 'DESIGN_CHECKS_PASSED (REVIEW REQ.)',
+        statusCode: activeSnap.carbon4LifecycleStatus ?? 'CHECKS_PASSED_WITHIN_SCOPE',
+        label: `${activeSnap.carbon4LifecycleStatus ?? 'CHECKS_PASSED_WITHIN_SCOPE'} · DESIGN_CHECKS_PASSED`,
         cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
+      };
+    }
+    if (activeSnap.designLifecycleStatus === 'INPUT_REVIEW_REQUIRED') {
+      return {
+        statusCode: activeSnap.carbon4LifecycleStatus ?? 'PRELIMINARY',
+        label: 'PRELIMINARY · INPUT_REVIEW_REQUIRED (GEOTECHNICAL / LOAD PATH)',
+        cls: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
       };
     }
     return {
@@ -530,12 +577,13 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         optimization: StructuralOptimizationSummary;
       }>('optimize', {
         ...analysisRequest,
+        foundationPreference: activeOverrides?.foundationPreferenceApplied ?? analysisRequest.foundationPreference,
         mode: optMode,
         maxIterations: 6,
-        initialSectionOverrides: optResult?.sectionOverridesApplied,
-        initialRebarOverrides: optResult?.rebarOverridesApplied,
-        initialSlabOverridesMm: optResult?.slabOverridesApplied,
-        initialFootingOverrides: optResult?.footingOverridesApplied,
+        initialSectionOverrides: activeOverrides?.sectionOverridesApplied,
+        initialRebarOverrides: activeOverrides?.rebarOverridesApplied,
+        initialSlabOverridesMm: activeOverrides?.slabOverridesApplied,
+        initialFootingOverrides: activeOverrides?.footingOverridesApplied,
       });
       setOptimization({ request: analysisRequest, evaluationId: nextEvalId, result: res });
       setExportStatus(
@@ -563,14 +611,15 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         optimization: StructuralOptimizationSummary;
       }>('optimize', {
         ...analysisRequest,
+        foundationPreference: activeOverrides?.foundationPreferenceApplied ?? analysisRequest.foundationPreference,
         mode: optMode,
         targetPhysicalMemberIds: [selectedPhysicalMemberId],
         previewOnly,
         maxIterations: 3,
-        initialSectionOverrides: optResult?.sectionOverridesApplied,
-        initialRebarOverrides: optResult?.rebarOverridesApplied,
-        initialSlabOverridesMm: optResult?.slabOverridesApplied,
-        initialFootingOverrides: optResult?.footingOverridesApplied,
+        initialSectionOverrides: activeOverrides?.sectionOverridesApplied,
+        initialRebarOverrides: activeOverrides?.rebarOverridesApplied,
+        initialSlabOverridesMm: activeOverrides?.slabOverridesApplied,
+        initialFootingOverrides: activeOverrides?.footingOverridesApplied,
       });
       if (previewOnly) {
         setMemberOptPreview({
@@ -599,7 +648,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     }
   }
 
-  async function handleDownloadBackendDrawing(format: 'dxf' | 'ifc' | 'pdf') {
+  async function handleDownloadBackendDrawing(format: 'dxf' | 'ifc' | 'pdf' | 'bbs_csv' | 'json') {
     if (!evaluationId) return;
     setExportBusy(true);
     setExportStatus(`Generating Structural ${format.toUpperCase()} package…`);
@@ -615,7 +664,14 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       }
       const blob = await res.blob();
       const safeName = (building.name || building.id || 'structural').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const ext = format === 'pdf' ? 'structural_bbs.pdf' : `structural.${format}`;
+      const ext =
+        format === 'pdf'
+          ? 'structural_bbs.pdf'
+          : format === 'bbs_csv'
+            ? 'structural_bbs.csv'
+            : format === 'json'
+              ? 'structural_report.json'
+              : `structural.${format}`;
       triggerDownload(blob, `${safeName}_${ext}`);
       setExportStatus(`Downloaded ${safeName}_${ext}`);
     } catch (err) {
@@ -836,7 +892,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               <div>Member already meets target criteria under {optMode} objective.</div>
             )}
             <div>
-              Global Max Util: {previewForThis.before.maxMemberUtilization} →{' '}
+              Peak check utilization {previewForThis.before.maxMemberUtilization} →{' '}
               <span className="font-bold">{previewForThis.after.maxMemberUtilization}</span> · Failed:{' '}
               {previewForThis.before.criticalDefectCount} → {previewForThis.after.criticalDefectCount}
             </div>
@@ -1330,6 +1386,23 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                 } · Arch Rev v${activeSnap.system.sourceArchitecturalRevision}`
               : `${building.floors.length} canonical storeys`}
           </p>
+          {regeneration && !feaBusy && !activeOptimization && (
+            <div data-testid="struct-regeneration-status" data-status={regeneration.status} className="mt-2 text-sm text-slate-200">
+              <p>
+                {regeneration.status === 'CHECKS_PASSED_WITHIN_SCOPE'
+                  ? 'Applicable structural checks passed.'
+                  : regeneration.status === 'UNSUPPORTED'
+                    ? `${regeneration.remainingFindings} findings in the diagnostic analysis.`
+                    : `Structural findings remaining: ${regeneration.remainingFindings} of ${regeneration.initialFindings}.`}{' '}
+                {regeneration.revisionsAnalyzed} {regeneration.revisionsAnalyzed === 1 ? 'revision' : 'revisions'} analyzed.
+              </p>
+              {regeneration.blockers.length > 0 && (
+                <ul className="mt-1 list-disc pl-5 text-amber-200">
+                  {regeneration.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Direct Deliverables: Structural DXF, OpenBIM IFC4, BBS PDF, Optional ETABS .e2k */}
@@ -1363,6 +1436,26 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
           >
             <FileText className="h-3.5 w-3.5" />
             Drawings &amp; BBS (PDF)
+          </button>
+          <button
+            type="button"
+            data-testid="struct-download-bbs-csv"
+            disabled={exportBusy || !evaluationId || feaBusy}
+            onClick={() => void handleDownloadBackendDrawing('bbs_csv')}
+            className="flex items-center gap-1.5 rounded-lg border border-teal-400/60 bg-teal-500/15 px-2.5 py-1.5 text-xs font-semibold text-teal-200 hover:bg-teal-500/25 disabled:opacity-50 cursor-pointer"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            BBS (CSV)
+          </button>
+          <button
+            type="button"
+            data-testid="struct-download-report-json"
+            disabled={exportBusy || !evaluationId || feaBusy}
+            onClick={() => void handleDownloadBackendDrawing('json')}
+            className="flex items-center gap-1.5 rounded-lg border border-indigo-400/60 bg-indigo-500/15 px-2.5 py-1.5 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/25 disabled:opacity-50 cursor-pointer"
+          >
+            <FileCode2 className="h-3.5 w-3.5" />
+            Report (JSON)
           </button>
           <button
             type="button"
@@ -1517,6 +1610,66 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             <option value="RIGID_RAFT">Rigid Mat Raft (IS 2950)</option>
           </select>
         </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-300">
+          <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Subgrade ks (kN/m³ · Raft)</span>
+          <input
+            data-testid="struct-subgrade-ks"
+            type="number"
+            min={0}
+            step="any"
+            placeholder="Required for raft verification"
+            value={subgradeModulusRaw}
+            onChange={(e) => setSubgradeModulusRaw(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-300">
+          <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Reviewed bearing capacity basis</span>
+          <select data-testid="struct-bearing-basis" value={bearingBasis}
+            onChange={(event) => setBearingBasis(event.target.value as typeof bearingBasis)}
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]">
+            <option value="">Select basis from site report</option>
+            <option value="NET">Net</option>
+            <option value="GROSS">Gross</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-300">
+          <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Reviewed groundwater depth (m)</span>
+          <input data-testid="struct-groundwater-depth" type="number" min={0} step="any"
+            value={groundwaterDepth} onChange={(event) => setGroundwaterDepth(event.target.value)}
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]" />
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-300">
+          <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">FEA Solver Backend</span>
+          <select
+            data-testid="struct-solver-select"
+            value={preferredSolverBackend}
+            onChange={(e) => setPreferredSolverBackend(e.target.value as StructuralSolverBackend)}
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          >
+            <option value="AWATIF_CPP_WASM">Awatif v3.4.0 C++/WASM</option>
+            <option value="PYNITE_3D_FRAME">PyNite v3.2.1 FEModel3D</option>
+            <option value="PYNITE_PDELTA">PyNite v3.2.1 P-Delta (Frame)</option>
+            <option value="TYPESCRIPT_SPARSE_LU_REFERENCE">TS Sparse-LU Reference</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs text-slate-300">
+          <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Section Capacity Engine</span>
+          <select
+            data-testid="struct-section-provider-select"
+            value={sectionCapacityBackend}
+            onChange={(e) => setSectionCapacityBackend(e.target.value as SectionCapacityBackend)}
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          >
+            <option value="RH_IS456_ANALYTICAL">IS 456 Analytical Integrator</option>
+            <option value="CONCRETE_PROPERTIES_FIBER">ConcreteProperties v0.8.0 Fiber</option>
+          </select>
+        </label>
       </div>
 
       <p className="text-xs text-slate-300">
@@ -1578,18 +1731,21 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         </div>
 
         <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-3.5">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Max Physical Utilization</div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Peak Check Utilization</div>
           <div
             className={`mt-1 text-xl font-bold font-mono ${
-              (activeSnap?.maxMemberUtilization ?? 0.7) <= 1.0 ? 'text-emerald-300' : 'text-rose-400'
+              !activeSnap ? 'text-slate-400' : activeSnap.maxMemberUtilization <= 1 ? 'text-emerald-300' : 'text-rose-400'
             }`}
           >
             {activeSnap ? activeSnap.maxMemberUtilization.toFixed(3) : '…'}
           </div>
-          <div className="mt-1 text-[11px] text-slate-300">
-            {activeSnap
-              ? `${activeSnap.rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${activeSnap.rccDesign.columns.length} cols · ${activeSnap.rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${activeSnap.rccDesign.beams.length} beams OK`
-              : 'Awaiting analysis results'}
+          <div data-testid="struct-member-check-counts" className="mt-1 text-[11px] text-slate-300">
+            {activeSnap ? (
+              <>
+                <div>{activeSnap.rccDesign.columns.filter(column => column.status === 'PASSED').length} of {activeSnap.rccDesign.columns.length} column checks passed</div>
+                <div>{activeSnap.rccDesign.beams.filter(beam => beam.status === 'PASSED').length} of {activeSnap.rccDesign.beams.length} beam checks passed</div>
+              </>
+            ) : 'Awaiting analysis results'}
           </div>
         </div>
 
@@ -1638,7 +1794,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             {label}
           </button>
         ))}
-        {feaBusy && <span className="ml-2 text-xs font-mono text-amber-300">Awaiting evaluated results…</span>}
+        {feaBusy && <span role="status" className="ml-2 text-xs text-amber-300">Analyzing the structure and regenerating designs as needed…</span>}
       </div>
 
       {/* 1. COLUMNS SCHEDULE */}
@@ -2175,7 +2331,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                     <td className="py-1.5">{optResult.iterations.length} WASM Passes</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5">Max Member Utilization</td>
+                    <td className="py-1.5">Peak Check Utilization</td>
                     <td className="py-1.5">{optResult.before.maxMemberUtilization}</td>
                     <td className="py-1.5 font-bold text-emerald-300">{optResult.after.maxMemberUtilization}</td>
                     <td className="py-1.5">
@@ -2304,7 +2460,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                     <td className="p-2">{row.totalBars}</td>
                     <td className="p-2">{row.cuttingLengthMm}</td>
                     <td className="p-2">{row.totalLengthM}</td>
-                    <td className="p-2 font-semibold text-sky-300">{row.totalWeightKg}</td>
+                    <td className="p-2 font-semibold text-sky-300">{row.totalWeightKg.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

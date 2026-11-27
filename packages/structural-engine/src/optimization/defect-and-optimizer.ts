@@ -13,8 +13,13 @@
  *    foundation checks, and consolidated BBS/BOQ quantities!
  */
 
-import { canonicalBuildingHash, type Building } from '@ai-floor-planner/core';
-import type { AnalyticalSolveEnvelope } from '../types/solver-types.js';
+import { canonicalBuildingHash, stableValueHash, type Building } from '@ai-floor-planner/core';
+import type {
+  AnalyticalSolveEnvelope,
+  Carbon4StructuralLifecycleStatus,
+  SectionCapacityBackend,
+  StructuralSolverBackend,
+} from '../types/solver-types.js';
 import {
   synthesizeCanonicalStructuralSystem,
   type ConcreteGrade,
@@ -27,7 +32,13 @@ import {
   type LoadTakeoffBreakdown,
   type ReviewedStructuralInputs,
 } from '../loads/indian-load-assembler.js';
-import { AwatifStructuralSolver } from '../solver/awatif-structural-solver.js';
+import { AwatifStructuralSolver, UnsupportedStructuralMethodError } from '../solver/awatif-structural-solver.js';
+import { PyNiteStructuralSolver } from '../solver/pynite-structural-solver.js';
+import { resolveCarbon4LifecycleStatus } from '../capabilities/solver-capability-registry.js';
+import {
+  buildColumnPerimeterBarCoordinates,
+  evaluateSectionsWithConcreteProperties,
+} from '../rcc/section-capacity-provider.js';
 import {
   runCompleteRccDesign,
   type CompleteRccDesignSummary,
@@ -94,11 +105,14 @@ export interface StoreyDriftCheckRecord {
   readonly allowableDriftMm: number;
   readonly utilizationRatio: number;
   readonly governingComboId: string;
+  readonly governingMemberId?: string;
   readonly isCompliant: boolean;
 }
 
 export interface FullStructuralEvaluationSnapshot {
   readonly designLifecycleStatus: DesignEvaluationStatus;
+  readonly carbon4LifecycleStatus?: Carbon4StructuralLifecycleStatus;
+  readonly sectionCapacityBackend?: SectionCapacityBackend;
   readonly unsupportedChecks: readonly string[];
   readonly system: SynthesizedStructuralSystem;
   readonly loadTakeoff: LoadTakeoffBreakdown;
@@ -185,6 +199,7 @@ export interface StructuralOptimizationResult {
   readonly rebarOverridesApplied: Readonly<Record<string, RebarOverrideSpec>>;
   readonly slabOverridesApplied: NonNullable<FrameSynthesisOptions['slabThicknessOverridesMm']>;
   readonly footingOverridesApplied: NonNullable<FootingSizingOverrides['byId']>;
+  readonly foundationPreferenceApplied: FoundationSystemPreference;
   readonly deltaSummary: {
     readonly defectsResolved: number;
     readonly concreteDeltaM3: number;
@@ -200,94 +215,170 @@ export type StructuralOptimizationSummary = Omit<StructuralOptimizationResult, '
   readonly after: StructuralEvaluationSummary;
 };
 
+export interface StructuralRegenerationSummary {
+  readonly status: 'CHECKS_PASSED_WITHIN_SCOPE' | 'INPUT_REVIEW_REQUIRED' | 'UNSUPPORTED' | 'DESIGN_UNRESOLVED';
+  readonly initialFindings: number;
+  readonly remainingFindings: number;
+  readonly revisionsAnalyzed: number;
+  readonly selectedStructuralRevision: number;
+  readonly blockers: readonly string[];
+  readonly passes: readonly {
+    readonly strategy: 'BALANCED' | 'TARGETED_STRENGTH' | 'MAX_CLEARANCE';
+    readonly revisionsAnalyzed: number;
+    readonly findings: number;
+    readonly structuralRevision: number;
+  }[];
+  readonly overrides: Pick<StructuralOptimizationResult,
+    'sectionOverridesApplied' | 'rebarOverridesApplied' | 'slabOverridesApplied' | 'footingOverridesApplied' | 'foundationPreferenceApplied'>;
+}
+
+export async function regenerateStructuralDesign(params: {
+  readonly building: Building;
+  readonly inputs: ReviewedStructuralInputs;
+  readonly foundationPreference?: FoundationSystemPreference;
+  readonly preferredSolverBackend?: StructuralSolverBackend;
+  readonly sectionCapacityBackend?: SectionCapacityBackend;
+  readonly signal?: AbortSignal;
+}): Promise<{ snapshot: FullStructuralEvaluationSnapshot; regeneration: StructuralRegenerationSummary }> {
+  type Strategy = StructuralRegenerationSummary['passes'][number]['strategy'];
+  const passes: StructuralRegenerationSummary['passes'][number][] = [];
+  const architecture = canonicalBuildingHash(params.building);
+  let nextRevision = 1;
+
+  async function run(strategy: Strategy, start?: StructuralOptimizationResult, targets?: readonly string[]) {
+    const result = await optimizeStructuralSystemWithGlobalReanalysis({
+      ...params,
+      foundationPreference: start?.foundationPreferenceApplied ?? params.foundationPreference,
+      mode: strategy === 'MAX_CLEARANCE' ? strategy : 'BALANCED',
+      targetPhysicalMemberIds: targets,
+      maxIterations: strategy === 'BALANCED' ? 10 : 6,
+      repairOnly: true,
+      synthesisOptions: { structuralRevision: nextRevision },
+      initialSectionOverrides: start?.sectionOverridesApplied,
+      initialRebarOverrides: start?.rebarOverridesApplied,
+      initialSlabOverridesMm: start?.slabOverridesApplied,
+      initialFootingOverrides: start?.footingOverridesApplied,
+    });
+    if (!result.architecturalGeometryProtected || result.after.system.sourceArchitecturalSha256 !== architecture) {
+      throw new Error('Structural regeneration lost its architectural revision.');
+    }
+    const revisionsAnalyzed = 1 + result.iterations.length;
+    nextRevision += revisionsAnalyzed;
+    passes.push({
+      strategy,
+      revisionsAnalyzed,
+      findings: result.after.criticalDefectCount,
+      structuralRevision: result.after.system.structuralRevision,
+    });
+    return result;
+  }
+
+  const requiresRepair = (snapshot: FullStructuralEvaluationSnapshot) =>
+    snapshot.designLifecycleStatus === 'DESIGN_FAILED' &&
+    snapshot.foundationDesign.status !== 'MISSING_GEOTECHNICAL_INPUT';
+  const improve = (candidate: StructuralOptimizationResult, best: StructuralOptimizationResult) =>
+    candidate.after.designLifecycleStatus === 'DESIGN_CHECKS_PASSED' ||
+    isBetterRepair(repairRank(candidate.after), repairRank(best.after));
+
+  let best = await run('BALANCED');
+  const initialFindings = best.before.criticalDefectCount;
+  for (let attempt = 0; attempt < 2 && requiresRepair(best.after); attempt++) {
+    const targets = [...new Set(best.after.defects
+      .filter(defect => (defect.severity === 'CRITICAL' || defect.severity === 'MAJOR') &&
+        (defect.memberCategory === 'BEAM' || defect.memberCategory === 'COLUMN'))
+      .map(defect => defect.physicalMemberId))];
+    if (targets.length === 0) break;
+    const candidate = await run('TARGETED_STRENGTH', best, targets);
+    if (!improve(candidate, best)) break;
+    best = candidate;
+  }
+
+  if (requiresRepair(best.after)) {
+    const alternative = await run('MAX_CLEARANCE');
+    if (improve(alternative, best)) best = alternative;
+  }
+
+  const snapshot = best.after;
+  const foundationStatus = snapshot.foundationDesign.status;
+  const pathCount = (snapshot.loadTakeoff.slabLoadPaths?.preliminaryDistribution.length ?? 0) +
+    (snapshot.loadTakeoff.slabLoadPaths?.missingSupport.length ?? 0);
+  const blockers = [...snapshot.unsupportedChecks];
+  const missingSoil = snapshot.foundationDesign.missingReviewedInputs ?? [];
+  if (foundationStatus === 'MISSING_GEOTECHNICAL_INPUT') {
+    blockers.push(`Foundation design requires geotechnical inputs from a reviewed site report: ${missingSoil.join(', ')}.`);
+  } else if (missingSoil.length) {
+    blockers.push(`Raft verification requires reviewed values for ${missingSoil.join(', ')}.`);
+  }
+  if (pathCount) blockers.push(`${pathCount} slab load paths require support and transfer verification.`);
+  const status = snapshot.designLifecycleStatus === 'DESIGN_CHECKS_PASSED'
+    ? 'CHECKS_PASSED_WITHIN_SCOPE'
+    : snapshot.designLifecycleStatus === 'UNSUPPORTED_REQUIRED_CHECK'
+      ? 'UNSUPPORTED'
+      : snapshot.designLifecycleStatus === 'INPUT_REVIEW_REQUIRED' || foundationStatus === 'MISSING_GEOTECHNICAL_INPUT'
+        ? 'INPUT_REVIEW_REQUIRED'
+        : 'DESIGN_UNRESOLVED';
+  if (status === 'DESIGN_UNRESOLVED') {
+    blockers.push('The available automatic redesigns were tried. The remaining failed checks require design review.');
+  }
+
+  return {
+    snapshot,
+    regeneration: {
+      status, initialFindings, remainingFindings: snapshot.criticalDefectCount,
+      revisionsAnalyzed: passes.reduce((total, pass) => total + pass.revisionsAnalyzed, 0),
+      selectedStructuralRevision: snapshot.system.structuralRevision, blockers, passes,
+      overrides: {
+        sectionOverridesApplied: best.sectionOverridesApplied,
+        rebarOverridesApplied: best.rebarOverridesApplied,
+        slabOverridesApplied: best.slabOverridesApplied,
+        footingOverridesApplied: best.footingOverridesApplied,
+        foundationPreferenceApplied: best.foundationPreferenceApplied,
+      },
+    },
+  };
+}
+
 /**
- * Evaluates IS 1893 (Part 1): 2016 Cl. 7.11.1 Storey Drift Limit (`<= 0.004 * h_s`) across lateral combinations.
+ * Evaluates relative drift at physical column ends using unit lateral load cases.
  */
 export function evaluateStoreyDrifts(
   system: SynthesizedStructuralSystem,
   solveEnvelope: AnalyticalSolveEnvelope,
 ): StoreyDriftCheckRecord[] {
-  // Use column stack nodes (excluding mid-span beam sub-nodes) grouped by storey elevation!
-  const colEndNodes = new Set<number>();
-  for (const col of system.physicalModel.columns) {
-    colEndNodes.add(col.endAnalyticalNodeIndex);
-  }
+  const lateralCases = Object.entries(solveEnvelope.loadCaseResults).filter(([id]) => /^(EQ|WL)[XY]$/.test(id));
+  const records = new Map<string, StoreyDriftCheckRecord>();
+  // IS 1893 (Part 1):2016 cl. 7.11.1.1 uses design base shear at a factor of 1.0.
+  // Compare vertically connected nodes so averaging across the plan cannot cancel edge drift.
+  for (const column of system.physicalModel.columns) {
+    const start = system.nodes[column.startAnalyticalNodeIndex]!;
+    const end = system.nodes[column.endAnalyticalNodeIndex]!;
+    const elevationM = end.positionM[2];
+    const storeyHeightMm = Math.round((elevationM - start.positionM[2]) * 1000);
+    if (elevationM <= 0.05 || storeyHeightMm <= 0) continue;
+    const floorId = end.floorId ?? column.floorId;
+    const allowableDriftMm = 0.004 * storeyHeightMm;
 
-  const elevMap = new Map<number, { floorId: string; nodeIndices: number[] }>();
-  for (const n of system.nodes) {
-    if (n.positionM[2] <= 0.05) continue;
-    if (colEndNodes.size > 0 && !colEndNodes.has(n.index)) continue;
-    const zRound = Math.round(n.positionM[2] * 100) / 100;
-    const cur = elevMap.get(zRound) ?? { floorId: n.floorId ?? `Z_${zRound}`, nodeIndices: [] };
-    cur.nodeIndices.push(n.index);
-    elevMap.set(zRound, cur);
-  }
-
-  const sortedZ = Array.from(elevMap.keys()).sort((a, b) => a - b);
-  const lateralCombos = Object.entries(solveEnvelope.combinationResults).filter(
-    ([id]) => id.includes('EQ') || id.includes('WL') || id.startsWith('SLS_'),
-  );
-  const activeCombos =
-    lateralCombos.length > 0
-      ? lateralCombos
-      : Object.entries(solveEnvelope.combinationResults);
-
-  const records: StoreyDriftCheckRecord[] = [];
-
-  for (let idx = 0; idx < sortedZ.length; idx++) {
-    const zCur = sortedZ[idx]!;
-    const zPrev = idx === 0 ? 0 : sortedZ[idx - 1]!;
-    const hStoreyMm = Math.round((zCur - zPrev) * 1000);
-    const allowDriftMm = 0.004 * hStoreyMm;
-
-    const curNodes = elevMap.get(zCur)!.nodeIndices;
-    const prevNodes = idx === 0 ? [] : elevMap.get(zPrev)!.nodeIndices;
-
-    let maxDxMm = 0;
-    let maxDyMm = 0;
-    let govCombo = activeCombos[0]?.[0] ?? 'SLS_10_DL_LL';
-
-    for (const [comboId, res] of activeCombos) {
-      const factorScale = comboId.startsWith('ULS_15') ? 1 / 1.5 : comboId.startsWith('ULS_12') ? 1 / 1.2 : 1.0;
-
-      const avgUxCur =
-        curNodes.reduce((s, ni) => s + res.displacements[ni]!.translationM[0], 0) / curNodes.length;
-      const avgUyCur =
-        curNodes.reduce((s, ni) => s + res.displacements[ni]!.translationM[1], 0) / curNodes.length;
-
-      const avgUxPrev =
-        prevNodes.length > 0
-          ? prevNodes.reduce((s, ni) => s + res.displacements[ni]!.translationM[0], 0) / prevNodes.length
-          : 0;
-      const avgUyPrev =
-        prevNodes.length > 0
-          ? prevNodes.reduce((s, ni) => s + res.displacements[ni]!.translationM[1], 0) / prevNodes.length
-          : 0;
-
-      const dxMm = Math.abs(avgUxCur - avgUxPrev) * 1000 * factorScale;
-      const dyMm = Math.abs(avgUyCur - avgUyPrev) * 1000 * factorScale;
-      if (Math.max(dxMm, dyMm) > Math.max(maxDxMm, maxDyMm)) {
-        govCombo = comboId;
-      }
-      if (dxMm > maxDxMm) maxDxMm = dxMm;
-      if (dyMm > maxDyMm) maxDyMm = dyMm;
+    for (const [caseId, result] of lateralCases) {
+      const bottom = result.displacements[start.index]!.translationM;
+      const top = result.displacements[end.index]!.translationM;
+      const dxMm = Math.abs(top[0] - bottom[0]) * 1000;
+      const dyMm = Math.abs(top[1] - bottom[1]) * 1000;
+      const utilizationRatio = Math.max(dxMm, dyMm) / allowableDriftMm;
+      if (utilizationRatio <= (records.get(floorId)?.utilizationRatio ?? -1)) continue;
+      records.set(floorId, {
+        floorId, elevationM, storeyHeightMm, allowableDriftMm, utilizationRatio,
+        maxDriftXMm: Number(dxMm.toFixed(2)),
+        maxDriftYMm: Number(dyMm.toFixed(2)),
+        governingComboId: caseId,
+        governingMemberId: column.physicalMemberId,
+        isCompliant: utilizationRatio <= 1,
+      });
     }
-
-    const util = Math.max(maxDxMm, maxDyMm) / Math.max(1, allowDriftMm);
-    records.push({
-      floorId: elevMap.get(zCur)!.floorId,
-      elevationM: zCur,
-      storeyHeightMm: hStoreyMm,
-      maxDriftXMm: Number(maxDxMm.toFixed(2)),
-      maxDriftYMm: Number(maxDyMm.toFixed(2)),
-      allowableDriftMm: Number(allowDriftMm.toFixed(2)),
-      utilizationRatio: Number(util.toFixed(3)),
-      governingComboId: govCombo,
-      isCompliant: util <= 1.0,
-    });
   }
 
-  return records;
+  return [...records.values()]
+    .sort((a, b) => a.elevationM - b.elevationM)
+    .map(record => ({ ...record, utilizationRatio: Number(record.utilizationRatio.toFixed(3)) }));
 }
 
 export function detectStructuralDefects(params: {
@@ -466,14 +557,24 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   readonly synthesisOptions?: FrameSynthesisOptions;
   readonly footingOverrides?: FootingSizingOverrides;
   readonly solver?: AwatifStructuralSolver;
+  readonly preferredSolverBackend?: StructuralSolverBackend;
+  readonly sectionCapacityBackend?: SectionCapacityBackend;
+  readonly signal?: AbortSignal;
 }): Promise<FullStructuralEvaluationSnapshot> {
-  const solver = params.solver ?? new AwatifStructuralSolver();
-  await solver.initialize();
+  params.signal?.throwIfAborted();
+  const reqBackend = params.preferredSolverBackend ?? 'AWATIF_CPP_WASM';
+  if (reqBackend === 'PYNITE_PLATE_QUAD') {
+    throw new UnsupportedStructuralMethodError('SHELL_FEM', 'Canonical building analysis does not yet assemble a validated shell mesh and matching slab load transfer.');
+  }
+  const awatifSolver = params.solver ?? new AwatifStructuralSolver();
+  await awatifSolver.initialize();
 
   const system = synthesizeCanonicalStructuralSystem(params.building, {
     concreteGrade: params.inputs.concreteGrade,
     steelGrade: params.inputs.steelGrade,
     ductileDetailing: params.inputs.ductileDetailingIS13920,
+    seismicZone: params.inputs.seismic?.enabled ? params.inputs.seismic.zone : undefined,
+    responseReductionFactorR: params.inputs.seismic?.responseReductionFactorR,
     foundationDepthBelowPlinthMm: params.inputs.geotechnical
       ? params.inputs.geotechnical.foundationDepthBelowGroundM * 1000
       : undefined,
@@ -483,25 +584,152 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   const { analyticalModel, loadTakeoff } = await assembleLoadedAnalyticalFrameModel(
     system,
     params.inputs,
-    solver,
+    awatifSolver,
   );
-  const solveEnvelope = await solver.analyze(analyticalModel, {
-    preferredBackend: 'AWATIF_CPP_WASM',
-  });
+
+  let solveEnvelope: AnalyticalSolveEnvelope;
+  if (reqBackend === 'PYNITE_3D_FRAME' || reqBackend === 'PYNITE_PDELTA') {
+    const pynite = new PyNiteStructuralSolver();
+    const cancel = () => pynite.cancel();
+    params.signal?.throwIfAborted();
+    params.signal?.addEventListener('abort', cancel, { once: true });
+    try {
+      await pynite.initialize();
+      solveEnvelope = await pynite.analyze(analyticalModel, {
+        preferredBackend: reqBackend,
+        method: reqBackend === 'PYNITE_PDELTA' ? 'P_DELTA' : 'LINEAR_STATIC_FRAME',
+      });
+    } finally {
+      params.signal?.removeEventListener('abort', cancel);
+    }
+  } else {
+    solveEnvelope = await awatifSolver.analyze(analyticalModel, {
+      preferredBackend: reqBackend,
+    });
+  }
+  params.signal?.throwIfAborted();
 
   const storeyDriftChecks = evaluateStoreyDrifts(system, solveEnvelope);
-  const rccDesign = runCompleteRccDesign(
+  const rawRccDesign = runCompleteRccDesign(
     system,
     params.inputs,
     solveEnvelope,
     params.synthesisOptions?.rebarOverrides,
   );
-  const foundationDesign = runFoundationDesign(
+
+  const secBackend: SectionCapacityBackend = params.sectionCapacityBackend ?? 'RH_IS456_ANALYTICAL';
+  let rccDesign = rawRccDesign;
+  if (secBackend === 'CONCRETE_PROPERTIES_FIBER' && rawRccDesign.columns.length > 0) {
+    // Group unique column cross-sections + reinforcement arrangements for fast batched fiber verification!
+    const groupMap = new Map<
+      string,
+      {
+        col: CompleteRccDesignSummary['columns'][number];
+        demands: { id: string; puKn: number; muxKnM: number; muyKnM: number }[];
+      }
+    >();
+    for (const col of rawRccDesign.columns) {
+      const key = `${col.widthMm}x${col.depthMm}|${col.concreteGrade}|${col.steelGrade}|${col.longitudinalBars.barCount}-T${col.longitudinalBars.barDiaMm}|tie:${col.lateralTies.barDiaMm}`;
+      const existing = groupMap.get(key);
+      const dem = {
+        id: col.physicalMemberId,
+        puKn: col.demandPuKn,
+        muxKnM: col.designMuxWithEccentricityAndSlendernessKnM,
+        muyKnM: col.designMuyWithEccentricityAndSlendernessKnM,
+      };
+      if (existing) existing.demands.push(dem);
+      else groupMap.set(key, { col, demands: [dem] });
+    }
+
+    const batchItems = Array.from(groupMap.entries()).map(([key, { col, demands }]) => {
+      const layout = buildColumnPerimeterBarCoordinates({
+        widthMm: col.widthMm,
+        depthMm: col.depthMm,
+        clearCoverMm: 40,
+        tieDiaMm: col.lateralTies.barDiaMm,
+        barDiaMm: col.longitudinalBars.barDiaMm,
+        totalBarCount: col.longitudinalBars.barCount,
+      });
+      return {
+        sectionId: key,
+        widthMm: col.widthMm,
+        depthMm: col.depthMm,
+        concreteGrade: col.concreteGrade,
+        steelGrade: col.steelGrade,
+        bars: layout.bars.map((b) => ({ xMm: b.xMm, yMm: b.yMm, areaMm2: b.areaMm2 })),
+        demands,
+      };
+    });
+
+    const cpBatch = await evaluateSectionsWithConcreteProperties(batchItems, undefined, params.signal);
+    const cpEvalByColId = new Map<
+      string,
+      { mux1: number; muy1: number; rayMux: number; rayMuy: number; util: number; outside: boolean }
+    >();
+    for (const secRes of cpBatch.results) {
+      for (const dev of secRes.demandEvaluations) {
+        cpEvalByColId.set(dev.id, {
+          mux1: dev.mux1CapacityKnM,
+          muy1: dev.muy1CapacityKnM,
+          rayMux: dev.rayCapacityMuxKnM,
+          rayMuy: dev.rayCapacityMuyKnM,
+          util: dev.utilizationRatio,
+          outside: dev.outsideAxialDomain,
+        });
+      }
+    }
+
+    const updatedCols = rawRccDesign.columns.map((col) => {
+      const cp = cpEvalByColId.get(col.physicalMemberId);
+      if (!cp) throw new Error(`Concrete Properties omitted the demand for ${col.physicalMemberId}.`);
+      if (!Number.isFinite(cp.util)) {
+        throw new Error(`Concrete Properties returned non-finite utilization for ${col.physicalMemberId}.`);
+      }
+      const cpRatio = Number(cp.util.toFixed(3));
+      const governedRatio = Math.max(col.biaxialInteractionRatio, cpRatio);
+      const passed = col.status === 'PASSED' && !cp.outside && cp.util <= 1.0;
+      return {
+        ...col,
+        capacityMux1AtPuKnM: Number((cp.mux1 > 0 ? cp.mux1 : col.capacityMux1AtPuKnM).toFixed(2)),
+        capacityMuy1AtPuKnM: Number((cp.muy1 > 0 ? cp.muy1 : col.capacityMuy1AtPuKnM).toFixed(2)),
+        biaxialInteractionRatio: governedRatio,
+        interactionOutsideCapacityDomain: Boolean(col.interactionOutsideCapacityDomain || cp.outside),
+        sectionCapacityProvider: 'CONCRETE_PROPERTIES_FIBER' as const,
+        concretePropertiesRayCapacityKnM: {
+          muxCapKnM: Number(cp.rayMux.toFixed(2)),
+          muyCapKnM: Number(cp.rayMuy.toFixed(2)),
+          utilizationRatio: cpRatio,
+        },
+        maxUtilization: Number(Math.max(col.maxUtilization, cpRatio).toFixed(3)),
+        status: passed ? ('PASSED' as const) : ('FAILED' as const),
+      };
+    });
+
+    const failedCount =
+      rawRccDesign.beams.filter((b) => b.status === 'FAILED').length +
+      updatedCols.filter((c) => c.status === 'FAILED').length +
+      rawRccDesign.slabs.filter((s) => s.status === 'FAILED').length +
+      rawRccDesign.stairs.filter((s) => s.status === 'FAILED').length;
+
+    rccDesign = {
+      ...rawRccDesign,
+      columns: updatedCols,
+      failedMemberCount: failedCount,
+      allPassed: failedCount === 0 && rawRccDesign.unsupportedMemberCount === 0,
+    };
+  }
+  const unassignedGravity = loadTakeoff.unassignedGravityKnByCase;
+  const incompleteGravity = unassignedGravity && Object.values(unassignedGravity).some(force => force > 0);
+  const evaluatedFoundation = runFoundationDesign(
     system,
     params.inputs,
     solveEnvelope,
     params.footingOverrides,
   );
+  const foundationDesign: FoundationDesignSummary = incompleteGravity && evaluatedFoundation.status === 'DESIGNED_VERIFIED'
+    ? { ...evaluatedFoundation, status: 'PRELIMINARY_GRAVITY_TRANSFER', allPassed: false,
+      infeasibilityDiagnostics: [...evaluatedFoundation.infeasibilityDiagnostics, 'Foundation reactions exclude unassigned gravity loads.'] }
+    : evaluatedFoundation;
   const detailingAndBoq = generateDetailingBbsAndBoq(system, rccDesign, foundationDesign);
   const defects = detectStructuralDefects({
     system,
@@ -511,6 +739,17 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   });
 
   const unsupportedChecks: string[] = [];
+  if (incompleteGravity) {
+    unsupportedChecks.push(`Gravity transfer is incomplete (${unassignedGravity.DL.toFixed(1)} kN dead, ${unassignedGravity.SDL.toFixed(1)} kN superimposed dead and ${unassignedGravity.LL.toFixed(1)} kN live load unassigned). Structural sizing is paused.`);
+    for (const record of loadTakeoff.loadSourceAudit ?? []) {
+      if (record.category === 'WATER_TANK' && record.gravityTransfer?.blocker) {
+        unsupportedChecks.push(record.gravityTransfer.blocker);
+      }
+    }
+  }
+  if ((params.inputs.seismic?.enabled || params.inputs.wind?.enabled) && storeyDriftChecks.length === 0) {
+    unsupportedChecks.push('Storey drift requires solved unit lateral load cases and continuous column endpoints.');
+  }
   if (foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
     unsupportedChecks.push(`Foundation type '${foundationDesign.selectedStrategy}' requires unsupported Winkler FEM / SSI.`);
   }
@@ -527,10 +766,14 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   let designLifecycleStatus: DesignEvaluationStatus;
   if (unsupportedChecks.length > 0) {
     designLifecycleStatus = 'UNSUPPORTED_REQUIRED_CHECK';
-  } else if (foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
+  } else if (foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' ||
+             foundationDesign.status === 'PRELIMINARY_GEOTECHNICAL') {
     designLifecycleStatus = criticalDefectCount > 0 ? 'DESIGN_FAILED' : 'INPUT_REVIEW_REQUIRED';
   } else if (criticalDefectCount === 0 && rccDesign.allPassed && foundationDesign.allPassed) {
-    designLifecycleStatus = 'DESIGN_CHECKS_PASSED';
+    const slabPaths = loadTakeoff.slabLoadPaths;
+    designLifecycleStatus = slabPaths && (slabPaths.preliminaryDistribution.length || slabPaths.missingSupport.length)
+      ? 'INPUT_REVIEW_REQUIRED'
+      : 'DESIGN_CHECKS_PASSED';
   } else {
     designLifecycleStatus = 'DESIGN_FAILED';
   }
@@ -545,8 +788,27 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   const maxMemberUtilization =
     allUtils.length > 0 ? Number(Math.max(...allUtils).toFixed(3)) : 0;
 
+  const hasPreliminaryPathsOrGeotech = Boolean(
+    foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' ||
+      foundationDesign.status === 'PRELIMINARY_GEOTECHNICAL' ||
+      (loadTakeoff.slabLoadPaths &&
+        (loadTakeoff.slabLoadPaths.preliminaryDistribution.length > 0 ||
+          loadTakeoff.slabLoadPaths.missingSupport.length > 0)),
+  );
+
+  const carbon4LifecycleStatus = resolveCarbon4LifecycleStatus({
+    hasUnsupportedScope: unsupportedChecks.length > 0,
+    hasDesignFailure: criticalDefectCount > 0 || !rccDesign.allPassed || foundationDesign.status === 'DESIGN_FAILED',
+    hasPreliminaryInputsOrLoadPaths: hasPreliminaryPathsOrGeotech,
+    hasUnverifiedMethod: false,
+    allChecksPassedWithinScope:
+      criticalDefectCount === 0 && rccDesign.allPassed && foundationDesign.allPassed && !hasPreliminaryPathsOrGeotech,
+  });
+
   return {
     designLifecycleStatus,
+    carbon4LifecycleStatus,
+    sectionCapacityBackend: secBackend,
     unsupportedChecks,
     system,
     loadTakeoff,
@@ -567,6 +829,22 @@ function nextHigherGrade(grade: ConcreteGrade): ConcreteGrade {
   return order[Math.min(order.length - 1, idx + 1)]!;
 }
 
+function repairRank(snapshot: FullStructuralEvaluationSnapshot, targets?: ReadonlySet<string> | null): number[] {
+  return [
+    snapshot.designLifecycleStatus === 'DESIGN_CHECKS_PASSED' ? 0 : 1,
+    snapshot.unsupportedChecks.length,
+    snapshot.system.clashes.filter(clash => clash.severity === 'ERROR').length,
+    Math.max(1, snapshot.maxMemberUtilization),
+    snapshot.criticalDefectCount,
+    targets ? snapshot.defects.filter(defect => targets.has(defect.physicalMemberId)).length : 0,
+  ];
+}
+
+function isBetterRepair(candidate: readonly number[], incumbent: readonly number[]): boolean {
+  const index = candidate.findIndex((value, position) => value !== incumbent[position]);
+  return index >= 0 && candidate[index]! < incumbent[index]!;
+}
+
 /**
  * Closed-Loop Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Gates 6 & 9).
  * Supports both full-building remediation/economy AND single/selected physical-member optimization!
@@ -585,8 +863,13 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   readonly initialSlabOverridesMm?: FrameSynthesisOptions['slabThicknessOverridesMm'];
   readonly initialFootingOverrides?: FootingSizingOverrides['byId'];
   readonly foundationPreference?: FoundationSystemPreference;
+  readonly preferredSolverBackend?: StructuralSolverBackend;
+  readonly sectionCapacityBackend?: SectionCapacityBackend;
   readonly maxIterations?: number;
+  readonly repairOnly?: boolean;
+  readonly signal?: AbortSignal;
 }): Promise<StructuralOptimizationResult> {
+  params.signal?.throwIfAborted();
   const mode = params.mode ?? 'BALANCED';
   const targetSet =
     params.targetPhysicalMemberIds && params.targetPhysicalMemberIds.length > 0
@@ -618,18 +901,35 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
       sectionOverrides,
       rebarOverrides,
       slabThicknessOverridesMm: slabOverrides,
-      structuralRevision: 1,
+      structuralRevision: params.synthesisOptions?.structuralRevision ?? 1,
     },
     footingOverrides: { byId: footingOverrides, preference: activeFoundationPref },
     solver,
+    preferredSolverBackend: params.preferredSolverBackend,
+    sectionCapacityBackend: params.sectionCapacityBackend,
+    signal: params.signal,
   });
 
   let current = before;
   const iterations: OptimizationIterationTrace[] = [];
+  const repairingFailedDesign = before.criticalDefectCount > 0;
+  let best = {
+    snapshot: before, rank: repairRank(before, targetSet), sections: { ...sectionOverrides },
+    rebar: { ...rebarOverrides }, slabs: { ...slabOverrides }, footings: { ...footingOverrides }, foundation: activeFoundationPref,
+  };
+  const sizingKey = () => stableValueHash([sectionOverrides, rebarOverrides, slabOverrides, footingOverrides, activeFoundationPref]);
+  const analyzedSizing = new Set(params.repairOnly ? [sizingKey()] : []);
 
   const isTargetAllowed = (id: string) => !targetSet || targetSet.has(id);
 
-  for (let iter = 1; iter <= maxIterations; iter++) {
+  const unassignedGravity = before.loadTakeoff.unassignedGravityKnByCase;
+  const repairBlocked = (unassignedGravity && Object.values(unassignedGravity).some(force => force > 0)) || (params.repairOnly && (
+    before.criticalDefectCount === 0 ||
+    before.designLifecycleStatus === 'UNSUPPORTED_REQUIRED_CHECK' ||
+    before.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT'
+  ));
+  for (let iter = 1; iter <= (repairBlocked ? 0 : maxIterations); iter++) {
+    params.signal?.throwIfAborted();
     const modifiedIds = new Set<string>();
     const modifiedDetails: MemberModificationRecord[] = [];
     const changeSummary: string[] = [];
@@ -964,6 +1264,11 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     if (modifiedIds.size === 0) {
       break;
     }
+    if (params.repairOnly) {
+      const key = sizingKey();
+      if (analyzedSizing.has(key)) break;
+      analyzedSizing.add(key);
+    }
 
     // Step C: MANDATORY GLOBAL REANALYSIS OF ENTIRE BUILDING STRUCTURE!
     const candidateEval = await evaluateFullBuildingStructuralSystem({
@@ -974,10 +1279,13 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
         sectionOverrides,
         rebarOverrides,
         slabThicknessOverridesMm: slabOverrides,
-        structuralRevision: iter + 1,
+        structuralRevision: before.system.structuralRevision + iter,
       },
       footingOverrides: { byId: footingOverrides, preference: activeFoundationPref },
       solver,
+      preferredSolverBackend: params.preferredSolverBackend,
+      sectionCapacityBackend: params.sectionCapacityBackend,
+      signal: params.signal,
     });
 
     // Guard: ensure previously passing members remain acceptable when running economy trims!
@@ -991,6 +1299,15 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     }
 
     current = candidateEval;
+    if (repairingFailedDesign) {
+      const candidateRank = repairRank(candidateEval, targetSet);
+      if (isBetterRepair(candidateRank, best.rank)) {
+        best = {
+          snapshot: candidateEval, rank: candidateRank, sections: { ...sectionOverrides },
+          rebar: { ...rebarOverrides }, slabs: { ...slabOverrides }, footings: { ...footingOverrides }, foundation: activeFoundationPref,
+        };
+      }
+    }
     const failedAfterIter =
       current.rccDesign.failedMemberCount +
       current.foundationDesign.footings.filter((f) => f.status === 'FAILED').length;
@@ -1017,6 +1334,7 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
       architecturalProtectionSha256: iterArchHash,
     });
 
+    if (params.repairOnly && current.designLifecycleStatus === 'DESIGN_CHECKS_PASSED') break;
     if (targetSet) {
       const targetStillFailing = current.defects.some((d) => targetSet.has(d.physicalMemberId));
       if (!targetStillFailing) break;
@@ -1025,18 +1343,27 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     }
   }
 
+  if (repairingFailedDesign) {
+    current = best.snapshot;
+    sectionOverrides = best.sections;
+    rebarOverrides = best.rebar;
+    slabOverrides = best.slabs;
+    footingOverrides = best.footings;
+    activeFoundationPref = best.foundation;
+  }
+
   const postArchSha256 = canonicalBuildingHash(params.building);
   const archProtected = preArchSha256 === postArchSha256;
 
   const hasArchClashError = current.system.clashes.some((c) => c.severity === 'ERROR');
   let status: StructuralOptimizationResult['status'];
-  if (current.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' && current.rccDesign.allPassed) {
-    status = 'INPUT_REVIEW_REQUIRED';
-  } else if (
-    current.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE' ||
-    current.rccDesign.unsupportedMemberCount > 0
-  ) {
+  if (current.designLifecycleStatus === 'UNSUPPORTED_REQUIRED_CHECK') {
     status = 'UNSUPPORTED_SCOPE';
+  } else if (current.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' && current.rccDesign.allPassed) {
+    status = 'INPUT_REVIEW_REQUIRED';
+  } else if (current.designLifecycleStatus === 'INPUT_REVIEW_REQUIRED' &&
+             current.rccDesign.allPassed && current.foundationDesign.allPassed) {
+    status = 'INPUT_REVIEW_REQUIRED';
   } else if (
     archProtected &&
     current.rccDesign.allPassed &&
@@ -1071,6 +1398,7 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
     rebarOverridesApplied: rebarOverrides,
     slabOverridesApplied: slabOverrides,
     footingOverridesApplied: footingOverrides,
+    foundationPreferenceApplied: activeFoundationPref,
     deltaSummary: {
       defectsResolved: Math.max(0, before.criticalDefectCount - current.criticalDefectCount),
       concreteDeltaM3: Number(

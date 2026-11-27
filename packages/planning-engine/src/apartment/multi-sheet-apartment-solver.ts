@@ -2682,6 +2682,7 @@ export function solveMultiSheetApartmentProject(
     readonly skipComplianceGate?: boolean;
     readonly complianceAttempt?: number;
     readonly areaEnvelopeScale?: number;
+    readonly rectangleDepthMm?: number;
     readonly areaScaleAxis?: 'BOTH' | 'RUN';
     readonly unitGrossAreasMm2?: readonly number[];
   },
@@ -2813,6 +2814,67 @@ export function solveMultiSheetApartmentProject(
     && specifiedUnits.every(unit => unit.targetCarpetSqFt && unit.targetCarpetSqFt > 0)
     ? specifiedUnits.reduce((total, unit) => total + (unit.targetCarpetSqFt ?? 0), 0)
     : undefined;
+  // Try the same measured per-unit allocation used for mandatory targets before
+  // filling a rectangular envelope. Publish it only if every unit and the
+  // architectural gates pass. An infeasible advisory program keeps its fallback.
+  if (!recovery && !irregularSite && !config.requireAreaTargets && completeCarpetTarget
+      && specifiedUnits.some(unit => unit.targetCarpetSqFt !== specifiedUnits[0]?.targetCarpetSqFt)) {
+    try {
+      const sizingConfig = { ...rawConfig, requireAreaTargets: true };
+      let fitted = solveMultiSheetApartmentProject(sizingConfig);
+      const isFitted = (candidate: MultiSheetApartmentResult) => {
+        const floors = candidate.schedule.floorAreas;
+        return floors?.length && floors.every(floor => floor.units.length === config.flatsPerFloor
+          && floor.units.every(unit => unit.target?.status === 'ACHIEVED'))
+          && candidate.building.complianceRating?.passed
+          && !generationBlockingFindings(candidate.building, candidate.validationReport).length;
+      };
+      if (isFitted(fitted)) {
+        const plate = fitted.schedule.floorAreas![0]!;
+        // Re-solve the program at each depth and retain only measured improvements.
+        const unitGrossAreasMm2 = plate.units.map(unit => unit.builtUpMm2);
+        const tryDepth = (depth: number) => {
+          try {
+            const candidate = solveMultiSheetApartmentProject(sizingConfig, undefined, {
+              rectangleDepthMm: depth, complianceAttempt: 1, unitGrossAreasMm2,
+            });
+            const area = candidate.schedule.floorAreas?.[0];
+            const best = fitted.schedule.floorAreas![0]!;
+            if (area && area.grossMm2 < best.grossMm2 && area.voidMm2 <= best.voidMm2 && isFitted(candidate)) {
+              fitted = candidate;
+              return true;
+            }
+          } catch { /* Continue from the last feasible plan. */ }
+          return false;
+        };
+        let rejectedDepth = 0;
+        let acceptedDepth = permissibleEnvelope.h;
+        for (const fraction of [1, 0.5, 0.25, 0.125]) {
+          const depth = snap10((plate.grossMm2 - fraction * plate.voidMm2) / permissibleEnvelope.w);
+          if (depth <= 0 || depth >= permissibleEnvelope.h) continue;
+          if (tryDepth(depth)) {
+            acceptedDepth = depth;
+            break;
+          }
+          rejectedDepth = depth;
+        }
+        // Probe the interval between the last two results. Feasibility can be
+        // discontinuous, so publish only a candidate that passes a full replay.
+        for (let attempt = 0; rejectedDepth > 0 && acceptedDepth - rejectedDepth > 20 && attempt < 4; attempt++) {
+          const depth = snap10((rejectedDepth + acceptedDepth) / 2);
+          if (tryDepth(depth)) acceptedDepth = depth;
+          else rejectedDepth = depth;
+        }
+        const brief = fitted.building.metadata.generationBrief!;
+        onStage?.('UNIT_SPATIAL_SLICING');
+        onStage?.('WALL_AND_OPENING_TOPOLOGY');
+        onStage?.('COLUMN_AND_BEAM_GRID');
+        return { ...fitted, config: { ...fitted.config, requireAreaTargets: rawConfig.requireAreaTargets },
+          building: { ...fitted.building, metadata: { ...fitted.building.metadata,
+            generationBrief: { ...brief, requireAreaTargets: rawConfig.requireAreaTargets } } } };
+      }
+    } catch { /* Evaluate the normal advisory program when no fully fitted candidate is available. */ }
+  }
   const sizeAdvisoryRectangle = !irregularSite && !config.requireAreaTargets && recovery?.areaEnvelopeScale !== undefined;
   const aggregateCarpetTargetSqFt = (config.requireAreaTargets || fitAdvisoryIrregularArea || sizeAdvisoryRectangle)
     ? completeCarpetTarget : undefined;
@@ -2907,6 +2969,11 @@ export function solveMultiSheetApartmentProject(
   if (envelope.w < minSpanReq || envelope.h < minRunReq) throw new Error('The requested setbacks leave too little buildable space for this apartment topology. Increase the plot or reduce the program.');
 
   onStage?.('UNIT_SPATIAL_SLICING');
+
+  if (recovery?.rectangleDepthMm && !irregularSite && recovery.rectangleDepthMm < envelope.h) {
+    envelope = { ...envelope, y: envelope.y + snap10((envelope.h - recovery.rectangleDepthMm) / 2),
+      h: recovery.rectangleDepthMm };
+  }
 
   // 2. Select the architectural organization.
   //

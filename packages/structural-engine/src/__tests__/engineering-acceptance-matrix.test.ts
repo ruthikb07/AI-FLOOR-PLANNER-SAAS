@@ -19,6 +19,7 @@ import {
   exportStructuralEngineeringDxf,
   exportStructuralIfc4Step,
   optimizeStructuralSystemWithGlobalReanalysis,
+  regenerateStructuralDesign,
   snapshotDrawingApprovalStatus,
   type AnalyticalFrameModel,
   type ReviewedStructuralInputs,
@@ -283,11 +284,61 @@ const REVIEWED_INPUTS_FEASIBLE: ReviewedStructuralInputs = {
     foundationDepthBelowGroundM: 1.8,
     soilUnitWeightKnM3: 19.0,
     allowableSettlementMm: 40,
+    subgradeModulusKnM3: 24_000,
     reportReference: 'GEOTECH-MATRIX-200KPA',
   },
 };
 
 describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matrix & Local Runtime Independence', () => {
+  const bungalow = makeBuildingFixture({
+    id: 'regeneration-bungalow',
+    name: 'Single-storey bungalow',
+    storeys: [{ level: 0, heightMm: 3300, gridXsMm: [0, 4200, 8400], gridYsMm: [0, 3800, 7600] }],
+  });
+
+  it('stops without redesign when the first bungalow revision passes or the site report is missing', async () => {
+    const passing = await regenerateStructuralDesign({ building: bungalow, inputs: REVIEWED_INPUTS_FEASIBLE });
+    expect(passing.regeneration).toMatchObject({
+      status: 'CHECKS_PASSED_WITHIN_SCOPE', initialFindings: 0, remainingFindings: 0, revisionsAnalyzed: 1, blockers: [],
+    });
+    expect(snapshotDrawingApprovalStatus(passing.snapshot)).toBe('PRELIMINARY_FOR_ENGINEER_REVIEW');
+
+    const missingSoil = await regenerateStructuralDesign({
+      building: bungalow,
+      inputs: { ...REVIEWED_INPUTS_FEASIBLE, geotechnical: undefined },
+    });
+    expect(missingSoil.regeneration).toMatchObject({
+      status: 'INPUT_REVIEW_REQUIRED', revisionsAnalyzed: 1, blockers: [expect.stringContaining('reviewed site report')],
+    });
+  }, 20_000);
+
+  it('honors cancellation before starting any regeneration candidate', async () => {
+    const reason = new Error('The architectural revision changed.');
+    await expect(regenerateStructuralDesign({
+      building: bungalow, inputs: REVIEWED_INPUTS_FEASIBLE, signal: AbortSignal.abort(reason),
+    })).rejects.toBe(reason);
+  });
+
+  it('regenerates a distinct two-storey model until all applicable checks pass', async () => {
+    const building = makeBuildingFixture({
+      id: 'regeneration-two-storey',
+      name: 'Two-storey residential building with longer spans',
+      storeys: [0, 1].map(level => ({
+        level, heightMm: 3150, gridXsMm: [0, 5600], gridYsMm: [0, 5200],
+      })),
+    });
+    const { snapshot, regeneration } = await regenerateStructuralDesign({
+      building,
+      inputs: { ...REVIEWED_INPUTS_FEASIBLE, floorFinishKnM2: 8 },
+    });
+    expect(regeneration.initialFindings, JSON.stringify(regeneration)).toBeGreaterThan(0);
+    expect(regeneration.revisionsAnalyzed).toBeGreaterThan(1);
+    expect(regeneration).toMatchObject({ status: 'CHECKS_PASSED_WITHIN_SCOPE', remainingFindings: 0, blockers: [] });
+    expect(snapshot.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+    expect(snapshot.system.sourceArchitecturalSha256).toBe(canonicalBuildingHash(building));
+    expect(snapshotDrawingApprovalStatus(snapshot)).toBe('PRELIMINARY_FOR_ENGINEER_REVIEW');
+  }, 30_000);
+
   it('Executes all 12 independently dimensioned structural projects locally via AWATIF_CPP_WASM with Gemini disabled', async () => {
     const prevGeminiKey = process.env.GEMINI_API_KEY;
     process.env.GEMINI_API_KEY = '';
@@ -573,6 +624,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         REVIEWED_INPUTS_FEASIBLE,
       );
       expect(p4.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p4.snap.rccDesign.allPassed).toBe(true);
+      expect(p4.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p4.rec.exportApprovalStatus).toBe('PRELIMINARY_FOR_ENGINEER_REVIEW');
 
       // -----------------------------------------------------------------------
@@ -594,6 +647,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         REVIEWED_INPUTS_FEASIBLE,
       );
       expect(p5.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p5.snap.rccDesign.allPassed).toBe(true);
+      expect(p5.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p5.snap.system.physicalModel.stairWaists.length).toBe(3);
 
       // -----------------------------------------------------------------------
@@ -616,6 +671,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         REVIEWED_INPUTS_FEASIBLE,
       );
       expect(p6.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p6.snap.rccDesign.allPassed).toBe(true);
+      expect(p6.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(
         p6.snap.system.physicalModel.beams.some((b) => b.analyticalElementIndices.length === 2),
       ).toBe(true);
@@ -642,6 +699,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         REVIEWED_INPUTS_FEASIBLE,
       );
       expect(p7.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p7.snap.rccDesign.allPassed).toBe(true);
+      expect(p7.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p7.snap.storeyDriftChecks.every((d) => d.isCompliant)).toBe(true);
 
       // -----------------------------------------------------------------------
@@ -666,7 +725,11 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         }),
         REVIEWED_INPUTS_FEASIBLE,
       );
-      expect(p8.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p8.snap.designLifecycleStatus).toBe('UNSUPPORTED_REQUIRED_CHECK');
+      expect(p8.snap.foundationDesign.status).toBe('PRELIMINARY_GRAVITY_TRANSFER');
+      expect(p8.snap.foundationDesign.allPassed).toBe(false);
+      expect(p8.snap.rccDesign.allPassed).toBe(true);
+      expect(p8.snap.loadTakeoff.unassignedGravityKnByCase!.DL).toBeGreaterThan(0);
 
       // -----------------------------------------------------------------------
       // PROJECT 9: Building with Varying Storey Heights (4.5m Commercial + 3.15m Upper)
@@ -685,6 +748,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         REVIEWED_INPUTS_FEASIBLE,
       );
       expect(p9.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p9.snap.rccDesign.allPassed).toBe(true);
+      expect(p9.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
 
       // -----------------------------------------------------------------------
       // PROJECT 10: Deliberately Unstable Structure (Unrestrained Mechanism -> Rejected!)
@@ -801,6 +866,8 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
       });
       expect(p11Remediated.before.designLifecycleStatus).toBe('DESIGN_FAILED');
       expect(p11Remediated.after.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
+      expect(p11Remediated.after.rccDesign.allPassed).toBe(true);
+      expect(p11Remediated.after.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p11Remediated.architecturalGeometryProtected).toBe(true);
       expect(snapshotDrawingApprovalStatus(p11Remediated.after)).toBe('PRELIMINARY_FOR_ENGINEER_REVIEW');
 

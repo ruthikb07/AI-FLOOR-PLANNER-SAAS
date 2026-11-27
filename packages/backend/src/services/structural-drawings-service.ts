@@ -126,7 +126,7 @@ export class StructuralDrawingsService {
       });
     };
 
-    function plotLabeler(page: ReturnType<typeof pdfDoc.addPage>, font: PDFFont, size: number) {
+    function plotLabeler(page: ReturnType<typeof pdfDoc.addPage>, font: PDFFont, size: number, rightBoundary = pageW - 36) {
       const occupied: { left: number; bottom: number; right: number; top: number }[] = [];
       let omitted = 0;
       return {
@@ -150,7 +150,7 @@ export class StructuralDrawingsService {
               right: targetX + width + 1,
               top: targetY + size + 1,
             };
-            if (box.left < 36 || box.right > pageW - 36 || box.bottom < 52 || box.top > pageH - 104) continue;
+            if (box.left < 36 || box.right > rightBoundary || box.bottom < 52 || box.top > pageH - 104) continue;
             if (
               occupied.some(
                 (item) =>
@@ -188,6 +188,65 @@ export class StructuralDrawingsService {
       };
     }
 
+    // Sheet 0 (S-100): Carbon 4 Executive Engineering Analysis, Equilibrium, Load Paths, Drift & Defect Register
+    {
+      const p0 = pdfDoc.addPage([pageW, pageH]);
+      addHeaderAndBorder(p0, 'S-100', 'STRUCTURAL ANALYSIS, EQUILIBRIUM, LOAD PATHS, DRIFT & DEFECT SUMMARY');
+      const { system: sys0, loadTakeoff: lt0, storeyDriftChecks: dr0, defects: def0 } = snapshot;
+      const combos0 = Object.entries(snapshot.solveEnvelope.combinationResults);
+      const maxEqForce = combos0.length ? Math.max(...combos0.map(([, c]) => c.equilibrium.maxForceResidualKn)) : 0;
+      const maxEqMom = combos0.length ? Math.max(...combos0.map(([, c]) => c.equilibrium.maxMomentResidualKnM)) : 0;
+      const governingDrift = dr0.reduce<typeof dr0[number] | undefined>(
+        (worst, current) => !worst || current.utilizationRatio > worst.utilizationRatio ? current : worst,
+        undefined,
+      );
+      const pathAudit = lt0.slabLoadPathAudit;
+      const omitted = lt0.unassignedGravityKnByCase;
+      const massAudit = snapshot.detailingAndBoq.quantities.massReconciliationAudit;
+
+      const summaryLines = [
+        `1. PROVENANCE & LIFECYCLE: Status=${snapshot.carbon4LifecycleStatus ?? snapshot.designLifecycleStatus} (${snapshot.designLifecycleStatus}) | Approval=${approvalStatus}`,
+        `   Solver Backend(s): ${snapshotSolverBackends(snapshot)} | Section Capacity Engine: ${snapshot.sectionCapacityBackend ?? 'RH_IS456_ANALYTICAL'}`,
+        `   Canonical Architectural Revision: v${sys0.sourceArchitecturalRevision} (SHA-256: ${sys0.sourceArchitecturalSha256}) | Structural Revision: r${sys0.structuralRevision}`,
+        `2. MODEL TOPOLOGY: ${sys0.storeys.length} Storeys | ${sys0.nodes.length} Analytical 6-DOF Nodes | ${sys0.elements.length} 3D Frame FE | ${sys0.physicalModel.columns.length} Physical Cols | ${sys0.physicalModel.beams.length} Physical Beams | ${sys0.physicalModel.slabs.length} Slabs`,
+        `3. GRAVITY & LATERAL LOAD TAKE-OFF (${Object.keys(snapshot.solveEnvelope.loadCaseResults).length} Load Cases, ${combos0.length} Factored/SLS Combinations):`,
+        `   Member SW=${lt0.memberSelfWeightKn.toFixed(1)} kN | Slab SW=${lt0.slabSelfWeightKn.toFixed(1)} kN | Finishes=${lt0.floorFinishLoadKn.toFixed(1)} kN | Masonry/Parapet=${lt0.masonryWallLoadKn.toFixed(1)} kN | Stairs=${lt0.staircaseDeadLoadKn.toFixed(1)} kN`,
+        `   Total DL+SDL=${lt0.totalDeadPlusSdlKn.toFixed(1)} kN | Occupancy LL=${lt0.totalOccupancyLiveKn.toFixed(1)} kN | Roof LL=${lt0.totalRoofLiveKn.toFixed(1)} kN | Wind Vbx=${lt0.windBaseShearXKn.toFixed(1)} kN, Vby=${lt0.windBaseShearYKn.toFixed(1)} kN`,
+        `   Slab Load Paths: 1-Way=${pathAudit?.verifiedOneWayOppositeEdges.length ?? 0}, 2-Way Tributary=${pathAudit?.verifiedTwoWayYieldLineIs456.length ?? 0}, Cantilever=${pathAudit?.verifiedCantileverRootEdge.length ?? 0}, Unresolved=${lt0.slabLoadPaths?.preliminaryDistribution.length ?? 0}, No Support=${lt0.slabLoadPaths?.missingSupport.length ?? 0}`,
+        ...(omitted && Object.values(omitted).some(force => force > 0) ? [
+          `   UNASSIGNED GRAVITY: DL=${omitted.DL.toFixed(1)} kN | SDL=${omitted.SDL.toFixed(1)} kN | LL=${omitted.LL.toFixed(1)} kN. Frame forces and quantities are diagnostic.`,
+        ] : []),
+        ...(snapshot.foundationDesign.missingReviewedInputs?.length ? [
+          `   REVIEWED FOUNDATION INPUTS REQUIRED: ${snapshot.foundationDesign.missingReviewedInputs.join(', ')}.`,
+        ] : []),
+        `4. GLOBAL EQUILIBRIUM & MODAL SEISMIC AUDIT: Max |Sum F + R| = ${maxEqForce.toExponential(3)} kN | Max |Sum M + r x R| = ${maxEqMom.toExponential(3)} kN.m`,
+        `   Modal T1 = ${lt0.seismicSummary?.analyticalFundamentalPeriodSec.toFixed(3) ?? 'N/A'} s | IS 1893 Design Base Shear VbX = ${lt0.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0.0'} kN, VbY = ${lt0.seismicSummary?.designBaseShearVbYKn.toFixed(1) ?? '0.0'} kN`,
+        governingDrift
+          ? `5. STOREY DRIFT (unit lateral cases): ${dr0.filter((d) => d.isCompliant).length}/${dr0.length} storeys within limit | Governing drift ${Math.max(governingDrift.maxDriftXMm, governingDrift.maxDriftYMm).toFixed(2)} mm | Limit ${governingDrift.allowableDriftMm.toFixed(2)} mm | Utilization ${governingDrift.utilizationRatio.toFixed(3)}`
+          : '5. STOREY DRIFT: No unit lateral drift results.',
+        `6. REINFORCEMENT & BOQ RECONCILIATION: Net Concrete=${snapshot.detailingAndBoq.quantities.netConcreteVolumeM3} m3 | Net Designed Steel=${massAudit?.netDesignedSteelMassKg ?? snapshot.detailingAndBoq.quantities.totalSteelWeightKg} kg + Lap/Splice=${massAudit?.lapAndSpliceSteelMassKg ?? 0} kg = ${snapshot.detailingAndBoq.quantities.totalSteelWeightKg} kg (Reconciled=${String(massAudit?.isReconciled ?? true)}, Discrepancy=${massAudit?.maxReconciliationDiscrepancyKg ?? 0} kg)`,
+        `7. DEFECT, WARNING & OMISSION REGISTER (${def0.length} Total Findings, ${snapshot.criticalDefectCount} Critical/Major, Peak Check Utilization=${snapshot.maxMemberUtilization}):`,
+        ...(def0.length === 0
+          ? ['   [NONE] Zero structural defects or architectural clashes detected within evaluated scope.']
+          : def0.slice(0, 18).map(
+              (d, idx) =>
+                `   [${idx + 1}] ${d.severity} ${d.memberCategory} ${d.memberId} (${d.storey}, ${d.governingCombination}): Util=${d.utilizationRatio} | ${d.explanation}`,
+            )),
+        ...(def0.length > 18 ? [`   ... plus ${def0.length - 18} additional finding(s) in JSON engineering report.`] : []),
+      ];
+
+      for (const [idx, line] of summaryLines.entries()) {
+        p0.drawText(printableText(line, fontReg), {
+          x: 40,
+          y: pageH - 108 - idx * 14.5,
+          size: 7.4,
+          font: line.match(/^[1-7]\./) ? fontBold : fontReg,
+          color: rgb(0.1, 0.14, 0.22),
+          maxWidth: pageW - 80,
+        });
+      }
+    }
+
     // Sheet 1: Foundation Layout, Footing Section & Column Grid
     const p1 = pdfDoc.addPage([pageW, pageH]);
     addHeaderAndBorder(p1, 'S-101', 'FOUNDATION LAYOUT, SECTION DETAIL & COLUMN GRID');
@@ -215,16 +274,9 @@ export class StructuralDrawingsService {
         borderWidth: 1.2,
         color: rgb(0.93, 0.97, 0.95),
       });
-      p1.drawText(`${ft.footingId} [${ft.scheduleGroupMark}] (${ft.lengthXMm}x${ft.widthYMm})`, {
-        x: mapX(ft.centerXMm) - fw / 2 + 3,
-        y: mapY(ft.centerYMm) - fh / 2 + 4,
-        size: 6.5,
-        font: fontReg,
-        color: rgb(0.1, 0.3, 0.2),
-      });
     }
 
-    const stackLabels = plotLabeler(p1, fontBold, 7.5);
+    const foundationLabels = plotLabeler(p1, fontBold, 7.5, 620);
     for (const stk of stacks) {
       const cw = Math.max(6, stk.columnWidthMm * scale);
       const cd = Math.max(6, stk.columnDepthMm * scale);
@@ -235,9 +287,15 @@ export class StructuralDrawingsService {
         height: cd,
         color: rgb(0.15, 0.22, 0.35),
       });
-      stackLabels.label(stk.stackId, mapX(stk.xMm) + cw / 2, mapY(stk.yMm));
     }
-    stackLabels.note('See consolidated column schedule for all stack marks.');
+    for (const stk of stacks) {
+      foundationLabels.label(stk.stackId, mapX(stk.xMm) + Math.max(3, stk.columnWidthMm * scale / 2), mapY(stk.yMm));
+    }
+    for (const ft of snapshot.foundationDesign.footings) {
+      foundationLabels.label(ft.footingId, mapX(ft.centerXMm) - ft.lengthXMm * scale / 2,
+        mapY(ft.centerYMm) - ft.widthYMm * scale / 2);
+    }
+    foundationLabels.note('See the foundation and column schedules for all marks and dimensions.');
 
     // Right side of S-101: Typical Foundation & Reinforcement Cross-Section Detail!
     p1.drawText(
@@ -496,7 +554,7 @@ export class StructuralDrawingsService {
       'CONSOLIDATED BAR BENDING SCHEDULE (BBS) & DEDUPLICATED BOQ',
       detailingAndBoq.bbsEntries.map(
         (row) =>
-          `${row.barMark} | ${row.memberId} | ${row.memberCategory} | T${row.barDiaMm} | ${row.memberCount}x${row.barsPerMember}=${row.totalBars} bars | Cut ${row.cuttingLengthMm} mm | ${row.totalLengthM} m | ${row.totalWeightKg} kg | ${row.description}`,
+          `${row.barMark} | ${row.memberId} | ${row.memberCategory} | T${row.barDiaMm} | ${row.memberCount}x${row.barsPerMember}=${row.totalBars} bars | Cut ${row.cuttingLengthMm} mm | ${row.totalLengthM} m | ${row.totalWeightKg.toFixed(2)} kg | ${row.description}`,
       ),
       `Net Concrete: ${boq.netConcreteVolumeM3} m3 (Joint Deduction: ${boq.jointAndSlabIntersectionDeductionM3} m3) | Total Rebar: ${boq.totalSteelWeightKg} kg (${boq.totalSteelTonnes} MT) | Formwork: ${boq.formworkAreaM2} m2 | Excavation: ${boq.excavationVolumeM3} m3`,
     );

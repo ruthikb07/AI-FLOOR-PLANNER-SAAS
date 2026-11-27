@@ -1,0 +1,7 @@
+# Structural analysis report specification
+
+The JSON report schema `RH_PLANNER_CARBON4_STRUCTURAL_REPORT_V1` carries canonical project, building and revision IDs, architectural SHA-256, structural-model fingerprint and supplied reviewed input fingerprint. It stores analytical nodes and elements, case and combination end actions and extrema, nodal displacements, support reactions, solver diagnostics, reaction equilibrium and seismic drift. The case route supplies full station results. JSON includes component-level RCC and foundations, unsupported checks, canonical reinforcement, BBS and quantities. Legacy service callers can omit reviewed inputs. The HTTP report path supplies the inputs retained with the evaluation.
+
+PDF, JSON, IFC, DXF and BBS use the same evaluation snapshot. Drawings use `PRELIMINARY_FOR_ENGINEER_REVIEW` for a passing internal scope and `DIAGNOSTIC_NOT_FOR_CONSTRUCTION` for other cases. The automated lifecycle does not assign engineer approval from a reference string. Optimization returns its before/after states and fresh reanalysis history through its own API response.
+
+Full clause validation across all code provisions, final model sign-off, licensed certification and certified shop drawings remain outside acceptance. Some analysis methods generate only diagnostic artifacts. Use the numerical result and engineering lifecycle to determine what further checks are needed.

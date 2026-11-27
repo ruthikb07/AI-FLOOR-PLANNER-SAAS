@@ -123,7 +123,7 @@ export interface CoordinatedMepEngineeringPlan {
   readonly schemaVersion: 'RH-MEP-3.0';
   readonly status: 'COORDINATION_PROPOSAL_NOT_CERTIFIED';
   readonly floors: readonly FloorMepEngineeringPlan[];
-  /** Shaft stacks continuous from the top typical floor to the stilt collector line. */
+  /** Proposed shafts and their connection to the stilt collector. */
   readonly verticalStacks: readonly {
     readonly id: string;
     readonly position: Point2D;
@@ -131,6 +131,13 @@ export interface CoordinatedMepEngineeringPlan {
     readonly depthMm: number;
     readonly floorIds: readonly string[];
     readonly terminatesAtStiltCollector: boolean;
+    readonly stiltConnectionDiagnostic?: {
+      readonly status: 'INFEASIBLE';
+      readonly code: 'PROTECTED_OPEN_TO_SKY' | 'NO_CLEAR_COLLECTOR_ROUTE' | 'NO_STILT_FLOOR';
+      readonly floorId?: string;
+      readonly protectedRoomId?: string;
+      readonly message: string;
+    };
   }[];
   readonly drainageEconomy?: DrainageEconomySummary;
   readonly summary: Readonly<Record<string, number>>;

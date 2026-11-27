@@ -15,10 +15,17 @@ import {
   stepList,
   stepReal,
   stepString,
+  stableValueHash,
   type StepId,
 } from '@ai-floor-planner/core';
 import { elementLengthAndLambda } from '../math/frame-mechanics.js';
-import type { FullStructuralEvaluationSnapshot } from '../optimization/defect-and-optimizer.js';
+import type { FullStructuralEvaluationSnapshot, StructuralRegenerationSummary } from '../optimization/defect-and-optimizer.js';
+import type { ReviewedStructuralInputs } from '../loads/indian-load-assembler.js';
+import type { AnalyticalSolveEnvelope } from '../types/solver-types.js';
+import {
+  CARBON4_SECTION_CAPABILITY_REGISTRY,
+  CARBON4_SOLVER_CAPABILITY_REGISTRY,
+} from '../capabilities/solver-capability-registry.js';
 
 export function snapshotSolverBackends(snapshot: FullStructuralEvaluationSnapshot): string {
   const results = [
@@ -105,6 +112,7 @@ export function exportStructuralEngineeringDxf(
   const entities: string[] = [];
 
   const layers = [
+    ['A-GRID-REF', 9],
     ['S-GRID', 8],
     ['S-FOOTING', 3],
     ['S-COLS', 1],
@@ -265,7 +273,7 @@ export function exportStructuralEngineeringDxf(
         xOff3,
         rowY,
         130,
-        `${entry.barMark} | ${entry.memberId} | T${entry.barDiaMm} | ${entry.memberCount} | ${entry.totalBars} | ${entry.cuttingLengthMm} | ${entry.totalLengthM}m | ${entry.totalWeightKg}kg | ${entry.description}`,
+        `${entry.barMark} | ${entry.memberId} | T${entry.barDiaMm} | ${entry.memberCount} | ${entry.totalBars} | ${entry.cuttingLengthMm} | ${entry.totalLengthM}m | ${entry.totalWeightKg.toFixed(2)}kg | ${entry.description}`,
       ),
     );
   }
@@ -720,4 +728,116 @@ export function exportStructuralIfc4Step(
   return new TextDecoder().decode(
     step.encode('RH Planner IFC4 structural exchange', projectName + '.ifc'),
   );
+}
+
+/**
+ * Exports a complete, revision-bound Carbon 4 Engineering Analysis, Design, Reinforcement & Audit JSON Report (`Section 07`).
+ */
+export function exportStructuralEngineeringJsonReport(
+  snapshot: FullStructuralEvaluationSnapshot,
+  projectName = 'RH Planner Structural Project',
+  reviewedInputs?: ReviewedStructuralInputs,
+  regeneration?: StructuralRegenerationSummary,
+): string {
+  const { system, loadTakeoff, solveEnvelope, storeyDriftChecks, rccDesign, foundationDesign, detailingAndBoq, defects, unsupportedChecks } = snapshot;
+  function reportCases(cases: AnalyticalSolveEnvelope['combinationResults']) {
+    return Object.fromEntries(Object.entries(cases).map(([id, { memberForces, ...result }]) => [
+      id,
+      {
+        ...result,
+        memberForces: memberForces.map(({ elementId, localEndActionsKnM, extrema }) => ({
+          elementId, localEndActionsKnM, extrema,
+        })),
+      },
+    ]));
+  }
+  const comboDiagnostics = Object.fromEntries(
+    Object.entries(solveEnvelope.combinationResults).map(([id, res]) => [
+      id,
+      {
+        name: res.name,
+        executionBackend: res.diagnostics.executionBackend,
+        solveDurationMs: res.diagnostics.solveDurationMs,
+        equilibrium: res.equilibrium,
+      },
+    ]),
+  );
+
+  const report = {
+    reportSchema: 'RH_PLANNER_CARBON4_STRUCTURAL_REPORT_V1',
+    generatedAt: new Date().toISOString(),
+    project: {
+      projectName,
+      projectId: system.projectId,
+      buildingId: system.buildingId,
+      sourceArchitecturalRevision: system.sourceArchitecturalRevision,
+      sourceArchitecturalSha256: system.sourceArchitecturalSha256,
+      structuralRevision: system.structuralRevision,
+      structuralModelFingerprint: stableValueHash(system),
+      engineeringInputsFingerprint: reviewedInputs ? stableValueHash(reviewedInputs) : null,
+    },
+    provenanceAndCapabilities: {
+      activeSolverBackends: snapshotSolverBackends(snapshot),
+      activeSectionCapacityBackend: snapshot.sectionCapacityBackend ?? 'RH_IS456_ANALYTICAL',
+      solverCapabilityRegistry: CARBON4_SOLVER_CAPABILITY_REGISTRY,
+      sectionCapabilityRegistry: CARBON4_SECTION_CAPABILITY_REGISTRY,
+    },
+    lifecycleAndApproval: {
+      designLifecycleStatus: snapshot.designLifecycleStatus,
+      carbon4LifecycleStatus: snapshot.carbon4LifecycleStatus ?? snapshot.designLifecycleStatus,
+      drawingApprovalStatus: snapshotDrawingApprovalStatus(snapshot),
+      disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER,
+    },
+    modelSummary: {
+      storeys: system.storeys,
+      analyticalNodeCount: system.nodes.length,
+      analyticalElementCount: system.elements.length,
+      physicalColumnCount: system.physicalModel.columns.length,
+      physicalBeamCount: system.physicalModel.beams.length,
+      physicalSlabCount: system.physicalModel.slabs.length,
+      physicalStairWaistCount: system.physicalModel.stairWaists.length,
+      physicalFoundationCount: foundationDesign.physicalFoundations.length,
+    },
+    reviewedInputs: reviewedInputs ?? null,
+    regeneration,
+    analyticalGeometry: { nodes: system.nodes, elements: system.elements },
+    analysisResults: {
+      ...solveEnvelope,
+      loadCaseResults: reportCases(solveEnvelope.loadCaseResults),
+      combinationResults: reportCases(solveEnvelope.combinationResults),
+    },
+    loadsAndLoadPaths: {
+      loadTakeoff,
+      combinationEquilibriumAudit: comboDiagnostics,
+    },
+    seismicAndDriftChecks: {
+      seismicSummary: loadTakeoff.seismicSummary ?? null,
+      storeyDriftChecks,
+    },
+    rccDesignSummary: {
+      allPassed: rccDesign.allPassed,
+      failedMemberCount: rccDesign.failedMemberCount,
+      unsupportedMemberCount: rccDesign.unsupportedMemberCount,
+      columns: rccDesign.columns,
+      beams: rccDesign.beams,
+      slabs: rccDesign.slabs,
+      stairs: rccDesign.stairs,
+    },
+    foundationDesignSummary: foundationDesign,
+    reinforcementAndQuantities: {
+      quantities: detailingAndBoq.quantities,
+      massReconciliationAudit: detailingAndBoq.quantities.massReconciliationAudit ?? null,
+      canonicalReinforcement: detailingAndBoq.canonicalReinforcement ?? null,
+      bbsEntries: detailingAndBoq.bbsEntries,
+    },
+    defectWarningAndUnsupportedRegister: {
+      criticalOrMajorCount: snapshot.criticalDefectCount,
+      maxMemberUtilization: snapshot.maxMemberUtilization,
+      unsupportedChecks,
+      architecturalClashes: system.clashes,
+      defects,
+    },
+  };
+
+  return `${JSON.stringify(report)}\n`;
 }

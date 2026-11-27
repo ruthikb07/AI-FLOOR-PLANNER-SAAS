@@ -102,6 +102,8 @@ export interface FoundationDesignSummary {
   readonly status:
     | 'DESIGNED_VERIFIED'
     | 'DESIGN_FAILED'
+    | 'PRELIMINARY_GEOTECHNICAL'
+    | 'PRELIMINARY_GRAVITY_TRANSFER'
     | 'MISSING_GEOTECHNICAL_INPUT'
     | 'UNSUPPORTED_FOUNDATION_TYPE';
   readonly analysisFormulation: 'RIGID_CONVENTIONAL_EQUILIBRIUM' | 'NONE' | 'UNSUPPORTED';
@@ -111,6 +113,7 @@ export interface FoundationDesignSummary {
   readonly physicalFoundations: readonly PhysicalFoundation[];
   readonly allPassed: boolean;
   readonly infeasibilityDiagnostics: readonly string[];
+  readonly missingReviewedInputs?: readonly string[];
   readonly ruleChecks: readonly CodeRuleEvaluation[];
 }
 
@@ -274,6 +277,11 @@ export function runFoundationDesign(
       physicalFoundations: [],
       allPassed: false,
       infeasibilityDiagnostics: [],
+      missingReviewedInputs: [
+        ...(!(geo?.safeBearingCapacityKPa && geo.safeBearingCapacityKPa > 20) ? ['safeBearingCapacityKPa'] : []),
+        ...(!(geo?.foundationDepthBelowGroundM && geo.foundationDepthBelowGroundM > 0.3) ? ['foundationDepthBelowGroundM'] : []),
+        ...(!geo?.reportReference?.trim() ? ['reportReference'] : []),
+      ],
       ruleChecks: [
         createRuleEvaluation({
           ruleId: 'IS1904-SBC-REQUIRED',
@@ -325,11 +333,12 @@ export function runFoundationDesign(
     safeBearingCapacityKPa: Number(effectiveSbcKPa.toFixed(1)),
   };
 
-  let rawFootings: FootingDesignRecord[] = [];
+  const rawFootings: FootingDesignRecord[] = [];
 
   if (pref === 'RIGID_RAFT') {
     rawFootings.push(
       designRigidMatRaft(
+        system,
         stacks,
         effectiveGeo,
         inputs.concreteGrade,
@@ -382,6 +391,7 @@ export function runFoundationDesign(
     if (pref === 'AUTO' && totalPadAreaM2 > 0.55 * bldgAreaM2 && stacks.length >= 4) {
       rawFootings.push(
         designRigidMatRaft(
+          system,
           stacks,
           effectiveGeo,
           inputs.concreteGrade,
@@ -460,20 +470,31 @@ export function runFoundationDesign(
     };
   });
 
-  const allPassed = footings.length > 0 && footings.every((f) => f.status === 'PASSED');
+  const checksPassed = footings.length > 0 && footings.every((f) => f.status === 'PASSED');
+  const isRaft = footings.some(f => f.typology === 'RIGID_RAFT');
+  const missingReviewedInputs = isRaft ? [
+    ...(!(geo.subgradeModulusKnM3 && geo.subgradeModulusKnM3 > 100) ? ['subgradeModulusKnM3'] : []),
+    ...(!(geo.allowableSettlementMm && geo.allowableSettlementMm > 0) ? ['allowableSettlementMm'] : []),
+    ...(!geo.bearingCapacityBasis ? ['bearingCapacityBasis'] : []),
+    ...(geo.waterTableDepthBelowGroundM === undefined ? ['waterTableDepthBelowGroundM'] : []),
+  ] : [];
+  const allPassed = checksPassed && missingReviewedInputs.length === 0;
   const infeasibilityDiagnostics = footings
     .map((f) => f.infeasibilityDiagnostic)
     .filter((d): d is string => Boolean(d));
 
   return {
-    status: allPassed ? 'DESIGNED_VERIFIED' : 'DESIGN_FAILED',
+    status: !checksPassed ? 'DESIGN_FAILED' : missingReviewedInputs.length ? 'PRELIMINARY_GEOTECHNICAL' : 'DESIGNED_VERIFIED',
     analysisFormulation: 'RIGID_CONVENTIONAL_EQUILIBRIUM',
     selectedStrategy: Array.from(new Set(footings.map((f) => f.typology))).join(' + '),
     geotechnicalInputs: effectiveGeo,
     footings,
     physicalFoundations: footings.map((f) => f.physicalFoundation),
     allPassed,
-    infeasibilityDiagnostics,
+    missingReviewedInputs,
+    infeasibilityDiagnostics: missingReviewedInputs.length
+      ? [...infeasibilityDiagnostics, `Raft verification requires reviewed values for ${missingReviewedInputs.join(', ')}.`]
+      : infeasibilityDiagnostics,
     ruleChecks: footings.flatMap((f) => f.ruleChecks),
   };
 }
@@ -689,7 +710,7 @@ function designIsolatedPadFooting(
     (ev.quMaxKPa * (lxMm / 1000) * shearSpanYM * 1000) / (lxMm * dEff),
   );
 
-  let ptX = (100 * astXReq) / (wyMm * dEff);
+  const ptX = (100 * astXReq) / (wyMm * dEff);
   let tauCOneWay = is456DesignShearStrengthTauCMPa(concreteGrade, ptX);
   if (tauOneWayMPa > tauCOneWay && !ov) {
     astXReq = Math.max(astXReq, 0.0035 * wyMm * dEff);
@@ -1299,6 +1320,7 @@ function designStripFootings(
 }
 
 function designRigidMatRaft(
+  system: SynthesizedStructuralSystem,
   stacks: readonly StackBaseInfo[],
   geo: GeotechnicalReviewedInputs,
   concreteGrade: ConcreteGrade,
@@ -1346,7 +1368,7 @@ function designRigidMatRaft(
     const iyAboutY = ((wyMm / 1000) * Math.pow(lxMm / 1000, 3)) / 12;
 
     let govSlsId = activeSls[0]?.[0] ?? 'SLS';
-    let qNetMax = 0, qNetMin = Infinity, qGrossMax = 0;
+    let qNetMax = -Infinity, qNetMin = Infinity, qGrossMax = 0, qGrossMin = Infinity;
     let pSlsGov = 0, mxSlsGov = 0, mySlsGov = 0;
     let eccMax = 0, minSlidingFos = 99, minOverturnFos = 99, effAreaMin = areaM2;
 
@@ -1358,15 +1380,16 @@ function designRigidMatRaft(
         sumPz += rx.pz;
         sumVx += rx.vx;
         sumVy += rx.vy;
-        const dxM = (s.xMm - cxMm) / 1000;
-        const dyM = (s.yMm - cyMm) / 1000;
-        mAboutX += rx.pz * dyM + rx.mx;
-        mAboutY += rx.pz * dxM + rx.my;
+        // Reactions and moments are in the solver's right-handed system.
+        const [x, y, z] = system.nodes[s.baseNodeIndex]!.positionM;
+        const dxM = x - cxMm / 1000;
+        const dyM = y + cyMm / 1000;
+        const dzM = z + geo.foundationDepthBelowGroundM;
+        mAboutX += rx.mx + dyM * rx.pz - dzM * rx.vy;
+        mAboutY += rx.my + dzM * rx.vx - dxM * rx.pz;
       }
-      mAboutX += sumVy * (thickMm / 1000);
-      mAboutY += sumVx * (thickMm / 1000);
 
-      const pSuper = Math.max(0, sumPz);
+      const pSuper = sumPz;
       const pNet = pSuper + netRaftSwKn;
       const pGross = pSuper + grossRaftPlusSoilKn;
 
@@ -1376,16 +1399,19 @@ function designRigidMatRaft(
       const q1 = pNet / areaM2 + dq;
       const q2 = pNet / areaM2 - dq;
       const qG = pGross / areaM2 + dq;
+      qGrossMin = Math.min(qGrossMin, pGross / areaM2 - dq);
 
-      const ex = pNet > 1 ? Math.abs(mAboutY) / pNet : 0;
-      const ey = pNet > 1 ? Math.abs(mAboutX) / pNet : 0;
+      const ex = pGross > 0 ? Math.abs(mAboutY) / pGross : Infinity;
+      const ey = pGross > 0 ? Math.abs(mAboutX) / pGross : Infinity;
       const eRatio = Math.max(ex / (lxMm / 1000), ey / (wyMm / 1000));
       const aEff = Math.max(1, lxMm / 1000 - 2 * ex) * Math.max(1, wyMm / 1000 - 2 * ey);
 
       const hShear = Math.hypot(sumVx, sumVy);
-      const sFos = hShear > 0.5 ? (0.5 * pGross) / hShear : 99;
+      const sFos = hShear > 0.5 ? (0.5 * Math.max(0, pGross)) / hShear : 99;
       const mOver = Math.max(Math.abs(mAboutX), Math.abs(mAboutY));
-      const oFos = mOver > 1 ? (pGross * (Math.min(lxMm, wyMm) / 2000)) / mOver : 99;
+      const oFos = mOver > 1
+        ? Math.max(0, pGross) / Math.max(Math.abs(mAboutX) / (wyMm / 2000), Math.abs(mAboutY) / (lxMm / 2000))
+        : 99;
 
       if (q1 >= qNetMax) {
         qNetMax = q1;
@@ -1415,11 +1441,9 @@ function designRigidMatRaft(
     let worstTauPunchCapMPa = 0.25 * Math.sqrt(fck);
 
     for (const [cid, res] of activeUls) {
-      let sumPu = 0;
+      const sumPu = stacks.reduce((sum, s) => sum + getSimultaneousStackReaction(res, s.baseNodeIndex).pz, 0);
       for (const s of stacks) {
-        const rx = getSimultaneousStackReaction(res, s.baseNodeIndex);
-        const puCol = Math.max(0, rx.pz);
-        sumPu += puCol;
+        const puCol = Math.max(0, getSimultaneousStackReaction(res, s.baseNodeIndex).pz);
 
         const crit = computeColumnCriticalPunchingPerimeterMm({
           colXMm: s.xMm,
@@ -1435,7 +1459,7 @@ function designRigidMatRaft(
         const betaC = Math.min(s.colWidthMm, s.colDepthMm) / Math.max(s.colWidthMm, s.colDepthMm);
         const ks = Math.min(1.0, 0.5 + betaC);
         const capMPa = ks * 0.25 * Math.sqrt(fck);
-        const quAvg = puCol > 0 ? Math.max(0, puCol - (sumPu / areaM2) * crit.blockAreaM2) : 0;
+        const quAvg = puCol > 0 ? Math.max(0, puCol - (Math.max(0, sumPu) / areaM2) * crit.blockAreaM2) : 0;
         const tauP = (quAvg * 1000) / Math.max(1, crit.b0Mm * dEff);
         const ratio = tauP / capMPa;
         if (ratio >= worstPunchRatio) {
@@ -1458,6 +1482,7 @@ function designRigidMatRaft(
       qNetMax,
       qNetMin: Number.isFinite(qNetMin) ? qNetMin : 0,
       qGrossMax,
+      qGrossMin,
       pSlsGov,
       mxSlsGov,
       mySlsGov,
@@ -1543,23 +1568,24 @@ function designRigidMatRaft(
   const utilOneWay = tauOneWayMPa / Math.max(0.2, tauCOneWayMPa);
   const utilFlex = astReqPerM / Math.max(1, astProvPerM);
 
-  const maxUtil = Number(
-    Math.max(
-      utilBearing,
-      utilPunch,
-      utilOneWay,
-      utilFlex,
-      utilSettle,
-      ev.qNetMin < -0.5 ? 1.1 : 0,
-      ev.minSlidingFos < 1.5 ? 1.5 / ev.minSlidingFos : 0,
-      ev.minOverturnFos < 2.0 ? 2.0 / ev.minOverturnFos : 0,
-    ).toFixed(3),
+  const rawUtil = Math.max(
+    utilBearing,
+    utilPunch,
+    utilOneWay,
+    utilFlex,
+    utilSettle,
+    ev.qGrossMin < 0 ? 1.1 : 0,
+    ev.minSlidingFos < 1.5 ? 1.5 / Math.max(Number.EPSILON, ev.minSlidingFos) : 0,
+    ev.minOverturnFos < 2.0 ? 2.0 / Math.max(Number.EPSILON, ev.minOverturnFos) : 0,
   );
-  const passed = maxUtil <= 1.0 && ev.qNetMin >= -0.5;
+  const maxUtil = Number(rawUtil.toFixed(3));
+  const passed = rawUtil <= 1.0;
 
   let infeasibilityDiagnostic: string | undefined;
   if (!passed) {
-    if (utilBearing > 1.0) {
+    if (ev.qGrossMin < 0) {
+      infeasibilityDiagnostic = 'One or more service combinations lose full raft contact. A compression-only redistribution check is required.';
+    } else if (utilBearing > 1.0) {
       infeasibilityDiagnostic = `Shallow Rigid Raft (${lxMm}x${wyMm}mm) net contact pressure (${ev.qNetMax.toFixed(1)} kPa) exceeds reviewed soil SBC (${geo.safeBearingCapacityKPa} kPa) within allowable setback overhang. Piled-raft / deep pile foundation or ground improvement is required.`;
     } else if (utilSettle > 1.0) {
       infeasibilityDiagnostic = `Estimated elastic raft settlement (${settleMm.toFixed(1)} mm) exceeds reviewed allowable settlement limit (${allowSettleMm} mm); review soil modulus E_s / subgrade modulus k_s or use deep foundations.`;

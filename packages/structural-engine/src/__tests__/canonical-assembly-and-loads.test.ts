@@ -272,6 +272,8 @@ describe('Canonical-to-Structural Frame Assembler & Indian Load/Combination Engi
     );
     expect(uniqueBeamSizes.size).toBeGreaterThanOrEqual(2);
 
+    const topElevation = Math.max(...system.physicalModel.columns.map(column => column.topElevationMm));
+    const supports = system.physicalModel.columns.filter(column => column.topElevationMm === topElevation).slice(0, 2);
     const inputs: ReviewedStructuralInputs = {
       concreteGrade: 'M25',
       steelGrade: 'Fe500',
@@ -280,6 +282,12 @@ describe('Canonical-to-Structural Frame Assembler & Indian Load/Combination Engi
       masonryUnitWeightKnM3: 19.0,
       roofLiveLoadKnM2: 1.5,
       waterTankLoadKn: 80,
+      waterTankSupport: {
+        reference: 'TEST-TANK-SUPPORTS',
+        centerOfGravityMm: { x: (supports[0]!.centerXMm + supports[1]!.centerXMm) / 2,
+          y: (supports[0]!.centerYMm + supports[1]!.centerYMm) / 2 },
+        reactions: supports.map(column => ({ physicalColumnId: column.physicalMemberId, verticalReactionKn: 40 })),
+      },
       seismic: {
         enabled: true,
         zone: 'III',
@@ -304,7 +312,23 @@ describe('Canonical-to-Structural Frame Assembler & Indian Load/Combination Engi
     );
 
     expect(loadTakeoff.memberSelfWeightKn).toBeGreaterThan(100);
-    expect(loadTakeoff.slabSelfWeightKn).toBeGreaterThan(200);
+    expect(loadTakeoff.slabSelfWeightKn + loadTakeoff.unassignedGravityKnByCase!.DL).toBeGreaterThan(200);
+    expect(loadTakeoff.unassignedGravityKnByCase!.DL).toBeGreaterThan(0);
+    expect(loadTakeoff.waterTankLoadKn).toBe(80);
+    expect(loadTakeoff.loadSourceAudit?.find(r => r.sourceId === 'ROOF_WATER_TANK')).toMatchObject({
+      transferMethod: 'REVIEWED_ROOF_TANK_REACTIONS',
+      receivingElementIds: supports.map(column => system.nodes[column.endAnalyticalNodeIndex]!.id),
+    });
+
+    for (const waterTankSupport of [undefined, {
+      ...inputs.waterTankSupport!, centerOfGravityMm: { x: inputs.waterTankSupport!.centerOfGravityMm.x + 100,
+        y: inputs.waterTankSupport!.centerOfGravityMm.y },
+    }]) {
+      const unresolved = await assembleLoadedAnalyticalFrameModel(system, { ...inputs, waterTankSupport });
+      expect(unresolved.loadTakeoff.waterTankLoadKn).toBe(0);
+      expect(unresolved.loadTakeoff.unassignedGravityKnByCase!.SDL - loadTakeoff.unassignedGravityKnByCase!.SDL).toBeCloseTo(80, 9);
+      expect(unresolved.loadTakeoff.loadSourceAudit?.find(r => r.sourceId === 'ROOF_WATER_TANK')?.receivingElementIds).toEqual([]);
+    }
     expect(loadTakeoff.masonryWallLoadKn).toBeGreaterThan(100);
     expect(loadTakeoff.seismicSummary?.designBaseShearVbXKn).toBeGreaterThan(10);
     expect(loadTakeoff.windBaseShearXKn).toBeGreaterThan(10);

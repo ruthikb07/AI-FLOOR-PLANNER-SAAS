@@ -28,7 +28,7 @@ test('leaves the welcome scene while shaders are still pending', async ({ page }
     };
   });
 
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
   const scene = page.getByTestId('residence-showcase');
   await expect(scene).toHaveAttribute('data-component-count', /^[1-9]\d*$/, { timeout: 45_000 });
   await page.getByTestId('cta-new-construction').click();

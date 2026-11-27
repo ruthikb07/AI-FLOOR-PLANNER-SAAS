@@ -210,15 +210,35 @@ export function condenseLocalStiffnessAndFef(
  * - Trapezoidal / uniform distributed local load q(x) = q0 + (q1 - q0) * (x/L)
  * - Intermediate concentrated local point loads P at x = a
  */
+export interface LocalTrapezoidalLoad {
+  readonly q0: Vec3Meters;
+  readonly q1: Vec3Meters;
+  readonly startFraction?: number;
+  readonly endFraction?: number;
+}
+
 export function computeUncondensedLocalFef(
   lengthM: number,
-  trapezoidalLoadsLocal: readonly { q0: Vec3Meters; q1: Vec3Meters }[],
+  trapezoidalLoadsLocal: readonly LocalTrapezoidalLoad[],
   pointLoadsLocal: readonly { aM: number; force: Vec3Meters }[],
 ): number[] {
   const L = lengthM;
   const f = new Array<number>(12).fill(0);
 
+  const pointLoads = [...pointLoadsLocal];
   for (const trap of trapezoidalLoadsLocal) {
+    const start = trap.startFraction ?? 0;
+    const end = trap.endFraction ?? 1;
+    if (start !== 0 || end !== 1) {
+      // Three-point Gauss integration is exact for linear load × cubic beam shape functions.
+      for (const [xi, weight] of [[-Math.sqrt(3 / 5), 5 / 9], [0, 8 / 9], [Math.sqrt(3 / 5), 5 / 9]] as const) {
+        const t = (1 + xi) / 2;
+        const scale = weight * (end - start) * L / 2;
+        const force = (axis: 0 | 1 | 2) => scale * (trap.q0[axis] + t * (trap.q1[axis] - trap.q0[axis]));
+        pointLoads.push({ aM: (start + t * (end - start)) * L, force: [force(0), force(1), force(2)] });
+      }
+      continue;
+    }
     const [qx0, qy0, qz0] = trap.q0;
     const [qx1, qy1, qz1] = trap.q1;
 
@@ -249,7 +269,7 @@ export function computeUncondensedLocalFef(
     f[10] -= (L * L * (2 * qz0 + 3 * qz1)) / 60;
   }
 
-  for (const pt of pointLoadsLocal) {
+  for (const pt of pointLoads) {
     const a = Math.max(0, Math.min(L, pt.aM));
     const b = L - a;
     const [Px, Py, Pz] = pt.force;
@@ -321,7 +341,7 @@ export function evaluateMemberStations(params: {
   readonly section: AnalyticalSectionProps;
   readonly localEndActionsKnM: readonly number[];
   readonly effectiveLocalDisplacements: readonly number[];
-  readonly trapezoidalLoadsLocal: readonly { q0: Vec3Meters; q1: Vec3Meters }[];
+  readonly trapezoidalLoadsLocal: readonly LocalTrapezoidalLoad[];
   readonly pointLoadsLocal: readonly { aM: number; force: Vec3Meters }[];
 }): MemberForceStation[] {
   const {
@@ -344,35 +364,28 @@ export function evaluateMemberStations(params: {
     if (s < 1 - 1e-5) sSet.add(Number(Math.min(1, s + 1e-6).toFixed(7)));
   }
 
-  // Analytically locate zero-shear points for uniform/linearly-varying distributed loads!
-  let qy0Sum = 0, qy1Sum = 0, qz0Sum = 0, qz1Sum = 0;
-  for (const t of trapezoidalLoadsLocal) {
-    qy0Sum += t.q0[1];
-    qy1Sum += t.q1[1];
-    qz0Sum += t.q0[2];
-    qz1Sum += t.q1[2];
-  }
-  for (const [fStart, q0, q1] of [
-    [f0[1]!, qy0Sum, qy1Sum],
-    [f0[2]!, qz0Sum, qz1Sum],
-  ] as const) {
-    // fStart + L * (q0 * s + 0.5 * (q1 - q0) * s^2) = 0
-    const aQuad = 0.5 * L * (q1 - q0);
-    const bQuad = L * q0;
-    const cQuad = fStart;
-    if (Math.abs(aQuad) <= 1e-10) {
-      if (Math.abs(bQuad) > 1e-10) {
-        const sRoot = -cQuad / bQuad;
-        if (sRoot > 0 && sRoot < 1) sSet.add(Number(sRoot.toFixed(7)));
-      }
-    } else {
-      const disc = bQuad * bQuad - 4 * aQuad * cQuad;
-      if (disc >= 0) {
-        const sqrtD = Math.sqrt(disc);
-        for (const sRoot of [(-bQuad - sqrtD) / (2 * aQuad), (-bQuad + sqrtD) / (2 * aQuad)]) {
-          if (sRoot > 0 && sRoot < 1) sSet.add(Number(sRoot.toFixed(7)));
-        }
-      }
+  const loadBreaks = [...new Set([0, 1, ...trapezoidalLoadsLocal.flatMap(t => [t.startFraction ?? 0, t.endFraction ?? 1]),
+    ...pointLoadsLocal.map(p => p.aM / L)])].sort((a, b) => a - b);
+  for (const s of loadBreaks) sSet.add(s);
+  for (let i = 1; i < loadBreaks.length; i++) {
+    const start = loadBreaks[i - 1]!;
+    const end = loadBreaks[i]!;
+    for (const axis of [1, 2] as const) {
+      const startAction = f0[axis]! + pointLoadsLocal.filter(p => p.aM <= start * L + 1e-12)
+        .reduce((sum, p) => sum + p.force[axis], 0);
+      const shear = (s: number) => trapezoidalLoadsLocal.reduce(
+        (sum, trap) => sum + integratedTrapezoid(trap, axis, s * L, L, 1), startAction,
+      );
+      const c = shear(start);
+      const midpoint = shear((start + end) / 2) - c;
+      const delta = shear(end) - c;
+      const a = 2 * delta - 4 * midpoint;
+      const b = delta - a;
+      const disc = b * b - 4 * a * c;
+      const roots = Math.abs(a) < 1e-10
+        ? Math.abs(b) < 1e-10 ? [] : [-c / b]
+        : disc < 0 ? [] : [(-b - Math.sqrt(disc)) / (2 * a), (-b + Math.sqrt(disc)) / (2 * a)];
+      for (const t of roots) if (t > 0 && t < 1) sSet.add(Number((start + t * (end - start)).toFixed(7)));
     }
   }
 
@@ -387,19 +400,11 @@ export function evaluateMemberStations(params: {
     let momentArmQz = 0; // integral_0^x (x - xi) qz(xi) dxi
 
     for (const trap of trapezoidalLoadsLocal) {
-      const [qx0, qy0, qz0] = trap.q0;
-      const [qx1, qy1, qz1] = trap.q1;
-      const dqx = (qx1 - qx0) / L;
-      const dqy = (qy1 - qy0) / L;
-      const dqz = (qz1 - qz0) / L;
-
-      Qx += qx0 * x + 0.5 * dqx * x * x;
-      Qy += qy0 * x + 0.5 * dqy * x * x;
-      Qz += qz0 * x + 0.5 * dqz * x * x;
-
-      // integral_0^x (x - xi) * (q0 + dq * xi) dxi = q0 * x^2 / 2 + dq * x^3 / 6
-      momentArmQy += 0.5 * qy0 * x * x + (dqy * x * x * x) / 6;
-      momentArmQz += 0.5 * qz0 * x * x + (dqz * x * x * x) / 6;
+      Qx += integratedTrapezoid(trap, 0, x, L, 1);
+      Qy += integratedTrapezoid(trap, 1, x, L, 1);
+      Qz += integratedTrapezoid(trap, 2, x, L, 1);
+      momentArmQy += integratedTrapezoid(trap, 1, x, L, 2);
+      momentArmQz += integratedTrapezoid(trap, 2, x, L, 2);
     }
 
     for (const pt of pointLoadsLocal) {
@@ -444,6 +449,13 @@ export function evaluateMemberStations(params: {
     // Dividing by (120 * L * EI) gives EI w''''(x) = (dq / L) * x — 100% EXACT!
     const x2LmX2 = x * x * (L - x) * (L - x);
     for (const trap of trapezoidalLoadsLocal) {
+      if ((trap.startFraction ?? 0) !== 0 || (trap.endFraction ?? 1) !== 1) {
+        const particular = (axis: 1 | 2) => integratedTrapezoid(trap, axis, x, L, 4)
+          - h3 * integratedTrapezoid(trap, axis, L, L, 4) - h4 * integratedTrapezoid(trap, axis, L, L, 3);
+        uy += particular(1) / EIz;
+        uz += particular(2) / EIy;
+        continue;
+      }
       const dqY = trap.q1[1] - trap.q0[1];
       const dqZ = trap.q1[2] - trap.q0[2];
       uy += (trap.q0[1] * x2LmX2) / (24 * EIz) + (dqY * x2LmX2 * (2 * L + x)) / (120 * L * EIz);
@@ -480,6 +492,17 @@ export function evaluateMemberStations(params: {
       rootRelativeDeflectionM: [uy - dEff[1]!, uz - dEff[2]!],
     };
   });
+}
+
+function integratedTrapezoid(load: LocalTrapezoidalLoad, axis: 0 | 1 | 2, x: number, length: number, order: 1 | 2 | 3 | 4): number {
+  const start = (load.startFraction ?? 0) * length;
+  const end = (load.endFraction ?? 1) * length;
+  const atStart = Math.max(0, x - start);
+  const atEnd = Math.max(0, x - end);
+  const divisor = [1, 1, 2, 6, 24][order]!;
+  const slope = (load.q1[axis] - load.q0[axis]) / (end - start);
+  return (load.q0[axis] * atStart ** order - load.q1[axis] * atEnd ** order) / divisor
+    + slope * (atStart ** (order + 1) - atEnd ** (order + 1)) / (divisor * (order + 1));
 }
 
 // ─── Linear Algebra Helpers (Zero External Dependencies) ────────────────────

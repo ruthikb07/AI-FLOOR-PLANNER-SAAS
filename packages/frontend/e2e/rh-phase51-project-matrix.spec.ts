@@ -77,6 +77,7 @@ for (const fixture of fixtures) {
       await page.getByRole('button', { name: 'Generate Architectural Project' }).click();
       const response = await generation;
       const { config } = response.request().postDataJSON() as { config: MultiSheetApartmentConfig };
+      await writeFile(info.outputPath('generation-request.json'), JSON.stringify(config, null, 2));
       expect(config).toMatchObject({ projectName: fixture.name, numTypicalFloors: fixture.floors, flatsPerFloor: flats });
       if ('survey' in fixture) {
         expect(config.surveyBoundary).toMatchObject({ points: expect.any(Array), roadEdge: 2 });
@@ -109,7 +110,16 @@ for (const fixture of fixtures) {
       times.solver = generated.telemetry.solverLatencyMs;
       const area = building.metadata.generationReport?.floorAreas?.find(candidate => candidate.floorId === floor.id);
       row.achievedCarpetSqFt = area?.units.map(unit => unit.target?.achievedAreaSqFt ?? unit.carpetMm2 / EXACT_SQMM_PER_SQFT);
-      if (strict) expect(area?.units.map(unit => unit.target?.status)).toEqual(Array(flats).fill('ACHIEVED'));
+      if (strict || fixture.id === 4) expect(area?.units.map(unit => unit.target?.status)).toEqual(Array(flats).fill('ACHIEVED'));
+      if (fixture.id === 4) {
+        const setbacks = config.setbacksMm!;
+        const capacity = (config.plotWidthMm - setbacks.left - setbacks.right)
+          * (config.plotDepthMm - setbacks.front - setbacks.rear);
+        row.grossFloorM2 = area!.grossMm2 / 1e6;
+        expect(area!.grossMm2).toBeLessThan(capacity);
+        expect(area!.grossMm2).toBeLessThan(894_540_000);
+        expect(area!.voidMm2).toBeLessThan(164_010_550);
+      }
       const functional = auditFloorFunctionalQuality(floor);
       row.roomAccessAndCirculation = functional;
       expect(functional.passed, JSON.stringify(functional.findings)).toBe(true);

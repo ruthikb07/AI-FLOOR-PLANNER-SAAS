@@ -226,6 +226,14 @@ export interface FrameSynthesisOptions {
   readonly rebarOverrides?: Readonly<Record<string, RebarOverrideSpec>>;
   /** Optional slab thickness overrides (`slabPanelId -> thicknessMm`). */
   readonly slabThicknessOverridesMm?: Readonly<Record<string, number>>;
+  /** Optional seismic zone & R factor for demand-based initial sizing (never hardcoded by storey count). */
+  readonly seismicZone?: 'II' | 'III' | 'IV' | 'V';
+  readonly responseReductionFactorR?: number;
+  /**
+   * - `'BEAM_BAY_GRID'` (default): synthesizes structural slab bays directly bounded by supporting frame beams on orthogonal floors.
+   * - `'LEGACY_ROOM_POLYGONS'`: preserves per-room architectural bounding boxes.
+   */
+  readonly slabPanelizationMode?: 'BEAM_BAY_GRID' | 'LEGACY_ROOM_POLYGONS';
   readonly structuralRevision?: number;
 }
 
@@ -748,11 +756,34 @@ export function synthesizeCanonicalStructuralSystem(
       const elGrade = override?.concreteGrade ?? concreteGrade;
 
       // Demand-differentiated sizing using actual tributary area, storey stack depth, and MRF sway demand!
-      const estPuKn = 16.5 * tribM2 * storeysAbove;
-      const mrfAmplifier = isCorner ? 1.55 : isEdge ? 1.75 : 1.95;
+      // Demand-differentiated sizing using actual tributary area, cumulative gravity, storey height, and seismic overturning/drift!
+      const zoneZ = { II: 0.1, III: 0.16, IV: 0.24, V: 0.36 }[options.seismicZone ?? 'III'];
+      const rFactor = Math.max(1.5, options.responseReductionFactorR ?? (ductileDetailing ? 5.0 : 3.0));
+      const ahEst = (zoneZ / 2) * (1.0 / rFactor) * 2.5;
+      const estGravityPuKn = 22.0 * tribM2 * storeysAbove;
+      const segHeightM = (topLvl.elevationMm - botLvl.elevationMm) / 1000;
+      const totalStoreyWeightAboveKn = 14.5 * planAreaM2 * storeysAbove;
+      const colLateralShearKn = (1.5 * ahEst * totalStoreyWeightAboveKn) / Math.max(4, stacks.length);
+      const colSeismicMomentKnM = colLateralShearKn * (segHeightM * 0.58);
+      const overturningMultiplier = isCorner ? 1.28 + 1.4 * ahEst : isEdge ? 1.22 + 1.1 * ahEst : 1.15 + 0.6 * ahEst;
+      const estPuKn = estGravityPuKn * overturningMultiplier;
+      const mrfAmplifier = (isCorner ? 1.45 : isEdge ? 1.55 : 1.65) + (colSeismicMomentKnM * 3.8) / Math.max(120, estPuKn);
+
+      // Upgrade concrete grade automatically on heavily loaded lower lifts if not overridden
+      const autoGrade: ConcreteGrade =
+        override?.concreteGrade ??
+        (estPuKn > 3400 ? 'M35' : estPuKn > 2200 ? 'M30' : concreteGrade);
+      const effectiveColGrade: ConcreteGrade =
+        CONCRETE_FCK_MPA[autoGrade] > CONCRETE_FCK_MPA[elGrade] && !override?.concreteGrade ? autoGrade : elGrade;
+
       const reqAgMm2 =
         (estPuKn * mrfAmplifier * 1000) /
-        (0.27 * CONCRETE_FCK_MPA[elGrade] + 0.008 * STEEL_FY_MPA[steelGrade]);
+        (0.28 * CONCRETE_FCK_MPA[effectiveColGrade] + 0.011 * STEEL_FY_MPA[steelGrade]);
+      // Drift stiffness floor: ensure column moment of inertia limits unfactored inter-storey drift <= 0.0036 * h_s
+      const unfactoredColShearKn = colLateralShearKn / 1.5;
+      const ecKPa = concreteElasticModulusMPa(effectiveColGrade) * 1000;
+      const reqInertiaM4 =
+        (unfactoredColShearKn * Math.pow(segHeightM, 2)) / Math.max(1, 12 * ecKPa * 0.0034);
       const minDimMm = ductileDetailing ? 300 : 230;
 
       let widthMm: number;
@@ -766,16 +797,14 @@ export function synthesizeCanonicalStructuralSystem(
       } else {
         const expW = stk.fromExplicitColumn && stk.explicitWidthMm ? stk.explicitWidthMm : minDimMm;
         const expD = stk.fromExplicitColumn && stk.explicitDepthMm ? stk.explicitDepthMm : minDimMm;
-        const demandW = reqAgMm2 > 220_000 ? 400 : reqAgMm2 > 140_000 ? 350 : minDimMm;
+        const demandW =
+          reqAgMm2 > 340_000 ? 500 : reqAgMm2 > 250_000 ? 450 : reqAgMm2 > 180_000 ? 400 : reqAgMm2 > 125_000 ? 350 : minDimMm;
         widthMm = Math.max(minDimMm, expW, demandW);
-        const depthFromStackMm =
-          minDimMm +
-          (storeysAbove >= 3 ? (storeysAbove - 2) * 50 : 0) +
-          (!isCorner && !isEdge ? 50 : 0);
+        const depthFromInertiaMm = Math.cbrt((12 * reqInertiaM4) / (widthMm / 1000)) * 1000;
         depthMm = clamp(
-          roundUp25(Math.max(minDimMm, expD, depthFromStackMm, reqAgMm2 / widthMm)),
+          roundUp25(Math.max(minDimMm, expD, reqAgMm2 / widthMm, depthFromInertiaMm)),
           minDimMm,
-          800,
+          900,
         );
         if (stk.fromExplicitColumn && widthMm === expW && depthMm === expD) {
           provenance = 'CANONICAL_EXPLICIT';
@@ -785,7 +814,7 @@ export function synthesizeCanonicalStructuralSystem(
       const sec = computeRectangularSectionProps({
         widthMm,
         depthMm,
-        elasticityMPa: concreteElasticModulusMPa(elGrade),
+        elasticityMPa: concreteElasticModulusMPa(effectiveColGrade),
         unitWeightKnM3: IS875_RCC_UNIT_WEIGHT_KN_M3,
       });
 
@@ -842,7 +871,7 @@ export function synthesizeCanonicalStructuralSystem(
         widthMm,
         depthMm,
         rotationDeg: 0,
-        concreteGrade: elGrade,
+        concreteGrade: effectiveColGrade,
         steelGrade,
         sizingProvenance: provenance,
         analyticalElementIds: childIds,
@@ -863,7 +892,7 @@ export function synthesizeCanonicalStructuralSystem(
         widthMm,
         depthMm,
         clearSpanOrHeightMm: segHeightMm,
-        concreteGrade: elGrade,
+        concreteGrade: effectiveColGrade,
         steelGrade,
         supportedWallThicknessMm: 0,
         supportedWallHeightMm: 0,
@@ -1058,9 +1087,14 @@ export function synthesizeCanonicalStructuralSystem(
         provenance = 'OPTIMIZED';
       } else if (lvl.isPlinth) {
         widthMm = 230;
-        depthMm = clamp(roundUp25(edge.lengthMm / 13), 350, 475);
+        depthMm = clamp(roundUp25(edge.lengthMm / 13), 300, 475);
+      } else if (edge.lengthMm < 2450) {
+        // Short coupling spans between closely-spaced columns: tau_v = E * theta * (D / L)^2!
+        // Keep D proportional to short L (L/D >= 4.2, well above Cl. 29 deep-beam limit 2.0) with generous web width!
+        depthMm = clamp(roundUp25(edge.lengthMm / 4.8), 250, 350);
+        widthMm = Math.max(250, ductileDetailing ? 300 : 230);
       } else {
-        // Primary frame girders on multi-storey seismic frames require ~ L / 10.5 depth for sway + hogging moment
+        // Primary frame girders sized from span L and lateral frame demand
         const spanRatio = sortedFloors.length >= 4 ? 10.5 : 11.5;
         depthMm = clamp(roundUp25(edge.lengthMm / spanRatio), 325, 750);
         widthMm = depthMm >= 525 ? 300 : depthMm >= 425 ? 250 : 230;
@@ -1378,8 +1412,119 @@ export function synthesizeCanonicalStructuralSystem(
     const levelBeams = beamElementsByLevel.get(lIdx) ?? [];
     const levelPhysBeams = physicalBeamsByLevel.get(lIdx) ?? [];
 
+    const floorBoundaryPts = floor.boundary?.points ?? [];
+    const isOrthogonalFloor =
+      floorBoundaryPts.length >= 4 &&
+      floorBoundaryPts.every((pt, i) => {
+        const nxt = floorBoundaryPts[(i + 1) % floorBoundaryPts.length]!;
+        return Math.abs(pt.x - nxt.x) <= 50 || Math.abs(pt.y - nxt.y) <= 50;
+      });
+    const useBeamBayGrid =
+      (options.slabPanelizationMode ?? 'BEAM_BAY_GRID') === 'BEAM_BAY_GRID' &&
+      framingStrategy === 'PRACTICAL_ARCHITECTURAL_GRID' &&
+      isOrthogonalFloor &&
+      gridLinesX.length >= 2 &&
+      gridLinesY.length >= 2;
+
+    const pointInPoly = (px: number, py: number, poly: readonly Point[]): boolean => {
+      if (poly.length < 3) return true;
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i]!.x, yi = poly[i]!.y;
+        const xj = poly[j]!.x, yj = poly[j]!.y;
+        const intersect = yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-9) + xi;
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    };
+
+    const synthesizedGridBayRooms: Room[] = [];
+    if (useBeamBayGrid) {
+      const cutouts = floor.voidBoundaries ?? [];
+      for (let ix = 0; ix < gridLinesX.length - 1; ix++) {
+        for (let iy = 0; iy < gridLinesY.length - 1; iy++) {
+          const x0 = gridLinesX[ix]!;
+          const x1 = gridLinesX[ix + 1]!;
+          const y0 = gridLinesY[iy]!;
+          const y1 = gridLinesY[iy + 1]!;
+          if (x1 - x0 < 900 || y1 - y0 < 900) continue;
+          const cx = 0.5 * (x0 + x1);
+          const cy = 0.5 * (y0 + y1);
+          if (floorBoundaryPts.length >= 3 && !pointInPoly(cx, cy, floorBoundaryPts)) continue;
+
+          // Skip bays whose center falls inside an explicit void/OTS/lift/stair shaft
+          const inVoid = cutouts.some((c) => c.points.length >= 3 && pointInPoly(cx, cy, c.points));
+          if (inVoid) continue;
+          const inStair = (floor.stairs ?? []).some(
+            (st) => cx > st.x + 150 && cx < st.x + st.width - 150 && cy > st.y + 150 && cy < st.y + st.length - 150,
+          );
+          if (inStair) continue;
+
+          const overlappingRooms = (floor.rooms ?? []).filter((rm) => {
+            const rb =
+              rm.boundary?.points && rm.boundary.points.length >= 3
+                ? polygonBounds(rm.boundary.points)
+                : { minX: rm.x, maxX: rm.x + rm.width, minY: rm.y, maxY: rm.y + rm.height };
+            const ox = Math.min(x1, rb.maxX) - Math.max(x0, rb.minX);
+            const oy = Math.min(y1, rb.maxY) - Math.max(y0, rb.minY);
+            return ox > 200 && oy > 200;
+          });
+          if (
+            overlappingRooms.length > 0 &&
+            overlappingRooms.every((rm) => {
+              const rn = `${rm.type} ${rm.name}`.toLowerCase();
+              return rm.spaceUse === 'VOID' || rm.openToSky || rn.includes('lift') || rn.includes('elevator') || rn.includes('shaft');
+            })
+          ) {
+            continue;
+          }
+
+          // Pick governing highest-occupancy room overlapping this structural bay
+          const domRoom = overlappingRooms[0];
+          const bayAreaM2 = ((x1 - x0) * (y1 - y0)) / 1e6;
+          synthesizedGridBayRooms.push({
+            id: `BAY_${floor.id}_${ix + 1}_${iy + 1}`,
+            floorId: floor.id,
+            type: (domRoom?.type ?? (floor.floorUse === 'ROOF' ? 'TERRACE' : 'LIVING_ROOM')) as Room['type'],
+            name: domRoom ? `${domRoom.name || String(domRoom.type)} [Grid ${ix + 1}.${iy + 1}]` : `Slab Bay ${ix + 1}.${iy + 1}`,
+            boundary: { points: rectRing(x0, x1, y0, y1) as Point[] },
+            x: x0,
+            y: y0,
+            width: x1 - x0,
+            height: y1 - y0,
+            rotation: 0,
+            area: bayAreaM2,
+            priority: 1,
+            tags: [],
+            adjacencyRequirements: [],
+            daylightRequirement: 'MEDIUM' as Room['daylightRequirement'],
+            privacyRequirement: 'PUBLIC' as Room['privacyRequirement'],
+            ventilationRequired: true,
+            isFixed: false,
+          });
+        }
+      }
+      // Also preserve genuine cantilever balcony overhangs projecting outside the column grid!
+      for (const rm of floor.rooms ?? []) {
+        const rb =
+          rm.boundary?.points && rm.boundary.points.length >= 3
+            ? polygonBounds(rm.boundary.points)
+            : { minX: rm.x, maxX: rm.x + rm.width, minY: rm.y, maxY: rm.y + rm.height };
+        const projectsOutside =
+          rb.maxX > allBounds.maxX + 350 ||
+          rb.minX < allBounds.minX - 350 ||
+          rb.maxY > allBounds.maxY + 350 ||
+          rb.minY < allBounds.minY - 350;
+        if (projectsOutside) {
+          synthesizedGridBayRooms.push(rm);
+        }
+      }
+    }
+
     const roomsToPanelize: Room[] =
-      floor.rooms && floor.rooms.length > 0
+      useBeamBayGrid && synthesizedGridBayRooms.length > 0
+        ? synthesizedGridBayRooms
+        : floor.rooms && floor.rooms.length > 0
         ? [...floor.rooms]
         : [
             {
@@ -1503,7 +1648,38 @@ export function synthesizeCanonicalStructuralSystem(
           const cx = (bMinX + bMaxX) / 2;
           const cy = (bMinY + bMaxY) / 2;
 
-          // Match supporting PhysicalBeams & their analytical element indices
+          // Match supporting PhysicalBeams along the 4 edges of the rectangular bay [bMinX, bMaxX] x [bMinY, bMaxY] FIRST,
+          // falling back to proximity only when an edge lacks a collinear beam!
+          const edgeMatchedBeams = levelPhysBeams.filter((pb) => {
+            const x0 = pb.startPointMm.x;
+            const y0 = pb.startPointMm.y;
+            const x1 = pb.endPointMm.x;
+            const y1 = pb.endPointMm.y;
+            const tol = 320;
+            // Horizontal beam along y = bMinY or y = bMaxY overlapping [bMinX, bMaxX]
+            if (Math.abs(y0 - y1) <= tol) {
+              const yAvg = 0.5 * (y0 + y1);
+              if (Math.abs(yAvg - bMinY) <= tol || Math.abs(yAvg - bMaxY) <= tol) {
+                const overlap = Math.min(bMaxX, Math.max(x0, x1)) - Math.max(bMinX, Math.min(x0, x1));
+                if (overlap > 250) return true;
+              }
+            }
+            // Vertical beam along x = bMinX or x = bMaxX overlapping [bMinY, bMaxY]
+            if (Math.abs(x0 - x1) <= tol) {
+              const xAvg = 0.5 * (x0 + x1);
+              if (Math.abs(xAvg - bMinX) <= tol || Math.abs(xAvg - bMaxX) <= tol) {
+                const overlap = Math.min(bMaxY, Math.max(y0, y1)) - Math.max(bMinY, Math.min(y0, y1));
+                if (overlap > 250) return true;
+              }
+            }
+            if (isCantilever && pb.category === 'CANTILEVER_BEAM') {
+              const bmx = 0.5 * (x0 + x1);
+              const bmy = 0.5 * (y0 + y1);
+              if (Math.hypot(bmx - cx, bmy - cy) <= Math.max(lyMm, 3200)) return true;
+            }
+            return false;
+          });
+
           const scoredPhysBeams = levelPhysBeams
             .map((pb) => {
               const bmx = (pb.startPointMm.x + pb.endPointMm.x) / 2;
@@ -1512,10 +1688,13 @@ export function synthesizeCanonicalStructuralSystem(
             })
             .sort((a, b) => a.dist - b.dist);
 
-          const chosenPhysBeams = scoredPhysBeams
-            .filter((b) => b.dist <= Math.max(lyMm * 0.85, 4800))
-            .slice(0, 4)
-            .map((b) => b.pb);
+          const chosenPhysBeams =
+            edgeMatchedBeams.length > 0
+              ? edgeMatchedBeams
+              : scoredPhysBeams
+                  .filter((b) => b.dist <= Math.max(lyMm * 0.85, 4800))
+                  .slice(0, 4)
+                  .map((b) => b.pb);
           if (chosenPhysBeams.length === 0 && scoredPhysBeams[0]) {
             chosenPhysBeams.push(scoredPhysBeams[0].pb);
           }

@@ -384,6 +384,29 @@ describe('Milestone 5.1 Gate 7 — Independent Foundation Verification (IS 456 C
     expect(nonSimultaneousEnvelopeSumKn).toBeGreaterThan(totalUnfactoredGravityKn * 1.08);
     expect(raft.serviceLoadPKn).toBeLessThanOrEqual(totalUnfactoredGravityKn * 1.005);
 
+    const reversed = runFoundationDesign({
+      ...sys, baseColumnStackMap: Object.fromEntries(Object.entries(sys.baseColumnStackMap).reverse()),
+    }, inputsSeismic, env, { preference: 'RIGID_RAFT' }).footings[0]!;
+    expect(reversed.punchingShearStressMPa).toBeCloseTo(raft.punchingShearStressMPa, 5);
+    expect(reversed.maxSoilPressureKPa).toBeCloseTo(raft.maxSoilPressureKPa, 5);
+
+    const supportReactions = env.combinationResults[raft.governingSlsComboId]!.reactions;
+    const length = raft.lengthXMm / 1000;
+    const width = raft.widthYMm / 1000;
+    const area = length * width;
+    let pz = 0, mx = 0, my = 0;
+    for (const r of supportReactions) {
+      const [x, y, z] = sys.nodes[r.nodeIndex]!.positionM;
+      const [rx, ry, rz, rmx, rmy] = r.reactionKnM;
+      pz += rz;
+      mx += rmx + (y + raft.centerYMm / 1000) * rz - (z + 1.8) * ry;
+      my += rmy - (x - raft.centerXMm / 1000) * rz + (z + 1.8) * rx;
+    }
+    const edgeVariation = 6 / area * (Math.abs(mx) / width + Math.abs(my) / length);
+    const expectedNet = pz / area + 6.5 * raft.thicknessMm / 1000 + edgeVariation;
+    expect(Math.abs(raft.maxSoilPressureKPa - expectedNet)).toBeLessThan(0.006);
+    expect(Math.abs(raft.grossMaxSoilPressureKPa - expectedNet - 18.5 * 1.8)).toBeLessThan(0.006);
+
     // Verify all 5 supported shallow foundation systems execute cleanly:
     for (const pref of ['ISOLATED', 'COMBINED', 'STRAP', 'STRIP', 'RIGID_RAFT'] as const) {
       const res = runFoundationDesign(sys, inputsSeismic, env, { preference: pref });

@@ -1,0 +1,15 @@
+[project]
+name = "rh-structural-python-worker"
+version = "1.0.0"
+description = "Internal Carbon 4 structural analysis & fiber section worker (PyNite + Concrete Properties)"
+requires-python = ">=3.12,<3.14"
+license = { text = "Proprietary / MIT third-party dependencies" }
+dependencies = [
+  "PyNiteFEA @ git+https://github.com/JWock82/Pynite.git@fdf3e12b102716b7009e64335be6916377d70f31",
+  "concreteproperties @ git+https://github.com/robbievanleeuwen/concrete-properties.git@13bfb7bfd75b265bcd418e2f8ed72106a0362678",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+]

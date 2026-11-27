@@ -45,10 +45,7 @@ function gridLabelX(i: number): string {
 export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
   const { building } = editor;
   const [viewMode, setViewMode] = useState<StructuralCADViewMode>('FOUNDATION_COLUMNS');
-  const [selectedFloorId, setSelectedFloorId] = useState<string>(() => {
-    const firstRes = building.floors.find((f) => f.floorUse === 'RESIDENTIAL');
-    return firstRes?.id || building.floors[0]?.id || '';
-  });
+  const [floorSelection, setFloorSelection] = useState<{ buildingId: string; floorId: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [busy, setBusy] = useState<boolean>(false);
   const [zoom, setZoom] = useState<number>(1);
@@ -78,9 +75,10 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
     if (previewModal) URL.revokeObjectURL(previewModal.url);
   }, [previewModal]);
 
-  const activeFloor = useMemo(() => {
-    return building.floors.find((f) => f.id === selectedFloorId) || building.floors[0];
-  }, [building.floors, selectedFloorId]);
+  const selectedFloorId = floorSelection?.buildingId === building.id ? floorSelection.floorId : undefined;
+  const activeFloor = building.floors.find((f) => f.id === selectedFloorId)
+    ?? building.floors.find((f) => f.floorUse === 'RESIDENTIAL')
+    ?? building.floors[0];
 
   const quickAnalysis = useMemo(() => evaluateIS456StructuralAnalysis(building), [building]);
 
@@ -271,7 +269,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
                 <button
                   key={f.id}
                   type="button"
-                  onClick={() => setSelectedFloorId(f.id)}
+                  onClick={() => setFloorSelection({ buildingId: building.id, floorId: f.id })}
                   className={`rounded px-2 py-0.5 text-xs font-mono font-semibold transition-colors cursor-pointer ${
                     activeFloor?.id === f.id
                       ? 'bg-amber-500 text-[#0B101B]'

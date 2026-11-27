@@ -132,6 +132,7 @@ export interface ColumnRccDesignResult {
   readonly steelGrade: SteelGrade;
   readonly governingComboId: string;
   readonly governingAnalyticalElementId: string;
+  readonly governingStationM?: number;
   readonly demandPuKn: number;
   readonly demandMuxKnM: number;
   readonly demandMuyKnM: number;
@@ -145,7 +146,15 @@ export interface ColumnRccDesignResult {
   readonly capacityMux1AtPuKnM: number;
   readonly capacityMuy1AtPuKnM: number;
   readonly breslerAlphaN: number;
+  /** Biaxial ratio, or the axial utilization lower bound if the interaction domain is exceeded. */
   readonly biaxialInteractionRatio: number;
+  readonly interactionOutsideCapacityDomain?: boolean;
+  readonly sectionCapacityProvider?: 'RH_IS456_ANALYTICAL' | 'CONCRETE_PROPERTIES_FIBER';
+  readonly concretePropertiesRayCapacityKnM?: {
+    readonly muxCapKnM: number;
+    readonly muyCapKnM: number;
+    readonly utilizationRatio: number;
+  };
   readonly longitudinalBars: RebarArrangement;
   readonly steelPercentagePt: number;
   readonly lateralTies: StirrupArrangement;
@@ -398,11 +407,7 @@ function concreteDesignStressMPa(eps: number, fck: number): number {
   return peak * (2 * r - r * r);
 }
 
-/**
- * True Strain-Compatibility Uniaxial Column Interaction Capacity `Mu1(Pu)` (in kN·m)
- * per IS 456:2000 Cl. 39.1 & SP-16 Charts 27–62.
- */
-export function evaluateColumnUniaxialMomentCapacity(params: {
+interface ColumnSectionInputs {
   readonly widthPerpMm: number;
   readonly depthBendingMm: number;
   readonly clearCoverMm: number;
@@ -410,126 +415,101 @@ export function evaluateColumnUniaxialMomentCapacity(params: {
   readonly steelGrade: SteelGrade;
   readonly totalBarCount: number;
   readonly barDiaMm: number;
-  readonly demandPuKn: number;
-}): {
-  readonly puzKn: number;
-  readonly puMaxDesignKn: number;
-  readonly ptMinTensionKn: number;
-  readonly mu1CapacityKnM: number;
-  readonly curvePoints: readonly { readonly puKn: number; readonly muKnM: number }[];
-} {
+  readonly tieDiaMm?: number;
+  readonly transposeSquareLayout?: boolean;
+}
+
+function prepareColumnCapacity(params: ColumnSectionInputs) {
   const b = params.widthPerpMm;
-  const D = params.depthBendingMm;
+  const depth = params.depthBendingMm;
   const fck = CONCRETE_FCK_MPA[params.concreteGrade];
   const fy = STEEL_FY_MPA[params.steelGrade];
-  const ag = b * D;
-  const totalAst = params.totalBarCount * barAreaMm2(params.barDiaMm);
-  const ac = ag - totalAst;
-
-  // IS 456 Cl. 39.6 Puz (pure theoretical ultimate crush load used in Bresler exponent):
-  const puzKn = (0.45 * fck * ac + 0.75 * fy * totalAst) * 1e-3;
-
-  const dEffCover = params.clearCoverMm + 8 + params.barDiaMm / 2;
-  const yTop = Math.max(10, D / 2 - dEffCover);
-  const yBot = -yTop;
-
-  interface SteelLayer {
-    readonly yFromCentroidMm: number;
-    readonly areaMm2: number;
+  const areaBar = barAreaMm2(params.barDiaMm);
+  const ast = params.totalBarCount * areaBar;
+  const ac = b * depth - ast;
+  const puzKn = (0.45 * fck * ac + 0.75 * fy * ast) / 1000;
+  const ptMinTensionKn = -0.87 * fy * ast / 1000;
+  const puMaxDesignKn = (0.447 * fck * ac + hysdSteelDesignStressMPa(0.002, fy) * ast) / 1000;
+  const cover = params.clearCoverMm + (params.tieDiaMm ?? 8) + params.barDiaMm / 2;
+  // Use one symmetric perimeter arrangement for both axes. Orient the spacing
+  // by the section dimensions so exchanging width and depth projects the same bars.
+  const innerB = Math.max(0, b - 2 * cover);
+  const innerD = Math.max(0, depth - 2 * cover);
+  const extraPairs = Math.max(0, Math.floor((params.totalBarCount - 4) / 2));
+  let acrossDepth = 0;
+  let smallestPitch = Infinity;
+  for (let n = 0; n <= extraPairs; n++) {
+    const pitch = Math.max(innerB / (extraPairs - n + 1), innerD / (n + 1));
+    if (pitch < smallestPitch || (pitch === smallestPitch && (depth > b || params.transposeSquareLayout))) {
+      smallestPitch = pitch;
+      acrossDepth = n;
+    }
   }
-  const layers: SteelLayer[] =
-    params.totalBarCount <= 4
-      ? [
-          { yFromCentroidMm: yTop, areaMm2: 0.5 * totalAst },
-          { yFromCentroidMm: yBot, areaMm2: 0.5 * totalAst },
-        ]
-      : [
-          { yFromCentroidMm: yTop, areaMm2: 0.375 * totalAst },
-          { yFromCentroidMm: 0, areaMm2: 0.25 * totalAst },
-          { yFromCentroidMm: yBot, areaMm2: 0.375 * totalAst },
-        ];
-
-  const ptMinTensionKn = (-0.87 * fy * totalAst) * 1e-3;
-  const fscAt002 = hysdSteelDesignStressMPa(0.002, fy);
-  const puMaxDesignKn = (0.447 * fck * ac + fscAt002 * totalAst) * 1e-3;
-
-  const curve: { puKn: number; muKnM: number }[] = [{ puKn: ptMinTensionKn, muKnM: 0 }];
-
-  const xuRatios = [
-    0.06, 0.1, 0.15, 0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.35, 1.6, 2.0,
-    2.8, 4.5, 8.0,
+  const acrossWidth = extraPairs - acrossDepth;
+  const faceBars = acrossWidth + 2;
+  const layers = [
+    { x: cover, area: (faceBars + (params.totalBarCount % 2) / 2) * areaBar },
+    { x: depth - cover, area: (faceBars + (params.totalBarCount % 2) / 2) * areaBar },
+    ...Array.from({ length: acrossDepth }, (_, i) => ({
+      x: cover + (i + 1) * innerD / (acrossDepth + 1),
+      area: 2 * areaBar,
+    })),
   ];
-  const nStrips = 32;
-  const stripDy = D / nStrips;
 
-  for (const kRatio of xuRatios) {
-    const xu = kRatio * D;
-    // IS 456 Cl. 39.1(b): when xu <= D, extreme compression strain = 0.0035;
-    // when xu > D (entire section in compression), strain at 3D/7 from highly compressed edge = 0.002!
-    const epsTop = xu <= D ? 0.0035 : 0.002 / Math.max(0.05, 1 - (3 * D) / (7 * xu));
-
-    let forceN = 0;
-    let momentNmm = 0;
-
-    for (let s = 0; s < nStrips; s++) {
-      const yCenter = D / 2 - (s + 0.5) * stripDy;
-      const xFromTop = D / 2 - yCenter;
-      const eps = epsTop * (1 - xFromTop / xu);
-      if (eps > 0) {
-        const fc = concreteDesignStressMPa(eps, fck);
-        const df = fc * b * stripDy;
-        forceN += df;
-        momentNmm += df * yCenter;
-      }
+  const at = (t: number) => {
+    if (t === 0) return { puKn: ptMinTensionKn, muKnM: 0 };
+    if (t === 1) return { puKn: puMaxDesignKn, muKnM: 0 };
+    const xu = depth * t / (1 - t);
+    // IS 456:2000 39.1(b): in full compression, epsTop + 0.75*epsBottom = 0.0035.
+    const epsTop = xu <= depth ? 0.0035 : 0.002 / (1 - 3 * depth / (7 * xu));
+    const compressionDepth = Math.min(depth, xu);
+    const plateauDepth = Math.max(0, Math.min(compressionDepth, xu * (1 - 0.002 / epsTop)));
+    const slope = epsTop / xu;
+    let force = 0.447 * fck * b * plateauDepth;
+    let moment = force * (depth - plateauDepth) / 2;
+    // Two-point Gaussian quadrature integrates the quadratic parabolic stress
+    // and its cubic first moment exactly on the interval below the plateau.
+    const half = (compressionDepth - plateauDepth) / 2;
+    const middle = plateauDepth + half;
+    for (const x of [middle - half / Math.sqrt(3), middle + half / Math.sqrt(3)]) {
+      const df = concreteDesignStressMPa(epsTop - slope * x, fck) * b * half;
+      force += df;
+      moment += df * (depth / 2 - x);
     }
-
     for (const layer of layers) {
-      const xFromTop = D / 2 - layer.yFromCentroidMm;
-      const eps = epsTop * (1 - xFromTop / xu);
-      const fs = hysdSteelDesignStressMPa(eps, fy);
-      const fcDisplaced = eps > 0 ? concreteDesignStressMPa(eps, fck) : 0;
-      const dfSteel = (fs - fcDisplaced) * layer.areaMm2;
-      forceN += dfSteel;
-      momentNmm += dfSteel * layer.yFromCentroidMm;
+      const eps = epsTop - slope * layer.x;
+      const df = (hysdSteelDesignStressMPa(eps, fy) - concreteDesignStressMPa(eps, fck)) * layer.area;
+      force += df;
+      moment += df * (depth / 2 - layer.x);
     }
-
-    curve.push({
-      puKn: forceN * 1e-3,
-      muKnM: Math.max(0, momentNmm * 1e-6),
-    });
-  }
-
-  curve.push({ puKn: puMaxDesignKn, muKnM: 0 });
-  curve.sort((a, b) => a.puKn - b.puKn);
-
-  const P = params.demandPuKn;
-  if (P <= ptMinTensionKn || P >= puMaxDesignKn) {
-    return {
-      puzKn,
-      puMaxDesignKn,
-      ptMinTensionKn,
-      mu1CapacityKnM: 0,
-      curvePoints: curve,
-    };
-  }
-
-  let mu1 = 0;
-  for (let i = 0; i < curve.length - 1; i++) {
-    const p0 = curve[i]!;
-    const p1 = curve[i + 1]!;
-    if (P >= p0.puKn && P <= p1.puKn) {
-      const span = p1.puKn - p0.puKn;
-      const t = span > 1e-9 ? (P - p0.puKn) / span : 0;
-      mu1 = Math.max(mu1, p0.muKnM + t * (p1.muKnM - p0.muKnM));
+    return { puKn: force / 1000, muKnM: Math.max(0, moment / 1e6) };
+  };
+  const capacityAt = (puKn: number) => {
+    if (puKn <= ptMinTensionKn || puKn >= puMaxDesignKn) return 0;
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 26; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(mid).puKn < puKn) lo = mid;
+      else hi = mid;
     }
-  }
+    return at((lo + hi) / 2).muKnM;
+  };
 
+  return { puzKn, ptMinTensionKn, puMaxDesignKn, capacityAt, at };
+}
+
+/** Uniaxial capacity at the requested axial force using IS 456:2000 section strain limits. */
+export function evaluateColumnUniaxialMomentCapacity(params: ColumnSectionInputs & {
+  readonly demandPuKn: number;
+}) {
+  const section = prepareColumnCapacity(params);
   return {
-    puzKn,
-    puMaxDesignKn,
-    ptMinTensionKn,
-    mu1CapacityKnM: mu1,
-    curvePoints: curve,
+    puzKn: section.puzKn,
+    puMaxDesignKn: section.puMaxDesignKn,
+    ptMinTensionKn: section.ptMinTensionKn,
+    mu1CapacityKnM: section.capacityAt(params.demandPuKn),
+    curvePoints: Array.from({ length: 41 }, (_, i) => section.at(i / 40)),
   };
 }
 
@@ -1137,6 +1117,7 @@ function designSinglePhysicalColumn(
     cand: { barCount: number; dia: number; area: number; spacingFeasible: boolean };
     govComboId: string;
     govElemId: string;
+    govStationM: number;
     govPu: number;
     govMuxRaw: number;
     govMuyRaw: number;
@@ -1148,86 +1129,94 @@ function designSinglePhysicalColumn(
     govMuy1: number;
     govAlphaN: number;
     maxBiaxialRatio: number;
+    outsideCapacityDomain: boolean;
   } | null = null;
 
   for (const cand of candidates) {
     let worstRatio = 0;
+    let outsideCapacityDomain = false;
+    let governingOutsideDomain = false;
     let worstCombo = ulsCombos[0]?.[0] ?? 'ULS';
     let worstElem = childIds[0]!;
+    let worstStationM = 0;
     let wPu = 0, wMuxRaw = 0, wMuyRaw = 0, wVu = 0;
     let wMuxDes = 0, wMuyDes = 0, wPuz = 0, wMux1 = 1, wMuy1 = 1, wAlpha = 1;
+
+    const capX = prepareColumnCapacity({
+      widthPerpMm: b,
+      depthBendingMm: D,
+      clearCoverMm,
+      concreteGrade: meta.concreteGrade,
+      steelGrade: meta.steelGrade,
+      totalBarCount: cand.barCount,
+      tieDiaMm: cand.dia > 24 ? 10 : 8,
+      barDiaMm: cand.dia,
+    });
+
+    const capY = prepareColumnCapacity({
+      widthPerpMm: D,
+      depthBendingMm: b,
+      transposeSquareLayout: D === b,
+      clearCoverMm,
+      concreteGrade: meta.concreteGrade,
+      steelGrade: meta.steelGrade,
+      totalBarCount: cand.barCount,
+      tieDiaMm: cand.dia > 24 ? 10 : 8,
+      barDiaMm: cand.dia,
+    });
 
     for (const [comboId, res] of ulsCombos) {
       for (let k = 0; k < childIndices.length; k++) {
         const mf = res.memberForces[childIndices[k]!];
         if (!mf) continue;
-        const pu =
-          mf.extrema.maxCompressionKn > 0
-            ? mf.extrema.maxCompressionKn
-            : -mf.extrema.maxTensionKn;
-        const muxRaw = mf.extrema.maxAbsMyKnM;
-        const muyRaw = mf.extrema.maxAbsMzKnM;
-        const vu = Math.max(mf.extrema.maxAbsVyKn, mf.extrema.maxAbsVzKn);
+        for (const station of mf.stations) {
+          const pu = -station.axialTensionPositiveKn;
+          const muxRaw = Math.abs(station.momentMyKnM);
+          const muyRaw = Math.abs(station.momentMzKnM);
+          const vu = Math.max(Math.abs(station.shearVyKn), Math.abs(station.shearVzKn));
+          const muxMin = Math.max(0, pu) * eminXMm / 1000;
+          const muyMin = Math.max(0, pu) * eminYMm / 1000;
+          const maX = slendX > 12 && pu > 0 ? (pu * (D / 1000) * slendX * slendX) / 2000 : 0;
+          const maY = slendY > 12 && pu > 0 ? (pu * (b / 1000) * slendY * slendY) / 2000 : 0;
+          const muCapX = capX.capacityAt(pu);
+          const muCapY = capY.capacityAt(pu);
 
-        const muxMin = Math.max(0, pu) * (eminXMm / 1000);
-        const muyMin = Math.max(0, pu) * (eminYMm / 1000);
+          const alphaN = pu <= 0
+            ? 1
+            : Math.max(1, Math.min(2, 1 + (pu / capX.puzKn - 0.2) / 0.6));
+          // IS 456:2000 25.4/39.2. If neither calculated eccentricity reaches
+          // its minimum, check two alternatives, applying the floor on one axis at a time.
+          const momentPairs: [number, number][] = muxRaw < muxMin && muyRaw < muyMin
+            ? [[muxMin + maX, muyRaw + maY], [muxRaw + maX, muyMin + maY]]
+            : [[muxRaw + maX, muyRaw + maY]];
+          for (const [muxDes, muyDes] of momentPairs) {
+            const axialLimit = pu < 0 ? -capX.ptMinTensionKn : capX.puMaxDesignKn;
+            const axialRatio = Math.abs(pu) / axialLimit;
+            const outsideDomain = (muxDes > 0 && muCapX === 0) || (muyDes > 0 && muCapY === 0);
+            outsideCapacityDomain ||= outsideDomain;
+            const momentTermX = muxDes > 0 && muCapX > 0 ? Math.pow(muxDes / muCapX, alphaN) : 0;
+            const momentTermY = muyDes > 0 && muCapY > 0 ? Math.pow(muyDes / muCapY, alphaN) : 0;
+            const ratio = outsideDomain ? axialRatio : Math.max(momentTermX + momentTermY, axialRatio);
 
-        const maX = slendX > 12 && pu > 0 ? (pu * (D / 1000) * slendX * slendX) / 2000 : 0;
-        const maY = slendY > 12 && pu > 0 ? (pu * (b / 1000) * slendY * slendY) / 2000 : 0;
-
-        const muxDes = Math.max(muxRaw, muxMin) + maX;
-        const muyDes = Math.max(muyRaw, muyMin) + maY;
-
-        const capX = evaluateColumnUniaxialMomentCapacity({
-          widthPerpMm: b,
-          depthBendingMm: D,
-          clearCoverMm,
-          concreteGrade: meta.concreteGrade,
-          steelGrade: meta.steelGrade,
-          totalBarCount: cand.barCount,
-          barDiaMm: cand.dia,
-          demandPuKn: pu,
-        });
-
-        const capY = evaluateColumnUniaxialMomentCapacity({
-          widthPerpMm: D,
-          depthBendingMm: b,
-          clearCoverMm,
-          concreteGrade: meta.concreteGrade,
-          steelGrade: meta.steelGrade,
-          totalBarCount: cand.barCount,
-          barDiaMm: cand.dia,
-          demandPuKn: pu,
-        });
-
-        const alphaN =
-          pu <= 0
-            ? 1.0
-            : Math.max(1.0, Math.min(2.0, 1.0 + (pu / Math.max(1, capX.puzKn) - 0.2) / 0.6));
-
-        let ratio: number;
-        if (capX.mu1CapacityKnM <= 1e-3 || capY.mu1CapacityKnM <= 1e-3) {
-          ratio = Math.max(1.5, Math.abs(pu) / Math.max(1, capX.puMaxDesignKn));
-        } else {
-          const termX = Math.pow(muxDes / capX.mu1CapacityKnM, alphaN);
-          const termY = Math.pow(muyDes / capY.mu1CapacityKnM, alphaN);
-          ratio = Math.max(termX + termY, pu / Math.max(1, capX.puMaxDesignKn));
-        }
-
-        if (ratio >= worstRatio) {
-          worstRatio = ratio;
-          worstCombo = comboId;
-          worstElem = childIds[k]!;
-          wPu = pu;
-          wMuxRaw = muxRaw;
-          wMuyRaw = muyRaw;
-          wVu = vu;
-          wMuxDes = muxDes;
-          wMuyDes = muyDes;
-          wPuz = capX.puzKn;
-          wMux1 = capX.mu1CapacityKnM;
-          wMuy1 = capY.mu1CapacityKnM;
-          wAlpha = alphaN;
+            if ((outsideDomain && !governingOutsideDomain) ||
+                (outsideDomain === governingOutsideDomain && ratio >= worstRatio)) {
+              governingOutsideDomain = outsideDomain;
+              worstRatio = ratio;
+              worstCombo = comboId;
+              worstElem = childIds[k]!;
+              worstStationM = station.xM;
+              wPu = pu;
+              wMuxRaw = muxRaw;
+              wMuyRaw = muyRaw;
+              wVu = vu;
+              wMuxDes = muxDes;
+              wMuyDes = muyDes;
+              wPuz = capX.puzKn;
+              wMux1 = muCapX;
+              wMuy1 = muCapY;
+              wAlpha = alphaN;
+            }
+          }
         }
       }
     }
@@ -1236,6 +1225,7 @@ function designSinglePhysicalColumn(
       cand,
       govComboId: worstCombo,
       govElemId: worstElem,
+      govStationM: worstStationM,
       govPu: wPu,
       govMuxRaw: wMuxRaw,
       govMuyRaw: wMuyRaw,
@@ -1247,9 +1237,10 @@ function designSinglePhysicalColumn(
       govMuy1: wMuy1,
       govAlphaN: wAlpha,
       maxBiaxialRatio: worstRatio,
+      outsideCapacityDomain,
     };
 
-    if (worstRatio <= 0.96 && cand.spacingFeasible) {
+    if (worstRatio <= 0.96 && !outsideCapacityDomain && cand.spacingFeasible) {
       break;
     }
   }
@@ -1271,6 +1262,7 @@ function designSinglePhysicalColumn(
   const ldComp = is456DevelopmentLengthMm(ev.cand.dia, meta.concreteGrade, meta.steelGrade, false);
   const passed =
     ev.maxBiaxialRatio <= 1.0 &&
+    !ev.outsideCapacityDomain &&
     ev.cand.spacingFeasible &&
     !ptExceeded &&
     !slendernessLimitExceeded &&
@@ -1291,12 +1283,14 @@ function designSinglePhysicalColumn(
         Muy1_cap_kNm: Number(ev.govMuy1.toFixed(2)),
         alpha_n: Number(ev.govAlphaN.toFixed(2)),
       },
-      calculation: `(Mux/Mux1)^${ev.govAlphaN.toFixed(2)} + (Muy/Muy1)^${ev.govAlphaN.toFixed(2)} = ${ev.maxBiaxialRatio.toFixed(3)} <= 1.0`,
+      calculation: ev.outsideCapacityDomain
+        ? 'Demand with bending falls outside the section moment-capacity domain. The reported ratio is the axial utilization.'
+        : `(Mux/Mux1)^${ev.govAlphaN.toFixed(2)} + (Muy/Muy1)^${ev.govAlphaN.toFixed(2)} = ${ev.maxBiaxialRatio.toFixed(3)} <= 1.0`,
       units: 'ratio',
       limit: 1.0,
       actual: Number(ev.maxBiaxialRatio.toFixed(3)),
       utilizationRatio: Number(ev.maxBiaxialRatio.toFixed(3)),
-      status: ev.maxBiaxialRatio <= 1.0 && ev.cand.spacingFeasible && !ptExceeded ? 'PASSED' : 'FAILED',
+      status: ev.maxBiaxialRatio <= 1.0 && !ev.outsideCapacityDomain && ev.cand.spacingFeasible && !ptExceeded ? 'PASSED' : 'FAILED',
       evidence: `${ev.cand.barCount}-T${ev.cand.dia} (${pt.toFixed(2)}%), governing ${ev.govComboId} (${ev.govElemId})`,
     }),
     createRuleEvaluation({
@@ -1355,6 +1349,7 @@ function designSinglePhysicalColumn(
     steelGrade: meta.steelGrade,
     governingComboId: ev.govComboId,
     governingAnalyticalElementId: ev.govElemId,
+    governingStationM: ev.govStationM,
     demandPuKn: Number(ev.govPu.toFixed(2)),
     demandMuxKnM: Number(ev.govMuxRaw.toFixed(2)),
     demandMuyKnM: Number(ev.govMuyRaw.toFixed(2)),
@@ -1368,6 +1363,7 @@ function designSinglePhysicalColumn(
     capacityMux1AtPuKnM: Number(ev.govMux1.toFixed(2)),
     capacityMuy1AtPuKnM: Number(ev.govMuy1.toFixed(2)),
     biaxialInteractionRatio: Number(ev.maxBiaxialRatio.toFixed(3)),
+    interactionOutsideCapacityDomain: ev.outsideCapacityDomain,
     breslerAlphaN: Number(ev.govAlphaN.toFixed(3)),
     longitudinalBars: {
       barCount: ev.cand.barCount,

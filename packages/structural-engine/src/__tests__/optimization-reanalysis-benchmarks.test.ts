@@ -10,8 +10,10 @@ import {
 } from '@ai-floor-planner/core';
 import {
   evaluateFullBuildingStructuralSystem,
+  evaluateStoreyDrifts,
   optimizeStructuralSystemWithGlobalReanalysis,
   synthesizeCanonicalStructuralSystem,
+  type AnalyticalSolveEnvelope,
   type OptimizationObjectiveMode,
   type ReviewedStructuralInputs,
 } from '../index.js';
@@ -124,6 +126,33 @@ function createGPlus2TestBuilding(): Building {
 }
 
 describe('Defect Detection, BBS/BOQ Deduplication & Global Reanalysis Optimizer (Phases A13–A15, A17, A20)', () => {
+  it('checks relative column-end drift using the unit lateral case', () => {
+    const system = synthesizeCanonicalStructuralSystem(createGPlus2TestBuilding());
+    const column = system.physicalModel.columns.find(item =>
+      system.nodes[item.endAnalyticalNodeIndex]!.positionM[2] > 0.05,
+    )!;
+    const bottom = system.nodes[column.startAnalyticalNodeIndex]!;
+    const top = system.nodes[column.endAnalyticalNodeIndex]!;
+    const height = top.positionM[2] - bottom.positionM[2];
+    const result = {
+      displacements: system.nodes.map(node => ({
+        translationM: [node.index === top.index ? height * 0.006 : 0, 0, 0],
+      })),
+    };
+    const envelope = {
+      loadCaseResults: { EQX: result },
+      combinationResults: { ULS_09_DL_15_PLUS_EQX: result },
+    } as unknown as AnalyticalSolveEnvelope;
+
+    expect(evaluateStoreyDrifts(system, envelope)).toContainEqual(expect.objectContaining({
+      floorId: top.floorId,
+      governingComboId: 'EQX',
+      governingMemberId: column.physicalMemberId,
+      utilizationRatio: 1.5,
+      isCompliant: false,
+    }));
+  });
+
   const reviewedInputs: ReviewedStructuralInputs = {
     concreteGrade: 'M25',
     steelGrade: 'Fe500',
@@ -200,19 +229,30 @@ describe('Defect Detection, BBS/BOQ Deduplication & Global Reanalysis Optimizer 
       1,
     );
 
-    // Prove ALL critical structural defects were resolved!
-    expect(optResult.status).toBe('OPTIMIZED_VERIFIED');
+    // Confirm numerical defects are resolved, orthogonal beam-bay slab load paths are verified,
+    // and incomplete raft geotechnical inputs (missing allowableSettlementMm & ks) still gate verification honestly.
+    expect(optResult.status).toBe('OPTIMIZATION_EXHAUSTED');
+    expect(optResult.after.designLifecycleStatus).toBe('INPUT_REVIEW_REQUIRED');
+    expect(optResult.after.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
     expect(optResult.after.criticalDefectCount).toBe(0);
     expect(optResult.after.rccDesign.allPassed).toBe(true);
-    expect(optResult.after.foundationDesign.allPassed).toBe(true);
+    expect(optResult.after.foundationDesign.status).toBe('PRELIMINARY_GEOTECHNICAL');
+    expect(optResult.after.foundationDesign.allPassed).toBe(false);
+    expect(optResult.after.foundationDesign.footings.every(footing => footing.status === 'PASSED')).toBe(true);
 
     // Prove 100% Canonical Architectural Geometry Protection!
     expect(optResult.architecturalGeometryProtected).toBe(true);
     expect(optResult.preOptimizationArchSha256).toBe(optResult.postOptimizationArchSha256);
 
     // Verify BBS & Intersection-Deduplicated BOQ completeness
-    const boq = optResult.after.detailingAndBoq.quantities;
-    expect(optResult.after.detailingAndBoq.bbsEntries.length).toBeGreaterThan(20);
+    const { quantities: boq, bbsEntries } = optResult.after.detailingAndBoq;
+    expect(bbsEntries.length).toBeGreaterThan(20);
+    const markTotal = bbsEntries.reduce((sum, mark) => {
+      const cuttingMass = mark.totalBars * mark.cuttingLengthMm / 1000 * mark.unitWeightKgPerM;
+      expect(mark.totalWeightKg).toBeCloseTo(cuttingMass, 8);
+      return sum + mark.totalWeightKg;
+    }, 0);
+    expect(Number(markTotal.toFixed(2))).toBe(boq.totalSteelWeightKg);
     expect(boq.jointAndSlabIntersectionDeductionM3).toBeGreaterThan(0.5);
     expect(boq.netConcreteVolumeM3).toBeLessThan(boq.grossConcreteVolumeM3);
     expect(boq.totalSteelWeightKg).toBeGreaterThan(500);
