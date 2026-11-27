@@ -1,0 +1,17 @@
+# Carbon 4 recovery and completion
+
+Recovery began on `phase6-audit`, branch `audit/phase6-checkpoint`, at `548929820c9295b1368fea55ce3a316136e1d345`. The start archive contains the binary Git diff and the exact bytes of all 49 changed or untracked files. Each archived file was read back and matched to its SHA-256. The tested overlay has its own manifest and archive. Git history was left at the recovered commit. [Starting snapshot](../../../carbon4-evidence/recovery-20261127/starting-source.zip) · [Tested overlay](../../../carbon4-evidence/recovery-20261127/tested-overlay-sha256.json)
+
+The workspace contains Phase 6 and Phase 7 acceptance, frozen source and native results, the original Carbon 4 JSON and CSV evidence, pinned upstream clones and the installed Python 3.12.13 environment. Searches of relevant local execution records found none of the four requested tasks' original logs: `task-23602`, `task-23691`, `task-23707` and `task-23712`. A matching Codex session contained this request. Other temporary logs pointed to the nested checkout. The recovered outputs establish what their contents demonstrate. The prior complete command exits are unknown.
+
+| Recovered area | Status | Disposition |
+| --- | --- | --- |
+| Git and source recovery | VERIFIED | Exact starting commit, preserved overlay and reproducible file hashes. |
+| Phase 7 frozen numerical and design replay | VERIFIED | Reproduces 422 nodes, 744 elements and the historical 361 findings, including COL_C23_L0 interaction 184.744. Historical design disposition remains failed. [Replay](../../../carbon4-evidence/recovery-20261127/frozen-phase7-reproduction.json) |
+| Managed Python worker | VERIFIED | Replays the pinned runtime. Exact request identity, simultaneous startup, timeout, cancellation, crash and schema recovery have regressions. Resource caps and restart remain bounded to a single shared worker. [Worker tests](../../../carbon4-evidence/recovery-20261127/worker-after.log) · [IPC regression](../../../carbon4-evidence/recovery-20261127/ipc-regression-after.log) |
+| PyNite and Concrete Properties integration | PARTIALLY IMPLEMENTED | Frame and direct adapter plate/P-Delta cases are implemented. One governing analytical column case per member is checked by the optional fiber engine. Canonical automatic shell construction is unsupported. [Solver audit](../structural/MULTI_SOLVER_VERIFICATION.md) |
+| Building-specific loads and optimization | PARTIALLY IMPLEMENTED | The exact frozen loads replay. Newer canonical transfer yields different demands and leaves failed members on the real project. Supported optimization triggers fresh global reanalysis. Review the final numeric status for the synthetic G+5 fixture separately. |
+| Reinforcement and quantities | PARTIALLY IMPLEMENTED | Canonical groups, BBS and schedule artifacts exist. Approved constructibility, anchorage and independent geometry agreement remain open. |
+| Professional acceptance | FAILED | Reassembled real case remains failed. Native lateral equivalence, supported project-specific load paths and the required inspection record remain open. |
+
+The original phase sidebar launch was above multiple checkouts. Run the application and tests from this worktree. The pinned Python environment can be selected with `RH_CARBON4_PYTHON`, or built using `uv sync --locked` in `tools/structural-python-worker`. The production worker recognizes that local `.venv`. The alternate worker script override is intended for explicitly configured services and fixture tests.

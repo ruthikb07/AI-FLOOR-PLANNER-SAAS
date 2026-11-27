@@ -13,6 +13,7 @@
  */
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { shutdownSharedPythonStructuralWorker } from '@ai-floor-planner/structural-engine';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -420,5 +421,11 @@ function isDirectRun(): boolean {
 }
 
 if (isDirectRun()) {
-  startBackendServer();
+  const { server } = startBackendServer();
+  const shutdown = () => {
+    shutdownSharedPythonStructuralWorker();
+    server.close();
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 }

@@ -30,36 +30,35 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   // 1. Generate canonical 30m x 40m 4x 2BHK with structural framing
   const projectId = 'rh-gate2-live-struct';
   const projectName = 'Gate 2 Structural Framing 30x40m';
+  const generationConfig = {
+    projectId,
+    projectName,
+    structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
+    galleryCoordinationMode: 'DOUBLE_HEIGHT_STAGGER',
+    plotWidthMm: 30_000,
+    plotDepthMm: 40_000,
+    roadWidthMm: 12_000,
+    roadAccessSides: ['south'],
+    jurisdiction: 'pune_pmc',
+    lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT',
+    verticalStackType: 'STILT_PLUS_N',
+    numTypicalFloors: 4,
+    floorToFloorHeightMm: 3150,
+    stiltHeightMm: 3150,
+    flatsPerFloor: 4,
+    includeStudyRoom: false,
+    units: [1, 2, 3, 4].map((i) => ({
+      unitIndex: i,
+      bhkType: '2BHK',
+      hasUtilityBalcony: true,
+    })),
+    setbacksMm: { front: 4500, rear: 3000, left: 3000, right: 3000 },
+    parkingMode: 'STILT_AND_SURFACE',
+    generationSeed: 1,
+  };
   const response = await request.post(`${base}/api/v1/projects/generate`, {
     timeout: 90_000,
-    data: {
-      config: {
-        projectId,
-        projectName,
-        structuralLayoutMode: 'PROVISIONAL_EXISTING_PROFILE',
-        galleryCoordinationMode: 'DOUBLE_HEIGHT_STAGGER',
-        plotWidthMm: 30_000,
-        plotDepthMm: 40_000,
-        roadWidthMm: 12_000,
-        roadAccessSides: ['south'],
-        jurisdiction: 'pune_pmc',
-        lotAllotmentMode: 'STATUTORY_SETBACK_100_PERCENT',
-        verticalStackType: 'STILT_PLUS_N',
-        numTypicalFloors: 4,
-        floorToFloorHeightMm: 3150,
-        stiltHeightMm: 3150,
-        flatsPerFloor: 4,
-        includeStudyRoom: false,
-        units: [1, 2, 3, 4].map((i) => ({
-          unitIndex: i,
-          bhkType: '2BHK',
-          hasUtilityBalcony: true,
-        })),
-        setbacksMm: { front: 4500, rear: 3000, left: 3000, right: 3000 },
-        parkingMode: 'STILT_AND_SURFACE',
-        generationSeed: 1,
-      },
-    },
+    data: { config: generationConfig },
   });
   expect(response.ok()).toBe(true);
   const payload = (await response.json()) as { building: Building };
@@ -101,10 +100,8 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   await page.getByTestId('nav-structural_cad').click({ timeout: 15_000 });
   await expect(page.getByTestId('structural-cad-workspace')).toBeVisible({ timeout: 15_000 });
 
-  const colCountText = await page.getByTestId('struct-sidebar-col-count').textContent();
-  const beamCountText = await page.getByTestId('struct-sidebar-beam-count').textContent();
-  expect(Number(colCountText?.trim())).toBeGreaterThanOrEqual(40);
-  expect(Number(beamCountText?.trim())).toBeGreaterThanOrEqual(120);
+  await expect(page.getByTestId('struct-sidebar-col-count')).toHaveText(String(typFloor!.columns.length));
+  await expect(page.getByTestId('struct-sidebar-beam-count')).toHaveText(String(typFloor!.beams!.length));
 
   // Verify sidebar has high-contrast dark obsidian background (not light cream)
   const sidebarBg = await page.getByTestId('structural-sidebar').evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -119,11 +116,21 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   await page.getByTestId('struct-tab-analysis').click();
   const initialResult = await initialAnalysis;
   expect(initialResult.ok(), 'Initial analysis status ' + initialResult.status()).toBe(true);
+  expect(initialResult.request().postDataJSON()).toMatchObject({ regenerate: true });
+  const initial = await initialResult.json();
+  expect(initial.regeneration).toMatchObject({ status: 'UNSUPPORTED', revisionsAnalyzed: 1 });
+  expect(initial.snapshot.foundationDesign.status).toBe('MISSING_GEOTECHNICAL_INPUT');
   await expect(page.getByTestId('structural-analysis-panel')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId('struct-column-schedule-table')).toBeVisible();
+  await expect(page.getByText('Peak Check Utilization', { exact: true })).toBeVisible();
+  const memberCounts = page.getByTestId('struct-member-check-counts');
+  const columns = (initial.snapshot.rccDesign.columns as { status: string }[]);
+  const beams = (initial.snapshot.rccDesign.beams as { status: string }[]);
+  await expect(memberCounts).toContainText(`${columns.filter(c => c.status === 'PASSED').length} of ${columns.length} column checks passed`);
+  await expect(memberCounts).toContainText(`${beams.filter(b => b.status === 'PASSED').length} of ${beams.length} beam checks passed`);
 
-  await expect(page.getByTestId('struct-solver-backend-badge')).toContainText(/AWATIF_CPP_WASM|TYPESCRIPT_SPARSE_LU/, { timeout: 50_000 });
-  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('GEOTECHNICAL');
+  await expect(page.getByTestId('struct-solver-backend-badge')).toContainText('AWATIF_CPP_WASM', { timeout: 50_000 });
+  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('INCOMPLETE GRAVITY LOAD PATHS');
   const baseShear = page.getByTestId('struct-base-shear-value');
   const shearNumber = async () => parseFloat((await baseShear.textContent() ?? '').replace(/[^0-9.]/g, ''));
   const originalShear = await shearNumber();
@@ -137,10 +144,12 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   await page.getByTestId('struct-subtab-footings').click();
   await expect(page.getByTestId('struct-sbc-input')).toHaveValue('');
   await page.getByTestId('struct-sbc-input').fill('100');
-  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('GEOTECHNICAL');
+  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('INCOMPLETE GRAVITY LOAD PATHS');
   await page.getByTestId('struct-foundation-depth-input').fill('1.8');
   await page.getByTestId('struct-soil-unit-weight').fill('18.5');
   await page.getByTestId('struct-settlement-limit').fill('40');
+  await page.getByTestId('struct-bearing-basis').selectOption('NET');
+  await page.getByTestId('struct-groundwater-depth').fill('3.5');
   const analysisResponse = page.waitForResponse((result) => result.url().endsWith('/api/v1/structural/analyze'), { timeout: 60_000 });
   await page.getByTestId('struct-geotech-reference').fill('PLAYWRIGHT-GEOTECH-FIXTURE');
   const analyzed = await analysisResponse;
@@ -149,12 +158,27 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   expect(evaluationId).toBeTruthy();
   const result = await request.post(base + '/api/v1/structural/evaluation', { data: { evaluationId }, timeout: 60_000 });
   expect(result.ok()).toBe(true);
-  const { snapshot } = await result.json();
+  const { snapshot, regeneration } = await result.json();
+  expect(regeneration).toEqual((await analyzed.json()).regeneration);
+  expect(regeneration).toMatchObject({ status: 'UNSUPPORTED', revisionsAnalyzed: 1 });
+  expect(regeneration.blockers).toContainEqual(expect.stringContaining('Gravity transfer is incomplete'));
+  expect(regeneration.remainingFindings).toBe(snapshot.criticalDefectCount);
+  const regenerationStatus = page.getByTestId('struct-regeneration-status');
+  await expect(regenerationStatus).toHaveAttribute('data-status', regeneration.status);
+  await expect(regenerationStatus).toContainText('1 revision analyzed.');
+  if (screenshotsDir) await regenerationStatus.screenshot({ path: path.join(screenshotsDir, 'automatic-redesign-status.png') });
   expect(snapshot.foundationDesign.status).not.toBe('MISSING_GEOTECHNICAL_INPUT');
+  expect(snapshot.foundationDesign.geotechnicalInputs).toMatchObject({ bearingCapacityBasis: 'NET', waterTableDepthBelowGroundM: 3.5 });
   expect(snapshot.foundationDesign.footings.length).toBeGreaterThan(0);
   expect(snapshot.system.sourceArchitecturalRevision).toBe(building.version);
   await expect(page.getByTestId('struct-footing-schedule-table')).toBeVisible();
-  expect(Object.keys(snapshot.solveEnvelope.combinationResults).length).toBeGreaterThan(1);
+  expect(Object.keys(snapshot.solveEnvelope.combinationResults)).toHaveLength(30);
+  for (const result of Object.values(snapshot.solveEnvelope.combinationResults)) {
+    expect(result).toMatchObject({
+      diagnostics: { executionBackend: 'AWATIF_CPP_WASM' },
+      equilibrium: { isEquilibrated: true },
+    });
+  }
 
   await page.getByTestId('struct-subtab-diagrams').click();
   await expect(page.getByTestId('struct-fea-diagram-canvas')).toBeVisible({ timeout: 25_000 });
@@ -171,7 +195,11 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
     expect(bytes.subarray(0, 40).toString()).toContain(signature);
     if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'structural-studio.' + format), bytes);
   }
+  const reportResponse = await request.post(base + '/api/v1/structural/drawings', { data: { evaluationId, format: 'json' } });
+  expect(reportResponse.ok()).toBe(true);
+  expect((await reportResponse.json()).regeneration).toEqual(regeneration);
   if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'structural-studio.snapshot.json'), JSON.stringify(snapshot));
+  if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'structural-studio.regeneration.json'), JSON.stringify(regeneration, null, 2));
 
   await page.getByTestId('struct-subtab-ai_assistant').click();
   await page.getByTestId('struct-assistant-send').click();
@@ -179,12 +207,45 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
 
   const badBuilding = await request.post(base + '/api/v1/structural/analyze', { data: { building: { floors: [] }, reviewedInputs: {} } });
   expect(badBuilding.status()).toBe(400);
+  const badRegenerationOption = await request.post(base + '/api/v1/structural/analyze', { data: { regenerate: 'false' } });
+  expect((await badRegenerationOption.json()).error.code).toBe('INVALID_REGENERATION_OPTION');
   const fakeGeotech = await request.post(base + '/api/v1/structural/analyze', {
     data: { building, reviewedInputs: { geotechnical: { safeBearingCapacityKPa: 200 } } },
   });
   expect(fakeGeotech.status()).toBe(400);
   const expired = await request.post(base + '/api/v1/structural/drawings', { data: { evaluationId: 'expired', format: 'ifc' } });
   expect(expired.status()).toBe(409);
+
+  const anotherProject = await request.post(`${base}/api/v1/projects/generate`, {
+    timeout: 90_000,
+    data: { config: {
+      ...generationConfig,
+      projectId: 'rh-gate2-structural-redesign-shorter',
+      projectName: 'Structural Regeneration 34x38m',
+      plotWidthMm: 34_000,
+      plotDepthMm: 38_000,
+      numTypicalFloors: 2,
+    } },
+  });
+  expect(anotherProject.ok()).toBe(true);
+  const { building: shorterBuilding } = await anotherProject.json() as { building: Building };
+  expect(shorterBuilding.floors.length).toBeLessThan(building.floors.length);
+  const shorterAnalysis = await request.post(base + '/api/v1/structural/analyze', {
+    data: { ...analyzed.request().postDataJSON(), building: shorterBuilding },
+    timeout: 90_000,
+  });
+  expect(shorterAnalysis.ok()).toBe(true);
+  const shorter = await shorterAnalysis.json();
+  expect(shorter.evaluationId).not.toBe(evaluationId);
+  expect(shorter.snapshot.system.sourceArchitecturalSha256).not.toBe(snapshot.system.sourceArchitecturalSha256);
+  expect(shorter.regeneration).toMatchObject({ status: 'UNSUPPORTED', revisionsAnalyzed: 1 });
+  expect(shorter.snapshot.loadTakeoff.unassignedGravityKnByCase.DL).toBeGreaterThan(0);
+  expect(shorter.regeneration.remainingFindings).toBe(shorter.snapshot.criticalDefectCount);
+  if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'second-building.regeneration.json'), JSON.stringify({
+    architecturalSha256: shorter.snapshot.system.sourceArchitecturalSha256,
+    storeys: shorterBuilding.floors.length,
+    ...shorter.regeneration,
+  }, null, 2));
 
   // 4. Verify Engineering -> ETABS Structural Analysis tab shows live IS 456 analysis (NOT dead unavailable text)
   await page.getByTestId('nav-engineering').click({ timeout: 15_000 });

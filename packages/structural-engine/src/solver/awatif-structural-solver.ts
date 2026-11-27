@@ -57,7 +57,12 @@ import {
   recoverEffectiveLocalDisplacements,
   transformGlobalVectorToLocal,
   transposeDense,
+  type LocalTrapezoidalLoad,
 } from '../math/frame-mechanics.js';
+
+function interpolate(from: Vec3Meters, to: Vec3Meters, fraction: number): Vec3Meters {
+  return [from[0] + fraction * (to[0] - from[0]), from[1] + fraction * (to[1] - from[1]), from[2] + fraction * (to[2] - from[2])];
+}
 
 export class UnsupportedStructuralMethodError extends Error {
   public readonly code = 'UNSUPPORTED_ANALYSIS_METHOD';
@@ -100,7 +105,7 @@ interface PreparedLoadingTask {
   readonly nodalLoads: readonly NodalPointLoad[];
   readonly memberUniformLoads: readonly MemberUniformLoad[];
   readonly memberPointLoads: readonly MemberPointLoad[];
-  readonly trapByEl: Map<number, { q0: Vec3Meters; q1: Vec3Meters }[]>;
+  readonly trapByEl: Map<number, LocalTrapezoidalLoad[]>;
   readonly ptByEl: Map<number, { aM: number; force: Vec3Meters }[]>;
   readonly fNodalGlobal: Float64Array;
   readonly fEquivalentGlobal: Float64Array;
@@ -316,18 +321,21 @@ export class AwatifStructuralSolver implements StructuralSolver {
       const uniformLoads: MemberUniformLoad[] = [];
       for (const ul of lc.memberUniformLoads) {
         const qEnd = ul.qEndKnPerM ?? ul.qStartKnPerM;
+        const start = ul.startFraction ?? 0;
+        const end = ul.endFraction ?? 1;
         const splits = elementSplitMap.get(ul.elementIndex) ?? [];
         for (const sp of splits) {
-          const interp = (s: number): Vec3Meters => [
-            ul.qStartKnPerM[0] + (qEnd[0] - ul.qStartKnPerM[0]) * s,
-            ul.qStartKnPerM[1] + (qEnd[1] - ul.qStartKnPerM[1]) * s,
-            ul.qStartKnPerM[2] + (qEnd[2] - ul.qStartKnPerM[2]) * s,
-          ];
+          const from = Math.max(start, sp.s0);
+          const to = Math.min(end, sp.s1);
+          if (to <= from) continue;
+          const interp = (s: number): Vec3Meters => interpolate(ul.qStartKnPerM, qEnd, (s - start) / (end - start));
           uniformLoads.push({
             elementIndex: sp.newIdx,
             coordinateSystem: ul.coordinateSystem,
-            qStartKnPerM: interp(sp.s0),
-            qEndKnPerM: interp(sp.s1),
+            qStartKnPerM: interp(from),
+            qEndKnPerM: interp(to),
+            startFraction: (from - sp.s0) / (sp.s1 - sp.s0),
+            endFraction: (to - sp.s0) / (sp.s1 - sp.s0),
             sourceDescription: ul.sourceDescription,
           });
         }
@@ -450,8 +458,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
           for (const ul of lc.memberUniformLoads) {
             const qEnd = ul.qEndKnPerM ?? ul.qStartKnPerM;
             combinedUniform.push({
-              elementIndex: ul.elementIndex,
-              coordinateSystem: ul.coordinateSystem,
+              ...ul,
               qStartKnPerM: [
                 ul.qStartKnPerM[0] * factor,
                 ul.qStartKnPerM[1] * factor,
@@ -793,12 +800,17 @@ export class AwatifStructuralSolver implements StructuralSolver {
     const numNodes = model.nodes.length;
     const totalDofs = numNodes * 6;
 
-    const trapByEl = new Map<number, { q0: Vec3Meters; q1: Vec3Meters }[]>();
+    const trapByEl = new Map<number, LocalTrapezoidalLoad[]>();
     const ptByEl = new Map<number, { aM: number; force: Vec3Meters }[]>();
 
     for (const ul of memberUniformLoads) {
       const prep = prepared[ul.elementIndex];
       if (!prep) continue;
+      const startFraction = ul.startFraction ?? 0;
+      const endFraction = ul.endFraction ?? 1;
+      if (!(0 <= startFraction && startFraction < endFraction && endFraction <= 1)) {
+        throw new RangeError(`Invalid distributed load interval on ${prep.element.id}.`);
+      }
       const qEnd = ul.qEndKnPerM ?? ul.qStartKnPerM;
       const q0Local =
         ul.coordinateSystem === 'LOCAL'
@@ -809,7 +821,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
           ? qEnd
           : transformGlobalVectorToLocal(prep.lambda3x3, qEnd);
       const list = trapByEl.get(ul.elementIndex) ?? [];
-      list.push({ q0: q0Local, q1: q1Local });
+      list.push({ q0: q0Local, q1: q1Local, startFraction, endFraction });
       trapByEl.set(ul.elementIndex, list);
     }
 
@@ -1167,9 +1179,13 @@ export class AwatifStructuralSolver implements StructuralSolver {
     for (const ul of memberUniformLoads) {
       const prep = prepared[ul.elementIndex];
       if (!prep) continue;
-      const p0 = model.nodes[prep.element.startNodeIndex]!.positionM;
-      const p1 = model.nodes[prep.element.endNodeIndex]!.positionM;
-      const L = prep.lengthM;
+      const memberStart = model.nodes[prep.element.startNodeIndex]!.positionM;
+      const memberEnd = model.nodes[prep.element.endNodeIndex]!.positionM;
+      const start = ul.startFraction ?? 0;
+      const end = ul.endFraction ?? 1;
+      const p0 = interpolate(memberStart, memberEnd, start);
+      const p1 = interpolate(memberStart, memberEnd, end);
+      const L = prep.lengthM * (end - start);
       const qEndRaw = ul.qEndKnPerM ?? ul.qStartKnPerM;
 
       const toGlobal = (vLocal: Vec3Meters): Vec3Meters => {

@@ -103,11 +103,14 @@ it.each(configurations)('verifies the %s brief on a production building', async 
   if (label === 'carpet') {
     expect(areas?.units.map(unit => unit.target?.requestedAreaSqFt)).toEqual([700, 1100, 1500, 1900]);
     expect(areas?.units.every(unit => unit.target?.tolerancePercent === 2)).toBe(true);
-    expect(areas?.units.some(unit => unit.target?.status === 'TARGET_NOT_MET')).toBe(true);
+    for (const unit of areas!.units) {
+      expect(unit.target?.status).toBe('ACHIEVED');
+      expect(Math.abs(unit.target!.achievedAreaSqFt / unit.target!.requestedAreaSqFt - 1)).toBeLessThanOrEqual(0.02);
+    }
     console.log('PHASE2_TARGET_BOXES', result.generationReport?.selectedVariant,
       JSON.stringify(floor.apartmentUnits?.map(flat => flat.boundary.points)));
     expect(new Set(areas?.units.map(unit => unit.carpetMm2)).size).toBeGreaterThan(1);
-    expect(result.generationReport?.violations.some(issue => issue.code === 'AREA_TARGET_UNMET')).toBe(true);
+    expect(result.generationReport?.violations.some(issue => issue.code === 'AREA_TARGET_UNMET')).toBe(false);
   }
 }, 60_000);
 

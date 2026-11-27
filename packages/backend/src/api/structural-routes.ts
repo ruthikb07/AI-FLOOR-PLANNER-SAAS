@@ -4,16 +4,20 @@
  * and Unified AI Structural Engineering Assistant (Phases A7–A19).
  */
 
-import { randomUUID } from 'node:crypto';
+import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AITaskType, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
+import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import {
+  getSharedPythonStructuralWorker,
+  exportStructuralBbsCsv,
   exportStructuralEngineeringDxf,
+  exportStructuralEngineeringJsonReport,
   exportStructuralIfc4Step,
   MANDATORY_STRUCTURAL_DISCLAIMER,
   snapshotDrawingApprovalStatus,
   snapshotSolverBackends,
+  UnsupportedStructuralMethodError,
   type ConcreteGrade,
   type FootingSizingOverrides,
   type FoundationSystemPreference,
@@ -21,9 +25,11 @@ import {
   type FullStructuralEvaluationSnapshot,
   type OptimizationObjectiveMode,
   type ReviewedStructuralInputs,
+  type SectionCapacityBackend,
   type SeismicZoneIS1893,
   type StructuralCaseSummary,
   type StructuralEvaluationSummary,
+  type StructuralSolverBackend,
   type SoilTypeIS1893,
   type SteelGrade,
 } from '@ai-floor-planner/structural-engine';
@@ -33,21 +39,6 @@ import { RequestBodyTooLarge, isRecord } from './http-input.js';
 
 const engine = new StructuralAnalysisEngine();
 const drawingsService = new StructuralDrawingsService();
-
-interface SavedEvaluation {
-  readonly snapshot: FullStructuralEvaluationSnapshot;
-  readonly inputs: ReviewedStructuralInputs;
-  readonly name: string;
-}
-
-const evaluations = new Map<string, SavedEvaluation>();
-
-function rememberEvaluation(evaluation: SavedEvaluation): string {
-  const id = randomUUID();
-  evaluations.set(id, evaluation);
-  if (evaluations.size > 4) evaluations.delete(evaluations.keys().next().value!);
-  return id;
-}
 
 function withoutRuleChecks<T extends { readonly ruleChecks: readonly unknown[] }>(record: T): Omit<T, 'ruleChecks'> {
   const { ruleChecks, ...summary } = record;
@@ -104,6 +95,19 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
         return { error: 'Geotechnical ' + label + ' must be a positive reviewed number.' };
       }
     }
+    const { subgradeModulusKnM3, bearingCapacityBasis, waterTableDepthBelowGroundM } = raw.geotechnical;
+    if (bearingCapacityBasis !== undefined && bearingCapacityBasis !== 'NET' && bearingCapacityBasis !== 'GROSS') {
+      return { error: 'Geotechnical bearingCapacityBasis must be NET or GROSS.' };
+    }
+    if (waterTableDepthBelowGroundM !== undefined &&
+        (typeof waterTableDepthBelowGroundM !== 'number' || !Number.isFinite(waterTableDepthBelowGroundM) ||
+          waterTableDepthBelowGroundM < 0)) {
+      return { error: 'Geotechnical waterTableDepthBelowGroundM must be a finite nonnegative depth.' };
+    }
+    if (subgradeModulusKnM3 !== undefined &&
+        (typeof subgradeModulusKnM3 !== 'number' || !Number.isFinite(subgradeModulusKnM3) || subgradeModulusKnM3 <= 100)) {
+      return { error: 'Geotechnical subgradeModulusKnM3 must be a reviewed value greater than 100 kN/m³.' };
+    }
     if (typeof reportReference !== 'string' || !reportReference.trim()) {
       return { error: 'A site geotechnical report reference is required.' };
     }
@@ -113,11 +117,40 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
       soilUnitWeightKnM3: soilUnitWeightKnM3 as number,
       allowableSettlementMm: allowableSettlementMm as number,
       reportReference: reportReference.trim(),
+      ...(bearingCapacityBasis !== undefined ? { bearingCapacityBasis } : {}),
+      ...(waterTableDepthBelowGroundM !== undefined ? { waterTableDepthBelowGroundM } : {}),
+      ...(subgradeModulusKnM3 !== undefined ? { subgradeModulusKnM3 } : {}),
     };
   }
 
   const seismicRaw = isRecord(raw.seismic) ? raw.seismic : null;
   const windRaw = isRecord(raw.wind) ? raw.wind : null;
+  let waterTankSupport: ReviewedStructuralInputs['waterTankSupport'];
+  if (raw.waterTankSupport !== undefined) {
+    const support = raw.waterTankSupport;
+    if (!isRecord(support) || typeof support.reference !== 'string' || !support.reference.trim() ||
+        !isRecord(support.centerOfGravityMm) || !Array.isArray(support.reactions) ||
+        support.reactions.length === 0 || support.reactions.length > 128) {
+      return { error: 'Tank support requires a reference, plan center of gravity and one to 128 column reactions.' };
+    }
+    const { x, y } = support.centerOfGravityMm;
+    if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return { error: 'Tank center of gravity requires finite x and y coordinates in millimetres.' };
+    }
+    const reactions: NonNullable<ReviewedStructuralInputs['waterTankSupport']>['reactions'][number][] = [];
+    for (const reaction of support.reactions) {
+      if (!isRecord(reaction) || typeof reaction.physicalColumnId !== 'string' || !reaction.physicalColumnId.trim() ||
+          typeof reaction.verticalReactionKn !== 'number' || !Number.isFinite(reaction.verticalReactionKn) || reaction.verticalReactionKn <= 0) {
+        return { error: 'Each tank reaction requires a physical column ID and positive vertical force in kN.' };
+      }
+      reactions.push({ physicalColumnId: reaction.physicalColumnId.trim(), verticalReactionKn: reaction.verticalReactionKn });
+    }
+    if (new Set(reactions.map(reaction => reaction.physicalColumnId)).size !== reactions.length ||
+        typeof raw.waterTankLoadKn !== 'number' || raw.waterTankLoadKn <= 0) {
+      return { error: 'Tank support requires a positive total tank load and unique receiving columns.' };
+    }
+    waterTankSupport = { reference: support.reference.trim(), centerOfGravityMm: { x, y }, reactions };
+  }
 
   for (const [label, value] of Object.entries({
     floorFinishKnM2: raw.floorFinishKnM2,
@@ -149,6 +182,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
       typeof raw.masonryUnitWeightKnM3 === 'number' ? raw.masonryUnitWeightKnM3 : 19.0,
     roofLiveLoadKnM2: typeof raw.roofLiveLoadKnM2 === 'number' ? raw.roofLiveLoadKnM2 : 1.5,
     waterTankLoadKn: typeof raw.waterTankLoadKn === 'number' ? raw.waterTankLoadKn : 0,
+    ...(waterTankSupport ? { waterTankSupport } : {}),
     seismic: seismicRaw
       ? {
           enabled: seismicRaw.enabled !== false,
@@ -195,6 +229,7 @@ function buildDeterministicAssistantAnswer(
   query: string,
   snapshot: FullStructuralEvaluationSnapshot,
   inputs: ReviewedStructuralInputs,
+  solverBackends = snapshotSolverBackends(snapshot),
 ): string {
   const qLower = query.toLowerCase();
   const { rccDesign, foundationDesign, detailingAndBoq, defects, loadTakeoff } = snapshot;
@@ -224,7 +259,7 @@ function buildDeterministicAssistantAnswer(
     return `**Foundation Design (${foundationDesign.selectedStrategy}):**\n• Status: **${foundationDesign.status}** (${foundationDesign.footings.length} foundation elements for SBC = ${inputs.geotechnical?.safeBearingCapacityKPa} kPa)\n• Peak Soil Pressure: **${Math.max(0, ...foundationDesign.footings.map((f) => f.maxSoilPressureKPa))} kPa**; allowed ${inputs.geotechnical?.safeBearingCapacityKPa} kPa\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
-  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${snapshotSolverBackends(snapshot)}):**\n• Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\n• RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\n• Foundations: **${foundationDesign.status}**\n• Quantities: **${boq.netConcreteVolumeM3} m³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${solverBackends}):**\n• Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\n• RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\n• Foundations: **${foundationDesign.status}**\n• Quantities: **${boq.netConcreteVolumeM3} m³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
 }
 
 export async function handleStructuralRoute(
@@ -235,7 +270,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -261,10 +296,14 @@ export async function handleStructuralRoute(
     }
 
     const action = match[1]!;
+    if (action === 'analyze' && body.regenerate !== undefined && typeof body.regenerate !== 'boolean') {
+      sendJson(response, 400, { error: { code: 'INVALID_REGENERATION_OPTION', message: 'The regenerate option must be true or false.' } });
+      return true;
+    }
     const format = typeof body.format === 'string' ? body.format.toLowerCase() : 'dxf';
     const query = typeof body.query === 'string' ? body.query.trim() : '';
-    if (action === 'drawings' && !['dxf', 'ifc', 'pdf'].includes(format)) {
-      sendJson(response, 400, { error: { code: 'UNSUPPORTED_FORMAT', message: "Use 'dxf', 'ifc', or 'pdf'." } });
+    if (action === 'drawings' && !['dxf', 'ifc', 'pdf', 'bbs_csv', 'csv', 'json'].includes(format)) {
+      sendJson(response, 400, { error: { code: 'UNSUPPORTED_FORMAT', message: "Use 'dxf', 'ifc', 'pdf', 'bbs_csv', or 'json'." } });
       return true;
     }
     if (action === 'assistant' && (!query || query.length > 2000)) {
@@ -272,15 +311,37 @@ export async function handleStructuralRoute(
       return true;
     }
 
-    if ((action === 'case' || action === 'design' || action === 'evaluation') && typeof body.evaluationId !== 'string') {
+    if ((action === 'case' || action === 'design' || action === 'evaluation' || action === 'deck-topology') && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
     }
     let evaluation: SavedEvaluation;
     if (action !== 'analyze' && action !== 'optimize' && body.evaluationId !== undefined) {
-      const saved = typeof body.evaluationId === 'string' ? evaluations.get(body.evaluationId) : undefined;
+      const saved = typeof body.evaluationId === 'string'
+        ? await readEvaluation(body.evaluationId, action === 'assistant' ? 'assistant' : 'full')
+        : undefined;
       if (!saved) {
         sendJson(response, 409, { error: { code: 'STRUCTURAL_EVALUATION_EXPIRED', message: 'Run structural analysis again before using this result.' } });
+        return true;
+      }
+      if (action === 'deck-topology') {
+        const building = body.building as Building;
+        if (validateBuildingSchema(building).length || canonicalBuildingHash(building) !== saved.snapshot.system.sourceArchitecturalSha256) {
+          sendJson(response, 409, { error: { code: 'DECK_ARCHITECTURE_MISMATCH', message: 'Supply the architecture used by this evaluation.' } });
+          return true;
+        }
+        const decks = [];
+        const worker = getSharedPythonStructuralWorker();
+        for (const floor of building.floors) {
+          const beams = saved.snapshot.system.physicalModel.beams.filter(beam => beam.floorId === floor.id);
+          const result = await worker.request({ action: 'coordinate_deck', floor, beams });
+          if (!result.ok) {
+            sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_GEOMETRY', floorId: floor.id, message: result.message } });
+            return true;
+          }
+          decks.push(result.deck);
+        }
+        sendJson(response, 200, { evaluationId: body.evaluationId, structuralRevision: saved.snapshot.system.structuralRevision, decks });
         return true;
       }
       evaluation = saved;
@@ -302,6 +363,16 @@ export async function handleStructuralRoute(
       const foundationPref = (body.foundationPreference ?? 'AUTO') as FoundationSystemPreference;
       if (!['AUTO', 'ISOLATED', 'COMBINED', 'STRAP', 'STRIP', 'RIGID_RAFT', 'FLEXIBLE_WINKLER_RAFT', 'PILE_GROUP'].includes(foundationPref)) {
         sendJson(response, 400, { error: { code: 'INVALID_FOUNDATION_PREFERENCE', message: 'Unknown foundation preference.' } });
+        return true;
+      }
+      const preferredSolverBackend = (body.preferredSolverBackend ?? 'AWATIF_CPP_WASM') as StructuralSolverBackend;
+      if (!['AWATIF_CPP_WASM', 'TYPESCRIPT_SPARSE_LU_REFERENCE', 'PYNITE_3D_FRAME', 'PYNITE_PLATE_QUAD', 'PYNITE_PDELTA'].includes(preferredSolverBackend)) {
+        sendJson(response, 400, { error: { code: 'INVALID_SOLVER_BACKEND', message: 'Unknown structural solver backend.' } });
+        return true;
+      }
+      const sectionCapacityBackend = (body.sectionCapacityBackend ?? 'RH_IS456_ANALYTICAL') as SectionCapacityBackend;
+      if (!['RH_IS456_ANALYTICAL', 'CONCRETE_PROPERTIES_FIBER'].includes(sectionCapacityBackend)) {
+        sendJson(response, 400, { error: { code: 'INVALID_SECTION_BACKEND', message: 'Unknown section capacity backend.' } });
         return true;
       }
 
@@ -339,12 +410,14 @@ export async function handleStructuralRoute(
           initialSlabOverridesMm,
           initialFootingOverrides,
           foundationPreference: foundationPref,
+          preferredSolverBackend,
+          sectionCapacityBackend,
           maxIterations,
         });
         const previewOnly = body.previewOnly === true;
         const evaluationId = previewOnly
           ? undefined
-          : rememberEvaluation({ snapshot: optimization.after, inputs: parsedInputs, name });
+          : await saveEvaluation({ snapshot: optimization.after, inputs: parsedInputs, name, analysisOptions: { mode, maxIterations, foundationPreference: foundationPref, preferredSolverBackend, sectionCapacityBackend, targetPhysicalMemberIds, initialSectionOverrides, initialRebarOverrides, initialSlabOverridesMm, initialFootingOverrides } });
         sendJson(response, 200, {
           evaluationId,
           previewOnly,
@@ -359,20 +432,41 @@ export async function handleStructuralRoute(
       }
 
       const footingOverrides: FootingSizingOverrides = { preference: foundationPref };
-      const snapshot = await engine.analyzeReviewedBuilding(building, parsedInputs, { footingOverrides });
-      evaluation = { snapshot, inputs: parsedInputs, name };
+      const analysisOptions = { foundationPreference: foundationPref, preferredSolverBackend, sectionCapacityBackend };
+      if (action === 'analyze' && body.regenerate === true) {
+        if (response.destroyed) return true;
+        const controller = new AbortController();
+        const cancel = () => controller.abort();
+        response.once('close', cancel);
+        try {
+          const result = await engine.regenerateReviewedBuilding({
+            building, inputs: parsedInputs, ...analysisOptions, signal: controller.signal,
+          });
+          if (controller.signal.aborted) return true;
+          evaluation = { ...result, inputs: parsedInputs, name, analysisOptions };
+        } finally {
+          response.off('close', cancel);
+        }
+      } else {
+        const snapshot = await engine.analyzeReviewedBuilding(building, parsedInputs, {
+          footingOverrides, preferredSolverBackend, sectionCapacityBackend,
+        });
+        evaluation = { snapshot, inputs: parsedInputs, name, analysisOptions };
+      }
       if (action === 'analyze') {
+        const { snapshot, regeneration } = evaluation;
         const lifecycleStatus = snapshot.designLifecycleStatus;
-        const evaluationId = rememberEvaluation(evaluation);
+        const carbon4LifecycleStatus = snapshot.carbon4LifecycleStatus ?? lifecycleStatus;
+        const evaluationId = await saveEvaluation(evaluation);
         response.setHeader('X-Structural-Evaluation-Id', evaluationId);
-        sendJson(response, 200, { evaluationId, lifecycleStatus, disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER, snapshot: summarizeEvaluation(snapshot) });
+        sendJson(response, 200, { evaluationId, lifecycleStatus, carbon4LifecycleStatus, regeneration, disclaimer: MANDATORY_STRUCTURAL_DISCLAIMER, snapshot: summarizeEvaluation(snapshot) });
         return true;
       }
     }
 
     const { snapshot, inputs, name } = evaluation;
     if (action === 'evaluation') {
-      sendJson(response, 200, { evaluationId: body.evaluationId, snapshot: summarizeEvaluation(snapshot) });
+      sendJson(response, 200, { evaluationId: body.evaluationId, snapshot: summarizeEvaluation(snapshot), regeneration: evaluation.regeneration });
       return true;
     }
 
@@ -453,10 +547,43 @@ export async function handleStructuralRoute(
         response.end(Buffer.from(pdf.data));
         return true;
       }
+
+      if (format === 'bbs_csv' || format === 'csv') {
+        const csv = exportStructuralBbsCsv(snapshot.detailingAndBoq, {
+          projectName: name,
+          sourceArchitecturalSha256: revision,
+          structuralRevision: snapshot.system.structuralRevision,
+          lifecycleStatus: snapshot.carbon4LifecycleStatus ?? snapshot.designLifecycleStatus,
+        });
+        const buf = Buffer.from(csv, 'utf-8');
+        response.writeHead(200, {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Length': String(buf.length),
+          'X-Structural-Source-Revision': revision,
+          'X-Structural-Approval-Status': approvalStatus,
+          'Content-Disposition': `attachment; filename="${safeName}_structural_bbs.csv"`,
+        });
+        response.end(buf);
+        return true;
+      }
+
+      if (format === 'json') {
+        const jsonReport = exportStructuralEngineeringJsonReport(snapshot, name, inputs, evaluation.regeneration);
+        const buf = Buffer.from(jsonReport, 'utf-8');
+        response.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Length': String(buf.length),
+          'X-Structural-Source-Revision': revision,
+          'X-Structural-Approval-Status': approvalStatus,
+          'Content-Disposition': `attachment; filename="${safeName}_structural_report.json"`,
+        });
+        response.end(buf);
+        return true;
+      }
     }
 
     if (action === 'assistant') {
-      const deterministicAnswer = buildDeterministicAssistantAnswer(query, snapshot, inputs);
+      const deterministicAnswer = buildDeterministicAssistantAnswer(query, snapshot, inputs, evaluation.solverBackends);
       let interpretation: string | undefined;
       let geminiInvoked = false;
       let modelUsed: string | undefined;
@@ -508,7 +635,12 @@ export async function handleStructuralRoute(
 
     return false;
   } catch (err) {
+    if (response.destroyed) return true;
     if (err instanceof RequestBodyTooLarge) throw err;
+    if (err instanceof UnsupportedStructuralMethodError) {
+      sendJson(response, 422, { error: { code: 'UNSUPPORTED_STRUCTURAL_METHOD', message: err.message, method: err.method } });
+      return true;
+    }
     sendJson(response, 500, {
       error: {
         code: 'STRUCTURAL_ENGINE_ERROR',

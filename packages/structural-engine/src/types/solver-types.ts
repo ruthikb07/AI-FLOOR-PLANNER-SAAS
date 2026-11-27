@@ -5,7 +5,25 @@
  * solver execution backends, diagnostics, and honest capability classifications.
  */
 
-export type StructuralSolverBackend = 'AWATIF_CPP_WASM' | 'TYPESCRIPT_SPARSE_LU_REFERENCE';
+export type StructuralSolverBackend =
+  | 'AWATIF_CPP_WASM'
+  | 'TYPESCRIPT_SPARSE_LU_REFERENCE'
+  | 'PYNITE_3D_FRAME'
+  | 'PYNITE_PLATE_QUAD'
+  | 'PYNITE_PDELTA';
+
+export type SectionCapacityBackend =
+  | 'RH_IS456_ANALYTICAL'
+  | 'CONCRETE_PROPERTIES_FIBER';
+
+export type Carbon4StructuralLifecycleStatus =
+  | 'ANALYSIS_COMPLETED'
+  | 'DESIGN_FAILED'
+  | 'PRELIMINARY'
+  | 'UNSUPPORTED'
+  | 'NOT_VERIFIED'
+  | 'CHECKS_PASSED_WITHIN_SCOPE'
+  | 'ENGINEER_APPROVED';
 
 export type AnalysisMethodKind =
   | 'LINEAR_STATIC_FRAME'
@@ -116,6 +134,9 @@ export interface MemberUniformLoad {
   /** Uniform line load intensity [qx, qy, qz] at start and end in kN/m (allows uniform or trapezoidal). */
   readonly qStartKnPerM: Vec3Meters;
   readonly qEndKnPerM?: Vec3Meters;
+  /** Loaded interval as fractions of the member length. Defaults to the whole member. */
+  readonly startFraction?: number;
+  readonly endFraction?: number;
   readonly sourceDescription?: string;
 }
 
@@ -304,12 +325,39 @@ export interface StructuralValidationIssue {
   readonly nodeId?: string;
 }
 
+export interface AnalyticalNodalSpring {
+  readonly nodeIndex: number;
+  readonly dof: 'DX' | 'DY' | 'DZ' | 'RX' | 'RY' | 'RZ';
+  readonly stiffness: number;
+  readonly direction?: '+' | '-' | null;
+}
+
+export interface AnalyticalPlateQuadElement {
+  readonly id: string;
+  readonly kind: 'PLATE' | 'QUAD';
+  readonly nodeIndices: readonly [number, number, number, number];
+  readonly thicknessM: number;
+  readonly elasticityKPa: number;
+  readonly poissonRatio?: number;
+  readonly kxMod?: number;
+  readonly kyMod?: number;
+  readonly surfacePressuresByCase?: Readonly<Record<string, number>>;
+}
+
+export interface PlateSolveResultRecord {
+  readonly id: string;
+  readonly kind: 'PLATE' | 'QUAD';
+  readonly centerMomentsKnMPerM: readonly [number, number, number];
+  readonly centerShearsKnPerM: readonly [number, number];
+}
+
 export interface AnalyticalSolveEnvelope {
   readonly modelId: string;
-  readonly method: 'LINEAR_STATIC_FRAME';
+  readonly method: 'LINEAR_STATIC_FRAME' | 'SHELL_FEM' | 'P_DELTA';
   readonly capabilityClassification: 'EMBEDDED_LIBRARY_VERIFIED';
   readonly loadCaseResults: Readonly<Record<string, SingleCaseSolveResult>>;
   readonly combinationResults: Readonly<Record<string, SingleCaseSolveResult>>;
+  readonly plateResultsByCaseOrCombo?: Readonly<Record<string, readonly PlateSolveResultRecord[]>> | null;
   readonly totalSolveDurationMs: number;
 }
 
@@ -318,6 +366,9 @@ export interface SolverAnalyzeOptions {
   readonly method?: AnalysisMethodKind;
   readonly solveLoadCases?: boolean;
   readonly solveCombinations?: boolean;
+  readonly nodalSprings?: readonly AnalyticalNodalSpring[];
+  readonly plateElements?: readonly AnalyticalPlateQuadElement[];
+  readonly maxIterations?: number;
 }
 
 export interface StructuralSolver {

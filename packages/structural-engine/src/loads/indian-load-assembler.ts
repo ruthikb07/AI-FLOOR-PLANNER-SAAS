@@ -1,17 +1,21 @@
 /**
- * @ai-floor-planner/structural-engine — Traceable Indian Load & Combination Engine (Phase A8)
+ * @ai-floor-planner/structural-engine — Traceable Indian Load & Physical Support-Edge Engine (Carbon 4 Section 04)
  *
  * Implements explicit, clause-traceable gravity, lateral seismic, and lateral wind loading
- * per IS 875 (Parts 1, 2, 3), IS 456:2000 Table 18, and IS 1893 (Part 1): 2016 Cl. 6.3.1.2:
+ * per IS 875 (Parts 1, 2, 3), IS 456:2000 Cl. 24.5 & Table 18, and IS 1893 (Part 1): 2016 Cl. 6.3.1.2:
  * - Member self-weight applied ONCE (zero duplicate self-weight!)
- * - Slab dead + floor finish + occupancy live load transferred onto supporting frame beams
- *   with exact total vertical force conservation (sum of beam line loads === panel area load!)
- * - Masonry wall line loads (deducting door/window openings) applied in SUPERIMPOSED_DEAD
- * - Staircase waist + riser/step + live load reactions transferred onto stair beams
- * - Optional overhead water tank load on designated roof column nodes
- * - IS 1893:2016 equivalent static lateral seismic load cases (+EQX, +EQY) via Awatif modal/seismic engine
- * - IS 875 (Part 3): 2015 wind lateral load cases (+WLX, +WLY) when wind parameters are provided
- * - Strictly distinguishes unfactored Serviceability (`SLS_CHARACTERISTIC`) combinations from factored `ULS` combinations!
+ * - Physical Support-Edge Graph for slab-to-beam gravity transfer (ZERO `length^1.35` heuristic!):
+ *   1. Exact One-Way Opposite-Edge Transfer (`w * lx / 2` per opposite edge, 100% force conservation).
+ *   2. Rectangular two-way 45-degree tributary edge transfer (IS 456 Cl. 24.5):
+ *      - Short edges (`lx`): triangular tributary load `F_short = F_panel * (lx / (4 * ly))`
+ *      - Long edges (`ly`): trapezoidal tributary load `F_long = F_panel * (0.5 - lx / (4 * ly))`
+ *      - Exact conservation: `2 * F_short + 2 * F_long === F_panel` to 1e-12!
+ *   3. Unresolved panels are recorded with their unapplied source loads and block scope acceptance.
+ *   4. Explicit meshedSlabPanelIds excludes loads owned by a coupled shell model.
+ * - Masonry wall & roof parapet line loads (deducting door/window openings) applied in `SUPERIMPOSED_DEAD`
+ * - Staircase waist + riser/step + live load reactions transferred onto stair landing/header beams
+ * - Overhead water tank reactions at identified roof column ends, with force and moment reconciliation.
+ * - Structured `loadSourceAudit` trail recording source, units, case, geometry, force, and receiving member IDs.
  */
 
 import type {
@@ -26,7 +30,12 @@ import type {
   SteelGrade,
   SynthesizedStructuralSystem,
 } from '../assembly/canonical-frame-assembler.js';
-import { IS875_RCC_UNIT_WEIGHT_KN_M3 } from '../adapter/units-and-coordinates.js';
+import type { Point } from '@ai-floor-planner/core';
+import { resolveRectangularSlabTransfer, type SlabTributarySegment } from './rectangular-slab-transfer.js';
+import {
+  IS875_RCC_UNIT_WEIGHT_KN_M3,
+  structuralMetersToCanonicalMm,
+} from '../adapter/units-and-coordinates.js';
 import {
   analyzeModalAndSeismicFrame,
   type EquivalentStaticSeismicResult,
@@ -38,6 +47,8 @@ import { AwatifStructuralSolver } from '../solver/awatif-structural-solver.js';
 export interface GeotechnicalReviewedInputs {
   /** Safe Bearing Capacity (SBC) at foundation level in kN/m² (kPa). NEVER invented! */
   readonly safeBearingCapacityKPa: number;
+  /** Explicit bearing basis (`'NET'` default per IS 1904 Cl. 3.6 & 7.1, or `'GROSS'`). */
+  readonly bearingCapacityBasis?: 'NET' | 'GROSS';
   readonly foundationDepthBelowGroundM: number;
   readonly soilUnitWeightKnM3: number;
   readonly waterTableDepthBelowGroundM?: number;
@@ -48,7 +59,6 @@ export interface GeotechnicalReviewedInputs {
 
 export interface WindReviewedInputs {
   readonly enabled: boolean;
-  /** IS 875 (Part 3): 2015 Basic wind speed Vb in m/s (e.g., 39 m/s Pune, 44 m/s Mumbai, 47 m/s Delhi). */
   readonly basicWindSpeedVbMs: number;
   readonly terrainCategory: 1 | 2 | 3 | 4;
   readonly riskCoefficientK1?: number;
@@ -69,24 +79,75 @@ export interface ReviewedStructuralInputs {
   readonly concreteGrade: ConcreteGrade;
   readonly steelGrade: SteelGrade;
   readonly ductileDetailingIS13920: boolean;
-  /** Floor finish load in kN/m² (IS 875 Part 1, typically 1.0 - 1.5 kN/m²). */
   readonly floorFinishKnM2: number;
-  /** Masonry infill unit weight in kN/m³ (Brick ~ 19.2 kN/m³, AAC block ~ 8.5 kN/m³). */
   readonly masonryUnitWeightKnM3: number;
-  /** Accessible roof terrace live load in kN/m² (IS 875 Part 2 Table 2: 1.5 kN/m² accessible, 0.75 kN/m² inaccessible). */
   readonly roofLiveLoadKnM2: number;
-  /** Optional overhead water tank gravity load in kN distributed over roof core columns. */
   readonly waterTankLoadKn?: number;
-  /** Optional room-type live load overrides (kN/m²). */
+  readonly waterTankSupport?: {
+    readonly reference: string;
+    readonly centerOfGravityMm: Point;
+    readonly reactions: readonly { readonly physicalColumnId: string; readonly verticalReactionKn: number }[];
+  };
   readonly occupancyLiveLoadOverridesKnM2?: Readonly<Record<string, number>>;
   readonly seismic?: SeismicReviewedInputs;
   readonly wind?: WindReviewedInputs;
-  /**
-   * Explicit user/geotechnical-engineer soil parameters.
-   * When `null` or `undefined`, superstructure frame analysis & RCC design run normally,
-   * while foundation design refuses to invent SBC and reports `MISSING_GEOTECHNICAL_INPUT`!
-   */
   readonly geotechnical?: GeotechnicalReviewedInputs | null;
+  /** Optional user-supplied reference. It carries no approval authority. */
+  readonly engineerApprovalReference?: string | null;
+}
+
+export interface LoadSourceAuditRecord {
+  readonly sourceId: string;
+  readonly category: 'MEMBER_SELF_WEIGHT' | 'SLAB_PANEL' | 'MASONRY_OR_PARAPET_WALL' | 'STAIRCASE_FLIGHT' | 'WATER_TANK';
+  readonly loadCaseIds: readonly string[];
+  readonly intensityDescription: string;
+  readonly areaOrLength: string;
+  readonly totalVerticalForceKn: number;
+  readonly transferMethod:
+    | 'DIRECT_MEMBER_SELF_WEIGHT'
+    | 'EXACT_ONE_WAY_OPPOSITE_EDGES'
+    | 'VERIFIED_TWO_WAY_YIELD_LINE_IS456'
+    | 'VERIFIED_CANTILEVER_ROOT_EDGE'
+    | 'UNVERIFIED_LINEAR_TRIBUTARY_FALLBACK'
+    | 'RECTANGULAR_TWO_WAY_45_DEGREE_TRIBUTARY'
+    | 'UNRESOLVED_SLAB_SUPPORT'
+    | 'COLLINEAR_BEAM_WALL_LINE_LOAD'
+    | 'STAIR_LANDING_REACTION'
+    | 'REVIEWED_ROOF_TANK_REACTIONS'
+    | 'UNRESOLVED_ROOF_TANK_SUPPORT'
+    | 'ROOF_CORE_NODAL_REACTION';
+  readonly receivingElementIds: readonly string[];
+  readonly slabGeometry?: {
+    readonly floorId: string;
+    readonly elevationMm?: number;
+    readonly boundaryMm?: SynthesizedStructuralSystem['slabPanels'][number]['exchangeBoundary'];
+    readonly boundsMm?: SynthesizedStructuralSystem['slabPanels'][number]['boundsMm'];
+    readonly completeEdges: readonly string[];
+    readonly supportedSegments: readonly {
+      readonly edge: string;
+      readonly elementId: string;
+      readonly physicalMemberId?: string;
+      readonly startMm: number;
+      readonly endMm: number;
+    }[];
+    readonly effectiveSpansMm: readonly number[];
+  };
+  readonly gravityTransfer?: {
+    readonly forceByCaseKn: Readonly<Record<string, number>>;
+    readonly assignedForceByCaseKn: Readonly<Record<string, number>>;
+    readonly appliedMomentByCaseKnM?: Readonly<Record<string, readonly number[]>>;
+    readonly loads?: readonly (SlabTributarySegment & { readonly elementId: string })[];
+    readonly blocker?: string;
+  };
+}
+
+export interface SlabLoadPathAudit {
+  readonly verifiedOneWayOppositeEdges: readonly string[];
+  readonly verifiedTwoWayYieldLineIs456: readonly string[];
+  readonly verifiedCantileverRootEdge: readonly string[];
+  readonly unverifiedPreliminaryFallback: readonly string[];
+  readonly missingSupport: readonly string[];
+  readonly meshedShellSkipped: readonly string[];
 }
 
 export interface LoadTakeoffBreakdown {
@@ -102,6 +163,21 @@ export interface LoadTakeoffBreakdown {
   readonly seismicSummary?: EquivalentStaticSeismicResult;
   readonly windBaseShearXKn: number;
   readonly windBaseShearYKn: number;
+  /**
+   * Backward-compatible 3-bucket summary:
+   * - `oneWayEdgeSupported`: Slab panels with verified analytical tributary transfer.
+   * - `preliminaryDistribution`: Panels with some geometric bearing but no verified load transfer.
+   * - `missingSupport`: Panels with zero valid supporting beam elements
+   */
+  readonly slabLoadPaths?: {
+    readonly oneWayEdgeSupported: readonly string[];
+    readonly preliminaryDistribution: readonly string[];
+    readonly missingSupport: readonly string[];
+  };
+  readonly slabLoadPathAudit?: SlabLoadPathAudit;
+  readonly loadSourceAudit?: readonly LoadSourceAuditRecord[];
+  /** Total estimated demands withheld from the diagnostic model for unresolved gravity paths. */
+  readonly unassignedGravityKnByCase?: Readonly<Record<'DL' | 'SDL' | 'LL', number>>;
 }
 
 export interface AssembledFrameModelWithTakeoff {
@@ -109,9 +185,6 @@ export interface AssembledFrameModelWithTakeoff {
   readonly loadTakeoff: LoadTakeoffBreakdown;
 }
 
-/**
- * IS 875 (Part 2): 1987 Table 1 Imposed Floor Loads for Residential / Commercial Spaces (kN/m²).
- */
 export function lookupIS875OccupancyLiveLoadKnM2(
   roomType: string,
   floorUse?: string,
@@ -129,7 +202,7 @@ export function lookupIS875OccupancyLiveLoadKnM2(
     upper.includes('LOBBY') ||
     upper.includes('STAIR')
   ) {
-    return 3.0; // IS 875 Part 2 Table 1 Item 1(a)(iii): Corridors, passages, staircases, balconies = 3.0 kN/m²
+    return 3.0;
   }
   if (upper.includes('STORE') || upper.includes('UTILITY')) {
     return 3.0;
@@ -140,11 +213,9 @@ export function lookupIS875OccupancyLiveLoadKnM2(
   if (upper.includes('OFFICE')) {
     return 2.5;
   }
-  // All residential habitable rooms, bedrooms, kitchens, toilets, bathrooms = 2.0 kN/m²
   return 2.0;
 }
 
-/** IS 875 (Part 3): 2015 Table 2 Terrain & Height Factor k2 approximation. */
 function computeIS875TerrainK2(heightM: number, category: 1 | 2 | 3 | 4): number {
   const h = Math.max(10, heightM);
   const base10 = { 1: 1.05, 2: 1.0, 3: 0.91, 4: 0.8 }[category];
@@ -156,11 +227,16 @@ export async function assembleLoadedAnalyticalFrameModel(
   system: SynthesizedStructuralSystem,
   inputs: ReviewedStructuralInputs,
   solverInstance?: AwatifStructuralSolver,
+  options?: {
+    /** Slab panel IDs modeled directly as PyNite Plate3D/Quad3D shell elements (prevents double-counting beam loads!). */
+    readonly meshedSlabPanelIds?: ReadonlySet<string>;
+  },
 ): Promise<AssembledFrameModelWithTakeoff> {
   const dlUniform: MemberUniformLoad[] = [];
   const sdlUniform: MemberUniformLoad[] = [];
   const sdlNodal: NodalPointLoad[] = [];
   const llUniform: MemberUniformLoad[] = [];
+  const loadSourceAudit: LoadSourceAuditRecord[] = [];
 
   let memberSelfWeightKn = 0;
   let slabSelfWeightKn = 0;
@@ -170,7 +246,6 @@ export async function assembleLoadedAnalyticalFrameModel(
   let totalOccupancyLiveKn = 0;
   let totalRoofLiveKn = 0;
 
-  // Map elementIndex -> lengthM
   const elemLengthsM = system.elements.map((el) => {
     const n0 = system.nodes[el.startNodeIndex]!.positionM;
     const n1 = system.nodes[el.endNodeIndex]!.positionM;
@@ -191,8 +266,18 @@ export async function assembleLoadedAnalyticalFrameModel(
       sourceDescription: `Self-weight of ${el.id}`,
     });
   }
+  loadSourceAudit.push({
+    sourceId: 'MEMBER_SELF_WEIGHT_ALL',
+    category: 'MEMBER_SELF_WEIGHT',
+    loadCaseIds: ['DL'],
+    intensityDescription: `${IS875_RCC_UNIT_WEIGHT_KN_M3} kN/m³ × section area`,
+    areaOrLength: `${system.elements.length} frame elements`,
+    totalVerticalForceKn: Number(memberSelfWeightKn.toFixed(3)),
+    transferMethod: 'DIRECT_MEMBER_SELF_WEIGHT',
+    receivingElementIds: system.elements.map((e) => e.id),
+  });
 
-  // 2. Masonry Wall Line Loads on Supporting Plinth & Floor Physical Beams (applied uniformly across all child analytical segments)
+  // 2. Masonry Wall & Roof Parapet Line Loads on Supporting Plinth & Floor Physical Beams
   for (const meta of system.memberMetadata) {
     if (meta.supportedWallThicknessMm > 0 && meta.supportedWallHeightMm > 0) {
       const netFactor = 1 - meta.wallOpeningFraction;
@@ -203,9 +288,11 @@ export async function assembleLoadedAnalyticalFrameModel(
           meta.analyticalElementIndices && meta.analyticalElementIndices.length > 0
             ? meta.analyticalElementIndices
             : [meta.elementIndex];
+        let memberWallTotKn = 0;
         for (const eIdx of childIndices) {
           const L = elemLengthsM[eIdx]!;
           masonryWallLoadKn += qWallKnM * L;
+          memberWallTotKn += qWallKnM * L;
           sdlUniform.push({
             elementIndex: eIdx,
             coordinateSystem: 'GLOBAL',
@@ -213,15 +300,23 @@ export async function assembleLoadedAnalyticalFrameModel(
             sourceDescription: `Masonry wall on ${meta.elementId} (${meta.supportedWallThicknessMm}mm, opening ${(meta.wallOpeningFraction * 100).toFixed(0)}%)`,
           });
         }
+        loadSourceAudit.push({
+          sourceId: `WALL_ON_${meta.elementId}`,
+          category: 'MASONRY_OR_PARAPET_WALL',
+          loadCaseIds: ['SDL'],
+          intensityDescription: `${qWallKnM.toFixed(2)} kN/m (${meta.supportedWallThicknessMm}x${meta.supportedWallHeightMm}mm, open ${(meta.wallOpeningFraction * 100).toFixed(0)}%)`,
+          areaOrLength: `${(meta.clearSpanOrHeightMm / 1000).toFixed(2)} m`,
+          totalVerticalForceKn: Number(memberWallTotKn.toFixed(3)),
+          transferMethod: 'COLLINEAR_BEAM_WALL_LINE_LOAD',
+          receivingElementIds: childIndices.map((idx) => system.elements[idx]!.id),
+        });
       }
     }
   }
 
-  // Determine highest floor level to treat top slab live load / roof terrace properly
   const maxFloorLevel = Math.max(0, ...system.slabPanels.map((p) => p.floorLevel));
 
-  // 3. Tributary Slab-to-Beam Load Transfer (Exact Force Conservation: sum(q_i * L_i) === w * Area!)
-  // Accumulate Nodal Seismic Weights per node as well for IS 1893:2016
+  // Nodal Seismic Weights per IS 1893:2016
   const nodalDeadSdlKn = new Float64Array(system.nodes.length);
   const nodalSeismicLiveKn = new Float64Array(system.nodes.length);
 
@@ -243,94 +338,154 @@ export async function assembleLoadedAnalyticalFrameModel(
   const physBeamById = new Map(
     (system.physicalModel?.beams ?? []).map((pb) => [pb.physicalMemberId, pb]),
   );
-
-  for (const panel of system.slabPanels) {
-    const physIds = panel.supportingPhysicalBeamIds?.filter((id) => physBeamById.has(id)) ?? [];
-    const beamGroups: { elemIndices: readonly number[]; totalLenM: number }[] =
-      physIds.length > 0
-        ? physIds.map((pid) => {
-            const pb = physBeamById.get(pid)!;
-            const totalLenM = pb.analyticalElementIndices.reduce((s, idx) => s + elemLengthsM[idx]!, 0);
-            return { elemIndices: pb.analyticalElementIndices, totalLenM };
-          })
-        : panel.supportingBeamElementIndices.map((idx) => ({
-            elemIndices: [idx],
-            totalLenM: elemLengthsM[idx]!,
-          }));
-
-    const validGroups = beamGroups.filter((g) => g.totalLenM > 1e-6);
-    if (validGroups.length === 0) continue;
-
-    const slabSwKPa = (panel.thicknessMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3;
-    const ffKPa = inputs.floorFinishKnM2;
-    const isTopRoof = panel.floorLevel === maxFloorLevel && system.slabPanels.some((p) => p.floorLevel < maxFloorLevel);
-    const liveKPa = isTopRoof
-      ? inputs.roofLiveLoadKnM2
-      : lookupIS875OccupancyLiveLoadKnM2(
-          panel.roomType,
-          undefined,
-          inputs.occupancyLiveLoadOverridesKnM2,
-        );
-
-    const panelSwKn = slabSwKPa * panel.areaM2;
-    const panelFfKn = ffKPa * panel.areaM2;
-    const panelLiveKn = liveKPa * panel.areaM2;
-
-    slabSelfWeightKn += panelSwKn;
-    floorFinishLoadKn += panelFfKn;
-    if (isTopRoof) totalRoofLiveKn += panelLiveKn;
-    else totalOccupancyLiveKn += panelLiveKn;
-
-    // Distribute tributary load proportionally across physical supporting beams (mesh-subdivision invariant!)
-    const weights = validGroups.map((g) => Math.pow(g.totalLenM, 1.35));
-    const sumW = weights.reduce((a, b) => a + b, 0) || 1;
-    const seismicLlFactor = isTopRoof ? 0 : liveKPa <= 3.0 ? 0.25 : 0.5;
-
-    for (let k = 0; k < validGroups.length; k++) {
-      const grp = validGroups[k]!;
-      const share = weights[k]! / sumW;
-      const qSw = (panelSwKn * share) / grp.totalLenM;
-      const qFf = (panelFfKn * share) / grp.totalLenM;
-      const qLl = (panelLiveKn * share) / grp.totalLenM;
-
-      for (const bIdx of grp.elemIndices) {
-        const segLenM = elemLengthsM[bIdx]!;
-        const el = system.elements[bIdx]!;
-        dlUniform.push({
-          elementIndex: bIdx,
-          coordinateSystem: 'GLOBAL',
-          qStartKnPerM: [0, 0, -qSw],
-          sourceDescription: `Slab ${panel.id} self-weight (${panel.thicknessMm}mm)`,
-        });
-        sdlUniform.push({
-          elementIndex: bIdx,
-          coordinateSystem: 'GLOBAL',
-          qStartKnPerM: [0, 0, -qFf],
-          sourceDescription: `Slab ${panel.id} floor finish`,
-        });
-        llUniform.push({
-          elementIndex: bIdx,
-          coordinateSystem: 'GLOBAL',
-          qStartKnPerM: [0, 0, -qLl],
-          sourceDescription: `Slab ${panel.id} imposed load (${liveKPa} kN/m²)`,
-        });
-
-        nodalDeadSdlKn[el.startNodeIndex] += 0.5 * (qSw + qFf) * segLenM;
-        nodalDeadSdlKn[el.endNodeIndex] += 0.5 * (qSw + qFf) * segLenM;
-        nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * qLl * segLenM * seismicLlFactor;
-        nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * qLl * segLenM * seismicLlFactor;
+  const physicalSlabsById = new Map(
+    system.physicalModel.slabs.map(slab => [slab.physicalMemberId, slab]),
+  );
+  const beamIndicesByFloor = new Map<string, number[]>();
+  for (const beam of system.physicalModel.beams) {
+    const indices = beamIndicesByFloor.get(beam.floorId) ?? [];
+    indices.push(...beam.analyticalElementIndices);
+    beamIndicesByFloor.set(beam.floorId, indices);
+  }
+  const overlappingSlabs = new Set<string>();
+  for (let i = 0; i < system.slabPanels.length; i++) {
+    const a = system.slabPanels[i]!;
+    if (!a.boundsMm || options?.meshedSlabPanelIds?.has(a.id)) continue;
+    for (let j = i + 1; j < system.slabPanels.length; j++) {
+      const b = system.slabPanels[j]!;
+      if (b.floorId !== a.floorId || !b.boundsMm) continue;
+      const overlapX = Math.min(a.boundsMm.maxX, b.boundsMm.maxX) - Math.max(a.boundsMm.minX, b.boundsMm.minX);
+      const overlapY = Math.min(a.boundsMm.maxY, b.boundsMm.maxY) - Math.max(a.boundsMm.minY, b.boundsMm.minY);
+      if (overlapX > 0.01 && overlapY > 0.01) {
+        overlappingSlabs.add(a.id);
+        overlappingSlabs.add(b.id);
       }
     }
   }
+  const slabLoadPaths = {
+    oneWayEdgeSupported: [] as string[],
+    preliminaryDistribution: [] as string[],
+    missingSupport: [] as string[],
+  };
+  const verifiedOneWay: string[] = [];
+  const verifiedTwoWay: string[] = [];
+  const meshedShellSkipped: string[] = [];
+  const unassignedGravity = { DL: 0, SDL: 0, LL: 0 };
+  const hasLowerFloor = system.slabPanels.some(panel => panel.floorLevel < maxFloorLevel);
 
-  // 4. Staircase Waist Slab + Steps Dead & Live Load Transfer
+  for (const panel of system.slabPanels) {
+    if (options?.meshedSlabPanelIds?.has(panel.id)) {
+      meshedShellSkipped.push(panel.id);
+      continue;
+    }
+
+    const isTopRoof = panel.floorLevel === maxFloorLevel && hasLowerFloor;
+    const intensities = {
+      DL: (panel.thicknessMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3,
+      SDL: inputs.floorFinishKnM2,
+      LL: isTopRoof ? inputs.roofLiveLoadKnM2 : lookupIS875OccupancyLiveLoadKnM2(
+        panel.roomType, undefined, inputs.occupancyLiveLoadOverridesKnM2,
+      ),
+    };
+    const physicalSlab = physicalSlabsById.get(panel.id);
+    const elevation = physicalSlab?.topElevationMm ?? system.storeys.find(s => s.id === panel.floorId)?.elevationMm;
+    const candidates = physicalSlab ? beamIndicesByFloor.get(panel.floorId) ?? [] : panel.supportingBeamElementIndices;
+    const resolved = resolveRectangularSlabTransfer(system, panel, elevation, candidates, overlappingSlabs.has(panel.id));
+    const loadCaseIds = ['DL', 'SDL', 'LL'] as const;
+    const area = resolved.kind !== 'UNRESOLVED' && panel.boundsMm
+      ? (panel.boundsMm.maxX - panel.boundsMm.minX) * (panel.boundsMm.maxY - panel.boundsMm.minY) / 1e6
+      : panel.areaM2;
+    const forceByCaseKn = { DL: area * intensities.DL, SDL: area * intensities.SDL, LL: area * intensities.LL };
+    const receivingElementIds = new Set<string>();
+    const supportedSegments = resolved.segments.map(s => {
+      const el = system.elements[s.elementIndex]!;
+      return { edge: s.edge, elementId: el.id, physicalMemberId: system.physicalModel.mapping.analyticalToPhysicalMemberId[el.id],
+        startMm: s.startMm, endMm: s.endMm };
+    });
+    const audit = {
+      sourceId: panel.id,
+      category: 'SLAB_PANEL' as const,
+      loadCaseIds,
+      intensityDescription: `SW=${intensities.DL.toFixed(2)}, FF=${intensities.SDL.toFixed(2)}, LL=${intensities.LL.toFixed(2)} kN/m²`,
+      areaOrLength: `${area.toFixed(3)} m² (${panel.lxMm}x${panel.lyMm}mm)`,
+      totalVerticalForceKn: forceByCaseKn.DL + forceByCaseKn.SDL + forceByCaseKn.LL,
+      slabGeometry: { floorId: panel.floorId, elevationMm: elevation, boundaryMm: panel.exchangeBoundary,
+        boundsMm: panel.boundsMm, completeEdges: resolved.completeEdges, supportedSegments, effectiveSpansMm: [panel.lxMm, panel.lyMm] },
+    };
+
+    if (resolved.kind === 'UNRESOLVED') {
+      if (resolved.segments.length) slabLoadPaths.preliminaryDistribution.push(panel.id);
+      else slabLoadPaths.missingSupport.push(panel.id);
+      for (const id of loadCaseIds) unassignedGravity[id] += forceByCaseKn[id];
+      loadSourceAudit.push({ ...audit, transferMethod: 'UNRESOLVED_SLAB_SUPPORT', receivingElementIds: [],
+        gravityTransfer: { forceByCaseKn, assignedForceByCaseKn: { DL: 0, SDL: 0, LL: 0 }, blocker: resolved.reason } });
+      continue;
+    }
+
+    const allocated = { area: 0, firstMomentX: 0, firstMomentY: 0 };
+    const seismicLlFactor = isTopRoof ? 0 : intensities.LL <= 3.0 ? 0.25 : 0.5;
+    for (const segment of resolved.allocations) {
+      const { elementIndex, startFraction, endFraction, startTributaryWidthM: w0, endTributaryWidthM: w1 } = segment;
+      const element = system.elements[elementIndex]!;
+      const segmentLength = elemLengthsM[elementIndex]! * (endFraction - startFraction);
+      const segmentArea = segmentLength * (w0 + w1) / 2;
+      const endArea = startFraction * segmentArea + (endFraction - startFraction) * segmentLength * (w0 + 2 * w1) / 6;
+      const startArea = segmentArea - endArea;
+      const start = system.nodes[element.startNodeIndex]!.positionM;
+      const end = system.nodes[element.endNodeIndex]!.positionM;
+      allocated.area += segmentArea;
+      allocated.firstMomentX += startArea * start[0] + endArea * end[0];
+      allocated.firstMomentY += startArea * start[1] + endArea * end[1];
+      receivingElementIds.add(element.id);
+      const lists = { DL: dlUniform, SDL: sdlUniform, LL: llUniform };
+      for (const id of loadCaseIds) {
+        lists[id].push({
+          elementIndex, startFraction, endFraction, coordinateSystem: 'GLOBAL',
+          qStartKnPerM: [0, 0, -w0 * intensities[id]], qEndKnPerM: [0, 0, -w1 * intensities[id]],
+          sourceDescription: `Slab ${panel.id} ${id} (${resolved.kind})`,
+        });
+      }
+      nodalDeadSdlKn[element.startNodeIndex] += startArea * (intensities.DL + intensities.SDL);
+      nodalDeadSdlKn[element.endNodeIndex] += endArea * (intensities.DL + intensities.SDL);
+      nodalSeismicLiveKn[element.startNodeIndex] += startArea * intensities.LL * seismicLlFactor;
+      nodalSeismicLiveKn[element.endNodeIndex] += endArea * intensities.LL * seismicLlFactor;
+    }
+
+    const bounds = panel.boundsMm!;
+    const centroid = { x: (bounds.minX + bounds.maxX) / 2000, y: -(bounds.minY + bounds.maxY) / 2000 };
+    const residual = [allocated.area - area, allocated.firstMomentX - area * centroid.x, allocated.firstMomentY - area * centroid.y];
+    if (residual.some(value => Math.abs(value) > 1e-7 * Math.max(1, area))) {
+      throw new Error(`Slab ${panel.id} support reactions do not conserve gravity force or moment.`);
+    }
+    slabLoadPaths.oneWayEdgeSupported.push(panel.id);
+    (resolved.kind === 'ONE_WAY_OPPOSITE_EDGES' ? verifiedOneWay : verifiedTwoWay).push(panel.id);
+    slabSelfWeightKn += forceByCaseKn.DL;
+    floorFinishLoadKn += forceByCaseKn.SDL;
+    if (isTopRoof) totalRoofLiveKn += forceByCaseKn.LL;
+    else totalOccupancyLiveKn += forceByCaseKn.LL;
+    loadSourceAudit.push({
+      ...audit,
+      transferMethod: resolved.kind === 'ONE_WAY_OPPOSITE_EDGES' ? 'EXACT_ONE_WAY_OPPOSITE_EDGES' : 'RECTANGULAR_TWO_WAY_45_DEGREE_TRIBUTARY',
+      receivingElementIds: [...receivingElementIds],
+      gravityTransfer: {
+        forceByCaseKn,
+        assignedForceByCaseKn: { DL: allocated.area * intensities.DL, SDL: allocated.area * intensities.SDL, LL: allocated.area * intensities.LL },
+        appliedMomentByCaseKnM: Object.fromEntries(loadCaseIds.map(id => [
+          id, [-allocated.firstMomentY * intensities[id], allocated.firstMomentX * intensities[id]],
+        ])),
+        loads: resolved.allocations.map(item => ({ ...item, elementId: system.elements[item.elementIndex]!.id })),
+      },
+    });
+  }
+
+  // 4. Staircase Waist Slab + Steps Dead & Live Load Reactions onto Landing/Header Beams
   for (const st of system.stairWaists) {
     if (st.supportingBeamElementIndices.length === 0) continue;
     const slopeFactor = Math.hypot(st.riserMm, st.treadMm) / Math.max(200, st.treadMm);
     const waistKPa = (st.waistThicknessMm / 1000) * slopeFactor * IS875_RCC_UNIT_WEIGHT_KN_M3;
-    const stepsKPa = (0.5 * (st.riserMm / 1000)) * IS875_RCC_UNIT_WEIGHT_KN_M3;
+    const stepsKPa = 0.5 * (st.riserMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3;
     const finishKPa = inputs.floorFinishKnM2;
-    const stairLiveKPa = 3.0; // IS 875 Part 2 Table 1
+    const stairLiveKPa = 3.0;
     const areaM2 = (st.horizontalSpanMm / 1000) * (st.widthMm / 1000);
 
     const totDeadKn = (waistKPa + stepsKPa + finishKPa) * areaM2;
@@ -362,26 +517,72 @@ export async function assembleLoadedAnalyticalFrameModel(
       nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
       nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
     }
+
+    loadSourceAudit.push({
+      sourceId: st.id,
+      category: 'STAIRCASE_FLIGHT',
+      loadCaseIds: ['SDL', 'LL'],
+      intensityDescription: `DL=${(waistKPa + stepsKPa + finishKPa).toFixed(2)}, LL=3.00 kN/m²`,
+      areaOrLength: `${areaM2.toFixed(2)} m²`,
+      totalVerticalForceKn: Number((totDeadKn + totLiveKn).toFixed(3)),
+      transferMethod: 'STAIR_LANDING_REACTION',
+      receivingElementIds: st.supportingBeamElementIndices.map((idx) => system.elements[idx]!.id),
+    });
   }
 
-  // 5. Optional Overhead Water Tank Load on Highest Roof Column Nodes
-  const waterTankLoadKn = Math.max(0, inputs.waterTankLoadKn ?? 0);
-  if (waterTankLoadKn > 0) {
-    const maxZ = Math.max(...system.nodes.map((n) => n.positionM[2]));
-    const roofNodes = system.nodes
-      .filter((n) => Math.abs(n.positionM[2] - maxZ) < 0.05 && !n.restraint)
-      .slice(0, 4);
-    if (roofNodes.length > 0) {
-      const perNode = waterTankLoadKn / roofNodes.length;
-      for (const rn of roofNodes) {
-        sdlNodal.push({
-          nodeIndex: rn.index,
-          vectorKnM: [0, 0, -perNode, 0, 0, 0],
-          sourceDescription: 'Overhead water tank gravity reaction',
-        });
-        nodalDeadSdlKn[rn.index] += perNode;
+  // 5. Apply only reviewed roof-column reactions that reproduce the tank resultant.
+  const requestedTankLoadKn = Math.max(0, inputs.waterTankLoadKn ?? 0);
+  let waterTankLoadKn = 0;
+  if (requestedTankLoadKn > 0) {
+    const roofElevationMm = Math.max(...system.physicalModel.columns.map(column => column.topElevationMm));
+    const roofColumns = new Map(system.physicalModel.columns
+      .filter(column => column.topElevationMm === roofElevationMm)
+      .map(column => [column.physicalMemberId, column]));
+    const review = inputs.waterTankSupport;
+    const reactions = review?.reactions.flatMap(reaction => {
+      const column = roofColumns.get(reaction.physicalColumnId);
+      if (!column || !Number.isFinite(reaction.verticalReactionKn) || reaction.verticalReactionKn <= 0) return [];
+      const node = system.nodes[column.endAnalyticalNodeIndex];
+      return node && !node.restraint?.[2]
+        ? [{ column, node, force: reaction.verticalReactionKn, position: structuralMetersToCanonicalMm(node.positionM) }]
+        : [];
+    }) ?? [];
+    const force = reactions.reduce((sum, r) => sum + r.force, 0);
+    const momentX = reactions.reduce((sum, r) => sum + r.position.y * r.force / 1000, 0);
+    const momentY = reactions.reduce((sum, r) => sum + r.position.x * r.force / 1000, 0);
+    const supportIsValid = review?.reference.trim() && reactions.length === review.reactions.length &&
+      new Set(reactions.map(r => r.node.index)).size === reactions.length &&
+      Math.abs(force - requestedTankLoadKn) <= 1e-6 * Math.max(1, requestedTankLoadKn) &&
+      Math.abs(momentX - requestedTankLoadKn * review.centerOfGravityMm.y / 1000) <= 0.001 * requestedTankLoadKn &&
+      Math.abs(momentY - requestedTankLoadKn * review.centerOfGravityMm.x / 1000) <= 0.001 * requestedTankLoadKn;
+
+    if (supportIsValid) {
+      waterTankLoadKn = force;
+      for (const r of reactions) {
+        sdlNodal.push({ nodeIndex: r.node.index, vectorKnM: [0, 0, -r.force, 0, 0, 0],
+          sourceDescription: 'Reviewed overhead tank gravity reaction' });
+        nodalDeadSdlKn[r.node.index] += r.force;
       }
+    } else {
+      unassignedGravity.SDL += requestedTankLoadKn;
     }
+    loadSourceAudit.push({
+      sourceId: 'ROOF_WATER_TANK',
+      category: 'WATER_TANK',
+      loadCaseIds: ['SDL'],
+      intensityDescription: `${requestedTankLoadKn.toFixed(2)} kN reviewed tank gravity force`,
+      areaOrLength: review ? `Tank center (${review.centerOfGravityMm.x}, ${review.centerOfGravityMm.y}) mm` : 'Tank center required',
+      totalVerticalForceKn: requestedTankLoadKn,
+      transferMethod: supportIsValid ? 'REVIEWED_ROOF_TANK_REACTIONS' : 'UNRESOLVED_ROOF_TANK_SUPPORT',
+      receivingElementIds: supportIsValid ? reactions.map(r => r.node.id) : [],
+      gravityTransfer: {
+        forceByCaseKn: { SDL: requestedTankLoadKn },
+        assignedForceByCaseKn: { SDL: waterTankLoadKn },
+        ...(supportIsValid ? { appliedMomentByCaseKnM: { SDL: [momentX, momentY] } } : {
+          blocker: 'Supply the reviewed tank center of gravity and concurrent gravity reactions at identified roof columns. The reactions must reproduce the specified force and plan moments.',
+        }),
+      },
+    });
   }
 
   const loadCases: AnalyticalLoadCase[] = [
@@ -408,7 +609,6 @@ export async function assembleLoadedAnalyticalFrameModel(
     },
   ];
 
-  // Plan dimensions & building height above plinth (Z = 0)
   const xs = system.nodes.map((n) => n.positionM[0]);
   const ys = system.nodes.map((n) => n.positionM[1]);
   const zs = system.nodes.map((n) => n.positionM[2]);
@@ -478,7 +678,6 @@ export async function assembleLoadedAnalyticalFrameModel(
     const k3 = inputs.wind.topographyFactorK3 ?? 1.0;
     const cf = inputs.wind.forceCoefficientCf ?? 1.2;
 
-    // Group above-ground nodes by elevation band
     const elevGroups = new Map<number, number[]>();
     for (const n of system.nodes) {
       if (n.positionM[2] <= 0.2 || n.restraint) continue;
@@ -500,7 +699,6 @@ export async function assembleLoadedAnalyticalFrameModel(
 
       const k2 = computeIS875TerrainK2(z, inputs.wind.terrainCategory);
       const vz = inputs.wind.basicWindSpeedVbMs * k1 * k2 * k3;
-      // pz = 0.6 * Vz^2 in N/m² -> 0.0006 * Vz^2 in kN/m²
       const pzKnM2 = 0.0006 * vz * vz;
 
       const fxStoryKn = cf * pzKnM2 * planDimYM * tribHeightM;
@@ -542,7 +740,7 @@ export async function assembleLoadedAnalyticalFrameModel(
     });
   }
 
-  // 8. Assemble Clause-Traceable ULS & SLS Load Combinations (IS 456 Table 18 & IS 1893 Cl. 6.3.1.2)
+  // 8. Assemble Clause-Traceable ULS & SLS Load Combinations
   const combinations: AnalyticalLoadCombination[] = [
     {
       id: 'ULS_15_DL_LL',
@@ -655,6 +853,17 @@ export async function assembleLoadedAnalyticalFrameModel(
       combinations,
     },
     loadTakeoff: {
+      slabLoadPaths,
+      slabLoadPathAudit: {
+        verifiedOneWayOppositeEdges: verifiedOneWay,
+        verifiedTwoWayYieldLineIs456: verifiedTwoWay,
+        verifiedCantileverRootEdge: [],
+        unverifiedPreliminaryFallback: [],
+        missingSupport: slabLoadPaths.missingSupport,
+        meshedShellSkipped,
+      },
+      loadSourceAudit,
+      unassignedGravityKnByCase: unassignedGravity,
       memberSelfWeightKn,
       slabSelfWeightKn,
       floorFinishLoadKn,

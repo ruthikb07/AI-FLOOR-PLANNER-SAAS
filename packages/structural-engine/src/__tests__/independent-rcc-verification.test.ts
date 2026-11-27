@@ -439,3 +439,15 @@ describe('Milestone 5.1 Gate 5 & Gate 8 — Independent RCC & Modal/Seismic Veri
     expect(modal.unsupportedDynamicCapabilities.length).toBeGreaterThanOrEqual(3);
   });
 });
+
+
+it('matches independently integrated capacities at the frozen COL_C23_L0 axial demand', () => {
+  const section = { clearCoverMm: 40, tieDiaMm: 10, concreteGrade: 'M25', steelGrade: 'Fe500',
+    totalBarCount: 12, barDiaMm: 28, demandPuKn: 4674.3517444246945 } as const;
+  const major = evaluateColumnUniaxialMomentCapacity({ ...section, widthPerpMm: 350, depthBendingMm: 550 });
+  const minor = evaluateColumnUniaxialMomentCapacity({ ...section, widthPerpMm: 550, depthBendingMm: 350 });
+  // 200×200 independent midpoint integration of concrete and discrete perimeter steel.
+  expect(Math.abs(major.mu1CapacityKnM - 32.14804)).toBeLessThan(0.01);
+  expect(Math.abs(minor.mu1CapacityKnM - 19.43933)).toBeLessThan(0.01);
+  expect(Math.abs(major.puzKn - 4853.38318)).toBeLessThan(0.001);
+});

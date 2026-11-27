@@ -96,7 +96,15 @@ it.each([2, 3, 4] as const)(
     expect(mep.drainageEconomy).toMatchObject({ routingStatus: 'SCHEMATIC_UNSIZED',
       collectorTerminatesTowardsRoad: collectorProposed, unconnectedRiserCount: unconnected.length });
     if (flatsPerFloor === 2) expect(collectorProposed).toBe(true);
-    if (flatsPerFloor === 3) expect(unconnected).toHaveLength(mep.verticalStacks.length);
+    expect(unconnected).toHaveLength(flatsPerFloor - 2);
+    for (const stack of unconnected) {
+      expect(stack.stiltConnectionDiagnostic).toMatchObject({
+        status: 'INFEASIBLE', code: 'PROTECTED_OPEN_TO_SKY',
+      });
+      const stilt = building.floors.find(floor => floor.id === stack.stiltConnectionDiagnostic?.floorId);
+      const courtyard = stilt?.rooms.find(room => room.id === stack.stiltConnectionDiagnostic?.protectedRoomId);
+      expect(courtyard?.openToSky || courtyard?.architecturalRole === 'OPEN_TO_SKY_VOID').toBe(true);
+    }
     expect(mep.drainageEconomy!.sharedShaftCount).toBeGreaterThanOrEqual(1);
     expect(mep.drainageEconomy!.servedWetRoomCount).toBeGreaterThan(0);
     expect(mep.drainageEconomy!.totalDrainagePipeLengthMm).toBeGreaterThan(0);

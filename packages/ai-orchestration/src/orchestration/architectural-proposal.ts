@@ -1250,6 +1250,13 @@ export async function generateArchitecturalProposal(
       : input.config.units;
 
     const promptMentionsArea = /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|sft|sq\.?\s*m|sqm|m2|m²)\b/i.test(basePrompt);
+    // Let measured unit allocation select a room archetype when the only
+    // preference would be the deterministic default for an empty brief.
+    const fitUnequalProgram = !basePrompt.trim() && !input.config.requireAreaTargets
+      && finalTelemetry.interpretationSource === 'DETERMINISTIC'
+      && resolvedUnits?.length === resolvedFlatsPerFloor
+      && resolvedUnits.every(unit => (unit.targetCarpetSqFt ?? 0) > 0)
+      && resolvedUnits.some(unit => unit.targetCarpetSqFt !== resolvedUnits[0]?.targetCarpetSqFt);
     const enrichedConfig: MultiSheetApartmentConfig = {
       ...input.config,
       flatsPerFloor: resolvedFlatsPerFloor,
@@ -1257,7 +1264,7 @@ export async function generateArchitecturalProposal(
       ...(effectiveAiPrompt ? { aiPrompt: effectiveAiPrompt } : {}),
       generationSeed: seed,
       rejectedTopologyHashes: rejected,
-      preferredArchetype: input.config.preferredArchetype ?? finalProposal.preferredArchetype,
+      preferredArchetype: input.config.preferredArchetype ?? (fitUnequalProgram ? undefined : finalProposal.preferredArchetype),
       buildingMassingShape: input.config.buildingMassingShape ?? finalProposal.buildingMassingShape,
       lockedMassingShape: input.config.lockedMassingShape ?? input.config.buildingMassingShape,
       ...(referenceGuidanceApplied.some(hint => hint === 'CORRIDOR_AXIS' || hint === 'COURTYARD_CIRCULATION') &&
