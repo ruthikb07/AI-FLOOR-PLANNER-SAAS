@@ -9,6 +9,8 @@
       "persistent": true
     },
     "test": {
+      "passThroughEnv": ["RH_CARBON4_PYTHON"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/structural-python-worker/*.py", "$TURBO_ROOT$/tools/structural-python-worker/uv.lock"],
       "dependsOn": ["build"],
       "outputs": ["coverage/**"]
     },

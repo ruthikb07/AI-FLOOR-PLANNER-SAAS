@@ -1,3 +1,4 @@
+import { applyReviewedDecks } from '../assembly/reviewed-decks.js';
 /**
  * @ai-floor-planner/structural-engine — Deterministic Structural Defect Detector &
  * Protected Localized Structural Optimizer with Mandatory Global Reanalysis (Milestone 5.1 Gates 2, 6, 8 & 9)
@@ -569,7 +570,7 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   const awatifSolver = params.solver ?? new AwatifStructuralSolver();
   await awatifSolver.initialize();
 
-  const system = synthesizeCanonicalStructuralSystem(params.building, {
+  const frame = synthesizeCanonicalStructuralSystem(params.building, {
     concreteGrade: params.inputs.concreteGrade,
     steelGrade: params.inputs.steelGrade,
     ductileDetailing: params.inputs.ductileDetailingIS13920,
@@ -581,6 +582,7 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     ...params.synthesisOptions,
   });
 
+  const system = applyReviewedDecks(params.building, frame, params.inputs.rectangularDeckReviews ?? []);
   const { analyticalModel, loadTakeoff } = await assembleLoadedAnalyticalFrameModel(
     system,
     params.inputs,

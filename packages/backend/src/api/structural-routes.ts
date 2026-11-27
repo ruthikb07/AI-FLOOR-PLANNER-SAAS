@@ -24,6 +24,8 @@ import {
   type FrameSynthesisOptions,
   type FullStructuralEvaluationSnapshot,
   type OptimizationObjectiveMode,
+  isRectangularDeckReview,
+  DeckReviewError,
   type ReviewedStructuralInputs,
   type SectionCapacityBackend,
   type SeismicZoneIS1893,
@@ -76,6 +78,10 @@ function summarizeEvaluation(snapshot: FullStructuralEvaluationSnapshot): Struct
 function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: string } {
   if (!isRecord(raw)) {
     return { error: 'reviewedInputs object is required.' };
+  }
+  const reviews = raw.rectangularDeckReviews;
+  if (reviews !== undefined && (!Array.isArray(reviews) || !reviews.every(isRectangularDeckReview))) {
+    return { error: 'Invalid rectangular deck review. Supply the revision, reviewed levels, loads and bearing width.' };
   }
   const concreteGrade = (raw.concreteGrade ?? 'M25') as ConcreteGrade;
   if (!['M20', 'M25', 'M30', 'M35', 'M40'].includes(concreteGrade)) {
@@ -176,6 +182,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
   return {
     concreteGrade,
     steelGrade,
+    ...(reviews ? { rectangularDeckReviews: reviews } : {}),
     ductileDetailingIS13920: raw.ductileDetailingIS13920 !== false,
     floorFinishKnM2: typeof raw.floorFinishKnM2 === 'number' ? raw.floorFinishKnM2 : 1.2,
     masonryUnitWeightKnM3:
@@ -333,8 +340,22 @@ export async function handleStructuralRoute(
         const decks = [];
         const worker = getSharedPythonStructuralWorker();
         for (const floor of building.floors) {
+          const reviewed = saved.snapshot.system.physicalModel.slabs.filter(slab => slab.floorId === floor.id && slab.deckReview);
+          if (reviewed.length) {
+            decks.push({ supportingFloorId: floor.id, status: 'ANALYZED_REVIEWED_DECK', slabs: reviewed });
+            continue;
+          }
+          const base = saved.snapshot.system.storeys.find(s => s.id === floor.id)?.elevationMm;
+          const owners = building.floors.filter(candidate => candidate.id !== floor.id && base !== undefined &&
+            candidate.elevationMm === base + floor.floorHeight);
+          const owner = owners.length === 1 ? owners[0] : undefined;
+          if (!owner) {
+            decks.push({ supportingFloorId: floor.id, status: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED' });
+            continue;
+          }
           const beams = saved.snapshot.system.physicalModel.beams.filter(beam => beam.floorId === floor.id);
-          const result = await worker.request({ action: 'coordinate_deck', floor, beams });
+          const result = await worker.request({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
+            registeredSurface: true, beams });
           if (!result.ok) {
             sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_GEOMETRY', floorId: floor.id, message: result.message } });
             return true;
@@ -637,6 +658,10 @@ export async function handleStructuralRoute(
   } catch (err) {
     if (response.destroyed) return true;
     if (err instanceof RequestBodyTooLarge) throw err;
+    if (err instanceof DeckReviewError) {
+      sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_REVIEW', message: err.message } });
+      return true;
+    }
     if (err instanceof UnsupportedStructuralMethodError) {
       sendJson(response, 422, { error: { code: 'UNSUPPORTED_STRUCTURAL_METHOD', message: err.message, method: err.method } });
       return true;

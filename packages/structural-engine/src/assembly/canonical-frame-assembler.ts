@@ -81,6 +81,7 @@ export interface ArchitecturalStructuralClash {
 }
 
 export interface SynthesizedSlabPanel {
+  readonly deckReview?: import('../assembly/reviewed-decks.js').RectangularDeckReview;
   readonly id: string;
   readonly floorId: string;
   readonly floorLevel: number;

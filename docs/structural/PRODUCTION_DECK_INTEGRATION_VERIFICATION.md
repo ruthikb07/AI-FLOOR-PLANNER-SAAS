@@ -1,0 +1,11 @@
+# Production deck integration verification
+
+**VERIFIED FOR DEFINED SCOPE** for a reviewed, simply supported rectangular deck covering a complete structural level with four continuous, column-supported beam edges. **PARTIAL** for Milestones 6A.1 and 6A.2.
+
+The normal analysis and regeneration endpoints accept an array in reviewedInputs.rectangularDeckReviews. Structural Studio can import the same array. Each entry must declare the RH_RECTANGULAR_DECK_V1 schema, SIMPLY_SUPPORTED_FULL_LEVEL boundary condition, canonical architecture SHA-256, review reference, supportingFloorId, surfaceFloorId, use, structuralTopMm, finishedFloorMm, thicknessMm, uniformLiveLoadKnM2 and minimumBearingWidthMm. The review must account for the entire level, including exposed terraces. A review reference is an operator-supplied engineering input.
+
+For each reviewed level the evaluator replaces every previously synthesized slab with one physical deck before assembling loads. Review and geometry travel together in the saved panel and physical slab. The geometry validator requires a simple rectangle, four fully covered edges, eligible analytical beam subsegments, matching elevation, minimum bearing width into each edge, and column-node chains reaching a vertical restraint. Interior beams, slots, balconies and stairs require regional modelling. Mixed uses or continuity requiring other load patterns need a separate method. Rejected reviews stop evaluation. Unreviewed levels retain the legacy model and its unresolved-path safety gate.
+
+Independent 160 mm slab cases used 25 kN/m³ concrete, 1 kN/m² finish and 3 kN/m² live load. A 4 by 2.5 m panel delivered 40 / 10 / 30 kN. A 5.5 by 2.5 m panel delivered 55 / 13.75 / 41.25 kN. Both used the upper surface over a larger stilt outline. Tests cover transferred force, first moment and exactly one physical panel. The export test evaluates a building and reads the same physical ID in DXF and IFC, including the IFC deck review reference. IFC native reopen for this new fixture remains unverified.
+
+The previous hosted job recorded four worker startup failures with python=MISSING. The workflow now provisions the pinned worker, runs its Python tests, and passes the interpreter path through Turbo. No assertion or deadline was relaxed.

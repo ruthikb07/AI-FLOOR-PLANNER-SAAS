@@ -1522,7 +1522,8 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
     try:
         if action == "coordinate_deck":
             from deck_topology import coordinate_deck
-            res = {"ok": True, "deck": coordinate_deck(req["floor"], req["beams"])}
+            res = {"ok": True, "deck": coordinate_deck(req["floor"], req["beams"],
+                    supporting_floor=req.get("supportingFloor"), registered_surface=bool(req.get("registeredSurface")))}
         elif action == "capabilities":
             res = {"ok": True, **get_capabilities()}
         elif action == "pynite_solve":
