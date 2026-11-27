@@ -53,6 +53,11 @@ export class StructuralAnalysisEngine {
     readonly building: Building;
     readonly inputs: ReviewedStructuralInputs;
     readonly mode?: OptimizationObjectiveMode;
+    readonly targetPhysicalMemberIds?: readonly string[];
+    readonly initialSectionOverrides?: FrameSynthesisOptions['sectionOverrides'];
+    readonly initialRebarOverrides?: FrameSynthesisOptions['rebarOverrides'];
+    readonly initialSlabOverridesMm?: FrameSynthesisOptions['slabThicknessOverridesMm'];
+    readonly initialFootingOverrides?: FootingSizingOverrides['byId'];
     readonly foundationPreference?: FoundationSystemPreference;
     readonly maxIterations?: number;
   }): Promise<StructuralOptimizationResult> {

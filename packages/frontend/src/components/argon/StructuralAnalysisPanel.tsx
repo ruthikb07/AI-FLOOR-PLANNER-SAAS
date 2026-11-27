@@ -21,9 +21,11 @@ import {
   CheckCircle2,
   Cpu,
   Download,
+  Eye,
   FileCode2,
   FileSpreadsheet,
   FileText,
+  Layers,
   Send,
   ShieldAlert,
   Sparkles,
@@ -34,17 +36,27 @@ interface StructuralAnalysisPanelProps {
   readonly building: Building;
   readonly onDownloadReportPdf?: () => void;
   readonly reportBusy?: boolean;
+  readonly initialSelectedCoordinate?: {
+    readonly kind: 'COLUMN' | 'BEAM';
+    readonly xMm: number;
+    readonly yMm: number;
+    readonly floorId: string;
+    readonly label: string;
+  } | null;
 }
 
 type ScheduleSubTab =
   | 'COLUMNS'
   | 'BEAMS_SLABS'
   | 'FOOTINGS'
+  | 'STUDIO_VIEWS'
   | 'SEISMIC'
   | 'DIAGRAMS'
   | 'OPTIMIZER'
   | 'BBS_BOQ'
   | 'AI_ASSISTANT';
+
+type StudioPlanViewKind = 'PHYSICAL_FRAMING' | 'ANALYTICAL_MESH' | 'FOUNDATION_PLAN';
 
 type DiagramKind = 'BMD' | 'SFD' | 'AFD' | 'TORSION' | 'DEFLECTION' | 'UTILIZATION';
 
@@ -77,10 +89,107 @@ function triggerDownload(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** Renders a to-scale SVG reinforcement cross-section for a physical RCC beam or column. */
+const RebarCrossSectionSvg: React.FC<{
+  readonly kind: 'BEAM' | 'COLUMN';
+  readonly widthMm: number;
+  readonly depthMm: number;
+  readonly topOrLongBars: { readonly barCount: number; readonly barDiaMm: number; readonly label: string };
+  readonly bottomBars?: { readonly barCount: number; readonly barDiaMm: number; readonly label: string };
+  readonly stirrupLabel: string;
+}> = ({ kind, widthMm, depthMm, topOrLongBars, bottomBars, stirrupLabel }) => {
+  const pad = 28;
+  const scale = Math.min(130 / Math.max(200, widthMm), 130 / Math.max(200, depthMm));
+  const wPx = widthMm * scale;
+  const dPx = depthMm * scale;
+  const coverPx = Math.max(8, (kind === 'COLUMN' ? 40 : 25) * scale);
+  const svgW = wPx + pad * 2;
+  const svgH = dPx + pad * 2;
+
+  const barCircles: { cx: number; cy: number; r: number; fill: string }[] = [];
+  const x0 = pad + coverPx;
+  const x1 = pad + wPx - coverPx;
+  const y0 = pad + coverPx;
+  const y1 = pad + dPx - coverPx;
+
+  if (kind === 'BEAM') {
+    const nTop = Math.max(2, Math.min(8, topOrLongBars.barCount));
+    const rTop = Math.max(3, (topOrLongBars.barDiaMm * scale) / 2);
+    for (let i = 0; i < nTop; i++) {
+      const t = nTop === 1 ? 0.5 : i / (nTop - 1);
+      barCircles.push({ cx: x0 + t * (x1 - x0), cy: y0 + rTop, r: rTop, fill: '#F59E0B' });
+    }
+    const bot = bottomBars ?? topOrLongBars;
+    const nBot = Math.max(2, Math.min(8, bot.barCount));
+    const rBot = Math.max(3, (bot.barDiaMm * scale) / 2);
+    for (let i = 0; i < nBot; i++) {
+      const t = nBot === 1 ? 0.5 : i / (nBot - 1);
+      barCircles.push({ cx: x0 + t * (x1 - x0), cy: y1 - rBot, r: rBot, fill: '#38BDF8' });
+    }
+  } else {
+    const nCol = Math.max(4, Math.min(16, topOrLongBars.barCount));
+    const rCol = Math.max(3.2, (topOrLongBars.barDiaMm * scale) / 2);
+    // Distribute symmetrically around perimeter (4 corners + intermediate bars)
+    barCircles.push(
+      { cx: x0 + rCol, cy: y0 + rCol, r: rCol, fill: '#F59E0B' },
+      { cx: x1 - rCol, cy: y0 + rCol, r: rCol, fill: '#F59E0B' },
+      { cx: x1 - rCol, cy: y1 - rCol, r: rCol, fill: '#F59E0B' },
+      { cx: x0 + rCol, cy: y1 - rCol, r: rCol, fill: '#F59E0B' },
+    );
+    const rem = nCol - 4;
+    const perFace = Math.floor(rem / 2);
+    for (let i = 1; i <= perFace; i++) {
+      const t = i / (perFace + 1);
+      barCircles.push({ cx: x0 + rCol, cy: y0 + t * (y1 - y0), r: rCol, fill: '#FDE68A' });
+      barCircles.push({ cx: x1 - rCol, cy: y0 + t * (y1 - y0), r: rCol, fill: '#FDE68A' });
+    }
+  }
+
+  return (
+    <div data-testid="struct-rebar-cross-section" className="rounded-lg border border-slate-700/80 bg-[#070B14] p-2.5 flex items-center gap-3">
+      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} className="shrink-0">
+        <rect x={pad} y={pad} width={wPx} height={dPx} fill="#1E293B" stroke="#94A3B8" strokeWidth={1.6} />
+        <rect
+          x={x0}
+          y={y0}
+          width={Math.max(8, x1 - x0)}
+          height={Math.max(8, y1 - y0)}
+          rx={3}
+          fill="none"
+          stroke="#10B981"
+          strokeWidth={1.5}
+        />
+        {barCircles.map((b, idx) => (
+          <circle key={idx} cx={b.cx} cy={b.cy} r={b.r} fill={b.fill} stroke="#0B101B" strokeWidth={0.8} />
+        ))}
+        <text x={pad + wPx / 2} y={pad - 8} textAnchor="middle" fill="#CBD5E1" fontSize="9" fontFamily="monospace">
+          b={widthMm}mm
+        </text>
+        <text x={pad + wPx + 5} y={pad + dPx / 2} fill="#CBD5E1" fontSize="9" fontFamily="monospace">
+          D={depthMm}
+        </text>
+      </svg>
+      <div className="text-[10px] font-mono space-y-1 text-slate-300">
+        <div className="font-bold text-slate-100">{kind} Cross-Section</div>
+        {kind === 'BEAM' ? (
+          <>
+            <div className="text-amber-300">Top: {topOrLongBars.label}</div>
+            <div className="text-sky-300">Bot: {bottomBars?.label}</div>
+          </>
+        ) : (
+          <div className="text-amber-300">Main: {topOrLongBars.label}</div>
+        )}
+        <div className="text-emerald-300">Links: {stirrupLabel}</div>
+      </div>
+    </div>
+  );
+};
+
 export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = ({
   building,
   onDownloadReportPdf,
   reportBusy = false,
+  initialSelectedCoordinate = null,
 }) => {
   const [seismicZone, setSeismicZone] = useState<SeismicZoneCode>('III');
   const [concreteGrade, setConcreteGrade] = useState<ConcreteGradeCode>('M25');
@@ -93,6 +202,14 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
   const [foundationPref, setFoundationPref] = useState<FoundationSystemPreference>('AUTO');
   const [windEnabled, setWindEnabled] = useState<boolean>(true);
   const [activeSubTab, setActiveSubTab] = useState<ScheduleSubTab>('COLUMNS');
+
+  // Gate 9 Studio View State
+  const [studioViewKind, setStudioViewKind] = useState<StudioPlanViewKind>('PHYSICAL_FRAMING');
+  const [studioFloorId, setStudioFloorId] = useState<string>(() => {
+    const resFloor = building.floors.find((f) => f.floorUse === 'RESIDENTIAL');
+    return resFloor?.id || building.floors[0]?.id || '';
+  });
+  const [selectedPhysicalMemberId, setSelectedPhysicalMemberId] = useState<string | null>(null);
 
   // Awatif C++/WASM Live Evaluation State
   const [analysis, setAnalysis] = useState<{
@@ -115,7 +232,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     error?: string;
   } | null>(null);
 
-  // Optimizer State
+  // Global & Single-Member Optimizer State
   const [optMode, setOptMode] = useState<OptimizationObjectiveMode>('BALANCED');
   const [optBusy, setOptBusy] = useState<boolean>(false);
   const [optimization, setOptimization] = useState<{
@@ -123,6 +240,12 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     evaluationId: string;
     result: StructuralOptimizationSummary;
   } | null>(null);
+  const [memberOptPreview, setMemberOptPreview] = useState<{
+    request: AnalysisRequest;
+    targetPhysicalMemberId: string;
+    result: StructuralOptimizationSummary;
+  } | null>(null);
+  const [memberOptBusy, setMemberOptBusy] = useState<boolean>(false);
 
   // Export & AI Assistant State
   const [exportStatus, setExportStatus] = useState<string>('');
@@ -140,15 +263,13 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
   const depth = Number(foundationDepthM);
   const unitWeight = Number(soilUnitWeight);
   const settlement = Number(settlementLimit);
-  const hasGeotechnicalInputs = [parsedSbc, depth, unitWeight, settlement].every(
-    (value) => Number.isFinite(value) && value > 0,
-  ) && geotechReference.trim().length > 0;
+  const hasGeotechnicalInputs =
+    [parsedSbc, depth, unitWeight, settlement].every((value) => Number.isFinite(value) && value > 0) &&
+    geotechReference.trim().length > 0;
 
-  // Incomplete fields leave the pending foundation model unchanged while the report is being entered.
-  const [appliedSbc, appliedDepth, appliedUnitWeight, appliedSettlement, appliedReport] =
-    hasGeotechnicalInputs
-      ? [parsedSbc, depth, unitWeight, settlement, geotechReference.trim()] as const
-      : [0, 0, 0, 0, ''] as const;
+  const [appliedSbc, appliedDepth, appliedUnitWeight, appliedSettlement, appliedReport] = hasGeotechnicalInputs
+    ? ([parsedSbc, depth, unitWeight, settlement, geotechReference.trim()] as const)
+    : ([0, 0, 0, 0, ''] as const);
 
   const reviewedInputs: ReviewedStructuralInputs = useMemo(
     () => ({
@@ -183,7 +304,18 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
           }
         : null,
     }),
-    [concreteGrade, steelGrade, seismicZone, windEnabled, hasGeotechnicalInputs, appliedSbc, appliedDepth, appliedUnitWeight, appliedSettlement, appliedReport],
+    [
+      concreteGrade,
+      steelGrade,
+      seismicZone,
+      windEnabled,
+      hasGeotechnicalInputs,
+      appliedSbc,
+      appliedDepth,
+      appliedUnitWeight,
+      appliedSettlement,
+      appliedReport,
+    ],
   );
 
   const analysisRequest = useMemo<AnalysisRequest>(
@@ -191,26 +323,33 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     [building, reviewedInputs, foundationPref],
   );
 
+  // Strict stale-result invalidation whenever geometry or reviewed inputs change
   useEffect(() => {
     const abort = new AbortController();
     setFeaBusy(true);
     setFeaError('');
     setOptimization(null);
+    setMemberOptPreview(null);
     const delay = window.setTimeout(() => {
       requestStructural<{ evaluationId: string; snapshot: StructuralEvaluationSummary }>(
-        'analyze', analysisRequest, abort.signal,
-      ).then((result) => {
-        if (abort.signal.aborted) return;
-        setAnalysis({ request: analysisRequest, ...result });
-        const combinationIds = Object.keys(result.snapshot.solveEnvelope.combinationResults);
-        if (combinationIds.length) {
-          setSelectedComboId((current) => combinationIds.includes(current) ? current : combinationIds[0]!);
-        }
-      }).catch((error: unknown) => {
-        if (!abort.signal.aborted) setFeaError(error instanceof Error ? error.message : String(error));
-      }).finally(() => {
-        if (!abort.signal.aborted) setFeaBusy(false);
-      });
+        'analyze',
+        analysisRequest,
+        abort.signal,
+      )
+        .then((result) => {
+          if (abort.signal.aborted) return;
+          setAnalysis({ request: analysisRequest, ...result });
+          const combinationIds = Object.keys(result.snapshot.solveEnvelope.combinationResults);
+          if (combinationIds.length) {
+            setSelectedComboId((current) => (combinationIds.includes(current) ? current : combinationIds[0]!));
+          }
+        })
+        .catch((error: unknown) => {
+          if (!abort.signal.aborted) setFeaError(error instanceof Error ? error.message : String(error));
+        })
+        .finally(() => {
+          if (!abort.signal.aborted) setFeaBusy(false);
+        });
     }, 250);
     return () => {
       window.clearTimeout(delay);
@@ -220,6 +359,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
 
   const activeAnalysis = analysis?.request === analysisRequest ? analysis : null;
   const activeOptimization = optimization?.request === analysisRequest ? optimization : null;
+  const activePreview = memberOptPreview?.request === analysisRequest ? memberOptPreview : null;
   const optResult = activeOptimization?.result;
   const activeSnap = optResult?.after ?? activeAnalysis?.snapshot;
   const evaluationId = activeOptimization?.evaluationId ?? activeAnalysis?.evaluationId;
@@ -230,6 +370,67 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
   const selectedCase = caseDetail?.evaluationId === evaluationId && caseDetail?.caseId === caseId ? caseDetail : null;
   const activeComboResult = selectedCase?.result;
   const solverBackend = caseSummary?.diagnostics.executionBackend ?? 'PENDING';
+  const fallbackReason = caseSummary?.diagnostics.backendFallbackReason;
+
+  // Map CAD coordinate hint or auto-select highest-utilization physical member
+  useEffect(() => {
+    if (!activeSnap) return;
+    if (initialSelectedCoordinate) {
+      const { kind, xMm, yMm, floorId } = initialSelectedCoordinate;
+      if (kind === 'COLUMN') {
+        let bestId: string | null = null;
+        let bestDist = Infinity;
+        for (const pc of activeSnap.system.physicalModel.columns) {
+          if (floorId && pc.floorId !== floorId) continue;
+          const d = Math.hypot(pc.centerXMm - xMm, pc.centerYMm - yMm);
+          if (d < bestDist) {
+            bestDist = d;
+            bestId = pc.physicalMemberId;
+          }
+        }
+        if (bestId) {
+          setSelectedPhysicalMemberId(bestId);
+          setActiveSubTab('STUDIO_VIEWS');
+          if (floorId) setStudioFloorId(floorId);
+          return;
+        }
+      } else {
+        let bestId: string | null = null;
+        let bestDist = Infinity;
+        for (const pb of activeSnap.system.physicalModel.beams) {
+          if (floorId && pb.floorId !== floorId) continue;
+          const mx = (pb.startPointMm.x + pb.endPointMm.x) / 2;
+          const my = (pb.startPointMm.y + pb.endPointMm.y) / 2;
+          const d = Math.hypot(mx - xMm, my - yMm);
+          if (d < bestDist) {
+            bestDist = d;
+            bestId = pb.physicalMemberId;
+          }
+        }
+        if (bestId) {
+          setSelectedPhysicalMemberId(bestId);
+          setActiveSubTab('STUDIO_VIEWS');
+          if (floorId) setStudioFloorId(floorId);
+          return;
+        }
+      }
+    }
+    setSelectedPhysicalMemberId((prev) => {
+      if (
+        prev &&
+        (activeSnap.rccDesign.beams.some((b) => b.physicalMemberId === prev) ||
+          activeSnap.rccDesign.columns.some((c) => c.physicalMemberId === prev))
+      ) {
+        return prev;
+      }
+      const worstBeam = [...activeSnap.rccDesign.beams].sort((a, b) => b.maxUtilization - a.maxUtilization)[0];
+      const worstCol = [...activeSnap.rccDesign.columns].sort((a, b) => b.maxUtilization - a.maxUtilization)[0];
+      if (!worstBeam && !worstCol) return null;
+      return (worstBeam?.maxUtilization ?? 0) >= (worstCol?.maxUtilization ?? 0)
+        ? worstBeam!.physicalMemberId
+        : worstCol!.physicalMemberId;
+    });
+  }, [activeSnap, initialSelectedCoordinate]);
 
   useEffect(() => {
     if (activeSubTab !== 'DIAGRAMS' || !evaluationId || !caseId) return;
@@ -246,32 +447,97 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     return () => abort.abort();
   }, [activeSubTab, evaluationId, caseId]);
 
+  // Distinct Gate 9 Lifecycle Statuses: ANALYZED | DESIGN_FAILED | UNSUPPORTED_REQUIRED_CHECK | DESIGN_CHECKS_PASSED
   const lifecycleBadge = useMemo(() => {
-    if (!activeSnap) return { label: feaError ? 'ANALYSIS UNAVAILABLE' : 'ANALYSIS PENDING', cls: 'bg-sky-500/20 text-sky-300 border-sky-400/40' };
+    if (!activeSnap) {
+      return {
+        statusCode: feaError ? 'ANALYSIS_UNAVAILABLE' : 'PENDING',
+        label: feaError ? 'ANALYSIS UNAVAILABLE' : 'ANALYSIS PENDING',
+        cls: 'bg-sky-500/20 text-sky-300 border-sky-400/40',
+      };
+    }
+    if (
+      activeSnap.designLifecycleStatus === 'UNSUPPORTED_REQUIRED_CHECK' ||
+      activeSnap.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE'
+    ) {
+      return {
+        statusCode: 'UNSUPPORTED_REQUIRED_CHECK',
+        label: 'UNSUPPORTED_REQUIRED_CHECK',
+        cls: 'bg-violet-500/20 text-violet-200 border-violet-400/50',
+      };
+    }
     if (activeSnap.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
-      return { label: 'INPUT REVIEW REQUIRED (GEOTECHNICAL)', cls: 'bg-amber-500/20 text-amber-300 border-amber-400/40' };
+      const superFailed = activeSnap.criticalDefectCount > 0 || !activeSnap.rccDesign.allPassed;
+      return {
+        statusCode: superFailed ? 'DESIGN_FAILED' : 'ANALYZED',
+        label: superFailed
+          ? `DESIGN_FAILED (${activeSnap.criticalDefectCount}) · GEOTECHNICAL REQ.`
+          : 'ANALYZED · INPUT_REVIEW_REQUIRED (GEOTECHNICAL)',
+        cls: superFailed
+          ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+          : 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+      };
     }
-    if (activeSnap.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
-      return { label: 'UNSUPPORTED FOUNDATION SYSTEM', cls: 'bg-amber-500/20 text-amber-300 border-amber-400/40' };
+    if (activeSnap.designLifecycleStatus === 'DESIGN_CHECKS_PASSED') {
+      return {
+        statusCode: 'DESIGN_CHECKS_PASSED',
+        label: 'DESIGN_CHECKS_PASSED (REVIEW REQ.)',
+        cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
+      };
     }
-    if (optResult?.status === 'OPTIMIZED_VERIFIED') {
-      return { label: 'OPTIMIZED · CHECKS PASSED (REVIEW REQ.)', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' };
+    return {
+      statusCode: 'DESIGN_FAILED',
+      label: `DESIGN_FAILED (${activeSnap.criticalDefectCount} FINDINGS)`,
+      cls: 'bg-rose-500/20 text-rose-300 border-rose-400/40',
+    };
+  }, [activeSnap, feaError]);
+
+  const selectedMemberDetail = useMemo(() => {
+    if (!activeSnap || !selectedPhysicalMemberId) return null;
+    const beam = activeSnap.rccDesign.beams.find((b) => b.physicalMemberId === selectedPhysicalMemberId);
+    if (beam) {
+      const defect = activeSnap.defects.find((d) => d.physicalMemberId === selectedPhysicalMemberId);
+      return { kind: 'BEAM' as const, beam, defect };
     }
-    if (activeSnap.criticalDefectCount === 0 && activeSnap.rccDesign.allPassed && activeSnap.foundationDesign.allPassed) {
-      return { label: 'DESIGN CHECKS PASSED (REVIEW REQ.)', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' };
+    const column = activeSnap.rccDesign.columns.find((c) => c.physicalMemberId === selectedPhysicalMemberId);
+    if (column) {
+      const defect = activeSnap.defects.find((d) => d.physicalMemberId === selectedPhysicalMemberId);
+      return { kind: 'COLUMN' as const, column, defect };
     }
-    return { label: `DESIGN DEFECTS DETECTED (${activeSnap.criticalDefectCount})`, cls: 'bg-rose-500/20 text-rose-300 border-rose-400/40' };
-  }, [activeSnap, optResult, feaError]);
+    return null;
+  }, [activeSnap, selectedPhysicalMemberId]);
+
+  const selectByAnalyticalElementIndex = (elIdx: number) => {
+    setSelectedElementIdx(elIdx);
+    if (!activeSnap) return;
+    const el = activeSnap.system.elements[elIdx];
+    const physId =
+      el?.parentMemberId ??
+      (el ? activeSnap.system.physicalModel.mapping.analyticalToPhysicalMemberId[el.id] : undefined);
+    if (physId) {
+      setSelectedPhysicalMemberId(physId);
+      setMemberOptPreview(null);
+    }
+  };
 
   async function handleRunOptimizer() {
     setOptBusy(true);
+    setMemberOptPreview(null);
     setExportStatus(`Running ${optMode} optimization with full-frame Awatif WASM global reanalysis…`);
     try {
-      const { evaluationId, optimization: res } = await requestStructural<{
+      const { evaluationId: nextEvalId, optimization: res } = await requestStructural<{
         evaluationId: string;
         optimization: StructuralOptimizationSummary;
-      }>('optimize', { ...analysisRequest, mode: optMode, maxIterations: 6 });
-      setOptimization({ request: analysisRequest, evaluationId, result: res });
+      }>('optimize', {
+        ...analysisRequest,
+        mode: optMode,
+        maxIterations: 6,
+        initialSectionOverrides: optResult?.sectionOverridesApplied,
+        initialRebarOverrides: optResult?.rebarOverridesApplied,
+        initialSlabOverridesMm: optResult?.slabOverridesApplied,
+        initialFootingOverrides: optResult?.footingOverridesApplied,
+      });
+      setOptimization({ request: analysisRequest, evaluationId: nextEvalId, result: res });
       setExportStatus(
         `Optimization ${res.status}: ${res.iterations.length} global reanalysis iteration(s), ${res.deltaSummary.defectsResolved} defect(s) resolved.`,
       );
@@ -279,6 +545,57 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       setExportStatus(err instanceof Error ? err.message : 'Optimization failed');
     } finally {
       setOptBusy(false);
+    }
+  }
+
+  async function handleSingleMemberOptimization(previewOnly: boolean) {
+    if (!selectedPhysicalMemberId) return;
+    setMemberOptBusy(true);
+    setExportStatus(
+      previewOnly
+        ? `Previewing localized optimization + global reanalysis for ${selectedPhysicalMemberId}…`
+        : `Applying localized optimization + full-frame global reanalysis for ${selectedPhysicalMemberId}…`,
+    );
+    try {
+      const data = await requestStructural<{
+        evaluationId?: string;
+        previewOnly: boolean;
+        optimization: StructuralOptimizationSummary;
+      }>('optimize', {
+        ...analysisRequest,
+        mode: optMode,
+        targetPhysicalMemberIds: [selectedPhysicalMemberId],
+        previewOnly,
+        maxIterations: 3,
+        initialSectionOverrides: optResult?.sectionOverridesApplied,
+        initialRebarOverrides: optResult?.rebarOverridesApplied,
+        initialSlabOverridesMm: optResult?.slabOverridesApplied,
+        initialFootingOverrides: optResult?.footingOverridesApplied,
+      });
+      if (previewOnly) {
+        setMemberOptPreview({
+          request: analysisRequest,
+          targetPhysicalMemberId: selectedPhysicalMemberId,
+          result: data.optimization,
+        });
+        setExportStatus(
+          `Preview ready for ${selectedPhysicalMemberId}: global max utilization ${data.optimization.before.maxMemberUtilization} → ${data.optimization.after.maxMemberUtilization}. Review and click Accept to commit.`,
+        );
+      } else if (data.evaluationId) {
+        setOptimization({
+          request: analysisRequest,
+          evaluationId: data.evaluationId,
+          result: data.optimization,
+        });
+        setMemberOptPreview(null);
+        setExportStatus(
+          `Accepted & globally reanalyzed ${selectedPhysicalMemberId} (${data.optimization.iterations.length} full-frame WASM reanalysis pass(es)).`,
+        );
+      }
+    } catch (err) {
+      setExportStatus(err instanceof Error ? err.message : 'Member optimization failed');
+    } finally {
+      setMemberOptBusy(false);
     }
   }
 
@@ -359,8 +676,443 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
 
   const baseShearDisplayKn = activeSnap?.loadTakeoff.seismicSummary?.designBaseShearVbXKn;
   const totalGravitySlsKn = activeSnap
-    ? activeSnap.loadTakeoff.totalDeadPlusSdlKn + activeSnap.loadTakeoff.totalOccupancyLiveKn + activeSnap.loadTakeoff.totalRoofLiveKn
+    ? activeSnap.loadTakeoff.totalDeadPlusSdlKn +
+      activeSnap.loadTakeoff.totalOccupancyLiveKn +
+      activeSnap.loadTakeoff.totalRoofLiveKn
     : undefined;
+
+  // Gate 9: Interactive Selected Physical Member Failure & Optimization Inspector Card
+  const renderSelectedMemberInspector = () => {
+    if (!activeSnap || !selectedMemberDetail) {
+      return (
+        <div
+          data-testid="struct-selected-member-panel"
+          className="rounded-xl border border-slate-700/80 bg-[#111827] p-4 text-xs font-mono text-slate-400"
+        >
+          Click any physical beam or column in the CAD Plan, 3D Diagram, or Schedules to inspect governing clauses, rebar cage, and localized optimization.
+        </div>
+      );
+    }
+
+    const isBeam = selectedMemberDetail.kind === 'BEAM';
+    const bm = isBeam ? selectedMemberDetail.beam : undefined;
+    const col = !isBeam ? selectedMemberDetail.column : undefined;
+    const physId = isBeam ? bm!.physicalMemberId : col!.physicalMemberId;
+    const status = isBeam ? bm!.status : col!.status;
+    const util = isBeam ? bm!.maxUtilization : col!.maxUtilization;
+    const childIds = isBeam ? bm!.analyticalElementIds : col!.analyticalElementIds;
+    const groupMark = isBeam ? bm!.scheduleGroupMark : col!.scheduleGroupMark;
+
+    const previewForThis =
+      activePreview && activePreview.targetPhysicalMemberId === physId ? activePreview.result : null;
+    const previewChange = previewForThis?.iterations[0]?.modifiedMembersDetail.find(
+      (m) => m.physicalMemberId === physId,
+    );
+
+    return (
+      <div
+        data-testid="struct-selected-member-panel"
+        className="rounded-xl border border-slate-700/80 bg-[#111827] p-4 flex flex-col gap-3 text-xs font-mono"
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-amber-300 font-bold">
+              Physical Member Inspector · [{groupMark}]
+            </div>
+            <div className="text-sm font-bold text-slate-100 mt-0.5">{physId}</div>
+          </div>
+          <span
+            className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+              status === 'PASSED'
+                ? 'bg-emerald-500/20 text-emerald-300'
+                : status === 'UNSUPPORTED'
+                  ? 'bg-violet-500/20 text-violet-200'
+                  : 'bg-rose-500/20 text-rose-300'
+            }`}
+          >
+            {status} · Util {util.toFixed(3)}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-[#0B101B] p-2.5 text-[11px] text-slate-300">
+          <div>
+            <span className="text-slate-500">Section:</span>{' '}
+            {isBeam ? `${bm!.widthMm}×${bm!.depthMm} (${bm!.concreteGrade})` : `${col!.widthMm}×${col!.depthMm} (${col!.concreteGrade})`}
+          </div>
+          <div>
+            <span className="text-slate-500">Span/Ht:</span>{' '}
+            {isBeam ? `${bm!.clearSpanMm} mm` : `${col!.clearHeightMm} mm`}
+          </div>
+          <div>
+            <span className="text-slate-500">Gov Combo:</span>{' '}
+            <span className="text-amber-200">{isBeam ? bm!.governingComboId : col!.governingComboId}</span>
+          </div>
+          <div>
+            <span className="text-slate-500">Analytical FE:</span>{' '}
+            <span className="text-sky-300">{childIds.length} ({childIds.join(', ')})</span>
+          </div>
+          {isBeam ? (
+            <>
+              <div>Me: {bm!.equivalentHoggingMeKnM} / {bm!.equivalentSaggingMeKnM} kN·m</div>
+              <div>Mu,lim: {bm!.muLimKnM} kN·m</div>
+              <div>Ve: {bm!.equivalentShearVeKn} kN ({bm!.nominalShearStressMPa} MPa)</div>
+              <div>Defl: {bm!.slsDeflectionMm} / {bm!.slsAllowableDeflectionMm} mm</div>
+            </>
+          ) : (
+            <>
+              <div>Pu: {col!.demandPuKn} kN (Puz {col!.capacityPuzKn} kN)</div>
+              <div>Bresler: {col!.biaxialInteractionRatio} (αn={col!.breslerAlphaN})</div>
+              <div>Mux/Mux1: {col!.designMuxWithEccentricityAndSlendernessKnM}/{col!.capacityMux1AtPuKnM}</div>
+              <div>Muy/Muy1: {col!.designMuyWithEccentricityAndSlendernessKnM}/{col!.capacityMuy1AtPuKnM}</div>
+            </>
+          )}
+        </div>
+
+        {selectedMemberDetail.defect && (
+          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-2.5 text-[11px] text-rose-200">
+            <div className="font-bold text-rose-300">{selectedMemberDetail.defect.clause}</div>
+            <div className="mt-0.5">{selectedMemberDetail.defect.explanation}</div>
+          </div>
+        )}
+
+        {isBeam ? (
+          <RebarCrossSectionSvg
+            kind="BEAM"
+            widthMm={bm!.widthMm}
+            depthMm={bm!.depthMm}
+            topOrLongBars={bm!.topBarsSupport}
+            bottomBars={bm!.bottomBarsMidspan}
+            stirrupLabel={bm!.stirrups.label}
+          />
+        ) : (
+          <RebarCrossSectionSvg
+            kind="COLUMN"
+            widthMm={col!.widthMm}
+            depthMm={col!.depthMm}
+            topOrLongBars={col!.longitudinalBars}
+            stirrupLabel={col!.lateralTies.label}
+          />
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            type="button"
+            data-testid="struct-preview-member-opt-btn"
+            disabled={memberOptBusy || feaBusy || !evaluationId}
+            onClick={() => void handleSingleMemberOptimization(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-amber-400/60 bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500/30 disabled:opacity-50 cursor-pointer"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {memberOptBusy ? 'Reanalyzing…' : 'Preview Member Optimization'}
+          </button>
+          {previewForThis && (
+            <button
+              type="button"
+              data-testid="struct-accept-member-opt-btn"
+              disabled={memberOptBusy || feaBusy}
+              onClick={() => void handleSingleMemberOptimization(false)}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-[#0B101B] hover:bg-emerald-400 disabled:opacity-50 cursor-pointer"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Accept &amp; Apply Full Reanalysis
+            </button>
+          )}
+        </div>
+
+        {previewForThis && (
+          <div
+            data-testid="struct-member-opt-preview-card"
+            className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 p-2.5 text-[11px] space-y-1 text-emerald-100"
+          >
+            <div className="font-bold text-emerald-300">
+              Full-Frame Reanalysis Preview ({previewForThis.status})
+            </div>
+            {previewChange ? (
+              <div>
+                Before: {previewChange.previousDimensionsAndRebar} →{' '}
+                <span className="font-bold text-amber-200">{previewChange.proposedDimensionsAndRebar}</span>
+              </div>
+            ) : (
+              <div>Member already meets target criteria under {optMode} objective.</div>
+            )}
+            <div>
+              Global Max Util: {previewForThis.before.maxMemberUtilization} →{' '}
+              <span className="font-bold">{previewForThis.after.maxMemberUtilization}</span> · Failed:{' '}
+              {previewForThis.before.criticalDefectCount} → {previewForThis.after.criticalDefectCount}
+            </div>
+            <div>
+              ΔConcrete: {previewForThis.deltaSummary.concreteDeltaM3} m³ · ΔSteel:{' '}
+              {previewForThis.deltaSummary.steelDeltaKg} kg · Arch SHA Protected:{' '}
+              {String(previewForThis.architecturalGeometryProtected)}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Gate 9: 2D SVG Physical Framing View | Analytical Mesh View | Foundation Footprint View
+  const renderStudioPlanView = () => {
+    if (!activeSnap) {
+      return <div className="p-8 text-center text-xs font-mono text-slate-400">Evaluating physical &amp; analytical structural model…</div>;
+    }
+    const { system, rccDesign, foundationDesign } = activeSnap;
+    const allXs = system.nodes.map((n) => n.positionM[0] * 1000);
+    const allYs = system.nodes.map((n) => -n.positionM[1] * 1000);
+    const minX = (allXs.length ? Math.min(...allXs) : 0) - 2400;
+    const maxX = (allXs.length ? Math.max(...allXs) : 10000) + 2400;
+    const minY = (allYs.length ? Math.min(...allYs) : 0) - 2400;
+    const maxY = (allYs.length ? Math.max(...allYs) : 10000) + 2400;
+    const vbW = Math.max(4000, maxX - minX);
+    const vbH = Math.max(4000, maxY - minY);
+
+    const floorId =
+      system.storeys.some((s) => s.id === studioFloorId) || studioFloorId === 'PLINTH'
+        ? studioFloorId
+        : system.storeys[0]?.id ?? 'PLINTH';
+
+    const beamByPhysId = new Map(rccDesign.beams.map((b) => [b.physicalMemberId, b]));
+    const colByPhysId = new Map(rccDesign.columns.map((c) => [c.physicalMemberId, c]));
+
+    return (
+      <svg
+        data-testid={`struct-studio-canvas-${studioViewKind.toLowerCase()}`}
+        viewBox={`${minX} ${minY} ${vbW} ${vbH}`}
+        className="w-full h-[420px] rounded-xl bg-[#070B14] border border-slate-800 select-none"
+      >
+        {studioViewKind === 'PHYSICAL_FRAMING' && (
+          <g>
+            {/* Subdivided Physical Slab Bays */}
+            {system.physicalModel.slabs
+              .filter((sl) => sl.floorId === floorId)
+              .map((sl) => (
+                <g key={sl.physicalMemberId}>
+                  <rect
+                    x={sl.boundsMm.minX}
+                    y={sl.boundsMm.minY}
+                    width={sl.boundsMm.maxX - sl.boundsMm.minX}
+                    height={sl.boundsMm.maxY - sl.boundsMm.minY}
+                    fill="rgba(30, 41, 59, 0.35)"
+                    stroke="#334155"
+                    strokeWidth={35}
+                    strokeDasharray="180 120"
+                  />
+                </g>
+              ))}
+
+            {/* Continuous Physical Beams (click to inspect & optimize!) */}
+            {system.physicalModel.beams
+              .filter((pb) => pb.floorId === floorId)
+              .map((pb) => {
+                const des = beamByPhysId.get(pb.physicalMemberId);
+                const isSel = selectedPhysicalMemberId === pb.physicalMemberId;
+                const color = isSel
+                  ? '#FBBF24'
+                  : des?.status === 'UNSUPPORTED'
+                    ? '#A78BFA'
+                    : des?.status === 'FAILED'
+                      ? '#EF4444'
+                      : '#10B981';
+                const mx = (pb.startPointMm.x + pb.endPointMm.x) / 2;
+                const my = (pb.startPointMm.y + pb.endPointMm.y) / 2;
+                return (
+                  <g
+                    key={pb.physicalMemberId}
+                    data-testid={`phys-beam-${pb.physicalMemberId}`}
+                    onClick={() => {
+                      setSelectedPhysicalMemberId(pb.physicalMemberId);
+                      setMemberOptPreview(null);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <line
+                      x1={pb.startPointMm.x}
+                      y1={pb.startPointMm.y}
+                      x2={pb.endPointMm.x}
+                      y2={pb.endPointMm.y}
+                      stroke={color}
+                      strokeWidth={isSel ? Math.max(360, pb.widthMm * 1.35) : Math.max(230, pb.widthMm)}
+                      strokeLinecap="round"
+                    >
+                      <title>
+                        {pb.physicalMemberId} [{des?.scheduleGroupMark}] · {pb.widthMm}×{pb.depthMm}mm · Util {des?.maxUtilization} ({des?.status})
+                      </title>
+                    </line>
+                    <text
+                      x={mx}
+                      y={my - 180}
+                      textAnchor="middle"
+                      fill="#E2E8F0"
+                      fontSize="210"
+                      fontFamily="monospace"
+                    >
+                      {des?.scheduleGroupMark ?? pb.physicalMemberId}
+                    </text>
+                  </g>
+                );
+              })}
+
+            {/* Physical Columns */}
+            {system.physicalModel.columns
+              .filter((pc) => pc.floorId === floorId)
+              .map((pc) => {
+                const des = colByPhysId.get(pc.physicalMemberId);
+                const isSel = selectedPhysicalMemberId === pc.physicalMemberId;
+                const fill = isSel
+                  ? '#FBBF24'
+                  : des?.status === 'FAILED'
+                    ? '#EF4444'
+                    : '#F8FAFC';
+                return (
+                  <g
+                    key={pc.physicalMemberId}
+                    data-testid={`phys-col-${pc.physicalMemberId}`}
+                    onClick={() => {
+                      setSelectedPhysicalMemberId(pc.physicalMemberId);
+                      setMemberOptPreview(null);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <rect
+                      x={pc.centerXMm - pc.widthMm / 2}
+                      y={pc.centerYMm - pc.depthMm / 2}
+                      width={pc.widthMm}
+                      height={pc.depthMm}
+                      fill={fill}
+                      stroke="#0F172A"
+                      strokeWidth={55}
+                    >
+                      <title>
+                        {pc.physicalMemberId} [{des?.scheduleGroupMark}] · {pc.widthMm}×{pc.depthMm}mm · Util {des?.maxUtilization} ({des?.status})
+                      </title>
+                    </rect>
+                    <text
+                      x={pc.centerXMm + pc.widthMm / 2 + 90}
+                      y={pc.centerYMm - pc.depthMm / 2 - 40}
+                      fill="#FDE68A"
+                      fontSize="220"
+                      fontFamily="monospace"
+                      fontWeight="bold"
+                    >
+                      {pc.stackId}
+                    </text>
+                  </g>
+                );
+              })}
+          </g>
+        )}
+
+        {studioViewKind === 'ANALYTICAL_MESH' && (
+          <g>
+            {/* Child Analytical Finite Elements (showing subdivided girder segments __fe_1, __fe_2) */}
+            {system.elements
+              .filter((el) => el.floorId === floorId && el.category !== 'COLUMN')
+              .map((el) => {
+                const n0 = system.nodes[el.startNodeIndex]!;
+                const n1 = system.nodes[el.endNodeIndex]!;
+                const x0 = n0.positionM[0] * 1000;
+                const y0 = -n0.positionM[1] * 1000;
+                const x1 = n1.positionM[0] * 1000;
+                const y1 = -n1.positionM[1] * 1000;
+                const isSubdivided = el.id.includes('__fe_');
+                return (
+                  <g
+                    key={el.id}
+                    onClick={() => selectByAnalyticalElementIndex(el.index)}
+                    className="cursor-pointer"
+                  >
+                    <line
+                      x1={x0}
+                      y1={y0}
+                      x2={x1}
+                      y2={y1}
+                      stroke={isSubdivided ? '#38BDF8' : '#94A3B8'}
+                      strokeWidth={140}
+                      strokeDasharray={isSubdivided ? '260 110' : undefined}
+                    >
+                      <title>
+                        Analytical Element {el.id} → Parent Physical {el.parentMemberId}
+                      </title>
+                    </line>
+                  </g>
+                );
+              })}
+
+            {/* Analytical 6-DOF Nodes (highlighting internal mesh subdivision nodes in cyan) */}
+            {system.nodes
+              .filter((nd) => nd.floorId === floorId)
+              .map((nd) => {
+                const cx = nd.positionM[0] * 1000;
+                const cy = -nd.positionM[1] * 1000;
+                const isSubNode = nd.id.includes('_M') || nd.id.includes('_SUB');
+                return (
+                  <circle
+                    key={nd.id}
+                    cx={cx}
+                    cy={cy}
+                    r={isSubNode ? 175 : 225}
+                    fill={isSubNode ? '#22D3EE' : '#F59E0B'}
+                    stroke="#0B101B"
+                    strokeWidth={45}
+                  >
+                    <title>
+                      Analytical Node {nd.id} ({nd.positionM.map((v) => v.toFixed(2)).join(', ')} m)
+                    </title>
+                  </circle>
+                );
+              })}
+          </g>
+        )}
+
+        {studioViewKind === 'FOUNDATION_PLAN' && (
+          <g>
+            {foundationDesign.footings.map((ft) => {
+              const pass = ft.status === 'PASSED';
+              return (
+                <g key={ft.footingId}>
+                  <rect
+                    x={ft.centerXMm - ft.lengthXMm / 2}
+                    y={ft.centerYMm - ft.widthYMm / 2}
+                    width={ft.lengthXMm}
+                    height={ft.widthYMm}
+                    fill={pass ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.22)'}
+                    stroke={pass ? '#10B981' : '#EF4444'}
+                    strokeWidth={75}
+                  >
+                    <title>
+                      {ft.footingId} [{ft.scheduleGroupMark}] · {ft.typology} {ft.lengthXMm}×{ft.widthYMm}×{ft.thicknessMm}mm · q_max={ft.maxSoilPressureKPa}/{ft.allowableBearingPressureKPa} kPa ({ft.status})
+                    </title>
+                  </rect>
+                  <text
+                    x={ft.centerXMm}
+                    y={ft.centerYMm + 80}
+                    textAnchor="middle"
+                    fill="#E2E8F0"
+                    fontSize="210"
+                    fontFamily="monospace"
+                  >
+                    {ft.scheduleGroupMark} ({ft.maxSoilPressureKPa}kPa)
+                  </text>
+                </g>
+              );
+            })}
+            {Object.values(system.baseColumnStackMap).map((stk) => (
+              <rect
+                key={stk.stackId}
+                x={stk.xMm - stk.columnWidthMm / 2}
+                y={stk.yMm - stk.columnDepthMm / 2}
+                width={stk.columnWidthMm}
+                height={stk.columnDepthMm}
+                fill="#F8FAFC"
+                stroke="#F59E0B"
+                strokeWidth={45}
+              />
+            ))}
+          </g>
+        )}
+      </svg>
+    );
+  };
 
   // Isometric projection helper for 3D FEA Diagram Canvas (X_east, Y_north, Z_up -> 2D screen SVG)
   const renderIsometricDiagram = () => {
@@ -382,7 +1134,6 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     const minY = Math.min(...pys) - 70;
     const maxY = Math.max(...pys) + 70;
 
-    // Max diagram value for normalization
     let maxDiagVal = 1;
     for (const mf of activeComboResult.memberForces) {
       const v =
@@ -394,16 +1145,20 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               ? Math.max(mf.extrema.maxCompressionKn, mf.extrema.maxTensionKn)
               : diagramKind === 'TORSION'
                 ? mf.extrema.maxAbsMxKnM
-                : mf.extrema.maxLocalDeflectionM * 1000;
+                : mf.extrema.maxRelativeChordDeflectionM * 1000;
       if (v > maxDiagVal) maxDiagVal = v;
     }
 
     const utilByElement = new Map<number, { util: number; failed: boolean }>();
     for (const b of activeSnap.rccDesign.beams) {
-      utilByElement.set(b.elementIndex, { util: b.maxUtilization, failed: b.status === 'FAILED' });
+      for (const idx of b.analyticalElementIndices) {
+        utilByElement.set(idx, { util: b.maxUtilization, failed: b.status !== 'PASSED' });
+      }
     }
     for (const c of activeSnap.rccDesign.columns) {
-      utilByElement.set(c.elementIndex, { util: c.maxUtilization, failed: c.status === 'FAILED' });
+      for (const idx of c.analyticalElementIndices) {
+        utilByElement.set(idx, { util: c.maxUtilization, failed: c.status !== 'PASSED' });
+      }
     }
 
     return (
@@ -412,7 +1167,6 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         viewBox={`${minX} ${minY} ${Math.max(200, maxX - minX)} ${Math.max(180, maxY - minY)}`}
         className="w-full h-[380px] rounded-xl bg-[#070B14] border border-slate-800 select-none"
       >
-        {/* Base Support Reactions & Triangles */}
         {activeComboResult.reactions.map((rx) => {
           const [sx, sy] = projectedNodes[rx.nodeIndex]!;
           return (
@@ -429,7 +1183,6 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
           );
         })}
 
-        {/* Frame Elements + Diagram Ribbons */}
         {system.elements.map((el) => {
           const n0 = system.nodes[el.startNodeIndex]!;
           const n1 = system.nodes[el.endNodeIndex]!;
@@ -437,6 +1190,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
           const [x1, y1] = projectedNodes[el.endNodeIndex]!;
           const mf = activeComboResult.memberForces[el.index]!;
           const uInfo = utilByElement.get(el.index);
+          const isPhysSelected = el.parentMemberId && el.parentMemberId === selectedPhysicalMemberId;
 
           const strokeColor =
             diagramKind === 'UTILIZATION'
@@ -447,11 +1201,10 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                   : uInfo.util > 0.78
                     ? '#F59E0B'
                     : '#10B981'
-              : selectedElementIdx === el.index
+              : selectedElementIdx === el.index || isPhysSelected
                 ? '#FBBF24'
                 : '#64748B';
 
-          // Build station diagram polygon perpendicular in screen space
           const dx = x1 - x0;
           const dy = y1 - y0;
           const segLen = Math.hypot(dx, dy) || 1;
@@ -471,13 +1224,12 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                     : diagramKind === 'TORSION'
                       ? st.torsionMxKnM
                       : diagramKind === 'DEFLECTION'
-                        ? st.localDeflectionM[1] * 1000
+                        ? (st.relativeChordDeflectionM?.[1] ?? st.localDeflectionM[1]) * 1000
                         : 0;
             const offsetPx = diagramKind === 'UTILIZATION' ? 0 : (rawVal / maxDiagVal) * 26;
             return `${(bx + nx * offsetPx).toFixed(1)},${(by + ny * offsetPx).toFixed(1)}`;
           });
 
-          // Deformed nodal curve overlay when DEFLECTION selected
           const d0 = activeComboResult.displacements[el.startNodeIndex]!;
           const d1 = activeComboResult.displacements[el.endNodeIndex]!;
           const [dx0, dy0] = isoProject(
@@ -491,13 +1243,10 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             n1.positionM[2] + d1.translationM[2] * 60,
           );
 
-          void n0;
-          void n1;
-
           return (
             <g
               key={el.id}
-              onClick={() => setSelectedElementIdx(el.index)}
+              onClick={() => selectByAnalyticalElementIndex(el.index)}
               className="cursor-pointer"
             >
               {diagramKind !== 'UTILIZATION' && diagramKind !== 'DEFLECTION' && (
@@ -537,7 +1286,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                 x2={x1}
                 y2={y1}
                 stroke={strokeColor}
-                strokeWidth={selectedElementIdx === el.index ? 3.2 : uInfo?.failed ? 2.8 : 1.8}
+                strokeWidth={selectedElementIdx === el.index || isPhysSelected ? 3.2 : uInfo?.failed ? 2.8 : 1.8}
               />
             </g>
           );
@@ -564,18 +1313,20 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               className="rounded-full bg-indigo-500/20 border border-indigo-400/40 px-2.5 py-0.5 text-[10px] font-mono font-semibold text-indigo-200"
             >
               SOLVER: {solverBackend}
+              {fallbackReason ? ` (FALLBACK: ${fallbackReason})` : ''}
             </span>
             <span
               data-testid="struct-lifecycle-badge"
+              data-lifecycle-code={lifecycleBadge.statusCode}
               className={`rounded-full border px-2.5 py-0.5 text-[11px] font-mono font-semibold ${lifecycleBadge.cls}`}
             >
               {lifecycleBadge.label}
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-300">
+          <p data-testid="struct-solver-diagnostics-bar" className="mt-1 text-xs font-mono text-slate-300">
             {activeSnap
-              ? `${activeSnap.system.nodes.length} 6-DOF nodes · ${activeSnap.system.elements.length} 3D frame elements · Equilibrium ${
-                  caseSummary?.equilibrium.isEquilibrated ? 'VERIFIED' : caseSummary ? 'RESIDUAL EXCEEDS LIMIT' : 'PENDING'
+              ? `Physical: ${activeSnap.system.physicalModel.columns.length} cols, ${activeSnap.system.physicalModel.beams.length} beams, ${activeSnap.system.physicalModel.slabs.length} slabs → Analytical: ${activeSnap.system.nodes.length} nodes, ${activeSnap.system.elements.length} 3D FE · WASM Heap ${((caseSummary?.diagnostics.wasmLinearMemoryBytes ?? 0) / 1048576).toFixed(1)} MB (Stack ${((caseSummary?.diagnostics.wasmStackCapacityBytes ?? 0) / 1048576).toFixed(1)} MB) · Factorized once/${caseSummary?.diagnostics.factorizationReusedCount ?? 0} RHS · Equilibrium ${
+                  caseSummary?.equilibrium.isEquilibrated ? `VERIFIED (${caseSummary.equilibrium.relativeStiffnessResidual.toExponential(2)})` : 'PENDING'
                 } · Arch Rev v${activeSnap.system.sourceArchitecturalRevision}`
               : `${building.floors.length} canonical storeys`}
           </p>
@@ -715,23 +1466,39 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
 
         <label className="flex flex-col gap-1 text-xs text-slate-300">
           <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Geotechnical report reference</span>
-          <input data-testid="struct-geotech-reference" type="text" value={geotechReference}
+          <input
+            data-testid="struct-geotech-reference"
+            type="text"
+            value={geotechReference}
             onChange={(e) => setGeotechReference(e.target.value)}
-            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]" />
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-xs text-slate-300">
           <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Settlement limit (mm)</span>
-          <input data-testid="struct-settlement-limit" type="number" min={0} step="any" value={settlementLimit}
+          <input
+            data-testid="struct-settlement-limit"
+            type="number"
+            min={0}
+            step="any"
+            value={settlementLimit}
             onChange={(e) => setSettlementLimit(e.target.value)}
-            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]" />
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-xs text-slate-300">
           <span className="font-mono uppercase tracking-wider text-[10px] text-slate-400">Soil unit weight (kN/m³)</span>
-          <input data-testid="struct-soil-unit-weight" type="number" min={0} step="any" value={soilUnitWeight}
+          <input
+            data-testid="struct-soil-unit-weight"
+            type="number"
+            min={0}
+            step="any"
+            value={soilUnitWeight}
             onChange={(e) => setSoilUnitWeight(e.target.value)}
-            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]" />
+            className="rounded-lg border border-slate-600 bg-[#0B101B] px-2.5 py-1.5 text-xs font-mono text-[#F8FAFC]"
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-xs text-slate-300">
@@ -756,8 +1523,15 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         Preliminary load assumptions include 1.2 kN/m² floor finish, 19 kN/m³ masonry, 1.5 kN/m² roof live load,
         and medium seismic site class. {windEnabled && 'Wind uses 39 m/s and terrain category 2.'}
       </p>
-      <button type="button" className="self-start text-xs text-sky-300 underline disabled:opacity-50"
-        disabled={feaBusy} onClick={() => { setAnalysis(null); setAnalysisRetry((current) => current + 1); }}>
+      <button
+        type="button"
+        className="self-start text-xs text-sky-300 underline disabled:opacity-50"
+        disabled={feaBusy}
+        onClick={() => {
+          setAnalysis(null);
+          setAnalysisRetry((current) => current + 1);
+        }}
+      >
         Rerun structural analysis
       </button>
       {(exportStatus || feaError) && (
@@ -774,10 +1548,11 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-3.5">
           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Unfactored Service Gravity (SLS)</div>
           <div className="mt-1 text-xl font-bold font-mono text-[#F8FAFC]">
-            {totalGravitySlsKn?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—'} <span className="text-xs font-normal text-slate-400">kN</span>
+            {totalGravitySlsKn?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—'}{' '}
+            <span className="text-xs font-normal text-slate-400">kN</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-300">
-            Zero duplicate self-weight · Exact vertical reaction balance
+            Simultaneous per-combo reactions · Zero duplicate self-weight
           </div>
         </div>
 
@@ -786,10 +1561,12 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             Seismic Base Shear Vb (Zone {seismicZone})
           </div>
           <div data-testid="struct-base-shear-value" className="mt-1 text-xl font-bold font-mono text-amber-300">
-            {baseShearDisplayKn?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—'} <span className="text-xs font-normal text-slate-400">kN</span>
+            {baseShearDisplayKn?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—'}{' '}
+            <span className="text-xs font-normal text-slate-400">kN</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-300">
-            Modal T1 = {activeSnap?.loadTakeoff.seismicSummary?.analyticalFundamentalPeriodSec.toFixed(3) ?? '—'}s · Wind {windEnabled ? 'ON' : 'OFF'}{' '}
+            Modal T1 = {activeSnap?.loadTakeoff.seismicSummary?.analyticalFundamentalPeriodSec.toFixed(3) ?? '—'}s · Wind{' '}
+            {windEnabled ? 'ON' : 'OFF'}{' '}
             <button
               type="button"
               onClick={() => setWindEnabled((v) => !v)}
@@ -801,7 +1578,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         </div>
 
         <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-3.5">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Max Member Utilization</div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Max Physical Utilization</div>
           <div
             className={`mt-1 text-xl font-bold font-mono ${
               (activeSnap?.maxMemberUtilization ?? 0.7) <= 1.0 ? 'text-emerald-300' : 'text-rose-400'
@@ -817,7 +1594,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         </div>
 
         <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-3.5">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Deduplicated BOQ &amp; BBS</div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Consolidated BOQ &amp; BBS</div>
           <div className="mt-1 text-xl font-bold font-mono text-sky-300">
             {activeSnap ? `${activeSnap.detailingAndBoq.quantities.netConcreteVolumeM3} m³` : '…'}{' '}
             <span className="text-xs font-normal text-slate-400">
@@ -826,7 +1603,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
           </div>
           <div className="mt-1 text-[11px] text-slate-300">
             {activeSnap
-              ? `${activeSnap.detailingAndBoq.bbsEntries.length} BBS bar marks · Joint ded. ${activeSnap.detailingAndBoq.quantities.jointAndSlabIntersectionDeductionM3} m³`
+              ? `${activeSnap.detailingAndBoq.bbsEntries.length} consolidated BBS marks · Joint ded. ${activeSnap.detailingAndBoq.quantities.jointAndSlabIntersectionDeductionM3} m³`
               : 'Computing cutting lengths'}
           </div>
         </div>
@@ -839,6 +1616,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             ['COLUMNS', 'Columns (P-Mx-My)'],
             ['BEAMS_SLABS', 'Beams & Slabs'],
             ['FOOTINGS', 'Foundations'],
+            ['STUDIO_VIEWS', 'Framing, Mesh & Footing Views'],
             ['SEISMIC', 'Modal & Drift'],
             ['DIAGRAMS', '3D Force Diagrams'],
             ['OPTIMIZER', 'Defects & AI Optimizer'],
@@ -865,265 +1643,388 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
 
       {/* 1. COLUMNS SCHEDULE */}
       {activeSubTab === 'COLUMNS' && (
-        <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto">
-          <table data-testid="struct-column-schedule-table" className="w-full text-left text-xs font-mono">
-            <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700">
-              <tr>
-                <th className="p-2.5">Member</th>
-                <th className="p-2.5">Size (mm)</th>
-                <th className="p-2.5">Pu (kN)</th>
-                <th className="p-2.5">Mux / Muy (kN·m)</th>
-                <th className="p-2.5">Main Rebar</th>
-                <th className="p-2.5">IS 13920 Ties</th>
-                <th className="p-2.5">Bresler Ratio</th>
-                <th className="p-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {activeSnap
-                ? activeSnap.rccDesign.columns.map((col) => (
-                    <tr key={col.elementId} className="hover:bg-slate-800/50">
-                      <td className="p-2.5 font-semibold text-amber-300">{col.elementId}</td>
-                      <td className="p-2.5">
-                        {col.widthMm}×{col.depthMm} ({col.concreteGrade})
-                      </td>
-                      <td className="p-2.5">{col.demandPuKn}</td>
-                      <td className="p-2.5">
-                        {col.designMuxWithEccentricityAndSlendernessKnM} / {col.designMuyWithEccentricityAndSlendernessKnM}
-                      </td>
-                      <td className="p-2.5">{col.longitudinalBars.label}</td>
-                      <td className="p-2.5">{col.lateralTies.label}</td>
-                      <td className="p-2.5">{col.biaxialInteractionRatio}</td>
-                      <td className="p-2.5">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold ${
-                            col.status === 'PASSED'
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : 'bg-rose-500/20 text-rose-300'
-                          }`}
-                        >
-                          {col.status === 'PASSED' ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                          {col.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                : null}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* 2. BEAMS & SLABS */}
-      {activeSubTab === 'BEAMS_SLABS' && (
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto">
-            <table data-testid="struct-beam-checks-table" className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto max-h-[480px]">
+            <table data-testid="struct-column-schedule-table" className="w-full text-left text-xs font-mono">
+              <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700 sticky top-0">
                 <tr>
-                  <th className="p-2.5">Beam ID</th>
-                  <th className="p-2.5">Section (mm)</th>
-                  <th className="p-2.5">Span (mm)</th>
-                  <th className="p-2.5">Me Hog / Sag (kN·m)</th>
-                  <th className="p-2.5">Ve (kN)</th>
-                  <th className="p-2.5">Top / Bottom Steel</th>
-                  <th className="p-2.5">Stirrups</th>
-                  <th className="p-2.5">Util</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {activeSnap
-                  ? activeSnap.rccDesign.beams.map((bm) => (
-                      <tr key={bm.elementId} className="hover:bg-slate-800/50">
-                        <td className="p-2.5 font-semibold text-sky-300">{bm.elementId}</td>
-                        <td className="p-2.5">
-                          {bm.widthMm}×{bm.depthMm}
-                        </td>
-                        <td className="p-2.5">{bm.clearSpanMm}</td>
-                        <td className="p-2.5">
-                          {bm.equivalentHoggingMeKnM} / {bm.equivalentSaggingMeKnM}
-                        </td>
-                        <td className="p-2.5">{bm.equivalentShearVeKn}</td>
-                        <td className="p-2.5">
-                          T: {bm.topBarsSupport.label} · B: {bm.bottomBarsMidspan.label}
-                        </td>
-                        <td className="p-2.5">{bm.stirrups.label}</td>
-                        <td className={`p-2.5 font-bold ${bm.status === 'PASSED' ? 'text-emerald-300' : 'text-rose-400'}`}>
-                          {bm.maxUtilization} ({bm.status})
-                        </td>
-                      </tr>
-                    ))
-                  : null}
-              </tbody>
-            </table>
-          </div>
-
-          {activeSnap && (
-            <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto">
-              <div className="px-3 py-2 text-xs font-bold border-b border-slate-700 bg-[#0F172A] text-slate-200">
-                IS 456 Annex D Two-Way / One-Way / Cantilever Slab Panels &amp; Staircase Waist Slabs
-              </div>
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="text-slate-400 border-b border-slate-800">
-                  <tr>
-                    <th className="p-2">Panel</th>
-                    <th className="p-2">Type</th>
-                    <th className="p-2">lx × ly (mm)</th>
-                    <th className="p-2">Thickness</th>
-                    <th className="p-2">Short Span Rebar</th>
-                    <th className="p-2">Long Span Rebar</th>
-                    <th className="p-2">L/d Check</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/70">
-                  {activeSnap.rccDesign.slabs.map((sl) => (
-                    <tr key={sl.panelId}>
-                      <td className="p-2 text-emerald-300">{sl.panelId} ({sl.roomName})</td>
-                      <td className="p-2">{sl.panelType}</td>
-                      <td className="p-2">{sl.lxMm}×{sl.lyMm}</td>
-                      <td className="p-2">{sl.thicknessMm} mm</td>
-                      <td className="p-2">T{sl.shortSpanBottomDiaMm}@{sl.shortSpanBottomSpacingMm} mm c/c</td>
-                      <td className="p-2">T{sl.longSpanDiaMm}@{sl.longSpanSpacingMm} mm c/c</td>
-                      <td className="p-2">{sl.spanOverDepthActual} &le; {sl.spanOverDepthAllowable} ({sl.status})</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 3. FOUNDATIONS (SAFE-LIKE GEOTECHNICAL SCHEDULE) */}
-      {activeSubTab === 'FOOTINGS' && (
-        <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto">
-          {activeSnap?.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' ? (
-            <div
-              data-testid="struct-missing-geotech-banner"
-              className="p-6 flex items-start gap-3 text-amber-200 bg-amber-500/10"
-            >
-              <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
-              <div className="text-xs leading-relaxed">
-                <div className="font-bold text-sm">MISSING_GEOTECHNICAL_INPUT — Foundation Design Gated (IS 1904:1986)</div>
-                RH Planner never invents soil Safe Bearing Capacity (SBC). Enter a reviewed site geotechnical SBC (&ge; 30 kN/m²) in the{' '}
-                <strong>Soil SBC</strong> input above to design Isolated, Combined, Strap, Strip, or Rigid-Mat Raft foundations.
-              </div>
-            </div>
-          ) : (
-            <table data-testid="struct-footing-schedule-table" className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700">
-                <tr>
-                  <th className="p-2.5">Footing ID</th>
-                  <th className="p-2.5">Typology</th>
-                  <th className="p-2.5">Plan L×W×D (mm)</th>
-                  <th className="p-2.5">P_SLS / Pu (kN)</th>
-                  <th className="p-2.5">q_max / SBC (kPa)</th>
-                  <th className="p-2.5">Punching (MPa)</th>
-                  <th className="p-2.5">Bottom / Top Reinforcement</th>
+                  <th className="p-2.5">Physical Member</th>
+                  <th className="p-2.5">Group</th>
+                  <th className="p-2.5">Size (mm)</th>
+                  <th className="p-2.5">Pu (kN)</th>
+                  <th className="p-2.5">Mux / Muy</th>
+                  <th className="p-2.5">Main Rebar</th>
+                  <th className="p-2.5">Bresler</th>
                   <th className="p-2.5">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {activeSnap
-                  ? activeSnap.foundationDesign.footings.map((ft) => (
-                      <tr key={ft.footingId} className="hover:bg-slate-800/50">
-                        <td className="p-2.5 font-semibold text-emerald-300">{ft.footingId}</td>
-                        <td className="p-2.5">{ft.typology}</td>
+                  ? activeSnap.rccDesign.columns.map((col) => (
+                      <tr
+                        key={col.physicalMemberId}
+                        onClick={() => {
+                          setSelectedPhysicalMemberId(col.physicalMemberId);
+                          setMemberOptPreview(null);
+                        }}
+                        className={`cursor-pointer hover:bg-slate-800/60 ${
+                          selectedPhysicalMemberId === col.physicalMemberId ? 'bg-amber-500/10' : ''
+                        }`}
+                      >
+                        <td className="p-2.5 font-semibold text-amber-300">{col.physicalMemberId}</td>
+                        <td className="p-2.5 text-slate-400">{col.scheduleGroupMark}</td>
                         <td className="p-2.5">
-                          {ft.lengthXMm}×{ft.widthYMm}×{ft.thicknessMm}
+                          {col.widthMm}×{col.depthMm} ({col.concreteGrade})
                         </td>
+                        <td className="p-2.5">{col.demandPuKn}</td>
                         <td className="p-2.5">
-                          {ft.serviceLoadPKn} / {ft.factoredLoadPuKn}
+                          {col.designMuxWithEccentricityAndSlendernessKnM} / {col.designMuyWithEccentricityAndSlendernessKnM}
                         </td>
+                        <td className="p-2.5">{col.longitudinalBars.label}</td>
+                        <td className="p-2.5">{col.biaxialInteractionRatio}</td>
                         <td className="p-2.5">
-                          {ft.maxSoilPressureKPa} / {ft.allowableBearingPressureKPa}
-                        </td>
-                        <td className="p-2.5">
-                          {ft.punchingShearStressMPa} &le; {ft.punchingShearCapacityMPa}
-                        </td>
-                        <td className="p-2.5">
-                          {ft.bottomMeshXLabel}
-                          {ft.topMeshLabel ? ` · ${ft.topMeshLabel}` : ''}
-                          {ft.strapBeamLabel ? ` · ${ft.strapBeamLabel}` : ''}
-                        </td>
-                        <td className={`p-2.5 font-bold ${ft.status === 'PASSED' ? 'text-emerald-300' : 'text-rose-400'}`}>
-                          {ft.status} ({ft.maxUtilization})
+                          <span
+                            className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold ${
+                              col.status === 'PASSED'
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : 'bg-rose-500/20 text-rose-300'
+                            }`}
+                          >
+                            {col.status === 'PASSED' ? (
+                              <CheckCircle2 className="h-3 w-3" />
+                            ) : (
+                              <AlertTriangle className="h-3 w-3" />
+                            )}
+                            {col.status}
+                          </span>
                         </td>
                       </tr>
                     ))
                   : null}
               </tbody>
             </table>
+          </div>
+          {renderSelectedMemberInspector()}
+        </div>
+      )}
+
+      {/* 2. BEAMS & SLABS */}
+      {activeSubTab === 'BEAMS_SLABS' && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 flex flex-col gap-4">
+            <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto max-h-[340px]">
+              <table data-testid="struct-beam-checks-table" className="w-full text-left text-xs font-mono">
+                <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700 sticky top-0">
+                  <tr>
+                    <th className="p-2.5">Physical Beam</th>
+                    <th className="p-2.5">FE</th>
+                    <th className="p-2.5">Section (mm)</th>
+                    <th className="p-2.5">Span (mm)</th>
+                    <th className="p-2.5">Me Hog / Sag</th>
+                    <th className="p-2.5">Top / Bottom Steel</th>
+                    <th className="p-2.5">Util</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {activeSnap
+                    ? activeSnap.rccDesign.beams.map((bm) => (
+                        <tr
+                          key={bm.physicalMemberId}
+                          onClick={() => {
+                            setSelectedPhysicalMemberId(bm.physicalMemberId);
+                            setMemberOptPreview(null);
+                          }}
+                          className={`cursor-pointer hover:bg-slate-800/60 ${
+                            selectedPhysicalMemberId === bm.physicalMemberId ? 'bg-amber-500/10' : ''
+                          }`}
+                        >
+                          <td className="p-2.5 font-semibold text-sky-300">
+                            {bm.physicalMemberId} <span className="text-slate-400">[{bm.scheduleGroupMark}]</span>
+                          </td>
+                          <td className="p-2.5 text-cyan-300">{bm.analyticalElementIndices.length}</td>
+                          <td className="p-2.5">
+                            {bm.widthMm}×{bm.depthMm}
+                          </td>
+                          <td className="p-2.5">{bm.clearSpanMm}</td>
+                          <td className="p-2.5">
+                            {bm.equivalentHoggingMeKnM} / {bm.equivalentSaggingMeKnM}
+                          </td>
+                          <td className="p-2.5">
+                            T: {bm.topBarsSupport.label} · B: {bm.bottomBarsMidspan.label}
+                          </td>
+                          <td className={`p-2.5 font-bold ${bm.status === 'PASSED' ? 'text-emerald-300' : 'text-rose-400'}`}>
+                            {bm.maxUtilization} ({bm.status})
+                          </td>
+                        </tr>
+                      ))
+                    : null}
+                </tbody>
+              </table>
+            </div>
+
+            {activeSnap && (
+              <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto max-h-[240px]">
+                <div className="px-3 py-2 text-xs font-bold border-b border-slate-700 bg-[#0F172A] text-slate-200 sticky top-0">
+                  IS 456 Annex D Subdivided Two-Way / One-Way / Cantilever Slab Bays &amp; Staircase Waist Slabs
+                </div>
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="text-slate-400 border-b border-slate-800">
+                    <tr>
+                      <th className="p-2">Panel</th>
+                      <th className="p-2">Type</th>
+                      <th className="p-2">lx × ly (mm)</th>
+                      <th className="p-2">Thickness</th>
+                      <th className="p-2">Short Span Rebar</th>
+                      <th className="p-2">L/d Check</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/70">
+                    {activeSnap.rccDesign.slabs.map((sl) => (
+                      <tr key={sl.panelId}>
+                        <td className="p-2 text-emerald-300">
+                          {sl.panelId} [{sl.scheduleGroupMark}]
+                        </td>
+                        <td className="p-2">{sl.panelType}</td>
+                        <td className="p-2">
+                          {sl.lxMm}×{sl.lyMm}
+                        </td>
+                        <td className="p-2">{sl.thicknessMm} mm</td>
+                        <td className="p-2">
+                          T{sl.shortSpanBottomDiaMm}@{sl.shortSpanBottomSpacingMm} mm c/c
+                        </td>
+                        <td className="p-2">
+                          {sl.spanOverDepthActual} &le; {sl.spanOverDepthAllowable} ({sl.status})
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          {renderSelectedMemberInspector()}
+        </div>
+      )}
+
+      {/* 3. FOUNDATIONS (SAFE-LIKE GEOTECHNICAL SCHEDULE) */}
+      {activeSubTab === 'FOOTINGS' && (
+        <div className="flex flex-col gap-3">
+          {activeSnap && activeSnap.foundationDesign.infeasibilityDiagnostics.length > 0 && (
+            <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs font-mono text-rose-200 space-y-1">
+              <div className="font-bold text-rose-300">Geotechnical / Shallow Foundation Infeasibility Diagnostics:</div>
+              {activeSnap.foundationDesign.infeasibilityDiagnostics.map((msg, idx) => (
+                <div key={idx}>• {msg}</div>
+              ))}
+            </div>
           )}
+          <div className="rounded-xl border border-slate-700/80 bg-[#111827] overflow-auto">
+            {activeSnap?.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT' ? (
+              <div
+                data-testid="struct-missing-geotech-banner"
+                className="p-6 flex items-start gap-3 text-amber-200 bg-amber-500/10"
+              >
+                <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+                <div className="text-xs leading-relaxed">
+                  <div className="font-bold text-sm">
+                    MISSING_GEOTECHNICAL_INPUT — Foundation Design Gated (IS 1904:1986)
+                  </div>
+                  RH Planner never invents soil Safe Bearing Capacity (SBC). Enter a reviewed site geotechnical SBC (&ge; 30 kN/m²) in the{' '}
+                  <strong>Soil SBC</strong> input above to design Isolated, Combined, Strap, Strip, or Rigid-Mat Raft foundations.
+                </div>
+              </div>
+            ) : (
+              <table data-testid="struct-footing-schedule-table" className="w-full text-left text-xs font-mono">
+                <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700">
+                  <tr>
+                    <th className="p-2.5">Footing ID</th>
+                    <th className="p-2.5">Formulation / Typology</th>
+                    <th className="p-2.5">Plan L×W×D (mm)</th>
+                    <th className="p-2.5">P_SLS / Pu (kN)</th>
+                    <th className="p-2.5">q_net / SBC (kPa)</th>
+                    <th className="p-2.5">Settle (mm)</th>
+                    <th className="p-2.5">Punching (MPa)</th>
+                    <th className="p-2.5">Reinforcement</th>
+                    <th className="p-2.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {activeSnap
+                    ? activeSnap.foundationDesign.footings.map((ft) => (
+                        <tr key={ft.footingId} className="hover:bg-slate-800/50">
+                          <td className="p-2.5 font-semibold text-emerald-300">
+                            {ft.footingId} [{ft.scheduleGroupMark}]
+                          </td>
+                          <td className="p-2.5">
+                            {ft.typology} <span className="text-[10px] text-slate-400">({ft.analysisFormulation})</span>
+                          </td>
+                          <td className="p-2.5">
+                            {ft.lengthXMm}×{ft.widthYMm}×{ft.thicknessMm}
+                          </td>
+                          <td className="p-2.5">
+                            {ft.serviceLoadPKn} / {ft.factoredLoadPuKn}
+                          </td>
+                          <td className="p-2.5">
+                            {ft.maxSoilPressureKPa} / {ft.allowableBearingPressureKPa}
+                          </td>
+                          <td className="p-2.5">
+                            {ft.estimatedSettlementMm} / {ft.allowableSettlementMm}
+                          </td>
+                          <td className="p-2.5">
+                            {ft.punchingShearStressMPa} &le; {ft.punchingShearCapacityMPa}
+                          </td>
+                          <td className="p-2.5">
+                            {ft.bottomMeshXLabel}
+                            {ft.topMeshLabel ? ` · ${ft.topMeshLabel}` : ''}
+                            {ft.strapBeamLabel ? ` · ${ft.strapBeamLabel}` : ''}
+                          </td>
+                          <td className={`p-2.5 font-bold ${ft.status === 'PASSED' ? 'text-emerald-300' : 'text-rose-400'}`}>
+                            {ft.status} ({ft.maxUtilization})
+                          </td>
+                        </tr>
+                      ))
+                    : null}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
 
-      {/* 4. MODAL & STOREY DRIFT */}
+      {/* 4. GATE 9 STUDIO VIEWS: PHYSICAL FRAMING | ANALYTICAL MESH | FOUNDATION PLAN */}
+      {activeSubTab === 'STUDIO_VIEWS' && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 flex flex-col gap-3 rounded-xl border border-slate-700/80 bg-[#111827] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Layers className="h-4 w-4 text-amber-400" />
+                {(
+                  [
+                    ['PHYSICAL_FRAMING', 'Physical Framing View', 'struct-view-physical'],
+                    ['ANALYTICAL_MESH', 'Analytical Mesh View', 'struct-view-analytical'],
+                    ['FOUNDATION_PLAN', 'Foundation View', 'struct-view-foundation'],
+                  ] as const
+                ).map(([kind, label, tid]) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    data-testid={tid}
+                    onClick={() => setStudioViewKind(kind)}
+                    className={`rounded px-2.5 py-1 text-xs font-mono font-semibold cursor-pointer ${
+                      studioViewKind === kind
+                        ? 'bg-amber-500 text-[#0B101B]'
+                        : 'bg-[#0B101B] text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {studioViewKind !== 'FOUNDATION_PLAN' && activeSnap && (
+                <select
+                  data-testid="struct-studio-floor-selector"
+                  value={studioFloorId}
+                  onChange={(e) => setStudioFloorId(e.target.value)}
+                  className="rounded border border-slate-600 bg-[#0B101B] px-2.5 py-1 text-xs font-mono text-[#F8FAFC]"
+                >
+                  {activeSnap.system.nodes.some((n) => n.floorId === 'PLINTH') && (
+                    <option value="PLINTH">Plinth Tie Level (0.0 m)</option>
+                  )}
+                  {activeSnap.system.storeys.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name || st.id} ({(st.elevationMm / 1000).toFixed(2)} m)
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {renderStudioPlanView()}
+            <div className="text-[11px] font-mono text-slate-400 flex flex-wrap gap-4">
+              <span>• Green: PASSED</span>
+              <span>• Red: DESIGN_FAILED</span>
+              <span>• Violet: UNSUPPORTED_SCOPE</span>
+              <span>• Cyan dashed (Mesh View): Subdivided Finite Elements (__fe_1..N)</span>
+            </div>
+          </div>
+          {renderSelectedMemberInspector()}
+        </div>
+      )}
+
+      {/* 5. MODAL & STOREY DRIFT */}
       {activeSubTab === 'SEISMIC' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 mb-3">
-              Local Modal Eigenvalues (Rayleigh-Ritz Awatif Flexibility)
-            </h3>
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="text-slate-400 border-b border-slate-700">
-                <tr>
-                  <th className="py-1.5">Mode</th>
-                  <th className="py-1.5">Period T (s)</th>
-                  <th className="py-1.5">Freq (Hz)</th>
-                  <th className="py-1.5">Mass X (%)</th>
-                  <th className="py-1.5">Mass Y (%)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {(activeSnap?.loadTakeoff.seismicSummary?.modes ?? []).map((m) => (
-                  <tr key={m.modeNumber}>
-                    <td className="py-1.5 text-amber-200">Mode {m.modeNumber}</td>
-                    <td className="py-1.5">{m.periodSec.toFixed(3)}</td>
-                    <td className="py-1.5">{m.frequencyHz.toFixed(2)}</td>
-                    <td className="py-1.5">{m.massParticipationXPct.toFixed(1)}%</td>
-                    <td className="py-1.5">{m.massParticipationYPct.toFixed(1)}%</td>
+        <div className="flex flex-col gap-3">
+          {activeSnap?.loadTakeoff.seismicSummary && (
+            <div className="rounded-lg border border-slate-700 bg-[#0F172A] px-3.5 py-2 text-[11px] font-mono text-slate-300">
+              Formulation: <span className="text-amber-300">{activeSnap.loadTakeoff.seismicSummary.modalFormulation}</span> · Orthonormality Error:{' '}
+              {activeSnap.loadTakeoff.seismicSummary.orthogonalityMaxError.toExponential(2)} · Mass Participation: X{' '}
+              {activeSnap.loadTakeoff.seismicSummary.totalModalMassParticipationXPct.toFixed(1)}% / Y{' '}
+              {activeSnap.loadTakeoff.seismicSummary.totalModalMassParticipationYPct.toFixed(1)}% (3D coupled torsional/response-spectrum/shell dynamics not claimed)
+            </div>
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 mb-3">
+                Reduced-Order Storey Translational Modal Eigenvalues (Awatif WASM Flexibility)
+              </h3>
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="text-slate-400 border-b border-slate-700">
+                  <tr>
+                    <th className="py-1.5">Mode</th>
+                    <th className="py-1.5">Period T (s)</th>
+                    <th className="py-1.5">Freq (Hz)</th>
+                    <th className="py-1.5">Mass X (%)</th>
+                    <th className="py-1.5">Mass Y (%)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {(activeSnap?.loadTakeoff.seismicSummary?.modes ?? []).map((m) => (
+                    <tr key={m.modeNumber}>
+                      <td className="py-1.5 text-amber-200">Mode {m.modeNumber}</td>
+                      <td className="py-1.5">{m.periodSec.toFixed(3)}</td>
+                      <td className="py-1.5">{m.frequencyHz.toFixed(2)}</td>
+                      <td className="py-1.5">{m.massParticipationXPct.toFixed(1)}%</td>
+                      <td className="py-1.5">{m.massParticipationYPct.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-sky-300 mb-3">
-              IS 1893:2016 Cl. 7.11.1 Inter-Storey Drift Verification (&le; 0.004 hs)
-            </h3>
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="text-slate-400 border-b border-slate-700">
-                <tr>
-                  <th className="py-1.5">Level</th>
-                  <th className="py-1.5">Elev (m)</th>
-                  <th className="py-1.5">Drift X/Y (mm)</th>
-                  <th className="py-1.5">Limit (mm)</th>
-                  <th className="py-1.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {(activeSnap?.storeyDriftChecks ?? []).map((d) => (
-                  <tr key={d.floorId}>
-                    <td className="py-1.5">{d.floorId}</td>
-                    <td className="py-1.5">{d.elevationM}</td>
-                    <td className="py-1.5">
-                      {d.maxDriftXMm} / {d.maxDriftYMm}
-                    </td>
-                    <td className="py-1.5">{d.allowableDriftMm}</td>
-                    <td className={`py-1.5 font-bold ${d.isCompliant ? 'text-emerald-300' : 'text-rose-400'}`}>
-                      {d.isCompliant ? 'COMPLIANT' : 'EXCEEDS'}
-                    </td>
+            <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-sky-300 mb-3">
+                IS 1893:2016 Cl. 7.11.1 Inter-Storey Drift Verification (&le; 0.004 hs)
+              </h3>
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="text-slate-400 border-b border-slate-700">
+                  <tr>
+                    <th className="py-1.5">Level</th>
+                    <th className="py-1.5">Elev (m)</th>
+                    <th className="py-1.5">Drift X/Y (mm)</th>
+                    <th className="py-1.5">Limit (mm)</th>
+                    <th className="py-1.5">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {(activeSnap?.storeyDriftChecks ?? []).map((d) => (
+                    <tr key={d.floorId}>
+                      <td className="py-1.5">{d.floorId}</td>
+                      <td className="py-1.5">{d.elevationM}</td>
+                      <td className="py-1.5">
+                        {d.maxDriftXMm} / {d.maxDriftYMm}
+                      </td>
+                      <td className="py-1.5">{d.allowableDriftMm}</td>
+                      <td className={`py-1.5 font-bold ${d.isCompliant ? 'text-emerald-300' : 'text-rose-400'}`}>
+                        {d.isCompliant ? 'COMPLIANT' : 'EXCEEDS'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 5. 3D ISOMETRIC FEA FORCE DIAGRAMS & STATION INSPECTOR */}
+      {/* 6. 3D ISOMETRIC FEA FORCE DIAGRAMS & STATION INSPECTOR */}
       {activeSubTab === 'DIAGRAMS' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 flex flex-col gap-3 rounded-xl border border-slate-700/80 bg-[#111827] p-4">
@@ -1136,7 +2037,9 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                     data-testid={`struct-diagram-btn-${dk.toLowerCase()}`}
                     onClick={() => setDiagramKind(dk)}
                     className={`rounded px-2.5 py-1 text-[11px] font-mono font-semibold cursor-pointer ${
-                      diagramKind === dk ? 'bg-amber-500 text-[#0B101B]' : 'bg-[#0B101B] text-slate-300 border border-slate-700'
+                      diagramKind === dk
+                        ? 'bg-amber-500 text-[#0B101B]'
+                        : 'bg-[#0B101B] text-slate-300 border border-slate-700'
                     }`}
                   >
                     {dk}
@@ -1161,52 +2064,54 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             {renderIsometricDiagram()}
           </div>
 
-          <div
-            data-testid="struct-member-inspector"
-            className="rounded-xl border border-slate-700/80 bg-[#111827] p-4 flex flex-col gap-2 text-xs font-mono overflow-auto max-h-[450px]"
-          >
-            <div className="font-bold text-amber-300 uppercase tracking-wider">
-              Member 11-Station Force &amp; Clause Inspector
+          <div className="flex flex-col gap-3">
+            <div
+              data-testid="struct-member-inspector"
+              className="rounded-xl border border-slate-700/80 bg-[#111827] p-4 flex flex-col gap-2 text-xs font-mono overflow-auto max-h-[260px]"
+            >
+              <div className="font-bold text-amber-300 uppercase tracking-wider">
+                Analytical Element 11-Station Force Inspector
+              </div>
+              {activeSnap && activeComboResult && activeComboResult.memberForces[selectedElementIdx] ? (
+                (() => {
+                  const mf = activeComboResult.memberForces[selectedElementIdx]!;
+                  const el = activeSnap.system.elements[selectedElementIdx]!;
+                  return (
+                    <>
+                      <div className="text-slate-200 font-semibold">
+                        {mf.elementId} → Physical {el.parentMemberId ?? mf.elementId} (L={mf.lengthM.toFixed(2)}m)
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 rounded bg-[#0B101B] p-2 text-[11px]">
+                        <div>Max N: {mf.extrema.maxCompressionKn.toFixed(1)} kN</div>
+                        <div>Max |Vz|: {mf.extrema.maxAbsVzKn.toFixed(1)} kN</div>
+                        <div>Max +My: {mf.extrema.maxPositiveMyKnM.toFixed(2)} kN·m</div>
+                        <div>Min -My: {mf.extrema.maxNegativeMyKnM.toFixed(2)} kN·m</div>
+                        <div>Max |Mx|: {mf.extrema.maxAbsMxKnM.toFixed(2)} kN·m</div>
+                        <div>Chord Defl: {(mf.extrema.maxRelativeChordDeflectionM * 1000).toFixed(2)} mm</div>
+                      </div>
+                      <div className="divide-y divide-slate-800 text-[10px]">
+                        {mf.stations.slice(0, 6).map((st, idx) => (
+                          <div key={idx} className="py-0.5 flex justify-between">
+                            <span>x={st.xM.toFixed(2)}m</span>
+                            <span>N={st.axialAwatifKn.toFixed(0)}</span>
+                            <span>V={st.shearVzKn.toFixed(1)}</span>
+                            <span>M={st.momentMyKnM.toFixed(1)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div className="text-slate-400">Click any 3D frame element to inspect internal forces &amp; optimize its parent physical member.</div>
+              )}
             </div>
-            {activeSnap && activeComboResult && activeComboResult.memberForces[selectedElementIdx] ? (
-              (() => {
-                const mf = activeComboResult.memberForces[selectedElementIdx]!;
-                const meta = activeSnap.system.memberMetadata[selectedElementIdx]!;
-                return (
-                  <>
-                    <div className="text-slate-200 font-semibold">
-                      {mf.elementId} ({meta.category} · {meta.widthMm}×{meta.depthMm} mm · L={mf.lengthM.toFixed(2)}m)
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 rounded bg-[#0B101B] p-2 text-[11px]">
-                      <div>Max N: {mf.extrema.maxCompressionKn.toFixed(1)} kN</div>
-                      <div>Max |Vz|: {mf.extrema.maxAbsVzKn.toFixed(1)} kN</div>
-                      <div>Max +My: {mf.extrema.maxPositiveMyKnM.toFixed(2)} kN·m</div>
-                      <div>Min -My: {mf.extrema.maxNegativeMyKnM.toFixed(2)} kN·m</div>
-                      <div>Max |Mx|: {mf.extrema.maxAbsMxKnM.toFixed(2)} kN·m</div>
-                      <div>Defl: {(mf.extrema.maxLocalDeflectionM * 1000).toFixed(2)} mm</div>
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-1">Stations x/L (N, Vz, My):</div>
-                    <div className="divide-y divide-slate-800 text-[10px]">
-                      {mf.stations.slice(0, 11).map((st, idx) => (
-                        <div key={idx} className="py-1 flex justify-between">
-                          <span>x={st.xM.toFixed(2)}m</span>
-                          <span>N={st.axialAwatifKn.toFixed(0)}</span>
-                          <span>V={st.shearVzKn.toFixed(1)}</span>
-                          <span>M={st.momentMyKnM.toFixed(1)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()
-            ) : (
-              <div className="text-slate-400">Click any 3D frame element to inspect internal forces.</div>
-            )}
+            {renderSelectedMemberInspector()}
           </div>
         </div>
       )}
 
-      {/* 6. DEFECTS & GLOBAL-REANALYSIS OPTIMIZER */}
+      {/* 7. DEFECTS & GLOBAL-REANALYSIS OPTIMIZER */}
       {activeSubTab === 'OPTIMIZER' && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/80 bg-[#111827] p-4">
@@ -1244,54 +2149,132 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-              Active Structural Defects ({activeSnap?.defects.length ?? 0})
-            </h3>
-            {activeSnap && activeSnap.defects.length === 0 ? (
-              <div className="text-xs text-emerald-300 font-mono flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> The defect detector reported zero findings in the available checks.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {(activeSnap?.defects ?? []).map((d) => (
-                  <div key={d.defectId} className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs font-mono">
-                    <div className="font-bold text-rose-300">
-                      [{d.severity}] {d.memberId} ({d.memberCategory} · {d.storey}) — Util {d.utilizationRatio} ({d.clause})
+          {/* Gate 9: Side-by-Side Before-and-After Optimization Comparison */}
+          {optResult && (
+            <div
+              data-testid="struct-before-after-comparison"
+              className="rounded-xl border border-emerald-500/30 bg-[#111827] p-4 overflow-auto"
+            >
+              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300 mb-2.5">
+                Before vs After Global-Reanalysis Optimization Comparison
+              </h3>
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="text-slate-400 border-b border-slate-700">
+                  <tr>
+                    <th className="py-1.5">Metric</th>
+                    <th className="py-1.5">Baseline (Before)</th>
+                    <th className="py-1.5">Optimized (After Global Reanalysis)</th>
+                    <th className="py-1.5">Delta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr>
+                    <td className="py-1.5">Lifecycle Status</td>
+                    <td className="py-1.5 text-rose-300">{optResult.before.designLifecycleStatus}</td>
+                    <td className="py-1.5 text-emerald-300">{optResult.after.designLifecycleStatus}</td>
+                    <td className="py-1.5">{optResult.iterations.length} WASM Passes</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5">Max Member Utilization</td>
+                    <td className="py-1.5">{optResult.before.maxMemberUtilization}</td>
+                    <td className="py-1.5 font-bold text-emerald-300">{optResult.after.maxMemberUtilization}</td>
+                    <td className="py-1.5">
+                      {(optResult.after.maxMemberUtilization - optResult.before.maxMemberUtilization).toFixed(3)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5">Critical / Major Defects</td>
+                    <td className="py-1.5">{optResult.before.criticalDefectCount}</td>
+                    <td className="py-1.5 font-bold text-emerald-300">{optResult.after.criticalDefectCount}</td>
+                    <td className="py-1.5">-{optResult.deltaSummary.defectsResolved} resolved</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5">Net Concrete Volume</td>
+                    <td className="py-1.5">{optResult.before.detailingAndBoq.quantities.netConcreteVolumeM3} m³</td>
+                    <td className="py-1.5">{optResult.after.detailingAndBoq.quantities.netConcreteVolumeM3} m³</td>
+                    <td className="py-1.5">{optResult.deltaSummary.concreteDeltaM3} m³</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5">Total Reinforcement Steel</td>
+                    <td className="py-1.5">{optResult.before.detailingAndBoq.quantities.totalSteelWeightKg} kg</td>
+                    <td className="py-1.5">{optResult.after.detailingAndBoq.quantities.totalSteelWeightKg} kg</td>
+                    <td className="py-1.5">{optResult.deltaSummary.steelDeltaKg} kg</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="xl:col-span-2 rounded-xl border border-slate-700/80 bg-[#111827] p-4 max-h-[450px] overflow-auto">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                Active Structural Defects ({activeSnap?.defects.length ?? 0})
+              </h3>
+              {activeSnap && activeSnap.defects.length === 0 ? (
+                <div className="text-xs text-emerald-300 font-mono flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" /> The defect detector reported zero findings in the available checks.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {(activeSnap?.defects ?? []).map((d) => (
+                    <div
+                      key={d.defectId}
+                      onClick={() => {
+                        if (d.physicalMemberId) {
+                          setSelectedPhysicalMemberId(d.physicalMemberId);
+                          setMemberOptPreview(null);
+                        }
+                      }}
+                      className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs font-mono cursor-pointer hover:bg-rose-500/15"
+                    >
+                      <div className="font-bold text-rose-300">
+                        [{d.severity}] {d.memberId} ({d.memberCategory} · {d.storey}) — Util {d.utilizationRatio} ({d.clause})
+                      </div>
+                      <div className="text-slate-200 mt-1">{d.explanation}</div>
+                      <div className="text-amber-200 mt-1">Proposed Fix: {d.proposedCorrection}</div>
                     </div>
-                    <div className="text-slate-200 mt-1">{d.explanation}</div>
-                    <div className="text-amber-200 mt-1">Proposed Fix: {d.proposedCorrection}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+            {renderSelectedMemberInspector()}
           </div>
         </div>
       )}
 
-      {/* 7. BAR BENDING SCHEDULE (BBS) & DEDUPLICATED QUANTITIES */}
+      {/* 8. BAR BENDING SCHEDULE (BBS) & DEDUPLICATED QUANTITIES */}
       {activeSubTab === 'BBS_BOQ' && activeSnap && (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs font-mono">
             <div className="rounded-lg border border-slate-700 bg-[#111827] p-3">
               <div className="text-slate-400 text-[10px]">NET CONCRETE</div>
-              <div className="text-base font-bold text-sky-300 mt-0.5">{activeSnap.detailingAndBoq.quantities.netConcreteVolumeM3} m³</div>
+              <div className="text-base font-bold text-sky-300 mt-0.5">
+                {activeSnap.detailingAndBoq.quantities.netConcreteVolumeM3} m³
+              </div>
             </div>
             <div className="rounded-lg border border-slate-700 bg-[#111827] p-3">
               <div className="text-slate-400 text-[10px]">JOINT DEDUCTION</div>
-              <div className="text-base font-bold text-emerald-300 mt-0.5">-{activeSnap.detailingAndBoq.quantities.jointAndSlabIntersectionDeductionM3} m³</div>
+              <div className="text-base font-bold text-emerald-300 mt-0.5">
+                -{activeSnap.detailingAndBoq.quantities.jointAndSlabIntersectionDeductionM3} m³
+              </div>
             </div>
             <div className="rounded-lg border border-slate-700 bg-[#111827] p-3">
               <div className="text-slate-400 text-[10px]">TOTAL REBAR STEEL</div>
-              <div className="text-base font-bold text-amber-300 mt-0.5">{activeSnap.detailingAndBoq.quantities.totalSteelWeightKg} kg</div>
+              <div className="text-base font-bold text-amber-300 mt-0.5">
+                {activeSnap.detailingAndBoq.quantities.totalSteelWeightKg} kg
+              </div>
             </div>
             <div className="rounded-lg border border-slate-700 bg-[#111827] p-3">
               <div className="text-slate-400 text-[10px]">SHUTTERING AREA</div>
-              <div className="text-base font-bold text-slate-100 mt-0.5">{activeSnap.detailingAndBoq.quantities.formworkAreaM2} m²</div>
+              <div className="text-base font-bold text-slate-100 mt-0.5">
+                {activeSnap.detailingAndBoq.quantities.formworkAreaM2} m²
+              </div>
             </div>
             <div className="rounded-lg border border-slate-700 bg-[#111827] p-3">
               <div className="text-slate-400 text-[10px]">EXCAVATION</div>
-              <div className="text-base font-bold text-slate-100 mt-0.5">{activeSnap.detailingAndBoq.quantities.excavationVolumeM3} m³</div>
+              <div className="text-base font-bold text-slate-100 mt-0.5">
+                {activeSnap.detailingAndBoq.quantities.excavationVolumeM3} m³
+              </div>
             </div>
           </div>
 
@@ -1300,10 +2283,11 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               <thead className="bg-[#0F172A] text-slate-300 border-b border-slate-700 sticky top-0">
                 <tr>
                   <th className="p-2.5">Bar Mark</th>
-                  <th className="p-2.5">Member</th>
+                  <th className="p-2.5">Consolidated Group</th>
+                  <th className="p-2.5">Members</th>
                   <th className="p-2.5">Shape (IS 2502)</th>
                   <th className="p-2.5">Dia</th>
-                  <th className="p-2.5">Qty</th>
+                  <th className="p-2.5">Total Bars</th>
                   <th className="p-2.5">Cut Length (mm)</th>
                   <th className="p-2.5">Total (m)</th>
                   <th className="p-2.5">Weight (kg)</th>
@@ -1314,6 +2298,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                   <tr key={row.barMark}>
                     <td className="p-2 text-amber-300 font-semibold">{row.barMark}</td>
                     <td className="p-2">{row.memberId}</td>
+                    <td className="p-2 text-cyan-300">{row.memberCount}</td>
                     <td className="p-2 text-[11px]">{row.shapeCode}</td>
                     <td className="p-2">T{row.barDiaMm}</td>
                     <td className="p-2">{row.totalBars}</td>
@@ -1328,7 +2313,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
         </div>
       )}
 
-      {/* 8. UNIFIED AI STRUCTURAL ENGINEERING ASSISTANT */}
+      {/* 9. UNIFIED AI STRUCTURAL ENGINEERING ASSISTANT */}
       {activeSubTab === 'AI_ASSISTANT' && (
         <div className="rounded-xl border border-slate-700/80 bg-[#111827] p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-300">

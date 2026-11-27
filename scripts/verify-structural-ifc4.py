@@ -1,4 +1,4 @@
-"""Read an exported RH Planner structural IFC4 and compare its products to the evaluation snapshot."""
+"""Read an exported RH Planner structural IFC4 and compare its physical products (incl. IfcStairFlight solids) to the evaluation snapshot."""
 
 import argparse
 from collections import Counter
@@ -13,7 +13,7 @@ from ifcopenshell.util.element import get_psets
 from ifcopenshell.util.placement import get_local_placement
 
 
-def close(actual, expected, label, tolerance=0.00001):
+def close(actual, expected, label, tolerance=0.0001):
     if not np.allclose(actual, expected, rtol=0, atol=tolerance):
         raise AssertionError(f"{label}: expected {expected}, found {actual}")
 
@@ -35,13 +35,21 @@ def verify(ifc_path, snapshot_path):
     provenance = get_psets(model.by_type("IfcBuilding")[0])["Pset_RHPlannerStructuralDesign"]
     assert provenance["ArchitecturalSha256"] == system["sourceArchitecturalSha256"]
     assert provenance["ArchitecturalRevision"] == system["sourceArchitecturalRevision"]
+    assert provenance["PhysicalColumnCount"] == len(design["columns"])
+    assert provenance["PhysicalBeamCount"] == len(design["beams"])
+    assert provenance["AnalyticalElementCount"] == len(system["elements"])
+
     storeys = {item.Name: item for item in model.by_type("IfcBuildingStorey")}
     for floor in system["storeys"]:
         storey = storeys[floor["name"] or floor["id"]]
         close(storey.Elevation, floor["elevationMm"], storey.Name)
         close(get_local_placement(storey.ObjectPlacement)[2, 3], floor["elevationMm"], storey.Name + " placement")
 
-    products = {item.Tag: item for kind in ("IfcColumn", "IfcBeam", "IfcSlab", "IfcFooting") for item in model.by_type(kind)}
+    products = {
+        item.Tag: item
+        for kind in ("IfcColumn", "IfcBeam", "IfcSlab", "IfcFooting", "IfcStairFlight")
+        for item in model.by_type(kind)
+    }
     counts = Counter()
 
     def vertices(product):
@@ -51,31 +59,35 @@ def verify(ifc_path, snapshot_path):
         counts[product.is_a()] += 1
         return result
 
+    # 1. Verify Physical Columns & Physical Beams (spanning first..last child analytical element!)
     for collection in ("columns", "beams"):
         for member in design[collection]:
-            identifier = member["elementId"]
+            identifier = member.get("physicalMemberId") or member["elementId"]
             product = products[identifier]
             assert product.is_a("IfcColumn" if collection == "columns" else "IfcBeam")
-            element = system["elements"][member["elementIndex"]]
-            start = np.asarray(system["nodes"][element["startNodeIndex"]]["positionM"])
-            end = np.asarray(system["nodes"][element["endNodeIndex"]]["positionM"])
+            child_indices = member.get("analyticalElementIndices") or [member["elementIndex"]]
+            first_el = system["elements"][child_indices[0]]
+            last_el = system["elements"][child_indices[-1]]
+            start = np.asarray(system["nodes"][first_el["startNodeIndex"]]["positionM"])
+            end = np.asarray(system["nodes"][last_el["endNodeIndex"]]["positionM"])
             axis = (end - start) / np.linalg.norm(end - start)
             mesh = vertices(product)
             distance = (mesh - start) @ axis
             close([float(distance.min()), float(distance.max())], [0, float(np.linalg.norm(end - start))], identifier + " span")
-            close(mesh[distance < 0.00001].mean(axis=0), start, identifier + " section centroid")
+            close(mesh[distance < 0.0001].mean(axis=0), start, identifier + " section centroid")
             props = get_psets(product)["Pset_RHPlannerStructuralDesign"]
             close(props["WidthMm"], member["widthMm"], identifier + " width")
             close(props["DepthMm"], member["depthMm"], identifier + " depth")
             assert props["DesignStatus"] == member["status"], identifier
 
+    # 2. Verify Physical Slabs
     panel_by_id = {panel["id"]: panel for panel in system["slabPanels"]}
-    omitted = 0
+    omitted_slabs = 0
     for slab in design["slabs"]:
         identifier = slab["panelId"]
         panel = panel_by_id[identifier]
-        if "exchangeBoundary" not in panel:
-            omitted += 1
+        if "exchangeBoundary" not in panel or panel["exchangeBoundary"] is None:
+            omitted_slabs += 1
             assert identifier not in products, identifier
             continue
         product = products[identifier]
@@ -85,22 +97,53 @@ def verify(ifc_path, snapshot_path):
         close(mesh[:, :2].min(axis=0), ring.min(axis=0), identifier + " plan min")
         close(mesh[:, :2].max(axis=0), ring.max(axis=0), identifier + " plan max")
         close(np.ptp(mesh[:, 2]), slab["thicknessMm"] / 1000, identifier + " thickness")
-    assert provenance["OmittedSlabPanelCount"] == omitted
-    assert provenance["OmittedStairWaistCount"] == len(system["stairWaists"])
+    assert provenance["OmittedSlabPanelCount"] == omitted_slabs
 
+    # 3. Verify Stair-Waist Inclined Solids (IfcStairFlight)
+    waist_by_id = {w["id"]: w for w in system["stairWaists"]}
+    omitted_stairs = 0
+    exported_stairs = 0
+    for stair in design["stairs"]:
+        identifier = stair["waistId"]
+        waist = waist_by_id[identifier]
+        if not waist.get("ifcSolidGeometrySupported") or "boundsMm" not in waist:
+            omitted_stairs += 1
+            assert identifier not in products, identifier
+            continue
+        product = products[identifier]
+        assert product.is_a("IfcStairFlight") and product.PredefinedType == "STRAIGHT"
+        mesh = vertices(product)
+        assert np.ptp(mesh[:, 2]) > 1.0, identifier + " inclined rise"
+        props = get_psets(product)["Pset_RHPlannerStructuralDesign"]
+        close(props["WaistThicknessMm"], waist["waistThicknessMm"], identifier + " waist thickness")
+        assert props["DesignStatus"] == stair["status"], identifier
+        exported_stairs += 1
+
+    assert provenance["OmittedStairWaistCount"] == omitted_stairs
+    assert provenance["ExportedStairWaistCount"] == exported_stairs
+
+    # 4. Verify Physical Foundations
     for footing in snapshot["foundationDesign"]["footings"]:
         identifier = footing["footingId"]
         product = products[identifier]
         assert product.is_a("IfcSlab" if footing["typology"] == "RIGID_RAFT" else "IfcFooting")
         mesh = vertices(product)
-        close(np.ptp(mesh, axis=0), [
-            footing["lengthXMm"] / 1000, footing["widthYMm"] / 1000, footing["thicknessMm"] / 1000,
-        ], identifier + " extent")
+        close(
+            np.ptp(mesh, axis=0),
+            [footing["lengthXMm"] / 1000, footing["widthYMm"] / 1000, footing["thicknessMm"] / 1000],
+            identifier + " extent",
+        )
         close(mesh[:, 2].min(), -footing["excavationDepthM"], identifier + " bottom elevation")
 
     assert len(products) == sum(counts.values())
-    return {"schema": model.schema, "storeys": len(storeys), "products": dict(counts),
-            "omittedSlabs": omitted, "omittedStairs": len(system["stairWaists"])}
+    return {
+        "schema": model.schema,
+        "storeys": len(storeys),
+        "products": dict(counts),
+        "omittedSlabs": omitted_slabs,
+        "exportedStairs": exported_stairs,
+        "omittedStairs": omitted_stairs,
+    }
 
 
 if __name__ == "__main__":

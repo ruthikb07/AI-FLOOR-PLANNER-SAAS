@@ -1,4 +1,5 @@
 export * from './types/solver-types.js';
+export * from './types/physical-structural-model.js';
 export * from './adapter/units-and-coordinates.js';
 export * from './wasm/awatif-wasm-bridge.js';
 export * from './math/frame-mechanics.js';

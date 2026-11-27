@@ -192,21 +192,27 @@ export async function assembleLoadedAnalyticalFrameModel(
     });
   }
 
-  // 2. Masonry Wall Line Loads on Supporting Plinth & Floor Beams (SDL)
+  // 2. Masonry Wall Line Loads on Supporting Plinth & Floor Physical Beams (applied uniformly across all child analytical segments)
   for (const meta of system.memberMetadata) {
     if (meta.supportedWallThicknessMm > 0 && meta.supportedWallHeightMm > 0) {
-      const L = elemLengthsM[meta.elementIndex]!;
       const netFactor = 1 - meta.wallOpeningFraction;
       const wallAreaPerM = (meta.supportedWallThicknessMm / 1000) * (meta.supportedWallHeightMm / 1000);
       const qWallKnM = wallAreaPerM * inputs.masonryUnitWeightKnM3 * netFactor;
       if (qWallKnM > 1e-4) {
-        masonryWallLoadKn += qWallKnM * L;
-        sdlUniform.push({
-          elementIndex: meta.elementIndex,
-          coordinateSystem: 'GLOBAL',
-          qStartKnPerM: [0, 0, -qWallKnM],
-          sourceDescription: `Masonry wall (${meta.supportedWallThicknessMm}mm, opening ${(meta.wallOpeningFraction * 100).toFixed(0)}%)`,
-        });
+        const childIndices =
+          meta.analyticalElementIndices && meta.analyticalElementIndices.length > 0
+            ? meta.analyticalElementIndices
+            : [meta.elementIndex];
+        for (const eIdx of childIndices) {
+          const L = elemLengthsM[eIdx]!;
+          masonryWallLoadKn += qWallKnM * L;
+          sdlUniform.push({
+            elementIndex: eIdx,
+            coordinateSystem: 'GLOBAL',
+            qStartKnPerM: [0, 0, -qWallKnM],
+            sourceDescription: `Masonry wall on ${meta.elementId} (${meta.supportedWallThicknessMm}mm, opening ${(meta.wallOpeningFraction * 100).toFixed(0)}%)`,
+          });
+        }
       }
     }
   }
@@ -234,12 +240,26 @@ export async function assembleLoadedAnalyticalFrameModel(
     nodalDeadSdlKn[el.endNodeIndex] += 0.5 * wTot;
   }
 
-  for (const panel of system.slabPanels) {
-    const beamIndices = panel.supportingBeamElementIndices;
-    if (beamIndices.length === 0) continue;
+  const physBeamById = new Map(
+    (system.physicalModel?.beams ?? []).map((pb) => [pb.physicalMemberId, pb]),
+  );
 
-    const totalBeamLenM = beamIndices.reduce((s, idx) => s + elemLengthsM[idx]!, 0);
-    if (totalBeamLenM <= 1e-6) continue;
+  for (const panel of system.slabPanels) {
+    const physIds = panel.supportingPhysicalBeamIds?.filter((id) => physBeamById.has(id)) ?? [];
+    const beamGroups: { elemIndices: readonly number[]; totalLenM: number }[] =
+      physIds.length > 0
+        ? physIds.map((pid) => {
+            const pb = physBeamById.get(pid)!;
+            const totalLenM = pb.analyticalElementIndices.reduce((s, idx) => s + elemLengthsM[idx]!, 0);
+            return { elemIndices: pb.analyticalElementIndices, totalLenM };
+          })
+        : panel.supportingBeamElementIndices.map((idx) => ({
+            elemIndices: [idx],
+            totalLenM: elemLengthsM[idx]!,
+          }));
+
+    const validGroups = beamGroups.filter((g) => g.totalLenM > 1e-6);
+    if (validGroups.length === 0) continue;
 
     const slabSwKPa = (panel.thicknessMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3;
     const ffKPa = inputs.floorFinishKnM2;
@@ -261,50 +281,45 @@ export async function assembleLoadedAnalyticalFrameModel(
     if (isTopRoof) totalRoofLiveKn += panelLiveKn;
     else totalOccupancyLiveKn += panelLiveKn;
 
-    // Distribute tributary load proportionally across bounding beams (with aspect-ratio weighting so long beams carry larger yield-line share!)
-    const weights = beamIndices.map((idx) => {
-      const L = elemLengthsM[idx]!;
-      // IS 456 Cl. 24.5 yield-line share: longer edge carries (1 - 1/(3*(ly/lx)^2)) vs shorter edge 1/3
-      return Math.pow(L, 1.35);
-    });
+    // Distribute tributary load proportionally across physical supporting beams (mesh-subdivision invariant!)
+    const weights = validGroups.map((g) => Math.pow(g.totalLenM, 1.35));
     const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+    const seismicLlFactor = isTopRoof ? 0 : liveKPa <= 3.0 ? 0.25 : 0.5;
 
-    for (let k = 0; k < beamIndices.length; k++) {
-      const bIdx = beamIndices[k]!;
+    for (let k = 0; k < validGroups.length; k++) {
+      const grp = validGroups[k]!;
       const share = weights[k]! / sumW;
-      const bLenM = elemLengthsM[bIdx]!;
-      const el = system.elements[bIdx]!;
+      const qSw = (panelSwKn * share) / grp.totalLenM;
+      const qFf = (panelFfKn * share) / grp.totalLenM;
+      const qLl = (panelLiveKn * share) / grp.totalLenM;
 
-      const qSw = (panelSwKn * share) / bLenM;
-      const qFf = (panelFfKn * share) / bLenM;
-      const qLl = (panelLiveKn * share) / bLenM;
+      for (const bIdx of grp.elemIndices) {
+        const segLenM = elemLengthsM[bIdx]!;
+        const el = system.elements[bIdx]!;
+        dlUniform.push({
+          elementIndex: bIdx,
+          coordinateSystem: 'GLOBAL',
+          qStartKnPerM: [0, 0, -qSw],
+          sourceDescription: `Slab ${panel.id} self-weight (${panel.thicknessMm}mm)`,
+        });
+        sdlUniform.push({
+          elementIndex: bIdx,
+          coordinateSystem: 'GLOBAL',
+          qStartKnPerM: [0, 0, -qFf],
+          sourceDescription: `Slab ${panel.id} floor finish`,
+        });
+        llUniform.push({
+          elementIndex: bIdx,
+          coordinateSystem: 'GLOBAL',
+          qStartKnPerM: [0, 0, -qLl],
+          sourceDescription: `Slab ${panel.id} imposed load (${liveKPa} kN/m²)`,
+        });
 
-      dlUniform.push({
-        elementIndex: bIdx,
-        coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -qSw],
-        sourceDescription: `Slab ${panel.id} self-weight (${panel.thicknessMm}mm)`,
-      });
-      sdlUniform.push({
-        elementIndex: bIdx,
-        coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -qFf],
-        sourceDescription: `Slab ${panel.id} floor finish`,
-      });
-      llUniform.push({
-        elementIndex: bIdx,
-        coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -qLl],
-        sourceDescription: `Slab ${panel.id} imposed load (${liveKPa} kN/m²)`,
-      });
-
-      nodalDeadSdlKn[el.startNodeIndex] += 0.5 * (panelSwKn + panelFfKn) * share;
-      nodalDeadSdlKn[el.endNodeIndex] += 0.5 * (panelSwKn + panelFfKn) * share;
-
-      // IS 1893:2016 Cl. 7.3.1 / Table 10: Roof live load = 0% seismic weight; LL <= 3.0 kN/m² = 25%; LL > 3.0 kN/m² = 50%
-      const seismicLlFactor = isTopRoof ? 0 : liveKPa <= 3.0 ? 0.25 : 0.5;
-      nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * panelLiveKn * share * seismicLlFactor;
-      nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * panelLiveKn * share * seismicLlFactor;
+        nodalDeadSdlKn[el.startNodeIndex] += 0.5 * (qSw + qFf) * segLenM;
+        nodalDeadSdlKn[el.endNodeIndex] += 0.5 * (qSw + qFf) * segLenM;
+        nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * qLl * segLenM * seismicLlFactor;
+        nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * qLl * segLenM * seismicLlFactor;
+      }
     }
   }
 
@@ -323,26 +338,29 @@ export async function assembleLoadedAnalyticalFrameModel(
     staircaseDeadLoadKn += totDeadKn;
     totalOccupancyLiveKn += totLiveKn;
 
-    const sharePerBeam = 1 / st.supportingBeamElementIndices.length;
+    const totBeamLenM = st.supportingBeamElementIndices.reduce((s, bIdx) => s + elemLengthsM[bIdx]!, 0);
+    if (totBeamLenM <= 1e-6) continue;
+    const qDeadStair = totDeadKn / totBeamLenM;
+    const qLiveStair = totLiveKn / totBeamLenM;
     for (const bIdx of st.supportingBeamElementIndices) {
       const bLenM = elemLengthsM[bIdx]!;
       const el = system.elements[bIdx]!;
       sdlUniform.push({
         elementIndex: bIdx,
         coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -(totDeadKn * sharePerBeam) / bLenM],
+        qStartKnPerM: [0, 0, -qDeadStair],
         sourceDescription: `Staircase ${st.stairId} waist + steps DL`,
       });
       llUniform.push({
         elementIndex: bIdx,
         coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -(totLiveKn * sharePerBeam) / bLenM],
+        qStartKnPerM: [0, 0, -qLiveStair],
         sourceDescription: `Staircase ${st.stairId} imposed load (3.0 kN/m²)`,
       });
-      nodalDeadSdlKn[el.startNodeIndex] += 0.5 * totDeadKn * sharePerBeam;
-      nodalDeadSdlKn[el.endNodeIndex] += 0.5 * totDeadKn * sharePerBeam;
-      nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * totLiveKn * sharePerBeam * 0.25;
-      nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * totLiveKn * sharePerBeam * 0.25;
+      nodalDeadSdlKn[el.startNodeIndex] += 0.5 * qDeadStair * bLenM;
+      nodalDeadSdlKn[el.endNodeIndex] += 0.5 * qDeadStair * bLenM;
+      nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
+      nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
     }
   }
 

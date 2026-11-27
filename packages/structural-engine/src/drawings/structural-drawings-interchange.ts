@@ -1,6 +1,22 @@
-/** Revision-bound DXF and IFC4 projections of a structural evaluation. */
+/**
+ * Revision-bound DXF and IFC4 projections of a physical structural evaluation (Milestone 5.1 Gate 10).
+ *
+ * Strictly enforces:
+ * - Physical member export (`1 PhysicalBeam` -> `1 IfcBeam` across full span `startNode..endNode`, never split per FEA segment!).
+ * - Supported inclined staircase waist solids exported as `IFCSTAIRFLIGHT` faceted Breps (`OmittedStairWaistCount = 0` for planar flights!).
+ * - Consolidated BBS marks & physical `scheduleGroupMark` properties.
+ * - Failed / unsupported / unreviewed designs are stamped `DIAGNOSTIC_NOT_FOR_CONSTRUCTION` (never construction-approved).
+ */
 
-import { canonicalIfcGlobalId, exchangeRing, IfcStepWriter, stepList, stepReal, stepString, type StepId } from '@ai-floor-planner/core';
+import {
+  canonicalIfcGlobalId,
+  exchangeRing,
+  IfcStepWriter,
+  stepList,
+  stepReal,
+  stepString,
+  type StepId,
+} from '@ai-floor-planner/core';
 import { elementLengthAndLambda } from '../math/frame-mechanics.js';
 import type { FullStructuralEvaluationSnapshot } from '../optimization/defect-and-optimizer.js';
 
@@ -10,6 +26,14 @@ export function snapshotSolverBackends(snapshot: FullStructuralEvaluationSnapsho
     ...Object.values(snapshot.solveEnvelope.combinationResults),
   ];
   return [...new Set(results.map((result) => result.diagnostics.executionBackend))].sort().join(', ') || 'UNAVAILABLE';
+}
+
+export function snapshotDrawingApprovalStatus(
+  snapshot: FullStructuralEvaluationSnapshot,
+): 'PRELIMINARY_FOR_ENGINEER_REVIEW' | 'DIAGNOSTIC_NOT_FOR_CONSTRUCTION' {
+  return snapshot.designLifecycleStatus === 'DESIGN_CHECKS_PASSED'
+    ? 'PRELIMINARY_FOR_ENGINEER_REVIEW'
+    : 'DIAGNOSTIC_NOT_FOR_CONSTRUCTION';
 }
 
 export const MANDATORY_STRUCTURAL_DISCLAIMER =
@@ -54,12 +78,30 @@ function dxfText(layer: string, x: number, y: number, height: number, content: s
   ].join('\n');
 }
 
-/** Projects the reviewed foundation, storey plans and BBS in right-handed millimetres. */
+function getPhysicalMemberEndPositionsM(
+  system: FullStructuralEvaluationSnapshot['system'],
+  member: { readonly elementIndex: number; readonly analyticalElementIndices?: readonly number[] },
+): { readonly startM: readonly [number, number, number]; readonly endM: readonly [number, number, number]; readonly firstEl: FullStructuralEvaluationSnapshot['system']['elements'][number] } {
+  const indices =
+    member.analyticalElementIndices && member.analyticalElementIndices.length > 0
+      ? member.analyticalElementIndices
+      : [member.elementIndex];
+  const firstEl = system.elements[indices[0]!]!;
+  const lastEl = system.elements[indices[indices.length - 1]!]!;
+  return {
+    startM: system.nodes[firstEl.startNodeIndex]!.positionM,
+    endM: system.nodes[lastEl.endNodeIndex]!.positionM,
+    firstEl,
+  };
+}
+
+/** Projects the physical foundation, storey framing, stair waists, cross-sections, and consolidated BBS in right-handed millimetres. */
 export function exportStructuralEngineeringDxf(
   snapshot: FullStructuralEvaluationSnapshot,
   projectName = 'RH Planner Structural Project',
 ): string {
   const { system, rccDesign, foundationDesign, detailingAndBoq } = snapshot;
+  const approvalStatus = snapshotDrawingApprovalStatus(snapshot);
   const entities: string[] = [];
 
   const layers = [
@@ -68,6 +110,7 @@ export function exportStructuralEngineeringDxf(
     ['S-COLS', 1],
     ['S-BEAM', 30],
     ['S-SLAB', 5],
+    ['S-STAIR', 6],
     ['S-REBAR', 2],
     ['S-ANNO', 7],
     ['S-SCHEDULE', 4],
@@ -89,14 +132,25 @@ export function exportStructuralEngineeringDxf(
   ].join('\n');
 
   // Sheet 1: Foundation & Column Grid Layout (X offset 0)
-  entities.push(dxfText('S-TITLE', 0, 4500, 350, `SHEET S-101: FOUNDATION & COLUMN LAYOUT - ${projectName}`));
+  entities.push(dxfText('S-TITLE', 0, 5000, 350, `SHEET S-101: FOUNDATION & COLUMN LAYOUT - ${projectName}`));
   entities.push(
     dxfText(
       'S-TITLE',
       0,
-      4000,
+      4450,
       180,
-      `Arch Rev ${system.sourceArchitecturalRevision} (SHA ${system.sourceArchitecturalSha256.slice(0, 12)}) | Solver: ${snapshotSolverBackends(snapshot)}`,
+      `Arch Rev ${system.sourceArchitecturalRevision} (SHA ${system.sourceArchitecturalSha256.slice(0, 12)}) | Struct Rev ${system.structuralRevision} | Solver: ${snapshotSolverBackends(snapshot)}`,
+    ),
+  );
+  entities.push(
+    dxfText(
+      'S-TITLE',
+      0,
+      4050,
+      200,
+      approvalStatus === 'DIAGNOSTIC_NOT_FOR_CONSTRUCTION'
+        ? `STATUS: ${snapshot.designLifecycleStatus} - DIAGNOSTIC REPORT ONLY (NOT FOR CONSTRUCTION)`
+        : `STATUS: ${snapshot.designLifecycleStatus} - FOR LICENSED STRUCTURAL ENGINEER REVIEW`,
     ),
   );
 
@@ -117,7 +171,7 @@ export function exportStructuralEngineeringDxf(
         cx - ft.lengthXMm / 2 + 80,
         cy - ft.widthYMm / 2 + 100,
         130,
-        `${ft.footingId} ${ft.typology} ${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} (${ft.bottomMeshXLabel})`,
+        `${ft.footingId} [${ft.scheduleGroupMark}] ${ft.typology} ${ft.lengthXMm}x${ft.widthYMm}x${ft.thicknessMm} (${ft.bottomMeshXLabel})`,
       ),
     );
   }
@@ -128,25 +182,30 @@ export function exportStructuralEngineeringDxf(
     ...(rccDesign.beams.some((beam) => beam.floorId === 'PLINTH') ? [{ id: 'PLINTH', name: 'Plinth' }] : []),
     ...system.storeys,
   ];
+
   for (const [floorIndex, floor] of floors.entries()) {
     const offsetX = (floorIndex + 1) * sheetPitchMm;
-    entities.push(dxfText('S-TITLE', offsetX, 4500, 350, 'FRAME PLAN - ' + (floor.name || floor.id)));
+    entities.push(dxfText('S-TITLE', offsetX, 4500, 350, `PHYSICAL FRAME PLAN - ${floor.name || floor.id}`));
     for (const col of rccDesign.columns.filter((item) => item.floorId === floor.id)) {
-      const element = system.elements[col.elementIndex]!;
-      const end = system.nodes[element.endNodeIndex]!.positionM;
-      entities.push(dxfRect('S-COLS', offsetX + end[0] * 1000, end[1] * 1000, col.widthMm, col.depthMm));
+      const { endM } = getPhysicalMemberEndPositionsM(system, col);
+      entities.push(dxfRect('S-COLS', offsetX + endM[0] * 1000, endM[1] * 1000, col.widthMm, col.depthMm));
     }
     for (const beam of rccDesign.beams.filter((item) => item.floorId === floor.id)) {
-      const element = system.elements[beam.elementIndex]!;
-      const start = system.nodes[element.startNodeIndex]!.positionM;
-      const end = system.nodes[element.endNodeIndex]!.positionM;
-      const x0 = offsetX + start[0] * 1000;
-      const y0 = start[1] * 1000;
-      const x1 = offsetX + end[0] * 1000;
-      const y1 = end[1] * 1000;
-      entities.push(dxfLine('S-BEAM', x0, y0, x1, y1),
-        dxfText('S-REBAR', (x0 + x1) / 2, (y0 + y1) / 2 + 120, 120,
-          `${beam.elementId} (${beam.widthMm}x${beam.depthMm}) T:${beam.topBarsSupport.label} B:${beam.bottomBarsMidspan.label}`));
+      const { startM, endM } = getPhysicalMemberEndPositionsM(system, beam);
+      const x0 = offsetX + startM[0] * 1000;
+      const y0 = startM[1] * 1000;
+      const x1 = offsetX + endM[0] * 1000;
+      const y1 = endM[1] * 1000;
+      entities.push(
+        dxfLine('S-BEAM', x0, y0, x1, y1),
+        dxfText(
+          'S-REBAR',
+          (x0 + x1) / 2,
+          (y0 + y1) / 2 + 120,
+          120,
+          `${beam.physicalMemberId} [${beam.scheduleGroupMark}] (${beam.widthMm}x${beam.depthMm}) T:${beam.topBarsSupport.label} B:${beam.bottomBarsMidspan.label}`,
+        ),
+      );
     }
     for (const panel of system.slabPanels.filter((item) => item.floorId === floor.id && item.exchangeBoundary)) {
       const ring = panel.exchangeBoundary!;
@@ -156,13 +215,27 @@ export function exportStructuralEngineeringDxf(
           entities.push(dxfLine('S-SLAB', offsetX + start.x, -start.y, offsetX + end.x, -end.y));
         }
       }
-      entities.push(dxfText('S-ANNO', offsetX + (panel.boundsMm.minX + panel.boundsMm.maxX) / 2,
-        -(panel.boundsMm.minY + panel.boundsMm.maxY) / 2, 130, `${panel.id} (${panel.thicknessMm}mm)`));
+      entities.push(
+        dxfText(
+          'S-ANNO',
+          offsetX + (panel.boundsMm.minX + panel.boundsMm.maxX) / 2,
+          -(panel.boundsMm.minY + panel.boundsMm.maxY) / 2,
+          130,
+          `${panel.id} (${panel.thicknessMm}mm)`,
+        ),
+      );
+    }
+    for (const st of system.stairWaists.filter((item) => item.floorId === floor.id && item.boundsMm)) {
+      const b = st.boundsMm!;
+      const cx = offsetX + (b.minX + b.maxX) / 2;
+      const cy = -(b.minY + b.maxY) / 2;
+      entities.push(dxfRect('S-STAIR', cx, cy, b.maxX - b.minX, b.maxY - b.minY));
+      entities.push(dxfText('S-ANNO', cx - 400, cy, 120, `${st.id} (Waist ${st.waistThicknessMm}mm)`));
     }
   }
 
   const xOff3 = (floors.length + 1) * sheetPitchMm;
-  entities.push(dxfText('S-TITLE', xOff3, 4500, 350, 'BAR BENDING SCHEDULE & MATERIAL QUANTITIES'));
+  entities.push(dxfText('S-TITLE', xOff3, 4500, 350, 'CONSOLIDATED BAR BENDING SCHEDULE & MATERIAL QUANTITIES'));
   const q = detailingAndBoq.quantities;
   entities.push(
     dxfText(
@@ -181,7 +254,7 @@ export function exportStructuralEngineeringDxf(
       xOff3,
       rowY,
       150,
-      'BAR_MARK | MEMBER_ID | DIA_MM | QTY | CUT_LEN_MM | TOTAL_LEN_M | WEIGHT_KG | DESCRIPTION',
+      'BAR_MARK | GROUP_MEMBERS | DIA_MM | MEMBERS | TOTAL_BARS | CUT_LEN_MM | TOTAL_LEN_M | WEIGHT_KG | DESCRIPTION',
     ),
   );
   for (const entry of detailingAndBoq.bbsEntries) {
@@ -192,7 +265,7 @@ export function exportStructuralEngineeringDxf(
         xOff3,
         rowY,
         130,
-        `${entry.barMark} | ${entry.memberId} | T${entry.barDiaMm} | ${entry.totalBars} | ${entry.cuttingLengthMm} | ${entry.totalLengthM}m | ${entry.totalWeightKg}kg | ${entry.description}`,
+        `${entry.barMark} | ${entry.memberId} | T${entry.barDiaMm} | ${entry.memberCount} | ${entry.totalBars} | ${entry.cuttingLengthMm} | ${entry.totalLengthM}m | ${entry.totalWeightKg}kg | ${entry.description}`,
       ),
     );
   }
@@ -203,7 +276,7 @@ export function exportStructuralEngineeringDxf(
     '0', 'SECTION',
     '2', 'HEADER',
     '9', '$INSUNITS',
-    '70', '4', // 4 = Millimetres
+    '70', '4',
     '0', 'ENDSEC',
     '0', 'SECTION',
     '2', 'TABLES',
@@ -218,32 +291,76 @@ export function exportStructuralEngineeringDxf(
   ].join('\n');
 }
 
-
-/** Projects the evaluated physical frame and supported planar profiles to IFC4. */
+/** Projects the evaluated PHYSICAL frame, slabs, foundations, and supported inclined stair-waist solids to IFC4 STEP. */
 export function exportStructuralIfc4Step(
   snapshot: FullStructuralEvaluationSnapshot,
   projectName = 'RH Planner Structural Model',
 ): string {
   const { system, rccDesign, foundationDesign, detailingAndBoq } = snapshot;
+  const approvalStatus = snapshotDrawingApprovalStatus(snapshot);
   const step = new IfcStepWriter();
-  const guid = (...identity: string[]) => stepString(canonicalIfcGlobalId(system.projectId, system.buildingId, 'structural', ...identity));
+  const guid = (...identity: string[]) =>
+    stepString(canonicalIfcGlobalId(system.projectId, system.buildingId, 'structural', ...identity));
   const direction = (axes: readonly number[]) => step.add('IFCDIRECTION', stepList(axes.map(stepReal)));
   const origin = step.point(0, 0, 0);
   const axis = step.add('IFCAXIS2PLACEMENT3D', origin, '$', '$');
   const zAxis = direction([0, 0, 1]);
   const context = step.add('IFCGEOMETRICREPRESENTATIONCONTEXT', '$', "'Model'", '3', '1.E-05', axis, '$');
-  const units = step.add('IFCUNITASSIGNMENT', stepList([
-    step.add('IFCSIUNIT', '*', '.LENGTHUNIT.', '.MILLI.', '.METRE.'),
-    step.add('IFCSIUNIT', '*', '.AREAUNIT.', '$', '.SQUARE_METRE.'),
-    step.add('IFCSIUNIT', '*', '.VOLUMEUNIT.', '$', '.CUBIC_METRE.'),
-    step.add('IFCSIUNIT', '*', '.FORCEUNIT.', '.KILO.', '.NEWTON.'),
-  ]));
-  const project = step.add('IFCPROJECT', guid('project'), '$', stepString(projectName),
-    stepString(MANDATORY_STRUCTURAL_DISCLAIMER), '$', '$', '$', stepList([context]), units);
+  const units = step.add(
+    'IFCUNITASSIGNMENT',
+    stepList([
+      step.add('IFCSIUNIT', '*', '.LENGTHUNIT.', '.MILLI.', '.METRE.'),
+      step.add('IFCSIUNIT', '*', '.AREAUNIT.', '$', '.SQUARE_METRE.'),
+      step.add('IFCSIUNIT', '*', '.VOLUMEUNIT.', '$', '.CUBIC_METRE.'),
+      step.add('IFCSIUNIT', '*', '.FORCEUNIT.', '.KILO.', '.NEWTON.'),
+    ]),
+  );
+  const project = step.add(
+    'IFCPROJECT',
+    guid('project'),
+    '$',
+    stepString(projectName),
+    stepString(MANDATORY_STRUCTURAL_DISCLAIMER),
+    '$',
+    '$',
+    '$',
+    stepList([context]),
+    units,
+  );
   const sitePlace = step.placement(0);
-  const site = step.add('IFCSITE', guid('site'), '$', "'Site'", '$', '$', sitePlace, '$', '$', '.ELEMENT.', '$', '$', '$', '$', '$');
+  const site = step.add(
+    'IFCSITE',
+    guid('site'),
+    '$',
+    "'Site'",
+    '$',
+    '$',
+    sitePlace,
+    '$',
+    '$',
+    '.ELEMENT.',
+    '$',
+    '$',
+    '$',
+    '$',
+    '$',
+  );
   const buildingPlace = step.placement(0, sitePlace);
-  const building = step.add('IFCBUILDING', guid('building'), '$', stepString(projectName), '$', '$', buildingPlace, '$', '$', '.ELEMENT.', '$', '$', '$');
+  const building = step.add(
+    'IFCBUILDING',
+    guid('building'),
+    '$',
+    stepString(projectName),
+    '$',
+    '$',
+    buildingPlace,
+    '$',
+    '$',
+    '.ELEMENT.',
+    '$',
+    '$',
+    '$',
+  );
   const aggregate = (id: string, parent: StepId, children: readonly StepId[]) =>
     step.add('IFCRELAGGREGATES', guid('aggregate', id), '$', '$', '$', parent, stepList(children));
   aggregate('project', project, [site]);
@@ -252,11 +369,23 @@ export function exportStructuralIfc4Step(
   const storeys = new Map<string, { entity: StepId; place: StepId; elevationMm: number; products: StepId[] }>();
   const addStorey = (floorId: string, name: string, elevationMm: number) => {
     const place = step.placement(elevationMm, buildingPlace);
-    const entity = step.add('IFCBUILDINGSTOREY', guid('storey', floorId), '$', stepString(name),
-      '$', '$', place, '$', '$', '.ELEMENT.', stepReal(elevationMm));
+    const entity = step.add(
+      'IFCBUILDINGSTOREY',
+      guid('storey', floorId),
+      '$',
+      stepString(name),
+      '$',
+      '$',
+      place,
+      '$',
+      '$',
+      '.ELEMENT.',
+      stepReal(elevationMm),
+    );
     storeys.set(floorId, { entity, place, elevationMm, products: [] });
   };
-  const foundationElevation = (system.nodes.find((node) => node.floorId === 'FOUNDATION')?.positionM[2] ?? 0) * 1000;
+  const foundationElevation =
+    (system.nodes.find((node) => node.floorId === 'FOUNDATION')?.positionM[2] ?? 0) * 1000;
   addStorey('FOUNDATION', 'Foundation', foundationElevation);
   if (system.nodes.some((node) => node.floorId === 'PLINTH')) addStorey('PLINTH', 'Plinth', 0);
   for (const floor of system.storeys) addStorey(floor.id, floor.name || floor.id, floor.elevationMm);
@@ -264,12 +393,20 @@ export function exportStructuralIfc4Step(
 
   const attachDesign = (target: StepId, key: string, props: Record<string, string | number>) => {
     const properties = Object.entries(props).map(([label, value]) => {
-      const typedValue = typeof value === 'number' && Number.isFinite(value)
-        ? 'IFCREAL(' + stepReal(value) + ')'
-        : 'IFCLABEL(' + stepString(typeof value === 'string' ? value : 'UNAVAILABLE') + ')';
+      const typedValue =
+        typeof value === 'number' && Number.isFinite(value)
+          ? 'IFCREAL(' + stepReal(value) + ')'
+          : 'IFCLABEL(' + stepString(typeof value === 'string' ? value : 'UNAVAILABLE') + ')';
       return step.add('IFCPROPERTYSINGLEVALUE', stepString(label), '$', typedValue, '$');
     });
-    const pset = step.add('IFCPROPERTYSET', guid('pset', key), '$', "'Pset_RHPlannerStructuralDesign'", '$', stepList(properties));
+    const pset = step.add(
+      'IFCPROPERTYSET',
+      guid('pset', key),
+      '$',
+      "'Pset_RHPlannerStructuralDesign'",
+      '$',
+      stepList(properties),
+    );
     step.add('IFCRELDEFINESBYPROPERTIES', guid('properties', key), '$', '$', '$', stepList([target]), pset);
   };
   const rect = (width: number, depth: number) =>
@@ -281,12 +418,32 @@ export function exportStructuralIfc4Step(
   });
 
   function frameBrep(axes: number[][], widthMm: number, depthMm: number, lengthMm: number) {
-    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const;
-    const points = [0, lengthMm].flatMap((station) => corners.map(([width, depth]) =>
-      step.point(...axes[0]!.map((direction, index) => direction * station +
-        axes[1]![index]! * width * widthMm / 2 + axes[2]![index]! * depth * depthMm / 2)),
-    ));
-    const faces = [[3, 2, 1, 0], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]].map((indices) => {
+    const corners = [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ] as const;
+    const points = [0, lengthMm].flatMap((station) =>
+      corners.map(([width, depth]) =>
+        step.point(
+          ...axes[0]!.map(
+            (dir, index) =>
+              dir * station +
+              axes[1]![index]! * width * (widthMm / 2) +
+              axes[2]![index]! * depth * (depthMm / 2),
+          ),
+        ),
+      ),
+    );
+    const faces = [
+      [3, 2, 1, 0],
+      [4, 5, 6, 7],
+      [0, 1, 5, 4],
+      [1, 2, 6, 5],
+      [2, 3, 7, 6],
+      [3, 0, 4, 7],
+    ].map((indices) => {
       const loop = step.add('IFCPOLYLOOP', stepList(indices.map((index) => points[index]!)));
       return step.add('IFCFACE', stepList([step.add('IFCFACEOUTERBOUND', loop, '.T.')]));
     });
@@ -294,49 +451,90 @@ export function exportStructuralIfc4Step(
   }
 
   function addProduct(params: {
-    type: string; subtype: string; id: string; floorId: string;
+    type: string;
+    subtype: string;
+    id: string;
+    floorId: string;
     baseMm: readonly [number, number, number];
     body: { id: StepId; type: "'SweptSolid'" | "'Brep'" };
-    axes?: number[][]; properties: Record<string, string | number>;
+    axes?: number[][];
+    extraArgsAfterSubtype?: readonly string[];
+    properties: Record<string, string | number>;
   }) {
     const storey = storeys.get(params.floorId);
     if (!storey) throw new Error('Missing IFC structural storey for ' + params.id);
     const [x, y, z] = params.baseMm;
     const location = step.point(x, y, z - storey.elevationMm);
-    const placementAxis = step.add('IFCAXIS2PLACEMENT3D', location,
-      params.axes ? direction(params.axes[0]!) : '$', params.axes ? direction(params.axes[1]!) : '$');
+    const placementAxis = step.add(
+      'IFCAXIS2PLACEMENT3D',
+      location,
+      params.axes ? direction(params.axes[0]!) : '$',
+      params.axes ? direction(params.axes[1]!) : '$',
+    );
     const place = step.add('IFCLOCALPLACEMENT', storey.place, placementAxis);
-    const shape = step.add('IFCSHAPEREPRESENTATION', context, "'Body'", params.body.type, stepList([params.body.id]));
+    const shape = step.add(
+      'IFCSHAPEREPRESENTATION',
+      context,
+      "'Body'",
+      params.body.type,
+      stepList([params.body.id]),
+    );
     const representation = step.add('IFCPRODUCTDEFINITIONSHAPE', '$', '$', stepList([shape]));
-    const product = step.add(params.type, guid(params.type, params.id), '$', stepString(params.id), '$', '$',
-      place, representation, stepString(params.id), params.subtype);
+    const product = step.add(
+      params.type,
+      guid(params.type, params.id),
+      '$',
+      stepString(params.id),
+      '$',
+      '$',
+      place,
+      representation,
+      stepString(params.id),
+      ...(params.extraArgsAfterSubtype ?? []),
+      params.subtype,
+    );
     storey.products.push(product);
     attachDesign(product, params.type + ':' + params.id, params.properties);
   }
 
+  // 1. Export Physical Columns & Physical Beams (1 IFC entity per PhysicalMember across full physical span!)
   for (const member of [...rccDesign.columns, ...rccDesign.beams]) {
-    const element = system.elements[member.elementIndex]!;
-    const start = system.nodes[element.startNodeIndex]!.positionM;
-    const end = system.nodes[element.endNodeIndex]!.positionM;
-    const frame = elementLengthAndLambda(start, end, element.localAxisAngleDeg);
+    const { startM, endM, firstEl } = getPhysicalMemberEndPositionsM(system, member);
+    const frame = elementLengthAndLambda(startM, endM, firstEl.localAxisAngleDeg);
     const column = 'longitudinalBars' in member;
     addProduct({
-      type: column ? 'IFCCOLUMN' : 'IFCBEAM', subtype: column ? '.COLUMN.' : '.BEAM.',
-      id: member.elementId, floorId: member.floorId, baseMm: [start[0] * 1000, start[1] * 1000, start[2] * 1000],
+      type: column ? 'IFCCOLUMN' : 'IFCBEAM',
+      subtype: column ? '.COLUMN.' : '.BEAM.',
+      id: member.physicalMemberId,
+      floorId: member.floorId,
+      baseMm: [startM[0] * 1000, startM[1] * 1000, startM[2] * 1000],
       axes: column ? frame.lambda3x3 : undefined,
       body: column
         ? extrude(rect(member.widthMm, member.depthMm), frame.lengthM * 1000)
-        : { id: frameBrep(frame.lambda3x3, member.widthMm, member.depthMm, frame.lengthM * 1000), type: "'Brep'" },
+        : {
+            id: frameBrep(frame.lambda3x3, member.widthMm, member.depthMm, frame.lengthM * 1000),
+            type: "'Brep'",
+          },
       properties: {
-        ConcreteGrade: member.concreteGrade, SteelGrade: member.steelGrade,
-        WidthMm: member.widthMm, DepthMm: member.depthMm, FrameLengthMm: frame.lengthM * 1000,
-        Reinforcement: column ? member.longitudinalBars.label : member.topBarsSupport.label + ' / ' + member.bottomBarsMidspan.label,
+        PhysicalMemberId: member.physicalMemberId,
+        ScheduleGroupMark: member.scheduleGroupMark,
+        AnalyticalChildCount: member.analyticalElementIndices.length,
+        ConcreteGrade: member.concreteGrade,
+        SteelGrade: member.steelGrade,
+        WidthMm: member.widthMm,
+        DepthMm: member.depthMm,
+        FrameLengthMm: frame.lengthM * 1000,
+        Reinforcement: column
+          ? member.longitudinalBars.label
+          : member.topBarsSupport.label + ' / ' + member.bottomBarsMidspan.label,
         TransverseReinforcement: column ? member.lateralTies.label : member.stirrups.label,
-        UtilizationRatio: member.maxUtilization, DesignStatus: member.status,
+        UtilizationRatio: member.maxUtilization,
+        DesignStatus: member.status,
       },
     });
   }
 
+  // 2. Export Physical Slabs
   const panelById = new Map(system.slabPanels.map((panel) => [panel.id, panel]));
   const omittedSlabIds: string[] = [];
   for (const slab of rccDesign.slabs) {
@@ -349,43 +547,177 @@ export function exportStructuralIfc4Step(
     const boundary = exchangeRing({ points: panel.exchangeBoundary });
     const profile = step.add('IFCARBITRARYCLOSEDPROFILEDEF', '.AREA.', '$', step.polyline(boundary));
     addProduct({
-      type: 'IFCSLAB', subtype: '.FLOOR.', id: slab.panelId, floorId: slab.floorId,
-      baseMm: [0, 0, top * 1000 - slab.thicknessMm], body: extrude(profile, slab.thicknessMm),
-      properties: { ThicknessMm: slab.thicknessMm, UtilizationRatio: slab.maxUtilization, DesignStatus: slab.status },
+      type: 'IFCSLAB',
+      subtype: '.FLOOR.',
+      id: slab.panelId,
+      floorId: slab.floorId,
+      baseMm: [0, 0, top * 1000 - slab.thicknessMm],
+      body: extrude(profile, slab.thicknessMm),
+      properties: {
+        PhysicalMemberId: slab.physicalMemberId,
+        ScheduleGroupMark: slab.scheduleGroupMark,
+        ThicknessMm: slab.thicknessMm,
+        ShortSpanRebar: `T${slab.shortSpanBottomDiaMm}@${slab.shortSpanBottomSpacingMm}`,
+        LongSpanRebar: `T${slab.longSpanDiaMm}@${slab.longSpanSpacingMm}`,
+        UtilizationRatio: slab.maxUtilization,
+        DesignStatus: slab.status,
+      },
     });
   }
 
+  // 3. Export Supported Staircase Waist Inclined Solids (`IFCSTAIRFLIGHT`, Gate 10!)
+  const waistById = new Map(system.stairWaists.map((w) => [w.id, w]));
+  const omittedStairIds: string[] = [];
+  let exportedStairCount = 0;
+
+  for (const stairDesign of rccDesign.stairs) {
+    const waist = waistById.get(stairDesign.waistId);
+    if (
+      !waist ||
+      !waist.ifcSolidGeometrySupported ||
+      !waist.boundsMm ||
+      waist.baseElevationMm === undefined ||
+      waist.topElevationMm === undefined
+    ) {
+      omittedStairIds.push(stairDesign.waistId);
+      continue;
+    }
+
+    const b = waist.boundsMm;
+    const midXMm = (b.minX + b.maxX) / 2;
+    const midYMm = (b.minY + b.maxY) / 2;
+    const dir = waist.flightDirection ?? 'N';
+
+    // Convert canonical plan (xMm East, yMm South -> -yMm North) into 3D inclined waist centerline [startM -> endM]
+    let startPlanMm: [number, number];
+    let endPlanMm: [number, number];
+    if (dir === 'N') {
+      startPlanMm = [midXMm, b.maxY];
+      endPlanMm = [midXMm, b.minY];
+    } else if (dir === 'S') {
+      startPlanMm = [midXMm, b.minY];
+      endPlanMm = [midXMm, b.maxY];
+    } else if (dir === 'E') {
+      startPlanMm = [b.minX, midYMm];
+      endPlanMm = [b.maxX, midYMm];
+    } else {
+      startPlanMm = [b.maxX, midYMm];
+      endPlanMm = [b.minX, midYMm];
+    }
+
+    const startM: [number, number, number] = [
+      startPlanMm[0] / 1000,
+      -startPlanMm[1] / 1000,
+      (waist.baseElevationMm + waist.waistThicknessMm / 2) / 1000,
+    ];
+    const endM: [number, number, number] = [
+      endPlanMm[0] / 1000,
+      -endPlanMm[1] / 1000,
+      (waist.topElevationMm - waist.waistThicknessMm / 2) / 1000,
+    ];
+    const flightFrame = elementLengthAndLambda(startM, endM, 0);
+
+    // IFC4 IfcStairFlight attributes:
+    // (GlobalId, OwnerHistory, Name, Description, ObjectType, ObjectPlacement, Representation, Tag, NumberOfRisers, NumberOfTreads, RiserHeight, TreadLength, PredefinedType)
+    addProduct({
+      type: 'IFCSTAIRFLIGHT',
+      subtype: '.STRAIGHT.',
+      id: stairDesign.waistId,
+      floorId: stairDesign.floorId,
+      baseMm: [startM[0] * 1000, startM[1] * 1000, startM[2] * 1000],
+      body: {
+        id: frameBrep(
+          flightFrame.lambda3x3,
+          waist.widthMm,
+          waist.waistThicknessMm,
+          flightFrame.lengthM * 1000,
+        ),
+        type: "'Brep'",
+      },
+      extraArgsAfterSubtype: [
+        String(waist.riserCount),
+        String(Math.max(1, waist.riserCount - 1)),
+        stepReal(waist.riserMm),
+        stepReal(waist.treadMm),
+      ],
+      properties: {
+        PhysicalMemberId: stairDesign.physicalMemberId,
+        WaistThicknessMm: waist.waistThicknessMm,
+        WidthMm: waist.widthMm,
+        InclinedLengthMm: Number((flightFrame.lengthM * 1000).toFixed(1)),
+        RiserCount: waist.riserCount,
+        MainReinforcement: `T${stairDesign.mainBarDiaMm}@${stairDesign.mainBarSpacingMm} mm c/c`,
+        DistributionReinforcement: `T${stairDesign.distributionBarDiaMm}@${stairDesign.distributionBarSpacingMm} mm c/c`,
+        UtilizationRatio: stairDesign.maxUtilization,
+        DesignStatus: stairDesign.status,
+      },
+    });
+    exportedStairCount++;
+  }
+
+  // 4. Export Physical Foundations
   for (const footing of foundationDesign.footings) {
     const raft = footing.typology === 'RIGID_RAFT';
     addProduct({
       type: raft ? 'IFCSLAB' : 'IFCFOOTING',
-      subtype: raft ? '.BASESLAB.' : footing.typology === 'STRIP' ? '.STRIP_FOOTING.' : '.PAD_FOOTING.',
-      id: footing.footingId, floorId: 'FOUNDATION',
+      subtype:
+        raft
+          ? '.BASESLAB.'
+          : footing.typology === 'STRIP'
+            ? '.STRIP_FOOTING.'
+            : '.PAD_FOOTING.',
+      id: footing.footingId,
+      floorId: 'FOUNDATION',
       baseMm: [footing.centerXMm, -footing.centerYMm, -footing.excavationDepthM * 1000],
       body: extrude(rect(footing.lengthXMm, footing.widthYMm), footing.thicknessMm),
       properties: {
-        Typology: footing.typology, MaxSoilPressureKPa: footing.maxSoilPressureKPa,
-        AllowableSBCKPa: footing.allowableBearingPressureKPa, BottomMeshX: footing.bottomMeshXLabel,
-        BottomMeshY: footing.bottomMeshYLabel, UtilizationRatio: footing.maxUtilization, DesignStatus: footing.status,
+        PhysicalMemberId: footing.footingId,
+        ScheduleGroupMark: footing.scheduleGroupMark,
+        Typology: footing.typology,
+        AnalysisFormulation: footing.analysisFormulation,
+        MaxSoilPressureKPa: footing.maxSoilPressureKPa,
+        AllowableSBCKPa: footing.allowableBearingPressureKPa,
+        EstimatedSettlementMm: footing.estimatedSettlementMm,
+        BottomMeshX: footing.bottomMeshXLabel,
+        BottomMeshY: footing.bottomMeshYLabel,
+        UtilizationRatio: footing.maxUtilization,
+        DesignStatus: footing.status,
       },
     });
   }
 
   attachDesign(building, 'evaluation', {
     SolverBackend: snapshotSolverBackends(snapshot),
+    DesignLifecycleStatus: snapshot.designLifecycleStatus,
+    DrawingApprovalStatus: approvalStatus,
     ArchitecturalRevision: system.sourceArchitecturalRevision,
     ArchitecturalSha256: system.sourceArchitecturalSha256,
+    StructuralRevision: system.structuralRevision,
+    PhysicalColumnCount: rccDesign.columns.length,
+    PhysicalBeamCount: rccDesign.beams.length,
+    AnalyticalElementCount: system.elements.length,
     FoundationStatus: foundationDesign.status,
     OmittedSlabPanelCount: omittedSlabIds.length,
-    OmittedStairWaistCount: system.stairWaists.length,
+    ExportedStairWaistCount: exportedStairCount,
+    OmittedStairWaistCount: omittedStairIds.length,
     NetConcreteVolumeM3: detailingAndBoq.quantities.netConcreteVolumeM3,
     TotalRebarWeightKg: detailingAndBoq.quantities.totalSteelWeightKg,
   });
+
   for (const [id, storey] of storeys) {
     if (storey.products.length) {
-      step.add('IFCRELCONTAINEDINSPATIALSTRUCTURE', guid('containment', id), '$', '$', '$',
-        stepList(storey.products), storey.entity);
+      step.add(
+        'IFCRELCONTAINEDINSPATIALSTRUCTURE',
+        guid('containment', id),
+        '$',
+        '$',
+        '$',
+        stepList(storey.products),
+        storey.entity,
+      );
     }
   }
-  return new TextDecoder().decode(step.encode('RH Planner IFC4 structural exchange', projectName + '.ifc'));
+  return new TextDecoder().decode(
+    step.encode('RH Planner IFC4 structural exchange', projectName + '.ifc'),
+  );
 }

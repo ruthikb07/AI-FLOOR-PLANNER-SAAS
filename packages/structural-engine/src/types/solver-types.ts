@@ -202,8 +202,12 @@ export interface MemberForceStation {
   readonly torsionMxKnM: number;
   readonly momentMyKnM: number;
   readonly momentMzKnM: number;
-  /** Local transverse deflections [uy_local, uz_local] in metres (m) including cubic Hermite + particular fixed-end beam deflection! */
+  /** Local transverse displacements [uy_local, uz_local] in metres (m) including cubic Hermite + particular fixed-end beam deflection. */
   readonly localDeflectionM: readonly [number, number];
+  /** Flexural transverse deflection relative to the chord connecting member start and end supports [duy_chord, duz_chord] in metres (m). */
+  readonly relativeChordDeflectionM?: readonly [number, number];
+  /** Transverse deflection relative to the start node translation [uy(s) - uy(0), uz(s) - uz(0)] in metres (m) (for cantilever droop without global floor sway). */
+  readonly rootRelativeDeflectionM?: readonly [number, number];
 }
 
 export interface MemberInternalForcesRecord {
@@ -237,6 +241,10 @@ export interface MemberInternalForcesRecord {
     readonly maxNegativeMzKnM: number;
     readonly maxAbsMzKnM: number;
     readonly maxLocalDeflectionM: number;
+    /** Maximum flexural deflection relative to the straight chord joining the two end nodes (m) — used for IS 456 Cl. 23.2.1 span/250 checks! */
+    readonly maxRelativeChordDeflectionM: number;
+    /** Maximum deflection relative to the start node translation (m) — used for IS 456 Cl. 23.2.1 cantilever span/180 checks! */
+    readonly maxRootRelativeDeflectionM: number;
   };
 }
 
@@ -262,6 +270,9 @@ export interface SolverDiagnostics {
   readonly restrainedDofs: number;
   readonly solveDurationMs: number;
   readonly wasmHeapBytesAllocated: number;
+  readonly wasmLinearMemoryBytes?: number;
+  readonly wasmStackCapacityBytes?: number;
+  readonly factorizationReusedCount?: number;
   readonly warnings: readonly string[];
 }
 

@@ -5,6 +5,27 @@ export interface AwatifEmscriptenModule {
   HEAPU32: Uint32Array;
   _malloc(bytes: number): number;
   _free(ptr: number): void;
+  _emscripten_stack_get_base?(): number;
+  _emscripten_stack_get_end?(): number;
+  _emscripten_stack_get_current?(): number;
+  _lSolveBatch(
+    nodesPtr: number,
+    numNodes: number,
+    elementsPtr: number,
+    numElements: number,
+    supportKeysPtr: number,
+    supportValuesPtr: number,
+    numSupports: number,
+    propsFlatPtr: number,
+    releaseKeysPtr: number,
+    releaseValuesPtr: number,
+    numReleases: number,
+    rhsMatrixPtr: number,
+    numCases: number,
+    deformationsDataPtrOutPtr: number,
+    deformationsSizeOutPtr: number,
+    statusOutPtr: number,
+  ): void;
   _lSolve(
     nodesPtr: number,
     numNodes: number,
