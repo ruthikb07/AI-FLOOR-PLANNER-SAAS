@@ -57,3 +57,24 @@ Third-Party Software Attributions
    Upstream Repository: https://github.com/amdghedy/openBIMstudio
    Copyright (c) 2026 Amdghedy. MIT License.
    Original license: docs/integration/licenses/openbimstudio-MIT.txt
+
+5. Awatif (Embedded C++/WebAssembly 3D Frame Finite Element Solver `lSolver.cpp`
+   / `lSolver.wasm` / `lSolver.js` and Direct-Stiffness Mechanics Reference in
+   `packages/structural-engine`)
+   Version: 3.4.0 (Commit a9017ec55343c07cb0c5f0e832b3214f97106641)
+   Upstream Repository: https://github.com/madil4/awatif
+   Copyright (c) 2025 Mohamed Adil. MIT License.
+   Full License: docs/integration/licenses/awatif-MIT.txt
+
+   Modifications & Boundaries by RH Planner (2026):
+     - Packaged as internal headless workspace engine `@ai-floor-planner/structural-engine`.
+     - Excluded Awatif's standalone VanJS / lit-html UI shell (`@awatif/ui`, `templates/`)
+       and prohibited remote nonlinear solver (`getNlPositionsAndForcesRemote`).
+     - Added exact Euler-Bernoulli distributed-load fixed-end force condensation,
+       6-DOF nodal rotational recovery, 11-station internal force recovery,
+       pure-TypeScript sparse reference solver, modal/seismic extensions, and
+       Indian Standard (IS 456 / IS 875 / IS 1893 / IS 13920 / IS 1904) design engines.
+
+6. Eigen C++ Linear Algebra Library (Compiled inside `lSolver.wasm` via `Eigen/SparseLU`)
+   Upstream Project: https://eigen.tuxfamily.org
+   Licensed under the Mozilla Public License Version 2.0 (MPL-2.0, header-only C++ template library).

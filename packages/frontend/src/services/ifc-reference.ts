@@ -301,6 +301,8 @@ export function readIfcReference(bytes: Uint8Array): IfcReferenceModel {
     }
     elements.push({ globalId: id, ifcClass, name, prisms });
   }
-  return { sha256: exchangeArtifactDigest(bytes), schema: 'IFC4', unit,
-    globalId, name: stepText(project.args[2]).slice(0, 512), storeys, elements, unsupported };
+  return {
+    sha256: exchangeArtifactDigest(bytes), schema: 'IFC4', unit,
+    globalId, name: stepText(project.args[2]).slice(0, 512), storeys, elements, unsupported
+  };
 }

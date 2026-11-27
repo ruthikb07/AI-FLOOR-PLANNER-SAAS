@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Building } from '@ai-floor-planner/core';
 
 const base = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
-const screenshotsDir = path.resolve(process.cwd(), 'e2e/screenshots');
+const screenshotsDir = process.env.RH_STRUCTURAL_EVIDENCE_DIR;
 
 test.use({
   launchOptions: chrome
@@ -17,8 +17,8 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   page,
   request,
 }) => {
-  test.setTimeout(150_000);
-  await mkdir(screenshotsDir, { recursive: true });
+  test.setTimeout(240_000);
+  if (screenshotsDir) await mkdir(screenshotsDir, { recursive: true });
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
@@ -112,31 +112,79 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
 
   // Switch to Beam Framing + Columns combined visual and capture repaired-structural-cad.png
   await page.getByTestId('struct-tab-beams').click();
-  await page.waitForTimeout(600);
-  await page.screenshot({ path: path.join(screenshotsDir, 'repaired-structural-cad.png') });
+  if (screenshotsDir) await page.screenshot({ path: path.join(screenshotsDir, 'repaired-structural-cad.png') });
 
   // 3. Switch to built-in Structural Analysis tab & verify live IS 456 / IS 1893 interactivity
+  const initialAnalysis = page.waitForResponse((result) => result.url().endsWith('/api/v1/structural/analyze'), { timeout: 70_000 });
   await page.getByTestId('struct-tab-analysis').click();
+  const initialResult = await initialAnalysis;
+  expect(initialResult.ok(), 'Initial analysis status ' + initialResult.status()).toBe(true);
   await expect(page.getByTestId('structural-analysis-panel')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId('struct-column-schedule-table')).toBeVisible();
 
-  const vbBeforeText = await page.getByTestId('struct-base-shear-value').textContent();
-  const vbBefore = parseFloat((vbBeforeText ?? '0').replace(/[^0-9.]/g, ''));
+  await expect(page.getByTestId('struct-solver-backend-badge')).toContainText(/AWATIF_CPP_WASM|TYPESCRIPT_SPARSE_LU/, { timeout: 50_000 });
+  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('GEOTECHNICAL');
+  const baseShear = page.getByTestId('struct-base-shear-value');
+  const shearNumber = async () => parseFloat((await baseShear.textContent() ?? '').replace(/[^0-9.]/g, ''));
+  const originalShear = await shearNumber();
+  expect(originalShear).toBeGreaterThan(0);
   await page.getByTestId('struct-seismic-zone').selectOption('V');
-  const vbAfterText = await page.getByTestId('struct-base-shear-value').textContent();
-  const vbAfter = parseFloat((vbAfterText ?? '0').replace(/[^0-9.]/g, ''));
-  expect(vbAfter).toBeGreaterThan(vbBefore);
+  await expect.poll(shearNumber, { timeout: 50_000 }).toBeGreaterThan(originalShear);
 
-  // Verify Beam & Slab Checks and Footing Sizing subtabs + editable SBC
   await page.getByTestId('struct-subtab-beams_slabs').click();
   await expect(page.getByTestId('struct-beam-checks-table')).toBeVisible();
 
   await page.getByTestId('struct-subtab-footings').click();
-  await expect(page.getByTestId('struct-footing-schedule-table')).toBeVisible();
-  const footingTextBefore = await page.getByTestId('struct-footing-schedule-table').textContent();
+  await expect(page.getByTestId('struct-sbc-input')).toHaveValue('');
   await page.getByTestId('struct-sbc-input').fill('100');
-  const footingTextAfter = await page.getByTestId('struct-footing-schedule-table').textContent();
-  expect(footingTextAfter).not.toBe(footingTextBefore);
+  await expect(page.getByTestId('struct-lifecycle-badge')).toContainText('GEOTECHNICAL');
+  await page.getByTestId('struct-foundation-depth-input').fill('1.8');
+  await page.getByTestId('struct-soil-unit-weight').fill('18.5');
+  await page.getByTestId('struct-settlement-limit').fill('40');
+  const analysisResponse = page.waitForResponse((result) => result.url().endsWith('/api/v1/structural/analyze'), { timeout: 60_000 });
+  await page.getByTestId('struct-geotech-reference').fill('PLAYWRIGHT-GEOTECH-FIXTURE');
+  const analyzed = await analysisResponse;
+  expect(analyzed.ok(), `Analysis status ${analyzed.status()}`).toBe(true);
+  const evaluationId = await analyzed.headerValue('x-structural-evaluation-id');
+  expect(evaluationId).toBeTruthy();
+  const result = await request.post(base + '/api/v1/structural/evaluation', { data: { evaluationId }, timeout: 60_000 });
+  expect(result.ok()).toBe(true);
+  const { snapshot } = await result.json();
+  expect(snapshot.foundationDesign.status).not.toBe('MISSING_GEOTECHNICAL_INPUT');
+  expect(snapshot.foundationDesign.footings.length).toBeGreaterThan(0);
+  expect(snapshot.system.sourceArchitecturalRevision).toBe(building.version);
+  await expect(page.getByTestId('struct-footing-schedule-table')).toBeVisible();
+  expect(Object.keys(snapshot.solveEnvelope.combinationResults).length).toBeGreaterThan(1);
+
+  await page.getByTestId('struct-subtab-diagrams').click();
+  await expect(page.getByTestId('struct-fea-diagram-canvas')).toBeVisible({ timeout: 25_000 });
+  const caseSelector = page.getByTestId('struct-combo-selector');
+  await caseSelector.selectOption({ index: 1 });
+  await expect(page.getByTestId('struct-fea-diagram-canvas')).toBeVisible({ timeout: 25_000 });
+  if (screenshotsDir) await page.screenshot({ path: path.join(screenshotsDir, 'structural-studio-analysis.png') });
+
+  for (const [format, signature] of [['dxf', 'SECTION'], ['ifc', 'ISO-10303-21'], ['pdf', '%PDF-']] as const) {
+    const result = await request.post(base + '/api/v1/structural/drawings', { data: { evaluationId, format } });
+    expect(result.ok(), `Failed to generate ${format}: ${result.status()}`).toBe(true);
+    expect(result.headers()['x-structural-source-revision']).toBe(snapshot.system.sourceArchitecturalSha256);
+    const bytes = await result.body();
+    expect(bytes.subarray(0, 40).toString()).toContain(signature);
+    if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'structural-studio.' + format), bytes);
+  }
+  if (screenshotsDir) await writeFile(path.join(screenshotsDir, 'structural-studio.snapshot.json'), JSON.stringify(snapshot));
+
+  await page.getByTestId('struct-subtab-ai_assistant').click();
+  await page.getByTestId('struct-assistant-send').click();
+  await expect(page.getByTestId('struct-assistant-answer')).toContainText('DETERMINISTIC_AWATIF_FEA');
+
+  const badBuilding = await request.post(base + '/api/v1/structural/analyze', { data: { building: { floors: [] }, reviewedInputs: {} } });
+  expect(badBuilding.status()).toBe(400);
+  const fakeGeotech = await request.post(base + '/api/v1/structural/analyze', {
+    data: { building, reviewedInputs: { geotechnical: { safeBearingCapacityKPa: 200 } } },
+  });
+  expect(fakeGeotech.status()).toBe(400);
+  const expired = await request.post(base + '/api/v1/structural/drawings', { data: { evaluationId: 'expired', format: 'ifc' } });
+  expect(expired.status()).toBe(409);
 
   // 4. Verify Engineering -> ETABS Structural Analysis tab shows live IS 456 analysis (NOT dead unavailable text)
   await page.getByTestId('nav-engineering').click({ timeout: 15_000 });

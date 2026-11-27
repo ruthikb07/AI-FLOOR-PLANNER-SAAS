@@ -72,6 +72,9 @@ importers:
       '@ai-floor-planner/renderer':
         specifier: workspace:^
         version: link:../renderer
+      '@ai-floor-planner/structural-engine':
+        specifier: workspace:*
+        version: link:../structural-engine
       '@node-projects/acad-ts':
         specifier: ^3.2.0
         version: 3.2.0
@@ -193,6 +196,9 @@ importers:
       '@ai-floor-planner/renderer':
         specifier: workspace:*
         version: link:../renderer
+      '@ai-floor-planner/structural-engine':
+        specifier: workspace:*
+        version: link:../structural-engine
       gsap:
         specifier: ^3.15.1
         version: 3.15.1
@@ -349,6 +355,22 @@ importers:
         specifier: workspace:*
         version: link:../geometry-engine
     devDependencies:
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+      vitest:
+        specifier: 2.0.5
+        version: 2.0.5(@types/node@20.19.43)(jsdom@26.1.0)
+
+  packages/structural-engine:
+    dependencies:
+      '@ai-floor-planner/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.0
+        version: 20.19.43
       typescript:
         specifier: 5.5.4
         version: 5.5.4

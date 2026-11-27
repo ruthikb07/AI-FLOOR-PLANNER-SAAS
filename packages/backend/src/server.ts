@@ -28,6 +28,7 @@ import { handleArchitecturalEvaluation } from './api/evaluation-routes.js';
 import { handleBimAssistantQuery } from './api/bim-assistant-routes.js';
 import { handleCadEditProposal } from './api/cad-edit-routes.js';
 import { handleProjectGeneration } from './api/generation-routes.js';
+import { handleStructuralRoute } from './api/structural-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
 import { handleLocalProjectRoute } from './routes/local-project-routes.js';
 import { RequestBodyTooLarge } from './api/http-input.js';
@@ -363,6 +364,7 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
       return;
     }
 
+    if (await handleStructuralRoute(request, response, url, readBody, sendJson, deps)) return;
     if (await handleCadImportRoute(request, response, url, readBody, sendJson)) return;
     if (await handleLocalProjectRoute(request, response, url, readBody, sendJson)) return;
     if (await handleExportRoute(request, response, url, readBody, sendJson)) return;

@@ -1,0 +1,19 @@
+# Existing RH Planner Structural Runtime Audit (`Phase A2`)
+
+## 1. Pre-Integration Structural Module Inventory
+
+| Module Path | Pre-Integration Role | Audit Classification & Defects Identified |
+|---|---|---|
+| `packages/backend/src/services/structural-analysis-engine.ts` | Backend structural analysis service | **STUB / REFUSAL ONLY:** Unconditionally threw `ExportError('NATIVE_ANALYSIS_REQUIRED', ..., 409)` on every call. |
+| `packages/backend/src/services/etabs-design-checks.ts` | Post-analysis IS 456 / IS 1893 design check evaluator | **DEFECTIVE APPROXIMATION (MUST REPLACE FOR INTERNAL DESIGN):** (1) Used `firstFloor.columnWidthMm ?? 300` and hardcoded `lengthMm = 3000` for every column; (2) Used crude `0.15*fck*b*D²` moment capacity instead of strain-compatibility `P-M` interaction; (3) Clamped minimum beam moment to `25 kNm`, hardcoded `spanMm = 4500`, and emitted `'3-T16 (603 mm²)'` regardless of required steel; (4) Fabricated `driftXDemandMm: 3.2, isCompliant: true` when `jointDisplacements` was empty; (5) Set `appliedVerticalLoadKn = reactionVerticalLoadKn` instead of auditing real equilibrium! |
+| `packages/planning-engine/src/structural/is456-structural-analysis.ts` | Preliminary tributary-area structural calculator | **PRELIMINARY ESTIMATOR ONLY:** Uses tributary areas (`wL²/10`) without stiffness matrix compatibility, sway equilibrium, or load-combination matrix analysis, and defaults `safeBearingCapacityKnM2 = 200` when omitted. Retained strictly as an optional fast architectural-phase heuristic preview; **never** presented as verified FEA or approved foundation design. |
+| `packages/backend/src/services/preliminary-structural-project.ts` & `etabs-e2k-generator.ts` | CSI ETABS `.e2k` text model exporter | **EXTERNAL INTEROP ONLY:** Valid `.e2k` text generator for optional external CSI ETABS verification, but previously sized all columns/beams uniformly (`300x500` / `230x450`). Upgraded to optional interoperability export alongside Awatif internal analysis. |
+| `packages/backend/src/services/structural-drawings-service.ts` & `structural-review.ts` | Structural PDF drawings & report | **REFUSAL GATES:** Threw `REVIEWED_STRUCTURAL_MODEL_REQUIRED` (`409`) because no verified internal structural analysis + RCC/foundation engine existed. |
+| `packages/backend/src/services/structural-quantities.ts` | Concrete & steel BOQ estimator | **HEURISTIC KG/M³ RATIO:** Estimated steel from flat `kg/m³` multipliers (`120 kg/m³` beams, `165 kg/m³` columns) without Bar Bending Schedule (`BBS`) cutting lengths or beam-column joint intersection deduction. |
+| `packages/frontend/src/components/argon/StructuralCADWorkspace.tsx` & `StructuralAnalysisPanel.tsx` | Frontend structural UI | **PRELIMINARY UI:** Displayed corner-locked tributary schedules and `.e2k` export button without real 3D frame BMD/SFD/AFD/deflection diagrams, geotechnical input gating, defect detection, or global-reanalysis optimization. |
+
+## 2. Migration Strategy
+
+1. **Preserve** Canonical `Building` (`@ai-floor-planner/core`, millimetres `mm`) as the sole architectural truth and preserve optional `.e2k` export for external engineer cross-checking.
+2. **Replace** `NATIVE_ANALYSIS_REQUIRED` for supported 3D frame buildings with real embedded **Awatif C++/WASM (`lSolver.wasm`)** finite-element analysis, while keeping strict honest refusals (`MISSING_GEOTECHNICAL_INPUT`, `STRUCTURAL_MODEL_INVALID`, `UNSUPPORTED_ANALYSIS_METHOD`) whenever required engineering inputs are unreviewed or out of scope.
+3. **Replace** heuristic design & quantity formulas in the verified structural pipeline with clause-traceable Indian Standard (`IS 456:2000`, `IS 875`, `IS 1893:2016`, `IS 13920:2016`, `IS 1904:1986`) RCC design, geotechnical-gated foundation design, closed-loop global-reanalysis optimization, and real Bar Bending Schedule (`BBS`) quantities.

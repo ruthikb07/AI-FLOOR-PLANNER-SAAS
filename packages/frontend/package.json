@@ -25,6 +25,7 @@
     "@ai-floor-planner/planning-engine": "workspace:*",
     "@ai-floor-planner/projection-3d": "workspace:*",
     "@ai-floor-planner/renderer": "workspace:*",
+    "@ai-floor-planner/structural-engine": "workspace:*",
     "gsap": "^3.15.1",
     "lucide-react": "^0.435.0",
     "react": "^18.3.1",
