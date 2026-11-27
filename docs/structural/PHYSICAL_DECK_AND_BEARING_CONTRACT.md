@@ -1,0 +1,7 @@
+# Physical deck and bearing contract
+
+Geometry uses canonical millimetres. Each linear floor outline is clipped by the union of its explicit void boundaries and its recognized shaft, stair and open-space footprints. Source records remain traceable even where openings overlap. The stair envelope excludes the entire stair footprint pending separate landing and flight modelling. Straight physical beam axes at the matching beam-top elevation partition the remaining polygon wherever they enclose a cell. Dangling beam segments retain physical identity. They cannot divide an entire deck on their own.
+
+Exterior and interior rings describe each cell. A candidate bearing segment must run longitudinally along an actual beam footprint at the selected elevation. The segment carries its ring and edge indices, intersection coordinates, length, coincident axis length, physical member ID and analytical children. The parallel-direction threshold is 1e-10 times the product of segment lengths. No coordinates are snapped. Contact does not establish anchorage, adequate bearing width or connection stiffness.
+
+The union of all cells is compared with the intended deck by symmetric difference. Summed cell area is compared with union area to detect overlap. Gross footprint less clipped opening area must equal coverage within 0.01 mm² on each floor. Curved boundaries and invalid polygons require explicit handling. The gravity status remains BEARING_VERIFICATION_REQUIRED for every floor.

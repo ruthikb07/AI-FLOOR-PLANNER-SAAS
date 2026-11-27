@@ -1,0 +1,132 @@
+{
+  "original": {
+    "architecturalDigest": "8444eca9316dce57584ad0dfc9ed86a76b022889ae294586a371bdb1e60e89cd",
+    "fileSha256": {
+      "snapshot": "148675f86456bd741434ef3544dada76df4e8bd1447a641732df3ce7403a599c",
+      "architecture": "8176d770869046098c88c672858116df55fd549b40c8d7f5636974540b85bdc5",
+      "summary": "e0cdedb54f8a6566947a4bbbb08702cb88ae9ac8814065f67276f89697acffd9"
+    },
+    "historicalUnassignedKn": {
+      "DL": 12350.186250000006,
+      "SDL": 3941.218800000005,
+      "LL": 7271.098000000004
+    },
+    "floors": [
+      {
+        "floorId": "floor_stilt_00",
+        "elevationMm": 3150.0,
+        "deckAreaMm2": 698120000.0,
+        "openingAreaMm2": 81880000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 2
+      },
+      {
+        "floorId": "floor_typical_01",
+        "elevationMm": 6300.0,
+        "deckAreaMm2": 698120000.0,
+        "openingAreaMm2": 81880000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 2
+      },
+      {
+        "floorId": "floor_level_02",
+        "elevationMm": 9450.0,
+        "deckAreaMm2": 698120000.0,
+        "openingAreaMm2": 81880000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 2
+      },
+      {
+        "floorId": "floor_level_03",
+        "elevationMm": 12600.0,
+        "deckAreaMm2": 698120000.0,
+        "openingAreaMm2": 81880000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 2
+      },
+      {
+        "floorId": "floor_level_04",
+        "elevationMm": 15750.0,
+        "deckAreaMm2": 698120000.0,
+        "openingAreaMm2": 81880000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 2
+      },
+      {
+        "floorId": "floor_terrace_05",
+        "elevationMm": 18750.0,
+        "deckAreaMm2": 707800000.0,
+        "openingAreaMm2": 72200000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 3
+      }
+    ]
+  },
+  "second": {
+    "architecturalDigest": "a5bbe93eb95dec6372be76a5fbbc0345bd24ccc3ee75f44d3f5886fcbe856e8a",
+    "fileSha256": {
+      "snapshot": "40778ad49c26cefee0c01753a10359eaee3d95f7be36fb9c13982088f5d709ae",
+      "architecture": "3d8c266bfe6a8b39834b54b5187d551138ebd28172b396931135c868b49c9fb4",
+      "summary": "bc7bbe3d81c5b6bbbe1889e543288d9032826e29644c13e1d6cc440a59fedc32"
+    },
+    "historicalUnassignedKn": {
+      "DL": 7490.787499999996,
+      "SDL": 2369.715600000001,
+      "LL": 4364.259499999998
+    },
+    "floors": [
+      {
+        "floorId": "floor_stilt_00",
+        "elevationMm": 3150.0,
+        "deckAreaMm2": 655464000.0,
+        "openingAreaMm2": 198536000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 3
+      },
+      {
+        "floorId": "floor_typical_01",
+        "elevationMm": 6300.0,
+        "deckAreaMm2": 655464000.0,
+        "openingAreaMm2": 198536000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 3
+      },
+      {
+        "floorId": "floor_level_02",
+        "elevationMm": 9450.0,
+        "deckAreaMm2": 655464000.0,
+        "openingAreaMm2": 198536000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 3
+      },
+      {
+        "floorId": "floor_terrace_03",
+        "elevationMm": 12450.0,
+        "deckAreaMm2": 665144000.0,
+        "openingAreaMm2": 188856000.0,
+        "gapMm2": 0.0,
+        "overlapMm2": 0.0,
+        "gravityStatus": "BEARING_VERIFICATION_REQUIRED",
+        "regionCount": 4
+      }
+    ]
+  }
+}

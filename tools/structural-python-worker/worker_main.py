@@ -1520,7 +1520,10 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
     req_id = req.get("requestId")
     action = str(req.get("action") or "").lower()
     try:
-        if action == "capabilities":
+        if action == "coordinate_deck":
+            from deck_topology import coordinate_deck
+            res = {"ok": True, "deck": coordinate_deck(req["floor"], req["beams"])}
+        elif action == "capabilities":
             res = {"ok": True, **get_capabilities()}
         elif action == "pynite_solve":
             _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)

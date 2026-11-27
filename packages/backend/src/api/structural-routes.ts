@@ -6,9 +6,10 @@
 
 import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AITaskType, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
+import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import {
+  getSharedPythonStructuralWorker,
   exportStructuralBbsCsv,
   exportStructuralEngineeringDxf,
   exportStructuralEngineeringJsonReport,
@@ -269,7 +270,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -310,7 +311,7 @@ export async function handleStructuralRoute(
       return true;
     }
 
-    if ((action === 'case' || action === 'design' || action === 'evaluation') && typeof body.evaluationId !== 'string') {
+    if ((action === 'case' || action === 'design' || action === 'evaluation' || action === 'deck-topology') && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
     }
@@ -321,6 +322,26 @@ export async function handleStructuralRoute(
         : undefined;
       if (!saved) {
         sendJson(response, 409, { error: { code: 'STRUCTURAL_EVALUATION_EXPIRED', message: 'Run structural analysis again before using this result.' } });
+        return true;
+      }
+      if (action === 'deck-topology') {
+        const building = body.building as Building;
+        if (validateBuildingSchema(building).length || canonicalBuildingHash(building) !== saved.snapshot.system.sourceArchitecturalSha256) {
+          sendJson(response, 409, { error: { code: 'DECK_ARCHITECTURE_MISMATCH', message: 'Supply the architecture used by this evaluation.' } });
+          return true;
+        }
+        const decks = [];
+        const worker = getSharedPythonStructuralWorker();
+        for (const floor of building.floors) {
+          const beams = saved.snapshot.system.physicalModel.beams.filter(beam => beam.floorId === floor.id);
+          const result = await worker.request({ action: 'coordinate_deck', floor, beams });
+          if (!result.ok) {
+            sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_GEOMETRY', floorId: floor.id, message: result.message } });
+            return true;
+          }
+          decks.push(result.deck);
+        }
+        sendJson(response, 200, { evaluationId: body.evaluationId, structuralRevision: saved.snapshot.system.structuralRevision, decks });
         return true;
       }
       evaluation = saved;
