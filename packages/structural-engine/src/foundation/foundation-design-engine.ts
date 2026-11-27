@@ -392,7 +392,7 @@ function designIsolatedPadFooting(
   } else {
     // Iterative sizing so BOTH bearing pressure (including biaxial moments + overburden) AND punching shear pass!
     const aspectOffset = st.colDepthMm - st.colWidthMm;
-    let side = Math.max(1000, roundUp50(Math.sqrt((st.pSlsKn * 1.15) / Math.max(30, geo.safeBearingCapacityKPa * 0.85)) * 1000));
+    const side = Math.max(1000, roundUp50(Math.sqrt((st.pSlsKn * 1.15) / Math.max(30, geo.safeBearingCapacityKPa * 0.85)) * 1000));
     lxMm = roundUp50(side + Math.max(0, aspectOffset / 2));
     wyMm = roundUp50(side - Math.min(0, aspectOffset / 2));
     thickMm = Math.max(350, roundUp50(0.22 * Math.max(lxMm - st.colDepthMm, wyMm - st.colWidthMm) + 150));

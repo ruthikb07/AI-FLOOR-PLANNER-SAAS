@@ -8,6 +8,7 @@ import {
   canonicalMmToStructuralMeters,
   computeRectangularSectionProps,
   densityKgM3ToUnitWeightKnM3,
+  factorReducedLinearSystem,
   knMToNMm,
   knToNewtons,
   kpaToMpa,
@@ -59,6 +60,22 @@ const beamRectSection = computeRectangularSectionProps({
   depthMm: 500,
   elasticityMPa: 25_000,
   poissonRatio: 0.2,
+});
+
+it('reuses a pivoted stiffness factorization across independent load vectors', () => {
+  const triplets = [[1, 4, 0], [4, 1, 1], [0, 1, 2]].flatMap((row, r) =>
+    row.map((v, c) => ({ r, c, v })).filter(({ v }) => v !== 0),
+  );
+  const solve = factorReducedLinearSystem(4, triplets);
+  for (const [rhs, expected] of [
+    [[9, 3, -4, 0], [1, 2, -3, 0]],
+    [[-2, -4, 8, 0], [-2, 0, 4, 0]],
+  ] as const) {
+    const result = solve(Float64Array.from(rhs));
+    expected.forEach((value, index) => expectRelClose(result.solution[index]!, value));
+    expect(result.relativeResidual).toBeLessThan(1e-12);
+  }
+  expect(() => solve(Float64Array.from([9, 3, -4, 1]))).toThrow(/disconnected DOF/);
 });
 
 describe('Awatif Embedded C++/WASM & Reference Structural Solver — Predeclared Analytical Benchmarks', () => {

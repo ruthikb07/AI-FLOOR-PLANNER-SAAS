@@ -52,7 +52,7 @@ import {
   multiplyDense,
   multiplyMatVec,
   recoverEffectiveLocalDisplacements,
-  solveReducedLinearSystem,
+  factorReducedLinearSystem,
   transformGlobalVectorToLocal,
   transposeDense,
 } from '../math/frame-mechanics.js';
@@ -75,6 +75,11 @@ export class StructuralValidationFailedError extends Error {
     this.name = 'StructuralValidationFailedError';
     this.issues = issues;
   }
+}
+
+interface ReducedFactorizations {
+  reference?: ReturnType<typeof factorReducedLinearSystem>;
+  rotations?: ReturnType<typeof factorReducedLinearSystem>;
 }
 
 interface PreparedElementCache {
@@ -379,7 +384,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
       throw new StructuralValidationFailedError(issues);
     }
 
-    const preferredBackend = options.preferredBackend ?? 'AWATIF_CPP_WASM';
+    let preferredBackend = options.preferredBackend ?? 'AWATIF_CPP_WASM';
     if (preferredBackend === 'AWATIF_CPP_WASM' && !isAwatifWasmInitialized()) {
       await this.initialize();
     }
@@ -390,6 +395,15 @@ export class AwatifStructuralSolver implements StructuralSolver {
 
     const solveLoadCases = options.solveLoadCases ?? true;
     const solveCombinations = options.solveCombinations ?? true;
+
+    let runtimeFallbackReason: string | undefined;
+    const factorizations: ReducedFactorizations = {};
+    const recordBackend = (result: SingleCaseSolveResult) => {
+      if (result.diagnostics.backendFallbackReason === 'AWATIF_WASM_RUNTIME_ABORT') {
+        runtimeFallbackReason = result.diagnostics.backendFallbackReason;
+        preferredBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
+      }
+    };
 
     const loadCaseResults: Record<string, SingleCaseSolveResult> = {};
     if (solveLoadCases) {
@@ -404,7 +418,10 @@ export class AwatifStructuralSolver implements StructuralSolver {
           lc.memberUniformLoads,
           lc.memberPointLoads ?? [],
           preferredBackend,
+          factorizations,
+          runtimeFallbackReason,
         );
+        recordBackend(loadCaseResults[lc.id]!);
       }
     }
 
@@ -470,7 +487,10 @@ export class AwatifStructuralSolver implements StructuralSolver {
           combinedUniform,
           combinedPoint,
           preferredBackend,
+          factorizations,
+          runtimeFallbackReason,
         );
+        recordBackend(combinationResults[combo.id]!);
       }
     }
 
@@ -571,6 +591,8 @@ export class AwatifStructuralSolver implements StructuralSolver {
     memberUniformLoads: readonly MemberUniformLoad[],
     memberPointLoads: readonly MemberPointLoad[],
     preferredBackend: StructuralSolverBackend,
+    factorizations: ReducedFactorizations,
+    priorRuntimeFallback?: string,
   ): SingleCaseSolveResult {
     const t0 = performance.now();
     const numNodes = model.nodes.length;
@@ -669,7 +691,8 @@ export class AwatifStructuralSolver implements StructuralSolver {
     // Determine execution backend
     const allWasmCompatible = prepared.every((p) => p.wasmCompatible);
     let executionBackend: StructuralSolverBackend = preferredBackend;
-    let backendFallbackReason: string | undefined;
+    let backendFallbackReason = priorRuntimeFallback;
+    if (priorRuntimeFallback) warnings.push('A preceding load case aborted in Awatif WASM. This case used the TypeScript sparse reference solver.');
 
     if (preferredBackend === 'AWATIF_CPP_WASM' && !allWasmCompatible) {
       executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
@@ -679,7 +702,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
       );
     }
 
-    let uGlobal = new Float64Array(totalDofs);
+    const uGlobal = new Float64Array(totalDofs);
     let wasmHeapBytesAllocated = 0;
     let relativeStiffnessResidual = 0;
 
@@ -754,14 +777,9 @@ export class AwatifStructuralSolver implements StructuralSolver {
         });
       } catch (err) {
         if (err instanceof AwatifSolverError && err.code === 'WASM_RUNTIME_ABORT') {
-          // Upstream prebuilt lSolver.wasm uses a 64 KB C stack that can overflow inside Eigen::SparseLU
-          // on large multi-storey supernodes; transparently fall back to exact TS Sparse-LU and re-init WASM!
           executionBackend = 'TYPESCRIPT_SPARSE_LU_REFERENCE';
-          backendFallbackReason = 'UPSTREAM_WASM_STACK_LIMIT_EXCEEDED_ON_LARGE_MESH';
-          warnings.push(
-            'Large frame mesh exceeded upstream lSolver.wasm 64 KB C-stack in Eigen::SparseLU; solved transparently via verified TypeScript Sparse-LU solver.',
-          );
-          void initAwatifWasm().catch(() => {});
+          backendFallbackReason = 'AWATIF_WASM_RUNTIME_ABORT';
+          warnings.push(err.message + ' This case used the TypeScript sparse reference solver.');
         } else {
           throw err;
         }
@@ -827,7 +845,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
                 rotRhs[rotRow] -= kv * uGlobal[gCol]!;
               } else {
                 const rotCol = globalToFreeRot[gCol]!;
-                if (rotCol >= 0) {
+                if (rotCol >= 0 && !factorizations.rotations) {
                   rotTriplets.push({ r: rotRow, c: rotCol, v: kv });
                 }
               }
@@ -836,7 +854,8 @@ export class AwatifStructuralSolver implements StructuralSolver {
         }
 
         try {
-          const rotSolved = solveReducedLinearSystem(freeRotIndices.length, rotTriplets, rotRhs);
+          factorizations.rotations ??= factorReducedLinearSystem(freeRotIndices.length, rotTriplets);
+          const rotSolved = factorizations.rotations(rotRhs);
           for (let rIdx = 0; rIdx < freeRotIndices.length; rIdx++) {
             const rotVal = rotSolved.solution[rIdx]!;
             if (!Number.isFinite(rotVal) || Math.abs(rotVal) > 1e5) {
@@ -891,23 +910,29 @@ export class AwatifStructuralSolver implements StructuralSolver {
         rhsFree[i] = fEquivalentGlobal[freeToGlobal[i]!]!;
       }
 
-      const triplets: { r: number; c: number; v: number }[] = [];
-      for (const prep of prepared) {
-        for (let r = 0; r < 12; r++) {
-          const fr = globalToFree[prep.dofMap[r]!]!;
-          if (fr < 0) continue;
-          for (let c = 0; c < 12; c++) {
-            const fc = globalToFree[prep.dofMap[c]!]!;
-            const kv = prep.kGlobal[r]![c]!;
-            if (fc >= 0 && kv !== 0) {
-              triplets.push({ r: fr, c: fc, v: kv });
+      try {
+        if (!factorizations.reference) {
+          const triplets: { r: number; c: number; v: number }[] = [];
+          for (const prep of prepared) {
+            for (let r = 0; r < 12; r++) {
+              const fr = globalToFree[prep.dofMap[r]!]!;
+              if (fr < 0) continue;
+              for (let c = 0; c < 12; c++) {
+                const fc = globalToFree[prep.dofMap[c]!]!;
+                const kv = prep.kGlobal[r]![c]!;
+                if (fc >= 0 && kv !== 0) {
+                  triplets.push({ r: fr, c: fc, v: kv });
+                }
+              }
             }
           }
-        }
-      }
 
-      try {
-        const tsSolved = solveReducedLinearSystem(freeToGlobal.length, triplets, rhsFree);
+          factorizations.reference = factorReducedLinearSystem(freeToGlobal.length, triplets);
+        }
+        const tsSolved = factorizations.reference(rhsFree);
+        if (!Number.isFinite(tsSolved.relativeResidual) || tsSolved.relativeResidual > 1e-3) {
+          throw new Error('Reference solver stiffness residual exceeded the acceptance limit.');
+        }
         for (let i = 0; i < freeToGlobal.length; i++) {
           uGlobal[freeToGlobal[i]!] = tsSolved.solution[i]!;
         }
@@ -1073,7 +1098,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
 
     const solveDurationMs = performance.now() - t0;
     const diag: SolverDiagnostics = {
-      requestedBackend: preferredBackend,
+      requestedBackend: priorRuntimeFallback ? 'AWATIF_CPP_WASM' : preferredBackend,
       executionBackend,
       backendFallbackReason,
       nodeCount: numNodes,

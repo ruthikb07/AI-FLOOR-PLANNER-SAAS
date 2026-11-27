@@ -30,6 +30,7 @@
     "@ai-floor-planner/planning-engine": "workspace:*",
     "@ai-floor-planner/projection-3d": "workspace:^",
     "@ai-floor-planner/renderer": "workspace:^",
+    "@ai-floor-planner/structural-engine": "workspace:*",
     "@node-projects/acad-ts": "^3.2.0",
     "fast-xml-parser": "5.3.6",
     "fontkit": "2.0.4",

@@ -14,7 +14,7 @@
  *   node scripts/bundle-backend.mjs --run  # build, then start the server
  */
 import { createRequire } from 'node:module';
-import { mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,6 +41,11 @@ await esbuild.build({
 });
 
 console.log('Backend bundle written to packages/backend/dist-server/server.cjs');
+
+const awatifWasmSrc = path.join(root, 'packages', 'structural-engine', 'src', 'wasm', 'lSolver.wasm');
+if (existsSync(awatifWasmSrc)) {
+  copyFileSync(awatifWasmSrc, path.join(backend, 'dist-server', 'lSolver.wasm'));
+}
 
 if (process.argv.includes('--run')) {
   const { fork } = await import('node:child_process');

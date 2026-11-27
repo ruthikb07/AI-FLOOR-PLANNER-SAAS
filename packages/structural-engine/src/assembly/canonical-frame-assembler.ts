@@ -89,6 +89,8 @@ export interface SynthesizedSlabPanel {
     readonly minY: number;
     readonly maxY: number;
   };
+  /** Exact supported plan ring. Undefined when a void intersects the panel or the room ring is unavailable. */
+  readonly exchangeBoundary?: readonly Point[];
   readonly sizingProvenance: 'PRELIMINARY_SPAN_DEPTH_RULE' | 'USER_OR_OPTIMIZER_ASSIGNED';
 }
 
@@ -133,6 +135,11 @@ export interface SynthesizedStructuralSystem {
   readonly concreteGrade: ConcreteGrade;
   readonly steelGrade: SteelGrade;
   readonly ductileDetailing: boolean;
+  readonly storeys: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly elevationMm: number;
+  }[];
   readonly nodes: readonly AnalyticalNode[];
   readonly elements: readonly AnalyticalFrameElement[];
   readonly memberMetadata: readonly MemberDesignMetadata[];
@@ -445,10 +452,12 @@ export function synthesizeCanonicalStructuralSystem(
     levels.push({ key: 'PLINTH', elevationMm: 0, isFoundation: false, isPlinth: true });
   }
 
+  const storeys: SynthesizedStructuralSystem['storeys'][number][] = [];
   let runningElevMm = 0;
   for (const floor of sortedFloors) {
-    const hMm = Math.max(2700, floor.floorHeight || 3000);
-    runningElevMm += hMm;
+    const elevationMm = floor.elevationMm ?? runningElevMm;
+    storeys.push({ id: floor.id, name: floor.name, elevationMm });
+    runningElevMm = elevationMm + floor.floorHeight;
     levels.push({
       key: floor.id,
       elevationMm: runningElevMm,
@@ -1072,6 +1081,13 @@ export function synthesizeCanonicalStructuralSystem(
             : room.area
           : (rawW * rawH) / 1e6;
 
+      const rawRing = room.boundary?.points;
+      const cutouts = floor.voidBoundaries ?? [];
+      const overlapsOpening = cutouts.some((cutout) => {
+        const bounds = polygonBounds(cutout.points);
+        return rb.minX < bounds.maxX && bounds.minX < rb.maxX && rb.minY < bounds.maxY && bounds.minY < rb.maxY;
+      });
+
       slabPanels.push({
         id: panelId,
         floorId: floor.id,
@@ -1090,6 +1106,7 @@ export function synthesizeCanonicalStructuralSystem(
         discontinuousEdges: discEdges,
         supportingBeamElementIndices: chosenBeams,
         boundsMm: rb,
+        exchangeBoundary: !overlapsOpening && rawRing && rawRing.length >= 3 ? rawRing : undefined,
         sizingProvenance:
           overrideThick || floor.slabThicknessMm
             ? 'USER_OR_OPTIMIZER_ASSIGNED'
@@ -1144,6 +1161,7 @@ export function synthesizeCanonicalStructuralSystem(
     concreteGrade,
     steelGrade,
     ductileDetailing,
+    storeys,
     nodes,
     elements,
     memberMetadata,

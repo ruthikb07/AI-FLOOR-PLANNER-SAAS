@@ -32,6 +32,7 @@ export default defineConfig({
     'rh-phase4b-bim-workflow.spec.ts',
     'rh-phase5-unified-studio.spec.ts',
     'rh-unified-cota-openbim.spec.ts',
+    'rh-gate2-structural-verification.spec.ts',
   ],
   timeout: 90_000,
   workers: 1,

@@ -94,6 +94,25 @@ export interface FullStructuralEvaluationSnapshot {
   readonly maxMemberUtilization: number;
 }
 
+export type StructuralCaseSummary = Pick<
+  AnalyticalSolveEnvelope['combinationResults'][string], 'name' | 'diagnostics' | 'equilibrium'
+>;
+
+export type StructuralEvaluationSummary = Omit<FullStructuralEvaluationSnapshot, 'solveEnvelope' | 'rccDesign' | 'foundationDesign'> & {
+  readonly rccDesign: {
+    readonly [Key in keyof CompleteRccDesignSummary]: CompleteRccDesignSummary[Key] extends readonly (infer Row)[]
+      ? readonly Omit<Row, 'ruleChecks'>[]
+      : CompleteRccDesignSummary[Key];
+  };
+  readonly foundationDesign: Omit<FoundationDesignSummary, 'ruleChecks' | 'footings'> & {
+    readonly footings: readonly Omit<FoundationDesignSummary['footings'][number], 'ruleChecks'>[];
+  };
+  readonly solveEnvelope: Omit<AnalyticalSolveEnvelope, 'loadCaseResults' | 'combinationResults'> & {
+    readonly loadCaseResults: Readonly<Record<string, StructuralCaseSummary>>;
+    readonly combinationResults: Readonly<Record<string, StructuralCaseSummary>>;
+  };
+};
+
 export interface OptimizationIterationTrace {
   readonly iteration: number;
   readonly modifiedMemberIds: readonly string[];
@@ -113,6 +132,8 @@ export interface StructuralOptimizationResult {
   readonly status:
     | 'OPTIMIZED_VERIFIED'
     | 'ALREADY_OPTIMAL'
+    | 'INPUT_REVIEW_REQUIRED'
+    | 'UNSUPPORTED_SCOPE'
     | 'OPTIMIZATION_EXHAUSTED'
     | 'INFEASIBLE_WITHOUT_ARCHITECTURAL_CHANGE';
   readonly mode: OptimizationObjectiveMode;
@@ -134,6 +155,12 @@ export interface StructuralOptimizationResult {
     readonly maxUtilizationAfter: number;
   };
 }
+
+export type StructuralOptimizationSummary = Omit<StructuralOptimizationResult, 'before' | 'after'> & {
+  readonly before: StructuralEvaluationSummary;
+  readonly after: StructuralEvaluationSummary;
+};
+
 
 /**
  * Evaluates IS 1893 (Part 1): 2016 Cl. 7.11.1 Storey Drift Limit (`<= 0.004 * h_s`) across lateral combinations.
@@ -388,6 +415,7 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     concreteGrade: params.inputs.concreteGrade,
     steelGrade: params.inputs.steelGrade,
     ductileDetailing: params.inputs.ductileDetailingIS13920,
+    foundationDepthBelowPlinthMm: params.inputs.geotechnical ? params.inputs.geotechnical.foundationDepthBelowGroundM * 1000 : undefined,
     ...params.synthesisOptions,
   });
 
@@ -471,12 +499,12 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   // Record Canonical Architectural Hash BEFORE optimization to prove 100% architectural invariance!
   const preArchSha256 = canonicalBuildingHash(params.building);
 
-  const sectionOverrides: Record<
+  let sectionOverrides: Record<
     string,
     { widthMm: number; depthMm: number; concreteGrade?: ConcreteGrade }
   > = { ...(params.initialSectionOverrides ?? {}) };
-  const slabOverrides: Record<string, number> = { ...(params.initialSlabOverridesMm ?? {}) };
-  const footingOverrides: Record<
+  let slabOverrides: Record<string, number> = { ...(params.initialSlabOverridesMm ?? {}) };
+  let footingOverrides: Record<
     string,
     { lengthXMm: number; widthYMm: number; thicknessMm: number }
   > = { ...(params.initialFootingOverrides ?? {}) };
@@ -500,6 +528,10 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
   for (let iter = 1; iter <= maxIterations; iter++) {
     const modifiedIds = new Set<string>();
     const changeSummary: string[] = [];
+    const previousSections = { ...sectionOverrides };
+    const previousSlabs = { ...slabOverrides };
+    const previousFootings = { ...footingOverrides };
+    const previousFoundationPreference = activeFoundationPref;
 
     // Step A: Remediate all structural defects (Beams, Columns, Slabs, Storey Drift, Footings)
     for (const bm of current.rccDesign.beams) {
@@ -664,6 +696,10 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
 
     // If an economy trim inadvertently introduced a new failure, revert and stop cleanly!
     if (current.criticalDefectCount === 0 && candidateEval.criticalDefectCount > 0) {
+      sectionOverrides = previousSections;
+      slabOverrides = previousSlabs;
+      footingOverrides = previousFootings;
+      activeFoundationPref = previousFoundationPreference;
       break;
     }
 
@@ -674,7 +710,7 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
       modifiedMemberIds: Array.from(modifiedIds),
       changeSummary,
       globalReanalysisExecuted: true,
-      solverExecutionBackend: firstComboRes?.diagnostics.executionBackend ?? 'AWATIF_CPP_WASM',
+      solverExecutionBackend: firstComboRes?.diagnostics.executionBackend ?? 'UNAVAILABLE',
       wasmSolveDurationMs: Number(current.solveEnvelope.totalSolveDurationMs.toFixed(2)),
       criticalDefectCountAfter: current.criticalDefectCount,
       maxUtilizationAfter: current.maxMemberUtilization,
@@ -694,7 +730,11 @@ export async function optimizeStructuralSystemWithGlobalReanalysis(params: {
 
   const hasArchClashError = current.system.clashes.some((c) => c.severity === 'ERROR');
   let status: StructuralOptimizationResult['status'];
-  if (current.criticalDefectCount === 0) {
+  if (current.foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
+    status = 'INPUT_REVIEW_REQUIRED';
+  } else if (current.foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
+    status = 'UNSUPPORTED_SCOPE';
+  } else if (archProtected && current.rccDesign.allPassed && current.foundationDesign.allPassed && current.criticalDefectCount === 0) {
     status = iterations.length === 0 ? 'ALREADY_OPTIMAL' : 'OPTIMIZED_VERIFIED';
   } else if (hasArchClashError) {
     status = 'INFEASIBLE_WITHOUT_ARCHITECTURAL_CHANGE';

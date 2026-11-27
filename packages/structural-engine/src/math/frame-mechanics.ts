@@ -570,177 +570,138 @@ export function multiplyMatVec(A: number[][], x: readonly number[]): number[] {
   return out;
 }
 
-/**
- * Sparse-row Gaussian elimination with partial pivoting on active DOFs.
- * Matches Awatif lSolver.cpp active-DOF filtering:
- * - Zero-stiffness inactive DOFs with zero load stay 0 (e.g., torsional DOF when J=0 or pinned truss joint).
- * - Zero-stiffness DOF with non-zero load throws LOAD_ON_UNSTABLE_DOF.
- * - Singular active stiffness matrix throws SINGULAR_STIFFNESS_MATRIX (never injects artificial springs!).
- */
+type StiffnessTriplet = { r: number; c: number; v: number };
+type ReducedSolveResult = { solution: Float64Array; relativeResidual: number };
+
 export function solveReducedLinearSystem(
   size: number,
-  triplets: readonly { r: number; c: number; v: number }[],
+  triplets: readonly StiffnessTriplet[],
   rhs: Float64Array,
-): { solution: Float64Array; relativeResidual: number } {
-  if (size === 0) {
-    return { solution: new Float64Array(0), relativeResidual: 0 };
-  }
+): ReducedSolveResult {
+  return factorReducedLinearSystem(size, triplets)(rhs);
+}
 
+/** Factor once and replay pivoting and elimination for each load on the same stiffness matrix. */
+export function factorReducedLinearSystem(size: number, triplets: readonly StiffnessTriplet[]) {
   const active = new Uint8Array(size);
   let maxDiagScale = 0;
-  for (const t of triplets) {
-    if (Math.abs(t.v) > 1e-14) {
-      active[t.r] = 1;
-      active[t.c] = 1;
-      if (t.r === t.c && Math.abs(t.v) > maxDiagScale) {
-        maxDiagScale = Math.abs(t.v);
-      }
-    }
+  for (const { r, c, v } of triplets) {
+    if (Math.abs(v) <= 1e-14) continue;
+    active[r] = 1;
+    active[c] = 1;
+    if (r === c) maxDiagScale = Math.max(maxDiagScale, Math.abs(v));
   }
-
   const fullToActive = new Int32Array(size).fill(-1);
   const activeToFull: number[] = [];
   for (let i = 0; i < size; i++) {
     if (active[i]) {
       fullToActive[i] = activeToFull.length;
       activeToFull.push(i);
-    } else if (Math.abs(rhs[i]!) > 1e-12) {
-      const err = new Error('Unbalanced load applied to zero-stiffness / disconnected DOF.');
-      (err as { code?: string }).code = 'LOAD_ON_UNSTABLE_DOF';
-      throw err;
     }
   }
 
   const m = activeToFull.length;
-  if (m === 0) {
-    return { solution: new Float64Array(size), relativeResidual: 0 };
-  }
-
-  // Banded / flat Float64Array LU with partial pivoting (fast in V8 up to thousands of DOFs)
-  const A = new Float64Array(m * m);
-  const AOrig = new Float64Array(m * m);
-  for (const t of triplets) {
-    const ar = fullToActive[t.r]!;
-    const ac = fullToActive[t.c]!;
-    if (ar >= 0 && ac >= 0) {
-      A[ar * m + ac] += t.v;
-      AOrig[ar * m + ac] += t.v;
-    }
-  }
-
-  const b = new Float64Array(m);
-  const bOrig = new Float64Array(m);
-  let normB = 0;
-  for (let i = 0; i < m; i++) {
-    const val = rhs[activeToFull[i]!]!;
-    b[i] = val;
-    bOrig[i] = val;
-    normB += val * val;
-  }
-  normB = Math.sqrt(normB);
-
-  const pivotTol = Math.max(1e-12, maxDiagScale * 1e-13);
-
-  // Compute semi-bandwidth to skip zero blocks during elimination (dramatic speedup on frame structures!)
+  const lu = new Float64Array(m * m);
   let bandwidth = 0;
-  for (let i = 0; i < m; i++) {
-    for (let j = i + 1; j < m; j++) {
-      if (A[i * m + j] !== 0 || A[j * m + i] !== 0) {
-        if (j - i > bandwidth) bandwidth = j - i;
-      }
+  for (const { r, c, v } of triplets) {
+    const row = fullToActive[r]!;
+    const col = fullToActive[c]!;
+    if (row >= 0 && col >= 0) {
+      lu[row * m + col] += v;
+      bandwidth = Math.max(bandwidth, Math.abs(row - col));
     }
   }
-  const upperHorizon = Math.min(m, Math.max(24, bandwidth * 2 + 12));
 
+  const pivots = new Int32Array(m);
+  const pivotTol = Math.max(1e-12, maxDiagScale * 1e-13);
+  const horizon = Math.min(m, Math.max(24, bandwidth * 2 + 12));
   for (let k = 0; k < m; k++) {
     let pivotRow = k;
-    let maxAbs = Math.abs(A[k * m + k]!);
-    const searchEnd = Math.min(m, k + upperHorizon);
+    let maxAbs = Math.abs(lu[k * m + k]!);
+    const searchEnd = Math.min(m, k + horizon);
     for (let i = k + 1; i < searchEnd; i++) {
-      const v = Math.abs(A[i * m + k]!);
-      if (v > maxAbs) {
-        maxAbs = v;
+      const value = Math.abs(lu[i * m + k]!);
+      if (value > maxAbs) {
+        maxAbs = value;
         pivotRow = i;
       }
     }
     if (maxAbs < pivotTol) {
-      // Full column scan fallback before declaring singular
       for (let i = searchEnd; i < m; i++) {
-        const v = Math.abs(A[i * m + k]!);
-        if (v > maxAbs) {
-          maxAbs = v;
+        const value = Math.abs(lu[i * m + k]!);
+        if (value > maxAbs) {
+          maxAbs = value;
           pivotRow = i;
         }
       }
     }
     if (maxAbs < pivotTol) {
-      const err = new Error('Structural stiffness matrix is singular (unstable mechanism or insufficient supports).');
-      (err as { code?: string }).code = 'SINGULAR_STIFFNESS_MATRIX';
-      throw err;
+      throw Object.assign(new Error('Structural stiffness matrix is singular (unstable mechanism or insufficient supports).'),
+        { code: 'SINGULAR_STIFFNESS_MATRIX' });
     }
 
+    pivots[k] = pivotRow;
+    const rowOffset = k * m;
     if (pivotRow !== k) {
+      // Earlier columns store the factors as they were applied before this pivot.
+      const pivotOffset = pivotRow * m;
       for (let j = k; j < m; j++) {
-        const tmp = A[k * m + j]!;
-        A[k * m + j] = A[pivotRow * m + j]!;
-        A[pivotRow * m + j] = tmp;
-      }
-      const tb = b[k]!;
-      b[k] = b[pivotRow]!;
-      b[pivotRow] = tb;
-    }
-
-    const pivot = A[k * m + k]!;
-    const rowEnd = Math.min(m, k + upperHorizon);
-    // Find non-zero span in pivot row
-    let colEnd = k + 1;
-    for (let j = m - 1; j > k; j--) {
-      if (A[k * m + j] !== 0) {
-        colEnd = j + 1;
-        break;
+        const previous = lu[rowOffset + j]!;
+        lu[rowOffset + j] = lu[pivotOffset + j]!;
+        lu[pivotOffset + j] = previous;
       }
     }
 
+    const pivot = lu[rowOffset + k]!;
+    let colEnd = m;
+    while (colEnd > k + 1 && lu[rowOffset + colEnd - 1] === 0) colEnd--;
     for (let i = k + 1; i < m; i++) {
-      if (i >= rowEnd && A[i * m + k] === 0) continue;
-      const factor = A[i * m + k]! / pivot;
-      if (factor === 0) continue;
-      A[i * m + k] = 0;
-      const iOffset = i * m;
-      const kOffset = k * m;
-      for (let j = k + 1; j < colEnd; j++) {
-        A[iOffset + j] -= factor * A[kOffset + j]!;
+      const offset = i * m;
+      const coefficient = lu[offset + k]!;
+      if (coefficient === 0) continue;
+      const factor = coefficient / pivot;
+      lu[offset + k] = factor;
+      for (let j = k + 1; j < colEnd; j++) lu[offset + j] -= factor * lu[rowOffset + j]!;
+    }
+  }
+
+  return (rhs: Float64Array): ReducedSolveResult => {
+    const b = new Float64Array(m);
+    for (let i = 0; i < size; i++) {
+      const mapped = fullToActive[i]!;
+      if (mapped >= 0) b[mapped] = rhs[i]!;
+      else if (Math.abs(rhs[i]!) > 1e-12) {
+        throw Object.assign(new Error('Unbalanced load applied to zero-stiffness / disconnected DOF.'),
+          { code: 'LOAD_ON_UNSTABLE_DOF' });
       }
-      b[i] -= factor * b[k]!;
     }
-  }
 
-  const xActive = new Float64Array(m);
-  for (let i = m - 1; i >= 0; i--) {
-    let sum = b[i]!;
-    const iOffset = i * m;
-    for (let j = i + 1; j < m; j++) {
-      const aij = A[iOffset + j]!;
-      if (aij !== 0) sum -= aij * xActive[j]!;
+    for (let k = 0; k < m; k++) {
+      const pivotRow = pivots[k]!;
+      if (pivotRow !== k) {
+        const previous = b[k]!;
+        b[k] = b[pivotRow]!;
+        b[pivotRow] = previous;
+      }
+      for (let i = k + 1; i < m; i++) b[i] -= lu[i * m + k]! * b[k]!;
     }
-    xActive[i] = sum / A[iOffset + i]!;
-  }
 
-  let resSq = 0;
-  for (let i = 0; i < m; i++) {
-    let ax = 0;
-    const iOffset = i * m;
-    for (let j = 0; j < m; j++) {
-      ax += AOrig[iOffset + j]! * xActive[j]!;
+    const solution = new Float64Array(size);
+    for (let i = m - 1; i >= 0; i--) {
+      let sum = b[i]!;
+      for (let j = i + 1; j < m; j++) sum -= lu[i * m + j]! * solution[activeToFull[j]!]!;
+      solution[activeToFull[i]!] = sum / lu[i * m + i]!;
     }
-    const r = ax - bOrig[i]!;
-    resSq += r * r;
-  }
-  const relativeResidual = normB > 1e-14 ? Math.sqrt(resSq) / normB : Math.sqrt(resSq);
 
-  const solution = new Float64Array(size);
-  for (let i = 0; i < m; i++) {
-    solution[activeToFull[i]!] = xActive[i]!;
-  }
-  return { solution, relativeResidual };
+    const residual = new Float64Array(size);
+    for (const { r, c, v } of triplets) residual[r] += v * solution[c]!;
+    let normB = 0;
+    let resSq = 0;
+    for (const i of activeToFull) {
+      const difference = residual[i]! - rhs[i]!;
+      normB += rhs[i]! * rhs[i]!;
+      resSq += difference * difference;
+    }
+    return { solution, relativeResidual: Math.sqrt(resSq) / (normB > 1e-28 ? Math.sqrt(normB) : 1) };
+  };
 }
