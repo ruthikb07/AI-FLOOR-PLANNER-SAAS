@@ -1,0 +1,212 @@
+{
+  "id": "mesh-check",
+  "projectId": "mesh-check",
+  "name": "Deck mesh fixture",
+  "version": 1,
+  "createdAt": "2026-11-28T00:00:00Z",
+  "updatedAt": "2026-11-28T00:00:00Z",
+  "metadata": {
+    "projectId": "mesh-check"
+  },
+  "site": {
+    "plotArea": 10,
+    "plotShape": "rectangular",
+    "orientation": 0,
+    "setbacks": {"front":0,"rear":0,"left":0,"right":0},
+    "accessPoints": [],
+    "roadFacing": "south",
+    "id": "site",
+    "plotWidth": 4000,
+    "plotDepth": 2500,
+    "plotBoundary": {
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2500
+        },
+        {
+          "x": 4000,
+          "y": 2500
+        },
+        {
+          "x": 4000,
+          "y": 0
+        }
+      ]
+    }
+  },
+  "floors": [
+    {
+      "id": "stilt",
+      "level": 0,
+      "buildingId": "mesh-check",
+      "name": "stilt",
+      "elevationMm": 0,
+      "floorHeight": 3100,
+      "floorUse": "STILT_PARKING",
+      "boundary": {
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 2500
+          },
+          {
+            "x": 4000,
+            "y": 2500
+          },
+          {
+            "x": 4000,
+            "y": 0
+          }
+        ]
+      },
+      "rooms": [],
+      "stairs": [],
+      "walls": [],
+      "doors": [],
+      "windows": [],
+      "columns": [
+        {
+          "id": "stilt0",
+          "floorId": "stilt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "stilt1",
+          "floorId": "stilt",
+          "position": {
+            "x": 0,
+            "y": 2500
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "stilt2",
+          "floorId": "stilt",
+          "position": {
+            "x": 4000,
+            "y": 2500
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "stilt3",
+          "floorId": "stilt",
+          "position": {
+            "x": 4000,
+            "y": 0
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        }
+      ]
+    },
+    {
+      "id": "upper",
+      "level": 1,
+      "buildingId": "mesh-check",
+      "name": "upper",
+      "elevationMm": 3100,
+      "floorHeight": 2800,
+      "floorUse": "RESIDENTIAL",
+      "boundary": {
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 2500
+          },
+          {
+            "x": 4000,
+            "y": 2500
+          },
+          {
+            "x": 4000,
+            "y": 0
+          }
+        ]
+      },
+      "rooms": [],
+      "stairs": [],
+      "walls": [],
+      "doors": [],
+      "windows": [],
+      "columns": [
+        {
+          "id": "upper0",
+          "floorId": "upper",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "upper1",
+          "floorId": "upper",
+          "position": {
+            "x": 0,
+            "y": 2500
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "upper2",
+          "floorId": "upper",
+          "position": {
+            "x": 4000,
+            "y": 2500
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        },
+        {
+          "id": "upper3",
+          "floorId": "upper",
+          "position": {
+            "x": 4000,
+            "y": 0
+          },
+          "width": 450,
+          "depth": 450,
+          "shape": "rectangular",
+          "isStructural": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import { RegisteredDeckView } from './RegisteredDeckView';
 import { FramingAlignmentPreview } from './FramingAlignmentPreview';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { Building } from '@ai-floor-planner/core';
+import { canonicalBuildingHash, type Building } from '@ai-floor-planner/core';
+import { EngineeringInputReview } from './EngineeringInputReview';
 import {
   type ConcreteGradeCode,
   type SeismicZoneCode,
@@ -194,12 +195,19 @@ const RebarCrossSectionSvg: React.FC<{
   );
 };
 
-export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = ({
+export function StructuralAnalysisPanel(props: StructuralAnalysisPanelProps) {
+  const digest = useMemo(() => canonicalBuildingHash(props.building), [props.building]);
+  return <RevisionStructuralPanel key={digest} {...props} engineeringDigest={digest} />;
+}
+
+const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { engineeringDigest: string }> = ({
+  engineeringDigest,
   building,
   onDownloadReportPdf,
   reportBusy = false,
   initialSelectedCoordinate = null,
 }) => {
+
   const [seismicZone, setSeismicZone] = useState<SeismicZoneCode>('III');
   const [concreteGrade, setConcreteGrade] = useState<ConcreteGradeCode>('M25');
   const [steelGrade, setSteelGrade] = useState<SteelGradeCode>('Fe500');
@@ -224,6 +232,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     return resFloor?.id || building.floors[0]?.id || '';
   });
   const [deckReviews, setDeckReviews] = useState<ReviewedStructuralInputs['rectangularDeckReviews']>();
+  const [stairReviews, setStairReviews] = useState<ReviewedStructuralInputs['stairBearingReviews']>();
   const [deckImportError, setDeckImportError] = useState('');
   const [showRegisteredDeck, setShowRegisteredDeck] = useState(false);
   const [inspectedSlab, setInspectedSlab] = useState('');
@@ -304,6 +313,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       concreteGrade,
       steelGrade,
       rectangularDeckReviews: deckReviews,
+      stairBearingReviews: stairReviews,
       ductileDetailingIS13920: seismicZone !== 'II',
       floorFinishKnM2: 1.2,
       masonryUnitWeightKnM3: 19.0,
@@ -341,6 +351,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       steelGrade,
       seismicZone,
       deckReviews,
+      stairReviews,
       windEnabled,
       hasGeotechnicalInputs,
       appliedSbc,
@@ -1366,6 +1377,13 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       data-testid="structural-analysis-panel"
       className="flex flex-col gap-4 bg-[#0B101B] text-[#F8FAFC] p-4 sm:p-5 overflow-auto h-full"
     >
+      <EngineeringInputReview key={engineeringDigest} building={building} digest={engineeringDigest}
+        onStair={review => setStairReviews(previous => [...(previous ?? []).filter(item => item.waistId !== review.waistId), review])}
+        onDeck={deck => setDeckReviews(previous => [...(previous ?? []).filter(item => item.supportingFloorId !== deck.supportingFloorId), deck])}
+        onSoil={soil => { setSbcRaw(String(soil.safeBearingCapacityKPa)); setFoundationDepthM(String(soil.foundationDepthBelowGroundM));
+          setSoilUnitWeight(String(soil.soilUnitWeightKnM3)); setSettlementLimit(String(soil.allowableSettlementMm));
+          setGeotechReference(soil.reportReference); setGroundwaterDepth(String(soil.waterTableDepthBelowGroundM ?? ''));
+          setSubgradeModulusRaw(String(soil.subgradeModulusKnM3 ?? '')); setBearingBasis(soil.bearingCapacityBasis ?? ''); }} />
       {/* Header, Solver Provenance & Lifecycle Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/80 bg-[#111827] p-4">
         <div>

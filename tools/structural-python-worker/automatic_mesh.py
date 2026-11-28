@@ -3,10 +3,13 @@ from collections import defaultdict
 import math
 from urllib.parse import quote
 
-from shapely import constrained_delaunay_triangles
+from shapely import constrained_delaunay_triangles, get_parts, union_all
 from shapely.geometry import LineString, MultiLineString, Polygon, box
 from shapely.strtree import STRtree
 
+from adaptive_mesh import adaptive_quads
+from beam_edge_chain import beam_subdivision_candidates
+from reviewed_mesh_joints import apply_joint_reviews, joint_registry
 from deck_mesh import check_deck_mesh, frame_segments
 
 MAX_QUADS = 20_000
@@ -101,7 +104,7 @@ def _proposal(region, cells, supports, quad_budget):
         "maxEdgeAspectRatio": max_aspect, "minScaledCornerJacobian": min_jacobian}
 
 
-def generate_region(deck, region, frame_nodes, beams, elements, quad_budget):
+def generate_region(deck, region, frame_nodes, beams, elements, quad_budget, coordinated_cells=None):
     outer, *holes = region["ringsMm"]
     surface = Polygon(outer, holes)
     supports = defaultdict(set)
@@ -118,6 +121,8 @@ def generate_region(deck, region, frame_nodes, beams, elements, quad_budget):
                         "boundaryInterfaces": []})
         return receipt
 
+    if coordinated_cells is not None:
+        return check(coordinated_cells, "COORDINATED_FLOOR_QUADS")
     try:
         return check(_grid_cells(surface, boundary_points | supports.keys(), quad_budget), "RECTANGULAR_GRID")
     except ValueError:
@@ -127,7 +132,11 @@ def generate_region(deck, region, frame_nodes, beams, elements, quad_budget):
     try:
         return check(_grid_cells(surface, boundary_points, quad_budget, balanced=True), "BALANCED_GRID")
     except ValueError:
+        pass
+    try:
         return check(_quad_cells(surface, quad_budget), "BOUNDARY_FITTED_QUADS")
+    except ValueError:
+        return check(adaptive_quads(surface, quad_budget), "ADAPTIVE_BOUNDARY_QUADS")
 
 
 def _boundary_edges(receipt):
@@ -175,7 +184,29 @@ def _check_interfaces(results, regions):
                                "CONTINUITY_REVIEW_REQUIRED" if conforming else "NONCONFORMING_INTERFACE")})
 
 
-def generate_floor(deck, frame_nodes, beams, elements, first_free):
+def _floor_partition(deck, quad_budget):
+    surfaces = [Polygon(r["ringsMm"][0], r["ringsMm"][1:]) for r in deck["regions"]]
+    footprint = union_all(surfaces)
+    boundaries = [surface.boundary for surface in surfaces]
+    boundaries.extend(LineString(beam["axisMm"]).intersection(footprint) for beam in deck["bearingLines"])
+    if len(boundaries) > 1024:
+        raise ValueError("Too many constrained components for a coordinated floor partition")
+    network = [line for line in get_parts(union_all(boundaries)) if line.geom_type == "LineString"]
+    if sum(len(line.coords) for line in network) > MAX_FLOOR_CORNERS:
+        raise ValueError("Noded floor constraints exceed the boundary vertex budget")
+    quads = adaptive_quads(footprint, quad_budget, network)
+    by_region = [[] for _ in surfaces]
+    tree = STRtree(surfaces)
+    for quad in quads:
+        owner = tree.query(quad.centroid, predicate="within")
+        if len(owner) != 1:
+            raise ValueError("Coordinated quad requires a unique region owner")
+        by_region[owner[0]].append(quad)
+    return by_region
+
+
+def generate_floor(deck, frame_nodes, beams, elements, first_free, interface_reviews=()):
+    registry_start = first_free
     if type(first_free) is not int or first_free < len(frame_nodes):
         raise ValueError("Invalid building node registry offset")
     results = []
@@ -184,11 +215,27 @@ def generate_floor(deck, frame_nodes, beams, elements, first_free):
     region_ids = [region["id"] for region in deck["regions"]]
     if len(region_ids) != len(set(region_ids)):
         raise ValueError("Duplicate deck region identity")
-    for region in deck["regions"]:
+    coordinated = None
+    registered_lines = deck.get("bearingLines", [])
+    needs_partition = len(region_ids) > 1 and "bearingLines" in deck
+    if len(region_ids) == 1 and registered_lines and corners <= MAX_FLOOR_CORNERS:
+        outer, *holes = deck["regions"][0]["ringsMm"]
+        surface = Polygon(outer, holes)
+        needs_partition = any(LineString(beam["axisMm"]).intersection(surface).difference(surface.boundary).length
+                              > LENGTH_TOL_MM for beam in registered_lines)
+    if needs_partition and corners <= MAX_FLOOR_CORNERS:
+        try:
+            coordinated = _floor_partition(deck, quad_budget)
+        except ValueError:
+            # Keep the independently checked region receipts and their interface
+            # flags when a floor-wide partition exceeds a quality or budget gate.
+            pass
+    for region_index, region in enumerate(deck["regions"]):
         try:
             if corners > MAX_FLOOR_CORNERS:
                 raise ValueError("Floor exceeds the boundary vertex budget")
-            receipt = generate_region(deck, region, frame_nodes, beams, elements, quad_budget)
+            receipt = generate_region(deck, region, frame_nodes, beams, elements, quad_budget,
+                                      coordinated[region_index] if coordinated is not None else None)
         except ValueError as error:
             results.append({"regionId": region["id"], "status": "MESH_REVIEW_REQUIRED",
                             "reason": str(error)})
@@ -207,8 +254,12 @@ def generate_floor(deck, frame_nodes, beams, elements, first_free):
             plate["nodeIndices"] = [remap[i] for i in plate["nodeIndices"]]
         for edge in receipt["sharedEdges"]:
             edge["plateIds"] = [f"quad/{scope}/{i}" for i in edge["plateIds"]]
+        receipt["beamSubdivisionCandidates"] = beam_subdivision_candidates(
+            deck, region, receipt, frame_nodes, beams, elements)
         results.append(receipt)
         quad_budget -= receipt["quadCount"]
     if corners <= MAX_FLOOR_CORNERS:
         _check_interfaces(results, deck["regions"])
-    return {"regions": results, "nextFreeNodeIndex": first_free}
+    if interface_reviews:
+        first_free = apply_joint_reviews(results, interface_reviews, registry_start, _boundary_edges)
+    return {"regions": results, "nextFreeNodeIndex": first_free, "jointRegistry": joint_registry(results)}

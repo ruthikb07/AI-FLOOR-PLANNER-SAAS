@@ -40,13 +40,20 @@ export interface PhysicalDeckMeshReceipt {
 export type AutomaticDeckMeshRegion =
   | { readonly regionId: string; readonly status: 'MESH_REVIEW_REQUIRED'; readonly reason: string }
   | (PhysicalDeckMeshReceipt & {
-      readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS';
+      readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS' | 'ADAPTIVE_BOUNDARY_QUADS' | 'COORDINATED_FLOOR_QUADS';
       readonly areaMm2: number;
       readonly quality: { readonly maxEdgeAspectRatio: number; readonly minScaledCornerJacobian: number };
+      readonly beamSubdivisionCandidates?: readonly {
+        readonly physicalMemberId: string;
+        readonly elementId: string;
+        readonly interiorNodeIndices: readonly number[];
+        readonly edgePlateIds: readonly (readonly string[])[];
+      }[];
       readonly unmatchedFrameElementIds: readonly string[];
       readonly boundaryInterfaces: readonly {
         readonly regionId: string;
         readonly lengthMm: number;
-        readonly status: 'SHARED_FRAME_DOFS' | 'CONTINUITY_REVIEW_REQUIRED' | 'NONCONFORMING_INTERFACE';
+        readonly reviewReference?: string;
+        readonly status: 'REVIEWED_MONOLITHIC_DOFS' | 'SHARED_FRAME_DOFS' | 'CONTINUITY_REVIEW_REQUIRED' | 'NONCONFORMING_INTERFACE';
       }[];
     });

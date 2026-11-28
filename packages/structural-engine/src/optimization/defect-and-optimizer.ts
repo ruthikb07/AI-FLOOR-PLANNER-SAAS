@@ -1,3 +1,4 @@
+import { applyStairBearingReviews } from '../loads/reviewed-stair-bearings.js';
 import { applyReviewedDecks } from '../assembly/reviewed-decks.js';
 /**
  * @ai-floor-planner/structural-engine — Deterministic Structural Defect Detector &
@@ -582,7 +583,8 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     ...params.synthesisOptions,
   });
 
-  const system = applyReviewedDecks(params.building, frame, params.inputs.rectangularDeckReviews ?? []);
+  const decks = applyReviewedDecks(params.building, frame, params.inputs.rectangularDeckReviews ?? []);
+  const system = applyStairBearingReviews(decks, params.inputs.stairBearingReviews ?? []);
   const { analyticalModel, loadTakeoff } = await assembleLoadedAnalyticalFrameModel(
     system,
     params.inputs,
@@ -755,10 +757,15 @@ export async function evaluateFullBuildingStructuralSystem(params: {
   if (foundationDesign.status === 'UNSUPPORTED_FOUNDATION_TYPE') {
     unsupportedChecks.push(`Foundation type '${foundationDesign.selectedStrategy}' requires unsupported Winkler FEM / SSI.`);
   }
-  if (rccDesign.unsupportedMemberCount > 0) {
+  const deepBeams = rccDesign.beams.filter(beam => beam.status === 'UNSUPPORTED');
+  if (deepBeams.length > 0) {
     unsupportedChecks.push(
-      `${rccDesign.unsupportedMemberCount} deep-beam member(s) (L/D < 2.0) require IS 456 Cl. 29 nonlinear strut-and-tie analysis.`,
+      `${deepBeams.length} deep-beam member(s) (L/D < 2.0) require IS 456 Cl. 29 nonlinear strut-and-tie analysis.`,
     );
+  }
+  const outstandingStairs = rccDesign.stairs.filter(stair => stair.status === 'UNSUPPORTED');
+  if (outstandingStairs.length) {
+    unsupportedChecks.push(`${outstandingStairs.length} stair flight(s) require verified bearing, shear and anchorage checks.`);
   }
 
   const criticalDefectCount = defects.filter(

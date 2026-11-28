@@ -115,6 +115,7 @@ interface PendingRpc {
 type WorkerProcess = import('node:child_process').ChildProcessWithoutNullStreams;
 
 export class PythonStructuralWorkerClient {
+  constructor(private readonly sectionWorker = false) {}
   private proc: WorkerProcess | null = null;
   private rl: import('node:readline').Interface | null = null;
   private pending = new Map<string, PendingRpc>();
@@ -141,6 +142,7 @@ export class PythonStructuralWorkerClient {
       windowsHide: true,
       env: {
         ...process.env,
+        ...(this.sectionWorker && { OPENBLAS_NUM_THREADS:'1', MKL_NUM_THREADS:'1', OMP_NUM_THREADS:'1' }),
         PYTHONUNBUFFERED: '1',
         PYTHONIOENCODING: 'utf-8',
         MPLBACKEND: 'Agg',
@@ -295,11 +297,16 @@ export class PythonStructuralWorkerClient {
 let sharedWorkerInstance: PythonStructuralWorkerClient | null = null;
 const sectionWorkers: PythonStructuralWorkerClient[] = [];
 
-export function getSectionPythonStructuralWorkers(): readonly PythonStructuralWorkerClient[] {
-  if (sectionWorkers.length === 0) {
-    for (let i = 0; i < 3; i++) sectionWorkers.push(new PythonStructuralWorkerClient());
-  }
-  return sectionWorkers;
+export function getSectionPythonStructuralWorkers(count=3): readonly PythonStructuralWorkerClient[] {
+  const size = Math.max(1, Math.min(6, Math.floor(count)));
+  while (sectionWorkers.length<size) sectionWorkers.push(new PythonStructuralWorkerClient(true));
+  return sectionWorkers.slice(0,size);
+}
+
+export async function sectionCapacityWorkers(requestCount:number): Promise<readonly PythonStructuralWorkerClient[]> {
+  const {os}=await loadNodeDeps();
+  const workers=Math.min(requestCount,Math.floor(os.availableParallelism()/2),Math.floor(os.freemem()/(512*1024**2)));
+  return getSectionPythonStructuralWorkers(workers);
 }
 
 export function getSharedPythonStructuralWorker(): PythonStructuralWorkerClient {

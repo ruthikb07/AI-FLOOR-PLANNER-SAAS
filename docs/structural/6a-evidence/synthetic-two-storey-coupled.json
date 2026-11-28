@@ -1,0 +1,1593 @@
+{
+  "scope": "Synthetic two-storey rectangular verification building",
+  "architectureSha256": "7d830d417b8368d0d5b1ea61e51be7d052cbd49293dc2cf7f58789f51ee838bc",
+  "fixtureInputs": {
+    "seismic": {
+      "enabled": false
+    },
+    "wind": {
+      "enabled": false
+    },
+    "floorFinishKnM2": 1,
+    "rectangularDeckReviews": [
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7d830d417b8368d0d5b1ea61e51be7d052cbd49293dc2cf7f58789f51ee838bc",
+        "reference": "Synthetic drawing stilt",
+        "supportingFloorId": "stilt",
+        "surfaceFloorId": "upper",
+        "use": "OCCUPIED",
+        "structuralTopMm": 3100,
+        "finishedFloorMm": 3100,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 3,
+        "minimumBearingWidthMm": 75
+      },
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7d830d417b8368d0d5b1ea61e51be7d052cbd49293dc2cf7f58789f51ee838bc",
+        "reference": "Synthetic drawing upper",
+        "supportingFloorId": "upper",
+        "surfaceFloorId": "upper",
+        "use": "ROOF",
+        "structuralTopMm": 5900,
+        "finishedFloorMm": 5900,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 1.5,
+        "minimumBearingWidthMm": 75
+      }
+    ],
+    "geotechnical": {
+      "safeBearingCapacityKPa": 200,
+      "foundationDepthBelowGroundM": 1.5,
+      "soilUnitWeightKnM3": 18,
+      "allowableSettlementMm": 25,
+      "waterTableDepthBelowGroundM": 3,
+      "subgradeModulusKnM3": 24000,
+      "reportReference": "SYNTHETIC verification soil only",
+      "bearingCapacityBasis": "GROSS"
+    }
+  },
+  "shorteningChecks": [
+    {
+      "columnId": "COL_C1_L1",
+      "actualM": 0.00000688888888888857,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C2_L1",
+      "actualM": 0.000006888888888888902,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C3_L1",
+      "actualM": 0.000006888888888888811,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C4_L1",
+      "actualM": 0.000006888888888888794,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C1_L2",
+      "actualM": 0.0000020740740740740645,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C2_L2",
+      "actualM": 0.0000020740740740742136,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C3_L2",
+      "actualM": 0.000002074074074074271,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C4_L2",
+      "actualM": 0.000002074074074074002,
+      "expectedM": 0.0000020740740740740742
+    }
+  ],
+  "coupledFoundation": {
+    "status": "PRELIMINARY_GRAVITY_PAD_CHECK",
+    "scope": "ISOLATED_GRAVITY_ONLY",
+    "reportReference": "SYNTHETIC verification soil only",
+    "method": "PYNITE_PLATE_QUAD",
+    "checksPassed": true,
+    "footings": [
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C1",
+          "footingId": "F_C1",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C1"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            0
+          ],
+          "centerXMm": 0,
+          "centerYMm": 0,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C1",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C1"
+        ],
+        "centerXMm": 0,
+        "centerYMm": 0,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C1 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C1",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C2",
+          "footingId": "F_C2",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C2"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            1
+          ],
+          "centerXMm": 4000,
+          "centerYMm": 0,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C2",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C2"
+        ],
+        "centerXMm": 4000,
+        "centerYMm": 0,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C2 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C2",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C3",
+          "footingId": "F_C3",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C3"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            2
+          ],
+          "centerXMm": 0,
+          "centerYMm": 2500,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C3",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C3"
+        ],
+        "centerXMm": 0,
+        "centerYMm": 2500,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C3 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C3",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C4",
+          "footingId": "F_C4",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C4"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            3
+          ],
+          "centerXMm": 4000,
+          "centerYMm": 2500,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C4",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C4"
+        ],
+        "centerXMm": 4000,
+        "centerYMm": 2500,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C4 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C4",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "coupledFrame": {
+    "beams": [
+      {
+        "id": "PB_PLINTH_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 5.61,
+        "children": [
+          "PB_PLINTH_1"
+        ],
+        "utilization": 0.669,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 3.23,
+        "children": [
+          "PB_PLINTH_2"
+        ],
+        "utilization": 0.608,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 3.23,
+        "children": [
+          "PB_PLINTH_3"
+        ],
+        "utilization": 0.608,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 5.61,
+        "children": [
+          "PB_PLINTH_4"
+        ],
+        "utilization": 0.669,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 27.58,
+        "children": [
+          "BM_stilt_1/child/0",
+          "BM_stilt_1/child/1",
+          "BM_stilt_1/child/2",
+          "BM_stilt_1/child/3",
+          "BM_stilt_1/child/4",
+          "BM_stilt_1/child/5",
+          "BM_stilt_1/child/6",
+          "BM_stilt_1/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 11.96,
+        "children": [
+          "BM_stilt_2/child/0",
+          "BM_stilt_2/child/1",
+          "BM_stilt_2/child/2",
+          "BM_stilt_2/child/3",
+          "BM_stilt_2/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 11.96,
+        "children": [
+          "BM_stilt_3/child/0",
+          "BM_stilt_3/child/1",
+          "BM_stilt_3/child/2",
+          "BM_stilt_3/child/3",
+          "BM_stilt_3/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 27.58,
+        "children": [
+          "BM_stilt_4/child/0",
+          "BM_stilt_4/child/1",
+          "BM_stilt_4/child/2",
+          "BM_stilt_4/child/3",
+          "BM_stilt_4/child/4",
+          "BM_stilt_4/child/5",
+          "BM_stilt_4/child/6",
+          "BM_stilt_4/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 32.66,
+        "children": [
+          "BM_upper_1/child/0",
+          "BM_upper_1/child/1",
+          "BM_upper_1/child/2",
+          "BM_upper_1/child/3",
+          "BM_upper_1/child/4",
+          "BM_upper_1/child/5",
+          "BM_upper_1/child/6",
+          "BM_upper_1/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 15.84,
+        "children": [
+          "BM_upper_2/child/0",
+          "BM_upper_2/child/1",
+          "BM_upper_2/child/2",
+          "BM_upper_2/child/3",
+          "BM_upper_2/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 15.84,
+        "children": [
+          "BM_upper_3/child/0",
+          "BM_upper_3/child/1",
+          "BM_upper_3/child/2",
+          "BM_upper_3/child/3",
+          "BM_upper_3/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 32.66,
+        "children": [
+          "BM_upper_4/child/0",
+          "BM_upper_4/child/1",
+          "BM_upper_4/child/2",
+          "BM_upper_4/child/3",
+          "BM_upper_4/child/4",
+          "BM_upper_4/child/5",
+          "BM_upper_4/child/6",
+          "BM_upper_4/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      }
+    ],
+    "columns": [
+      {
+        "id": "COL_C1_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C1_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C1_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      }
+    ]
+  },
+  "slabLoadLedger": [
+    {
+      "physicalSlabId": "DECK:stilt:upper",
+      "areaM2": 10,
+      "quads": 40,
+      "reference": "Synthetic drawing stilt",
+      "centroidM": [
+        2,
+        -1.25
+      ],
+      "forceKn": {
+        "DL": 40,
+        "SDL": 10,
+        "LL": 30
+      },
+      "bearingStations": [
+        {
+          "forceIndex": 0,
+          "frameNodeId": "N_C1_stilt",
+          "plateNodeId": "DECK:stilt:upper/plate/0/0",
+          "planM": [
+            0,
+            0
+          ]
+        },
+        {
+          "forceIndex": 1,
+          "frameNodeId": "DECK:stilt:upper/beam/1/0",
+          "plateNodeId": "DECK:stilt:upper/plate/1/0",
+          "planM": [
+            0.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 2,
+          "frameNodeId": "DECK:stilt:upper/beam/2/0",
+          "plateNodeId": "DECK:stilt:upper/plate/2/0",
+          "planM": [
+            1,
+            0
+          ]
+        },
+        {
+          "forceIndex": 3,
+          "frameNodeId": "DECK:stilt:upper/beam/3/0",
+          "plateNodeId": "DECK:stilt:upper/plate/3/0",
+          "planM": [
+            1.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 4,
+          "frameNodeId": "DECK:stilt:upper/beam/4/0",
+          "plateNodeId": "DECK:stilt:upper/plate/4/0",
+          "planM": [
+            2,
+            0
+          ]
+        },
+        {
+          "forceIndex": 5,
+          "frameNodeId": "DECK:stilt:upper/beam/5/0",
+          "plateNodeId": "DECK:stilt:upper/plate/5/0",
+          "planM": [
+            2.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 6,
+          "frameNodeId": "DECK:stilt:upper/beam/6/0",
+          "plateNodeId": "DECK:stilt:upper/plate/6/0",
+          "planM": [
+            3,
+            0
+          ]
+        },
+        {
+          "forceIndex": 7,
+          "frameNodeId": "DECK:stilt:upper/beam/7/0",
+          "plateNodeId": "DECK:stilt:upper/plate/7/0",
+          "planM": [
+            3.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 8,
+          "frameNodeId": "N_C2_stilt",
+          "plateNodeId": "DECK:stilt:upper/plate/8/0",
+          "planM": [
+            4,
+            0
+          ]
+        },
+        {
+          "forceIndex": 9,
+          "frameNodeId": "DECK:stilt:upper/beam/0/1",
+          "plateNodeId": "DECK:stilt:upper/plate/0/1",
+          "planM": [
+            0,
+            -0.5
+          ]
+        },
+        {
+          "forceIndex": 10,
+          "frameNodeId": "DECK:stilt:upper/beam/8/1",
+          "plateNodeId": "DECK:stilt:upper/plate/8/1",
+          "planM": [
+            4,
+            -0.5
+          ]
+        },
+        {
+          "forceIndex": 11,
+          "frameNodeId": "DECK:stilt:upper/beam/0/2",
+          "plateNodeId": "DECK:stilt:upper/plate/0/2",
+          "planM": [
+            0,
+            -1
+          ]
+        },
+        {
+          "forceIndex": 12,
+          "frameNodeId": "DECK:stilt:upper/beam/8/2",
+          "plateNodeId": "DECK:stilt:upper/plate/8/2",
+          "planM": [
+            4,
+            -1
+          ]
+        },
+        {
+          "forceIndex": 13,
+          "frameNodeId": "DECK:stilt:upper/beam/0/3",
+          "plateNodeId": "DECK:stilt:upper/plate/0/3",
+          "planM": [
+            0,
+            -1.5
+          ]
+        },
+        {
+          "forceIndex": 14,
+          "frameNodeId": "DECK:stilt:upper/beam/8/3",
+          "plateNodeId": "DECK:stilt:upper/plate/8/3",
+          "planM": [
+            4,
+            -1.5
+          ]
+        },
+        {
+          "forceIndex": 15,
+          "frameNodeId": "DECK:stilt:upper/beam/0/4",
+          "plateNodeId": "DECK:stilt:upper/plate/0/4",
+          "planM": [
+            0,
+            -2
+          ]
+        },
+        {
+          "forceIndex": 16,
+          "frameNodeId": "DECK:stilt:upper/beam/8/4",
+          "plateNodeId": "DECK:stilt:upper/plate/8/4",
+          "planM": [
+            4,
+            -2
+          ]
+        },
+        {
+          "forceIndex": 17,
+          "frameNodeId": "N_C3_stilt",
+          "plateNodeId": "DECK:stilt:upper/plate/0/5",
+          "planM": [
+            0,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 18,
+          "frameNodeId": "DECK:stilt:upper/beam/1/5",
+          "plateNodeId": "DECK:stilt:upper/plate/1/5",
+          "planM": [
+            0.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 19,
+          "frameNodeId": "DECK:stilt:upper/beam/2/5",
+          "plateNodeId": "DECK:stilt:upper/plate/2/5",
+          "planM": [
+            1,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 20,
+          "frameNodeId": "DECK:stilt:upper/beam/3/5",
+          "plateNodeId": "DECK:stilt:upper/plate/3/5",
+          "planM": [
+            1.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 21,
+          "frameNodeId": "DECK:stilt:upper/beam/4/5",
+          "plateNodeId": "DECK:stilt:upper/plate/4/5",
+          "planM": [
+            2,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 22,
+          "frameNodeId": "DECK:stilt:upper/beam/5/5",
+          "plateNodeId": "DECK:stilt:upper/plate/5/5",
+          "planM": [
+            2.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 23,
+          "frameNodeId": "DECK:stilt:upper/beam/6/5",
+          "plateNodeId": "DECK:stilt:upper/plate/6/5",
+          "planM": [
+            3,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 24,
+          "frameNodeId": "DECK:stilt:upper/beam/7/5",
+          "plateNodeId": "DECK:stilt:upper/plate/7/5",
+          "planM": [
+            3.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 25,
+          "frameNodeId": "N_C4_stilt",
+          "plateNodeId": "DECK:stilt:upper/plate/8/5",
+          "planM": [
+            4,
+            -2.5
+          ]
+        }
+      ],
+      "bearingTransfer": {
+        "case/DL": {
+          "appliedKn": 40,
+          "verticalResidualKn": -1.5702994460298214e-12,
+          "momentResidualKnM": [
+            3.3115871156397247e-13,
+            -1.7447154831984335e-13
+          ],
+          "minimumBearingReactionKn": -1.2462253451417382e-14,
+          "requiresHoldDown": false
+        },
+        "case/SDL": {
+          "appliedKn": 10,
+          "verticalResidualKn": -2.398081733190338e-13,
+          "momentResidualKnM": [
+            3.9157913023224467e-14,
+            4.103661854770735e-14
+          ],
+          "minimumBearingReactionKn": -8.222589276130066e-15,
+          "requiresHoldDown": false
+        },
+        "case/LL": {
+          "appliedKn": 30,
+          "verticalResidualKn": -7.815970093361102e-13,
+          "momentResidualKnM": [
+            -6.716849298982197e-14,
+            -8.537615059367454e-14
+          ],
+          "minimumBearingReactionKn": -4.107825191113079e-14,
+          "requiresHoldDown": false
+        },
+        "combination/ULS_15_DL_LL": {
+          "appliedKn": 120,
+          "verticalResidualKn": -3.709033080667723e-12,
+          "momentResidualKnM": [
+            -5.46229728115577e-14,
+            -9.525713551283843e-13
+          ],
+          "minimumBearingReactionKn": -3.197442310920451e-14,
+          "requiresHoldDown": false
+        },
+        "combination/SLS_10_DL_LL": {
+          "appliedKn": 80,
+          "verticalResidualKn": -3.0269120543380268e-12,
+          "momentResidualKnM": [
+            -1.3648804308985518e-13,
+            -8.90287843446913e-13
+          ],
+          "minimumBearingReactionKn": -6.311617894994015e-14,
+          "requiresHoldDown": false
+        }
+      }
+    },
+    {
+      "physicalSlabId": "DECK:upper:upper",
+      "areaM2": 10,
+      "quads": 40,
+      "reference": "Synthetic drawing upper",
+      "centroidM": [
+        2,
+        -1.25
+      ],
+      "forceKn": {
+        "DL": 40,
+        "SDL": 10,
+        "LL": 15
+      },
+      "bearingStations": [
+        {
+          "forceIndex": 26,
+          "frameNodeId": "N_C1_upper",
+          "plateNodeId": "DECK:upper:upper/plate/0/0",
+          "planM": [
+            0,
+            0
+          ]
+        },
+        {
+          "forceIndex": 27,
+          "frameNodeId": "DECK:upper:upper/beam/1/0",
+          "plateNodeId": "DECK:upper:upper/plate/1/0",
+          "planM": [
+            0.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 28,
+          "frameNodeId": "DECK:upper:upper/beam/2/0",
+          "plateNodeId": "DECK:upper:upper/plate/2/0",
+          "planM": [
+            1,
+            0
+          ]
+        },
+        {
+          "forceIndex": 29,
+          "frameNodeId": "DECK:upper:upper/beam/3/0",
+          "plateNodeId": "DECK:upper:upper/plate/3/0",
+          "planM": [
+            1.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 30,
+          "frameNodeId": "DECK:upper:upper/beam/4/0",
+          "plateNodeId": "DECK:upper:upper/plate/4/0",
+          "planM": [
+            2,
+            0
+          ]
+        },
+        {
+          "forceIndex": 31,
+          "frameNodeId": "DECK:upper:upper/beam/5/0",
+          "plateNodeId": "DECK:upper:upper/plate/5/0",
+          "planM": [
+            2.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 32,
+          "frameNodeId": "DECK:upper:upper/beam/6/0",
+          "plateNodeId": "DECK:upper:upper/plate/6/0",
+          "planM": [
+            3,
+            0
+          ]
+        },
+        {
+          "forceIndex": 33,
+          "frameNodeId": "DECK:upper:upper/beam/7/0",
+          "plateNodeId": "DECK:upper:upper/plate/7/0",
+          "planM": [
+            3.5,
+            0
+          ]
+        },
+        {
+          "forceIndex": 34,
+          "frameNodeId": "N_C2_upper",
+          "plateNodeId": "DECK:upper:upper/plate/8/0",
+          "planM": [
+            4,
+            0
+          ]
+        },
+        {
+          "forceIndex": 35,
+          "frameNodeId": "DECK:upper:upper/beam/0/1",
+          "plateNodeId": "DECK:upper:upper/plate/0/1",
+          "planM": [
+            0,
+            -0.5
+          ]
+        },
+        {
+          "forceIndex": 36,
+          "frameNodeId": "DECK:upper:upper/beam/8/1",
+          "plateNodeId": "DECK:upper:upper/plate/8/1",
+          "planM": [
+            4,
+            -0.5
+          ]
+        },
+        {
+          "forceIndex": 37,
+          "frameNodeId": "DECK:upper:upper/beam/0/2",
+          "plateNodeId": "DECK:upper:upper/plate/0/2",
+          "planM": [
+            0,
+            -1
+          ]
+        },
+        {
+          "forceIndex": 38,
+          "frameNodeId": "DECK:upper:upper/beam/8/2",
+          "plateNodeId": "DECK:upper:upper/plate/8/2",
+          "planM": [
+            4,
+            -1
+          ]
+        },
+        {
+          "forceIndex": 39,
+          "frameNodeId": "DECK:upper:upper/beam/0/3",
+          "plateNodeId": "DECK:upper:upper/plate/0/3",
+          "planM": [
+            0,
+            -1.5
+          ]
+        },
+        {
+          "forceIndex": 40,
+          "frameNodeId": "DECK:upper:upper/beam/8/3",
+          "plateNodeId": "DECK:upper:upper/plate/8/3",
+          "planM": [
+            4,
+            -1.5
+          ]
+        },
+        {
+          "forceIndex": 41,
+          "frameNodeId": "DECK:upper:upper/beam/0/4",
+          "plateNodeId": "DECK:upper:upper/plate/0/4",
+          "planM": [
+            0,
+            -2
+          ]
+        },
+        {
+          "forceIndex": 42,
+          "frameNodeId": "DECK:upper:upper/beam/8/4",
+          "plateNodeId": "DECK:upper:upper/plate/8/4",
+          "planM": [
+            4,
+            -2
+          ]
+        },
+        {
+          "forceIndex": 43,
+          "frameNodeId": "N_C3_upper",
+          "plateNodeId": "DECK:upper:upper/plate/0/5",
+          "planM": [
+            0,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 44,
+          "frameNodeId": "DECK:upper:upper/beam/1/5",
+          "plateNodeId": "DECK:upper:upper/plate/1/5",
+          "planM": [
+            0.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 45,
+          "frameNodeId": "DECK:upper:upper/beam/2/5",
+          "plateNodeId": "DECK:upper:upper/plate/2/5",
+          "planM": [
+            1,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 46,
+          "frameNodeId": "DECK:upper:upper/beam/3/5",
+          "plateNodeId": "DECK:upper:upper/plate/3/5",
+          "planM": [
+            1.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 47,
+          "frameNodeId": "DECK:upper:upper/beam/4/5",
+          "plateNodeId": "DECK:upper:upper/plate/4/5",
+          "planM": [
+            2,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 48,
+          "frameNodeId": "DECK:upper:upper/beam/5/5",
+          "plateNodeId": "DECK:upper:upper/plate/5/5",
+          "planM": [
+            2.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 49,
+          "frameNodeId": "DECK:upper:upper/beam/6/5",
+          "plateNodeId": "DECK:upper:upper/plate/6/5",
+          "planM": [
+            3,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 50,
+          "frameNodeId": "DECK:upper:upper/beam/7/5",
+          "plateNodeId": "DECK:upper:upper/plate/7/5",
+          "planM": [
+            3.5,
+            -2.5
+          ]
+        },
+        {
+          "forceIndex": 51,
+          "frameNodeId": "N_C4_upper",
+          "plateNodeId": "DECK:upper:upper/plate/8/5",
+          "planM": [
+            4,
+            -2.5
+          ]
+        }
+      ],
+      "bearingTransfer": {
+        "case/DL": {
+          "appliedKn": 40,
+          "verticalResidualKn": -1.4139800441625994e-12,
+          "momentResidualKnM": [
+            3.273284421290157e-13,
+            4.851119506099622e-13
+          ],
+          "minimumBearingReactionKn": -1.9539925233402755e-14,
+          "requiresHoldDown": false
+        },
+        "case/SDL": {
+          "appliedKn": 10,
+          "verticalResidualKn": -7.283063041541027e-13,
+          "momentResidualKnM": [
+            2.0400174605139654e-13,
+            -8.694434061595757e-15
+          ],
+          "minimumBearingReactionKn": -1.532107773982716e-14,
+          "requiresHoldDown": false
+        },
+        "case/LL": {
+          "appliedKn": 15,
+          "verticalResidualKn": -5.258016244624741e-13,
+          "momentResidualKnM": [
+            -2.025601908428598e-13,
+            2.148281552649678e-13
+          ],
+          "minimumBearingReactionKn": 6.661338147750939e-16,
+          "requiresHoldDown": false
+        },
+        "combination/ULS_15_DL_LL": {
+          "appliedKn": 97.5,
+          "verticalResidualKn": -5.016431714466307e-12,
+          "momentResidualKnM": [
+            -1.0111078641017457e-12,
+            1.7741363933510002e-12
+          ],
+          "minimumBearingReactionKn": -7.105427357601002e-15,
+          "requiresHoldDown": false
+        },
+        "combination/SLS_10_DL_LL": {
+          "appliedKn": 65,
+          "verticalResidualKn": -3.765876499528531e-12,
+          "momentResidualKnM": [
+            -6.661338147750939e-14,
+            4.700684286262913e-13
+          ],
+          "minimumBearingReactionKn": -1.8318679906315083e-15,
+          "requiresHoldDown": false
+        }
+      }
+    }
+  ],
+  "coupledCases": {
+    "DL": {
+      "equilibrium": {
+        "appliedForceSumKn": [
+          0,
+          0,
+          -304.3124999999996
+        ],
+        "appliedMomentAboutOriginKnM": [
+          380.39062500000006,
+          608.625,
+          0
+        ],
+        "reactionForceSumKn": [
+          -6.661338147750939e-16,
+          -1.4432899320127035e-15,
+          304.3124999999991
+        ],
+        "forceResidualKn": [
+          -6.661338147750939e-16,
+          -1.4432899320127035e-15,
+          -5.115907697472721e-13
+        ],
+        "momentResidualAboutOriginKnM": [
+          -7.389644451905042e-13,
+          2.3874235921539366e-12,
+          -3.219646771412954e-15
+        ],
+        "maxForceResidualKn": 5.115907697472721e-13,
+        "maxMomentResidualKnM": 2.3874235921539366e-12,
+        "relativeStiffnessResidual": 1.6811443477114062e-15,
+        "isEquilibrated": true
+      },
+      "backend": "PYNITE_PLATE_QUAD"
+    },
+    "SDL": {
+      "equilibrium": {
+        "appliedForceSumKn": [
+          0,
+          0,
+          -58.90250000000002
+        ],
+        "appliedMomentAboutOriginKnM": [
+          73.62812500000001,
+          117.805,
+          0
+        ],
+        "reactionForceSumKn": [
+          -1.5265566588595902e-15,
+          -1.1102230246251565e-16,
+          58.9025
+        ],
+        "forceResidualKn": [
+          -1.5265566588595902e-15,
+          -1.1102230246251565e-16,
+          -1.4210854715202004e-14
+        ],
+        "momentResidualAboutOriginKnM": [
+          -2.5579538487363607e-13,
+          4.831690603168681e-13,
+          -2.7408630920433552e-15
+        ],
+        "maxForceResidualKn": 1.4210854715202004e-14,
+        "maxMomentResidualKnM": 4.831690603168681e-13,
+        "relativeStiffnessResidual": 2.42655974109311e-16,
+        "isEquilibrated": true
+      },
+      "backend": "PYNITE_PLATE_QUAD"
+    },
+    "LL": {
+      "equilibrium": {
+        "appliedForceSumKn": [
+          0,
+          0,
+          -45
+        ],
+        "appliedMomentAboutOriginKnM": [
+          56.25,
+          90,
+          0
+        ],
+        "reactionForceSumKn": [
+          -1.1102230246251565e-16,
+          4.996003610813204e-16,
+          44.99999999999985
+        ],
+        "forceResidualKn": [
+          -1.1102230246251565e-16,
+          4.996003610813204e-16,
+          -1.4921397450962104e-13
+        ],
+        "momentResidualAboutOriginKnM": [
+          -4.263256414560601e-14,
+          -7.673861546209082e-13,
+          5.551115123125783e-17
+        ],
+        "maxForceResidualKn": 1.4921397450962104e-13,
+        "maxMomentResidualKnM": 7.673861546209082e-13,
+        "relativeStiffnessResidual": 3.315885604322505e-15,
+        "isEquilibrated": true
+      },
+      "backend": "PYNITE_PLATE_QUAD"
+    }
+  },
+  "conventionalDesign": {
+    "lifecycle": "DESIGN_CHECKS_PASSED",
+    "foundation": "DESIGNED_VERIFIED",
+    "rccPassed": true,
+    "governingUtilization": 0.817,
+    "quantities": {
+      "grossConcreteVolumeM3": 13.87,
+      "jointAndSlabIntersectionDeductionM3": 1.02,
+      "netConcreteVolumeM3": 12.84,
+      "concreteByCategoryM3": {
+        "columns": 5.99,
+        "beams": 1.96,
+        "slabs": 3.2,
+        "stairs": 0,
+        "footings": 1.69
+      },
+      "concreteByGradeM3": {
+        "M25": 12.84
+      },
+      "totalSteelWeightKg": 1242.77,
+      "totalSteelTonnes": 1.243,
+      "netDesignedSteelWeightKg": 993.02,
+      "lapAndSpliceSteelWeightKg": 249.75,
+      "steelByDiameterKg": {
+        "8": 329.42,
+        "10": 51.6,
+        "12": 235.96,
+        "20": 625.79
+      },
+      "steelByCategoryKg": {
+        "columns": 800.51,
+        "beams": 292.32,
+        "slabs": 88.06,
+        "stairs": 0,
+        "footings": 61.88
+      },
+      "steelByFloorKg": {
+        "PLINTH": 299.53,
+        "stilt": 453.45,
+        "upper": 427.92,
+        "FOUNDATION": 61.88
+      },
+      "massReconciliationAudit": {
+        "netDesignedSteelMassKg": 993.02,
+        "lapAndSpliceSteelMassKg": 249.75,
+        "totalCutSteelMassKg": 1242.77,
+        "sumByDiameterKg": 1242.77,
+        "sumByCategoryKg": 1242.77,
+        "sumByFloorKg": 1242.77,
+        "maxReconciliationDiscrepancyKg": 4.5475e-13,
+        "isReconciled": true,
+        "advisoryWastagePercent": 3,
+        "advisoryGrossProcurementKg": 1280.06
+      },
+      "formworkAreaM2": 103.6,
+      "excavationVolumeM3": 12.5,
+      "pccBlindingVolumeM3": 0.68,
+      "indicativeStructuralCostInr": 254766
+    }
+  },
+  "optimization": {
+    "status": "ALREADY_OPTIMAL",
+    "iterations": [],
+    "delta": {
+      "defectsResolved": 0,
+      "concreteDeltaM3": 0,
+      "steelDeltaKg": 0,
+      "costDeltaInr": 0,
+      "maxUtilizationBefore": 0.817,
+      "maxUtilizationAfter": 0.817
+    }
+  },
+  "exportBytes": {
+    "ifc": 56711,
+    "dxf": 17752,
+    "bbs_csv": 6993,
+    "pdf": 13203
+  }
+}

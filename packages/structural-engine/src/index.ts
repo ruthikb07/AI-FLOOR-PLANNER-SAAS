@@ -10,6 +10,7 @@ export * from './solver/pynite-structural-solver.js';
 export * from './dynamics/modal-and-seismic.js';
 export * from './assembly/canonical-frame-assembler.js';
 export * from './assembly/reviewed-decks.js';
+export * from './loads/reviewed-stair-bearings.js';
 export * from './assembly/structural-project-adapter.js';
 export * from './loads/indian-load-assembler.js';
 export * from './codes/indian-code-rules.js';

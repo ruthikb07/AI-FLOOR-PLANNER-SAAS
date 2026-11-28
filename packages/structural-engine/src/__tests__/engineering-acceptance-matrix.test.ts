@@ -646,8 +646,24 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         }),
         REVIEWED_INPUTS_FEASIBLE,
       );
-      expect(p5.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
-      expect(p5.snap.rccDesign.allPassed).toBe(true);
+      function expectUnreviewedStairs(snapshot: typeof p5.snap, count: number) {
+        expect(snapshot.designLifecycleStatus).toBe('UNSUPPORTED_REQUIRED_CHECK');
+        expect(snapshot.rccDesign.allPassed).toBe(false);
+        expect(snapshot.unsupportedChecks).toContain(`${count} stair flight(s) require verified bearing, shear and anchorage checks.`);
+        expect(snapshot.unsupportedChecks.some(reason => reason.includes('deep-beam'))).toBe(false);
+        expect(snapshot.rccDesign.unsupportedMemberCount).toBe(count);
+        expect(snapshot.rccDesign.stairs.map(stair => stair.status)).toEqual(Array(count).fill('UNSUPPORTED'));
+        const flights = snapshot.loadTakeoff.loadSourceAudit?.filter(item => item.category === 'STAIRCASE_FLIGHT');
+        expect(flights).toHaveLength(count);
+        for (const flight of flights!) {
+          expect(flight.transferMethod).toBe('UNRESOLVED_STAIR_BEARING');
+          expect(flight.receivingElementIds).toHaveLength(0);
+          expect(flight.gravityTransfer?.assignedForceByCaseKn).toEqual({ DL: 0, SDL: 0, LL: 0 });
+          expect(flight.totalVerticalForceKn).toBeGreaterThan(0);
+        }
+        expect(snapshot.foundationDesign.allPassed).toBe(false);
+      }
+      expectUnreviewedStairs(p5.snap, 3);
       expect(p5.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p5.snap.system.physicalModel.stairWaists.length).toBe(3);
 
@@ -670,8 +686,7 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         }),
         REVIEWED_INPUTS_FEASIBLE,
       );
-      expect(p6.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
-      expect(p6.snap.rccDesign.allPassed).toBe(true);
+      expectUnreviewedStairs(p6.snap, 4);
       expect(p6.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(
         p6.snap.system.physicalModel.beams.some((b) => b.analyticalElementIndices.length === 2),
@@ -698,8 +713,7 @@ describe('Milestone 5.1 Gates 11 & 12 — 12-Project Engineering Acceptance Matr
         }),
         REVIEWED_INPUTS_FEASIBLE,
       );
-      expect(p7.snap.designLifecycleStatus).toBe('DESIGN_CHECKS_PASSED');
-      expect(p7.snap.rccDesign.allPassed).toBe(true);
+      expectUnreviewedStairs(p7.snap, 4);
       expect(p7.snap.loadTakeoff.slabLoadPaths!.preliminaryDistribution.length).toBe(0);
       expect(p7.snap.storeyDriftChecks.every((d) => d.isCompliant)).toBe(true);
 

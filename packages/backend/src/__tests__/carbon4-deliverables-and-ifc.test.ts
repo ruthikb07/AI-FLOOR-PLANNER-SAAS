@@ -248,7 +248,17 @@ describe('Carbon 4 Section 07 & 08 — Verified Deliverables (PDF, JSON, BBS CSV
     };
     verifyFrozenEvidence();
 
-    const building = createStiltPlus5VerifiedApartment();
+    const apartmentWithStairs = createStiltPlus5VerifiedApartment();
+    const originalDigest = canonicalBuildingHash(apartmentWithStairs);
+    // A separate synthetic frame exercises the positive sizing and export path.
+    // The original six flights remain in their own gated evaluation below.
+    const building: Building = {
+      ...apartmentWithStairs,
+      id: 'synthetic-frame-g5', projectId:'synthetic-frame-g5',
+      metadata:{...apartmentWithStairs.metadata,projectId:'synthetic-frame-g5'},
+      name:'Synthetic G+5 frame-only design and export benchmark',
+      floors:apartmentWithStairs.floors.map(floor=>({...floor,buildingId:'synthetic-frame-g5',stairs:[]})),
+    };
     const preArchHash = canonicalBuildingHash(building);
 
     const baseSys = synthesizeCanonicalStructuralSystem(building, {
@@ -290,6 +300,13 @@ describe('Carbon 4 Section 07 & 08 — Verified Deliverables (PDF, JSON, BBS CSV
     };
 
     // Start with an intentionally undersized column & beam, then optimize with ConcreteProperties + Awatif WASM
+    const stairSnapshot = await evaluateFullBuildingStructuralSystem({building:apartmentWithStairs,inputs:reviewedInputs});
+    expect(canonicalBuildingHash(apartmentWithStairs)).toBe(originalDigest);
+    expect(stairSnapshot.designLifecycleStatus).toBe('UNSUPPORTED_REQUIRED_CHECK');
+    expect(stairSnapshot.rccDesign.stairs.filter(flight=>flight.status==='UNSUPPORTED')).toHaveLength(6);
+    expect(stairSnapshot.foundationDesign.allPassed).toBe(false);
+    expect(stairSnapshot.loadTakeoff.loadSourceAudit?.filter(s=>s.transferMethod==='UNRESOLVED_STAIR_BEARING')).toHaveLength(6);
+    expect(exportStructuralIfc4Step(stairSnapshot, apartmentWithStairs.name)).toContain('IFCSTAIRFLIGHT');
     const baseCol = baseSys.memberMetadata.find((m) => m.category === 'COLUMN' && m.elementId.endsWith('_L0'))!;
     const baseBeam = baseSys.memberMetadata.find((m) => m.category === 'BEAM')!;
 
@@ -382,7 +399,7 @@ describe('Carbon 4 Section 07 & 08 — Verified Deliverables (PDF, JSON, BBS CSV
 
     const ifcText = exportStructuralIfc4Step(snap, building.name);
     expect(ifcText).toContain('FILE_SCHEMA((\'IFC4\'))');
-    expect(ifcText).toContain('IFCSTAIRFLIGHT');
+    expect(ifcText).not.toContain('IFCSTAIRFLIGHT');
     const ifcPath = path.join(deliverablesDir, 'carbon4-verified-structural.ifc');
     writeFileSync(ifcPath, ifcText, 'utf8');
 

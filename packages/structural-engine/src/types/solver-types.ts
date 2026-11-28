@@ -368,6 +368,8 @@ export interface SolverAnalyzeOptions {
   readonly solveLoadCases?: boolean;
   readonly solveCombinations?: boolean;
   readonly nodalSprings?: readonly AnalyticalNodalSpring[];
+  readonly verticalBearings?: readonly { masterNodeIndex: number; slaveNodeIndex: number; reference: string }[];
+  readonly rigidOffsets?: readonly { masterNodeIndex: number; slaveNodeIndex: number; reference: string }[];
   readonly plateElements?: readonly AnalyticalPlateQuadElement[];
   readonly maxIterations?: number;
 }

@@ -1,11 +1,54 @@
 import { expect, test } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Building } from '@ai-floor-planner/core';
 
 const base = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
 const screenshotsDir = process.env.RH_STRUCTURAL_EVIDENCE_DIR;
+
+test('reviews the occupied floor and roof and reopens the coupled 45 kN synthetic gravity result', async ({page,request}) => {
+  test.setTimeout(120_000);
+  const building = JSON.parse(await readFile(path.resolve(import.meta.dirname,
+    '../../../docs/structural/6a-evidence/synthetic-two-storey-building.json'), 'utf8'));
+  const saved = await request.post(base+'/api/v1/local-projects', {data:{projectId:building.projectId,name:building.name,building}});
+  expect(saved.ok()).toBe(true);
+  await page.addInitScript(()=>sessionStorage.setItem('rh_welcome_dismissed','true'));
+  await page.goto(base);
+  await page.getByTestId('nav-library').click();
+  await page.getByTestId('open-disk-project-'+building.projectId).first().click();
+  await page.getByTestId('nav-structural_cad').click();
+  await page.getByTestId('struct-tab-analysis').click();
+  const review = page.locator('details').filter({has:page.getByText('Engineering Input Review',{exact:true})});
+  await review.locator('summary').click();
+  for (const roof of [false,true]) {
+    await review.getByLabel('Input category').selectOption(roof?'Terminal roof':'Occupied deck');
+    await review.getByLabel('Reviewed deck bearings').selectOption(roof?'SIMPLY_SUPPORTED_FULL_LEVEL':'SIMPLY_SUPPORTED_GRID_BAYS');
+    await review.getByLabel('Supporting floor').selectOption(roof?'upper':'stilt');
+    if (!roof) await review.getByLabel('Floor owning the occupied surface').selectOption('upper');
+    await review.getByLabel('Component or site ID').fill(roof?'R1':'D1');
+    await review.getByLabel('Drawing or report reference').fill('Synthetic drawing '+(roof?'R1':'D1'));
+    await review.getByLabel("Reviewer's name").fill('Fixture reviewer');
+    for (const [label,value] of Object.entries({'Structural top (mm)':roof?5900:3100,'Finished level (mm)':roof?5900:3100,
+      'Thickness (mm)':160,'Live load (kN/m²)':roof?1.5:3,'Minimum bearing width (mm)':75})) {
+      await review.getByLabel(label,{exact:true}).fill(String(value));
+    }
+    await review.getByLabel('I reviewed these parameters').check();
+    await review.getByRole('button',{name:'Approve input record'}).click();
+    await review.getByRole('button',{name:roof?'Apply as simply supported rectangular roof':'Apply as simply supported occupied deck'}).click();
+  }
+  await review.locator('summary').click();
+  await page.getByTestId('struct-subtab-studio_views').click();
+  await page.getByTestId('struct-studio-floor-selector').selectOption('stilt');
+  await page.getByRole('button',{name:'Inspect registered floor geometry'}).click();
+  await page.getByRole('button',{name:'Solve reviewed decks and frame'}).click({timeout:30000});
+  const live = page.getByRole('row').filter({has:page.getByRole('rowheader',{name:'LL',exact:true})});
+  await expect(live).toContainText('45.000',{timeout:30000});
+  await expect(page.getByText(/Coupled frame check pending/)).toBeVisible();
+  await expect(page.getByText(/Coupled foundation check pending/)).toBeVisible();
+  await page.getByRole('button',{name:'Reopen saved gravity result'}).click();
+  await expect(live).toContainText('45.000');
+});
 
 test.use({
   launchOptions: chrome
@@ -121,6 +164,20 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   expect(initial.regeneration).toMatchObject({ status: 'UNSUPPORTED', revisionsAnalyzed: 1 });
   expect(initial.snapshot.foundationDesign.status).toBe('MISSING_GEOTECHNICAL_INPUT');
   await expect(page.getByTestId('structural-analysis-panel')).toBeVisible({ timeout: 10_000 });
+  const inputReview = page.locator('details').filter({ has: page.getByText('Engineering Input Review', { exact: true }) });
+  await inputReview.locator('summary').click();
+  await inputReview.getByLabel('Input category').selectOption('Balcony root');
+  await inputReview.getByLabel('Component or site ID').fill('synthetic-balcony');
+  await inputReview.getByLabel('Drawing or report reference').fill('Synthetic verification drawing B1');
+  await inputReview.getByLabel("Reviewer's name").fill('Fixture reviewer');
+  await inputReview.getByLabel('Root length (mm)').fill('1000');
+  await inputReview.getByLabel('Projection (mm)').fill('2000');
+  await inputReview.getByLabel('Thickness (mm)').fill('100');
+  await inputReview.getByLabel('I reviewed these parameters').check();
+  await inputReview.getByRole('button', { name: 'Approve input record' }).click();
+  await expect(inputReview.getByText('Connection analysis and design verification pending')).toBeVisible();
+  await inputReview.locator('summary').click();
+
   await expect(page.getByTestId('struct-column-schedule-table')).toBeVisible();
   await expect(page.getByText('Peak Check Utilization', { exact: true })).toBeVisible();
   const memberCounts = page.getByTestId('struct-member-check-counts');

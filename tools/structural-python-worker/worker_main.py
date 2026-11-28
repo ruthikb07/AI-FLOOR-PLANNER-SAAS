@@ -37,6 +37,7 @@ import sys
 import time
 import traceback
 from bisect import bisect_left
+from decimal import Decimal
 from functools import cached_property, lru_cache
 from typing import Any
 
@@ -45,6 +46,9 @@ matplotlib.use("Agg")
 
 import numpy as np
 from scipy.interpolate import interp1d
+from rigid_offsets import solve_rigid_offsets, validate_offsets, validate_vertical_bearings
+from analytical_member import AnalyticalMember
+from frame_subdivision import subdivide
 from Pynite import FEModel3D
 from shapely.geometry import LineString, Point, Polygon
 from sectionproperties.pre.geometry import Geometry
@@ -515,7 +519,7 @@ def _evaluate_stations_from_end_actions(
 
 def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
     t0 = time.perf_counter()
-    model_data = payload["model"]
+    model_data = subdivide(payload["model"])
     options = payload.get("options") or {}
     analysis_mode = str(options.get("analysisMode", "LINEAR")).upper()
     solve_cases = bool(options.get("solveLoadCases", True))
@@ -542,6 +546,11 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
     load_cases = model_data.get("loadCases") or []
     combinations = model_data.get("combinations") or []
 
+    offset_pairs = validate_offsets(nodes, payload.get("rigidOffsets", []))
+    vertical_pairs = validate_vertical_bearings(nodes,payload.get("verticalBearings",[]),offset_pairs)
+    has_constraints = bool(offset_pairs or vertical_pairs)
+    if has_constraints and (analysis_mode != "LINEAR" or nodal_springs):
+        raise ValueError("Reviewed rigid offsets currently require linear statics without nodal springs")
     node_names: list[str] = []
     restrained_dofs = 0
     for idx, n in enumerate(nodes):
@@ -612,6 +621,9 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
         m_name = f"EL_{idx}"
         fe.add_member(m_name, node_names[i_idx], node_names[j_idx], mat_name, sec_name, rotation=roll_deg)
+        if plate_elements or has_constraints or model_data is not payload["model"]:
+            fe.members[m_name] = AnalyticalMember(fe, m_name, fe.nodes[node_names[i_idx]],
+                                                  fe.nodes[node_names[j_idx]], mat_name, sec_name, roll_deg)
         pn_member = fe.members[m_name]
         t_pn = pn_member.T()[:3, :3]
         max_axis_diff = float(np.max(np.abs(t_pn - lambda_rh)))
@@ -699,6 +711,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
         # stiffness check. Coincident coordinates do not connect components.
         adjacency = [set() for _ in nodes]
         edges = [(el["startNodeIndex"], el["endNodeIndex"]) for el in elements]
+        edges.extend(offset_pairs + vertical_pairs)
         for _, _, ids in plate_records_meta:
             edges.extend(zip(ids, ids[1:] + ids[:1]))
         for start, end in edges:
@@ -882,12 +895,17 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
         fe.add_load_combo(ckey, {cid: 1.0})
         combo_defs.append(("CASE", cid, cid, {cid: 1.0}))
 
+    offset_residuals, bearing_forces, contacts = {}, {}, {}
     eff_stability = bool(check_stability and len(nodes) <= 80)
     try:
         if analysis_mode == "PDELTA":
             fe.analyze_PDelta(log=False, check_stability=eff_stability, max_iter=max_iter, sparse=True)
         else:
-            fe.analyze_linear(log=False, check_stability=eff_stability, check_statics=False, sparse=True)
+            if has_constraints:
+                offset_residuals, bearing_forces, contacts = solve_rigid_offsets(fe, nodes, offset_pairs, vertical_pairs,
+                    compression_only=payload.get('compressionOnlyBearings') is True)
+            else:
+                fe.analyze_linear(log=False, check_stability=eff_stability, check_statics=False, sparse=True)
     except Exception as exc:
         return {
             "ok": False,
@@ -897,7 +915,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
     solve_ms = (time.perf_counter() - t0) * 1000.0
     total_dofs = len(nodes) * 6
-    free_dofs = max(0, total_dofs - restrained_dofs)
+    free_dofs = max(0, total_dofs - restrained_dofs - 6*len(offset_pairs) - len(vertical_pairs))
     exec_backend = (
         "PYNITE_PDELTA"
         if analysis_mode == "PDELTA"
@@ -1087,6 +1105,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                     "elementIndex": el_idx,
                     "elementId": str(el["id"]),
                     "lengthM": member_lengths[el_idx],
+                    **{k: el[k] for k in ("parentMemberId", "sourceElementId", "parentStationRange") if k in el},
                     **eval_res,
                 }
             )
@@ -1136,8 +1155,11 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                 "executionBackend": exec_backend,
                 "nodeCount": len(nodes),
                 "elementCount": len(elements) + len(plate_elements),
+                **({"verticalBearingForcesKn":bearing_forces[ckey]} if vertical_pairs else {}),
                 "totalDofs": total_dofs,
-                "freeDofs": free_dofs,
+                **({"verticalContact":contacts[ckey]} if ckey in contacts else {}),
+                "freeDofs": free_dofs + len(contacts.get(ckey,{}).get("openIndices",[])),
+                **({"rigidOffsetCount":len(offset_pairs), "verticalBearingCount":len(vertical_pairs), "constraintReducedResidual":offset_residuals[ckey]} if has_constraints else {}),
                 "restrainedDofs": restrained_dofs,
                 "solveDurationMs": solve_ms / max(1, len(combo_defs)),
                 "wasmHeapBytesAllocated": 0,
@@ -1366,6 +1388,12 @@ def _build_section(fck, fy, dimensions, polygon, bars):
 
 @lru_cache(maxsize=128)
 def _biaxial_contour(section_key, axial_kn, point_count):
+    from section_contour_cache import exact_contour
+    return exact_contour(section_key, axial_kn, point_count,
+                         lambda: _compute_biaxial_contour(section_key, axial_kn, point_count))
+
+
+def _compute_biaxial_contour(section_key, axial_kn, point_count):
     section, _ = _build_section(*section_key)
     axial_n = axial_kn * 1000.0
     ux = section.ultimate_bending_capacity(theta=0.0, n=axial_n)
@@ -1566,7 +1594,7 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
             if "firstFreeNode" in req:
                 from automatic_mesh import generate_floor
                 res["automaticMesh"] = generate_floor(res["deck"], req["frameNodes"], req["beams"],
-                                                       req["frameElements"], req["firstFreeNode"])
+                                                       req["frameElements"], req["firstFreeNode"], req.get("interfaceReviews", []))
             if "meshProposal" in req:
                 from deck_mesh import check_deck_mesh
                 res["meshReceipt"] = check_deck_mesh(res["deck"], req["meshProposal"], req["frameNodes"],
@@ -1576,6 +1604,16 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
             res = {"ok": True, "preview": preview_alignment(req["floorId"], req["beams"], req["columns"], req["floors"])}
         elif action == "capabilities":
             res = {"ok": True, **get_capabilities()}
+        elif action == "reviewed_rectangular_gravity":
+            _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)
+            from reviewed_rectangular_coupling import assemble_rectangular_decks
+            coupled, ledger = assemble_rectangular_decks(req["model"],req["decks"])
+            coupled["model"] = subdivide(coupled["model"])
+            res = run_pynite_solve(coupled)
+            if res["ok"]:
+                from reviewed_rectangular_coupling import verify_slab_transfer
+                res["slabLoadLedger"] = verify_slab_transfer(coupled,ledger,res["envelope"])
+                res["frameRegistry"] = {"nodes":coupled["model"]["nodes"], "elements":coupled["model"]["elements"]}
         elif action == "pynite_solve":
             _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)
             res = run_pynite_solve(req)

@@ -1,3 +1,5 @@
+import { CoupledGravityResult } from './CoupledGravityResult';
+import { canonicalBuildingHash } from '@ai-floor-planner/core';
 import { useEffect, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
 import type { AutomaticDeckMeshRegion } from '@ai-floor-planner/structural-engine';
@@ -39,7 +41,7 @@ export function RegisteredDeckView({ building, evaluationId, floorId }: { buildi
   if (!decks) return <p>Loading registered floor geometry…</p>;
   const deck = decks.find(d => d.supportingFloorId === floorId);
   if (!deck || deck.status === 'SURFACE_OWNERSHIP_REVIEW_REQUIRED') return <p>This structural elevation requires a reviewed surface owner.</p>;
-  if (deck.status === 'ANALYZED_REVIEWED_DECK') return <p>The framing view shows the reviewed slab used for this evaluation.</p>;
+  if (deck.status === 'ANALYZED_REVIEWED_DECK') return <CoupledGravityResult key={evaluationId} evaluationId={evaluationId} digest={canonicalBuildingHash(building)} />;
   if (deck.status === 'DECK_GEOMETRY_REVIEW_REQUIRED') return <p role="alert">{deck.reason}</p>;
   const regions = deck.regions ?? [];
   const points = regions.flatMap(r => r.ringsMm.flatMap(ring => [...ring]));
@@ -52,8 +54,8 @@ export function RegisteredDeckView({ building, evaluationId, floorId }: { buildi
     <label><input type="checkbox" checked={showMesh} onChange={e => setShowMesh(e.target.checked)} /> Generate quadrilateral mesh proposal</label>
     {showMesh && <ul>{deck.automaticMesh?.map(r => <li key={r.regionId}>
       {r.regionId} · {r.status === 'MESH_REVIEW_REQUIRED' ? r.reason :
-        `${r.quadCount} quadrilaterals · ${r.sharedEdges.length} matching beam edges · ${r.unmatchedFrameElementIds.length} unmatched beam elements`}
-      {r.status === 'MESH_GEOMETRY_CHECKED' && r.boundaryInterfaces.some(i => i.status !== 'SHARED_FRAME_DOFS')
+        `${r.quadCount} quadrilaterals · ${r.sharedEdges.length} matching beam edges · ${r.beamSubdivisionCandidates?.length ?? 0} proposed beam subdivisions · ${r.unmatchedFrameElementIds.length} unmatched beam elements`}
+      {r.status === 'MESH_GEOMETRY_CHECKED' && r.boundaryInterfaces.some(i => i.status === 'CONTINUITY_REVIEW_REQUIRED' || i.status === 'NONCONFORMING_INTERFACE')
         && ' · Adjacent deck connections require review'}
     </li>)}</ul>}
     <svg className="w-full h-80" role="img" aria-label="Registered deck coverage and beam footprints"

@@ -1,15 +1,18 @@
 /**
  * Backend HTTP Routes for RH Planner's Embedded Awatif v3.4.0 Structural Engineering Engine,
  * RCC/Foundation Design, Protected Localized Global-Reanalysis Optimizer, CAD/BIM Drawings,
- * and Unified AI Structural Engineering Assistant (Phases A7–A19).
+ * and Unified AI Structural Engineering Assistant (Phases A7â€“A19).
  */
 
-import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
+import { engineeringInputRecords } from '../services/engineering-input-records.js';
+import { loadCoupledReceipt, saveCoupledReceipt, readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import {
   getSharedPythonStructuralWorker,
+  assembleLoadedAnalyticalFrameModel,
+  type AnalyticalSolveEnvelope,
   exportStructuralBbsCsv,
   exportStructuralEngineeringDxf,
   exportStructuralEngineeringJsonReport,
@@ -25,6 +28,7 @@ import {
   type FullStructuralEvaluationSnapshot,
   type OptimizationObjectiveMode,
   isRectangularDeckReview,
+  isStairBearingReview,
   DeckReviewError,
   type AutomaticDeckMeshRegion,
   type PhysicalDeckMeshReceipt,
@@ -40,6 +44,8 @@ import {
 } from '@ai-floor-planner/structural-engine';
 import { StructuralAnalysisEngine } from '../services/structural-analysis-engine.js';
 import { StructuralDrawingsService } from '../services/structural-drawings-service.js';
+import { checkCoupledGravityFoundations, coupledDesignBlocker } from '../services/coupled-foundation.js';
+import { coupledFrameCandidates, type CoupledFrameRegistry } from '../services/coupled-frame-design.js';
 import { RequestBodyTooLarge, isRecord } from './http-input.js';
 
 const engine = new StructuralAnalysisEngine();
@@ -82,6 +88,8 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
   if (!isRecord(raw)) {
     return { error: 'reviewedInputs object is required.' };
   }
+  const stairs = raw.stairBearingReviews;
+  if (stairs !== undefined && (!Array.isArray(stairs) || !stairs.every(isStairBearingReview))) return { error: 'Invalid stair bearing review.' };
   const reviews = raw.rectangularDeckReviews;
   if (reviews !== undefined && (!Array.isArray(reviews) || !reviews.every(isRectangularDeckReview))) {
     return { error: 'Invalid rectangular deck review. Supply the revision, reviewed levels, loads and bearing width.' };
@@ -115,7 +123,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
     }
     if (subgradeModulusKnM3 !== undefined &&
         (typeof subgradeModulusKnM3 !== 'number' || !Number.isFinite(subgradeModulusKnM3) || subgradeModulusKnM3 <= 100)) {
-      return { error: 'Geotechnical subgradeModulusKnM3 must be a reviewed value greater than 100 kN/m³.' };
+      return { error: 'Geotechnical subgradeModulusKnM3 must be a reviewed value greater than 100 kN/mÂ³.' };
     }
     if (typeof reportReference !== 'string' || !reportReference.trim()) {
       return { error: 'A site geotechnical report reference is required.' };
@@ -186,6 +194,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
     concreteGrade,
     steelGrade,
     ...(reviews ? { rectangularDeckReviews: reviews } : {}),
+    ...(stairs ? { stairBearingReviews: stairs } : {}),
     ductileDetailingIS13920: raw.ductileDetailingIS13920 !== false,
     floorFinishKnM2: typeof raw.floorFinishKnM2 === 'number' ? raw.floorFinishKnM2 : 1.2,
     masonryUnitWeightKnM3:
@@ -253,23 +262,23 @@ function buildDeterministicAssistantAnswer(
       .slice(0, 5)
       .map(
         (d) =>
-          `• **${d.memberId}** (${d.memberCategory}, ${d.storey}): Utilization **${d.utilizationRatio}** under \`${d.governingCombination}\` (${d.clause}) — ${d.explanation}. *Fix:* ${d.proposedCorrection}`,
+          `â€¢ **${d.memberId}** (${d.memberCategory}, ${d.storey}): Utilization **${d.utilizationRatio}** under \`${d.governingCombination}\` (${d.clause}) â€” ${d.explanation}. *Fix:* ${d.proposedCorrection}`,
       );
     return `Detected **${defects.length}** structural finding(s):\n${lines.join('\n')}\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
   if (qLower.includes('bbs') || qLower.includes('bar bending') || qLower.includes('steel') || qLower.includes('quantit')) {
-    return `**Bar Bending Schedule & Deduplicated BOQ Summary:**\n• Net Concrete Volume: **${boq.netConcreteVolumeM3} m³** (deducted ${boq.jointAndSlabIntersectionDeductionM3} m³ at beam-column/slab intersections)\n• Total Reinforcement Steel: **${boq.totalSteelWeightKg} kg (${boq.totalSteelTonnes} MT)** across ${detailingAndBoq.bbsEntries.length} bar marks (Columns ${boq.steelByCategoryKg.columns} kg, Beams ${boq.steelByCategoryKg.beams} kg, Slabs ${boq.steelByCategoryKg.slabs} kg, Footings ${boq.steelByCategoryKg.footings} kg)\n• Formwork: **${boq.formworkAreaM2} m²** · Excavation: **${boq.excavationVolumeM3} m³**\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+    return `**Bar Bending Schedule & Deduplicated BOQ Summary:**\nâ€¢ Net Concrete Volume: **${boq.netConcreteVolumeM3} mÂ³** (deducted ${boq.jointAndSlabIntersectionDeductionM3} mÂ³ at beam-column/slab intersections)\nâ€¢ Total Reinforcement Steel: **${boq.totalSteelWeightKg} kg (${boq.totalSteelTonnes} MT)** across ${detailingAndBoq.bbsEntries.length} bar marks (Columns ${boq.steelByCategoryKg.columns} kg, Beams ${boq.steelByCategoryKg.beams} kg, Slabs ${boq.steelByCategoryKg.slabs} kg, Footings ${boq.steelByCategoryKg.footings} kg)\nâ€¢ Formwork: **${boq.formworkAreaM2} mÂ²** Â· Excavation: **${boq.excavationVolumeM3} mÂ³**\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
   if (qLower.includes('foundation') || qLower.includes('footing') || qLower.includes('sbc') || qLower.includes('raft')) {
     if (foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
-      return `Foundation design is currently gated (**MISSING_GEOTECHNICAL_INPUT**) because no reviewed geotechnical Safe Bearing Capacity (SBC) was supplied. Enter your site geotechnical SBC (kN/m²) and foundation depth to size footings per IS 1904:1986 & IS 456 Cl. 34.`;
+      return `Foundation design is currently gated (**MISSING_GEOTECHNICAL_INPUT**) because no reviewed geotechnical Safe Bearing Capacity (SBC) was supplied. Enter your site geotechnical SBC (kN/mÂ²) and foundation depth to size footings per IS 1904:1986 & IS 456 Cl. 34.`;
     }
-    return `**Foundation Design (${foundationDesign.selectedStrategy}):**\n• Status: **${foundationDesign.status}** (${foundationDesign.footings.length} foundation elements for SBC = ${inputs.geotechnical?.safeBearingCapacityKPa} kPa)\n• Peak Soil Pressure: **${Math.max(0, ...foundationDesign.footings.map((f) => f.maxSoilPressureKPa))} kPa**; allowed ${inputs.geotechnical?.safeBearingCapacityKPa} kPa\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+    return `**Foundation Design (${foundationDesign.selectedStrategy}):**\nâ€¢ Status: **${foundationDesign.status}** (${foundationDesign.footings.length} foundation elements for SBC = ${inputs.geotechnical?.safeBearingCapacityKPa} kPa)\nâ€¢ Peak Soil Pressure: **${Math.max(0, ...foundationDesign.footings.map((f) => f.maxSoilPressureKPa))} kPa**; allowed ${inputs.geotechnical?.safeBearingCapacityKPa} kPa\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
-  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${solverBackends}):**\n• Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\n• RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\n• Foundations: **${foundationDesign.status}**\n• Quantities: **${boq.netConcreteVolumeM3} m³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${solverBackends}):**\nâ€¢ Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\nâ€¢ RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\nâ€¢ Foundations: **${foundationDesign.status}**\nâ€¢ Quantities: **${boq.netConcreteVolumeM3} mÂ³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
 }
 
 export async function handleStructuralRoute(
@@ -280,7 +289,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview|engineering-inputs|coupled-gravity)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -306,6 +315,20 @@ export async function handleStructuralRoute(
     }
 
     const action = match[1]!;
+    if (action === 'engineering-inputs') {
+      const building = body.building as Building;
+      if (validateBuildingSchema(building).length || !building.floors?.length ||
+          body.digest !== canonicalBuildingHash(building)) {
+        sendJson(response,409,{error:{code:'REVIEW_REVISION_MISMATCH',message:'A matching canonical building revision is required.'}});
+        return true;
+      }
+      try { sendJson(response,200,{records:await engineeringInputRecords(building,body.record)}); }
+      catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        sendJson(response,422,{error:{code:'INVALID_ENGINEERING_RECORD',message:error.message}});
+      }
+      return true;
+    }
     if (action === 'analyze' && body.regenerate !== undefined && typeof body.regenerate !== 'boolean') {
       sendJson(response, 400, { error: { code: 'INVALID_REGENERATION_OPTION', message: 'The regenerate option must be true or false.' } });
       return true;
@@ -321,7 +344,7 @@ export async function handleStructuralRoute(
       return true;
     }
 
-    if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview'].includes(action) && typeof body.evaluationId !== 'string') {
+    if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview', 'coupled-gravity'].includes(action) && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
     }
@@ -332,6 +355,79 @@ export async function handleStructuralRoute(
         : undefined;
       if (!saved) {
         sendJson(response, 409, { error: { code: 'STRUCTURAL_EVALUATION_EXPIRED', message: 'Run structural analysis again before using this result.' } });
+        return true;
+      }
+      if (action === 'coupled-gravity') {
+        const system = saved.snapshot.system;
+        if (typeof body.resultId === 'string') {
+          const cached = await loadCoupledReceipt(String(body.evaluationId),body.resultId);
+          if (!isRecord(cached) || cached.architectureSha256!==body.architectureSha256 ||
+              cached.structuralRevision!==system.structuralRevision || cached.evaluationId!==body.evaluationId) {
+            sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
+          } else sendJson(response,200,{...cached,resultId:body.resultId});
+          return true;
+        }
+        const panels = system.slabPanels;
+        const reviews = panels.map(panel => panel.deckReview);
+        const stairConflict = system.stairWaists.some(stair=>{
+          const box=stair.boundsMm;
+          if (!box || !stair.bearingReview || !stair.hasExplicitStraightFlightGeometry) return true;
+          return panels.some(panel=>{
+            const slab=panel.boundsMm, top=panel.deckReview?.structuralTopMm;
+            return slab && (top===stair.baseElevationMm || top===stair.topElevationMm) &&
+              Math.min(slab.maxX,box.maxX)>Math.max(slab.minX,box.minX) &&
+              Math.min(slab.maxY,box.maxY)>Math.max(slab.minY,box.minY);
+          });
+        });
+        if (body.architectureSha256 !== system.sourceArchitecturalSha256 || !panels.length ||
+            reviews.some(review => !review) || stairConflict ||
+            !system.storeys.every(floor => panels.some(p=>p.floorId===floor.id))) {
+          sendJson(response,422,{error:{code:'COUPLED_DECK_SCOPE',message:'A matching revision and reviewed rectangular decks or independent grid bays at every frame level, including the roof, are required. Stair systems require regional analysis.'}});
+          return true;
+        }
+        const gravityInputs = {...saved.inputs, seismic:undefined, wind:undefined};
+        const {analyticalModel,loadTakeoff} = await assembleLoadedAnalyticalFrameModel(system,gravityInputs,undefined,
+          {meshedSlabPanelIds:new Set(panels.map(p=>p.id))});
+        if (Object.values(loadTakeoff.unassignedGravityKnByCase ?? {}).some(n=>n!==0)) {
+          sendJson(response,422,{error:{code:'UNASSIGNED_GRAVITY',message:'The saved frame has an unresolved gravity source.'}});
+          return true;
+        }
+        const decks = panels.map(panel => {
+          const review = panel.deckReview!;
+          const source = saved.snapshot.loadTakeoff.loadSourceAudit?.find(item=>item.sourceId===panel.id && item.category==='SLAB_PANEL');
+          const forces = source?.gravityTransfer?.forceByCaseKn;
+          if (!forces || !panel.boundsMm || !panel.supportingBeamElementIndices.length || !panel.areaM2 ||
+              !['DL','SDL','LL'].every(id=>Number.isFinite(forces[id]) && forces[id]! >= 0)) throw new Error('Missing reviewed deck pressure ledger.');
+          return {id:panel.id,boundsMm:panel.boundsMm,topMm:review.structuralTopMm,thicknessMm:review.thicknessMm,
+            reference:review.reference,elasticityKPa:system.elements[panel.supportingBeamElementIndices[0]!]!.section.elasticityKPa,
+            supportingBeamElementIndices:panel.supportingBeamElementIndices,
+            pressures:Object.fromEntries(['DL','SDL','LL'].map(id=>[id,forces[id]!/panel.areaM2]))};
+        });
+        const controller = new AbortController();
+        const cancel = () => controller.abort();
+        response.once('close',cancel);
+        const solved = await getSharedPythonStructuralWorker().request<PythonWorkerResponseBase & {
+          envelope?:AnalyticalSolveEnvelope; slabLoadLedger?:unknown; frameRegistry?:CoupledFrameRegistry;
+        }>({action:'reviewed_rectangular_gravity', model:analyticalModel,decks},undefined,controller.signal)
+          .finally(()=>response.off('close',cancel));
+        if (!solved.ok || !solved.envelope || !solved.frameRegistry) {
+          sendJson(response,422,{error:{code:'COUPLED_SOLVE_FAILED',message:solved.message}});
+          return true;
+        }
+        const results = [...Object.values(solved.envelope.loadCaseResults), ...Object.values(solved.envelope.combinationResults)];
+        if (!results.length || results.some(r=>!r.equilibrium.isEquilibrated)) {
+          sendJson(response,422,{error:{code:'COUPLED_EQUILIBRIUM_FAILED',message:'Coupled gravity forces or moments failed equilibrium.'}});
+          return true;
+        }
+        const blocker=coupledDesignBlocker(saved,solved.envelope);
+        const receipt = {evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
+          structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
+          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope,
+          stairLoadTransfers:loadTakeoff.loadSourceAudit?.filter(source=>source.category==='STAIRCASE_FLIGHT'),
+          frameDesign:coupledFrameCandidates(saved,solved.envelope,solved.frameRegistry,blocker),
+          foundation:checkCoupledGravityFoundations(saved,solved.envelope,blocker)};
+        const resultId = await saveCoupledReceipt(String(body.evaluationId),receipt);
+        sendJson(response,200,{...receipt,resultId});
         return true;
       }
       if (action === 'deck-topology' || action === 'alignment-preview') {
@@ -379,6 +475,17 @@ export async function handleStructuralRoute(
           return true;
         }
         const automatic = body.automaticMesh === true && proposal === undefined;
+        const reviews = body.interfaceReviews ?? [];
+        if (!Array.isArray(reviews) || reviews.length > 1024 || reviews.some(review =>
+          !automatic || !isRecord(review) || review.evaluationId !== body.evaluationId ||
+          review.connection !== 'MONOLITHIC_FULL_INTERFACE' ||
+          typeof review.reference !== 'string' || !review.reference.trim() || review.reference.length > 512 ||
+          !building.floors.some(floor => floor.id === review.supportingFloorId) ||
+          !Array.isArray(review.regionIds) || review.regionIds.length !== 2 ||
+          !review.regionIds.every((id: unknown) => typeof id === 'string' && id.length > 0 && id.length <= 512))) {
+          sendJson(response, 422, { error: { code: 'INVALID_INTERFACE_REVIEW', message: 'Specify reviewed region pairs bound to this evaluation and supporting floor.' } });
+          return true;
+        }
         const frameNodeCount = saved.snapshot.system.nodes.length;
         let firstFreeNode = frameNodeCount;
         const decks = [];
@@ -386,6 +493,12 @@ export async function handleStructuralRoute(
         for (const floor of building.floors) {
           if (proposal !== undefined && floor.id !== floorId) continue;
           const reviewed = saved.snapshot.system.physicalModel.slabs.filter(slab => slab.floorId === floor.id && slab.deckReview);
+          const floorReviews = reviews.filter(review => review.supportingFloorId === floor.id);
+          if (reviewed.length && floorReviews.length) {
+            sendJson(response, 422, { error: { code: 'DECK_ALREADY_REVIEWED', floorId: floor.id,
+              message: 'Conventional transfer is already registered for this floor.' } });
+            return true;
+          }
           if (reviewed.length) {
             if (proposal !== undefined) {
               sendJson(response, 422, { error: { code: 'DECK_ALREADY_REVIEWED', message: 'This floor uses reviewed conventional slab transfer.' } });
@@ -399,7 +512,7 @@ export async function handleStructuralRoute(
             candidate.elevationMm === base + floor.floorHeight);
           const owner = owners.length === 1 ? owners[0] : undefined;
           if (!owner) {
-            if (proposal !== undefined) {
+            if (proposal !== undefined || floorReviews.length) {
               sendJson(response, 422, { error: { code: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED', message: 'No unique registered deck surface at this level.' } });
               return true;
             }
@@ -413,10 +526,10 @@ export async function handleStructuralRoute(
           response.once('close', cancel);
           const result = await worker.request<PythonWorkerResponseBase & {
             meshReceipt?: PhysicalDeckMeshReceipt;
-            automaticMesh?: { regions: AutomaticDeckMeshRegion[]; nextFreeNodeIndex: number };
+            automaticMesh?: { regions: AutomaticDeckMeshRegion[]; nextFreeNodeIndex: number; jointRegistry: unknown };
           }>({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
             registeredSurface: true, beams, ...(!automatic && proposal === undefined ? {} : {
-              ...(automatic ? { firstFreeNode } : { meshProposal: proposal }),
+              ...(automatic ? { firstFreeNode, interfaceReviews: floorReviews } : { meshProposal: proposal }),
               frameNodes: saved.snapshot.system.nodes.map(({ index, positionM }) => ({ index, positionM })),
               frameElements: saved.snapshot.system.elements.map(({ id, startNodeIndex, endNodeIndex }) => ({ id, startNodeIndex, endNodeIndex })),
             }) }, undefined, controller.signal).catch((error: unknown) => {
@@ -425,6 +538,10 @@ export async function handleStructuralRoute(
             }).finally(() => response.off('close', cancel));
           if (result === undefined || response.destroyed) return true;
           if (!result.ok) {
+            if (floorReviews.length) {
+              sendJson(response, 422, { error: { code: 'INVALID_INTERFACE_REVIEW', floorId: floor.id, message: result.message } });
+              return true;
+            }
             if (automatic) {
               decks.push({ supportingFloorId: floor.id, status: 'DECK_GEOMETRY_REVIEW_REQUIRED', reason: result.message });
               continue;
@@ -443,7 +560,7 @@ export async function handleStructuralRoute(
           if (automatic) {
             if (!result.automaticMesh || !isRecord(result.deck)) throw new Error('Missing automatic mesh result.');
             firstFreeNode = result.automaticMesh.nextFreeNodeIndex;
-            decks.push({ ...result.deck, automaticMesh: result.automaticMesh.regions });
+            decks.push({ ...result.deck, automaticMesh: result.automaticMesh.regions, jointRegistry: result.automaticMesh.jointRegistry });
           } else {
             decks.push(result.deck);
           }
