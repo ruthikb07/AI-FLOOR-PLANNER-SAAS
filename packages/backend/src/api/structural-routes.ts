@@ -344,6 +344,26 @@ export async function handleStructuralRoute(
       return true;
     }
 
+    if (body.resultId !== undefined) {
+      if (typeof body.resultId !== 'string' || typeof body.evaluationId !== 'string') {
+        sendJson(response,400,{error:{code:'INVALID_COUPLED_REFERENCE',message:'Supply parent and result identifiers.'}});
+        return true;
+      }
+      const parent = await readEvaluation(body.evaluationId,'full');
+      const receipt = await loadCoupledReceipt(body.evaluationId,body.resultId);
+      if (!parent || !isRecord(receipt) || receipt.evaluationId !== body.evaluationId ||
+          receipt.architectureSha256 !== body.architectureSha256 ||
+          receipt.architectureSha256 !== parent.snapshot.system.sourceArchitecturalSha256 ||
+          receipt.structuralRevision !== parent.snapshot.system.structuralRevision) {
+        sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
+      } else if (action === 'coupled-gravity' || action === 'evaluation' || action === 'design' || (action === 'drawings' && format === 'json')) {
+        if (action === 'drawings') response.setHeader('Content-Disposition',`attachment; filename="coupled-gravity-${body.resultId}.json"`);
+        sendJson(response,200,{...receipt,resultId:body.resultId});
+      } else {
+        sendJson(response,422,{error:{code:'COUPLED_OPERATION_UNSUPPORTED',message:'This operation requires a method validated for the selected coupled gravity result.'}});
+      }
+      return true;
+    }
     if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview', 'coupled-gravity'].includes(action) && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
@@ -359,14 +379,6 @@ export async function handleStructuralRoute(
       }
       if (action === 'coupled-gravity') {
         const system = saved.snapshot.system;
-        if (typeof body.resultId === 'string') {
-          const cached = await loadCoupledReceipt(String(body.evaluationId),body.resultId);
-          if (!isRecord(cached) || cached.architectureSha256!==body.architectureSha256 ||
-              cached.structuralRevision!==system.structuralRevision || cached.evaluationId!==body.evaluationId) {
-            sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
-          } else sendJson(response,200,{...cached,resultId:body.resultId});
-          return true;
-        }
         const panels = system.slabPanels;
         const reviews = panels.map(panel => panel.deckReview);
         const stairConflict = system.stairWaists.some(stair=>{

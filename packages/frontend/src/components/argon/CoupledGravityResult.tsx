@@ -73,7 +73,16 @@ export function CoupledGravityResult({ evaluationId, digest }: { evaluationId:st
         <tbody>{[...receipt.frameDesign.beams,...receipt.frameDesign.columns].map(member=><tr key={member.physicalMemberId}>
           <th>{member.physicalMemberId}</th><td>{member.maxUtilization}</td><td>{member.status}</td></tr>)}</tbody></table>
       </details>}
-      <p>Exported schedules use the saved conventional evaluation.</p>
+      <button type="button" onClick={() => {
+        const blob = new Blob([JSON.stringify(receipt,null,2)],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href=url;
+        link.download=`coupled-gravity-${receipt.resultId}.json`;
+        link.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+      }}>Download this coupled gravity result</button>
+      <p>Drawing and reinforcement schedules elsewhere in the studio use the conventional evaluation.</p>
     </>}
   </section>;
 }

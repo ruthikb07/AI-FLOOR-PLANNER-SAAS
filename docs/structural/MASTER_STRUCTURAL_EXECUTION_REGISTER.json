@@ -1,6 +1,13 @@
 {
   "baseline": "1fa7861a56909bbff7af74b4e2e0709c4db1a136",
   "scope": "Working recovery register. Null fields identify outstanding investigation.",
+  "selectedCoupledResultCheckpoint": {
+    "status": "PARTIAL",
+    "verified": "physical-deck-mesh.test.ts: evaluation, design readback and JSON export return the original receipt for an explicit resultId. Unsupported optimization and DXF operations reject this selection.",
+    "pending": "Global selection propagation, coupled optimization with fresh analysis, detailing, schedules and CAD/BIM export remain open. Apartment approvals remain outstanding.",
+    "performanceSeconds": [446.8043, 31.6222, 33.7785],
+    "performanceScope": "Three local grid runs exited successfully. Cold baseline and revised runs partially overlapped."
+  },
   "defects": [
     {
       "id": "D01",

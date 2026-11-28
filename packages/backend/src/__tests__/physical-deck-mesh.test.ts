@@ -233,6 +233,15 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
         shorteningChecks.push({ columnId: column.id, actualM, expectedM });
       }
     }
+    const selected = {evaluationId:qualified.evaluationId,architectureSha256:digest,resultId:assessed.resultId};
+    for (const action of ['evaluation','design','drawings']) {
+      const selectedResponse = await post(action,{...selected,format:'json'});
+      expect(selectedResponse.status).toBe(200);
+      expect(await selectedResponse.json()).toEqual(assessed);
+    }
+    for (const action of ['optimize','drawings']) {
+      expect((await post(action,{...selected,format:'dxf'})).status).toBe(422);
+    }
     const reopen = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest,resultId:assessed.resultId});
     expect(await reopen.json()).toEqual(assessed);
     expect((await post('coupled-gravity',{evaluationId,architectureSha256:digest,resultId:assessed.resultId})).status).toBe(409);
