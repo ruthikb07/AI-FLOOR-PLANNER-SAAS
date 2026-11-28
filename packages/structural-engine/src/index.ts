@@ -24,3 +24,5 @@ export type {
   StructuralWorkerRequest,
   StructuralWorkerResponse,
 } from './worker/structural-solver.worker.js';
+
+export type { PhysicalDeckMeshProposal, PhysicalDeckMeshReceipt } from './types/physical-deck-mesh.js';

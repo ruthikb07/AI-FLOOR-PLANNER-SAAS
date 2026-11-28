@@ -23,3 +23,7 @@ Resolve which approved architectural surface is carried at each structural level
 ## Production deck continuation
 
 The production evaluator now accepts reviewed full-level rectangles before assembling loads. See [production verification](PRODUCTION_DECK_INTEGRATION_VERIFICATION.md) and [level ownership](DECK_LEVEL_AND_STAIR_OWNERSHIP.md). The original diagnostic replay remains preserved.
+
+## Plate and frame mesh handoff
+
+A saved evaluation can now check a proposed quadrilateral mesh against a registered deck region, including openings and the actual beam nodes. The [coupling verification record](COUPLED_SLAB_FRAME_VERIFICATION.md) documents the endpoint, numerical tolerances, tested cases and remaining engineering gates.

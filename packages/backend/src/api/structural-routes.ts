@@ -26,6 +26,8 @@ import {
   type OptimizationObjectiveMode,
   isRectangularDeckReview,
   DeckReviewError,
+  type PhysicalDeckMeshReceipt,
+  type PythonWorkerResponseBase,
   type ReviewedStructuralInputs,
   type SectionCapacityBackend,
   type SeismicZoneIS1893,
@@ -337,11 +339,24 @@ export async function handleStructuralRoute(
           sendJson(response, 409, { error: { code: 'DECK_ARCHITECTURE_MISMATCH', message: 'Supply the architecture used by this evaluation.' } });
           return true;
         }
+        const proposal = body.meshProposal;
+        const floorId = isRecord(proposal) ? proposal.supportingFloorId : undefined;
+        if (proposal !== undefined && (!isRecord(proposal) || typeof proposal.regionId !== 'string' ||
+            !Array.isArray(proposal.nodes) || !Array.isArray(proposal.quads) ||
+            !building.floors.some(floor => floor.id === floorId))) {
+          sendJson(response, 400, { error: { code: 'INVALID_DECK_MESH', message: 'Specify a supporting floor, region, nodes and quads.' } });
+          return true;
+        }
         const decks = [];
         const worker = getSharedPythonStructuralWorker();
         for (const floor of building.floors) {
+          if (proposal !== undefined && floor.id !== floorId) continue;
           const reviewed = saved.snapshot.system.physicalModel.slabs.filter(slab => slab.floorId === floor.id && slab.deckReview);
           if (reviewed.length) {
+            if (proposal !== undefined) {
+              sendJson(response, 422, { error: { code: 'DECK_ALREADY_REVIEWED', message: 'This floor uses reviewed conventional slab transfer.' } });
+              return true;
+            }
             decks.push({ supportingFloorId: floor.id, status: 'ANALYZED_REVIEWED_DECK', slabs: reviewed });
             continue;
           }
@@ -350,14 +365,29 @@ export async function handleStructuralRoute(
             candidate.elevationMm === base + floor.floorHeight);
           const owner = owners.length === 1 ? owners[0] : undefined;
           if (!owner) {
+            if (proposal !== undefined) {
+              sendJson(response, 422, { error: { code: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED', message: 'No unique registered deck surface at this level.' } });
+              return true;
+            }
             decks.push({ supportingFloorId: floor.id, status: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED' });
             continue;
           }
           const beams = saved.snapshot.system.physicalModel.beams.filter(beam => beam.floorId === floor.id);
-          const result = await worker.request({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
-            registeredSurface: true, beams });
+          const result = await worker.request<PythonWorkerResponseBase & { meshReceipt?: PhysicalDeckMeshReceipt }>({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
+            registeredSurface: true, beams, ...(proposal === undefined ? {} : { meshProposal: proposal,
+              frameNodes: saved.snapshot.system.nodes.map(({ index, positionM }) => ({ index, positionM })),
+              frameElements: saved.snapshot.system.elements.map(({ id, startNodeIndex, endNodeIndex }) => ({ id, startNodeIndex, endNodeIndex })),
+            }) });
           if (!result.ok) {
-            sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_GEOMETRY', floorId: floor.id, message: result.message } });
+            sendJson(response, 422, { error: { code: proposal === undefined ? 'UNSUPPORTED_DECK_GEOMETRY' : 'INVALID_DECK_MESH', floorId: floor.id, message: result.message } });
+            return true;
+          }
+          if (proposal !== undefined) {
+            if (!result.meshReceipt) throw new Error('Missing mesh validation receipt from structural worker.');
+            sendJson(response, 200, { evaluationId: body.evaluationId, architectureSha256: saved.snapshot.system.sourceArchitecturalSha256,
+              structuralRevision: saved.snapshot.system.structuralRevision, supportingFloorId: floor.id,
+              surfaceFloorId: owner.id, candidateElevationMm: owner.elevationMm, candidateThicknessMm: owner.slabThicknessMm ?? null,
+              concreteGrade: saved.snapshot.system.concreteGrade, meshReceipt: result.meshReceipt });
             return true;
           }
           decks.push(result.deck);
