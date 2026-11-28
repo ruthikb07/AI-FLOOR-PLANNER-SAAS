@@ -56,6 +56,8 @@ def replay(archive, baseline, historical):
                     "methodCounts": Counter(region["method"] for region in meshed),
                     "bearingCandidateMemberIds": sorted({bearing["memberId"] for region in deck["regions"]
                                                          for bearing in region["bearingCandidates"]}),
+                    "beamSubdivisionCandidates": [candidate for region in meshed
+                                                  for candidate in region["beamSubdivisionCandidates"]],
                     "verifiedBearingAreaM2": 0,
                     "sharedAnalyticalElementIds": sorted({edge["elementId"] for region in meshed
                                                            for edge in region["sharedEdges"]}),

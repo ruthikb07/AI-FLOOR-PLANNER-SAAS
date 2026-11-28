@@ -45,6 +45,8 @@ matplotlib.use("Agg")
 
 import numpy as np
 from scipy.interpolate import interp1d
+from analytical_member import AnalyticalMember
+from frame_subdivision import subdivide
 from Pynite import FEModel3D
 from shapely.geometry import LineString, Point, Polygon
 from sectionproperties.pre.geometry import Geometry
@@ -515,7 +517,7 @@ def _evaluate_stations_from_end_actions(
 
 def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
     t0 = time.perf_counter()
-    model_data = payload["model"]
+    model_data = subdivide(payload["model"])
     options = payload.get("options") or {}
     analysis_mode = str(options.get("analysisMode", "LINEAR")).upper()
     solve_cases = bool(options.get("solveLoadCases", True))
@@ -612,6 +614,9 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
         m_name = f"EL_{idx}"
         fe.add_member(m_name, node_names[i_idx], node_names[j_idx], mat_name, sec_name, rotation=roll_deg)
+        if plate_elements or model_data is not payload["model"]:
+            fe.members[m_name] = AnalyticalMember(fe, m_name, fe.nodes[node_names[i_idx]],
+                                                  fe.nodes[node_names[j_idx]], mat_name, sec_name, roll_deg)
         pn_member = fe.members[m_name]
         t_pn = pn_member.T()[:3, :3]
         max_axis_diff = float(np.max(np.abs(t_pn - lambda_rh)))
@@ -1087,6 +1092,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                     "elementIndex": el_idx,
                     "elementId": str(el["id"]),
                     "lengthM": member_lengths[el_idx],
+                    **{k: el[k] for k in ("parentMemberId", "sourceElementId", "parentStationRange") if k in el},
                     **eval_res,
                 }
             )

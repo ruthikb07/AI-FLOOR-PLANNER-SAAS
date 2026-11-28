@@ -43,6 +43,12 @@ export type AutomaticDeckMeshRegion =
       readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS' | 'ADAPTIVE_BOUNDARY_QUADS';
       readonly areaMm2: number;
       readonly quality: { readonly maxEdgeAspectRatio: number; readonly minScaledCornerJacobian: number };
+      readonly beamSubdivisionCandidates?: readonly {
+        readonly physicalMemberId: string;
+        readonly elementId: string;
+        readonly interiorNodeIndices: readonly number[];
+        readonly edgePlateIds: readonly (readonly string[])[];
+      }[];
       readonly unmatchedFrameElementIds: readonly string[];
       readonly boundaryInterfaces: readonly {
         readonly regionId: string;

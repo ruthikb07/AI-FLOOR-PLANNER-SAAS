@@ -18,7 +18,7 @@
         "6a-evidence/adaptive-apartment-replay.json",
         "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
       ],
-      "correctionCommit": null,
+      "correctionCommit": "eb1ce8e",
       "scope": "Registered geometric surfaces in the two frozen archives"
     },
     {
@@ -37,7 +37,7 @@
         "6a-evidence/adaptive-apartment-replay.json",
         "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
       ],
-      "correctionCommit": null,
+      "correctionCommit": "eb1ce8e",
       "scope": "Registered geometric surfaces in the two frozen archives"
     },
     {
@@ -45,15 +45,16 @@
       "severity": "release gate",
       "component": "Incomplete analytical beam subdivision",
       "baselineObservation": "Mesh edges do not consistently correspond to analytical frame subdivisions.",
-      "currentStatus": "OPEN",
+      "currentStatus": "ROOT_CAUSE_CONFIRMED",
       "reproductionSteps": null,
       "expectedBehavior": null,
-      "confirmedRootCause": null,
+      "confirmedRootCause": "A one-element-per-edge identity check does not recognize an ordered chain of shorter plate edges.",
       "requiredCorrection": null,
-      "regressionTest": null,
+      "regressionTest": "tests/test_explicit_frame_connectivity.py",
       "independentBenchmark": null,
       "evidence": [
-        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
+        "BEAM_SUBDIVISION_VERIFICATION.md"
       ],
       "correctionCommit": null
     },
@@ -62,15 +63,16 @@
       "severity": "release gate",
       "component": "Nonconforming regional interfaces",
       "baselineObservation": "Adjacent slab regions may retain separate nodes and incompatible edge partitions despite appearing geometrically connected.",
-      "currentStatus": "OPEN",
+      "currentStatus": "ROOT_CAUSE_CONFIRMED",
       "reproductionSteps": null,
       "expectedBehavior": null,
-      "confirmedRootCause": null,
+      "confirmedRootCause": "Each region allocates its own partition and joint identities. The pinned solver also automatically attaches collinear interior joints when physical member discretization is enabled.",
       "requiredCorrection": null,
-      "regressionTest": null,
+      "regressionTest": "tests/test_explicit_frame_connectivity.py",
       "independentBenchmark": null,
       "evidence": [
-        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
+        "BUILDING_CONNECTIVITY_VERIFICATION.md"
       ],
       "correctionCommit": null
     },

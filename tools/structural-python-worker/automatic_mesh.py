@@ -8,6 +8,7 @@ from shapely.geometry import LineString, MultiLineString, Polygon, box
 from shapely.strtree import STRtree
 
 from adaptive_mesh import adaptive_quads
+from beam_edge_chain import beam_subdivision_candidates
 from deck_mesh import check_deck_mesh, frame_segments
 
 MAX_QUADS = 20_000
@@ -212,6 +213,8 @@ def generate_floor(deck, frame_nodes, beams, elements, first_free):
             plate["nodeIndices"] = [remap[i] for i in plate["nodeIndices"]]
         for edge in receipt["sharedEdges"]:
             edge["plateIds"] = [f"quad/{scope}/{i}" for i in edge["plateIds"]]
+        receipt["beamSubdivisionCandidates"] = beam_subdivision_candidates(
+            deck, region, receipt, frame_nodes, beams, elements)
         results.append(receipt)
         quad_budget -= receipt["quadCount"]
     if corners <= MAX_FLOOR_CORNERS:
