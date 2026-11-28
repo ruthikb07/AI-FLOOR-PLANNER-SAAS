@@ -37,6 +37,7 @@ import sys
 import time
 import traceback
 from bisect import bisect_left
+from decimal import Decimal
 from functools import cached_property, lru_cache
 from typing import Any
 
@@ -1387,6 +1388,12 @@ def _build_section(fck, fy, dimensions, polygon, bars):
 
 @lru_cache(maxsize=128)
 def _biaxial_contour(section_key, axial_kn, point_count):
+    from section_contour_cache import exact_contour
+    return exact_contour(section_key, axial_kn, point_count,
+                         lambda: _compute_biaxial_contour(section_key, axial_kn, point_count))
+
+
+def _compute_biaxial_contour(section_key, axial_kn, point_count):
     section, _ = _build_section(*section_key)
     axial_n = axial_kn * 1000.0
     ux = section.ultimate_bending_capacity(theta=0.0, n=axial_n)

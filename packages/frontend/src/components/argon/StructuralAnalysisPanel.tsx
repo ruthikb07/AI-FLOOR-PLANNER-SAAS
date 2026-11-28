@@ -1382,7 +1382,8 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
         onDeck={deck => setDeckReviews(previous => [...(previous ?? []).filter(item => item.supportingFloorId !== deck.supportingFloorId), deck])}
         onSoil={soil => { setSbcRaw(String(soil.safeBearingCapacityKPa)); setFoundationDepthM(String(soil.foundationDepthBelowGroundM));
           setSoilUnitWeight(String(soil.soilUnitWeightKnM3)); setSettlementLimit(String(soil.allowableSettlementMm));
-          setGeotechReference(soil.reportReference); setGroundwaterDepth(''); setSubgradeModulusRaw(''); setBearingBasis(''); }} />
+          setGeotechReference(soil.reportReference); setGroundwaterDepth(String(soil.waterTableDepthBelowGroundM ?? ''));
+          setSubgradeModulusRaw(String(soil.subgradeModulusKnM3 ?? '')); setBearingBasis(soil.bearingCapacityBasis ?? ''); }} />
       {/* Header, Solver Provenance & Lifecycle Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/80 bg-[#111827] p-4">
         <div>

@@ -32,6 +32,7 @@ import { handleProjectGeneration } from './api/generation-routes.js';
 import { handleStructuralRoute } from './api/structural-routes.js';
 import { handleCadImportRoute } from './routes/cad-import-routes.js';
 import { handleLocalProjectRoute } from './routes/local-project-routes.js';
+import { resolveLocalProjectsRoot } from './services/local-project-store.js';
 import { RequestBodyTooLarge } from './api/http-input.js';
 import { authorizeApiRequest, isLoopbackHost, resolveApiAccess, type ApiAccess } from './api/http-access.js';
 
@@ -385,6 +386,7 @@ async function route(request: IncomingMessage, response: ServerResponse, deps: S
 }
 
 export function startBackendServer(port?: number): { server: Server; config: ServiceConfig } {
+  process.env.RH_SECTION_CACHE_DIR ??= path.join(resolveLocalProjectsRoot(), '.structural-cache');
   const config = resolveServiceConfig();
   const gemini = createGeminiProvider(config);
   const apiAccess = resolveApiAccess();

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { canonicalBuildingHash, stableValueHash, type Building } from '@ai-floor-planner/core';
 import { resolveLocalProjectsRoot } from './local-project-store.js';
 
-const fieldCounts = { 'Terminal roof':5, 'Slab–beam connection':3, 'Stair bearing':4, 'Balcony root':3,
+const fieldCounts = { 'Terminal roof':5, 'Occupied deck':5, 'Slab–beam connection':3, 'Stair bearing':4, 'Balcony root':3,
   'Site geotechnical report':4 } as const;
 
 export function validEngineeringRecord(record: unknown, building: Building, digest: string) {
@@ -19,8 +19,14 @@ export function validEngineeringRecord(record: unknown, building: Building, dige
       !r.numbers.every(Number.isFinite)) return false;
   const [a,b,c,d,e] = r.numbers;
   switch (r.kind) {
+    case 'Occupied deck': return building.floors.some(f=>f.id===r.surfaceFloorId && f.level>floor.level) &&
+      b>=a && c>0 && d>=0 && e>0;
     case 'Terminal roof': return !building.floors.some(f=>f.level>floor.level) && b>=a && c>0 && d>=0 && e>0;
     case 'Slab–beam connection': return a>0;
+    case 'Site geotechnical report': return r.numbers.every(n=>n>0) &&
+      (r.bearingCapacityBasis===undefined || r.bearingCapacityBasis==='NET' || r.bearingCapacityBasis==='GROSS') &&
+      (r.waterTableDepthBelowGroundM===undefined || (typeof r.waterTableDepthBelowGroundM==='number' && Number.isFinite(r.waterTableDepthBelowGroundM) && r.waterTableDepthBelowGroundM>=0)) &&
+      (r.subgradeModulusKnM3===undefined || (typeof r.subgradeModulusKnM3==='number' && Number.isFinite(r.subgradeModulusKnM3) && r.subgradeModulusKnM3>100));
     case 'Stair bearing': return a>0 && c>0 && d>=0 && text(r.lowerBeamId) && text(r.upperBeamId) && r.lowerBeamId!==r.upperBeamId;
     default: return r.numbers.every(n=>n>0);
   }

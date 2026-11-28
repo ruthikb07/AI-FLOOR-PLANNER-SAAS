@@ -38,6 +38,14 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     expect(stale.status).toBe(409);
     const invalid = await post('engineering-inputs',{building,digest,record:{...record,numbers:[-1,2000,100]}});
     expect(invalid.status).toBe(422);
+    const occupied = {...record, kind:'Occupied deck', floor:'stilt', surfaceFloorId:'upper', numbers:[3100,3100,160,3,75]};
+    expect((await post('engineering-inputs',{building,digest,record:occupied})).status).toBe(200);
+    expect((await post('engineering-inputs',{building,digest,record:{...occupied,surfaceFloorId:'stilt'}})).status).toBe(422);
+    const site = {...record, kind:'Site geotechnical report', member:'fixture-site', numbers:[200,1.5,18,25],
+      bearingCapacityBasis:'GROSS',waterTableDepthBelowGroundM:0,subgradeModulusKnM3:24000};
+    const soilReview = await post('engineering-inputs',{building,digest,record:site});
+    expect(await soilReview.json()).toMatchObject({records:expect.arrayContaining([site])});
+    expect((await post('engineering-inputs',{building,digest,record:{...site,bearingCapacityBasis:'unknown'}})).status).toBe(422);
     const data = { building, evaluationId };
     const blockedCoupling = await post('coupled-gravity',{evaluationId,architectureSha256:digest});
     expect(blockedCoupling.status).toBe(422);

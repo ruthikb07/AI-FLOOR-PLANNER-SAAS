@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
 import type { ReviewedStructuralInputs, StairBearingReview } from '@ai-floor-planner/structural-engine';
 
+const deckFields = ['Structural top (mm)', 'Finished level (mm)', 'Thickness (mm)', 'Live load (kN/m²)', 'Minimum bearing width (mm)'];
 const fields = {
-  'Terminal roof': ['Structural top (mm)', 'Finished level (mm)', 'Thickness (mm)', 'Live load (kN/m²)', 'Minimum bearing width (mm)'],
+  'Terminal roof': deckFields,
+  'Occupied deck': deckFields,
   'Slab–beam connection': ['Bearing width (mm)', 'Beam centroid elevation (mm)', 'Slab midsurface elevation (mm)'],
   'Stair bearing': ['Bearing width (mm)', 'Landing elevation (mm)', 'Waist thickness (mm)', 'Stair live load (kN/m²)'],
   'Balcony root': ['Root length (mm)', 'Projection (mm)', 'Thickness (mm)'],
@@ -14,7 +16,8 @@ type Deck = NonNullable<ReviewedStructuralInputs['rectangularDeckReviews']>[numb
 type Soil = NonNullable<ReviewedStructuralInputs['geotechnical']>;
 interface RecordEntry {
   kind: Kind; floor: string; member: string; reference: string; reviewer: string; numbers: number[]; lowerBeamId?: string; upperBeamId?: string;
-  digest: string; approvedAt: string;
+  digest: string; approvedAt: string; surfaceFloorId?: string;
+  bearingCapacityBasis?: 'NET' | 'GROSS'; waterTableDepthBelowGroundM?: number; subgradeModulusKnM3?: number;
 }
 function valid(entry: RecordEntry, digest: string, building: Building) {
   return entry && entry.digest === digest && Object.hasOwn(fields, entry.kind) &&
@@ -34,6 +37,10 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
   const [entries, setEntries] = useState<RecordEntry[]>(() => { try { return read(); } catch { return []; } });
   const [kind, setKind] = useState<Kind>('Terminal roof');
   const [floor, setFloor] = useState(building.floors[0]?.id ?? '');
+  const [surfaceFloorId, setSurfaceFloorId] = useState('');
+  const [basis, setBasis] = useState<'' | 'NET' | 'GROSS'>('');
+  const [waterDepth, setWaterDepth] = useState('');
+  const [subgrade, setSubgrade] = useState('');
   const [member, setMember] = useState('');
   const [reference, setReference] = useState('');
   const [reviewer, setReviewer] = useState('');
@@ -63,6 +70,12 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
   async function approve() {
     const values = fields[kind].map((_, i) => numbers[i]?.trim() ? Number(numbers[i]) : NaN);
     const record = { kind, floor, member: member.trim(), reference: reference.trim(), reviewer: reviewer.trim(),
+      ...(kind === 'Occupied deck' && {surfaceFloorId}),
+      ...(kind === 'Site geotechnical report' && {
+        ...(basis && {bearingCapacityBasis:basis}),
+        ...(waterDepth.trim() && {waterTableDepthBelowGroundM:Number(waterDepth)}),
+        ...(subgrade.trim() && {subgradeModulusKnM3:Number(subgrade)}),
+      }),
       lowerBeamId:lowerBeamId.trim(), upperBeamId:upperBeamId.trim(), digest, approvedAt: new Date().toISOString(), numbers: values };
     if (!confirmed || !valid(record, digest, building)) { setMessage('Complete each field and confirm the review.'); return; }
     const [a,b,c,d,e] = values as [number,number,number,number,number];
@@ -83,17 +96,20 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
     } catch (error) { setMessage(String(error)); } finally { setSaving(false); }
   }
   function apply(record: RecordEntry) {
+    if (!valid(record, digest, building)) return;
     const [a,b,c,d,e] = record.numbers as [number,number,number,number,number];
     const ref = record.reference + ' — ' + record.reviewer;
     if (record.kind === 'Stair bearing' && record.lowerBeamId && record.upperBeamId) onStair({
       waistId:record.member, lowerBeamId:record.lowerBeamId, upperBeamId:record.upperBeamId, reference:ref,
       architectureSha256:digest, method:'SIMPLY_SUPPORTED_STRAIGHT_FLIGHT', minimumBearingMm:a,
       upperLandingMm:b, waistThicknessMm:c, liveLoadKnM2:d });
-    if (record.kind === 'Terminal roof') onDeck({ schema:'RH_RECTANGULAR_DECK_V1', boundaryCondition:'SIMPLY_SUPPORTED_FULL_LEVEL',
-      architectureSha256:digest, reference:ref, supportingFloorId:record.floor, surfaceFloorId:record.floor, use:'ROOF',
+    if (record.kind === 'Terminal roof' || (record.kind === 'Occupied deck' && record.surfaceFloorId)) onDeck({ schema:'RH_RECTANGULAR_DECK_V1', boundaryCondition:'SIMPLY_SUPPORTED_FULL_LEVEL',
+      architectureSha256:digest, reference:ref, supportingFloorId:record.floor, surfaceFloorId:record.surfaceFloorId ?? record.floor,
+      use:record.kind === 'Terminal roof' ? 'ROOF' : 'OCCUPIED',
       structuralTopMm:a, finishedFloorMm:b, thicknessMm:c, uniformLiveLoadKnM2:d, minimumBearingWidthMm:e });
     if (record.kind === 'Site geotechnical report') onSoil({ safeBearingCapacityKPa:a, foundationDepthBelowGroundM:b,
-      soilUnitWeightKnM3:c, allowableSettlementMm:d, reportReference:ref });
+      soilUnitWeightKnM3:c, allowableSettlementMm:d, reportReference:ref, bearingCapacityBasis:record.bearingCapacityBasis,
+      waterTableDepthBelowGroundM:record.waterTableDepthBelowGroundM, subgradeModulusKnM3:record.subgradeModulusKnM3 });
     setMessage('Submitted to the current analysis inputs. See the evaluation for acceptance or rejection.');
   }
   return <details className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
@@ -104,9 +120,18 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
       <label>Input category <select value={kind} onChange={e => {setKind(e.target.value as Kind); setNumbers([]);}}>
         {Object.keys(fields).map(k => <option key={k}>{k}</option>)}</select></label>
       <label>Supporting floor <select value={floor} onChange={e => setFloor(e.target.value)}>{building.floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
+      {kind === 'Occupied deck' && <label>Floor owning the occupied surface <select value={surfaceFloorId} onChange={e=>setSurfaceFloorId(e.target.value)}>
+        <option value="">Select a floor</option>{building.floors.filter(f=>f.level>(building.floors.find(s=>s.id===floor)?.level ?? Infinity))
+          .map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label>}
       <label>Component or site ID <input value={member} onChange={e => setMember(e.target.value)} /></label>
       <label>Drawing or report reference <input value={reference} onChange={e => setReference(e.target.value)} /></label>
       <label>Reviewer's name <input value={reviewer} onChange={e => setReviewer(e.target.value)} /></label>
+      {kind === 'Site geotechnical report' && <>
+        <label>Bearing capacity basis <select value={basis} onChange={e=>setBasis(e.target.value as typeof basis)}>
+          <option value="">Unspecified</option><option value="GROSS">Gross</option><option value="NET">Net</option></select></label>
+        <label>Reported water table depth (m, optional) <input type="number" min="0" step="any" value={waterDepth} onChange={e=>setWaterDepth(e.target.value)} /></label>
+        <label>Reported subgrade modulus (kN/m³, optional) <input type="number" min="0" step="any" value={subgrade} onChange={e=>setSubgrade(e.target.value)} /></label>
+      </>}
       {kind === 'Stair bearing' && <>
         <label>Lower bearing beam ID <input value={lowerBeamId} onChange={e => setLowerBeamId(e.target.value)} /></label>
         <label>Upper bearing beam ID <input value={upperBeamId} onChange={e => setUpperBeamId(e.target.value)} /></label>
@@ -119,8 +144,8 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
     <button type="button" disabled={!confirmed || saving || !available} onClick={approve}>Approve input record</button>
     <ul>{entries.map((r,i) => <li key={i} className="my-2">{r.kind} · {r.floor} · {r.member} · {r.reference} · {r.reviewer}
       <div>{fields[r.kind].map((label,j) => label + ' ' + r.numbers[j]).join(' · ')}</div>
-      {r.kind === 'Terminal roof' || r.kind === 'Site geotechnical report' || (r.kind === 'Stair bearing' && r.lowerBeamId && r.upperBeamId)
-        ? <button type="button" onClick={() => apply(r)}>{r.kind === 'Terminal roof' ? 'Apply as simply supported rectangular roof' : r.kind === 'Stair bearing' ? 'Apply straight-flight bearing review' : 'Apply geotechnical inputs'}</button>
+      {r.kind === 'Terminal roof' || r.kind === 'Occupied deck' || r.kind === 'Site geotechnical report' || (r.kind === 'Stair bearing' && r.lowerBeamId && r.upperBeamId)
+        ? <button type="button" onClick={() => apply(r)}>{r.kind === 'Terminal roof' ? 'Apply as simply supported rectangular roof' : r.kind === 'Occupied deck' ? 'Apply as simply supported occupied deck' : r.kind === 'Stair bearing' ? 'Apply straight-flight bearing review' : 'Apply geotechnical inputs'}</button>
         : <span>Connection analysis and design verification pending</span>}</li>)}</ul>
     {message && <p role="status">{message}</p>}
   </details>;
