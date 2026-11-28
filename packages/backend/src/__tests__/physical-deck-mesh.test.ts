@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it, vi } from 'vitest';
-import { shutdownSharedPythonStructuralWorker, type PhysicalDeckMeshProposal, type PhysicalDeckMeshReceipt, type StructuralEvaluationSummary } from '@ai-floor-planner/structural-engine';
+import { shutdownSharedPythonStructuralWorker, type AutomaticDeckMeshRegion, type PhysicalDeckMeshProposal, type PhysicalDeckMeshReceipt, type StructuralEvaluationSummary } from '@ai-floor-planner/structural-engine';
 import { createBackendServer } from '../server.js';
 
 it('checks a shared plate edge against the saved frame and rejects a coincident independent node', async () => {
@@ -42,6 +42,39 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
       structuralRevision: snapshot.system.structuralRevision, meshReceipt: { status: 'MESH_GEOMETRY_CHECKED',
         quadCount: 1, gapMm2: 0, outsideMm2: 0, overlapMm2: 0, gravityStatus: 'BEARING_AND_LOAD_TRANSFER_UNVERIFIED' } });
     expect(receipt.meshReceipt.sharedEdges).toHaveLength(4);
+    const automatic = await post('deck-topology', { ...data, automaticMesh: true });
+    const generated = await automatic.json() as { decks: { automaticMesh?: AutomaticDeckMeshRegion[] }[] };
+    expect(automatic.status, JSON.stringify(generated)).toBe(200);
+    expect(generated).toMatchObject({
+      evaluationId,
+      architectureSha256: snapshot.system.sourceArchitecturalSha256,
+      meshRegistry: { additionalNodeCount: 0 },
+      decks: [
+        { supportingFloorId: 'stilt', automaticMesh: [{ status: 'MESH_GEOMETRY_CHECKED', quadCount: 1,
+          unmatchedFrameElementIds: [], gravityStatus: 'BEARING_AND_LOAD_TRANSFER_UNVERIFIED' }] },
+        { supportingFloorId: 'upper', status: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED' },
+      ],
+    });
+    expect(generated.decks[0]?.automaticMesh?.[0]).toMatchObject({ sharedEdges: receipt.meshReceipt.sharedEdges.map(
+      ({ physicalBeamId, elementId, frameNodeIndices }) => ({ physicalBeamId, elementId, frameNodeIndices }),
+    ) });
+    const stiltBeams = snapshot.system.physicalModel.beams.filter(beam => beam.floorId === 'stilt');
+    const first = stiltBeams[0]!;
+    const second = stiltBeams.find(beam => beam !== first &&
+      [first.startAnalyticalNodeIndex, first.endAnalyticalNodeIndex].some(node =>
+        beam.startAnalyticalNodeIndex === node || beam.endAnalyticalNodeIndex === node))!;
+    const alignment = await post('alignment-preview', { ...data, floorId: 'stilt',
+      beamIds: [first.physicalMemberId, second.physicalMemberId] });
+    const alignmentBody = await alignment.json();
+    expect(alignment.status, JSON.stringify(alignmentBody)).toBe(200);
+    expect(alignmentBody).toMatchObject({
+      evaluationId,
+      architectureSha256: snapshot.system.sourceArchitecturalSha256,
+      preview: {
+        straightWithExistingColumns: { status: 'AXIS_MISSES_COLUMN' },
+        straightWithStackMoves: { status: 'ARCHITECTURAL_APPROVAL_REQUIRED' },
+      },
+    });
     const bad = await post('deck-topology', { ...data, meshProposal: { ...proposal,
       nodes: [{ id: 'Q0', pointMm: [0, 0] }, ...proposal.nodes.slice(1)] } });
     expect(bad.status).toBe(422);

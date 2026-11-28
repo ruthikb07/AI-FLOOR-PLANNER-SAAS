@@ -26,6 +26,7 @@ import {
   type OptimizationObjectiveMode,
   isRectangularDeckReview,
   DeckReviewError,
+  type AutomaticDeckMeshRegion,
   type PhysicalDeckMeshReceipt,
   type PythonWorkerResponseBase,
   type ReviewedStructuralInputs,
@@ -279,7 +280,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -320,7 +321,7 @@ export async function handleStructuralRoute(
       return true;
     }
 
-    if ((action === 'case' || action === 'design' || action === 'evaluation' || action === 'deck-topology') && typeof body.evaluationId !== 'string') {
+    if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview'].includes(action) && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
     }
@@ -333,10 +334,40 @@ export async function handleStructuralRoute(
         sendJson(response, 409, { error: { code: 'STRUCTURAL_EVALUATION_EXPIRED', message: 'Run structural analysis again before using this result.' } });
         return true;
       }
-      if (action === 'deck-topology') {
+      if (action === 'deck-topology' || action === 'alignment-preview') {
         const building = body.building as Building;
         if (validateBuildingSchema(building).length || canonicalBuildingHash(building) !== saved.snapshot.system.sourceArchitecturalSha256) {
           sendJson(response, 409, { error: { code: 'DECK_ARCHITECTURE_MISMATCH', message: 'Supply the architecture used by this evaluation.' } });
+          return true;
+        }
+        if (action === 'alignment-preview') {
+          const { floorId, beamIds } = body;
+          if (typeof floorId !== 'string' || !building.floors.some(floor => floor.id === floorId) ||
+              !Array.isArray(beamIds) || beamIds.length < 2 || beamIds.length > 32 ||
+              beamIds.some(id => typeof id !== 'string') || new Set(beamIds).size !== beamIds.length) {
+            sendJson(response, 400, { error: { code: 'INVALID_BEAM_CHAIN', message: 'Select two to 32 different beams on one floor.' } });
+            return true;
+          }
+          const { columns, beams } = saved.snapshot.system.physicalModel;
+          const selectedIds = new Set(beamIds);
+          const selected = beams.filter(beam => beam.floorId === floorId && selectedIds.has(beam.physicalMemberId));
+          if (selected.length !== beamIds.length) {
+            sendJson(response, 422, { error: { code: 'INVALID_BEAM_CHAIN', message: 'Some members are missing from the selected floor.' } });
+            return true;
+          }
+          const result = await getSharedPythonStructuralWorker().request<PythonWorkerResponseBase & { preview?: unknown }>({
+            action: 'preview_framing_alignment', floorId, beams: selected, columns,
+            floors: building.floors.map(({ id, floorUse, boundary, voidBoundaries, canonicalStaircases, rooms }) =>
+              ({ id, floorUse, boundary, voidBoundaries, canonicalStaircases,
+                rooms: rooms.map(room => ({ id: room.id, boundary: room.boundary })) })),
+          });
+          if (!result.ok) {
+            sendJson(response, 422, { error: { code: 'INVALID_BEAM_CHAIN', message: result.message } });
+            return true;
+          }
+          sendJson(response, 200, { evaluationId: body.evaluationId,
+            structuralRevision: saved.snapshot.system.structuralRevision,
+            architectureSha256: saved.snapshot.system.sourceArchitecturalSha256, preview: result.preview });
           return true;
         }
         const proposal = body.meshProposal;
@@ -347,6 +378,9 @@ export async function handleStructuralRoute(
           sendJson(response, 400, { error: { code: 'INVALID_DECK_MESH', message: 'Specify a supporting floor, region, nodes and quads.' } });
           return true;
         }
+        const automatic = body.automaticMesh === true && proposal === undefined;
+        const frameNodeCount = saved.snapshot.system.nodes.length;
+        let firstFreeNode = frameNodeCount;
         const decks = [];
         const worker = getSharedPythonStructuralWorker();
         for (const floor of building.floors) {
@@ -373,12 +407,28 @@ export async function handleStructuralRoute(
             continue;
           }
           const beams = saved.snapshot.system.physicalModel.beams.filter(beam => beam.floorId === floor.id);
-          const result = await worker.request<PythonWorkerResponseBase & { meshReceipt?: PhysicalDeckMeshReceipt }>({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
-            registeredSurface: true, beams, ...(proposal === undefined ? {} : { meshProposal: proposal,
+          if (response.destroyed) return true;
+          const controller = new AbortController();
+          const cancel = () => controller.abort();
+          response.once('close', cancel);
+          const result = await worker.request<PythonWorkerResponseBase & {
+            meshReceipt?: PhysicalDeckMeshReceipt;
+            automaticMesh?: { regions: AutomaticDeckMeshRegion[]; nextFreeNodeIndex: number };
+          }>({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
+            registeredSurface: true, beams, ...(!automatic && proposal === undefined ? {} : {
+              ...(automatic ? { firstFreeNode } : { meshProposal: proposal }),
               frameNodes: saved.snapshot.system.nodes.map(({ index, positionM }) => ({ index, positionM })),
               frameElements: saved.snapshot.system.elements.map(({ id, startNodeIndex, endNodeIndex }) => ({ id, startNodeIndex, endNodeIndex })),
-            }) });
+            }) }, undefined, controller.signal).catch((error: unknown) => {
+              if (controller.signal.aborted) return undefined;
+              throw error;
+            }).finally(() => response.off('close', cancel));
+          if (result === undefined || response.destroyed) return true;
           if (!result.ok) {
+            if (automatic) {
+              decks.push({ supportingFloorId: floor.id, status: 'DECK_GEOMETRY_REVIEW_REQUIRED', reason: result.message });
+              continue;
+            }
             sendJson(response, 422, { error: { code: proposal === undefined ? 'UNSUPPORTED_DECK_GEOMETRY' : 'INVALID_DECK_MESH', floorId: floor.id, message: result.message } });
             return true;
           }
@@ -390,9 +440,17 @@ export async function handleStructuralRoute(
               concreteGrade: saved.snapshot.system.concreteGrade, meshReceipt: result.meshReceipt });
             return true;
           }
-          decks.push(result.deck);
+          if (automatic) {
+            if (!result.automaticMesh || !isRecord(result.deck)) throw new Error('Missing automatic mesh result.');
+            firstFreeNode = result.automaticMesh.nextFreeNodeIndex;
+            decks.push({ ...result.deck, automaticMesh: result.automaticMesh.regions });
+          } else {
+            decks.push(result.deck);
+          }
         }
-        sendJson(response, 200, { evaluationId: body.evaluationId, structuralRevision: saved.snapshot.system.structuralRevision, decks });
+        sendJson(response, 200, { evaluationId: body.evaluationId, structuralRevision: saved.snapshot.system.structuralRevision, decks,
+          ...(automatic ? { architectureSha256: saved.snapshot.system.sourceArchitecturalSha256,
+            meshRegistry: { frameNodeCount, additionalNodeCount: firstFreeNode - frameNodeCount } } : {}) });
         return true;
       }
       evaluation = saved;

@@ -36,3 +36,17 @@ export interface PhysicalDeckMeshReceipt {
   }[];
   readonly gravityStatus: 'BEARING_AND_LOAD_TRANSFER_UNVERIFIED';
 }
+
+export type AutomaticDeckMeshRegion =
+  | { readonly regionId: string; readonly status: 'MESH_REVIEW_REQUIRED'; readonly reason: string }
+  | (PhysicalDeckMeshReceipt & {
+      readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS';
+      readonly areaMm2: number;
+      readonly quality: { readonly maxEdgeAspectRatio: number; readonly minScaledCornerJacobian: number };
+      readonly unmatchedFrameElementIds: readonly string[];
+      readonly boundaryInterfaces: readonly {
+        readonly regionId: string;
+        readonly lengthMm: number;
+        readonly status: 'SHARED_FRAME_DOFS' | 'CONTINUITY_REVIEW_REQUIRED' | 'NONCONFORMING_INTERFACE';
+      }[];
+    });

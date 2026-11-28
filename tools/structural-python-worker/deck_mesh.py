@@ -13,7 +13,19 @@ def frame_plan_point(node):
     return x * 1000, -y * 1000
 
 
-def check_deck_mesh(deck, proposal, frame_nodes, beams, frame_elements):
+def frame_segments(deck, surface, frame_nodes, beams, frame_elements):
+    for beam in beams:
+        if beam["floorId"] != deck["supportingFloorId"] or beam["topElevationMm"] != deck["elevationMm"]:
+            continue
+        for index in beam["analyticalElementIndices"]:
+            element = frame_elements[index]
+            start, end = (element[key] for key in ("startNodeIndex", "endNodeIndex"))
+            line = LineString([frame_plan_point(frame_nodes[i]) for i in (start, end)])
+            if line.intersection(surface).length > 1e-6:
+                yield beam["physicalMemberId"], element["id"], start, end, line
+
+
+def check_deck_mesh(deck, proposal, frame_nodes, beams, frame_elements, *, require_frame_connection=True):
     regions = [r for r in deck["regions"] if r["id"] == proposal["regionId"]]
     if len(regions) != 1:
         raise ValueError("Unknown physical deck region")
@@ -76,29 +88,33 @@ def check_deck_mesh(deck, proposal, frame_nodes, beams, frame_elements):
         raise ValueError("Quad coverage has gaps, overlap or crosses the physical boundary or opening")
 
     shared_edges = {}
+    # Linear tolerance for floating-point interpolation on an oblique boundary,
+    # on the same millimetre scale as the saved frame elevation check.
+    boundary = surface.boundary
+    boundary_band = None
     for (a, b), adjacent in incidence.items():
         edge = LineString([points[a], points[b]])
-        if len(adjacent) > 2 or (len(adjacent) == 1 and not surface.boundary.covers(edge)):
+        if len(adjacent) > 2:
             raise ValueError("Nonconforming mesh edge or hanging node")
+        if len(adjacent) == 1 and not boundary.covers(edge):
+            if boundary_band is None:
+                boundary_band = boundary.buffer(1e-6)
+            if not boundary_band.covers(edge):
+                raise ValueError("Nonconforming mesh edge or hanging node")
         if a in shared and b in shared:
             shared_edges[tuple(sorted((shared[a], shared[b])))] = adjacent
 
-    connections = []
-    for beam in beams:
-        if beam["floorId"] != deck["supportingFloorId"] or beam["topElevationMm"] != deck["elevationMm"]:
-            continue
-        for index in beam["analyticalElementIndices"]:
-            el = frame_elements[index]
-            start, end = el["startNodeIndex"], el["endNodeIndex"]
-            line = LineString([frame_plan_point(frame_nodes[i]) for i in (start, end)])
-            if line.intersection(surface).length <= 1e-6:
-                continue
-            adjacent = shared_edges.get(tuple(sorted((start, end))))
-            if not adjacent:
-                raise ValueError(f"Frame element {el['id']} requires matching plate edge node identities")
-            connections.append({"physicalBeamId": beam["physicalMemberId"], "elementId": el["id"],
+    connections, unmatched = [], []
+    for beam_id, element_id, start, end, _ in frame_segments(deck, surface, frame_nodes, beams, frame_elements):
+        adjacent = shared_edges.get(tuple(sorted((start, end))))
+        if adjacent is None:
+            if require_frame_connection:
+                raise ValueError(f"Frame element {element_id} requires matching plate edge node identities")
+            unmatched.append(element_id)
+        else:
+            connections.append({"physicalBeamId": beam_id, "elementId": element_id,
                                 "frameNodeIndices": [start, end], "plateIds": adjacent})
-    if not connections:
+    if require_frame_connection and not connections:
         raise ValueError("No shared beam and plate edge in the selected region")
     analytical_indices = dict(shared)
     next_index = len(frame_nodes)
@@ -115,4 +131,5 @@ def check_deck_mesh(deck, proposal, frame_nodes, beams, frame_elements):
                     for quad in quads]
     return {"nodes": mesh_nodes, "quadConnectivity": connectivity, "status": "MESH_GEOMETRY_CHECKED", "regionId": region["id"], "quadCount": len(cells),
             "gapMm2": gap, "outsideMm2": outside, "overlapMm2": overlap, "sharedEdges": connections,
+            **({} if require_frame_connection else {"unmatchedFrameElementIds": sorted(set(unmatched))}),
             "gravityStatus": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED"}

@@ -271,6 +271,7 @@ export interface MemberInternalForcesRecord {
 
 export interface EquilibriumAudit {
   readonly appliedForceSumKn: Vec3Meters;
+  readonly appliedMomentAboutOriginKnM?: Vec3Meters;
   readonly reactionForceSumKn: Vec3Meters;
   readonly forceResidualKn: Vec3Meters;
   readonly momentResidualAboutOriginKnM: Vec3Meters;

@@ -183,7 +183,10 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   await page.getByTestId('struct-subtab-studio_views').click();
   await page.getByTestId('struct-studio-floor-selector').selectOption(building.floors[0].id);
   await page.getByRole('button', { name: 'Inspect registered floor geometry' }).click();
-  await expect(page.getByTestId('registered-deck-geometry')).toBeVisible({ timeout: 30_000 });
+  const registeredDeck = page.getByTestId('registered-deck-geometry');
+  await expect(registeredDeck).toBeVisible({ timeout: 30_000 });
+  await registeredDeck.getByLabel('Generate quadrilateral mesh proposal').check();
+  await expect(registeredDeck.locator('svg polygon').first()).toBeVisible({ timeout: 30_000 });
   await page.getByLabel('Inspect slab').selectOption({ index: 1 });
   await expect(page.getByTestId('physical-deck-inspector')).toContainText('unassigned');
   await page.getByTestId('struct-subtab-diagrams').click();

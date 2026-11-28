@@ -638,8 +638,15 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
     # Optional Plate3D / Quad3D elements
     plate_records_meta: list[tuple[str, str, list[int]]] = []
+    pressure_cases = {str(case["id"]) for case in load_cases}
+    plate_ids = set()
     for p_idx, pl in enumerate(plate_elements):
         kind = str(pl.get("kind", "QUAD")).upper()
+        if kind not in ("PLATE", "QUAD"):
+            raise ValueError(f"Unsupported plate element formulation {kind}")
+        for case_id, pressure in (pl.get("surfacePressuresByCase") or {}).items():
+            if case_id not in pressure_cases or not math.isfinite(float(pressure)):
+                raise ValueError(f"Invalid plate pressure or unknown load case {case_id}")
         e_kpa = float(pl["elasticityKPa"])
         nu = float(pl.get("poissonRatio", 0.2))
         g_kpa = e_kpa / (2.0 * (1.0 + nu))
@@ -650,11 +657,17 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
             mat_cache[mat_key] = m_name
         mat_name = mat_cache[mat_key]
 
-        n_idxs = [int(v) for v in pl["nodeIndices"]]
+        n_idxs = pl["nodeIndices"]
+        if (len(n_idxs) != 4 or any(type(i) is not int or not 0 <= i < len(nodes) for i in n_idxs)
+                or len(set(n_idxs)) != 4):
+            raise ValueError("Plate requires four distinct registered node indices")
         t_m = float(pl["thicknessM"])
         kx_mod = float(pl.get("kxMod", 1.0))
         ky_mod = float(pl.get("kyMod", 1.0))
         p_name = str(pl.get("id") or f"PL_{p_idx}")
+        if p_name in plate_ids:
+            raise ValueError(f"Duplicate plate element ID {p_name}")
+        plate_ids.add(p_name)
         if kind == "PLATE":
             fe.add_plate(
                 p_name,
@@ -680,6 +693,29 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                 ky_mod,
             )
         plate_records_meta.append((p_name, kind, n_idxs))
+
+    if plate_records_meta:
+        # Check topological support independently of PyNite's small-model
+        # stiffness check. Coincident coordinates do not connect components.
+        adjacency = [set() for _ in nodes]
+        edges = [(el["startNodeIndex"], el["endNodeIndex"]) for el in elements]
+        for _, _, ids in plate_records_meta:
+            edges.extend(zip(ids, ids[1:] + ids[:1]))
+        for start, end in edges:
+            adjacency[start].add(end)
+            adjacency[end].add(start)
+        supported = {i for i, node in enumerate(nodes) if any(node.get("restraint") or [])}
+        supported.update(spring["nodeIndex"] for spring in nodal_springs)
+        visited = set(supported)
+        pending = list(supported)
+        while pending:
+            index = pending.pop()
+            neighbours = adjacency[index] - visited
+            visited.update(neighbours)
+            pending.extend(neighbours)
+        if len(visited) != len(nodes):
+            return {"ok": False, "errorCode": "DISCONNECTED_COUPLED_MODEL",
+                    "message": "Plate/frame model has nodes disconnected from all supports."}
 
     # Track local member loads per case for exact multi-station evaluation
     case_trap_local: dict[str, dict[int, list[tuple[np.ndarray, np.ndarray, float, float]]]] = {}
@@ -807,12 +843,14 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                 t_pl = p_obj.T()[:3, :3]
                 z_hat = t_pl[2]
                 pts_3d = [np.array(nodes[idx]["positionM"], dtype=float) for idx in n_idxs]
-                area_pl = 0.5 * (
-                    np.linalg.norm(np.cross(pts_3d[1] - pts_3d[0], pts_3d[3] - pts_3d[0]))
-                    + np.linalg.norm(np.cross(pts_3d[2] - pts_3d[1], pts_3d[3] - pts_3d[1]))
-                )
+                # Integrate the two triangles of the planar convex quadrilateral.
+                # Equal vertex weighting misplaces the load centroid of a trapezoid.
+                triangles = [(pts_3d[0], pts_3d[1], pts_3d[3]), (pts_3d[2], pts_3d[3], pts_3d[1])]
+                areas = [np.linalg.norm(np.cross(b - a, c - a)) / 2 for a, b, c in triangles]
+                area_pl = sum(areas)
+                centroid_pl = sum(area * (a + b + c) / 3
+                                  for area, (a, b, c) in zip(areas, triangles)) / area_pl
                 f_pl = p_val * area_pl * z_hat
-                centroid_pl = sum(pts_3d) / 4.0
                 f_sum += f_pl
                 m_sum += np.cross(centroid_pl, f_pl)
 
@@ -1084,6 +1122,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
             "memberForces": member_forces,
             "equilibrium": {
                 "appliedForceSumKn": [float(v) for v in app_f.tolist()],
+                "appliedMomentAboutOriginKnM": [float(v) for v in app_m.tolist()],
                 "reactionForceSumKn": [float(v) for v in rxn_force_sum.tolist()],
                 "forceResidualKn": [float(v) for v in f_res_vec.tolist()],
                 "momentResidualAboutOriginKnM": [float(v) for v in m_res_vec.tolist()],
@@ -1524,10 +1563,17 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
             from deck_topology import coordinate_deck
             res = {"ok": True, "deck": coordinate_deck(req["floor"], req["beams"],
                     supporting_floor=req.get("supportingFloor"), registered_surface=bool(req.get("registeredSurface")))}
+            if "firstFreeNode" in req:
+                from automatic_mesh import generate_floor
+                res["automaticMesh"] = generate_floor(res["deck"], req["frameNodes"], req["beams"],
+                                                       req["frameElements"], req["firstFreeNode"])
             if "meshProposal" in req:
                 from deck_mesh import check_deck_mesh
                 res["meshReceipt"] = check_deck_mesh(res["deck"], req["meshProposal"], req["frameNodes"],
                                                      req["beams"], req["frameElements"])
+        elif action == "preview_framing_alignment":
+            from framing_alignment import preview_alignment
+            res = {"ok": True, "preview": preview_alignment(req["floorId"], req["beams"], req["columns"], req["floors"])}
         elif action == "capabilities":
             res = {"ok": True, **get_capabilities()}
         elif action == "pynite_solve":

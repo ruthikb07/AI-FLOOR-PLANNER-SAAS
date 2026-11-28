@@ -27,3 +27,7 @@ The production evaluator now accepts reviewed full-level rectangles before assem
 ## Plate and frame mesh handoff
 
 A saved evaluation can now check a proposed quadrilateral mesh against a registered deck region, including openings and the actual beam nodes. The [coupling verification record](COUPLED_SLAB_FRAME_VERIFICATION.md) documents the endpoint, numerical tolerances, tested cases and remaining engineering gates.
+
+## Milestone 6A.3–6A.4 continuation
+
+The [acceptance record](MILESTONE_6A_3_4_ACCEPTANCE.md) tracks the automatic geometry and alignment previews, independent synthetic numerical evidence and actual apartment closure gates.

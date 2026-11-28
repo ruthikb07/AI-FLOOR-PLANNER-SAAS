@@ -29,3 +29,7 @@ The local PyNite worker also passed an independent bending patch on a horizontal
 | Longitudinal plate bending moment magnitude | 1.600 kN·m/m |
 
 The 4-, 8- and 16-quad meshes each meet 10⁻⁸ m displacement, 10⁻⁸ rad rotation and 10⁻⁶ moment tolerances in the units above for moments. This checks bending compatibility and action recovery in an exactly representable elastic field. Distributed floor gravity, realistic slab-to-beam offsets, stair bearings, reactions for either apartment and mesh convergence for their geometries remain open.
+
+## Subsequent verification
+
+The automatic geometry handoff and the concentric pressure-loaded worker checks extend this baseline. The production apartment shell solve remains gated. See [automatic meshing](AUTOMATIC_CONFORMING_MESH_VERIFICATION.md), [building-wide identity](BUILDING_WIDE_COUPLED_ASSEMBLY.md) and [gravity benchmarks](DISTRIBUTED_GRAVITY_BENCHMARKS.md).

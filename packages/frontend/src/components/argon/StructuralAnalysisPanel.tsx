@@ -1,4 +1,5 @@
 import { RegisteredDeckView } from './RegisteredDeckView';
+import { FramingAlignmentPreview } from './FramingAlignmentPreview';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
 import {
@@ -2107,6 +2108,9 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               {showRegisteredDeck ? 'Hide registered floor geometry' : 'Inspect registered floor geometry'}
             </button>
             {showRegisteredDeck && evaluationId && <RegisteredDeckView key={evaluationId} building={building} evaluationId={evaluationId} floorId={studioFloorId} />}
+            {activeSnap && evaluationId && studioViewKind !== 'FOUNDATION_PLAN' &&
+              <FramingAlignmentPreview key={JSON.stringify([evaluationId, studioFloorId])} building={building}
+                evaluationId={evaluationId} floorId={studioFloorId} beams={activeSnap.system.physicalModel.beams} />}
             <label className="block text-sm">Inspect slab
               <select className="ml-2 bg-slate-900" value={inspectedSlab} onChange={e => setInspectedSlab(e.target.value)}>
                 <option value="">Select a physical slab</option>

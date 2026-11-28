@@ -1,0 +1,11 @@
+# Automatic conforming deck mesh
+
+Structural Studio's **Generate quadrilateral mesh proposal** control sends the saved evaluation ID and matching canonical building to `POST /api/v1/structural/deck-topology` with `automaticMesh: true`. The local worker returns per-region coverage, quality, candidate frame connections and rejected regions. The original explicit-node mesh check also remains available.
+
+The generator first tries a rectangular grid seeded by boundary corners and matching frame endpoints. A second pass limits rectangular cell aspect ratios using the boundary coordinate lines. For oblique polygons, constrained polygon triangulation supplies a partition. Each triangle becomes three quadrilaterals by joining its centroid to its edge midpoints. These quadrilaterals have four distinct vertices. The existing worker environment supplies Shapely. [Shapely constrained triangulation](https://shapely.readthedocs.io/en/stable/reference/shapely.constrained_delaunay_triangles.html)
+
+The automatic quality thresholds are an edge aspect ratio of at most 10 and scaled corner Jacobian of at least 0.25. Each face must also pass the existing convexity, orientation, opening, gap and overlap checks. The area tolerance is 0.01 mm² and the boundary interpolation tolerance is 10⁻⁶ mm. Each floor has a 20,000-quad budget and a 25,000-boundary-vertex budget. A rejected region retains its review reason. Adjacent boundary partitions are checked separately from regional coverage.
+
+The geometric regression covers an eight-quad, 32 m² deck around a 4 m² opening and its 24-quad oblique counterpart. Existing manual tests retain inversion, fill, overlap, disconnected duplicate identities and hanging-node rejection. The automated partition test identifies a hanging edge between neighbouring regions and blocks its shared-DOF status.
+
+The archived rotations, cuts and openings remain part of the geometry. Regions that exceed the distortion thresholds remain open. Supporting walls, arbitrary internal beam-line embedding, conforming refinement across every interface and analytically connected curved or inclined surfaces remain outside this patch's verified scope. [Apartment replay](APARTMENT_GRAVITY_LOAD_CLOSURE.json)
