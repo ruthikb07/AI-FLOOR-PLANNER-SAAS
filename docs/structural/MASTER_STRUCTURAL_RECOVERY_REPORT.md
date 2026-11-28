@@ -9,3 +9,7 @@ Resume E2 at the shared regional edge registry. Use the coordinated geometric pa
 Commercial structural release remains **NOT READY**. The archived gravity ledger still carries 647 and 335 historical unresolved slab paths. The new mesh results do not supply project reactions, lateral response, utilization, footing pressures, reinforcement or material quantities. Later release gates and the all-subsystem acceptance matrix remain open.
 
 The saved-evaluation geometry preview also supports revision-bound monolithic slab-interface review and emits a per-floor joint registry. Refer to the continuity benchmark before wiring reviewed beam station lists into a production evaluation. The benchmark records explicit interface transfer, while real apartment reviews remain absent.
+
+## Engineering Input Review and linear offset continuation
+
+Structural Studio now records revision-specific input approvals for terminal roofs, slab–beam connections, stair bearings, balcony roots and geotechnical reports. Records include the component, floor, parameter values, named reviewer, source and timestamp. They persist in this browser. An explicit action sends supported rectangular roof or geotechnical values into the existing evaluation. Connection entries retain a pending method status. The two project archives have no new approvals. The managed worker now supports independently checked first-order rigid links for synthetic offset and balcony fixtures. See [offset verification](BEAM_SLAB_OFFSET_VERIFICATION.md).

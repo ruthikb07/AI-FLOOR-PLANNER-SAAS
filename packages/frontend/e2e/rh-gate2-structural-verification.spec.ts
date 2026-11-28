@@ -121,6 +121,20 @@ test('Gate 2 Live Verification — Corner-Locked Columns/Beams, High-Contrast Si
   expect(initial.regeneration).toMatchObject({ status: 'UNSUPPORTED', revisionsAnalyzed: 1 });
   expect(initial.snapshot.foundationDesign.status).toBe('MISSING_GEOTECHNICAL_INPUT');
   await expect(page.getByTestId('structural-analysis-panel')).toBeVisible({ timeout: 10_000 });
+  const inputReview = page.locator('details').filter({ has: page.getByText('Engineering Input Review', { exact: true }) });
+  await inputReview.locator('summary').click();
+  await inputReview.getByLabel('Input category').selectOption('Balcony root');
+  await inputReview.getByLabel('Component or site ID').fill('synthetic-balcony');
+  await inputReview.getByLabel('Drawing or report reference').fill('Synthetic verification drawing B1');
+  await inputReview.getByLabel("Reviewer's name").fill('Fixture reviewer');
+  await inputReview.getByLabel('Root length (mm)').fill('1000');
+  await inputReview.getByLabel('Projection (mm)').fill('2000');
+  await inputReview.getByLabel('Thickness (mm)').fill('100');
+  await inputReview.getByLabel('I reviewed these parameters').check();
+  await inputReview.getByRole('button', { name: 'Approve input record' }).click();
+  await expect(inputReview.getByText('Connection analysis and design verification pending')).toBeVisible();
+  await inputReview.locator('summary').click();
+
   await expect(page.getByTestId('struct-column-schedule-table')).toBeVisible();
   await expect(page.getByText('Peak Check Utilization', { exact: true })).toBeVisible();
   const memberCounts = page.getByTestId('struct-member-check-counts');

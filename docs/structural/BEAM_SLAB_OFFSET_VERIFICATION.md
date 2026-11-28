@@ -1,0 +1,5 @@
+# Linear rigid offsets
+
+The mixed solver assembles the PyNite frame and quad matrices, then applies the kinematic relation between the slave and master translations and rotations through a sparse transformation. The reduced system uses TᵀKT and Tᵀf. Each master reaction includes the eccentric moment arm. The adapter rejects chained links, multiple masters for one slave, restrained slave nodes and combinations with nodal springs or second-order analysis.
+
+Three explicitly synthetic cases exercise signed offsets and a balcony carried by two offset beam ends. A 10 kN force at a ±0.3 m lever arm produces a ∓3 kN m root reaction moment. The test checks rotation and translation against independent cantilever flexibility within 1e-10. A separate 2 m by 1 m plate with 3 kN/m² downward pressure, 4 kN total horizontal load, a 0.25 m vertical offset and 0.8 m beam extensions produces 6 kN vertical, −4 kN horizontal and −11.8 kN m total root bending reaction. Reaction tolerance is 1e-8. These fixtures verify the linear constraint formulation. Actual concrete joint rigidity, composite flange representation and project bearing remain open.

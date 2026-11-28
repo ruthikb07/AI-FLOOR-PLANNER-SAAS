@@ -45,6 +45,7 @@ matplotlib.use("Agg")
 
 import numpy as np
 from scipy.interpolate import interp1d
+from rigid_offsets import solve_rigid_offsets, validate_offsets
 from analytical_member import AnalyticalMember
 from frame_subdivision import subdivide
 from Pynite import FEModel3D
@@ -544,6 +545,9 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
     load_cases = model_data.get("loadCases") or []
     combinations = model_data.get("combinations") or []
 
+    offset_pairs = validate_offsets(nodes, payload.get("rigidOffsets", []))
+    if offset_pairs and (analysis_mode != "LINEAR" or nodal_springs):
+        raise ValueError("Reviewed rigid offsets currently require linear statics without nodal springs")
     node_names: list[str] = []
     restrained_dofs = 0
     for idx, n in enumerate(nodes):
@@ -614,7 +618,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
         m_name = f"EL_{idx}"
         fe.add_member(m_name, node_names[i_idx], node_names[j_idx], mat_name, sec_name, rotation=roll_deg)
-        if plate_elements or model_data is not payload["model"]:
+        if plate_elements or offset_pairs or model_data is not payload["model"]:
             fe.members[m_name] = AnalyticalMember(fe, m_name, fe.nodes[node_names[i_idx]],
                                                   fe.nodes[node_names[j_idx]], mat_name, sec_name, roll_deg)
         pn_member = fe.members[m_name]
@@ -704,6 +708,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
         # stiffness check. Coincident coordinates do not connect components.
         adjacency = [set() for _ in nodes]
         edges = [(el["startNodeIndex"], el["endNodeIndex"]) for el in elements]
+        edges.extend(offset_pairs)
         for _, _, ids in plate_records_meta:
             edges.extend(zip(ids, ids[1:] + ids[:1]))
         for start, end in edges:
@@ -887,12 +892,16 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
         fe.add_load_combo(ckey, {cid: 1.0})
         combo_defs.append(("CASE", cid, cid, {cid: 1.0}))
 
+    offset_residuals = {}
     eff_stability = bool(check_stability and len(nodes) <= 80)
     try:
         if analysis_mode == "PDELTA":
             fe.analyze_PDelta(log=False, check_stability=eff_stability, max_iter=max_iter, sparse=True)
         else:
-            fe.analyze_linear(log=False, check_stability=eff_stability, check_statics=False, sparse=True)
+            if offset_pairs:
+                offset_residuals = solve_rigid_offsets(fe, nodes, offset_pairs)
+            else:
+                fe.analyze_linear(log=False, check_stability=eff_stability, check_statics=False, sparse=True)
     except Exception as exc:
         return {
             "ok": False,
@@ -902,7 +911,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
 
     solve_ms = (time.perf_counter() - t0) * 1000.0
     total_dofs = len(nodes) * 6
-    free_dofs = max(0, total_dofs - restrained_dofs)
+    free_dofs = max(0, total_dofs - restrained_dofs - 6*len(offset_pairs))
     exec_backend = (
         "PYNITE_PDELTA"
         if analysis_mode == "PDELTA"
@@ -1144,6 +1153,7 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                 "elementCount": len(elements) + len(plate_elements),
                 "totalDofs": total_dofs,
                 "freeDofs": free_dofs,
+                **({"rigidOffsetCount":len(offset_pairs), "constraintReducedResidual":offset_residuals[ckey]} if offset_pairs else {}),
                 "restrainedDofs": restrained_dofs,
                 "solveDurationMs": solve_ms / max(1, len(combo_defs)),
                 "wasmHeapBytesAllocated": 0,

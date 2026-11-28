@@ -189,6 +189,7 @@ export class PyNiteStructuralSolver implements StructuralSolver {
       model,
       nodalSprings: options.nodalSprings ?? [],
       plateElements: options.plateElements ?? [],
+      rigidOffsets: options.rigidOffsets ?? [],
       options: {
         analysisMode,
         solveLoadCases: options.solveLoadCases ?? true,
