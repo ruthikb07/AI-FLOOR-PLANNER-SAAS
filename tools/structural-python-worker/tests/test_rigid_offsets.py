@@ -49,3 +49,36 @@ def test_eccentric_frame_and_loaded_balcony_plate():
     assert sum(r[2] for r in reactions) == pytest.approx(6,abs=1e-8)
     assert sum(r[4] for r in reactions) == pytest.approx(-(6*1.8+4*.25),abs=1e-8)
     assert sol["equilibrium"]["isEquilibrated"]
+
+def test_simple_vertical_bearings_transfer_pressure_and_allow_independent_rotations():
+    # A 4 m by 1 m one-way strip on four grounded posts. Slave nodes retain
+    # independent rotations. Small membrane gauges suppress in-plane rigid modes.
+    from test_distributed_gravity import make_strip, LENGTH, WIDTH, PRESSURE, THICKNESS, ELASTIC
+    nx = 16
+    nodes, _, plates = make_strip(nx, lambda i,j: [i==0 and j==0,i in (0,nx) and j==0,False,False,False,False], False)
+    beams, links = [], []
+    section = dict(areaM2=.1,elasticityKPa=30e6,shearModulusKPa=12e6,
+                   momentInertiaYM4=.001,momentInertiaZM4=.001,torsionalConstantM4=.001)
+    for j in range(3):
+        for i in (0,nx):
+            s=j*(nx+1)+i
+            x,y,_=nodes[s]["positionM"]
+            m=len(nodes)
+            for k,z in enumerate((-.2,-1.2)):
+                nodes.append(dict(id=f"B{m+k}",index=m+k,positionM=[x,y,z],restraint=[k==1]*6))
+            beams.append(dict(id=f"C{m}",index=len(beams),startNodeIndex=m+1,endNodeIndex=m,section=section))
+            links.append(dict(masterNodeIndex=m,slaveNodeIndex=s,reference="synthetic vertical line bearing"))
+    payload=dict(model=dict(modelId="simple-bearing",nodes=nodes,elements=beams,loadCases=[dict(id="G")],combinations=[]),
+                 verticalBearings=links,plateElements=plates)
+    result=run_pynite_solve(payload)
+    assert result["ok"], result
+    sol=result["envelope"]["loadCaseResults"]["G"]
+    reactions=sol["reactions"]
+    for x in (0,LENGTH):
+        assert sum(r["reactionKnM"][2] for r in reactions if nodes[r["nodeIndex"]]["positionM"][0]==x) == pytest.approx(
+            PRESSURE*WIDTH*LENGTH/2,abs=1e-7)
+    assert max(abs(r["reactionKnM"][4]) for r in reactions)<1e-7
+    expected=-5*PRESSURE*LENGTH**4/(384*ELASTIC*THICKNESS**3/12)
+    mid=sol["displacements"][nx+1+nx//2]["translationM"][2]
+    assert mid == pytest.approx(expected,rel=.03)
+    assert sol["diagnostics"]["verticalBearingCount"]==6

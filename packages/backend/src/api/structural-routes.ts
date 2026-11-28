@@ -11,6 +11,8 @@ import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Buildin
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import {
   getSharedPythonStructuralWorker,
+  assembleLoadedAnalyticalFrameModel,
+  type AnalyticalSolveEnvelope,
   exportStructuralBbsCsv,
   exportStructuralEngineeringDxf,
   exportStructuralEngineeringJsonReport,
@@ -285,7 +287,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview|engineering-inputs)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview|engineering-inputs|coupled-gravity)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -340,7 +342,7 @@ export async function handleStructuralRoute(
       return true;
     }
 
-    if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview'].includes(action) && typeof body.evaluationId !== 'string') {
+    if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview', 'coupled-gravity'].includes(action) && typeof body.evaluationId !== 'string') {
       sendJson(response, 400, { error: { code: 'INVALID_STRUCTURAL_EVALUATION', message: 'An evaluation identifier is required.' } });
       return true;
     }
@@ -351,6 +353,55 @@ export async function handleStructuralRoute(
         : undefined;
       if (!saved) {
         sendJson(response, 409, { error: { code: 'STRUCTURAL_EVALUATION_EXPIRED', message: 'Run structural analysis again before using this result.' } });
+        return true;
+      }
+      if (action === 'coupled-gravity') {
+        const system = saved.snapshot.system;
+        const panels = system.slabPanels;
+        const reviews = panels.map(panel => panel.deckReview);
+        if (body.architectureSha256 !== system.sourceArchitecturalSha256 || !panels.length ||
+            reviews.some(review => !review) || system.stairWaists.length ||
+            !system.storeys.every(floor => panels.filter(p=>p.floorId===floor.id).length===1)) {
+          sendJson(response,422,{error:{code:'COUPLED_DECK_SCOPE',message:'A matching saved revision and a reviewed full rectangular deck at every frame level, including the roof, are required. Stair systems require regional analysis.'}});
+          return true;
+        }
+        const gravityInputs = {...saved.inputs, seismic:undefined, wind:undefined};
+        const {analyticalModel,loadTakeoff} = await assembleLoadedAnalyticalFrameModel(system,gravityInputs,undefined,
+          {meshedSlabPanelIds:new Set(panels.map(p=>p.id))});
+        if (Object.values(loadTakeoff.unassignedGravityKnByCase ?? {}).some(n=>n!==0)) {
+          sendJson(response,422,{error:{code:'UNASSIGNED_GRAVITY',message:'The saved frame has an unresolved gravity source.'}});
+          return true;
+        }
+        const decks = panels.map(panel => {
+          const review = panel.deckReview!;
+          const source = saved.snapshot.loadTakeoff.loadSourceAudit?.find(item=>item.sourceId===panel.id && item.category==='SLAB_PANEL');
+          const forces = source?.gravityTransfer?.forceByCaseKn;
+          if (!forces || !panel.boundsMm || !panel.supportingBeamElementIndices.length || !panel.areaM2 ||
+              !['DL','SDL','LL'].every(id=>Number.isFinite(forces[id]) && forces[id]! >= 0)) throw new Error('Missing reviewed deck pressure ledger.');
+          return {id:panel.id,boundsMm:panel.boundsMm,topMm:review.structuralTopMm,thicknessMm:review.thicknessMm,
+            reference:review.reference,elasticityKPa:system.elements[panel.supportingBeamElementIndices[0]!]!.section.elasticityKPa,
+            supportingBeamElementIndices:panel.supportingBeamElementIndices,
+            pressures:Object.fromEntries(['DL','SDL','LL'].map(id=>[id,forces[id]!/panel.areaM2]))};
+        });
+        const controller = new AbortController();
+        const cancel = () => controller.abort();
+        response.once('close',cancel);
+        const solved = await getSharedPythonStructuralWorker().request<PythonWorkerResponseBase & {
+          envelope?:AnalyticalSolveEnvelope; slabLoadLedger?:unknown;
+        }>({action:'reviewed_rectangular_gravity', model:analyticalModel,decks},undefined,controller.signal)
+          .finally(()=>response.off('close',cancel));
+        if (!solved.ok || !solved.envelope) {
+          sendJson(response,422,{error:{code:'COUPLED_SOLVE_FAILED',message:solved.message}});
+          return true;
+        }
+        const results = [...Object.values(solved.envelope.loadCaseResults), ...Object.values(solved.envelope.combinationResults)];
+        if (!results.length || results.some(r=>!r.equilibrium.isEquilibrated)) {
+          sendJson(response,422,{error:{code:'COUPLED_EQUILIBRIUM_FAILED',message:'Coupled gravity forces or moments failed equilibrium.'}});
+          return true;
+        }
+        sendJson(response,200,{evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
+          structuralRevision:system.structuralRevision,scope:'LINEAR_GRAVITY_SIMPLE_VERTICAL_BEARINGS',
+          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope});
         return true;
       }
       if (action === 'deck-topology' || action === 'alignment-preview') {

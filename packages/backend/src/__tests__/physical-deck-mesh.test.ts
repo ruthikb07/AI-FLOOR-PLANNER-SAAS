@@ -39,6 +39,24 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     const invalid = await post('engineering-inputs',{building,digest,record:{...record,numbers:[-1,2000,100]}});
     expect(invalid.status).toBe(422);
     const data = { building, evaluationId };
+    const blockedCoupling = await post('coupled-gravity',{evaluationId,architectureSha256:digest});
+    expect(blockedCoupling.status).toBe(422);
+    const rectangularDeckReviews = ['stilt','upper'].map((id,i)=>({schema:'RH_RECTANGULAR_DECK_V1',
+      boundaryCondition:'SIMPLY_SUPPORTED_FULL_LEVEL',architectureSha256:digest,reference:'Synthetic drawing '+id,
+      supportingFloorId:id,surfaceFloorId:'upper',use:i?'ROOF':'OCCUPIED',structuralTopMm:i?5900:3100,
+      finishedFloorMm:i?5900:3100,thicknessMm:160,uniformLiveLoadKnM2:i?1.5:3,minimumBearingWidthMm:75}));
+    const reviewed = await post('analyze',{building,reviewedInputs:{seismic:{enabled:false},floorFinishKnM2:1,rectangularDeckReviews}});
+    const qualified = await reviewed.json();
+    expect(reviewed.status,JSON.stringify(qualified.error)).toBe(200);
+    const coupled = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest});
+    const assessed = await coupled.json();
+    expect(coupled.status,JSON.stringify(assessed.error)).toBe(200);
+    expect(assessed.slabLoadLedger.map((item:{forceKn:unknown})=>item.forceKn)).toEqual([
+      {DL:40,SDL:10,LL:30},{DL:40,SDL:10,LL:15}]);
+    const live = assessed.envelope.loadCaseResults.LL;
+    expect(live.diagnostics.executionBackend).toBe('PYNITE_PLATE_QUAD');
+    expect(live.reactions.reduce((sum:number,r:{reactionKnM:number[]})=>sum+r.reactionKnM[2]!,0)).toBeCloseTo(45,6);
+    expect(live.equilibrium.isEquilibrated).toBe(true);
     const geometry = await post('deck-topology', data);
     expect(geometry.status).toBe(200);
     const { decks } = await geometry.json() as { decks: { deckAreaMm2: number; regions: { id: string }[] }[] };
