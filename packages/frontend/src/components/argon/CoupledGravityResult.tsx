@@ -9,6 +9,7 @@ interface GravityReceipt {
   resultId: string;
   slabLoadLedger: { physicalSlabId:string; areaM2:number; quads:number; forceKn:Record<string,number>; bearingTransfer:Record<string,{requiresHoldDown:boolean}> }[];
   envelope: AnalyticalSolveEnvelope;
+  stairLoadTransfers?:{sourceId:string;receivingElementIds:string[];gravityTransfer?:{assignedForceByCaseKn:Record<string,number>}}[];
   frameDesign?: {status:'INPUT_OR_METHOD_REVIEW_REQUIRED';reason:string} | {
     status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES';
     beams:{physicalMemberId:string;maxUtilization:number;status:string}[];
@@ -52,6 +53,7 @@ export function CoupledGravityResult({ evaluationId, digest }: { evaluationId:st
     {error && <p role="alert">{error}</p>}
     {receipt && <>
       <p>{receipt.slabLoadLedger.length} decks · {receipt.slabLoadLedger.reduce((n,r)=>n+r.quads,0)} quadrilaterals · elastic gravity with compression-only bearings</p>
+      {!!receipt.stairLoadTransfers?.length && <p>{receipt.stairLoadTransfers.length} reviewed stair flights transfer gravity through equivalent line loads on their landing beams. Stair shear and anchorage require separate verification.</p>}
       {receipt.slabLoadLedger.some(s => Object.values(s.bearingTransfer).some(b => b.requiresHoldDown)) &&
         <p role="alert">Tensile bearing reactions require a reviewed hold-down or a contact reanalysis.</p>}
       <table><caption>Base reactions and largest force residual</caption><thead><tr><th>Case</th><th>Vertical reaction (kN)</th><th>Residual (kN)</th></tr></thead>

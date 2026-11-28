@@ -369,10 +369,20 @@ export async function handleStructuralRoute(
         }
         const panels = system.slabPanels;
         const reviews = panels.map(panel => panel.deckReview);
+        const stairConflict = system.stairWaists.some(stair=>{
+          const box=stair.boundsMm;
+          if (!box || !stair.bearingReview || !stair.hasExplicitStraightFlightGeometry) return true;
+          return panels.some(panel=>{
+            const slab=panel.boundsMm, top=panel.deckReview?.structuralTopMm;
+            return slab && (top===stair.baseElevationMm || top===stair.topElevationMm) &&
+              Math.min(slab.maxX,box.maxX)>Math.max(slab.minX,box.minX) &&
+              Math.min(slab.maxY,box.maxY)>Math.max(slab.minY,box.minY);
+          });
+        });
         if (body.architectureSha256 !== system.sourceArchitecturalSha256 || !panels.length ||
-            reviews.some(review => !review) || system.stairWaists.length ||
-            !system.storeys.every(floor => panels.filter(p=>p.floorId===floor.id).length===1)) {
-          sendJson(response,422,{error:{code:'COUPLED_DECK_SCOPE',message:'A matching saved revision and a reviewed full rectangular deck at every frame level, including the roof, are required. Stair systems require regional analysis.'}});
+            reviews.some(review => !review) || stairConflict ||
+            !system.storeys.every(floor => panels.some(p=>p.floorId===floor.id))) {
+          sendJson(response,422,{error:{code:'COUPLED_DECK_SCOPE',message:'A matching revision and reviewed rectangular decks or independent grid bays at every frame level, including the roof, are required. Stair systems require regional analysis.'}});
           return true;
         }
         const gravityInputs = {...saved.inputs, seismic:undefined, wind:undefined};
@@ -413,6 +423,7 @@ export async function handleStructuralRoute(
         const receipt = {evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
           structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
           slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope,
+          stairLoadTransfers:loadTakeoff.loadSourceAudit?.filter(source=>source.category==='STAIRCASE_FLIGHT'),
           frameDesign:coupledFrameCandidates(saved,solved.envelope,solved.frameRegistry,blocker),
           foundation:checkCoupledGravityFoundations(saved,solved.envelope,blocker)};
         const resultId = await saveCoupledReceipt(String(body.evaluationId),receipt);

@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import {applyStairBearingReviews} from '../loads/reviewed-stair-bearings.js';
 import type { Building } from '@ai-floor-planner/core';
 import { synthesizeCanonicalStructuralSystem, applyReviewedDecks, assembleLoadedAnalyticalFrameModel, evaluateFullBuildingStructuralSystem, exportStructuralIfc4Step, exportStructuralEngineeringDxf } from '../index.js';
 
@@ -41,6 +42,32 @@ it('rejects duplicate, stale, disconnected and wrong-level deck reviews', () => 
   expect(() => applyReviewedDecks(building, { ...frame, physicalModel: { ...frame.physicalModel, columns: [] } }, [review])).toThrow(/column-end/);
 });
 
+it('keeps a partial-bay opening outside both rectangular bearing methods', () => {
+  const {building,review}=fixture(4000);
+  const opening={points:[{x:500,y:500},{x:500,y:1000},{x:1500,y:1000},{x:1500,y:500}]};
+  const revised={...building,floors:building.floors.map(f=>f.id==='upper'?{...f,voidBoundaries:[opening]}:f)};
+  const frame=synthesizeCanonicalStructuralSystem(revised);
+  const approval={...review,architectureSha256:frame.sourceArchitecturalSha256};
+  expect(()=>applyReviewedDecks(revised,frame,[approval])).toThrow(/Openings/);
+  expect(()=>applyReviewedDecks(revised,frame,[{...approval,boundaryCondition:'SIMPLY_SUPPORTED_GRID_BAYS'}]))
+    .toThrow(/opening edge/);
+});
+
+it('preserves a westbound architectural flight and rejects straight bearing treatment for a turning flight', () => {
+  const {building}=fixture(4000);
+  const make=(type:string)=>({...building,floors:building.floors.map(f=>f.id!=='upper'?f:{...f,
+    stairs:[{id:'westflight',floorId:f.id,type,direction:'west',x:0,y:0,width:4000,length:2500,
+      riserHeight:175,treadDepth:250,riserCount:16}]})}) as unknown as Building;
+  const frame=synthesizeCanonicalStructuralSystem(make('straight'));
+  expect(frame.stairWaists[0]?.flightDirection).toBe('W');
+  const turn=synthesizeCanonicalStructuralSystem(make('U_shaped'));
+  const stair=turn.stairWaists[0]!;
+  const check={architectureSha256:turn.sourceArchitecturalSha256,waistId:stair.id,lowerBeamId:'a',upperBeamId:'b',
+    reference:'synthetic invalid review',method:'SIMPLY_SUPPORTED_STRAIGHT_FLIGHT' as const,liveLoadKnM2:3,
+    waistThicknessMm:stair.waistThicknessMm,minimumBearingMm:75,upperLandingMm:stair.topElevationMm!};
+  expect(()=>applyStairBearingReviews(turn,[check])).toThrow(/straight flight/i);
+});
+
 it('projects the same reviewed deck revision into the evaluated IFC and DXF', async () => {
   const { building, review } = fixture(4000);
   const snapshot = await evaluateFullBuildingStructuralSystem({ building, inputs: { concreteGrade: 'M25', steelGrade: 'Fe500',
@@ -56,7 +83,7 @@ it('projects the same reviewed deck revision into the evaluated IFC and DXF', as
 
 it('accounts for a synthetic straight waist at its two reviewed structural elevations', async () => {
   const { frame } = fixture(4000);
-  const waist = { id:'synthetic-stair',stairId:'S', floorId:'upper',horizontalSpanMm:4000,widthMm:2500,
+  const waist = { id:'synthetic-stair',stairId:'S', floorId:'upper',hasExplicitStraightFlightGeometry:true,horizontalSpanMm:4000,widthMm:2500,
     waistThicknessMm:160,riserMm:175,treadMm:250,riserCount:16,baseElevationMm:3100,topElevationMm:5900,
     boundsMm:{minX:0,maxX:4000,minY:0,maxY:2500},flightDirection:'E' as const,supportingBeamElementIndices:[] };
   const system = {...frame, stairWaists:[waist]};

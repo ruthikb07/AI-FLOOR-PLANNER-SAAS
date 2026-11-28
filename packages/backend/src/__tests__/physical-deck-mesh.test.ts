@@ -1,10 +1,129 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { shutdownSharedPythonStructuralWorker, type AnalyticalSolveEnvelope, type AutomaticDeckMeshRegion, type PhysicalDeckMeshProposal, type PhysicalDeckMeshReceipt, type StructuralEvaluationSummary, type StructuralOptimizationSummary } from '@ai-floor-planner/structural-engine';
 import { createBackendServer } from '../server.js';
+import {canonicalBuildingHash} from '@ai-floor-planner/core';
+import {synthesizeCanonicalStructuralSystem} from '@ai-floor-planner/structural-engine';
+
+it('carries a reviewed stair through the floor opening to two identified coupled frame bearings',async()=>{
+  const store=await mkdtemp(path.join(tmpdir(),'rh-grid-stair-'));
+  vi.stubEnv('RH_LOCAL_PROJECTS_DIR',store);
+  const server=createBackendServer({gemini:null,briefInterpreterKind:'gemini'});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {
+    const base='http://127.0.0.1:'+(server.address() as AddressInfo).port+'/api/v1/structural/';
+    const post=(route:string,data:object)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const building=JSON.parse(await readFile(new URL('../../../../docs/structural/6a-evidence/synthetic-two-storey-building.json',import.meta.url),'utf8'));
+    const rect=(lo:number,hi:number)=>({points:[{x:lo,y:0},{x:lo,y:2000},{x:hi,y:2000},{x:hi,y:0}]});
+    Object.assign(building.site,{plotWidth:8000,plotDepth:2000,plotArea:16,plotBoundary:rect(0,8000)});
+    for (const floor of building.floors) {
+      floor.boundary=rect(0,8000);
+      floor.voidBoundaries=[rect(2000,6000)];
+      floor.columns=[0,2000,6000,8000].flatMap(x=>[0,2000].map(y=>({...floor.columns[0],id:floor.id+'/'+x+'/'+y,position:{x,y}})));
+    }
+    building.floors[1].stairs=[{id:'synthetic-flight',floorId:'upper',type:'straight',direction:'west',x:2000,y:0,
+      width:4000,length:2000,riserHeight:175,treadDepth:250,riserCount:16}];
+    const system=synthesizeCanonicalStructuralSystem(building), digest=system.sourceArchitecturalSha256;
+    const waist=system.stairWaists[0]!;
+    const bearing=(x:number,z:number)=>system.physicalModel.beams.find(b=>b.topElevationMm===z &&
+      b.startPointMm.x===x && b.endPointMm.x===x)!.physicalMemberId;
+    const stair={architectureSha256:digest,waistId:waist.id,lowerBeamId:bearing(6000,waist.baseElevationMm!),
+      upperBeamId:bearing(2000,waist.topElevationMm!),method:'SIMPLY_SUPPORTED_STRAIGHT_FLIGHT',
+      upperLandingMm:waist.topElevationMm,liveLoadKnM2:4,waistThicknessMm:waist.waistThicknessMm,
+      minimumBearingMm:75,reference:'Synthetic westbound stair bearings'};
+    const reviews=['stilt','upper'].map((id,i)=>({schema:'RH_RECTANGULAR_DECK_V1',boundaryCondition:'SIMPLY_SUPPORTED_GRID_BAYS',
+      architectureSha256:digest,reference:'Synthetic divided deck '+id,supportingFloorId:id,surfaceFloorId:'upper',
+      use:i?'ROOF':'OCCUPIED',structuralTopMm:i?5900:3100,finishedFloorMm:i?5900:3100,minimumBearingWidthMm:75,
+      uniformLiveLoadKnM2:i?1.5:3,thicknessMm:160}));
+    const inputs={seismic:{enabled:false},wind:{enabled:false},floorFinishKnM2:1,rectangularDeckReviews:reviews};
+    for (const approved of [false,true]) {
+      const result=await post('analyze',{building,reviewedInputs:{...inputs,stairBearingReviews:approved?[stair]:[]}});
+      const evaluation=await result.json() as {evaluationId:string;error?:unknown;snapshot:StructuralEvaluationSummary};
+      expect(result.status,JSON.stringify(evaluation.error)).toBe(200);
+      const res=await post('coupled-gravity',{evaluationId:evaluation.evaluationId,architectureSha256:digest});
+      if (!approved) { expect(res.status).toBe(422); continue; }
+      const data=await res.json() as {error?:unknown;envelope:AnalyticalSolveEnvelope;stairLoadTransfers:unknown[]};
+      expect(res.status,JSON.stringify(data.error)).toBe(200);
+      expect(data.stairLoadTransfers).toMatchObject([{sourceId:waist.id,transferMethod:'STAIR_LANDING_REACTION',
+        gravityTransfer:{assignedForceByCaseKn:{LL:32}}}]);
+      expect(data.envelope.loadCaseResults.LL!.equilibrium.reactionForceSumKn[2]).toBeCloseTo(68,6);
+      expect(evaluation.snapshot.rccDesign.stairs[0]?.status).toBe('UNSUPPORTED');
+    }
+  } finally {
+    shutdownSharedPythonStructuralWorker();
+    await new Promise<void>(resolve=>server.close(()=>resolve()));
+    vi.unstubAllEnvs();
+    await rm(store,{recursive:true,force:true});
+  }
+},60_000);
+
+it('couples eight independently bearing bays around a full-bay opening at each of two storeys', async () => {
+  const store=await mkdtemp(path.join(tmpdir(),'rh-bay-coupling-'));
+  vi.stubEnv('RH_LOCAL_PROJECTS_DIR',store);
+  const server=createBackendServer({gemini:null,briefInterpreterKind:'gemini'});
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {
+    const base='http://127.0.0.1:'+(server.address() as AddressInfo).port+'/api/v1/structural/';
+    const post=(action:string,data:object)=>fetch(base+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const building=JSON.parse(await readFile(new URL('../../../../docs/structural/6a-evidence/synthetic-two-storey-building.json',import.meta.url),'utf8'));
+    const rectangle=(lo:number,hi:number)=>({points:[{x:lo,y:lo},{x:lo,y:hi},{x:hi,y:hi},{x:hi,y:lo}]});
+    const axes=[0,2000,4000,6000];
+    building.name='Synthetic square grid with a central opening';
+    Object.assign(building.site,{plotWidth:6000,plotDepth:6000,plotArea:36,plotBoundary:rectangle(0,6000)});
+    for (const f of building.floors) {
+      f.boundary=rectangle(0,6000);
+      f.voidBoundaries=[rectangle(2000,4000)];
+      f.columns=axes.flatMap(x=>axes.map(y=>({...f.columns[0], id:f.id+'/'+x+'/'+y,position:{x,y}})));
+    }
+    const digest=canonicalBuildingHash(building);
+    const reviews=['stilt','upper'].map((id,i)=>({schema:'RH_RECTANGULAR_DECK_V1',boundaryCondition:'SIMPLY_SUPPORTED_GRID_BAYS',
+      architectureSha256:digest,reference:'Synthetic independent simple bay bearings '+id,supportingFloorId:id,surfaceFloorId:'upper',
+      use:i?'ROOF':'OCCUPIED',structuralTopMm:i?5900:3100,finishedFloorMm:i?5900:3100,minimumBearingWidthMm:75,
+      uniformLiveLoadKnM2:i?1.5:3,thicknessMm:160}));
+    const evaluation=await post('analyze',{building,reviewedInputs:{seismic:{enabled:false},wind:{enabled:false},
+      floorFinishKnM2:1,rectangularDeckReviews:reviews}});
+    const saved=await evaluation.json() as {evaluationId:string;error?:unknown;snapshot:StructuralEvaluationSummary};
+    expect(evaluation.status,JSON.stringify(saved.error)).toBe(200);
+    const res=await post('coupled-gravity',{evaluationId:saved.evaluationId,architectureSha256:digest});
+    const receipt=await res.json() as {error?:unknown;envelope:AnalyticalSolveEnvelope;
+      slabLoadLedger:{areaM2:number;physicalSlabId:string;bearingStations:{frameNodeId:string;plateNodeId:string}[]}[]};
+    expect(res.status,JSON.stringify(receipt.error)).toBe(200);
+    expect(receipt.slabLoadLedger).toHaveLength(16);
+    expect(receipt.slabLoadLedger.every(r=>r.areaM2===4)).toBe(true);
+    const live=receipt.envelope.loadCaseResults.LL!;
+    expect(live.equilibrium.reactionForceSumKn[2]).toBeCloseTo(32*(3+1.5),6);
+    // For identical columns within a storey, the mean shortening follows
+    // equilibrium and axial elasticity regardless of individual tributary areas.
+    const shortening = [];
+    for (const [level,load] of [['upper',48],['stilt',144]] as const) {
+      const columns=saved.snapshot.system.elements.filter(e=>e.category==='COLUMN' && e.floorId===level);
+      expect(columns).toHaveLength(16);
+      const axialStiffness=columns.map(c=>c.section.elasticityKPa*c.section.areaM2 /
+        (saved.snapshot.system.nodes[c.endNodeIndex]!.positionM[2]-saved.snapshot.system.nodes[c.startNodeIndex]!.positionM[2]));
+      const sum=columns.reduce((n,c,i)=>n+axialStiffness[i]!*(live.displacements[c.startNodeIndex]!.translationM[2]-live.displacements[c.endNodeIndex]!.translationM[2]),0);
+      expect(sum).toBeCloseTo(load,6);
+      shortening.push({level,supportedKn:load,axialFromShorteningKn:sum});
+    }
+    const stations=receipt.slabLoadLedger.flatMap(r=>r.bearingStations);
+    const shared=stations.filter(s=>s.frameNodeId.includes('/beam/'));
+    expect(new Set(shared.map(s=>s.frameNodeId)).size).toBeLessThan(shared.length);
+    expect(new Set(stations.map(s=>s.plateNodeId)).size).toBe(stations.length);
+    if(process.env.RH_GRID_COUPLED_REPORT) await writeFile(process.env.RH_GRID_COUPLED_REPORT,JSON.stringify({
+      scope:'Synthetic two-storey grid with a full central bay opening and independent simple bearings',
+      building,reviews,architectureSha256:digest,shortening,liveEquilibrium:live.equilibrium,
+      bays:receipt.slabLoadLedger.map(b=>({id:b.physicalSlabId,areaM2:b.areaM2})),
+      frameStations:new Set(stations.map(s=>s.frameNodeId)).size,slabStations:stations.length,
+    },null,2));
+  } finally {
+    shutdownSharedPythonStructuralWorker();
+    await new Promise<void>(resolve=>server.close(()=>resolve()));
+    vi.unstubAllEnvs();
+    await rm(store,{recursive:true,force:true});
+  }
+},60_000);
 
 it('checks a shared plate edge against the saved frame and rejects a coincident independent node', async () => {
   const store = await mkdtemp(path.join(tmpdir(), 'rh-deck-mesh-'));

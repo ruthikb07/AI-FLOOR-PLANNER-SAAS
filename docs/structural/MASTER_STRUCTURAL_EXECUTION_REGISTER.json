@@ -106,14 +106,15 @@
       "confirmedRootCause": null,
       "requiredCorrection": null,
       "regressionTest": "packages/backend/src/__tests__/physical-deck-mesh.test.ts",
-      "independentBenchmark": "Two decks transfer 45 kN LL. Check each slab force and first moments independently.",
+      "independentBenchmark": "Two decks transfer 45 kN LL. The 16-bay opening case transfers 144 kN and recovers both storey loads from axial shortening. A westbound stair adds 32 kN to a separate 68 kN fixture.",
       "evidence": [
         "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
         "COUPLED_PRODUCTION_ANALYSIS_VERIFICATION.md",
-        "6a-evidence/synthetic-two-storey-coupled.json"
+        "6a-evidence/synthetic-two-storey-coupled.json",
+        "6a-evidence/synthetic-grid-opening-coupled.json"
       ],
       "correctionCommit": "7d5180e (initial scoped solve)",
-      "scope": "Complete saved rectangular gravity verification fixture only. Irregular apartment assembly and consumption for sizing remain open."
+      "scope": "Saved rectangular decks and independent grid bays with beam-aligned openings, compression-only vertical bearings and explicitly reviewed straight stairs. The limited frame RCC and isolated pad checks consume coupled actions. General irregular apartment design and slab reinforcement remain open."
     },
     {
       "id": "D07",

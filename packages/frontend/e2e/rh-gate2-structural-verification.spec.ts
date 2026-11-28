@@ -23,6 +23,7 @@ test('reviews the occupied floor and roof and reopens the coupled 45 kN syntheti
   await review.locator('summary').click();
   for (const roof of [false,true]) {
     await review.getByLabel('Input category').selectOption(roof?'Terminal roof':'Occupied deck');
+    await review.getByLabel('Reviewed deck bearings').selectOption(roof?'SIMPLY_SUPPORTED_FULL_LEVEL':'SIMPLY_SUPPORTED_GRID_BAYS');
     await review.getByLabel('Supporting floor').selectOption(roof?'upper':'stilt');
     if (!roof) await review.getByLabel('Floor owning the occupied surface').selectOption('upper');
     await review.getByLabel('Component or site ID').fill(roof?'R1':'D1');

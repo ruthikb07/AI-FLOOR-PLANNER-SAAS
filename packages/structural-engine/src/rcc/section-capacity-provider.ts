@@ -19,7 +19,7 @@ import {
 import { evaluateColumnUniaxialMomentCapacity } from './rcc-design-engine.js';
 import {
   getSharedPythonStructuralWorker,
-  getSectionPythonStructuralWorkers,
+  sectionCapacityWorkers,
   type PythonStructuralWorkerClient,
   type PythonWorkerResponseBase,
 } from '../worker/python-structural-client.js';
@@ -290,58 +290,45 @@ export async function evaluateSectionsWithConcreteProperties(
   const started = performance.now();
   const demandCount = rpcItems.reduce((sum, item) => sum + item.demands.length, 0);
   if (rpcItems.length > 512 || demandCount > 1024) throw new Error('ConcreteProperties evaluation exceeds the section or demand limit.');
-  const clients = !worker && demandCount >= 16 && rpcItems.length >= 3
-    ? getSectionPythonStructuralWorkers() : [worker ?? getSharedPythonStructuralWorker()];
-  const batches = clients.map(client => ({ client, indices: [] as number[], estimatedCost: 0 }));
-  const order = rpcItems.map((item, index) => ({ index, cost: (1 + item.bars.length + (item.polygonMm?.length ?? 4)) * (1 + item.demands.reduce(
-    (sum, demand) => sum + (demand.biaxialPoints ?? (demand.includeContour ? 36 : 20)), 0,
-  )) })).sort((a, b) => b.cost - a.cost);
-  for (const { index, cost } of order) {
-    const batch = batches.reduce((best, candidate) => candidate.estimatedCost < best.estimatedCost ? candidate : best);
-    batch.indices.push(index);
-    batch.estimatedCost += cost;
-  }
-
-  const cancel = new AbortController();
-  const batchSignal = signal ? AbortSignal.any([signal, cancel.signal]) : cancel.signal;
-  const results: ConcretePropertiesSectionResult[] = new Array(items.length);
-  try {
-    await Promise.all(batches.map(async ({ client, indices }) => {
-      const requests: { index: number; item: (typeof rpcItems)[number] }[][] = [];
-      let pending: (typeof requests)[number] = [];
-      let pendingDemands = 0;
-      for (const index of indices) {
-        const item = rpcItems[index]!;
-        for (let offset = 0; offset < Math.max(1, item.demands.length); offset += MAX_SECTION_RPC_DEMANDS) {
-          const demands = item.demands.slice(offset, offset + MAX_SECTION_RPC_DEMANDS);
-          if (pendingDemands + demands.length > MAX_SECTION_RPC_DEMANDS || pending.length === MAX_SECTION_RPC_ITEMS) {
-            requests.push(pending);
-            pending = [];
-            pendingDemands = 0;
-          }
-          pending.push({ index, item: { ...item, demands,
-            includeInteractionCurves: offset === 0 && item.includeInteractionCurves,
-            includeMomentCurvature: offset === 0 && item.includeMomentCurvature } });
-          pendingDemands += demands.length;
-        }
+  type Entry = {index:number;part:number;item:(typeof rpcItems)[number]};
+  const requests: Entry[][] = [];
+  const parts: ConcretePropertiesSectionResult[][] = rpcItems.map(()=>[]);
+  let pending:Entry[] = [], pendingDemands=0;
+  for (const [index,item] of rpcItems.entries()) {
+    for (let offset=0; offset<Math.max(1,item.demands.length); offset+=MAX_SECTION_RPC_DEMANDS) {
+      const demands=item.demands.slice(offset,offset+MAX_SECTION_RPC_DEMANDS);
+      if (pending.length===MAX_SECTION_RPC_ITEMS || pendingDemands+demands.length>MAX_SECTION_RPC_DEMANDS) {
+        requests.push(pending);
+        pending=[]; pendingDemands=0;
       }
-      if (pending.length) requests.push(pending);
-      for (const request of requests) {
-        const response = await client.request<SectionBatchRpcResponse>({
-          action: 'section_capacity_batch', items: request.map(entry => entry.item),
-        }, 300_000, batchSignal);
-        if (!response.ok || !response.results || response.results.length !== request.length) {
+      pending.push({index,part:offset/MAX_SECTION_RPC_DEMANDS,item:{...item,demands,
+        includeInteractionCurves:offset===0 && item.includeInteractionCurves,
+        includeMomentCurvature:offset===0 && item.includeMomentCurvature}});
+      pendingDemands+=demands.length;
+    }
+  }
+  if (pending.length) requests.push(pending);
+
+  const clients = !worker && demandCount>=16 ? await sectionCapacityWorkers(requests.length) : [worker ?? getSharedPythonStructuralWorker()];
+  const cancel = new AbortController();
+  const batchSignal = signal ? AbortSignal.any([signal,cancel.signal]) : cancel.signal;
+  let next=0;
+  try {
+    await Promise.all(clients.map(async client=>{
+      while (next<requests.length) {
+        batchSignal.throwIfAborted();
+        const request=requests[next++]!;
+        const response=await client.request<SectionBatchRpcResponse>({
+          action:'section_capacity_batch',items:request.map(entry=>entry.item)
+        },300_000,batchSignal);
+        if (!response.ok || response.results?.length!==request.length)
           throw new Error(`ConcreteProperties section evaluation failed (${response.errorCode ?? 'ERROR'}): ${response.message ?? 'Incomplete batch response.'}`);
-        }
-        response.results.forEach((result, i) => {
-          const { index, item } = request[i]!;
-          if (result.sectionId !== item.sectionId || result.demandEvaluations.length !== item.demands.length ||
-              result.demandEvaluations.some((demand, j) => demand.id !== item.demands[j]!.id)) {
+        response.results.forEach((result,i)=>{
+          const {index,part,item}=request[i]!;
+          if (result.sectionId!==item.sectionId || result.demandEvaluations.length!==item.demands.length ||
+              result.demandEvaluations.some((d,j)=>d.id!==item.demands[j]!.id))
             throw new Error('ConcreteProperties returned inconsistent section or demand identifiers.');
-          }
-          const previous = results[index];
-          results[index] = previous ? { ...previous,
-            demandEvaluations: [...previous.demandEvaluations, ...result.demandEvaluations] } : result;
+          parts[index]![part]=result;
         });
       }
     }));
@@ -349,6 +336,7 @@ export async function evaluateSectionsWithConcreteProperties(
     cancel.abort();
     throw error;
   }
+  const results=parts.map(section=>({...section[0]!,demandEvaluations:section.flatMap(part=>part.demandEvaluations)}));
   return { results, durationMs: performance.now() - started };
 }
 

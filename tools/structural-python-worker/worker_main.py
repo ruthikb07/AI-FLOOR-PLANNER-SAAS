@@ -1605,6 +1605,7 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
         elif action == "capabilities":
             res = {"ok": True, **get_capabilities()}
         elif action == "reviewed_rectangular_gravity":
+            _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)
             from reviewed_rectangular_coupling import assemble_rectangular_decks
             coupled, ledger = assemble_rectangular_decks(req["model"],req["decks"])
             coupled["model"] = subdivide(coupled["model"])

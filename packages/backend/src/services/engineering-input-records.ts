@@ -18,6 +18,8 @@ export function validEngineeringRecord(record: unknown, building: Building, dige
       !Array.isArray(r.numbers) || r.numbers.length !== fieldCounts[r.kind as keyof typeof fieldCounts] ||
       !r.numbers.every(Number.isFinite)) return false;
   const [a,b,c,d,e] = r.numbers;
+  if (r.deckBoundaryCondition!==undefined && (!['Occupied deck','Terminal roof'].includes(r.kind) ||
+      !['SIMPLY_SUPPORTED_FULL_LEVEL','SIMPLY_SUPPORTED_GRID_BAYS'].includes(String(r.deckBoundaryCondition)))) return false;
   switch (r.kind) {
     case 'Occupied deck': return building.floors.some(f=>f.id===r.surfaceFloorId && f.level>floor.level) &&
       b>=a && c>0 && d>=0 && e>0;

@@ -25,6 +25,7 @@ export function isStairBearingReview(raw: unknown): raw is StairBearingReview {
 }
 
 export function stairBearingEdges(system: SynthesizedStructuralSystem, waist: SynthesizedStaircaseWaist, review: StairBearingReview) {
+  if (!waist.hasExplicitStraightFlightGeometry) throw new Error('Straight flight bearing review requires explicit straight geometry, dimensions and direction.');
   const bounds = waist.boundsMm;
   if (!bounds || !waist.flightDirection || waist.baseElevationMm === undefined || waist.topElevationMm === undefined ||
       review.upperLandingMm !== waist.topElevationMm || waist.topElevationMm <= waist.baseElevationMm || !isStairBearingReview(review) ||

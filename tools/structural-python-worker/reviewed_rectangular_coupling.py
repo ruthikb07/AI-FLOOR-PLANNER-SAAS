@@ -8,6 +8,7 @@ def assemble_rectangular_decks(model, decks):
     nodes = list(model["nodes"])
     elements = [dict(el) for el in model["elements"]]
     plates, bearings, ledger = [], [], []
+    beam_stations = {}
     if not decks or len(decks)>48:
         raise ValueError("A bounded set of reviewed structural decks is required")
     for deck in decks:
@@ -56,9 +57,13 @@ def assemble_rectangular_decks(model, decks):
                     if len(endpoint_ids)==1 and not interiors:
                         master=endpoint_ids.pop()
                     elif not endpoint_ids and len(interiors)==1:
-                        master=len(nodes)
-                        nodes.append(dict(index=master,id=f"{deck['id']}/beam/{i}/{j}",positionM=[x/1000,-y/1000,z]))
-                        interiors[0].setdefault("interiorNodeIndices",[]).append(master)
+                        element = interiors[0]
+                        key = (element["index"], x, y)
+                        if key not in beam_stations:
+                            beam_stations[key] = len(nodes)
+                            nodes.append(dict(index=len(nodes), id=f"{deck['id']}/beam/{i}/{j}",positionM=[x/1000,-y/1000,z]))
+                            element.setdefault("interiorNodeIndices",[]).append(beam_stations[key])
+                        master = beam_stations[key]
                     else:
                         raise ValueError("Ambiguous or incomplete structural bearing station")
                 slave=len(nodes)

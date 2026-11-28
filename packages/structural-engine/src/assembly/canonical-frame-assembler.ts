@@ -110,6 +110,7 @@ export interface SynthesizedSlabPanel {
 }
 
 export interface SynthesizedStaircaseWaist {
+  readonly hasExplicitStraightFlightGeometry?: boolean;
   readonly bearingReview?: import('../loads/reviewed-stair-bearings.js').StairBearingReview;
   readonly id: string;
   readonly floorId: string;
@@ -1808,12 +1809,9 @@ export function synthesizeCanonicalStructuralSystem(
       const stairBeamElemIndices = stairPhysBeams.flatMap((pb) => pb.analyticalElementIndices);
 
       const rawDir = String((stair as { direction?: string }).direction ?? '').toUpperCase();
-      const flightDirection: 'N' | 'S' | 'E' | 'W' =
-        rawDir === 'N' || rawDir === 'S' || rawDir === 'E' || rawDir === 'W'
-          ? rawDir
-          : lRaw >= wRaw
-            ? 'N'
-            : 'E';
+      const directions:Record<string,'N'|'S'|'E'|'W'> = { NORTH:'N', SOUTH:'S', EAST:'E', WEST:'W', N:'N', S:'S', E:'E', W:'W' };
+      const explicitDirection = directions[rawDir];
+      const flightDirection = explicitDirection ?? (lRaw >= wRaw ? 'N' : 'E');
 
       const stairBounds = {
         minX: Math.round(stair.x),
@@ -1831,6 +1829,8 @@ export function synthesizeCanonicalStructuralSystem(
       const waistId = `STAIR_WAIST_${floor.id}_${stair.id}`;
       stairWaists.push({
         id: waistId,
+        hasExplicitStraightFlightGeometry: stair.type === 'straight' && !!explicitDirection && hasFiniteGeometry &&
+          [stair.width,stair.length,stair.riserHeight,stair.treadDepth,stair.riserCount].every(n=>Number.isFinite(n) && n>0),
         floorId: floor.id,
         stairId: stair.id,
         horizontalSpanMm: Math.round(spanMm),

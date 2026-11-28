@@ -1,0 +1,694 @@
+{
+  "scope": "Synthetic two-storey grid with a full central bay opening and independent simple bearings",
+  "building": {
+    "id": "mesh-check",
+    "projectId": "mesh-check",
+    "name": "Synthetic square grid with a central opening",
+    "version": 1,
+    "createdAt": "2026-11-28T00:00:00Z",
+    "updatedAt": "2026-11-28T00:00:00Z",
+    "metadata": {
+      "projectId": "mesh-check"
+    },
+    "site": {
+      "plotArea": 36,
+      "plotShape": "rectangular",
+      "orientation": 0,
+      "setbacks": {
+        "front": 0,
+        "rear": 0,
+        "left": 0,
+        "right": 0
+      },
+      "accessPoints": [],
+      "roadFacing": "south",
+      "id": "site",
+      "plotWidth": 6000,
+      "plotDepth": 6000,
+      "plotBoundary": {
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 6000
+          },
+          {
+            "x": 6000,
+            "y": 6000
+          },
+          {
+            "x": 6000,
+            "y": 0
+          }
+        ]
+      }
+    },
+    "floors": [
+      {
+        "id": "stilt",
+        "level": 0,
+        "buildingId": "mesh-check",
+        "name": "stilt",
+        "elevationMm": 0,
+        "floorHeight": 3100,
+        "floorUse": "STILT_PARKING",
+        "boundary": {
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 6000
+            },
+            {
+              "x": 6000,
+              "y": 6000
+            },
+            {
+              "x": 6000,
+              "y": 0
+            }
+          ]
+        },
+        "rooms": [],
+        "stairs": [],
+        "walls": [],
+        "doors": [],
+        "windows": [],
+        "columns": [
+          {
+            "id": "stilt/0/0",
+            "floorId": "stilt",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/0/2000",
+            "floorId": "stilt",
+            "position": {
+              "x": 0,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/0/4000",
+            "floorId": "stilt",
+            "position": {
+              "x": 0,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/0/6000",
+            "floorId": "stilt",
+            "position": {
+              "x": 0,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/2000/0",
+            "floorId": "stilt",
+            "position": {
+              "x": 2000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/2000/2000",
+            "floorId": "stilt",
+            "position": {
+              "x": 2000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/2000/4000",
+            "floorId": "stilt",
+            "position": {
+              "x": 2000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/2000/6000",
+            "floorId": "stilt",
+            "position": {
+              "x": 2000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/4000/0",
+            "floorId": "stilt",
+            "position": {
+              "x": 4000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/4000/2000",
+            "floorId": "stilt",
+            "position": {
+              "x": 4000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/4000/4000",
+            "floorId": "stilt",
+            "position": {
+              "x": 4000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/4000/6000",
+            "floorId": "stilt",
+            "position": {
+              "x": 4000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/6000/0",
+            "floorId": "stilt",
+            "position": {
+              "x": 6000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/6000/2000",
+            "floorId": "stilt",
+            "position": {
+              "x": 6000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/6000/4000",
+            "floorId": "stilt",
+            "position": {
+              "x": 6000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "stilt/6000/6000",
+            "floorId": "stilt",
+            "position": {
+              "x": 6000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          }
+        ],
+        "voidBoundaries": [
+          {
+            "points": [
+              {
+                "x": 2000,
+                "y": 2000
+              },
+              {
+                "x": 2000,
+                "y": 4000
+              },
+              {
+                "x": 4000,
+                "y": 4000
+              },
+              {
+                "x": 4000,
+                "y": 2000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "upper",
+        "level": 1,
+        "buildingId": "mesh-check",
+        "name": "upper",
+        "elevationMm": 3100,
+        "floorHeight": 2800,
+        "floorUse": "RESIDENTIAL",
+        "boundary": {
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 6000
+            },
+            {
+              "x": 6000,
+              "y": 6000
+            },
+            {
+              "x": 6000,
+              "y": 0
+            }
+          ]
+        },
+        "rooms": [],
+        "stairs": [],
+        "walls": [],
+        "doors": [],
+        "windows": [],
+        "columns": [
+          {
+            "id": "upper/0/0",
+            "floorId": "upper",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/0/2000",
+            "floorId": "upper",
+            "position": {
+              "x": 0,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/0/4000",
+            "floorId": "upper",
+            "position": {
+              "x": 0,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/0/6000",
+            "floorId": "upper",
+            "position": {
+              "x": 0,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/2000/0",
+            "floorId": "upper",
+            "position": {
+              "x": 2000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/2000/2000",
+            "floorId": "upper",
+            "position": {
+              "x": 2000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/2000/4000",
+            "floorId": "upper",
+            "position": {
+              "x": 2000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/2000/6000",
+            "floorId": "upper",
+            "position": {
+              "x": 2000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/4000/0",
+            "floorId": "upper",
+            "position": {
+              "x": 4000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/4000/2000",
+            "floorId": "upper",
+            "position": {
+              "x": 4000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/4000/4000",
+            "floorId": "upper",
+            "position": {
+              "x": 4000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/4000/6000",
+            "floorId": "upper",
+            "position": {
+              "x": 4000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/6000/0",
+            "floorId": "upper",
+            "position": {
+              "x": 6000,
+              "y": 0
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/6000/2000",
+            "floorId": "upper",
+            "position": {
+              "x": 6000,
+              "y": 2000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/6000/4000",
+            "floorId": "upper",
+            "position": {
+              "x": 6000,
+              "y": 4000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          },
+          {
+            "id": "upper/6000/6000",
+            "floorId": "upper",
+            "position": {
+              "x": 6000,
+              "y": 6000
+            },
+            "width": 450,
+            "depth": 450,
+            "shape": "rectangular",
+            "isStructural": true
+          }
+        ],
+        "voidBoundaries": [
+          {
+            "points": [
+              {
+                "x": 2000,
+                "y": 2000
+              },
+              {
+                "x": 2000,
+                "y": 4000
+              },
+              {
+                "x": 4000,
+                "y": 4000
+              },
+              {
+                "x": 4000,
+                "y": 2000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reviews": [
+    {
+      "schema": "RH_RECTANGULAR_DECK_V1",
+      "boundaryCondition": "SIMPLY_SUPPORTED_GRID_BAYS",
+      "architectureSha256": "0b2240568be98e92318d97be7858fffdc0176f29d8093778ade2b74b1831dcd6",
+      "reference": "Synthetic independent simple bay bearings stilt",
+      "supportingFloorId": "stilt",
+      "surfaceFloorId": "upper",
+      "use": "OCCUPIED",
+      "structuralTopMm": 3100,
+      "finishedFloorMm": 3100,
+      "minimumBearingWidthMm": 75,
+      "uniformLiveLoadKnM2": 3,
+      "thicknessMm": 160
+    },
+    {
+      "schema": "RH_RECTANGULAR_DECK_V1",
+      "boundaryCondition": "SIMPLY_SUPPORTED_GRID_BAYS",
+      "architectureSha256": "0b2240568be98e92318d97be7858fffdc0176f29d8093778ade2b74b1831dcd6",
+      "reference": "Synthetic independent simple bay bearings upper",
+      "supportingFloorId": "upper",
+      "surfaceFloorId": "upper",
+      "use": "ROOF",
+      "structuralTopMm": 5900,
+      "finishedFloorMm": 5900,
+      "minimumBearingWidthMm": 75,
+      "uniformLiveLoadKnM2": 1.5,
+      "thicknessMm": 160
+    }
+  ],
+  "architectureSha256": "0b2240568be98e92318d97be7858fffdc0176f29d8093778ade2b74b1831dcd6",
+  "shortening": [
+    {
+      "level": "upper",
+      "supportedKn": 48,
+      "axialFromShorteningKn": 48.000000000001044
+    },
+    {
+      "level": "stilt",
+      "supportedKn": 144,
+      "axialFromShorteningKn": 144
+    }
+  ],
+  "liveEquilibrium": {
+    "appliedForceSumKn": [
+      0,
+      0,
+      -144
+    ],
+    "appliedMomentAboutOriginKnM": [
+      432,
+      432,
+      0
+    ],
+    "reactionForceSumKn": [
+      -7.008282842946301e-16,
+      3.0531133177191805e-16,
+      144.00000000000014
+    ],
+    "forceResidualKn": [
+      -7.008282842946301e-16,
+      3.0531133177191805e-16,
+      1.4210854715202004e-13
+    ],
+    "momentResidualAboutOriginKnM": [
+      -1.1937117960769683e-12,
+      6.252776074688882e-13,
+      -1.7615898012615664e-15
+    ],
+    "maxForceResidualKn": 1.4210854715202004e-13,
+    "maxMomentResidualKnM": 1.1937117960769683e-12,
+    "relativeStiffnessResidual": 9.868791890619599e-16,
+    "isEquilibrated": true
+  },
+  "bays": [
+    {
+      "id": "DECK:stilt:upper/bay/0",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/1",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/2",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/3",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/4",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/5",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/6",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:stilt:upper/bay/7",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/0",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/1",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/2",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/3",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/4",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/5",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/6",
+      "areaM2": 4
+    },
+    {
+      "id": "DECK:upper:upper/bay/7",
+      "areaM2": 4
+    }
+  ],
+  "frameStations": 176,
+  "slabStations": 256
+}
