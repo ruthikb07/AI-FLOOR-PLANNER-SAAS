@@ -1548,14 +1548,15 @@ function designSingleStairWaist(
   const clearCover = 20;
   const mainDia = 12;
   const dEff = Math.max(100, waist.waistThicknessMm - clearCover - mainDia / 2);
-  const slope = Math.hypot(waist.riserMm, waist.treadMm) / Math.max(200, waist.treadMm);
+  const review = waist.bearingReview;
+  const slope = review ? Math.hypot(1, (waist.topElevationMm! - waist.baseElevationMm!) / waist.horizontalSpanMm) : Math.hypot(waist.riserMm, waist.treadMm) / Math.max(200, waist.treadMm);
   const dlKPa =
     (waist.waistThicknessMm / 1000) * slope * IS875_RCC_UNIT_WEIGHT_KN_M3 +
     0.5 * (waist.riserMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3 +
     inputs.floorFinishKnM2;
-  const wuKPa = 1.5 * (dlKPa + 3.0);
+  const wuKPa = 1.5 * (dlKPa + (review?.liveLoadKnM2 ?? 3.0));
   const lM = waist.horizontalSpanMm / 1000;
-  const muKnM = (wuKPa * lM * lM) / 9;
+  const muKnM = (wuKPa * lM * lM) / (review ? 8 : 9);
 
   const fck = CONCRETE_FCK_MPA[inputs.concreteGrade];
   const fy = STEEL_FY_MPA[inputs.steelGrade];
@@ -1592,8 +1593,12 @@ function designSingleStairWaist(
     distributionBarDiaMm: distDia,
     distributionBarSpacingMm: distSpacing,
     maxUtilization: maxUtil,
-    status: maxUtil <= 1.0 ? 'PASSED' : 'FAILED',
+    status: review && maxUtil > 1.0 ? 'FAILED' : 'UNSUPPORTED',
     ruleChecks: [
+      createRuleEvaluation({ruleId:'STAIR-BEARING-AND-DETAILING', standard:'IS 456', clause:'Stair bearing and detailing review pending',
+        title:'Stair bearing and reinforcement detailing', applicability:waist.id,inputs:{},
+        calculation:review ? 'Bearing geometry checked. Anchorage and shear verification remain open.' : 'Flight bearing review missing.',
+        units:'verification', limit:'Verified bearing, shear and anchorage', actual:'Incomplete', status:'UNSUPPORTED', evidence:review?.reference ?? 'No approved physical end bearings.'}),
       createRuleEvaluation({
         ruleId: 'IS456-STAIR-WAIST',
         standard: 'IS 456',
@@ -1606,7 +1611,7 @@ function designSingleStairWaist(
         limit: 1.0,
         actual: maxUtil,
         utilizationRatio: maxUtil,
-        status: maxUtil <= 1.0 ? 'PASSED' : 'FAILED',
+        status: !review ? 'UNSUPPORTED' : maxUtil <= 1.0 ? 'PASSED' : 'FAILED',
         evidence: `Dist steel T${distDia}@${distSpacing} mm c/c`,
       }),
     ],

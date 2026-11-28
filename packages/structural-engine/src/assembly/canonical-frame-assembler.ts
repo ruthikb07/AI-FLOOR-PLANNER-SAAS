@@ -110,6 +110,7 @@ export interface SynthesizedSlabPanel {
 }
 
 export interface SynthesizedStaircaseWaist {
+  readonly bearingReview?: import('../loads/reviewed-stair-bearings.js').StairBearingReview;
   readonly id: string;
   readonly floorId: string;
   readonly stairId: string;

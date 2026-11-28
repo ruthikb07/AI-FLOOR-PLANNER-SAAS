@@ -155,6 +155,7 @@ export interface PhysicalSlab {
 }
 
 export interface PhysicalStairWaist {
+  readonly bearingReview?: import('../loads/reviewed-stair-bearings.js').StairBearingReview;
   readonly kind: 'PHYSICAL_STAIR_WAIST';
   readonly physicalMemberId: string;
   readonly floorId: string;

@@ -66,3 +66,22 @@ export function stairBearingEdges(system: SynthesizedStructuralSystem, waist: Sy
     throw new Error('Both stair bearings must be on opposite flight ends.');
   return sides.flatMap(s=>s.indices);
 }
+
+
+export function applyStairBearingReviews(system: SynthesizedStructuralSystem, reviews: readonly StairBearingReview[]) {
+  if (!reviews.length) return system;
+  const connectors = new Map(reviews.map(review => {
+    const waist = system.stairWaists.find(w => w.id === review.waistId);
+    if (!waist || waist.waistThicknessMm !== review.waistThicknessMm) throw new Error('Unknown or incompatible reviewed stair waist.');
+    return [waist.id,{review,indices:stairBearingEdges(system, waist, review)}] as const;
+  }));
+  if (connectors.size !== reviews.length) throw new Error('Duplicate stair bearing review.');
+  return {...system, stairWaists:system.stairWaists.map(waist => {
+    const connection = connectors.get(waist.id);
+    return connection ? {...waist, bearingReview:connection.review, supportingBeamElementIndices:connection.indices} : waist;
+  }), physicalModel:{...system.physicalModel,stairWaists:system.physicalModel.stairWaists.map(waist => {
+    const connection = connectors.get(waist.physicalMemberId);
+    return connection ? {...waist, bearingReview:connection.review, supportingAnalyticalElementIndices:connection.indices,
+      supportingPhysicalBeamIds:[connection.review.lowerBeamId,connection.review.upperBeamId]} : waist;
+  })}};
+}

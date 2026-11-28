@@ -78,3 +78,31 @@ it('accounts for a synthetic straight waist at its two reviewed structural eleva
   }
   await expect(assembleLoadedAnalyticalFrameModel(system,{...inputs,stairBearingReviews:[{...review,upperBeamId:review.lowerBeamId}]})).rejects.toThrow();
 });
+
+it('preserves the reviewed physical bearings from canonical synthesis through RCC demand and IFC', async () => {
+  const { building } = fixture(4000);
+  const testBuilding = {...building, floors:building.floors.map((f,i)=> i ? {...f,stairs:[{
+    id:'verification-flight',floorId:f.id,x:0,y:0,width:4000,length:2500,riserHeight:155,treadDepth:200,
+    riserCount:20,direction:'E',type:'straight',
+  }]} : f)} as unknown as Building;
+  const system = synthesizeCanonicalStructuralSystem(testBuilding);
+  const waist = system.stairWaists.find(w=>w.stairId==='verification-flight')!;
+  const find = (x:number,z:number) => system.physicalModel.beams.find(b=>b.topElevationMm===z &&
+    b.startPointMm.x===x && b.endPointMm.x===x);
+  // The lower beam may be a plinth without a matching physical floor beam.
+  // Only a real pair of canonical members can receive the reviewed loads.
+  const lower = find(0,waist.baseElevationMm!), upper=find(4000,waist.topElevationMm!);
+  expect([waist.baseElevationMm,waist.topElevationMm,lower?.physicalMemberId,upper?.physicalMemberId]).toEqual([
+    expect.any(Number),expect.any(Number),expect.any(String),expect.any(String)]);
+  const review = {architectureSha256:system.sourceArchitecturalSha256,waistId:waist.id,lowerBeamId:lower!.physicalMemberId,
+    upperBeamId:upper!.physicalMemberId,reference:'Synthetic flight review F2',method:'SIMPLY_SUPPORTED_STRAIGHT_FLIGHT' as const,
+    liveLoadKnM2:4,waistThicknessMm:waist.waistThicknessMm,minimumBearingMm:70,upperLandingMm:waist.topElevationMm!};
+  const result=await evaluateFullBuildingStructuralSystem({building:testBuilding, inputs:{concreteGrade:'M25',steelGrade:'Fe500',
+    ductileDetailingIS13920:false,floorFinishKnM2:1,masonryUnitWeightKnM3:19,roofLiveLoadKnM2:1,stairBearingReviews:[review]}});
+  expect(result.system.physicalModel.stairWaists[0]?.supportingPhysicalBeamIds).toEqual([review.lowerBeamId,review.upperBeamId]);
+  const design=result.rccDesign.stairs[0]!;
+  const dead=25*(waist.waistThicknessMm/1000*Math.hypot(1,(waist.topElevationMm!-waist.baseElevationMm!)/4000)+.155/2);
+  expect(design.designMuKnMPerM).toBeCloseTo(1.5*(dead+1+4)*4**2/8,1);
+  expect(design.status).not.toBe('PASSED');
+  expect(exportStructuralIfc4Step(result)).toContain('Synthetic flight review F2');
+});

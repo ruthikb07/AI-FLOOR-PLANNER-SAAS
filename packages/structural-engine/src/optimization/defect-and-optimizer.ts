@@ -1,3 +1,4 @@
+import { applyStairBearingReviews } from '../loads/reviewed-stair-bearings.js';
 import { applyReviewedDecks } from '../assembly/reviewed-decks.js';
 /**
  * @ai-floor-planner/structural-engine — Deterministic Structural Defect Detector &
@@ -582,7 +583,8 @@ export async function evaluateFullBuildingStructuralSystem(params: {
     ...params.synthesisOptions,
   });
 
-  const system = applyReviewedDecks(params.building, frame, params.inputs.rectangularDeckReviews ?? []);
+  const decks = applyReviewedDecks(params.building, frame, params.inputs.rectangularDeckReviews ?? []);
+  const system = applyStairBearingReviews(decks, params.inputs.stairBearingReviews ?? []);
   const { analyticalModel, loadTakeoff } = await assembleLoadedAnalyticalFrameModel(
     system,
     params.inputs,
