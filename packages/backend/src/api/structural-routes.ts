@@ -4,6 +4,7 @@
  * and Unified AI Structural Engineering Assistant (Phases A7â€“A19).
  */
 
+import { engineeringInputRecords } from '../services/engineering-input-records.js';
 import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
@@ -284,7 +285,7 @@ export async function handleStructuralRoute(
   sendJson: (response: ServerResponse, status: number, body: unknown) => void,
   deps: { readonly gemini: BaseAIProvider | null },
 ): Promise<boolean> {
-  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview)$/);
+  const match = url.pathname.match(/^\/api(?:\/v1)?\/structural\/(analyze|optimize|drawings|assistant|case|design|evaluation|deck-topology|alignment-preview|engineering-inputs)$/);
   if (!match) return false;
 
   if (request.method !== 'POST') {
@@ -310,6 +311,20 @@ export async function handleStructuralRoute(
     }
 
     const action = match[1]!;
+    if (action === 'engineering-inputs') {
+      const building = body.building as Building;
+      if (validateBuildingSchema(building).length || !building.floors?.length ||
+          body.digest !== canonicalBuildingHash(building)) {
+        sendJson(response,409,{error:{code:'REVIEW_REVISION_MISMATCH',message:'A matching canonical building revision is required.'}});
+        return true;
+      }
+      try { sendJson(response,200,{records:await engineeringInputRecords(building,body.record)}); }
+      catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        sendJson(response,422,{error:{code:'INVALID_ENGINEERING_RECORD',message:error.message}});
+      }
+      return true;
+    }
     if (action === 'analyze' && body.regenerate !== undefined && typeof body.regenerate !== 'boolean') {
       sendJson(response, 400, { error: { code: 'INVALID_REGENERATION_OPTION', message: 'The regenerate option must be true or false.' } });
       return true;

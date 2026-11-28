@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
 import type { ReviewedStructuralInputs, StairBearingReview } from '@ai-floor-planner/structural-engine';
 
@@ -42,7 +42,25 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
   const [lowerBeamId, setLowerBeamId] = useState('');
   const [upperBeamId, setUpperBeamId] = useState('');
   const [confirmed, setConfirmed] = useState(false);
-  function approve() {
+  const [saving,setSaving] = useState(false);
+  const [available,setAvailable] = useState(false);
+  useEffect(() => {
+    const abort = new AbortController();
+    async function load() {
+      const response = await fetch('/api/v1/structural/engineering-inputs',{method:'POST',headers:{'Content-Type':'application/json'},
+        signal:abort.signal,body:JSON.stringify({building,digest})});
+      if (!response.ok) throw new Error('Could not load engineering approvals from the project store.');
+      const {records} = await response.json() as {records:RecordEntry[]};
+      if (!abort.signal.aborted) {
+        // Preserve records saved by earlier versions in the local browser.
+        setEntries(previous => [...records,...previous.filter(r=>!records.some(v=>JSON.stringify(v)===JSON.stringify(r)))]);
+        setAvailable(true);
+      }
+    }
+    load().catch(error=>{if (!abort.signal.aborted) setMessage(String(error));});
+    return () => abort.abort();
+  },[building,digest]);
+  async function approve() {
     const values = fields[kind].map((_, i) => numbers[i]?.trim() ? Number(numbers[i]) : NaN);
     const record = { kind, floor, member: member.trim(), reference: reference.trim(), reviewer: reviewer.trim(),
       lowerBeamId:lowerBeamId.trim(), upperBeamId:upperBeamId.trim(), digest, approvedAt: new Date().toISOString(), numbers: values };
@@ -56,9 +74,13 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
       setMessage('Check the selected floor, elevations and positive physical dimensions.'); return;
     }
     try {
-      localStorage.setItem(prefix + crypto.randomUUID(), JSON.stringify(record));
-      setEntries(read()); setConfirmed(false); setMessage('Input approval recorded for this architectural revision.');
-    } catch { setMessage('The browser could not save this approval.'); }
+      setSaving(true);
+      const response = await fetch('/api/v1/structural/engineering-inputs',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({building,digest,record})});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message ?? 'The project store could not save this approval.');
+      setEntries(previous=>[...data.records,...previous.filter(r=>!data.records.some((v:RecordEntry)=>JSON.stringify(v)===JSON.stringify(r)))]); setConfirmed(false); setMessage('Input approval recorded for this architectural revision.');
+    } catch (error) { setMessage(String(error)); } finally { setSaving(false); }
   }
   function apply(record: RecordEntry) {
     const [a,b,c,d,e] = record.numbers as [number,number,number,number,number];
@@ -76,7 +98,7 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
   }
   return <details className="rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm">
     <summary className="cursor-pointer font-semibold">Engineering Input Review</summary>
-    <p className="my-2">Input approvals are stored in this browser for revision {digest.slice(0,12)}.</p>
+    <p className="my-2">New approvals are saved in the local project store for revision {digest.slice(0,12)}.</p>
     <ul>{(Object.keys(fields) as Kind[]).map(k => <li key={k}>{k} · {entries.filter(r => r.kind === k).length || 'Missing'}</li>)}</ul>
     <fieldset className="mt-3 grid gap-2 sm:grid-cols-2" onChange={() => { setConfirmed(false); setMessage(''); }}>
       <label>Input category <select value={kind} onChange={e => {setKind(e.target.value as Kind); setNumbers([]);}}>
@@ -94,7 +116,7 @@ export function EngineeringInputReview({ building, digest, onDeck, onSoil, onSta
       }} /></label>)}
     </fieldset>
     <label className="block my-2"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} /> I reviewed these parameters against the cited source.</label>
-    <button type="button" disabled={!confirmed} onClick={approve}>Approve input record</button>
+    <button type="button" disabled={!confirmed || saving || !available} onClick={approve}>Approve input record</button>
     <ul>{entries.map((r,i) => <li key={i} className="my-2">{r.kind} · {r.floor} · {r.member} · {r.reference} · {r.reviewer}
       <div>{fields[r.kind].map((label,j) => label + ' ' + r.numbers[j]).join(' · ')}</div>
       {r.kind === 'Terminal roof' || r.kind === 'Site geotechnical report' || (r.kind === 'Stair bearing' && r.lowerBeamId && r.upperBeamId)

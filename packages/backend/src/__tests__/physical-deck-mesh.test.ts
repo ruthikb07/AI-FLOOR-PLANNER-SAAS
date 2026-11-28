@@ -26,6 +26,18 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     const analysis = await post('analyze', { building, reviewedInputs: { seismic: { enabled: false } } });
     expect(analysis.status).toBe(200);
     const { evaluationId, snapshot } = await analysis.json() as { evaluationId: string; snapshot: StructuralEvaluationSummary };
+    const digest = snapshot.system.sourceArchitecturalSha256;
+    const record = {kind:'Balcony root',floor:'upper',member:'B-synthetic',reference:'Fixture B',
+      reviewer:'Verifier',approvedAt:'2026-11-28T00:00:00Z',numbers:[1000,2000,100],digest};
+    const write = () => post('engineering-inputs',{building,digest,record});
+    const savedRecords = await Promise.all([write(),write()]);
+    for (const savedRecord of savedRecords) expect(await savedRecord.json()).toEqual({records:[record]});
+    const read = await post('engineering-inputs',{building,digest});
+    expect(await read.json()).toEqual({records:[record]});
+    const stale = await post('engineering-inputs',{building,digest:'stale',record});
+    expect(stale.status).toBe(409);
+    const invalid = await post('engineering-inputs',{building,digest,record:{...record,numbers:[-1,2000,100]}});
+    expect(invalid.status).toBe(422);
     const data = { building, evaluationId };
     const geometry = await post('deck-topology', data);
     expect(geometry.status).toBe(200);
