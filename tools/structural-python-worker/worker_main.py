@@ -1572,7 +1572,7 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
             if "firstFreeNode" in req:
                 from automatic_mesh import generate_floor
                 res["automaticMesh"] = generate_floor(res["deck"], req["frameNodes"], req["beams"],
-                                                       req["frameElements"], req["firstFreeNode"])
+                                                       req["frameElements"], req["firstFreeNode"], req.get("interfaceReviews", []))
             if "meshProposal" in req:
                 from deck_mesh import check_deck_mesh
                 res["meshReceipt"] = check_deck_mesh(res["deck"], req["meshProposal"], req["frameNodes"],

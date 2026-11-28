@@ -49,14 +49,14 @@
       "reproductionSteps": null,
       "expectedBehavior": null,
       "confirmedRootCause": "A one-element-per-edge identity check does not recognize an ordered chain of shorter plate edges.",
-      "requiredCorrection": null,
+      "requiredCorrection": "Remap loads and releases to children on reviewed station identities, then recover governing physical envelopes.",
       "regressionTest": "tests/test_explicit_frame_connectivity.py",
       "independentBenchmark": null,
       "evidence": [
         "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
         "BEAM_SUBDIVISION_VERIFICATION.md"
       ],
-      "correctionCommit": null
+      "correctionCommit": "b34ab2f (partial)"
     },
     {
       "id": "D04",
@@ -67,14 +67,14 @@
       "reproductionSteps": null,
       "expectedBehavior": null,
       "confirmedRootCause": "Each region allocates its own partition and joint identities. The pinned solver also automatically attaches collinear interior joints when physical member discretization is enabled.",
-      "requiredCorrection": null,
-      "regressionTest": "tests/test_explicit_frame_connectivity.py",
-      "independentBenchmark": null,
+      "requiredCorrection": "Coordinate all region boundary partitions and merge joint identities only for an explicit reviewed continuous interface.",
+      "regressionTest": "tests/test_automatic_mesh.py; tests/test_explicit_frame_connectivity.py",
+      "independentBenchmark": "A 2 m by 2 m bay carrying 2 kN/m2 transfers 8 kN and 24 kN m at the fixed root.",
       "evidence": [
         "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
         "BUILDING_CONNECTIVITY_VERIFICATION.md"
       ],
-      "correctionCommit": null
+      "correctionCommit": "03babac (geometric partitions)"
     },
     {
       "id": "D05",
@@ -313,6 +313,160 @@
         "MILESTONE_6A_STRUCTURAL_TOPOLOGY.md"
       ],
       "correctionCommit": null
+    }
+  ],
+  "gates": [
+    {
+      "id": "G01",
+      "criterion": "Automatic mesh coverage reconciles with reviewed physical deck geometry.",
+      "status": "VERIFIED",
+      "scope": "Registered candidate deck geometry only. Terminal roofs excluded pending ownership.",
+      "evidence": [
+        "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
+      ]
+    },
+    {
+      "id": "G02",
+      "criterion": "Openings and architectural geometry are preserved.",
+      "status": "VERIFIED",
+      "scope": "Registered candidate deck geometry only. Terminal roofs excluded pending ownership.",
+      "evidence": [
+        "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
+      ]
+    },
+    {
+      "id": "G03",
+      "criterion": "Mesh quality satisfies validated numerical limits.",
+      "status": "VERIFIED",
+      "scope": "Registered candidate deck geometry only. Terminal roofs excluded pending ownership.",
+      "evidence": [
+        "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
+      ]
+    },
+    {
+      "id": "G04",
+      "criterion": "All required structural analytical interfaces are compatible.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G05",
+      "criterion": "Analytical beam subdivision preserves physical identity and load behavior.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G06",
+      "criterion": "Applicable slab-to-beam offsets are independently verified.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G07",
+      "criterion": "Every mandatory gravity load has a justified physical transfer mechanism.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G08",
+      "criterion": "Applied loads, first moments and reactions reconcile.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G09",
+      "criterion": "No duplicated structural loads or stiffness contributions.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G10",
+      "criterion": "Complete supported building analysis executes in one compatible numerical system.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G11",
+      "criterion": "Required lateral analysis methods are verified and available.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G12",
+      "criterion": "Structural defects are correctly identified.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G13",
+      "criterion": "Optimization performs global reanalysis.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G14",
+      "criterion": "Applicable mandatory strength, serviceability and stability checks pass for at least one complete reviewed verification building.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G15",
+      "criterion": "RCC design calculations pass independent benchmarks.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G16",
+      "criterion": "Foundation calculations pass independent benchmarks and require appropriate site information.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G17",
+      "criterion": "Reinforcement detailing and quantities are physically consistent.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G18",
+      "criterion": "Structural drawings and IFC correspond to the evaluated revision.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G19",
+      "criterion": "Approved architectural geometry remains protected.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G20",
+      "criterion": "Production calculations operate without external engineering application automation.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G21",
+      "criterion": "AI-provider unavailability does not prevent deterministic engineering calculations.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G22",
+      "criterion": "Windows performance and reliability evidence is recorded.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G23",
+      "criterion": "Existing architectural, CAD and BIM functionality remains operational.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G24",
+      "criterion": "Complete production browser verification passes.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G25",
+      "criterion": "Full software regression passes.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G26",
+      "criterion": "Independent engineering benchmarks pass.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G27",
+      "criterion": "Hosted CI passes on the exact final commit.",
+      "status": "OPEN"
+    },
+    {
+      "id": "G28",
+      "criterion": "Remaining unsupported capabilities and professional review requirements are explicitly disclosed.",
+      "status": "OPEN"
     }
   ]
 }

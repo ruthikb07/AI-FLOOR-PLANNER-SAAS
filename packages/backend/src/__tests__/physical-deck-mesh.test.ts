@@ -58,6 +58,14 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     expect(generated.decks[0]?.automaticMesh?.[0]).toMatchObject({ sharedEdges: receipt.meshReceipt.sharedEdges.map(
       ({ physicalBeamId, elementId, frameNodeIndices }) => ({ physicalBeamId, elementId, frameNodeIndices }),
     ) });
+    const review = { supportingFloorId: 'stilt', regionIds: [proposal.regionId, 'unknown'],
+      connection: 'MONOLITHIC_FULL_INTERFACE', reference: 'controlled-negative', evaluationId };
+    const invalidRegion = await post('deck-topology', { ...data, automaticMesh: true, interfaceReviews: [review] });
+    expect(invalidRegion.status).toBe(422);
+    const staleReview = await post('deck-topology', { ...data, automaticMesh: true,
+      interfaceReviews: [{ ...review, evaluationId: 'stale' }] });
+    expect(staleReview.status).toBe(422);
+    expect(await staleReview.json()).toMatchObject({ error: { code: 'INVALID_INTERFACE_REVIEW' } });
     const stiltBeams = snapshot.system.physicalModel.beams.filter(beam => beam.floorId === 'stilt');
     const first = stiltBeams[0]!;
     const second = stiltBeams.find(beam => beam !== first &&

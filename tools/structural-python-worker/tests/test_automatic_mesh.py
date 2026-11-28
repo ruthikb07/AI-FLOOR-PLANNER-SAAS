@@ -84,3 +84,48 @@ def test_four_corner_deck_respects_diagonal_frame_constraint():
     assert len(candidate["interiorNodeIndices"]) >= 1
     assert all(len(plates) == 2 for plates in candidate["edgePlateIds"])
 
+
+
+def test_reviewed_monolithic_edge_reuses_dofs_and_rejects_unknown_region():
+    import pytest
+    left = {"id":"L","ringsMm":[[[0,0],[0,2000],[2000,2000],[2000,0]]]}
+    right = {"id":"R","ringsMm":[[[2000,0],[2000,2000],[4000,2000],[4000,0]]]}
+    deck = {"supportingFloorId":"F","elevationMm":3000,"bearingLines":[],"regions":[left,right]}
+    review = {"regionIds":["R","L"],"connection":"MONOLITHIC_FULL_INTERFACE","reference":"controlled-fixture"}
+    result = generate_floor(deck,[],[],[],26,[review])
+    a,b = result["regions"]
+    assert a["boundaryInterfaces"][0]["status"] == "REVIEWED_MONOLITHIC_DOFS"
+    def interface(region):
+        return {(n["index"],n["id"]) for n in region["nodes"] if n["positionM"][0] == 2}
+    assert interface(a) == interface(b)
+    unique = {n["index"] for r in (a,b) for n in r["nodes"]}
+    assert unique == set(range(26,result["nextFreeNodeIndex"]))
+    with pytest.raises(ValueError,match="Invalid or duplicate"):
+        generate_floor(deck,[],[],[],26,[dict(review,regionIds=["L","missing"])])
+
+def test_monolithic_joint_transfers_pressure_across_a_region_without_supports():
+    import pytest
+    from worker_main import run_pynite_solve
+    left = {"id":"L","ringsMm":[[[0,0],[0,2000],[2000,2000],[2000,0]]]}
+    right = {"id":"R","ringsMm":[[[2000,0],[2000,2000],[4000,2000],[4000,0]]]}
+    deck = {"supportingFloorId":"F","elevationMm":0,"bearingLines":[],"regions":[left,right]}
+    review = {"regionIds":["R","L"],"connection":"MONOLITHIC_FULL_INTERFACE","reference":"controlled-fixture"}
+    for reviews in ([],[review]):
+        receipts = generate_floor(deck,[],[],[],0,reviews)["regions"]
+        by_id,plates = {},[]
+        for region in receipts:
+            for node in region["nodes"]:
+                by_id[node["index"]] = dict(node, restraint=[node["positionM"][0] == 0]*6)
+            for quad in region["quadConnectivity"]:
+                plates.append(dict(quad, kind="QUAD", thicknessM=.10, elasticityKPa=24e6, poissonRatio=.2,
+                                   surfacePressuresByCase={"G":-2. if region["regionId"] == "R" else 0.}))
+        payload = dict(model=dict(modelId="coupled-interface",nodes=[by_id[i] for i in range(len(by_id))],
+                                  elements=[],loadCases=[dict(id="G",name="gravity")],combinations=[]),
+                       plateElements=plates)
+        solution = run_pynite_solve(payload)
+        if not reviews:
+            assert solution["errorCode"] == "DISCONNECTED_COUPLED_MODEL"
+            continue
+        reactions = solution["envelope"]["loadCaseResults"]["G"]["reactions"]
+        assert sum(r["reactionKnM"][2] for r in reactions) == pytest.approx(8,abs=1e-7)
+        assert sum(r["reactionKnM"][4] for r in reactions) == pytest.approx(-24,abs=1e-7)

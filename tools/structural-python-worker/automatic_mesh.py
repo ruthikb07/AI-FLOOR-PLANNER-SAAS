@@ -9,6 +9,7 @@ from shapely.strtree import STRtree
 
 from adaptive_mesh import adaptive_quads
 from beam_edge_chain import beam_subdivision_candidates
+from reviewed_mesh_joints import apply_joint_reviews, joint_registry
 from deck_mesh import check_deck_mesh, frame_segments
 
 MAX_QUADS = 20_000
@@ -188,7 +189,11 @@ def _floor_partition(deck, quad_budget):
     footprint = union_all(surfaces)
     boundaries = [surface.boundary for surface in surfaces]
     boundaries.extend(LineString(beam["axisMm"]).intersection(footprint) for beam in deck["bearingLines"])
+    if len(boundaries) > 1024:
+        raise ValueError("Too many constrained components for a coordinated floor partition")
     network = [line for line in get_parts(union_all(boundaries)) if line.geom_type == "LineString"]
+    if sum(len(line.coords) for line in network) > MAX_FLOOR_CORNERS:
+        raise ValueError("Noded floor constraints exceed the boundary vertex budget")
     quads = adaptive_quads(footprint, quad_budget, network)
     by_region = [[] for _ in surfaces]
     tree = STRtree(surfaces)
@@ -200,7 +205,8 @@ def _floor_partition(deck, quad_budget):
     return by_region
 
 
-def generate_floor(deck, frame_nodes, beams, elements, first_free):
+def generate_floor(deck, frame_nodes, beams, elements, first_free, interface_reviews=()):
+    registry_start = first_free
     if type(first_free) is not int or first_free < len(frame_nodes):
         raise ValueError("Invalid building node registry offset")
     results = []
@@ -254,4 +260,6 @@ def generate_floor(deck, frame_nodes, beams, elements, first_free):
         quad_budget -= receipt["quadCount"]
     if corners <= MAX_FLOOR_CORNERS:
         _check_interfaces(results, deck["regions"])
-    return {"regions": results, "nextFreeNodeIndex": first_free}
+    if interface_reviews:
+        first_free = apply_joint_reviews(results, interface_reviews, registry_start, _boundary_edges)
+    return {"regions": results, "nextFreeNodeIndex": first_free, "jointRegistry": joint_registry(results)}

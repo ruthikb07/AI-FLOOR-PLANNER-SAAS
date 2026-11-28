@@ -103,6 +103,293 @@
             "BM_floor_stilt_00_8",
             "BM_floor_stilt_00_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 578,
+            "distinctQuads": 465,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_stilt_00_1",
+                "physicalMemberId": "BM_floor_stilt_00_1",
+                "interiorNodeIndices": [
+                  470
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_10",
+                "physicalMemberId": "BM_floor_stilt_00_10",
+                "interiorNodeIndices": [
+                  444
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_11",
+                "physicalMemberId": "BM_floor_stilt_00_11",
+                "interiorNodeIndices": [
+                  514
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_12",
+                "physicalMemberId": "BM_floor_stilt_00_12",
+                "interiorNodeIndices": [
+                  424
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_13",
+                "physicalMemberId": "BM_floor_stilt_00_13",
+                "interiorNodeIndices": [
+                  437
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_14",
+                "physicalMemberId": "BM_floor_stilt_00_14",
+                "interiorNodeIndices": [
+                  533
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_15",
+                "physicalMemberId": "BM_floor_stilt_00_15",
+                "interiorNodeIndices": [
+                  463
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_16",
+                "physicalMemberId": "BM_floor_stilt_00_16",
+                "interiorNodeIndices": [
+                  531,
+                  532,
+                  601,
+                  602,
+                  633,
+                  634,
+                  637,
+                  638,
+                  639
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_17",
+                "physicalMemberId": "BM_floor_stilt_00_17",
+                "interiorNodeIndices": [
+                  498
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_18",
+                "physicalMemberId": "BM_floor_stilt_00_18",
+                "interiorNodeIndices": [
+                  642,
+                  643,
+                  644,
+                  625,
+                  623,
+                  617,
+                  614,
+                  576,
+                  573,
+                  453,
+                  523,
+                  524,
+                  569,
+                  565,
+                  595,
+                  596,
+                  598
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_20",
+                "physicalMemberId": "BM_floor_stilt_00_20",
+                "interiorNodeIndices": [
+                  571,
+                  528,
+                  525
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_21",
+                "physicalMemberId": "BM_floor_stilt_00_21",
+                "interiorNodeIndices": [
+                  579
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_22",
+                "physicalMemberId": "BM_floor_stilt_00_22",
+                "interiorNodeIndices": [
+                  605
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_23",
+                "physicalMemberId": "BM_floor_stilt_00_23",
+                "interiorNodeIndices": [
+                  607,
+                  586,
+                  610,
+                  611,
+                  620,
+                  621,
+                  628
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_24",
+                "physicalMemberId": "BM_floor_stilt_00_24",
+                "interiorNodeIndices": [
+                  629
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_29",
+                "physicalMemberId": "BM_floor_stilt_00_29",
+                "interiorNodeIndices": [
+                  799
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_3",
+                "physicalMemberId": "BM_floor_stilt_00_3",
+                "interiorNodeIndices": [
+                  468
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_30",
+                "physicalMemberId": "BM_floor_stilt_00_30",
+                "interiorNodeIndices": [
+                  797,
+                  798,
+                  863,
+                  860,
+                  872,
+                  873,
+                  875
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_33",
+                "physicalMemberId": "BM_floor_stilt_00_33",
+                "interiorNodeIndices": [
+                  719
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_37",
+                "physicalMemberId": "BM_floor_stilt_00_37",
+                "interiorNodeIndices": [
+                  773,
+                  774,
+                  829,
+                  832,
+                  834,
+                  820,
+                  836,
+                  838,
+                  865
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_4",
+                "physicalMemberId": "BM_floor_stilt_00_4",
+                "interiorNodeIndices": [
+                  479
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_41",
+                "physicalMemberId": "BM_floor_stilt_00_41",
+                "interiorNodeIndices": [
+                  648
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_42",
+                "physicalMemberId": "BM_floor_stilt_00_42",
+                "interiorNodeIndices": [
+                  734
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_45",
+                "physicalMemberId": "BM_floor_stilt_00_45",
+                "interiorNodeIndices": [
+                  810
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_46",
+                "physicalMemberId": "BM_floor_stilt_00_46",
+                "interiorNodeIndices": [
+                  807
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_47",
+                "physicalMemberId": "BM_floor_stilt_00_47",
+                "interiorNodeIndices": [
+                  784
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_49",
+                "physicalMemberId": "BM_floor_stilt_00_49",
+                "interiorNodeIndices": [
+                  714
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_5",
+                "physicalMemberId": "BM_floor_stilt_00_5",
+                "interiorNodeIndices": [
+                  477
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_50",
+                "physicalMemberId": "BM_floor_stilt_00_50",
+                "interiorNodeIndices": [
+                  716
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_53",
+                "physicalMemberId": "BM_floor_stilt_00_53",
+                "interiorNodeIndices": [
+                  549
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_7",
+                "physicalMemberId": "BM_floor_stilt_00_7",
+                "interiorNodeIndices": [
+                  517
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_8",
+                "physicalMemberId": "BM_floor_stilt_00_8",
+                "interiorNodeIndices": [
+                  511
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_9",
+                "physicalMemberId": "BM_floor_stilt_00_9",
+                "interiorNodeIndices": [
+                  447
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_stilt_00_31__fe_1",
+              "BM_floor_stilt_00_31__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_stilt_00_1",
@@ -911,7 +1198,7 @@
             "floor_typical_01::apt-room:core_stair_1:stair",
             "floor_typical_01::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 212.3
+          "elapsedMs": 220.3
         },
         {
           "supportingFloorId": "floor_typical_01",
@@ -996,6 +1283,293 @@
             "BM_floor_typical_01_8",
             "BM_floor_typical_01_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 578,
+            "distinctQuads": 465,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_typical_01_1",
+                "physicalMemberId": "BM_floor_typical_01_1",
+                "interiorNodeIndices": [
+                  1003
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_10",
+                "physicalMemberId": "BM_floor_typical_01_10",
+                "interiorNodeIndices": [
+                  977
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_11",
+                "physicalMemberId": "BM_floor_typical_01_11",
+                "interiorNodeIndices": [
+                  1047
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_12",
+                "physicalMemberId": "BM_floor_typical_01_12",
+                "interiorNodeIndices": [
+                  957
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_13",
+                "physicalMemberId": "BM_floor_typical_01_13",
+                "interiorNodeIndices": [
+                  970
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_14",
+                "physicalMemberId": "BM_floor_typical_01_14",
+                "interiorNodeIndices": [
+                  1066
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_15",
+                "physicalMemberId": "BM_floor_typical_01_15",
+                "interiorNodeIndices": [
+                  996
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_16",
+                "physicalMemberId": "BM_floor_typical_01_16",
+                "interiorNodeIndices": [
+                  1064,
+                  1065,
+                  1134,
+                  1135,
+                  1166,
+                  1167,
+                  1170,
+                  1171,
+                  1172
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_17",
+                "physicalMemberId": "BM_floor_typical_01_17",
+                "interiorNodeIndices": [
+                  1031
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_18",
+                "physicalMemberId": "BM_floor_typical_01_18",
+                "interiorNodeIndices": [
+                  1175,
+                  1176,
+                  1177,
+                  1158,
+                  1156,
+                  1150,
+                  1147,
+                  1109,
+                  1106,
+                  986,
+                  1056,
+                  1057,
+                  1102,
+                  1098,
+                  1128,
+                  1129,
+                  1131
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_20",
+                "physicalMemberId": "BM_floor_typical_01_20",
+                "interiorNodeIndices": [
+                  1104,
+                  1061,
+                  1058
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_21",
+                "physicalMemberId": "BM_floor_typical_01_21",
+                "interiorNodeIndices": [
+                  1112
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_22",
+                "physicalMemberId": "BM_floor_typical_01_22",
+                "interiorNodeIndices": [
+                  1138
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_23",
+                "physicalMemberId": "BM_floor_typical_01_23",
+                "interiorNodeIndices": [
+                  1140,
+                  1119,
+                  1143,
+                  1144,
+                  1153,
+                  1154,
+                  1161
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_24",
+                "physicalMemberId": "BM_floor_typical_01_24",
+                "interiorNodeIndices": [
+                  1162
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_29",
+                "physicalMemberId": "BM_floor_typical_01_29",
+                "interiorNodeIndices": [
+                  1332
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_3",
+                "physicalMemberId": "BM_floor_typical_01_3",
+                "interiorNodeIndices": [
+                  1001
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_30",
+                "physicalMemberId": "BM_floor_typical_01_30",
+                "interiorNodeIndices": [
+                  1330,
+                  1331,
+                  1396,
+                  1393,
+                  1405,
+                  1406,
+                  1408
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_33",
+                "physicalMemberId": "BM_floor_typical_01_33",
+                "interiorNodeIndices": [
+                  1252
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_37",
+                "physicalMemberId": "BM_floor_typical_01_37",
+                "interiorNodeIndices": [
+                  1306,
+                  1307,
+                  1362,
+                  1365,
+                  1367,
+                  1353,
+                  1369,
+                  1371,
+                  1398
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_4",
+                "physicalMemberId": "BM_floor_typical_01_4",
+                "interiorNodeIndices": [
+                  1012
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_41",
+                "physicalMemberId": "BM_floor_typical_01_41",
+                "interiorNodeIndices": [
+                  1181
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_42",
+                "physicalMemberId": "BM_floor_typical_01_42",
+                "interiorNodeIndices": [
+                  1267
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_45",
+                "physicalMemberId": "BM_floor_typical_01_45",
+                "interiorNodeIndices": [
+                  1343
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_46",
+                "physicalMemberId": "BM_floor_typical_01_46",
+                "interiorNodeIndices": [
+                  1340
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_47",
+                "physicalMemberId": "BM_floor_typical_01_47",
+                "interiorNodeIndices": [
+                  1317
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_49",
+                "physicalMemberId": "BM_floor_typical_01_49",
+                "interiorNodeIndices": [
+                  1247
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_5",
+                "physicalMemberId": "BM_floor_typical_01_5",
+                "interiorNodeIndices": [
+                  1010
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_50",
+                "physicalMemberId": "BM_floor_typical_01_50",
+                "interiorNodeIndices": [
+                  1249
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_53",
+                "physicalMemberId": "BM_floor_typical_01_53",
+                "interiorNodeIndices": [
+                  1082
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_7",
+                "physicalMemberId": "BM_floor_typical_01_7",
+                "interiorNodeIndices": [
+                  1050
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_8",
+                "physicalMemberId": "BM_floor_typical_01_8",
+                "interiorNodeIndices": [
+                  1044
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_9",
+                "physicalMemberId": "BM_floor_typical_01_9",
+                "interiorNodeIndices": [
+                  980
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_typical_01_31__fe_1",
+              "BM_floor_typical_01_31__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_typical_01_1",
@@ -1804,7 +2378,7 @@
             "floor_level_02::apt-room:core_stair_1:stair",
             "floor_level_02::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 195.2
+          "elapsedMs": 225.2
         },
         {
           "supportingFloorId": "floor_level_02",
@@ -1889,6 +2463,293 @@
             "BM_floor_level_02_8",
             "BM_floor_level_02_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 578,
+            "distinctQuads": 465,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_level_02_1",
+                "physicalMemberId": "BM_floor_level_02_1",
+                "interiorNodeIndices": [
+                  1536
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_10",
+                "physicalMemberId": "BM_floor_level_02_10",
+                "interiorNodeIndices": [
+                  1510
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_11",
+                "physicalMemberId": "BM_floor_level_02_11",
+                "interiorNodeIndices": [
+                  1580
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_12",
+                "physicalMemberId": "BM_floor_level_02_12",
+                "interiorNodeIndices": [
+                  1490
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_13",
+                "physicalMemberId": "BM_floor_level_02_13",
+                "interiorNodeIndices": [
+                  1503
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_14",
+                "physicalMemberId": "BM_floor_level_02_14",
+                "interiorNodeIndices": [
+                  1599
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_15",
+                "physicalMemberId": "BM_floor_level_02_15",
+                "interiorNodeIndices": [
+                  1529
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_16",
+                "physicalMemberId": "BM_floor_level_02_16",
+                "interiorNodeIndices": [
+                  1597,
+                  1598,
+                  1667,
+                  1668,
+                  1699,
+                  1700,
+                  1703,
+                  1704,
+                  1705
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_17",
+                "physicalMemberId": "BM_floor_level_02_17",
+                "interiorNodeIndices": [
+                  1564
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_18",
+                "physicalMemberId": "BM_floor_level_02_18",
+                "interiorNodeIndices": [
+                  1708,
+                  1709,
+                  1710,
+                  1691,
+                  1689,
+                  1683,
+                  1680,
+                  1642,
+                  1639,
+                  1519,
+                  1589,
+                  1590,
+                  1635,
+                  1631,
+                  1661,
+                  1662,
+                  1664
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_20",
+                "physicalMemberId": "BM_floor_level_02_20",
+                "interiorNodeIndices": [
+                  1637,
+                  1594,
+                  1591
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_21",
+                "physicalMemberId": "BM_floor_level_02_21",
+                "interiorNodeIndices": [
+                  1645
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_22",
+                "physicalMemberId": "BM_floor_level_02_22",
+                "interiorNodeIndices": [
+                  1671
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_23",
+                "physicalMemberId": "BM_floor_level_02_23",
+                "interiorNodeIndices": [
+                  1673,
+                  1652,
+                  1676,
+                  1677,
+                  1686,
+                  1687,
+                  1694
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_24",
+                "physicalMemberId": "BM_floor_level_02_24",
+                "interiorNodeIndices": [
+                  1695
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_29",
+                "physicalMemberId": "BM_floor_level_02_29",
+                "interiorNodeIndices": [
+                  1865
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_3",
+                "physicalMemberId": "BM_floor_level_02_3",
+                "interiorNodeIndices": [
+                  1534
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_30",
+                "physicalMemberId": "BM_floor_level_02_30",
+                "interiorNodeIndices": [
+                  1863,
+                  1864,
+                  1929,
+                  1926,
+                  1938,
+                  1939,
+                  1941
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_33",
+                "physicalMemberId": "BM_floor_level_02_33",
+                "interiorNodeIndices": [
+                  1785
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_37",
+                "physicalMemberId": "BM_floor_level_02_37",
+                "interiorNodeIndices": [
+                  1839,
+                  1840,
+                  1895,
+                  1898,
+                  1900,
+                  1886,
+                  1902,
+                  1904,
+                  1931
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_4",
+                "physicalMemberId": "BM_floor_level_02_4",
+                "interiorNodeIndices": [
+                  1545
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_41",
+                "physicalMemberId": "BM_floor_level_02_41",
+                "interiorNodeIndices": [
+                  1714
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_42",
+                "physicalMemberId": "BM_floor_level_02_42",
+                "interiorNodeIndices": [
+                  1800
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_45",
+                "physicalMemberId": "BM_floor_level_02_45",
+                "interiorNodeIndices": [
+                  1876
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_46",
+                "physicalMemberId": "BM_floor_level_02_46",
+                "interiorNodeIndices": [
+                  1873
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_47",
+                "physicalMemberId": "BM_floor_level_02_47",
+                "interiorNodeIndices": [
+                  1850
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_49",
+                "physicalMemberId": "BM_floor_level_02_49",
+                "interiorNodeIndices": [
+                  1780
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_5",
+                "physicalMemberId": "BM_floor_level_02_5",
+                "interiorNodeIndices": [
+                  1543
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_50",
+                "physicalMemberId": "BM_floor_level_02_50",
+                "interiorNodeIndices": [
+                  1782
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_53",
+                "physicalMemberId": "BM_floor_level_02_53",
+                "interiorNodeIndices": [
+                  1615
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_7",
+                "physicalMemberId": "BM_floor_level_02_7",
+                "interiorNodeIndices": [
+                  1583
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_8",
+                "physicalMemberId": "BM_floor_level_02_8",
+                "interiorNodeIndices": [
+                  1577
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_9",
+                "physicalMemberId": "BM_floor_level_02_9",
+                "interiorNodeIndices": [
+                  1513
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_level_02_31__fe_1",
+              "BM_floor_level_02_31__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_level_02_1",
@@ -2697,7 +3558,7 @@
             "floor_level_03::apt-room:core_stair_1:stair",
             "floor_level_03::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 217.0
+          "elapsedMs": 208.1
         },
         {
           "supportingFloorId": "floor_level_03",
@@ -2782,6 +3643,293 @@
             "BM_floor_level_03_8",
             "BM_floor_level_03_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 578,
+            "distinctQuads": 465,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_level_03_1",
+                "physicalMemberId": "BM_floor_level_03_1",
+                "interiorNodeIndices": [
+                  2069
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_10",
+                "physicalMemberId": "BM_floor_level_03_10",
+                "interiorNodeIndices": [
+                  2043
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_11",
+                "physicalMemberId": "BM_floor_level_03_11",
+                "interiorNodeIndices": [
+                  2113
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_12",
+                "physicalMemberId": "BM_floor_level_03_12",
+                "interiorNodeIndices": [
+                  2023
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_13",
+                "physicalMemberId": "BM_floor_level_03_13",
+                "interiorNodeIndices": [
+                  2036
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_14",
+                "physicalMemberId": "BM_floor_level_03_14",
+                "interiorNodeIndices": [
+                  2132
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_15",
+                "physicalMemberId": "BM_floor_level_03_15",
+                "interiorNodeIndices": [
+                  2062
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_16",
+                "physicalMemberId": "BM_floor_level_03_16",
+                "interiorNodeIndices": [
+                  2130,
+                  2131,
+                  2200,
+                  2201,
+                  2232,
+                  2233,
+                  2236,
+                  2237,
+                  2238
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_17",
+                "physicalMemberId": "BM_floor_level_03_17",
+                "interiorNodeIndices": [
+                  2097
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_18",
+                "physicalMemberId": "BM_floor_level_03_18",
+                "interiorNodeIndices": [
+                  2241,
+                  2242,
+                  2243,
+                  2224,
+                  2222,
+                  2216,
+                  2213,
+                  2175,
+                  2172,
+                  2052,
+                  2122,
+                  2123,
+                  2168,
+                  2164,
+                  2194,
+                  2195,
+                  2197
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_20",
+                "physicalMemberId": "BM_floor_level_03_20",
+                "interiorNodeIndices": [
+                  2170,
+                  2127,
+                  2124
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_21",
+                "physicalMemberId": "BM_floor_level_03_21",
+                "interiorNodeIndices": [
+                  2178
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_22",
+                "physicalMemberId": "BM_floor_level_03_22",
+                "interiorNodeIndices": [
+                  2204
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_23",
+                "physicalMemberId": "BM_floor_level_03_23",
+                "interiorNodeIndices": [
+                  2206,
+                  2185,
+                  2209,
+                  2210,
+                  2219,
+                  2220,
+                  2227
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_24",
+                "physicalMemberId": "BM_floor_level_03_24",
+                "interiorNodeIndices": [
+                  2228
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_29",
+                "physicalMemberId": "BM_floor_level_03_29",
+                "interiorNodeIndices": [
+                  2398
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_3",
+                "physicalMemberId": "BM_floor_level_03_3",
+                "interiorNodeIndices": [
+                  2067
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_30",
+                "physicalMemberId": "BM_floor_level_03_30",
+                "interiorNodeIndices": [
+                  2396,
+                  2397,
+                  2462,
+                  2459,
+                  2471,
+                  2472,
+                  2474
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_33",
+                "physicalMemberId": "BM_floor_level_03_33",
+                "interiorNodeIndices": [
+                  2318
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_37",
+                "physicalMemberId": "BM_floor_level_03_37",
+                "interiorNodeIndices": [
+                  2372,
+                  2373,
+                  2428,
+                  2431,
+                  2433,
+                  2419,
+                  2435,
+                  2437,
+                  2464
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_4",
+                "physicalMemberId": "BM_floor_level_03_4",
+                "interiorNodeIndices": [
+                  2078
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_41",
+                "physicalMemberId": "BM_floor_level_03_41",
+                "interiorNodeIndices": [
+                  2247
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_42",
+                "physicalMemberId": "BM_floor_level_03_42",
+                "interiorNodeIndices": [
+                  2333
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_45",
+                "physicalMemberId": "BM_floor_level_03_45",
+                "interiorNodeIndices": [
+                  2409
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_46",
+                "physicalMemberId": "BM_floor_level_03_46",
+                "interiorNodeIndices": [
+                  2406
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_47",
+                "physicalMemberId": "BM_floor_level_03_47",
+                "interiorNodeIndices": [
+                  2383
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_49",
+                "physicalMemberId": "BM_floor_level_03_49",
+                "interiorNodeIndices": [
+                  2313
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_5",
+                "physicalMemberId": "BM_floor_level_03_5",
+                "interiorNodeIndices": [
+                  2076
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_50",
+                "physicalMemberId": "BM_floor_level_03_50",
+                "interiorNodeIndices": [
+                  2315
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_53",
+                "physicalMemberId": "BM_floor_level_03_53",
+                "interiorNodeIndices": [
+                  2148
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_7",
+                "physicalMemberId": "BM_floor_level_03_7",
+                "interiorNodeIndices": [
+                  2116
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_8",
+                "physicalMemberId": "BM_floor_level_03_8",
+                "interiorNodeIndices": [
+                  2110
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_03_9",
+                "physicalMemberId": "BM_floor_level_03_9",
+                "interiorNodeIndices": [
+                  2046
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_level_03_31__fe_1",
+              "BM_floor_level_03_31__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_level_03_1",
@@ -3590,7 +4738,7 @@
             "floor_level_04::apt-room:core_stair_1:stair",
             "floor_level_04::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 200.5
+          "elapsedMs": 205.2
         },
         {
           "supportingFloorId": "floor_level_04",
@@ -3678,6 +4826,324 @@
             "BM_floor_level_04_8",
             "BM_floor_level_04_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 649,
+            "distinctQuads": 522,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_level_04_1",
+                "physicalMemberId": "BM_floor_level_04_1",
+                "interiorNodeIndices": [
+                  2596
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_10",
+                "physicalMemberId": "BM_floor_level_04_10",
+                "interiorNodeIndices": [
+                  2588
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_11",
+                "physicalMemberId": "BM_floor_level_04_11",
+                "interiorNodeIndices": [
+                  2673
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_12",
+                "physicalMemberId": "BM_floor_level_04_12",
+                "interiorNodeIndices": [
+                  2562
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_13",
+                "physicalMemberId": "BM_floor_level_04_13",
+                "interiorNodeIndices": [
+                  2571
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_14",
+                "physicalMemberId": "BM_floor_level_04_14",
+                "interiorNodeIndices": [
+                  2653
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_15",
+                "physicalMemberId": "BM_floor_level_04_15",
+                "interiorNodeIndices": [
+                  2583
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_16",
+                "physicalMemberId": "BM_floor_level_04_16",
+                "interiorNodeIndices": [
+                  2622,
+                  2623,
+                  2703,
+                  2704,
+                  2741,
+                  2742,
+                  2752,
+                  2753,
+                  2765
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_17",
+                "physicalMemberId": "BM_floor_level_04_17",
+                "interiorNodeIndices": [
+                  2587
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_18",
+                "physicalMemberId": "BM_floor_level_04_18",
+                "interiorNodeIndices": [
+                  2768,
+                  2769,
+                  2770,
+                  2725,
+                  2723,
+                  2717,
+                  2714,
+                  2683,
+                  2680,
+                  2625,
+                  2686,
+                  2687,
+                  2710,
+                  2708,
+                  2720,
+                  2721,
+                  2730
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_20",
+                "physicalMemberId": "BM_floor_level_04_20",
+                "interiorNodeIndices": [
+                  2727,
+                  2646,
+                  2649
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_21",
+                "physicalMemberId": "BM_floor_level_04_21",
+                "interiorNodeIndices": [
+                  2694
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_22",
+                "physicalMemberId": "BM_floor_level_04_22",
+                "interiorNodeIndices": [
+                  2713
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_23",
+                "physicalMemberId": "BM_floor_level_04_23",
+                "interiorNodeIndices": [
+                  2737,
+                  2738,
+                  2778,
+                  2779,
+                  2785,
+                  2783,
+                  2787,
+                  2775,
+                  2772
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_24",
+                "physicalMemberId": "BM_floor_level_04_24",
+                "interiorNodeIndices": [
+                  2747
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_25",
+                "physicalMemberId": "BM_floor_level_04_25",
+                "interiorNodeIndices": [
+                  3092,
+                  3082,
+                  3083,
+                  3086,
+                  3094
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_26",
+                "physicalMemberId": "BM_floor_level_04_26",
+                "interiorNodeIndices": [
+                  3091
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_28",
+                "physicalMemberId": "BM_floor_level_04_28",
+                "interiorNodeIndices": [
+                  3095
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_29",
+                "physicalMemberId": "BM_floor_level_04_29",
+                "interiorNodeIndices": [
+                  2976
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_3",
+                "physicalMemberId": "BM_floor_level_04_3",
+                "interiorNodeIndices": [
+                  2594
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_30",
+                "physicalMemberId": "BM_floor_level_04_30",
+                "interiorNodeIndices": [
+                  2975,
+                  2971,
+                  3004,
+                  3005,
+                  3018,
+                  3017,
+                  3034,
+                  3035,
+                  3036
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_33",
+                "physicalMemberId": "BM_floor_level_04_33",
+                "interiorNodeIndices": [
+                  2811
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_37",
+                "physicalMemberId": "BM_floor_level_04_37",
+                "interiorNodeIndices": [
+                  2944,
+                  2947,
+                  2958,
+                  2961,
+                  2963,
+                  2951,
+                  2977,
+                  2980,
+                  2982,
+                  2984,
+                  3000
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_4",
+                "physicalMemberId": "BM_floor_level_04_4",
+                "interiorNodeIndices": [
+                  2606
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_41",
+                "physicalMemberId": "BM_floor_level_04_41",
+                "interiorNodeIndices": [
+                  2804
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_42",
+                "physicalMemberId": "BM_floor_level_04_42",
+                "interiorNodeIndices": [
+                  2914
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_45",
+                "physicalMemberId": "BM_floor_level_04_45",
+                "interiorNodeIndices": [
+                  2933
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_46",
+                "physicalMemberId": "BM_floor_level_04_46",
+                "interiorNodeIndices": [
+                  2903
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_47",
+                "physicalMemberId": "BM_floor_level_04_47",
+                "interiorNodeIndices": [
+                  2892
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_49",
+                "physicalMemberId": "BM_floor_level_04_49",
+                "interiorNodeIndices": [
+                  2885
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_5",
+                "physicalMemberId": "BM_floor_level_04_5",
+                "interiorNodeIndices": [
+                  2604
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_50",
+                "physicalMemberId": "BM_floor_level_04_50",
+                "interiorNodeIndices": [
+                  2861
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_53",
+                "physicalMemberId": "BM_floor_level_04_53",
+                "interiorNodeIndices": [
+                  2697
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_7",
+                "physicalMemberId": "BM_floor_level_04_7",
+                "interiorNodeIndices": [
+                  2676
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_8",
+                "physicalMemberId": "BM_floor_level_04_8",
+                "interiorNodeIndices": [
+                  2670
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_04_9",
+                "physicalMemberId": "BM_floor_level_04_9",
+                "interiorNodeIndices": [
+                  2591
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_level_04_31__fe_1",
+              "BM_floor_level_04_31__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_level_04_1",
@@ -4574,7 +6040,7 @@
             "floor_terrace_05::terrace__stair_mumty_1:stair",
             "floor_terrace_05::terrace__stair_mumty_2:stair"
           ],
-          "elapsedMs": 231.7
+          "elapsedMs": 238.2
         },
         {
           "supportingFloorId": "floor_terrace_05",
@@ -4719,6 +6185,404 @@
             "BM_floor_stilt_00_8",
             "BM_floor_stilt_00_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 535,
+            "distinctQuads": 423,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_stilt_00_1",
+                "physicalMemberId": "BM_floor_stilt_00_1",
+                "interiorNodeIndices": [
+                  346
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_10",
+                "physicalMemberId": "BM_floor_stilt_00_10",
+                "interiorNodeIndices": [
+                  454
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_11",
+                "physicalMemberId": "BM_floor_stilt_00_11",
+                "interiorNodeIndices": [
+                  401
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_12",
+                "physicalMemberId": "BM_floor_stilt_00_12",
+                "interiorNodeIndices": [
+                  400
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_13",
+                "physicalMemberId": "BM_floor_stilt_00_13",
+                "interiorNodeIndices": [
+                  502
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_14",
+                "physicalMemberId": "BM_floor_stilt_00_14",
+                "interiorNodeIndices": [
+                  493,
+                  494,
+                  628,
+                  629,
+                  662,
+                  663,
+                  681,
+                  682,
+                  683
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_15",
+                "physicalMemberId": "BM_floor_stilt_00_15",
+                "interiorNodeIndices": [
+                  307
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_16",
+                "physicalMemberId": "BM_floor_stilt_00_16",
+                "interiorNodeIndices": [
+                  686,
+                  687,
+                  688,
+                  659,
+                  657,
+                  641,
+                  638,
+                  587,
+                  584,
+                  496,
+                  648,
+                  649,
+                  652,
+                  655,
+                  678,
+                  667,
+                  664
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_2",
+                "physicalMemberId": "BM_floor_stilt_00_2",
+                "interiorNodeIndices": [
+                  349
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_21",
+                "physicalMemberId": "BM_floor_stilt_00_21",
+                "interiorNodeIndices": [
+                  593,
+                  581,
+                  578,
+                  583,
+                  624,
+                  621,
+                  619,
+                  570,
+                  602
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_23",
+                "physicalMemberId": "BM_floor_stilt_00_23",
+                "interiorNodeIndices": [
+                  600,
+                  565,
+                  563,
+                  560,
+                  557,
+                  466,
+                  478
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_25",
+                "physicalMemberId": "BM_floor_stilt_00_25",
+                "interiorNodeIndices": [
+                  476
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_28",
+                "physicalMemberId": "BM_floor_stilt_00_28",
+                "interiorNodeIndices": [
+                  423
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_3",
+                "physicalMemberId": "BM_floor_stilt_00_3",
+                "interiorNodeIndices": [
+                  438
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_30",
+                "physicalMemberId": "BM_floor_stilt_00_30",
+                "interiorNodeIndices": [
+                  428
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_31",
+                "physicalMemberId": "BM_floor_stilt_00_31",
+                "interiorNodeIndices": [
+                  426
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_32",
+                "physicalMemberId": "BM_floor_stilt_00_32",
+                "interiorNodeIndices": [
+                  552
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_33",
+                "physicalMemberId": "BM_floor_stilt_00_33",
+                "interiorNodeIndices": [
+                  556,
+                  514,
+                  518,
+                  519,
+                  616,
+                  615,
+                  614
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_34",
+                "physicalMemberId": "BM_floor_stilt_00_34",
+                "interiorNodeIndices": [
+                  506
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_38",
+                "physicalMemberId": "BM_floor_stilt_00_38",
+                "interiorNodeIndices": [
+                  319
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_39",
+                "physicalMemberId": "BM_floor_stilt_00_39",
+                "interiorNodeIndices": [
+                  296
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_4",
+                "physicalMemberId": "BM_floor_stilt_00_4",
+                "interiorNodeIndices": [
+                  440
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_40",
+                "physicalMemberId": "BM_floor_stilt_00_40",
+                "interiorNodeIndices": [
+                  774
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_41",
+                "physicalMemberId": "BM_floor_stilt_00_41",
+                "interiorNodeIndices": [
+                  405
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_42",
+                "physicalMemberId": "BM_floor_stilt_00_42",
+                "interiorNodeIndices": [
+                  407
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_43",
+                "physicalMemberId": "BM_floor_stilt_00_43",
+                "interiorNodeIndices": [
+                  350
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_45",
+                "physicalMemberId": "BM_floor_stilt_00_45",
+                "interiorNodeIndices": [
+                  780
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_46",
+                "physicalMemberId": "BM_floor_stilt_00_46",
+                "interiorNodeIndices": [
+                  786
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_47",
+                "physicalMemberId": "BM_floor_stilt_00_47",
+                "interiorNodeIndices": [
+                  782
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_49",
+                "physicalMemberId": "BM_floor_stilt_00_49",
+                "interiorNodeIndices": [
+                  322
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_5",
+                "physicalMemberId": "BM_floor_stilt_00_5",
+                "interiorNodeIndices": [
+                  451
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_51",
+                "physicalMemberId": "BM_floor_stilt_00_51",
+                "interiorNodeIndices": [
+                  392
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_52",
+                "physicalMemberId": "BM_floor_stilt_00_52",
+                "interiorNodeIndices": [
+                  339
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_53",
+                "physicalMemberId": "BM_floor_stilt_00_53",
+                "interiorNodeIndices": [
+                  338
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_54",
+                "physicalMemberId": "BM_floor_stilt_00_54",
+                "interiorNodeIndices": [
+                  335
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_55",
+                "physicalMemberId": "BM_floor_stilt_00_55",
+                "interiorNodeIndices": [
+                  401
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_56",
+                "physicalMemberId": "BM_floor_stilt_00_56",
+                "interiorNodeIndices": [
+                  400
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_57",
+                "physicalMemberId": "BM_floor_stilt_00_57",
+                "interiorNodeIndices": [
+                  307
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_6",
+                "physicalMemberId": "BM_floor_stilt_00_6",
+                "interiorNodeIndices": [
+                  392
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_60",
+                "physicalMemberId": "BM_floor_stilt_00_60",
+                "interiorNodeIndices": [
+                  319
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_62",
+                "physicalMemberId": "BM_floor_stilt_00_62",
+                "interiorNodeIndices": [
+                  405
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_63",
+                "physicalMemberId": "BM_floor_stilt_00_63",
+                "interiorNodeIndices": [
+                  407
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_64",
+                "physicalMemberId": "BM_floor_stilt_00_64",
+                "interiorNodeIndices": [
+                  350
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_66",
+                "physicalMemberId": "BM_floor_stilt_00_66",
+                "interiorNodeIndices": [
+                  780
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_67",
+                "physicalMemberId": "BM_floor_stilt_00_67",
+                "interiorNodeIndices": [
+                  786
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_68",
+                "physicalMemberId": "BM_floor_stilt_00_68",
+                "interiorNodeIndices": [
+                  782
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_7",
+                "physicalMemberId": "BM_floor_stilt_00_7",
+                "interiorNodeIndices": [
+                  339
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_8",
+                "physicalMemberId": "BM_floor_stilt_00_8",
+                "interiorNodeIndices": [
+                  338
+                ]
+              },
+              {
+                "elementId": "BM_floor_stilt_00_9",
+                "physicalMemberId": "BM_floor_stilt_00_9",
+                "interiorNodeIndices": [
+                  335
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_stilt_00_61",
+              "BM_floor_stilt_00_65__fe_1",
+              "BM_floor_stilt_00_65__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_stilt_00_1",
@@ -5799,7 +7663,7 @@
             "floor_typical_01::apt-room:core_stair_1:stair",
             "floor_typical_01::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 202.6
+          "elapsedMs": 202.1
         },
         {
           "supportingFloorId": "floor_typical_01",
@@ -5900,6 +7764,404 @@
             "BM_floor_typical_01_8",
             "BM_floor_typical_01_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 535,
+            "distinctQuads": 423,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_typical_01_1",
+                "physicalMemberId": "BM_floor_typical_01_1",
+                "interiorNodeIndices": [
+                  839
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_10",
+                "physicalMemberId": "BM_floor_typical_01_10",
+                "interiorNodeIndices": [
+                  947
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_11",
+                "physicalMemberId": "BM_floor_typical_01_11",
+                "interiorNodeIndices": [
+                  894
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_12",
+                "physicalMemberId": "BM_floor_typical_01_12",
+                "interiorNodeIndices": [
+                  893
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_13",
+                "physicalMemberId": "BM_floor_typical_01_13",
+                "interiorNodeIndices": [
+                  995
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_14",
+                "physicalMemberId": "BM_floor_typical_01_14",
+                "interiorNodeIndices": [
+                  986,
+                  987,
+                  1121,
+                  1122,
+                  1155,
+                  1156,
+                  1174,
+                  1175,
+                  1176
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_15",
+                "physicalMemberId": "BM_floor_typical_01_15",
+                "interiorNodeIndices": [
+                  800
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_16",
+                "physicalMemberId": "BM_floor_typical_01_16",
+                "interiorNodeIndices": [
+                  1179,
+                  1180,
+                  1181,
+                  1152,
+                  1150,
+                  1134,
+                  1131,
+                  1080,
+                  1077,
+                  989,
+                  1141,
+                  1142,
+                  1145,
+                  1148,
+                  1171,
+                  1160,
+                  1157
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_2",
+                "physicalMemberId": "BM_floor_typical_01_2",
+                "interiorNodeIndices": [
+                  842
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_21",
+                "physicalMemberId": "BM_floor_typical_01_21",
+                "interiorNodeIndices": [
+                  1086,
+                  1074,
+                  1071,
+                  1076,
+                  1117,
+                  1114,
+                  1112,
+                  1063,
+                  1095
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_23",
+                "physicalMemberId": "BM_floor_typical_01_23",
+                "interiorNodeIndices": [
+                  1093,
+                  1058,
+                  1056,
+                  1053,
+                  1050,
+                  959,
+                  971
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_25",
+                "physicalMemberId": "BM_floor_typical_01_25",
+                "interiorNodeIndices": [
+                  969
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_28",
+                "physicalMemberId": "BM_floor_typical_01_28",
+                "interiorNodeIndices": [
+                  916
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_3",
+                "physicalMemberId": "BM_floor_typical_01_3",
+                "interiorNodeIndices": [
+                  931
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_30",
+                "physicalMemberId": "BM_floor_typical_01_30",
+                "interiorNodeIndices": [
+                  921
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_31",
+                "physicalMemberId": "BM_floor_typical_01_31",
+                "interiorNodeIndices": [
+                  919
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_32",
+                "physicalMemberId": "BM_floor_typical_01_32",
+                "interiorNodeIndices": [
+                  1045
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_33",
+                "physicalMemberId": "BM_floor_typical_01_33",
+                "interiorNodeIndices": [
+                  1049,
+                  1007,
+                  1011,
+                  1012,
+                  1109,
+                  1108,
+                  1107
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_34",
+                "physicalMemberId": "BM_floor_typical_01_34",
+                "interiorNodeIndices": [
+                  999
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_38",
+                "physicalMemberId": "BM_floor_typical_01_38",
+                "interiorNodeIndices": [
+                  812
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_39",
+                "physicalMemberId": "BM_floor_typical_01_39",
+                "interiorNodeIndices": [
+                  789
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_4",
+                "physicalMemberId": "BM_floor_typical_01_4",
+                "interiorNodeIndices": [
+                  933
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_40",
+                "physicalMemberId": "BM_floor_typical_01_40",
+                "interiorNodeIndices": [
+                  1267
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_41",
+                "physicalMemberId": "BM_floor_typical_01_41",
+                "interiorNodeIndices": [
+                  898
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_42",
+                "physicalMemberId": "BM_floor_typical_01_42",
+                "interiorNodeIndices": [
+                  900
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_43",
+                "physicalMemberId": "BM_floor_typical_01_43",
+                "interiorNodeIndices": [
+                  843
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_45",
+                "physicalMemberId": "BM_floor_typical_01_45",
+                "interiorNodeIndices": [
+                  1273
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_46",
+                "physicalMemberId": "BM_floor_typical_01_46",
+                "interiorNodeIndices": [
+                  1279
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_47",
+                "physicalMemberId": "BM_floor_typical_01_47",
+                "interiorNodeIndices": [
+                  1275
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_49",
+                "physicalMemberId": "BM_floor_typical_01_49",
+                "interiorNodeIndices": [
+                  815
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_5",
+                "physicalMemberId": "BM_floor_typical_01_5",
+                "interiorNodeIndices": [
+                  944
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_51",
+                "physicalMemberId": "BM_floor_typical_01_51",
+                "interiorNodeIndices": [
+                  885
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_52",
+                "physicalMemberId": "BM_floor_typical_01_52",
+                "interiorNodeIndices": [
+                  832
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_53",
+                "physicalMemberId": "BM_floor_typical_01_53",
+                "interiorNodeIndices": [
+                  831
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_54",
+                "physicalMemberId": "BM_floor_typical_01_54",
+                "interiorNodeIndices": [
+                  828
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_55",
+                "physicalMemberId": "BM_floor_typical_01_55",
+                "interiorNodeIndices": [
+                  894
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_56",
+                "physicalMemberId": "BM_floor_typical_01_56",
+                "interiorNodeIndices": [
+                  893
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_57",
+                "physicalMemberId": "BM_floor_typical_01_57",
+                "interiorNodeIndices": [
+                  800
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_6",
+                "physicalMemberId": "BM_floor_typical_01_6",
+                "interiorNodeIndices": [
+                  885
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_60",
+                "physicalMemberId": "BM_floor_typical_01_60",
+                "interiorNodeIndices": [
+                  812
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_62",
+                "physicalMemberId": "BM_floor_typical_01_62",
+                "interiorNodeIndices": [
+                  898
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_63",
+                "physicalMemberId": "BM_floor_typical_01_63",
+                "interiorNodeIndices": [
+                  900
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_64",
+                "physicalMemberId": "BM_floor_typical_01_64",
+                "interiorNodeIndices": [
+                  843
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_66",
+                "physicalMemberId": "BM_floor_typical_01_66",
+                "interiorNodeIndices": [
+                  1273
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_67",
+                "physicalMemberId": "BM_floor_typical_01_67",
+                "interiorNodeIndices": [
+                  1279
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_68",
+                "physicalMemberId": "BM_floor_typical_01_68",
+                "interiorNodeIndices": [
+                  1275
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_7",
+                "physicalMemberId": "BM_floor_typical_01_7",
+                "interiorNodeIndices": [
+                  832
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_8",
+                "physicalMemberId": "BM_floor_typical_01_8",
+                "interiorNodeIndices": [
+                  831
+                ]
+              },
+              {
+                "elementId": "BM_floor_typical_01_9",
+                "physicalMemberId": "BM_floor_typical_01_9",
+                "interiorNodeIndices": [
+                  828
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_typical_01_61",
+              "BM_floor_typical_01_65__fe_1",
+              "BM_floor_typical_01_65__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_typical_01_1",
@@ -6980,7 +9242,7 @@
             "floor_level_02::apt-room:core_stair_1:stair",
             "floor_level_02::apt-room:core_stair_2:stair"
           ],
-          "elapsedMs": 197.6
+          "elapsedMs": 205.5
         },
         {
           "supportingFloorId": "floor_level_02",
@@ -7083,6 +9345,441 @@
             "BM_floor_level_02_8",
             "BM_floor_level_02_9"
           ],
+          "jointRegistry": {
+            "distinctNodes": 628,
+            "distinctQuads": 495,
+            "frameSubdivisionCandidates": [
+              {
+                "elementId": "BM_floor_level_02_1",
+                "physicalMemberId": "BM_floor_level_02_1",
+                "interiorNodeIndices": [
+                  1280
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_10",
+                "physicalMemberId": "BM_floor_level_02_10",
+                "interiorNodeIndices": [
+                  1473
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_11",
+                "physicalMemberId": "BM_floor_level_02_11",
+                "interiorNodeIndices": [
+                  1390
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_12",
+                "physicalMemberId": "BM_floor_level_02_12",
+                "interiorNodeIndices": [
+                  1387
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_13",
+                "physicalMemberId": "BM_floor_level_02_13",
+                "interiorNodeIndices": [
+                  1518
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_14",
+                "physicalMemberId": "BM_floor_level_02_14",
+                "interiorNodeIndices": [
+                  1509,
+                  1510,
+                  1630,
+                  1631,
+                  1687,
+                  1688,
+                  1691,
+                  1692,
+                  1693
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_15",
+                "physicalMemberId": "BM_floor_level_02_15",
+                "interiorNodeIndices": [
+                  1309
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_16",
+                "physicalMemberId": "BM_floor_level_02_16",
+                "interiorNodeIndices": [
+                  1696,
+                  1697,
+                  1698,
+                  1684,
+                  1682,
+                  1655,
+                  1652,
+                  1607,
+                  1604,
+                  1512,
+                  1581,
+                  1582,
+                  1658,
+                  1659,
+                  1674,
+                  1670,
+                  1667
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_19",
+                "physicalMemberId": "BM_floor_level_02_19",
+                "interiorNodeIndices": [
+                  1776,
+                  1781,
+                  1784,
+                  1785,
+                  1786,
+                  1755,
+                  1761
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_2",
+                "physicalMemberId": "BM_floor_level_02_2",
+                "interiorNodeIndices": [
+                  1283
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_21",
+                "physicalMemberId": "BM_floor_level_02_21",
+                "interiorNodeIndices": [
+                  1533,
+                  1529,
+                  1526,
+                  1531,
+                  1536,
+                  1537,
+                  1637,
+                  1635,
+                  1632,
+                  1600,
+                  1614
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_22",
+                "physicalMemberId": "BM_floor_level_02_22",
+                "interiorNodeIndices": [
+                  1762
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_23",
+                "physicalMemberId": "BM_floor_level_02_23",
+                "interiorNodeIndices": [
+                  1680,
+                  1678,
+                  1675,
+                  1590,
+                  1587,
+                  1466,
+                  1463,
+                  1447,
+                  1445
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_25",
+                "physicalMemberId": "BM_floor_level_02_25",
+                "interiorNodeIndices": [
+                  1443
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_26",
+                "physicalMemberId": "BM_floor_level_02_26",
+                "interiorNodeIndices": [
+                  1759,
+                  1758,
+                  1773,
+                  1766,
+                  1764
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_28",
+                "physicalMemberId": "BM_floor_level_02_28",
+                "interiorNodeIndices": [
+                  1432
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_3",
+                "physicalMemberId": "BM_floor_level_02_3",
+                "interiorNodeIndices": [
+                  1345
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_30",
+                "physicalMemberId": "BM_floor_level_02_30",
+                "interiorNodeIndices": [
+                  1456
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_31",
+                "physicalMemberId": "BM_floor_level_02_31",
+                "interiorNodeIndices": [
+                  1454
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_32",
+                "physicalMemberId": "BM_floor_level_02_32",
+                "interiorNodeIndices": [
+                  1378
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_33",
+                "physicalMemberId": "BM_floor_level_02_33",
+                "interiorNodeIndices": [
+                  1567,
+                  1561,
+                  1558,
+                  1557,
+                  1554,
+                  1547,
+                  1546,
+                  1543,
+                  1542
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_34",
+                "physicalMemberId": "BM_floor_level_02_34",
+                "interiorNodeIndices": [
+                  1493
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_38",
+                "physicalMemberId": "BM_floor_level_02_38",
+                "interiorNodeIndices": [
+                  1321
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_39",
+                "physicalMemberId": "BM_floor_level_02_39",
+                "interiorNodeIndices": [
+                  1298
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_4",
+                "physicalMemberId": "BM_floor_level_02_4",
+                "interiorNodeIndices": [
+                  1349
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_40",
+                "physicalMemberId": "BM_floor_level_02_40",
+                "interiorNodeIndices": [
+                  1851
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_41",
+                "physicalMemberId": "BM_floor_level_02_41",
+                "interiorNodeIndices": [
+                  1421
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_42",
+                "physicalMemberId": "BM_floor_level_02_42",
+                "interiorNodeIndices": [
+                  1423
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_43",
+                "physicalMemberId": "BM_floor_level_02_43",
+                "interiorNodeIndices": [
+                  1350
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_45",
+                "physicalMemberId": "BM_floor_level_02_45",
+                "interiorNodeIndices": [
+                  1857
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_46",
+                "physicalMemberId": "BM_floor_level_02_46",
+                "interiorNodeIndices": [
+                  1863
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_47",
+                "physicalMemberId": "BM_floor_level_02_47",
+                "interiorNodeIndices": [
+                  1859
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_49",
+                "physicalMemberId": "BM_floor_level_02_49",
+                "interiorNodeIndices": [
+                  1324
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_5",
+                "physicalMemberId": "BM_floor_level_02_5",
+                "interiorNodeIndices": [
+                  1295
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_51",
+                "physicalMemberId": "BM_floor_level_02_51",
+                "interiorNodeIndices": [
+                  1397
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_52",
+                "physicalMemberId": "BM_floor_level_02_52",
+                "interiorNodeIndices": [
+                  1406
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_53",
+                "physicalMemberId": "BM_floor_level_02_53",
+                "interiorNodeIndices": [
+                  1402
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_54",
+                "physicalMemberId": "BM_floor_level_02_54",
+                "interiorNodeIndices": [
+                  1399
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_55",
+                "physicalMemberId": "BM_floor_level_02_55",
+                "interiorNodeIndices": [
+                  1390
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_56",
+                "physicalMemberId": "BM_floor_level_02_56",
+                "interiorNodeIndices": [
+                  1387
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_57",
+                "physicalMemberId": "BM_floor_level_02_57",
+                "interiorNodeIndices": [
+                  1309
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_6",
+                "physicalMemberId": "BM_floor_level_02_6",
+                "interiorNodeIndices": [
+                  1397
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_60",
+                "physicalMemberId": "BM_floor_level_02_60",
+                "interiorNodeIndices": [
+                  1321
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_62",
+                "physicalMemberId": "BM_floor_level_02_62",
+                "interiorNodeIndices": [
+                  1421
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_63",
+                "physicalMemberId": "BM_floor_level_02_63",
+                "interiorNodeIndices": [
+                  1423
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_64",
+                "physicalMemberId": "BM_floor_level_02_64",
+                "interiorNodeIndices": [
+                  1350
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_66",
+                "physicalMemberId": "BM_floor_level_02_66",
+                "interiorNodeIndices": [
+                  1857
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_67",
+                "physicalMemberId": "BM_floor_level_02_67",
+                "interiorNodeIndices": [
+                  1863
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_68",
+                "physicalMemberId": "BM_floor_level_02_68",
+                "interiorNodeIndices": [
+                  1859
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_7",
+                "physicalMemberId": "BM_floor_level_02_7",
+                "interiorNodeIndices": [
+                  1406
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_8",
+                "physicalMemberId": "BM_floor_level_02_8",
+                "interiorNodeIndices": [
+                  1402
+                ]
+              },
+              {
+                "elementId": "BM_floor_level_02_9",
+                "physicalMemberId": "BM_floor_level_02_9",
+                "interiorNodeIndices": [
+                  1399
+                ]
+              }
+            ],
+            "conflictingElementIds": [
+              "BM_floor_level_02_61",
+              "BM_floor_level_02_65__fe_1",
+              "BM_floor_level_02_65__fe_2"
+            ]
+          },
           "beamSubdivisionCandidates": [
             {
               "physicalMemberId": "BM_floor_level_02_1",
@@ -8275,7 +10972,7 @@
             "floor_terrace_03::terrace__stair_mumty_1:stair",
             "floor_terrace_03::terrace__stair_mumty_2:stair"
           ],
-          "elapsedMs": 234.7
+          "elapsedMs": 240.4
         },
         {
           "supportingFloorId": "floor_terrace_03",

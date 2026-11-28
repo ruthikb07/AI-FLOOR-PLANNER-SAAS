@@ -53,6 +53,7 @@ export type AutomaticDeckMeshRegion =
       readonly boundaryInterfaces: readonly {
         readonly regionId: string;
         readonly lengthMm: number;
-        readonly status: 'SHARED_FRAME_DOFS' | 'CONTINUITY_REVIEW_REQUIRED' | 'NONCONFORMING_INTERFACE';
+        readonly reviewReference?: string;
+        readonly status: 'REVIEWED_MONOLITHIC_DOFS' | 'SHARED_FRAME_DOFS' | 'CONTINUITY_REVIEW_REQUIRED' | 'NONCONFORMING_INTERFACE';
       }[];
     });

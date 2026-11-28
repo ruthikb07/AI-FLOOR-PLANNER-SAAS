@@ -1,7 +1,7 @@
 /**
  * Backend HTTP Routes for RH Planner's Embedded Awatif v3.4.0 Structural Engineering Engine,
  * RCC/Foundation Design, Protected Localized Global-Reanalysis Optimizer, CAD/BIM Drawings,
- * and Unified AI Structural Engineering Assistant (Phases A7–A19).
+ * and Unified AI Structural Engineering Assistant (Phases A7â€“A19).
  */
 
 import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
@@ -115,7 +115,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
     }
     if (subgradeModulusKnM3 !== undefined &&
         (typeof subgradeModulusKnM3 !== 'number' || !Number.isFinite(subgradeModulusKnM3) || subgradeModulusKnM3 <= 100)) {
-      return { error: 'Geotechnical subgradeModulusKnM3 must be a reviewed value greater than 100 kN/m³.' };
+      return { error: 'Geotechnical subgradeModulusKnM3 must be a reviewed value greater than 100 kN/mÂ³.' };
     }
     if (typeof reportReference !== 'string' || !reportReference.trim()) {
       return { error: 'A site geotechnical report reference is required.' };
@@ -253,23 +253,23 @@ function buildDeterministicAssistantAnswer(
       .slice(0, 5)
       .map(
         (d) =>
-          `• **${d.memberId}** (${d.memberCategory}, ${d.storey}): Utilization **${d.utilizationRatio}** under \`${d.governingCombination}\` (${d.clause}) — ${d.explanation}. *Fix:* ${d.proposedCorrection}`,
+          `â€¢ **${d.memberId}** (${d.memberCategory}, ${d.storey}): Utilization **${d.utilizationRatio}** under \`${d.governingCombination}\` (${d.clause}) â€” ${d.explanation}. *Fix:* ${d.proposedCorrection}`,
       );
     return `Detected **${defects.length}** structural finding(s):\n${lines.join('\n')}\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
   if (qLower.includes('bbs') || qLower.includes('bar bending') || qLower.includes('steel') || qLower.includes('quantit')) {
-    return `**Bar Bending Schedule & Deduplicated BOQ Summary:**\n• Net Concrete Volume: **${boq.netConcreteVolumeM3} m³** (deducted ${boq.jointAndSlabIntersectionDeductionM3} m³ at beam-column/slab intersections)\n• Total Reinforcement Steel: **${boq.totalSteelWeightKg} kg (${boq.totalSteelTonnes} MT)** across ${detailingAndBoq.bbsEntries.length} bar marks (Columns ${boq.steelByCategoryKg.columns} kg, Beams ${boq.steelByCategoryKg.beams} kg, Slabs ${boq.steelByCategoryKg.slabs} kg, Footings ${boq.steelByCategoryKg.footings} kg)\n• Formwork: **${boq.formworkAreaM2} m²** · Excavation: **${boq.excavationVolumeM3} m³**\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+    return `**Bar Bending Schedule & Deduplicated BOQ Summary:**\nâ€¢ Net Concrete Volume: **${boq.netConcreteVolumeM3} mÂ³** (deducted ${boq.jointAndSlabIntersectionDeductionM3} mÂ³ at beam-column/slab intersections)\nâ€¢ Total Reinforcement Steel: **${boq.totalSteelWeightKg} kg (${boq.totalSteelTonnes} MT)** across ${detailingAndBoq.bbsEntries.length} bar marks (Columns ${boq.steelByCategoryKg.columns} kg, Beams ${boq.steelByCategoryKg.beams} kg, Slabs ${boq.steelByCategoryKg.slabs} kg, Footings ${boq.steelByCategoryKg.footings} kg)\nâ€¢ Formwork: **${boq.formworkAreaM2} mÂ²** Â· Excavation: **${boq.excavationVolumeM3} mÂ³**\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
   if (qLower.includes('foundation') || qLower.includes('footing') || qLower.includes('sbc') || qLower.includes('raft')) {
     if (foundationDesign.status === 'MISSING_GEOTECHNICAL_INPUT') {
-      return `Foundation design is currently gated (**MISSING_GEOTECHNICAL_INPUT**) because no reviewed geotechnical Safe Bearing Capacity (SBC) was supplied. Enter your site geotechnical SBC (kN/m²) and foundation depth to size footings per IS 1904:1986 & IS 456 Cl. 34.`;
+      return `Foundation design is currently gated (**MISSING_GEOTECHNICAL_INPUT**) because no reviewed geotechnical Safe Bearing Capacity (SBC) was supplied. Enter your site geotechnical SBC (kN/mÂ²) and foundation depth to size footings per IS 1904:1986 & IS 456 Cl. 34.`;
     }
-    return `**Foundation Design (${foundationDesign.selectedStrategy}):**\n• Status: **${foundationDesign.status}** (${foundationDesign.footings.length} foundation elements for SBC = ${inputs.geotechnical?.safeBearingCapacityKPa} kPa)\n• Peak Soil Pressure: **${Math.max(0, ...foundationDesign.footings.map((f) => f.maxSoilPressureKPa))} kPa**; allowed ${inputs.geotechnical?.safeBearingCapacityKPa} kPa\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+    return `**Foundation Design (${foundationDesign.selectedStrategy}):**\nâ€¢ Status: **${foundationDesign.status}** (${foundationDesign.footings.length} foundation elements for SBC = ${inputs.geotechnical?.safeBearingCapacityKPa} kPa)\nâ€¢ Peak Soil Pressure: **${Math.max(0, ...foundationDesign.footings.map((f) => f.maxSoilPressureKPa))} kPa**; allowed ${inputs.geotechnical?.safeBearingCapacityKPa} kPa\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
   }
 
-  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${solverBackends}):**\n• Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\n• RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\n• Foundations: **${foundationDesign.status}**\n• Quantities: **${boq.netConcreteVolumeM3} m³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
+  return `**Structural Evaluation (${inputs.concreteGrade} / ${inputs.steelGrade}; ${solverBackends}):**\nâ€¢ Gravity Total (DL+SDL+LL): **${(loadTakeoff.totalDeadPlusSdlKn + loadTakeoff.totalOccupancyLiveKn + loadTakeoff.totalRoofLiveKn).toFixed(1)} kN** | Seismic Base Shear Vb: **${loadTakeoff.seismicSummary?.designBaseShearVbXKn.toFixed(1) ?? '0'} kN**\nâ€¢ RCC Superstructure: **${rccDesign.columns.filter((c) => c.status === 'PASSED').length}/${rccDesign.columns.length}** columns passed, **${rccDesign.beams.filter((b) => b.status === 'PASSED').length}/${rccDesign.beams.length}** beams passed, **${rccDesign.slabs.filter((s) => s.status === 'PASSED').length}/${rccDesign.slabs.length}** slabs passed (Max Utilization **${snapshot.maxMemberUtilization}**)\nâ€¢ Foundations: **${foundationDesign.status}**\nâ€¢ Quantities: **${boq.netConcreteVolumeM3} mÂ³** concrete, **${boq.totalSteelTonnes} MT** rebar steel.\n\n${MANDATORY_STRUCTURAL_DISCLAIMER}`;
 }
 
 export async function handleStructuralRoute(
@@ -379,6 +379,17 @@ export async function handleStructuralRoute(
           return true;
         }
         const automatic = body.automaticMesh === true && proposal === undefined;
+        const reviews = body.interfaceReviews ?? [];
+        if (!Array.isArray(reviews) || reviews.length > 1024 || reviews.some(review =>
+          !automatic || !isRecord(review) || review.evaluationId !== body.evaluationId ||
+          review.connection !== 'MONOLITHIC_FULL_INTERFACE' ||
+          typeof review.reference !== 'string' || !review.reference.trim() || review.reference.length > 512 ||
+          !building.floors.some(floor => floor.id === review.supportingFloorId) ||
+          !Array.isArray(review.regionIds) || review.regionIds.length !== 2 ||
+          !review.regionIds.every((id: unknown) => typeof id === 'string' && id.length > 0 && id.length <= 512))) {
+          sendJson(response, 422, { error: { code: 'INVALID_INTERFACE_REVIEW', message: 'Specify reviewed region pairs bound to this evaluation and supporting floor.' } });
+          return true;
+        }
         const frameNodeCount = saved.snapshot.system.nodes.length;
         let firstFreeNode = frameNodeCount;
         const decks = [];
@@ -386,6 +397,12 @@ export async function handleStructuralRoute(
         for (const floor of building.floors) {
           if (proposal !== undefined && floor.id !== floorId) continue;
           const reviewed = saved.snapshot.system.physicalModel.slabs.filter(slab => slab.floorId === floor.id && slab.deckReview);
+          const floorReviews = reviews.filter(review => review.supportingFloorId === floor.id);
+          if (reviewed.length && floorReviews.length) {
+            sendJson(response, 422, { error: { code: 'DECK_ALREADY_REVIEWED', floorId: floor.id,
+              message: 'Conventional transfer is already registered for this floor.' } });
+            return true;
+          }
           if (reviewed.length) {
             if (proposal !== undefined) {
               sendJson(response, 422, { error: { code: 'DECK_ALREADY_REVIEWED', message: 'This floor uses reviewed conventional slab transfer.' } });
@@ -399,7 +416,7 @@ export async function handleStructuralRoute(
             candidate.elevationMm === base + floor.floorHeight);
           const owner = owners.length === 1 ? owners[0] : undefined;
           if (!owner) {
-            if (proposal !== undefined) {
+            if (proposal !== undefined || floorReviews.length) {
               sendJson(response, 422, { error: { code: 'SURFACE_OWNERSHIP_REVIEW_REQUIRED', message: 'No unique registered deck surface at this level.' } });
               return true;
             }
@@ -413,10 +430,10 @@ export async function handleStructuralRoute(
           response.once('close', cancel);
           const result = await worker.request<PythonWorkerResponseBase & {
             meshReceipt?: PhysicalDeckMeshReceipt;
-            automaticMesh?: { regions: AutomaticDeckMeshRegion[]; nextFreeNodeIndex: number };
+            automaticMesh?: { regions: AutomaticDeckMeshRegion[]; nextFreeNodeIndex: number; jointRegistry: unknown };
           }>({ action: 'coordinate_deck', floor: owner, supportingFloor: floor,
             registeredSurface: true, beams, ...(!automatic && proposal === undefined ? {} : {
-              ...(automatic ? { firstFreeNode } : { meshProposal: proposal }),
+              ...(automatic ? { firstFreeNode, interfaceReviews: floorReviews } : { meshProposal: proposal }),
               frameNodes: saved.snapshot.system.nodes.map(({ index, positionM }) => ({ index, positionM })),
               frameElements: saved.snapshot.system.elements.map(({ id, startNodeIndex, endNodeIndex }) => ({ id, startNodeIndex, endNodeIndex })),
             }) }, undefined, controller.signal).catch((error: unknown) => {
@@ -443,7 +460,7 @@ export async function handleStructuralRoute(
           if (automatic) {
             if (!result.automaticMesh || !isRecord(result.deck)) throw new Error('Missing automatic mesh result.');
             firstFreeNode = result.automaticMesh.nextFreeNodeIndex;
-            decks.push({ ...result.deck, automaticMesh: result.automaticMesh.regions });
+            decks.push({ ...result.deck, automaticMesh: result.automaticMesh.regions, jointRegistry: result.automaticMesh.jointRegistry });
           } else {
             decks.push(result.deck);
           }
