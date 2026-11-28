@@ -1,0 +1,316 @@
+{
+  "baseline": "1fa7861a56909bbff7af74b4e2e0709c4db1a136",
+  "scope": "Working recovery register. Null fields identify outstanding investigation.",
+  "defects": [
+    {
+      "id": "D01",
+      "severity": "release gate",
+      "component": "Inadequate automatic mesh coverage",
+      "baselineObservation": "Original apartment:\n\nCandidate deck area: 3534.3175 m\u00b2.\n\nSuccessfully meshed area: 43.7175 m\u00b2.\n\nCoverage: approximately 1.24%.\n\nQuadrilateral elements: 19.\n\nRejected regions: 10.\n\nSecond apartment:\n\nCandidate deck area: 1996.491 m\u00b2.\n\nSuccessfully meshed area: 39.279 m\u00b2.\n\nCoverage: approximately 1.97%.\n\nQuadrilateral elements: 22.\n\nRejected regions: 6.\n\nBoth apartments have zero verified bearing area.\n\nThe current registered deck areas exclude unreviewed terminal roof surfaces.",
+      "currentStatus": "VERIFIED",
+      "reproductionSteps": "Run replay_apartment_meshes.py on the hash-checked refined archive at the baseline commit, then at this checkpoint.",
+      "expectedBehavior": "Cover every registered region within 0.01 mm2 while preserving boundary vertices, openings and existing shape limits.",
+      "confirmedRootCause": "Rectilinear grids cross oblique edges. Direct triangle-to-quad conversion without interior refinement fails shape checks near short boundary subdivisions.",
+      "requiredCorrection": "Recover boundary segments and refine locally using circumcentres and encroached segment bisection.",
+      "regressionTest": "tests/test_archived_adaptive_mesh.py (16 archive regions)",
+      "independentBenchmark": "Geometric symmetric difference and isoparametric Q4 shape derivatives at corners, centre and Gauss points",
+      "evidence": [
+        "6a-evidence/adaptive-apartment-replay.json",
+        "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
+      ],
+      "correctionCommit": null,
+      "scope": "Registered geometric surfaces in the two frozen archives"
+    },
+    {
+      "id": "D02",
+      "severity": "release gate",
+      "component": "Distorted quadrilateral mesh elements",
+      "baselineObservation": "Sixteen major regions failed because generated elements violated the existing aspect ratio or scaled corner Jacobian criteria.",
+      "currentStatus": "VERIFIED",
+      "reproductionSteps": "Run replay_apartment_meshes.py on the hash-checked refined archive at the baseline commit, then at this checkpoint.",
+      "expectedBehavior": "Cover every registered region within 0.01 mm2 while preserving boundary vertices, openings and existing shape limits.",
+      "confirmedRootCause": "Rectilinear grids cross oblique edges. Direct triangle-to-quad conversion without interior refinement fails shape checks near short boundary subdivisions.",
+      "requiredCorrection": "Recover boundary segments and refine locally using circumcentres and encroached segment bisection.",
+      "regressionTest": "tests/test_archived_adaptive_mesh.py (16 archive regions)",
+      "independentBenchmark": "Geometric symmetric difference and isoparametric Q4 shape derivatives at corners, centre and Gauss points",
+      "evidence": [
+        "6a-evidence/adaptive-apartment-replay.json",
+        "ADAPTIVE_MESH_FINAL_VERIFICATION.md"
+      ],
+      "correctionCommit": null,
+      "scope": "Registered geometric surfaces in the two frozen archives"
+    },
+    {
+      "id": "D03",
+      "severity": "release gate",
+      "component": "Incomplete analytical beam subdivision",
+      "baselineObservation": "Mesh edges do not consistently correspond to analytical frame subdivisions.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D04",
+      "severity": "release gate",
+      "component": "Nonconforming regional interfaces",
+      "baselineObservation": "Adjacent slab regions may retain separate nodes and incompatible edge partitions despite appearing geometrically connected.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D05",
+      "severity": "release gate",
+      "component": "Unverified beam\u2013slab offsets",
+      "baselineObservation": "The current coupled benchmarks principally use concentric slab and frame geometry.\n\nActual RCC beams have centroid offsets relative to slab midsurfaces.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "COUPLED_SLAB_FRAME_VERIFICATION.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D06",
+      "severity": "release gate",
+      "component": "Missing production coupled solver integration",
+      "baselineObservation": "The automatic mesh endpoint produces geometry receipts.\n\nThe actual apartment structural evaluations do not yet perform complete coupled slab\u2013frame gravity analysis.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D07",
+      "severity": "release gate",
+      "component": "Unresolved gravity loading",
+      "baselineObservation": "Original apartment: 647 historical unresolved slab paths.\n\nSecond apartment: 335 historical unresolved slab paths.\n\nOriginal estimated unassigned loads:\n\nDL: 12350.18625 kN.\n\nSDL: 3941.2188 kN.\n\nLL: 7271.098 kN.\n\nSecond estimated unassigned loads:\n\nDL: 7490.7875 kN.\n\nSDL: 2369.7156 kN.\n\nLL: 4364.2595 kN.\n\nThese historical totals must be reconciled against the corrected physical deck model.\n\nDo not blindly assume that the legacy load totals are the correct final loads.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "APARTMENT_GRAVITY_LOAD_CLOSURE.json"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D08",
+      "severity": "release gate",
+      "component": "Stair and landing connectivity",
+      "baselineObservation": "Actual stair bearings, intermediate landing supports and flight load transfer remain unresolved.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "STAIR_AND_CANTILEVER_TRANSFER_VERIFICATION.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D09",
+      "severity": "release gate",
+      "component": "Balcony and cantilever load paths",
+      "baselineObservation": "Cantilever root stiffness, bending moments and applicable torsional effects remain incompletely verified.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "STAIR_AND_CANTILEVER_TRANSFER_VERIFICATION.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D10",
+      "severity": "release gate",
+      "component": "Terminal roof ownership",
+      "baselineObservation": "Both apartments require reviewed terminal roof definitions.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "DECK_LEVEL_AND_STAIR_OWNERSHIP.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D11",
+      "severity": "release gate",
+      "component": "Irregular structural beam alignment",
+      "baselineObservation": "The original middle chain has reported column offsets:\n\n0 mm, 400 mm, 400 mm and 700 mm.\n\nThe fixed-end straightening proposal moves two column stacks by approximately 191.2 mm and 107.8 mm, but introduces shaft and lobby overlap.\n\nDo not automatically accept it.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "STRUCTURAL_ALIGNMENT_OPTIMIZATION.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D12",
+      "severity": "release gate",
+      "component": "Incomplete lateral structural behavior",
+      "baselineObservation": "Full applicable diaphragm behavior, torsional response, response spectrum and second-order effects remain unverified for the actual apartments.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D13",
+      "severity": "release gate",
+      "component": "Historical strength and drift failures",
+      "baselineObservation": "The earlier original apartment contained six historical drift failures, three failed beams and one failed column.\n\nThese must be reassessed using complete verified loads.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D14",
+      "severity": "release gate",
+      "component": "Incomplete foundation verification",
+      "baselineObservation": "Both raft designs require complete structural reactions and appropriate reviewed geotechnical information.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D15",
+      "severity": "release gate",
+      "component": "Windows G+5 performance",
+      "baselineObservation": "Original deadline: 600 seconds.\n\nIsolated instrumented completion: 596.805 seconds.\n\nConcurrent run: timed out.\n\nFiber-section computation dominates the measured worker workload.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D16",
+      "severity": "release gate",
+      "component": "Intermittent browser reliability",
+      "baselineObservation": "Previous Cota CAD mount timeout and Windows browser deadlines require investigation and regression protection.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D17",
+      "severity": "release gate",
+      "component": "Incomplete structural detailing verification",
+      "baselineObservation": "Actual reinforcement arrangements, congestion, anchorage, joints, laps and construction detailing require independent verification.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_3_4_ACCEPTANCE.md"
+      ],
+      "correctionCommit": null
+    },
+    {
+      "id": "D18",
+      "severity": "release gate",
+      "component": "Legacy solver and export consistency",
+      "baselineObservation": "Audit large-model WASM reliability, fallback behavior, analytical-to-physical mapping, stale evaluation handling and structural export provenance.\n\nDo not assume previously reported corrections remain valid after subsequent changes.",
+      "currentStatus": "OPEN",
+      "reproductionSteps": null,
+      "expectedBehavior": null,
+      "confirmedRootCause": null,
+      "requiredCorrection": null,
+      "regressionTest": null,
+      "independentBenchmark": null,
+      "evidence": [
+        "MILESTONE_6A_STRUCTURAL_TOPOLOGY.md"
+      ],
+      "correctionCommit": null
+    }
+  ]
+}

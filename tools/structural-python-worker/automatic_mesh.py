@@ -7,6 +7,7 @@ from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiLineString, Polygon, box
 from shapely.strtree import STRtree
 
+from adaptive_mesh import adaptive_quads
 from deck_mesh import check_deck_mesh, frame_segments
 
 MAX_QUADS = 20_000
@@ -127,7 +128,11 @@ def generate_region(deck, region, frame_nodes, beams, elements, quad_budget):
     try:
         return check(_grid_cells(surface, boundary_points, quad_budget, balanced=True), "BALANCED_GRID")
     except ValueError:
+        pass
+    try:
         return check(_quad_cells(surface, quad_budget), "BOUNDARY_FITTED_QUADS")
+    except ValueError:
+        return check(adaptive_quads(surface, quad_budget), "ADAPTIVE_BOUNDARY_QUADS")
 
 
 def _boundary_edges(receipt):
