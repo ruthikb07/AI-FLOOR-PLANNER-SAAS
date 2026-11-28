@@ -232,6 +232,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
     return resFloor?.id || building.floors[0]?.id || '';
   });
   const [deckReviews, setDeckReviews] = useState<ReviewedStructuralInputs['rectangularDeckReviews']>();
+  const [stairReviews, setStairReviews] = useState<ReviewedStructuralInputs['stairBearingReviews']>();
   const [deckImportError, setDeckImportError] = useState('');
   const [showRegisteredDeck, setShowRegisteredDeck] = useState(false);
   const [inspectedSlab, setInspectedSlab] = useState('');
@@ -312,6 +313,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       concreteGrade,
       steelGrade,
       rectangularDeckReviews: deckReviews,
+      stairBearingReviews: stairReviews,
       ductileDetailingIS13920: seismicZone !== 'II',
       floorFinishKnM2: 1.2,
       masonryUnitWeightKnM3: 19.0,
@@ -349,6 +351,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       steelGrade,
       seismicZone,
       deckReviews,
+      stairReviews,
       windEnabled,
       hasGeotechnicalInputs,
       appliedSbc,
@@ -1375,6 +1378,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       className="flex flex-col gap-4 bg-[#0B101B] text-[#F8FAFC] p-4 sm:p-5 overflow-auto h-full"
     >
       <EngineeringInputReview key={engineeringDigest} building={building} digest={engineeringDigest}
+        onStair={review => setStairReviews(previous => [...(previous ?? []).filter(item => item.waistId !== review.waistId), review])}
         onDeck={deck => setDeckReviews(previous => [...(previous ?? []).filter(item => item.supportingFloorId !== deck.supportingFloorId), deck])}
         onSoil={soil => { setSbcRaw(String(soil.safeBearingCapacityKPa)); setFoundationDepthM(String(soil.foundationDepthBelowGroundM));
           setSoilUnitWeight(String(soil.soilUnitWeightKnM3)); setSettlementLimit(String(soil.allowableSettlementMm));

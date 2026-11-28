@@ -1,3 +1,4 @@
+import { stairBearingEdges, type StairBearingReview } from './reviewed-stair-bearings.js';
 /**
  * @ai-floor-planner/structural-engine — Traceable Indian Load & Physical Support-Edge Engine (Carbon 4 Section 04)
  *
@@ -76,6 +77,7 @@ export interface SeismicReviewedInputs {
 }
 
 export interface ReviewedStructuralInputs {
+  readonly stairBearingReviews?: readonly StairBearingReview[];
   readonly rectangularDeckReviews?: readonly import('../assembly/reviewed-decks.js').RectangularDeckReview[];
   readonly concreteGrade: ConcreteGrade;
   readonly steelGrade: SteelGrade;
@@ -113,6 +115,7 @@ export interface LoadSourceAuditRecord {
     | 'RECTANGULAR_TWO_WAY_45_DEGREE_TRIBUTARY'
     | 'UNRESOLVED_SLAB_SUPPORT'
     | 'COLLINEAR_BEAM_WALL_LINE_LOAD'
+    | 'UNRESOLVED_STAIR_BEARING'
     | 'STAIR_LANDING_REACTION'
     | 'REVIEWED_ROOF_TANK_REACTIONS'
     | 'UNRESOLVED_ROOF_TANK_SUPPORT'
@@ -480,55 +483,48 @@ export async function assembleLoadedAnalyticalFrameModel(
   }
 
   // 4. Staircase Waist Slab + Steps Dead & Live Load Reactions onto Landing/Header Beams
+  const stairReviews = new Map((inputs.stairBearingReviews ?? []).map(r => [r.waistId, r]));
+  if (stairReviews.size !== (inputs.stairBearingReviews?.length ?? 0) ||
+      [...stairReviews.keys()].some(id => !system.stairWaists.some(st => st.id === id)))
+    throw new Error('Duplicate or unknown stair waist in bearing review.');
   for (const st of system.stairWaists) {
-    if (st.supportingBeamElementIndices.length === 0) continue;
-    const slopeFactor = Math.hypot(st.riserMm, st.treadMm) / Math.max(200, st.treadMm);
-    const waistKPa = (st.waistThicknessMm / 1000) * slopeFactor * IS875_RCC_UNIT_WEIGHT_KN_M3;
-    const stepsKPa = 0.5 * (st.riserMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3;
-    const finishKPa = inputs.floorFinishKnM2;
-    const stairLiveKPa = 3.0;
-    const areaM2 = (st.horizontalSpanMm / 1000) * (st.widthMm / 1000);
-
-    const totDeadKn = (waistKPa + stepsKPa + finishKPa) * areaM2;
-    const totLiveKn = stairLiveKPa * areaM2;
-    staircaseDeadLoadKn += totDeadKn;
-    totalOccupancyLiveKn += totLiveKn;
-
-    const totBeamLenM = st.supportingBeamElementIndices.reduce((s, bIdx) => s + elemLengthsM[bIdx]!, 0);
-    if (totBeamLenM <= 1e-6) continue;
-    const qDeadStair = totDeadKn / totBeamLenM;
-    const qLiveStair = totLiveKn / totBeamLenM;
-    for (const bIdx of st.supportingBeamElementIndices) {
-      const bLenM = elemLengthsM[bIdx]!;
-      const el = system.elements[bIdx]!;
-      sdlUniform.push({
-        elementIndex: bIdx,
-        coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -qDeadStair],
-        sourceDescription: `Staircase ${st.stairId} waist + steps DL`,
-      });
-      llUniform.push({
-        elementIndex: bIdx,
-        coordinateSystem: 'GLOBAL',
-        qStartKnPerM: [0, 0, -qLiveStair],
-        sourceDescription: `Staircase ${st.stairId} imposed load (3.0 kN/m²)`,
-      });
-      nodalDeadSdlKn[el.startNodeIndex] += 0.5 * qDeadStair * bLenM;
-      nodalDeadSdlKn[el.endNodeIndex] += 0.5 * qDeadStair * bLenM;
-      nodalSeismicLiveKn[el.startNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
-      nodalSeismicLiveKn[el.endNodeIndex] += 0.5 * qLiveStair * bLenM * 0.25;
+    const review = stairReviews.get(st.id);
+    const bearingElements = review ? stairBearingEdges(system, st, review) : [];
+    if (review && Math.abs(st.waistThicknessMm - review.waistThicknessMm) > 1e-5)
+      throw new Error('Reviewed stair thickness differs from the physical waist.');
+    const riseRun = review ? (st.topElevationMm! - st.baseElevationMm!) / st.horizontalSpanMm : st.riserMm / st.treadMm;
+    const area = st.horizontalSpanMm * st.widthMm / 1e6;
+    const force = {
+      DL: area * IS875_RCC_UNIT_WEIGHT_KN_M3 * (st.waistThicknessMm * Math.hypot(1, riseRun) + .5 * st.riserMm) / 1000,
+      SDL: area * inputs.floorFinishKnM2,
+      LL: area * (review?.liveLoadKnM2 ?? 3),
+    };
+    const cases = ['DL','SDL','LL'] as const;
+    const lines = {DL:dlUniform, SDL:sdlUniform, LL:llUniform};
+    if (review) {
+      const bearingLength = 2 * st.widthMm / 1000;
+      for (const index of bearingElements) {
+        const el = system.elements[index]!;
+        for (const id of cases) lines[id].push({elementIndex:index, coordinateSystem:'GLOBAL',
+          qStartKnPerM:[0,0,-force[id]/bearingLength], sourceDescription:'Reviewed stair ' + st.id + ' ' + review.reference});
+        const share = elemLengthsM[index]! / (2 * bearingLength);
+        for (const node of [el.startNodeIndex,el.endNodeIndex]) {
+          nodalDeadSdlKn[node] += share * (force.DL + force.SDL);
+          nodalSeismicLiveKn[node] += share * force.LL * (review.liveLoadKnM2 > 3 ? .5 : .25);
+        }
+      }
+      staircaseDeadLoadKn += force.DL + force.SDL;
+      totalOccupancyLiveKn += force.LL;
+    } else {
+      for (const id of cases) unassignedGravity[id] += force[id];
     }
-
-    loadSourceAudit.push({
-      sourceId: st.id,
-      category: 'STAIRCASE_FLIGHT',
-      loadCaseIds: ['SDL', 'LL'],
-      intensityDescription: `DL=${(waistKPa + stepsKPa + finishKPa).toFixed(2)}, LL=3.00 kN/m²`,
-      areaOrLength: `${areaM2.toFixed(2)} m²`,
-      totalVerticalForceKn: Number((totDeadKn + totLiveKn).toFixed(3)),
-      transferMethod: 'STAIR_LANDING_REACTION',
-      receivingElementIds: st.supportingBeamElementIndices.map((idx) => system.elements[idx]!.id),
-    });
+    loadSourceAudit.push({sourceId:st.id, category:'STAIRCASE_FLIGHT', loadCaseIds:cases,
+      intensityDescription: review ? 'Reviewed straight flight between two simple line bearings' : 'Unreviewed flight gravity estimate',
+      areaOrLength:area.toFixed(3) + ' m²',totalVerticalForceKn:force.DL+force.SDL+force.LL,
+      transferMethod:review ? 'STAIR_LANDING_REACTION' : 'UNRESOLVED_STAIR_BEARING',
+      receivingElementIds:bearingElements.map(i => system.elements[i]!.id),
+      gravityTransfer:{forceByCaseKn:force, assignedForceByCaseKn:review ? force : {DL:0,SDL:0,LL:0},
+        ...(review ? {} : {blocker:'Reviewed flight geometry and two identified physical end bearings are required.'})}});
   }
 
   // 5. Apply only reviewed roof-column reactions that reproduce the tank resultant.

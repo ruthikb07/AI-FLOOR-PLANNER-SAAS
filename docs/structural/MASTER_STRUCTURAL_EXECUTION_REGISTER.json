@@ -86,12 +86,14 @@
       "expectedBehavior": null,
       "confirmedRootCause": null,
       "requiredCorrection": null,
-      "regressionTest": null,
+      "regressionTest": "tests/test_rigid_offsets.py",
       "independentBenchmark": null,
       "evidence": [
-        "COUPLED_SLAB_FRAME_VERIFICATION.md"
+        "COUPLED_SLAB_FRAME_VERIFICATION.md",
+        "BEAM_SLAB_OFFSET_VERIFICATION.md"
       ],
-      "correctionCommit": null
+      "correctionCommit": "c4b35bc (linear fixture scope)",
+      "scope": "Signed rigid offsets in linear statics without nodal springs; synthetic balcony frame and plate."
     },
     {
       "id": "D06",
@@ -132,17 +134,18 @@
       "severity": "release gate",
       "component": "Stair and landing connectivity",
       "baselineObservation": "Actual stair bearings, intermediate landing supports and flight load transfer remain unresolved.",
-      "currentStatus": "OPEN",
+      "currentStatus": "ROOT_CAUSE_CONFIRMED",
       "reproductionSteps": null,
       "expectedBehavior": null,
-      "confirmedRootCause": null,
-      "requiredCorrection": null,
-      "regressionTest": null,
+      "confirmedRootCause": "Legacy allocation picked two nearest beam centres or silently skipped an unconnected flight.",
+      "requiredCorrection": "Straight flight now checks reviewed bearing geometry. Model and verify intermediate landings and remaining project paths.",
+      "regressionTest": "src/__tests__/reviewed-decks.test.ts",
       "independentBenchmark": null,
       "evidence": [
         "STAIR_AND_CANTILEVER_TRANSFER_VERIFICATION.md"
       ],
-      "correctionCommit": null
+      "correctionCommit": null,
+      "scope": "Simply supported straight waist with full-width named lower and upper beam bearings."
     },
     {
       "id": "D09",
@@ -154,12 +157,14 @@
       "expectedBehavior": null,
       "confirmedRootCause": null,
       "requiredCorrection": null,
-      "regressionTest": null,
+      "regressionTest": "tests/test_rigid_offsets.py",
       "independentBenchmark": null,
       "evidence": [
-        "STAIR_AND_CANTILEVER_TRANSFER_VERIFICATION.md"
+        "STAIR_AND_CANTILEVER_TRANSFER_VERIFICATION.md",
+        "BEAM_SLAB_OFFSET_VERIFICATION.md"
       ],
-      "correctionCommit": null
+      "correctionCommit": "c4b35bc (linear fixture scope)",
+      "scope": "Uniformly loaded cantilever plate with two rigidly offset beam ends."
     },
     {
       "id": "D10",

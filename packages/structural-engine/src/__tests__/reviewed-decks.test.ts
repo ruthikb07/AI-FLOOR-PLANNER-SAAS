@@ -53,3 +53,28 @@ it('projects the same reviewed deck revision into the evaluated IFC and DXF', as
   expect(ifc).toContain(id);
   expect(ifc).toContain(review.reference);
 });
+
+it('accounts for a synthetic straight waist at its two reviewed structural elevations', async () => {
+  const { frame } = fixture(4000);
+  const waist = { id:'synthetic-stair',stairId:'S', floorId:'upper',horizontalSpanMm:4000,widthMm:2500,
+    waistThicknessMm:160,riserMm:175,treadMm:250,riserCount:16,baseElevationMm:3100,topElevationMm:5900,
+    boundsMm:{minX:0,maxX:4000,minY:0,maxY:2500},flightDirection:'E' as const,supportingBeamElementIndices:[] };
+  const system = {...frame, stairWaists:[waist]};
+  const beam = (floor:string,x:number) => frame.physicalModel.beams.find(b => b.floorId === floor &&
+    b.startPointMm.x === x && b.endPointMm.x === x)!.physicalMemberId;
+  const review = {architectureSha256:frame.sourceArchitecturalSha256,waistId:waist.id,lowerBeamId:beam('stilt',0),
+    upperBeamId:beam('upper',4000),reference:'synthetic end bearings',method:'SIMPLY_SUPPORTED_STRAIGHT_FLIGHT' as const,
+    liveLoadKnM2:3,waistThicknessMm:160,minimumBearingMm:75,upperLandingMm:5900};
+  const inputs = {concreteGrade:'M25',steelGrade:'Fe500',ductileDetailingIS13920:false,
+    floorFinishKnM2:1,masonryUnitWeightKnM3:19,roofLiveLoadKnM2:1} as const;
+  const before = await assembleLoadedAnalyticalFrameModel(system, inputs);
+  const after = await assembleLoadedAnalyticalFrameModel(system, {...inputs,stairBearingReviews:[review]});
+  const expected = {DL:25*(.16*Math.hypot(4,2.8)*2.5 + .175/2*10),SDL:10,LL:30};
+  for (const id of ['DL','SDL','LL'] as const) {
+    expect(before.loadTakeoff.unassignedGravityKnByCase![id]-after.loadTakeoff.unassignedGravityKnByCase![id]).toBeCloseTo(expected[id],8);
+    const loads = after.analyticalModel.loadCases.find(c=>c.id===id)!.memberUniformLoads.filter(l=>l.sourceDescription?.includes(waist.id));
+    expect(loads.length).toBeGreaterThan(1);
+    for (const load of loads) expect(load.qStartKnPerM[2]).toBeCloseTo(-expected[id]/5,8);
+  }
+  await expect(assembleLoadedAnalyticalFrameModel(system,{...inputs,stairBearingReviews:[{...review,upperBeamId:review.lowerBeamId}]})).rejects.toThrow();
+});

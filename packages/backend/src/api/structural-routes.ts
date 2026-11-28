@@ -25,6 +25,7 @@ import {
   type FullStructuralEvaluationSnapshot,
   type OptimizationObjectiveMode,
   isRectangularDeckReview,
+  isStairBearingReview,
   DeckReviewError,
   type AutomaticDeckMeshRegion,
   type PhysicalDeckMeshReceipt,
@@ -82,6 +83,8 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
   if (!isRecord(raw)) {
     return { error: 'reviewedInputs object is required.' };
   }
+  const stairs = raw.stairBearingReviews;
+  if (stairs !== undefined && (!Array.isArray(stairs) || !stairs.every(isStairBearingReview))) return { error: 'Invalid stair bearing review.' };
   const reviews = raw.rectangularDeckReviews;
   if (reviews !== undefined && (!Array.isArray(reviews) || !reviews.every(isRectangularDeckReview))) {
     return { error: 'Invalid rectangular deck review. Supply the revision, reviewed levels, loads and bearing width.' };
@@ -186,6 +189,7 @@ function parseReviewedInputs(raw: unknown): ReviewedStructuralInputs | { error: 
     concreteGrade,
     steelGrade,
     ...(reviews ? { rectangularDeckReviews: reviews } : {}),
+    ...(stairs ? { stairBearingReviews: stairs } : {}),
     ductileDetailingIS13920: raw.ductileDetailingIS13920 !== false,
     floorFinishKnM2: typeof raw.floorFinishKnM2 === 'number' ? raw.floorFinishKnM2 : 1.2,
     masonryUnitWeightKnM3:
