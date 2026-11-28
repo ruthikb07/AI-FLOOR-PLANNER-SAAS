@@ -48,6 +48,48 @@
       "bearingCapacityBasis": "GROSS"
     }
   },
+  "shorteningChecks": [
+    {
+      "columnId": "COL_C1_L1",
+      "actualM": 0.00000688888888888857,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C2_L1",
+      "actualM": 0.000006888888888888902,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C3_L1",
+      "actualM": 0.000006888888888888811,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C4_L1",
+      "actualM": 0.000006888888888888794,
+      "expectedM": 0.000006888888888888889
+    },
+    {
+      "columnId": "COL_C1_L2",
+      "actualM": 0.0000020740740740740645,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C2_L2",
+      "actualM": 0.0000020740740740742136,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C3_L2",
+      "actualM": 0.000002074074074074271,
+      "expectedM": 0.0000020740740740740742
+    },
+    {
+      "columnId": "COL_C4_L2",
+      "actualM": 0.000002074074074074002,
+      "expectedM": 0.0000020740740740740742
+    }
+  ],
   "slabLoadLedger": [
     {
       "physicalSlabId": "DECK:stilt:upper",

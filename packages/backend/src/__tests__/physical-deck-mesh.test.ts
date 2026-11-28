@@ -67,6 +67,25 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     expect(live.diagnostics.executionBackend).toBe('PYNITE_PLATE_QUAD');
     expect(live.reactions.reduce((sum,r)=>sum+r.reactionKnM[2]!,0)).toBeCloseTo(45,6);
     expect(live.equilibrium.isEquilibrated).toBe(true);
+    // Each of the four identical columns carries a quarter of the load above
+    // its storey in this doubly symmetric, uniformly loaded verification frame.
+    const shorteningChecks = [];
+    for (const [floorId, supportedKn] of [['stilt', 45], ['upper', 15]] as const) {
+      const columns = qualified.snapshot.system.elements.filter(e => e.category === 'COLUMN' && e.floorId === floorId);
+      expect(columns).toHaveLength(4);
+      for (const column of columns) {
+        const { nodes } = qualified.snapshot.system;
+        const start = nodes[column.startNodeIndex]!;
+        const end = nodes[column.endNodeIndex]!;
+        const displacement = (id: string) => live.displacements.find(d => d.nodeId === id)!.translationM[2];
+        const actualM = displacement(start.id) - displacement(end.id);
+        const expectedM = supportedKn / 4 * (end.positionM[2] - start.positionM[2]) /
+          (column.section.elasticityKPa * column.section.areaM2);
+        expect(expectedM).toBeGreaterThan(0);
+        expect(Math.abs(actualM / expectedM - 1)).toBeLessThan(1e-5);
+        shorteningChecks.push({ columnId: column.id, actualM, expectedM });
+      }
+    }
     const reopen = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest,resultId:assessed.resultId});
     expect(await reopen.json()).toEqual(assessed);
     expect((await post('coupled-gravity',{evaluationId,architectureSha256:digest,resultId:assessed.resultId})).status).toBe(409);
@@ -85,7 +104,7 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     if (output) {
       const baseline=qualified.snapshot;
       await writeFile(output,JSON.stringify({scope:'Synthetic two-storey rectangular verification building',
-        architectureSha256:digest,fixtureInputs,slabLoadLedger:assessed.slabLoadLedger,
+        architectureSha256:digest,fixtureInputs,shorteningChecks,slabLoadLedger:assessed.slabLoadLedger,
         coupledCases:Object.fromEntries(Object.entries(assessed.envelope.loadCaseResults).map(([id,r])=>
           [id,{equilibrium:r.equilibrium,backend:r.diagnostics.executionBackend}])),
         conventionalDesign:{lifecycle:baseline.designLifecycleStatus,foundation:baseline.foundationDesign.status,
