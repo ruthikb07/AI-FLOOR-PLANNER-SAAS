@@ -67,7 +67,7 @@ def assemble_rectangular_decks(model, decks):
                                   positionM=[x/1000,-y/1000,z-deck["thicknessMm"]/2000],
                                   restraint=[i==0 and j==0,j==0 and i in (0,len(xaxis)-1),False,False,False,False]))
                 if master is not None:
-                    bearings.append(dict(masterNodeIndex=master,slaveNodeIndex=slave,reference=deck["reference"]))
+                    bearings.append(dict(masterNodeIndex=master,slaveNodeIndex=slave,reference=deck["reference"], physicalSlabId=deck["id"]))
         count=0
         for j in range(len(yaxis)-1):
             for i in range(len(xaxis)-1):
@@ -78,5 +78,40 @@ def assemble_rectangular_decks(model, decks):
                 count+=1
         area=(xaxis[-1]-xaxis[0])*(yaxis[-1]-yaxis[0])/1e6
         ledger.append(dict(physicalSlabId=deck["id"],areaM2=area,quads=count,reference=deck["reference"],
+                           centroidM=[(xaxis[0]+xaxis[-1])/2000,-(yaxis[0]+yaxis[-1])/2000],
                            forceKn={k:area*v for k,v in deck["pressures"].items()}))
-    return dict(model=dict(model,nodes=nodes,elements=elements),plateElements=plates,verticalBearings=bearings),ledger
+    return dict(model=dict(model,nodes=nodes,elements=elements),plateElements=plates,verticalBearings=bearings,compressionOnlyBearings=True),ledger
+
+
+def verify_slab_transfer(coupled, ledger, envelope):
+    """Independently balance each physical slab against its constraint forces."""
+    from collections import defaultdict
+    by_slab = defaultdict(list)
+    nodes = coupled["model"]["nodes"]
+    for i,link in enumerate(coupled["verticalBearings"]):
+        x,y,_ = nodes[link["slaveNodeIndex"]]["positionM"]
+        by_slab[link["physicalSlabId"]].append((i,x,y))
+    combos = {entry["id"]:entry["factors"] for entry in coupled["model"]["combinations"]}
+    for slab in ledger:
+        audit = {}
+        slab["bearingStations"] = [
+            dict(forceIndex=i,frameNodeId=nodes[coupled["verticalBearings"][i]["masterNodeIndex"]]["id"],
+                 plateNodeId=nodes[coupled["verticalBearings"][i]["slaveNodeIndex"]]["id"],planM=[x,y])
+            for i,x,y in by_slab[slab["physicalSlabId"]]]
+        for group,results in (("case",envelope["loadCaseResults"]),("combination",envelope["combinationResults"])):
+            for key,result in results.items():
+                factors = {key:1.} if group=="case" else combos[key]
+                applied = sum(factors.get(case,0.)*force for case,force in slab["forceKn"].items())
+                forces = result["diagnostics"]["verticalBearingForcesKn"]
+                transfers = [(forces[i],x,y) for i,x,y in by_slab[slab["physicalSlabId"]]]
+                cx,cy = slab["centroidM"]
+                residual = [sum(r for r,_,_ in transfers)-applied,
+                            sum(r*(y-cy) for r,_,y in transfers),
+                            -sum(r*(x-cx) for r,x,_ in transfers)]
+                if any(not math.isfinite(v) or abs(v)>1e-6 for v in residual):
+                    raise ValueError("Individual deck reactions or first moments do not balance")
+                audit[group+"/"+key] = dict(appliedKn=applied,verticalResidualKn=residual[0],
+                    momentResidualKnM=residual[1:],minimumBearingReactionKn=min(r for r,_,_ in transfers),
+                    requiresHoldDown=any(r < -1e-7 for r,_,_ in transfers))
+        slab["bearingTransfer"]=audit
+    return ledger

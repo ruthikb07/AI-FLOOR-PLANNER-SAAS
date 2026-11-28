@@ -105,3 +105,27 @@ export async function readEvaluation(id: string, mode: 'full' | 'assistant' = 'f
   return { ...evaluation, snapshot: { ...evaluation.snapshot,
     solveEnvelope: { ...evaluation.snapshot.solveEnvelope, ...cases } } };
 }
+
+
+/** Additional analysis results are immutable siblings of the saved evaluation. */
+export async function saveCoupledReceipt(evaluationId: string, receipt: object): Promise<string> {
+  if (!/^[0-9a-f]{64}$/.test(evaluationId)) throw new Error('Invalid evaluation identifier.');
+  const directory = path.join(root(),evaluationId,'coupled-gravity');
+  await mkdir(directory,{recursive:true});
+  const stage = await mkdtemp(path.join(directory,'.writing-'));
+  try {
+    const hash = await writePart(stage,receipt);
+    const name = path.join(directory,hash);
+    await rename(path.join(stage,hash),name).catch(async error=>{
+      if (!['EEXIST','EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error;
+      await readPart(directory,hash);
+    });
+    return hash;
+  } finally { await rm(stage,{recursive:true,force:true}); }
+}
+
+export async function loadCoupledReceipt(evaluationId: string, resultId: string): Promise<unknown> {
+  if (![evaluationId,resultId].every(id=>/^[0-9a-f]{64}$/.test(id))) return undefined;
+  try { return await readPart(path.join(root(),evaluationId,'coupled-gravity'),resultId); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code==='ENOENT') return undefined; throw error; }
+}

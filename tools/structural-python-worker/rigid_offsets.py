@@ -40,11 +40,7 @@ def validate_vertical_bearings(nodes, links, rigid_pairs):
     return pairs
 
 
-def solve_rigid_offsets(fe, nodes, pairs, vertical_pairs=()):
-    Analysis._prepare_model(fe)
-    unknown, prescribed, values = Analysis._partition_D(fe)
-    if np.any(values):
-        raise ValueError("Nonzero prescribed displacement with constraints requires verification")
+def _constraint_transform(nodes,pairs,vertical_pairs):
     # Index independent DOFs individually. A vertical-only bearing retains
     # independent horizontal translations and all three slab rotations.
     dependent = {6*s+d:6*m+d for m,s in pairs for d in range(6)}
@@ -62,26 +58,63 @@ def solve_rigid_offsets(fe, nodes, pairs, vertical_pairs=()):
                 cols.append(compact[6*master+3+axis])
                 weights.append(coef)
     transform = coo_matrix((weights,(rows,cols)),shape=(ndof,len(compact))).tocsr()
+    return transform, compact
+
+
+def solve_rigid_offsets(fe, nodes, pairs, vertical_pairs=(), compression_only=False):
+    Analysis._prepare_model(fe)
+    unknown, prescribed, values = Analysis._partition_D(fe)
+    if np.any(values):
+        raise ValueError("Nonzero prescribed displacement with constraints requires verification")
     stiffness = fe.Ke(next(iter(fe.load_combos)), check_stability=False, sparse=True).tocsr()
-    reduced = (transform.T @ stiffness @ transform).tocsr()
-    fixed = [compact[k] for k in prescribed]
-    free = np.setdiff1d(np.arange(reduced.shape[0]),fixed)
-    kff = reduced[free][:,free]
     rxns = ("RxnFX","RxnFY","RxnFZ","RxnMX","RxnMY","RxnMZ")
-    residuals = {}
+    residuals, bearing_forces, contacts = {}, {}, {}
     for key,combo in fe.load_combos.items():
-        force = transform.T @ (fe.P(key)-fe.FER(key))
-        reduced_u = np.zeros_like(force)
-        if len(free):
-            reduced_u[free] = Analysis._solve_unknown_disp(kff,force[free],True,True)
-        full_u = transform @ reduced_u
-        Analysis._store_displacements(fe, full_u[unknown], values, unknown, prescribed, combo)
-        reaction = reduced @ reduced_u-force
-        residuals[key] = float(np.linalg.norm(reaction[free]) / max(1., np.linalg.norm(force[free])))
-        if not np.isfinite(full_u).all() or not np.isfinite(reaction).all() or residuals[key] > 1e-7:
-            raise ValueError("Rigid offset equilibrium residual exceeds tolerance")
-        for k,q in zip(prescribed,fixed):
-            node = fe.nodes[f"N_{k//6}"]
-            getattr(node,rxns[k%6])[key] = float(reaction[q,0])
+        full_force = fe.P(key)-fe.FER(key)
+        active = set(range(len(vertical_pairs)))
+        tried = set()
+        for iteration in range(128):
+            state = frozenset(active)
+            if state in tried:
+                raise ValueError("Vertical bearing contact active set cycled")
+            tried.add(state)
+            transform,compact = _constraint_transform(nodes,pairs,[vertical_pairs[i] for i in sorted(active)])
+            reduced = (transform.T @ stiffness @ transform).tocsr()
+            fixed = [compact[k] for k in prescribed]
+            free = np.setdiff1d(np.arange(reduced.shape[0]),fixed)
+            force = transform.T @ full_force
+            reduced_u = np.zeros_like(force)
+            if len(free):
+                reduced_u[free] = Analysis._solve_unknown_disp(reduced[free][:,free],force[free],True,True)
+            full_u = transform @ reduced_u
+            reaction = reduced @ reduced_u-force
+            residuals[key] = float(np.linalg.norm(reaction[free]) / max(1.,np.linalg.norm(force[free])))
+            if not np.isfinite(full_u).all() or not np.isfinite(reaction).all() or residuals[key] > 1e-7:
+                raise ValueError("Constraint equilibrium residual exceeds tolerance")
+            full_residual = stiffness @ full_u - full_force
+            forces = [float(full_residual[6*s+2,0]) for _,s in vertical_pairs]
+            gaps = [float(full_u[6*s+2,0]-full_u[6*m+2,0]) for m,s in vertical_pairs]
+            if not np.isfinite(forces).all() or not np.isfinite(gaps).all():
+                raise ValueError("Nonfinite vertical bearing force or opening")
+            if compression_only:
+                penetrations = [i for i,g in enumerate(gaps) if i not in active and g < -1e-9]
+                if penetrations:
+                    active.add(min(penetrations,key=gaps.__getitem__))
+                    continue
+                tensile = [i for i in active if forces[i] < -1e-7]
+                if tensile:
+                    active.remove(min(tensile,key=forces.__getitem__))
+                    continue
+                if any(abs(forces[i])>1e-7 for i in range(len(forces)) if i not in active):
+                    raise ValueError("Released bearing has a residual contact force")
+                contacts[key] = dict(iterations=iteration+1,openIndices=sorted(set(range(len(forces)))-active),
+                                     openingM=gaps)
+            bearing_forces[key] = forces
+            Analysis._store_displacements(fe, full_u[unknown], values, unknown, prescribed, combo)
+            for k,q in zip(prescribed,fixed):
+                getattr(fe.nodes[f"N_{k//6}"],rxns[k%6])[key] = float(reaction[q,0])
+            break
+        else:
+            raise ValueError("Vertical bearing contact exceeded the iteration budget")
     fe.solution = "Linear"
-    return residuals
+    return residuals, bearing_forces, contacts

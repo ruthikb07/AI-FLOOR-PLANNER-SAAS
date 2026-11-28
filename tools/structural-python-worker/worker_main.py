@@ -894,14 +894,15 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
         fe.add_load_combo(ckey, {cid: 1.0})
         combo_defs.append(("CASE", cid, cid, {cid: 1.0}))
 
-    offset_residuals = {}
+    offset_residuals, bearing_forces, contacts = {}, {}, {}
     eff_stability = bool(check_stability and len(nodes) <= 80)
     try:
         if analysis_mode == "PDELTA":
             fe.analyze_PDelta(log=False, check_stability=eff_stability, max_iter=max_iter, sparse=True)
         else:
             if has_constraints:
-                offset_residuals = solve_rigid_offsets(fe, nodes, offset_pairs, vertical_pairs)
+                offset_residuals, bearing_forces, contacts = solve_rigid_offsets(fe, nodes, offset_pairs, vertical_pairs,
+                    compression_only=payload.get('compressionOnlyBearings') is True)
             else:
                 fe.analyze_linear(log=False, check_stability=eff_stability, check_statics=False, sparse=True)
     except Exception as exc:
@@ -1153,8 +1154,10 @@ def run_pynite_solve(payload: dict[str, Any]) -> dict[str, Any]:
                 "executionBackend": exec_backend,
                 "nodeCount": len(nodes),
                 "elementCount": len(elements) + len(plate_elements),
+                **({"verticalBearingForcesKn":bearing_forces[ckey]} if vertical_pairs else {}),
                 "totalDofs": total_dofs,
-                "freeDofs": free_dofs,
+                **({"verticalContact":contacts[ckey]} if ckey in contacts else {}),
+                "freeDofs": free_dofs + len(contacts.get(ckey,{}).get("openIndices",[])),
                 **({"rigidOffsetCount":len(offset_pairs), "verticalBearingCount":len(vertical_pairs), "constraintReducedResidual":offset_residuals[ckey]} if has_constraints else {}),
                 "restrainedDofs": restrained_dofs,
                 "solveDurationMs": solve_ms / max(1, len(combo_defs)),
@@ -1599,7 +1602,8 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
             coupled, ledger = assemble_rectangular_decks(req["model"],req["decks"])
             res = run_pynite_solve(coupled)
             if res["ok"]:
-                res["slabLoadLedger"] = ledger
+                from reviewed_rectangular_coupling import verify_slab_transfer
+                res["slabLoadLedger"] = verify_slab_transfer(coupled,ledger,res["envelope"])
         elif action == "pynite_solve":
             _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)
             res = run_pynite_solve(req)

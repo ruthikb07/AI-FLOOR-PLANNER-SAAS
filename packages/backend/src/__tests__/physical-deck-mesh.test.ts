@@ -1,9 +1,9 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it, vi } from 'vitest';
-import { shutdownSharedPythonStructuralWorker, type AutomaticDeckMeshRegion, type PhysicalDeckMeshProposal, type PhysicalDeckMeshReceipt, type StructuralEvaluationSummary } from '@ai-floor-planner/structural-engine';
+import { shutdownSharedPythonStructuralWorker, type AnalyticalSolveEnvelope, type AutomaticDeckMeshRegion, type PhysicalDeckMeshProposal, type PhysicalDeckMeshReceipt, type StructuralEvaluationSummary, type StructuralOptimizationSummary } from '@ai-floor-planner/structural-engine';
 import { createBackendServer } from '../server.js';
 
 it('checks a shared plate edge against the saved frame and rejects a coincident independent node', async () => {
@@ -45,18 +45,54 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
       boundaryCondition:'SIMPLY_SUPPORTED_FULL_LEVEL',architectureSha256:digest,reference:'Synthetic drawing '+id,
       supportingFloorId:id,surfaceFloorId:'upper',use:i?'ROOF':'OCCUPIED',structuralTopMm:i?5900:3100,
       finishedFloorMm:i?5900:3100,thicknessMm:160,uniformLiveLoadKnM2:i?1.5:3,minimumBearingWidthMm:75}));
-    const reviewed = await post('analyze',{building,reviewedInputs:{seismic:{enabled:false},floorFinishKnM2:1,rectangularDeckReviews}});
-    const qualified = await reviewed.json();
+    const fixtureInputs = {seismic:{enabled:false},wind:{enabled:false},floorFinishKnM2:1,rectangularDeckReviews,
+      geotechnical:{safeBearingCapacityKPa:200,foundationDepthBelowGroundM:1.5,soilUnitWeightKnM3:18,
+        allowableSettlementMm:25,reportReference:'SYNTHETIC verification soil only',bearingCapacityBasis:'GROSS'}};
+    const reviewed = await post('analyze',{building,reviewedInputs:fixtureInputs});
+    const qualified = await reviewed.json() as { evaluationId:string; error?:unknown; snapshot:StructuralEvaluationSummary };
     expect(reviewed.status,JSON.stringify(qualified.error)).toBe(200);
     const coupled = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest});
-    const assessed = await coupled.json();
+    const assessed = await coupled.json() as {error?:unknown;resultId:string;envelope:AnalyticalSolveEnvelope;
+      slabLoadLedger:{forceKn:Record<string,number>;bearingTransfer:Record<string,{verticalResidualKn:number;momentResidualKnM:number[];minimumBearingReactionKn:number;requiresHoldDown:boolean}>}[]};
     expect(coupled.status,JSON.stringify(assessed.error)).toBe(200);
     expect(assessed.slabLoadLedger.map((item:{forceKn:unknown})=>item.forceKn)).toEqual([
       {DL:40,SDL:10,LL:30},{DL:40,SDL:10,LL:15}]);
-    const live = assessed.envelope.loadCaseResults.LL;
+    for (const slab of assessed.slabLoadLedger) {
+      const transfer = slab.bearingTransfer['case/LL']!;
+      expect(Math.abs(transfer.verticalResidualKn)).toBeLessThan(1e-6);
+      expect(transfer.momentResidualKnM.every(r=>Math.abs(r)<1e-6)).toBe(true);
+      expect(transfer.requiresHoldDown).toBe(transfer.minimumBearingReactionKn < -1e-7);
+    }
+    const live = assessed.envelope.loadCaseResults.LL!;
     expect(live.diagnostics.executionBackend).toBe('PYNITE_PLATE_QUAD');
-    expect(live.reactions.reduce((sum:number,r:{reactionKnM:number[]})=>sum+r.reactionKnM[2]!,0)).toBeCloseTo(45,6);
+    expect(live.reactions.reduce((sum,r)=>sum+r.reactionKnM[2]!,0)).toBeCloseTo(45,6);
     expect(live.equilibrium.isEquilibrated).toBe(true);
+    const reopen = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest,resultId:assessed.resultId});
+    expect(await reopen.json()).toEqual(assessed);
+    expect((await post('coupled-gravity',{evaluationId,architectureSha256:digest,resultId:assessed.resultId})).status).toBe(409);
+    const optimized = await post('optimize',{building,reviewedInputs:fixtureInputs,maxIterations:2,mode:'BALANCED'});
+    const opt = await optimized.json() as {optimization:StructuralOptimizationSummary;error?:unknown};
+    expect(optimized.status,JSON.stringify(opt.error)).toBe(200);
+    expect(opt.optimization.after.system.sourceArchitecturalSha256).toBe(digest);
+    const exports:Record<string,number> = {};
+    for (const format of ['ifc','dxf','bbs_csv','pdf']) {
+      const file = await post('drawings',{evaluationId:qualified.evaluationId,format});
+      expect(file.status).toBe(200);
+      exports[format]=(await file.arrayBuffer()).byteLength;
+      expect(exports[format]).toBeGreaterThan(100);
+    }
+    const output = process.env.RH_SYNTHETIC_COUPLED_REPORT;
+    if (output) {
+      const baseline=qualified.snapshot;
+      await writeFile(output,JSON.stringify({scope:'Synthetic two-storey rectangular verification building',
+        architectureSha256:digest,fixtureInputs,slabLoadLedger:assessed.slabLoadLedger,
+        coupledCases:Object.fromEntries(Object.entries(assessed.envelope.loadCaseResults).map(([id,r])=>
+          [id,{equilibrium:r.equilibrium,backend:r.diagnostics.executionBackend}])),
+        conventionalDesign:{lifecycle:baseline.designLifecycleStatus,foundation:baseline.foundationDesign.status,
+          rccPassed:baseline.rccDesign.allPassed,governingUtilization:baseline.maxMemberUtilization,
+          quantities:baseline.detailingAndBoq.quantities}, optimization:{status:opt.optimization.status,
+          iterations:opt.optimization.iterations,delta:opt.optimization.deltaSummary},exportBytes:exports},null,2));
+    }
     const geometry = await post('deck-topology', data);
     expect(geometry.status).toBe(200);
     const { decks } = await geometry.json() as { decks: { deckAreaMm2: number; regions: { id: string }[] }[] };

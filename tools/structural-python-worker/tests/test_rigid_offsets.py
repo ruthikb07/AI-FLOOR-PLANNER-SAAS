@@ -51,7 +51,7 @@ def test_eccentric_frame_and_loaded_balcony_plate():
     assert sol["equilibrium"]["isEquilibrated"]
 
 def test_simple_vertical_bearings_transfer_pressure_and_allow_independent_rotations():
-    # A 4 m by 1 m one-way strip on four grounded posts. Slave nodes retain
+    # A 4 m by 1 m one-way strip on six grounded posts. Slave nodes retain
     # independent rotations. Small membrane gauges suppress in-plane rigid modes.
     from test_distributed_gravity import make_strip, LENGTH, WIDTH, PRESSURE, THICKNESS, ELASTIC
     nx = 16
@@ -82,3 +82,40 @@ def test_simple_vertical_bearings_transfer_pressure_and_allow_independent_rotati
     mid=sol["displacements"][nx+1+nx//2]["translationM"][2]
     assert mid == pytest.approx(expected,rel=.03)
     assert sol["diagnostics"]["verticalBearingCount"]==6
+
+
+def test_hold_down_and_failure_of_local_equilibrium_in_slab_audit():
+    from reviewed_rectangular_coupling import verify_slab_transfer
+    # Three collinear stations in this audit-only synthetic fixture. The symmetric
+    # end reactions balance the applied resultant even with central uplift.
+    coupled = {"model":{"nodes":[{"id":str(i),"positionM":[i%3,0.,0.]} for i in range(6)],"combinations":[]},
+               "verticalBearings":[{"physicalSlabId":"D","masterNodeIndex":i,"slaveNodeIndex":i+3} for i in range(3)]}
+    ledger = [{"physicalSlabId":"D","centroidM":[1.,0.],"forceKn":{"G":5.}}]
+    result = {"loadCaseResults":{"G":{"diagnostics":{"verticalBearingForcesKn":[3.,-1.,3.]}}},"combinationResults":{}}
+    audit = verify_slab_transfer(coupled,ledger,result)[0]["bearingTransfer"]["case/G"]
+    assert audit["requiresHoldDown"] and audit["minimumBearingReactionKn"] == -1.
+    result["loadCaseResults"]["G"]["diagnostics"]["verticalBearingForcesKn"] = [2.,-1.,4.]
+    with pytest.raises(ValueError,match="first moments"):
+        verify_slab_transfer(coupled,ledger,result)
+
+def test_one_sided_tip_bearing_releases_and_recloses_per_combination():
+    # A horizontal cantilever meets a rigid stop at its free end. A downward
+    # force is carried by the stop. Upward loading gives the free cantilever
+    # solution. The combined case closes even though the upward case opened.
+    points = [(0,0,0),(4,0,0),(4,0,-.1)]
+    nodes = [dict(id=str(i),index=i,positionM=p,restraint=[i!=1]*6) for i,p in enumerate(points)]
+    section = dict(areaM2=.08,elasticityKPa=25e6,shearModulusKPa=10e6,
+                   momentInertiaYM4=.001,momentInertiaZM4=.001,torsionalConstantM4=.001)
+    model = dict(modelId="tip-stop",nodes=nodes,elements=[dict(id="B",index=0,startNodeIndex=0,endNodeIndex=1,section=section)],
+        loadCases=[dict(id=k,nodalLoads=[dict(nodeIndex=1,vectorKnM=[0,0,v,0,0,0])]) for k,v in (("up",3),("down",-5))],
+        combinations=[dict(id="both",factors={"up":1,"down":1})])
+    result = run_pynite_solve(dict(model=model,verticalBearings=[dict(masterNodeIndex=2,slaveNodeIndex=1,reference="synthetic stop")],
+                                  compressionOnlyBearings=True))["envelope"]
+    up=result["loadCaseResults"]["up"]
+    assert up["diagnostics"]["verticalContact"]["openIndices"]==[0]
+    assert up["displacements"][1]["translationM"][2]==pytest.approx(3*4**3/(3*25e6*.001),abs=1e-10)
+    assert up["diagnostics"]["verticalBearingForcesKn"]==pytest.approx([0],abs=1e-8)
+    for case,force in ((result["loadCaseResults"]["down"],5),(result["combinationResults"]["both"],2)):
+        assert not case["diagnostics"]["verticalContact"]["openIndices"]
+        assert case["diagnostics"]["verticalBearingForcesKn"]==pytest.approx([force],abs=1e-8)
+        assert case["displacements"][1]["translationM"][2]==pytest.approx(0,abs=1e-10)

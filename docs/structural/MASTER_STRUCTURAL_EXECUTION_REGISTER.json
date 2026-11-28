@@ -100,17 +100,20 @@
       "severity": "release gate",
       "component": "Missing production coupled solver integration",
       "baselineObservation": "The automatic mesh endpoint produces geometry receipts.\n\nThe actual apartment structural evaluations do not yet perform complete coupled slab\u2013frame gravity analysis.",
-      "currentStatus": "OPEN",
-      "reproductionSteps": null,
+      "currentStatus": "IMPLEMENTED",
+      "reproductionSteps": "Run the saved-evaluation HTTP regression using the managed worker.",
       "expectedBehavior": null,
       "confirmedRootCause": null,
       "requiredCorrection": null,
-      "regressionTest": null,
-      "independentBenchmark": null,
+      "regressionTest": "packages/backend/src/__tests__/physical-deck-mesh.test.ts",
+      "independentBenchmark": "Two decks transfer 45 kN LL. Check each slab force and first moments independently.",
       "evidence": [
-        "BUILDING_WIDE_COUPLED_ASSEMBLY.md"
+        "BUILDING_WIDE_COUPLED_ASSEMBLY.md",
+        "COUPLED_PRODUCTION_ANALYSIS_VERIFICATION.md",
+        "6a-evidence/synthetic-two-storey-coupled.json"
       ],
-      "correctionCommit": null
+      "correctionCommit": "7d5180e (initial scoped solve)",
+      "scope": "Complete saved rectangular gravity verification fixture only. Irregular apartment assembly and consumption for sizing remain open."
     },
     {
       "id": "D07",

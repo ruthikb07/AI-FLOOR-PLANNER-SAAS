@@ -5,7 +5,7 @@
  */
 
 import { engineeringInputRecords } from '../services/engineering-input-records.js';
-import { readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
+import { loadCoupledReceipt, saveCoupledReceipt, readEvaluation, saveEvaluation, type SavedEvaluation } from '../services/structural-evaluation-store.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Building } from '@ai-floor-planner/core';
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
@@ -357,6 +357,14 @@ export async function handleStructuralRoute(
       }
       if (action === 'coupled-gravity') {
         const system = saved.snapshot.system;
+        if (typeof body.resultId === 'string') {
+          const cached = await loadCoupledReceipt(String(body.evaluationId),body.resultId);
+          if (!isRecord(cached) || cached.architectureSha256!==body.architectureSha256 ||
+              cached.structuralRevision!==system.structuralRevision || cached.evaluationId!==body.evaluationId) {
+            sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
+          } else sendJson(response,200,{...cached,resultId:body.resultId});
+          return true;
+        }
         const panels = system.slabPanels;
         const reviews = panels.map(panel => panel.deckReview);
         if (body.architectureSha256 !== system.sourceArchitecturalSha256 || !panels.length ||
@@ -399,9 +407,11 @@ export async function handleStructuralRoute(
           sendJson(response,422,{error:{code:'COUPLED_EQUILIBRIUM_FAILED',message:'Coupled gravity forces or moments failed equilibrium.'}});
           return true;
         }
-        sendJson(response,200,{evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
-          structuralRevision:system.structuralRevision,scope:'LINEAR_GRAVITY_SIMPLE_VERTICAL_BEARINGS',
-          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope});
+        const receipt = {evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
+          structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
+          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope};
+        const resultId = await saveCoupledReceipt(String(body.evaluationId),receipt);
+        sendJson(response,200,{...receipt,resultId});
         return true;
       }
       if (action === 'deck-topology' || action === 'alignment-preview') {
