@@ -1,6 +1,6 @@
 # Beam subdivision verification
 
-The automatic deck receipt identifies a subdivision candidate only when registered frame endpoints bound a complete, ordered chain of plate edges along the original analytical member. The result carries the physical member, original element, interior node IDs and incident plates on each edge. The archived replay produced 186 region-level candidates in the original apartment and 160 in the second. A member can appear in adjacent regions. These counts do not establish the number of approved connections.
+The automatic deck receipt identifies a subdivision candidate only when registered frame endpoints bound a complete, ordered chain of plate edges along the original analytical member. The result carries the physical member, original element, interior node IDs and incident plates on each edge. The archived replay produced 188 region-level candidates in the original apartment and 168 in the second. A member can appear in adjacent regions. These counts do not establish the number of approved connections.
 
 The managed solver accepts explicit interior node indices, verifies each station in three dimensions, creates ordered children and publishes their physical parent and station interval. The children carry the parent section and roll. Releases occur only at the original ends. Partial trapezoidal loads are clipped and interpolated in the original coordinate system. A point load exactly at a split station has one owner. Canonical nodal moments retain their original node.
 

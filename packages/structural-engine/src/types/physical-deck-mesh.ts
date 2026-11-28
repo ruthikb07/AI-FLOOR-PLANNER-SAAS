@@ -40,7 +40,7 @@ export interface PhysicalDeckMeshReceipt {
 export type AutomaticDeckMeshRegion =
   | { readonly regionId: string; readonly status: 'MESH_REVIEW_REQUIRED'; readonly reason: string }
   | (PhysicalDeckMeshReceipt & {
-      readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS' | 'ADAPTIVE_BOUNDARY_QUADS';
+      readonly method: 'RECTANGULAR_GRID' | 'BALANCED_GRID' | 'BOUNDARY_FITTED_QUADS' | 'ADAPTIVE_BOUNDARY_QUADS' | 'COORDINATED_FLOOR_QUADS';
       readonly areaMm2: number;
       readonly quality: { readonly maxEdgeAspectRatio: number; readonly minScaledCornerJacobian: number };
       readonly beamSubdivisionCandidates?: readonly {

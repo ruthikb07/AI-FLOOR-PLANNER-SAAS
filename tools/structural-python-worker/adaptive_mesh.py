@@ -6,7 +6,7 @@ from shapely import contains_xy
 from shapely.geometry import LineString, Polygon
 
 
-def adaptive_quads(surface, budget):
+def adaptive_quads(surface, budget, constraint_lines=None):
     points = []
     indices = {}
 
@@ -18,7 +18,7 @@ def adaptive_quads(surface, budget):
         return indices[key]
 
     segments = []
-    for ring in (surface.exterior, *surface.interiors):
+    for ring in ((surface.exterior, *surface.interiors) if constraint_lines is None else constraint_lines):
         ids = [index(p) for p in ring.coords]
         segments.extend(zip(ids, ids[1:]))
 

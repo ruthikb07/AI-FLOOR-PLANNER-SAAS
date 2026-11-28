@@ -4,8 +4,8 @@ The saved-evaluation automatic deck route now uses local Delaunay refinement whe
 
 | Frozen archive | Candidate area (m²) | Baseline meshed (m²) | Repaired meshed (m²) | Baseline / repaired quads | Verified bearing (m²) |
 |---|---:|---:|---:|---:|---:|
-| Original | 3534.3175 | 43.7175 | 3534.3175 | 19 / 1891 | 0 |
-| Second | 1996.491 | 39.279 | 1996.491 | 22 / 1018 | 0 |
+| Original | 3534.3175 | 43.7175 | 3534.3175 | 19 / 2382 | 0 |
+| Second | 1996.491 | 39.279 | 1996.491 | 22 / 1341 | 0 |
 
 The denominator is unchanged. Both terminal roofs require ownership review. Full per-floor counts, archived digests, unresolved interfaces and historical loads are in [the hash-checked replay](6a-evidence/adaptive-apartment-replay.json). Reproduce using the managed Python interpreter with `tools/structural-python-worker/replay_apartment_meshes.py <refined-archive-dir> <output-file>`.
 
