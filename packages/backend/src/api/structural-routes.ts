@@ -11,9 +11,8 @@ import { AITaskType, canonicalBuildingHash, validateBuildingSchema, type Buildin
 import type { BaseAIProvider } from '@ai-floor-planner/ai-orchestration';
 import {
   getSharedPythonStructuralWorker,
-  assembleLoadedAnalyticalFrameModel,
-  type AnalyticalSolveEnvelope,
   exportStructuralBbsCsv,
+  type generateFrameCandidateSchedule,
   exportStructuralEngineeringDxf,
   exportStructuralEngineeringJsonReport,
   exportStructuralIfc4Step,
@@ -44,8 +43,8 @@ import {
 } from '@ai-floor-planner/structural-engine';
 import { StructuralAnalysisEngine } from '../services/structural-analysis-engine.js';
 import { StructuralDrawingsService } from '../services/structural-drawings-service.js';
-import { checkCoupledGravityFoundations, coupledDesignBlocker } from '../services/coupled-foundation.js';
-import { coupledFrameCandidates, type CoupledFrameRegistry } from '../services/coupled-frame-design.js';
+import { compareCoupledBeamDepths } from '../services/coupled-beam-trials.js';
+import { solveReviewedGravity,CoupledScopeError } from '../services/coupled-gravity.js';
 import { RequestBodyTooLarge, isRecord } from './http-input.js';
 
 const engine = new StructuralAnalysisEngine();
@@ -335,7 +334,7 @@ export async function handleStructuralRoute(
     }
     const format = typeof body.format === 'string' ? body.format.toLowerCase() : 'dxf';
     const query = typeof body.query === 'string' ? body.query.trim() : '';
-    if (action === 'drawings' && !['dxf', 'ifc', 'pdf', 'bbs_csv', 'csv', 'json'].includes(format)) {
+    if (action === 'drawings' && !['dxf', 'ifc', 'pdf', 'bbs_csv', 'csv', 'json', 'frame_bbs_csv'].includes(format)) {
       sendJson(response, 400, { error: { code: 'UNSUPPORTED_FORMAT', message: "Use 'dxf', 'ifc', 'pdf', 'bbs_csv', or 'json'." } });
       return true;
     }
@@ -382,6 +381,20 @@ export async function handleStructuralRoute(
           (isRecord(body.selection) && (body.selection.projectId !== parent.snapshot.system.projectId ||
             body.selection.structuralRevision !== receipt.structuralRevision || (receipt.solverIdentity !== undefined && body.selection.solverIdentity !== receipt.solverIdentity)))) {
         sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
+      } else if (action === 'optimize' && body.mode === 'COUPLED_BEAM_DEPTH_TRIAL') {
+        if (validateBuildingSchema(body.building).length || typeof body.maxDepthMm !== 'number' ||
+            !Number.isSafeInteger(body.maxDepthMm) || body.maxDepthMm<=0) {
+          throw new CoupledScopeError('COUPLED_TRIAL_INPUT','Supply the source building and a positive maximum beam depth in millimetres.');
+        }
+        const controller = new AbortController();
+        const cancel = ()=>controller.abort();
+        response.once('close',cancel);
+        try {
+          const result = await compareCoupledBeamDepths(body.building as Building,parent,
+            {...receipt,evaluationId:body.evaluationId} as Awaited<ReturnType<typeof solveReviewedGravity>>,
+            body.resultId,body.maxDepthMm,controller.signal);
+          if (!controller.signal.aborted) sendJson(response,200,result);
+        } finally { response.off('close',cancel); }
       } else if (action === 'case') {
         const envelope = receipt.envelope;
         const cases = isRecord(envelope) && (body.kind === 'loadCase' ? envelope.loadCaseResults : envelope.combinationResults);
@@ -397,12 +410,30 @@ export async function handleStructuralRoute(
           typeof memberId === 'string' && (item.physicalMemberId === memberId || item.footingId === memberId));
         if (!record) sendJson(response,404,{error:{code:'STRUCTURAL_MEMBER_NOT_FOUND',message:'Member design unavailable in this coupled evaluation.'}});
         else sendJson(response,200,{evaluationId:body.evaluationId,resultId:body.resultId,record});
+      } else if (action === 'drawings' && format === 'frame_bbs_csv') {
+        const schedule = isRecord(receipt.frameDesign) && receipt.frameDesign.schedule;
+        if (!isRecord(schedule) || schedule.scope !== 'PRELIMINARY_GRAVITY_FRAME_ONLY' ||
+            !Array.isArray(schedule.bbsEntries) || !isRecord(schedule.quantities) ||
+            !isRecord(schedule.quantities.massReconciliationAudit) || schedule.quantities.massReconciliationAudit.isReconciled !== true) {
+          sendJson(response,422,{error:{code:'COUPLED_FRAME_SCHEDULE_UNAVAILABLE',message:'Reconciled coupled frame reinforcement records are required.'}});
+          return true;
+        }
+        const csv = exportStructuralBbsCsv(schedule as ReturnType<typeof generateFrameCandidateSchedule>,{
+          projectName:parent.name,sourceArchitecturalSha256:parent.snapshot.system.sourceArchitecturalSha256,
+          structuralRevision:parent.snapshot.system.structuralRevision,lifecycleStatus:'PRELIMINARY_GRAVITY_FRAME_ONLY'});
+        response.writeHead(200,{'Content-Type':'text/csv; charset=utf-8',
+          'Content-Disposition':`attachment; filename="preliminary-frame-${body.resultId}.csv"`});
+        response.end(`# EvaluationId=${body.evaluationId},ResultId=${body.resultId}\r\n` + csv);
       } else if (action === 'coupled-gravity' || action === 'evaluation' || (action === 'drawings' && format === 'json')) {
         if (action === 'drawings') response.setHeader('Content-Disposition',`attachment; filename="coupled-gravity-${body.resultId}.json"`);
         sendJson(response,200,{...receipt,resultId:body.resultId});
       } else {
         sendJson(response,422,{error:{code:'COUPLED_OPERATION_UNSUPPORTED',message:'This operation requires a method validated for the selected coupled gravity result.'}});
       }
+      return true;
+    }
+    if (format === 'frame_bbs_csv' && action === 'drawings') {
+      sendJson(response,422,{error:{code:'COUPLED_REFERENCE_REQUIRED',message:'Select a saved coupled gravity result for the frame-only schedule.'}});
       return true;
     }
     if (['case', 'design', 'evaluation', 'deck-topology', 'alignment-preview', 'coupled-gravity'].includes(action) && typeof body.evaluationId !== 'string') {
@@ -419,67 +450,15 @@ export async function handleStructuralRoute(
         return true;
       }
       if (action === 'coupled-gravity') {
-        const system = saved.snapshot.system;
-        const panels = system.slabPanels;
-        const reviews = panels.map(panel => panel.deckReview);
-        const stairConflict = system.stairWaists.some(stair=>{
-          const box=stair.boundsMm;
-          if (!box || !stair.bearingReview || !stair.hasExplicitStraightFlightGeometry) return true;
-          return panels.some(panel=>{
-            const slab=panel.boundsMm, top=panel.deckReview?.structuralTopMm;
-            return slab && (top===stair.baseElevationMm || top===stair.topElevationMm) &&
-              Math.min(slab.maxX,box.maxX)>Math.max(slab.minX,box.minX) &&
-              Math.min(slab.maxY,box.maxY)>Math.max(slab.minY,box.minY);
-          });
-        });
-        if (body.architectureSha256 !== system.sourceArchitecturalSha256 || !panels.length ||
-            reviews.some(review => !review) || stairConflict ||
-            !system.storeys.every(floor => panels.some(p=>p.floorId===floor.id))) {
-          sendJson(response,422,{error:{code:'COUPLED_DECK_SCOPE',message:'A matching revision and reviewed rectangular decks or independent grid bays at every frame level, including the roof, are required. Stair systems require regional analysis.'}});
-          return true;
+        if (body.architectureSha256 !== saved.snapshot.system.sourceArchitecturalSha256) {
+          throw new CoupledScopeError('COUPLED_DECK_SCOPE','The selected architecture has changed.');
         }
-        const gravityInputs = {...saved.inputs, seismic:undefined, wind:undefined};
-        const {analyticalModel,loadTakeoff} = await assembleLoadedAnalyticalFrameModel(system,gravityInputs,undefined,
-          {meshedSlabPanelIds:new Set(panels.map(p=>p.id))});
-        if (Object.values(loadTakeoff.unassignedGravityKnByCase ?? {}).some(n=>n!==0)) {
-          sendJson(response,422,{error:{code:'UNASSIGNED_GRAVITY',message:'The saved frame has an unresolved gravity source.'}});
-          return true;
-        }
-        const decks = panels.map(panel => {
-          const review = panel.deckReview!;
-          const source = saved.snapshot.loadTakeoff.loadSourceAudit?.find(item=>item.sourceId===panel.id && item.category==='SLAB_PANEL');
-          const forces = source?.gravityTransfer?.forceByCaseKn;
-          if (!forces || !panel.boundsMm || !panel.supportingBeamElementIndices.length || !panel.areaM2 ||
-              !['DL','SDL','LL'].every(id=>Number.isFinite(forces[id]) && forces[id]! >= 0)) throw new Error('Missing reviewed deck pressure ledger.');
-          return {id:panel.id,boundsMm:panel.boundsMm,topMm:review.structuralTopMm,thicknessMm:review.thicknessMm,
-            reference:review.reference,elasticityKPa:system.elements[panel.supportingBeamElementIndices[0]!]!.section.elasticityKPa,
-            supportingBeamElementIndices:panel.supportingBeamElementIndices,
-            pressures:Object.fromEntries(['DL','SDL','LL'].map(id=>[id,forces[id]!/panel.areaM2]))};
-        });
         const controller = new AbortController();
         const cancel = () => controller.abort();
         response.once('close',cancel);
-        const solved = await getSharedPythonStructuralWorker().request<PythonWorkerResponseBase & {
-          envelope?:AnalyticalSolveEnvelope; slabLoadLedger?:unknown; frameRegistry?:CoupledFrameRegistry;
-        }>({action:'reviewed_rectangular_gravity', model:analyticalModel,decks},undefined,controller.signal)
+        const receipt = await solveReviewedGravity(saved,String(body.evaluationId),controller.signal)
           .finally(()=>response.off('close',cancel));
-        if (!solved.ok || !solved.envelope || !solved.frameRegistry) {
-          sendJson(response,422,{error:{code:'COUPLED_SOLVE_FAILED',message:solved.message}});
-          return true;
-        }
-        const results = [...Object.values(solved.envelope.loadCaseResults), ...Object.values(solved.envelope.combinationResults)];
-        if (!results.length || results.some(r=>!r.equilibrium.isEquilibrated)) {
-          sendJson(response,422,{error:{code:'COUPLED_EQUILIBRIUM_FAILED',message:'Coupled gravity forces or moments failed equilibrium.'}});
-          return true;
-        }
-        const blocker=coupledDesignBlocker(saved,solved.envelope);
-        const receipt = {evaluationId:body.evaluationId,projectId:system.projectId,
-          solverIdentity:results[0]!.diagnostics.executionBackend,architectureSha256:system.sourceArchitecturalSha256,
-          structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
-          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope,
-          stairLoadTransfers:loadTakeoff.loadSourceAudit?.filter(source=>source.category==='STAIRCASE_FLIGHT'),
-          frameDesign:coupledFrameCandidates(saved,solved.envelope,solved.frameRegistry,blocker),
-          foundation:checkCoupledGravityFoundations(saved,solved.envelope,blocker)};
+        controller.signal.throwIfAborted();
         const resultId = await saveCoupledReceipt(String(body.evaluationId),receipt);
         sendJson(response,200,{...receipt,resultId});
         return true;
@@ -917,6 +896,10 @@ export async function handleStructuralRoute(
   } catch (err) {
     if (response.destroyed) return true;
     if (err instanceof RequestBodyTooLarge) throw err;
+    if (err instanceof CoupledScopeError) {
+      sendJson(response,422,{error:{code:err.code,message:err.message}});
+      return true;
+    }
     if (err instanceof DeckReviewError) {
       sendJson(response, 422, { error: { code: 'UNSUPPORTED_DECK_REVIEW', message: err.message } });
       return true;

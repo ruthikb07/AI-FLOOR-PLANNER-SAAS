@@ -1,7 +1,9 @@
+import type { Building } from '@ai-floor-planner/core';
 import { useEffect, useRef, useState } from 'react';
 import type { AnalyticalSolveEnvelope, CoupledEvaluationSelection, SingleCaseSolveResult } from '@ai-floor-planner/structural-engine';
 
 export interface GravityReceipt {
+  trial?:{parentResultId:string;scope:string;changes:{physicalMemberId:string;previousDepthMm:number;trialDepthMm:number}[]};
   projectId?:string;
   solverIdentity?:string;
   evaluationId: string;
@@ -14,6 +16,7 @@ export interface GravityReceipt {
   stairLoadTransfers?:{sourceId:string;receivingElementIds:string[];gravityTransfer?:{assignedForceByCaseKn:Record<string,number>}}[];
   frameDesign?: {status:'INPUT_OR_METHOD_REVIEW_REQUIRED';reason:string} | {
     status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES';
+    schedule?:{scope:'PRELIMINARY_GRAVITY_FRAME_ONLY';quantities:{massReconciliationAudit:{isReconciled:boolean;totalCutSteelMassKg:number}}};
     beams:{physicalMemberId:string;maxUtilization:number;status:string}[];
     columns:{physicalMemberId:string;maxUtilization:number;status:string}[];
   };
@@ -27,7 +30,7 @@ export function gravitySelection(projectId:string,receipt:GravityReceipt):Couple
   return {projectId,architectureSha256:receipt.architectureSha256,structuralRevision:receipt.structuralRevision,
     evaluationId:receipt.evaluationId,resultId:receipt.resultId,analysisMethod:'COUPLED_GRAVITY',
     solverIdentity:receipt.solverIdentity ?? Object.values(receipt.envelope.loadCaseResults)[0]!.diagnostics.executionBackend,
-    resultChecksum:receipt.resultId,capabilities:['evaluation','case','design','json']};
+    resultChecksum:receipt.resultId,capabilities:receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' && receipt.frameDesign.schedule?.quantities.massReconciliationAudit.isReconciled ? ['evaluation','case','design','json','frame_bbs_csv'] : ['evaluation','case','design','json']};
 }
 
 export function CoupledGravityResult({ evaluationId, digest, onSelect }: { evaluationId:string; digest:string; onSelect:(result:GravityReceipt)=>void }) {
@@ -95,7 +98,32 @@ function CoupledCaseView({result}:{result:SingleCaseSolveResult}) {
   </section>;
 }
 
-export function SelectedGravityResult({receipt,projectId}:{receipt:GravityReceipt;projectId:string}) {
+export function SelectedGravityResult({receipt,building,onSelect}:{receipt:GravityReceipt;building:Building;onSelect:(result:GravityReceipt)=>void}) {
+  const projectId = building.projectId;
+  const [depthLimit,setDepthLimit] = useState('');
+  const [trialBusy,setTrialBusy] = useState(false);
+  const [trialStatus,setTrialStatus] = useState('');
+  const [candidate,setCandidate] = useState<GravityReceipt>();
+  const trialController = useRef<AbortController>();
+  useEffect(()=>()=>trialController.current?.abort(),[receipt]);
+  async function compareDepths() {
+    trialController.current?.abort();
+    const controller = new AbortController();
+    trialController.current=controller;
+    setCandidate(undefined); setTrialStatus(''); setTrialBusy(true);
+    try {
+      const response = await fetch('/api/v1/structural/optimize',{method:'POST',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:gravitySelection(projectId,receipt),
+          mode:'COUPLED_BEAM_DEPTH_TRIAL',building,maxDepthMm:Number(depthLimit)})});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message ?? 'Coupled trial failed.');
+      if (!controller.signal.aborted) {
+        setCandidate(data.receipt);
+        setTrialStatus(data.receipt ? 'A revised gravity frame and pad candidate is available for review.' : 'No trial satisfied the gravity frame and pad checks.');
+      }
+    } catch (error) { if (!controller.signal.aborted) setTrialStatus(String(error)); }
+    finally { if (!controller.signal.aborted) setTrialBusy(false); }
+  }
   const [exportError,setExportError] = useState('');
   const [memberId,setMemberId] = useState('');
   const [memberRecord,setMemberRecord] = useState<{id:string;data:unknown}>();
@@ -118,6 +146,20 @@ export function SelectedGravityResult({receipt,projectId}:{receipt:GravityReceip
   const cases = [...Object.entries(receipt.envelope.loadCaseResults).map(([id,result])=>({key:'case/'+id,result})),
     ...Object.entries(receipt.envelope.combinationResults).map(([id,result])=>({key:'combination/'+id,result}))];
   const selected = cases.find(item=>item.key===caseKey) ?? cases[0];
+  async function download(format:'json'|'frame_bbs_csv') {
+        try {
+        const response = await fetch('/api/v1/structural/drawings',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({selection:gravitySelection(projectId,receipt),format})});
+        if (!response.ok) throw new Error((await response.json()).error?.message ?? 'Coupled report export failed.');
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href=url;
+        link.download=`coupled-gravity-${receipt.resultId}.${format==='json' ? 'json' : 'csv'}`;
+        link.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        } catch (error) { setExportError(String(error)); }
+  }
   return <section>
       <h3>Coupled gravity evaluation</h3>
       <p>Result <code>{receipt.resultId}</code></p>
@@ -151,21 +193,23 @@ export function SelectedGravityResult({receipt,projectId}:{receipt:GravityReceip
       </details>}
       {memberError && <p role="alert">{memberError}</p>}
       {memberRecord && memberRecord.id===memberId && <details open><summary>Design record for {memberId}</summary><pre>{JSON.stringify(memberRecord.data,null,2)}</pre></details>}
-      <button type="button" onClick={async () => {
-        try {
-        const response = await fetch('/api/v1/structural/drawings',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({selection:gravitySelection(projectId,receipt),format:'json'})});
-        if (!response.ok) throw new Error((await response.json()).error?.message ?? 'Coupled report export failed.');
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href=url;
-        link.download=`coupled-gravity-${receipt.resultId}.json`;
-        link.click();
-        setTimeout(()=>URL.revokeObjectURL(url),1000);
-        } catch (error) { setExportError(String(error)); }
-      }}>Download this coupled gravity result</button>
+      <button type="button" onClick={()=>download('json')}>Download this coupled gravity result</button>
+      {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' && receipt.frameDesign.schedule?.quantities.massReconciliationAudit.isReconciled &&
+        <p>Preliminary beam and column cut steel {receipt.frameDesign.schedule.quantities.massReconciliationAudit.totalCutSteelMassKg} kg.
+          <button type="button" onClick={()=>download('frame_bbs_csv')}>Download preliminary frame BBS</button></p>}
       {exportError && <p role="alert">{exportError}</p>}
-      <p>Drawing, reinforcement, quantity, assistant and optimization services are unavailable for this coupled result.</p>
+      {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' &&
+        receipt.frameDesign.beams.some(member=>member.status==='FAILED') && receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' &&
+        <section><h4>Coupled beam depth trials</h4>
+          <label>Maximum permitted beam depth (mm) <input type="number" min="1" value={depthLimit}
+            onChange={event=>{setDepthLimit(event.target.value);setCandidate(undefined);}} disabled={trialBusy}/></label>
+          <button type="button" disabled={trialBusy || Number(depthLimit)<=0} onClick={compareDepths}>Reanalyze beam depth candidates</button>
+          {trialBusy && <button onClick={()=>{trialController.current?.abort();setTrialBusy(false);}}>Cancel trials</button>}
+          {trialStatus && <p role="status">{trialStatus}</p>}
+          {candidate?.trial && <><ul>{candidate.trial.changes.map(change=><li key={change.physicalMemberId}>
+            {change.physicalMemberId}: {change.previousDepthMm} to {change.trialDepthMm} mm</li>)}</ul>
+            <button onClick={()=>onSelect(candidate)}>Select revised gravity evaluation</button></>}
+        </section>}
+      <p>Whole-building drawing, reinforcement, quantity, assistant and optimization services are unavailable for this coupled result.</p>
   </section>;
 }

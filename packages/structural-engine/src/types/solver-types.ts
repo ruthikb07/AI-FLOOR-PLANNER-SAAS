@@ -361,7 +361,7 @@ export interface CoupledEvaluationSelection {
   readonly analysisMethod: 'COUPLED_GRAVITY';
   readonly solverIdentity: string;
   readonly resultChecksum: string;
-  readonly capabilities: readonly ('evaluation' | 'case' | 'design' | 'json')[];
+  readonly capabilities: readonly ('evaluation' | 'case' | 'design' | 'json' | 'frame_bbs_csv')[];
 }
 
 export type StructuralEvaluationSelection = CoupledEvaluationSelection | (Omit<CoupledEvaluationSelection,'analysisMethod'|'capabilities'> & {

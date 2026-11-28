@@ -1,4 +1,4 @@
-import { runFrameRccDesign, type AnalyticalNode, type AnalyticalFrameElement, type AnalyticalSolveEnvelope } from '@ai-floor-planner/structural-engine';
+import { generateFrameCandidateSchedule, runFrameRccDesign, type AnalyticalNode, type AnalyticalFrameElement, type AnalyticalSolveEnvelope } from '@ai-floor-planner/structural-engine';
 import type { SavedEvaluation } from './structural-evaluation-store.js';
 
 export interface CoupledFrameRegistry {
@@ -46,5 +46,6 @@ export function coupledFrameCandidates(saved:SavedEvaluation, envelope:Analytica
       analyticalElementIds:chain.map(e=>e.id)};
   });
   const checked=runFrameRccDesign({...system,...registry,memberMetadata},saved.inputs,envelope);
-  return {status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES' as const,method:'RH_IS456_ANALYTICAL' as const,...checked};
+  const schedule = generateFrameCandidateSchedule(system,checked);
+  return {schedule,status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES' as const,method:'RH_IS456_ANALYTICAL' as const,...checked};
 }

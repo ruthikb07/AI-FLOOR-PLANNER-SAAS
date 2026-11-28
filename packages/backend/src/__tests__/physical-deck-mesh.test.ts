@@ -251,6 +251,21 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
         .map(result=>result.diagnostics.executionBackend))].sort().join(', ')};
     expect((await post('evaluation',{selection:conventional})).status).toBe(200);
     expect((await post('evaluation',{selection:{...conventional,resultId:selected.resultId,resultChecksum:selected.resultId}})).status).toBe(409);
+    const frameCsv = await post('drawings',{selection,format:'frame_bbs_csv'});
+    expect(frameCsv.status).toBe(200);
+    const scheduleText = await frameCsv.text();
+    expect(scheduleText).toContain(selected.resultId);
+    expect(scheduleText).toContain('PRELIMINARY_GRAVITY_FRAME_ONLY');
+    expect(scheduleText).toContain('TOTAL_RECONCILED');
+    expect(scheduleText).not.toMatch(/,(?:SLAB|FOOTING|STAIR),/);
+    const frameSchedule = (assessed.frameDesign as typeof assessed.frameDesign & {
+      schedule:ReturnType<typeof import('@ai-floor-planner/structural-engine').generateFrameCandidateSchedule>
+    }).schedule;
+    const barMass = frameSchedule.bbsEntries.reduce((sum,row)=>sum +
+      row.totalBars * row.cuttingLengthMm / 1000 * Math.PI * (row.barDiaMm/2000)**2 * 7850,0);
+    expect(frameSchedule.quantities.massReconciliationAudit.totalCutSteelMassKg).toBeCloseTo(barMass,2);
+    expect(new Set(frameSchedule.bbsEntries.flatMap(row=>row.physicalMemberIds))).toEqual(new Set(
+      [...assessed.frameDesign.beams,...assessed.frameDesign.columns].map(member=>member.physicalMemberId)));
     const column = assessed.frameDesign.columns[0]!;
     expect(await (await post('design',{...selected,memberId:column.physicalMemberId})).json()).toEqual({
       evaluationId:selected.evaluationId,resultId:selected.resultId,record:column});

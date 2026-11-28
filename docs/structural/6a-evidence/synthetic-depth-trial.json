@@ -1,0 +1,136 @@
+{
+  "fixture": "Synthetic two-storey gravity-only deficient beams",
+  "inputs": {
+    "seismic": {
+      "enabled": false
+    },
+    "wind": {
+      "enabled": false
+    },
+    "floorFinishKnM2": 1,
+    "rectangularDeckReviews": [
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7959338fcce5e4651b76af2c0bc8360976475821c939a39984b4caa1833bc6f3",
+        "reference": "Synthetic depth-trial fixture stilt",
+        "supportingFloorId": "stilt",
+        "surfaceFloorId": "upper",
+        "use": "OCCUPIED",
+        "structuralTopMm": 3100,
+        "finishedFloorMm": 3100,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 3,
+        "minimumBearingWidthMm": 75
+      },
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7959338fcce5e4651b76af2c0bc8360976475821c939a39984b4caa1833bc6f3",
+        "reference": "Synthetic depth-trial fixture upper",
+        "supportingFloorId": "upper",
+        "surfaceFloorId": "upper",
+        "use": "ROOF",
+        "structuralTopMm": 5900,
+        "finishedFloorMm": 5900,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 1.5,
+        "minimumBearingWidthMm": 75
+      }
+    ],
+    "geotechnical": {
+      "safeBearingCapacityKPa": 200,
+      "foundationDepthBelowGroundM": 1.5,
+      "soilUnitWeightKnM3": 18,
+      "allowableSettlementMm": 25,
+      "waterTableDepthBelowGroundM": 3,
+      "subgradeModulusKnM3": 24000,
+      "reportReference": "SYNTHETIC verification soil only",
+      "bearingCapacityBasis": "GROSS"
+    },
+    "concreteGrade": "M25",
+    "steelGrade": "Fe500",
+    "ductileDetailingIS13920": false
+  },
+  "sectionOverrides": {
+    "BM_stilt_1": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_stilt_4": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_upper_1": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_upper_4": {
+      "widthMm": 230,
+      "depthMm": 150
+    }
+  },
+  "maxDepthMm": 550,
+  "before": {
+    "failed": [
+      {
+        "id": "BM_stilt_1",
+        "depthMm": 150,
+        "utilization": 1.382
+      },
+      {
+        "id": "BM_stilt_4",
+        "depthMm": 150,
+        "utilization": 1.382
+      },
+      {
+        "id": "BM_upper_1",
+        "depthMm": 150,
+        "utilization": 0.749
+      },
+      {
+        "id": "BM_upper_4",
+        "depthMm": 150,
+        "utilization": 0.749
+      }
+    ],
+    "deadReactionKn": 285.91249999999485
+  },
+  "after": {
+    "scope": "PRELIMINARY_GRAVITY_FRAME_AND_PADS",
+    "deadReactionKn": 304.3124999999991,
+    "trials": [
+      {
+        "changes": [
+          {
+            "physicalMemberId": "BM_stilt_1",
+            "previousDepthMm": 150,
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_stilt_4",
+            "previousDepthMm": 150,
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_1",
+            "previousDepthMm": 150,
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_4",
+            "previousDepthMm": 150,
+            "trialDepthMm": 350
+          }
+        ],
+        "qualified": true,
+        "peakFrameUtilization": 0.663,
+        "failedMembers": [],
+        "failedPadChecks": [],
+        "padChecksPassed": true,
+        "foundationStatus": "PRELIMINARY_GRAVITY_PAD_CHECK",
+        "compressionOnly": true
+      }
+    ]
+  }
+}

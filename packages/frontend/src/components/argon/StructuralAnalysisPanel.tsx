@@ -1443,7 +1443,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
   if (restoring || restoreError) return <section><p>{restoreError || 'Restoring saved coupled evaluation…'}</p>
     {restoreError && <button onClick={switchToConventional}>Switch to conventional evaluation</button>}</section>;
   if (selectedGravity) return <div data-testid="coupled-analysis-panel" className="h-full overflow-auto p-4">
-    <SelectedGravityResult receipt={selectedGravity} projectId={building.projectId}/>
+    <SelectedGravityResult key={selectedGravity.resultId} receipt={selectedGravity} building={building} onSelect={selectGravity}/>
     <button type="button" onClick={switchToConventional}>Switch to conventional evaluation</button>
   </div>;
 

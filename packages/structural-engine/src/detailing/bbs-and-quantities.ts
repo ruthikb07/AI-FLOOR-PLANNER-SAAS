@@ -119,13 +119,8 @@ interface RawBarSpec {
   readonly cuttingLengthMm: number;
 }
 
-export function generateDetailingBbsAndBoq(
-  system: SynthesizedStructuralSystem,
-  rcc: CompleteRccDesignSummary,
-  foundation: FoundationDesignSummary,
-): DetailingAndBoqPackage {
+function frameBarSpecs(canonicalFrameReinf: ReturnType<typeof buildCanonicalPhysicalReinforcementRecords>): RawBarSpec[] {
   const rawSpecs: RawBarSpec[] = [];
-  const canonicalFrameReinf = buildCanonicalPhysicalReinforcementRecords(system, rcc, foundation);
 
   // 1. Physical Beams BBS (from canonical physical beam reinforcement records!)
   for (const bm of canonicalFrameReinf.beams) {
@@ -236,6 +231,143 @@ export function generateDetailingBbsAndBoq(
       cuttingLengthMm: col.ties.cutLengthPerSetMm,
     });
   }
+
+  return rawSpecs;
+}
+
+function reconcileBarSpecs(rawSpecs: readonly RawBarSpec[]) {
+  // Consolidate identical bar geometries per floor & member category (zero duplicate marks!)
+  const consolidatedMap = new Map<string, { spec: RawBarSpec; physicalMemberIds: string[] }>();
+  for (const spec of rawSpecs) {
+    const key = [
+      spec.floorId,
+      spec.memberCategory,
+      spec.scheduleGroupMark ?? spec.physicalMemberId,
+      spec.prefix,
+      spec.shapeCode,
+      spec.barDiaMm,
+      spec.spacingMm ?? 0,
+      spec.barsPerMember,
+      spec.cuttingLengthMm,
+    ].join('|');
+    const existing = consolidatedMap.get(key);
+    if (existing) {
+      existing.physicalMemberIds.push(spec.physicalMemberId);
+    } else {
+      consolidatedMap.set(key, { spec, physicalMemberIds: [spec.physicalMemberId] });
+    }
+  }
+
+  // Accumulate unrounded exact masses first so diameter/category/floor totals reconcile to < 1e-9 kg!
+  const bbs: BarBendingScheduleEntry[] = [];
+  const exactSteelByDia: Record<number, number> = {};
+  const exactSteelByFloor: Record<string, number> = {};
+  const exactSteelByCat = { columns: 0, beams: 0, slabs: 0, stairs: 0, footings: 0 };
+  let exactNetSteelKg = 0;
+  let exactLapSteelKg = 0;
+  let exactTotalSteelKg = 0;
+
+  let markSeq = 1;
+  for (const { spec, physicalMemberIds } of consolidatedMap.values()) {
+    const memberCount = physicalMemberIds.length;
+    const totalBars = memberCount * spec.barsPerMember;
+    const totalLengthM = (totalBars * spec.cuttingLengthMm) / 1000;
+    const netLengthM = (totalBars * spec.netLengthMm) / 1000;
+    const lapLengthM = (totalBars * spec.lapLengthMm) / 1000;
+    const uwExact = exactNominalRebarMassKgPerM(spec.barDiaMm);
+
+    const rowTotalKgExact = totalLengthM * uwExact;
+    const rowNetKgExact = netLengthM * uwExact;
+    const rowLapKgExact = lapLengthM * uwExact;
+
+    exactTotalSteelKg += rowTotalKgExact;
+    exactNetSteelKg += rowNetKgExact;
+    exactLapSteelKg += rowLapKgExact;
+    exactSteelByDia[spec.barDiaMm] = (exactSteelByDia[spec.barDiaMm] ?? 0) + rowTotalKgExact;
+    exactSteelByFloor[spec.floorId] = (exactSteelByFloor[spec.floorId] ?? 0) + rowTotalKgExact;
+
+    if (spec.memberCategory === 'COLUMN') exactSteelByCat.columns += rowTotalKgExact;
+    else if (spec.memberCategory === 'BEAM') exactSteelByCat.beams += rowTotalKgExact;
+    else if (spec.memberCategory === 'SLAB') exactSteelByCat.slabs += rowTotalKgExact;
+    else if (spec.memberCategory === 'STAIR') exactSteelByCat.stairs += rowTotalKgExact;
+    else exactSteelByCat.footings += rowTotalKgExact;
+
+    const displayMember =
+      memberCount === 1
+        ? physicalMemberIds[0]!
+        : `${spec.scheduleGroupMark ?? physicalMemberIds[0]} (${memberCount} nos: ${physicalMemberIds.slice(0, 3).join(', ')}${memberCount > 3 ? '...' : ''})`;
+
+    bbs.push({
+      barMark: `${spec.prefix}-${String(markSeq++).padStart(3, '0')}`,
+      memberId: displayMember,
+      physicalMemberIds,
+      scheduleGroupMark: spec.scheduleGroupMark,
+      memberCategory: spec.memberCategory,
+      floorId: spec.floorId,
+      description: spec.description,
+      shapeCode: spec.shapeCode,
+      barDiaMm: spec.barDiaMm,
+      spacingMm: spec.spacingMm,
+      memberCount,
+      barsPerMember: spec.barsPerMember,
+      totalBars,
+      netDesignedLengthMm: spec.netLengthMm,
+      lapOrAnchorageLengthMm: spec.lapLengthMm,
+      cuttingLengthMm: spec.cuttingLengthMm,
+      totalLengthM: Number(totalLengthM.toFixed(3)),
+      unitWeightKgPerM: uwExact,
+      netDesignedWeightKg: rowNetKgExact,
+      lapOrSpliceWeightKg: rowLapKgExact,
+      totalWeightKg: rowTotalKgExact,
+    });
+  }
+
+  const sumDiaExact = Object.values(exactSteelByDia).reduce((a, b) => a + b, 0);
+  const sumCatExact =
+    exactSteelByCat.columns +
+    exactSteelByCat.beams +
+    exactSteelByCat.slabs +
+    exactSteelByCat.stairs +
+    exactSteelByCat.footings;
+  const sumFloorExact = Object.values(exactSteelByFloor).reduce((a, b) => a + b, 0);
+  const sumBarMarksExact = bbs.reduce((mass, row) => mass + row.totalWeightKg, 0);
+  const maxDiscrepancy = Math.max(
+    Math.abs(sumBarMarksExact - exactTotalSteelKg),
+    Math.abs(sumDiaExact - exactTotalSteelKg),
+    Math.abs(sumCatExact - exactTotalSteelKg),
+    Math.abs(sumFloorExact - exactTotalSteelKg),
+    Math.abs(exactNetSteelKg + exactLapSteelKg - exactTotalSteelKg),
+  );
+
+  const massAudit: MassReconciliationAudit = {
+    netDesignedSteelMassKg: Number(exactNetSteelKg.toFixed(2)),
+    lapAndSpliceSteelMassKg: Number(exactLapSteelKg.toFixed(2)),
+    totalCutSteelMassKg: Number(exactTotalSteelKg.toFixed(2)),
+    sumByDiameterKg: Number(sumDiaExact.toFixed(2)),
+    sumByCategoryKg: Number(sumCatExact.toFixed(2)),
+    sumByFloorKg: Number(sumFloorExact.toFixed(2)),
+    maxReconciliationDiscrepancyKg: Number(maxDiscrepancy.toExponential(4)),
+    isReconciled: maxDiscrepancy <= 1e-6,
+    advisoryWastagePercent: 3.0,
+    advisoryGrossProcurementKg: Number((exactTotalSteelKg * 1.03).toFixed(2)),
+  };
+
+  return { bbs, massAudit, exactSteelByDia, exactSteelByFloor, exactSteelByCat, exactNetSteelKg, exactLapSteelKg, exactTotalSteelKg };
+}
+
+export function generateFrameCandidateSchedule(system:SynthesizedStructuralSystem, design:Pick<CompleteRccDesignSummary,'beams'|'columns'>) {
+  const reinforcement = buildCanonicalPhysicalReinforcementRecords(system,design);
+  const {bbs,massAudit} = reconcileBarSpecs(frameBarSpecs(reinforcement));
+  return {scope:'PRELIMINARY_GRAVITY_FRAME_ONLY' as const,reinforcement,bbsEntries:bbs,quantities:{massReconciliationAudit:massAudit}};
+}
+
+export function generateDetailingBbsAndBoq(
+  system: SynthesizedStructuralSystem,
+  rcc: CompleteRccDesignSummary,
+  foundation: FoundationDesignSummary,
+): DetailingAndBoqPackage {
+  const canonicalFrameReinf = buildCanonicalPhysicalReinforcementRecords(system,rcc,foundation);
+  const rawSpecs = frameBarSpecs(canonicalFrameReinf);
 
   // 3. Physical Slabs BBS
   for (const sl of rcc.slabs) {
@@ -402,121 +534,7 @@ export function generateDetailingBbsAndBoq(
     }
   }
 
-  // Consolidate identical bar geometries per floor & member category (zero duplicate marks!)
-  const consolidatedMap = new Map<string, { spec: RawBarSpec; physicalMemberIds: string[] }>();
-  for (const spec of rawSpecs) {
-    const key = [
-      spec.floorId,
-      spec.memberCategory,
-      spec.scheduleGroupMark ?? spec.physicalMemberId,
-      spec.prefix,
-      spec.shapeCode,
-      spec.barDiaMm,
-      spec.spacingMm ?? 0,
-      spec.barsPerMember,
-      spec.cuttingLengthMm,
-    ].join('|');
-    const existing = consolidatedMap.get(key);
-    if (existing) {
-      existing.physicalMemberIds.push(spec.physicalMemberId);
-    } else {
-      consolidatedMap.set(key, { spec, physicalMemberIds: [spec.physicalMemberId] });
-    }
-  }
-
-  // Accumulate unrounded exact masses first so diameter/category/floor totals reconcile to < 1e-9 kg!
-  const bbs: BarBendingScheduleEntry[] = [];
-  const exactSteelByDia: Record<number, number> = {};
-  const exactSteelByFloor: Record<string, number> = {};
-  const exactSteelByCat = { columns: 0, beams: 0, slabs: 0, stairs: 0, footings: 0 };
-  let exactNetSteelKg = 0;
-  let exactLapSteelKg = 0;
-  let exactTotalSteelKg = 0;
-
-  let markSeq = 1;
-  for (const { spec, physicalMemberIds } of consolidatedMap.values()) {
-    const memberCount = physicalMemberIds.length;
-    const totalBars = memberCount * spec.barsPerMember;
-    const totalLengthM = (totalBars * spec.cuttingLengthMm) / 1000;
-    const netLengthM = (totalBars * spec.netLengthMm) / 1000;
-    const lapLengthM = (totalBars * spec.lapLengthMm) / 1000;
-    const uwExact = exactNominalRebarMassKgPerM(spec.barDiaMm);
-
-    const rowTotalKgExact = totalLengthM * uwExact;
-    const rowNetKgExact = netLengthM * uwExact;
-    const rowLapKgExact = lapLengthM * uwExact;
-
-    exactTotalSteelKg += rowTotalKgExact;
-    exactNetSteelKg += rowNetKgExact;
-    exactLapSteelKg += rowLapKgExact;
-    exactSteelByDia[spec.barDiaMm] = (exactSteelByDia[spec.barDiaMm] ?? 0) + rowTotalKgExact;
-    exactSteelByFloor[spec.floorId] = (exactSteelByFloor[spec.floorId] ?? 0) + rowTotalKgExact;
-
-    if (spec.memberCategory === 'COLUMN') exactSteelByCat.columns += rowTotalKgExact;
-    else if (spec.memberCategory === 'BEAM') exactSteelByCat.beams += rowTotalKgExact;
-    else if (spec.memberCategory === 'SLAB') exactSteelByCat.slabs += rowTotalKgExact;
-    else if (spec.memberCategory === 'STAIR') exactSteelByCat.stairs += rowTotalKgExact;
-    else exactSteelByCat.footings += rowTotalKgExact;
-
-    const displayMember =
-      memberCount === 1
-        ? physicalMemberIds[0]!
-        : `${spec.scheduleGroupMark ?? physicalMemberIds[0]} (${memberCount} nos: ${physicalMemberIds.slice(0, 3).join(', ')}${memberCount > 3 ? '...' : ''})`;
-
-    bbs.push({
-      barMark: `${spec.prefix}-${String(markSeq++).padStart(3, '0')}`,
-      memberId: displayMember,
-      physicalMemberIds,
-      scheduleGroupMark: spec.scheduleGroupMark,
-      memberCategory: spec.memberCategory,
-      floorId: spec.floorId,
-      description: spec.description,
-      shapeCode: spec.shapeCode,
-      barDiaMm: spec.barDiaMm,
-      spacingMm: spec.spacingMm,
-      memberCount,
-      barsPerMember: spec.barsPerMember,
-      totalBars,
-      netDesignedLengthMm: spec.netLengthMm,
-      lapOrAnchorageLengthMm: spec.lapLengthMm,
-      cuttingLengthMm: spec.cuttingLengthMm,
-      totalLengthM: Number(totalLengthM.toFixed(3)),
-      unitWeightKgPerM: uwExact,
-      netDesignedWeightKg: rowNetKgExact,
-      lapOrSpliceWeightKg: rowLapKgExact,
-      totalWeightKg: rowTotalKgExact,
-    });
-  }
-
-  const sumDiaExact = Object.values(exactSteelByDia).reduce((a, b) => a + b, 0);
-  const sumCatExact =
-    exactSteelByCat.columns +
-    exactSteelByCat.beams +
-    exactSteelByCat.slabs +
-    exactSteelByCat.stairs +
-    exactSteelByCat.footings;
-  const sumFloorExact = Object.values(exactSteelByFloor).reduce((a, b) => a + b, 0);
-  const sumBarMarksExact = bbs.reduce((mass, row) => mass + row.totalWeightKg, 0);
-  const maxDiscrepancy = Math.max(
-    Math.abs(sumBarMarksExact - exactTotalSteelKg),
-    Math.abs(sumDiaExact - exactTotalSteelKg),
-    Math.abs(sumCatExact - exactTotalSteelKg),
-    Math.abs(sumFloorExact - exactTotalSteelKg),
-    Math.abs(exactNetSteelKg + exactLapSteelKg - exactTotalSteelKg),
-  );
-
-  const massAudit: MassReconciliationAudit = {
-    netDesignedSteelMassKg: Number(exactNetSteelKg.toFixed(2)),
-    lapAndSpliceSteelMassKg: Number(exactLapSteelKg.toFixed(2)),
-    totalCutSteelMassKg: Number(exactTotalSteelKg.toFixed(2)),
-    sumByDiameterKg: Number(sumDiaExact.toFixed(2)),
-    sumByCategoryKg: Number(sumCatExact.toFixed(2)),
-    sumByFloorKg: Number(sumFloorExact.toFixed(2)),
-    maxReconciliationDiscrepancyKg: Number(maxDiscrepancy.toExponential(4)),
-    isReconciled: maxDiscrepancy <= 1e-6,
-    advisoryWastagePercent: 3.0,
-    advisoryGrossProcurementKg: Number((exactTotalSteelKg * 1.03).toFixed(2)),
-  };
+  const { bbs, massAudit, exactSteelByDia, exactSteelByFloor, exactSteelByCat, exactNetSteelKg, exactLapSteelKg, exactTotalSteelKg } = reconcileBarSpecs(rawSpecs);
 
   // 6. Intersection-Deduplicated Concrete, Formwork, Excavation & Steel Aggregation
   let colConcGrossM3 = 0;
@@ -671,7 +689,7 @@ function csvCell(val: string | number | undefined): string {
  * Exports a complete, audit-grade RFC-4180 Bar Bending Schedule CSV (`Section 06 & 07`).
  */
 export function exportStructuralBbsCsv(
-  pkg: DetailingAndBoqPackage,
+  pkg: Pick<DetailingAndBoqPackage,'bbsEntries'> & {quantities:Pick<StructuralMaterialBoq,'massReconciliationAudit'>},
   metadata?: {
     readonly projectName?: string;
     readonly sourceArchitecturalSha256?: string;

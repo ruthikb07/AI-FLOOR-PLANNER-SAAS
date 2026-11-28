@@ -162,8 +162,8 @@ export function computeNonOverlappingThreeZoneCounts(params: {
 
 export function buildCanonicalPhysicalReinforcementRecords(
   system: SynthesizedStructuralSystem,
-  rcc: CompleteRccDesignSummary,
-  _foundation: FoundationDesignSummary,
+  rcc: Pick<CompleteRccDesignSummary, 'columns' | 'beams'>,
+  _foundation?: FoundationDesignSummary,
 ): Pick<CanonicalReinforcementSchedule, 'columns' | 'beams'> {
   const physColById = new Map(
     system.physicalModel.columns.map((pc) => [pc.physicalMemberId, pc]),
