@@ -547,7 +547,8 @@ export function exportStructuralIfc4Step(
   const omittedSlabIds: string[] = [];
   for (const slab of rccDesign.slabs) {
     const panel = panelById.get(slab.panelId);
-    const top = system.nodes.find((node) => node.floorId === slab.floorId)?.positionM[2];
+    const top = panel?.deckReview ? panel.deckReview.structuralTopMm / 1000 :
+      system.nodes.find((node) => node.floorId === slab.floorId)?.positionM[2];
     if (!panel?.exchangeBoundary || top === undefined) {
       omittedSlabIds.push(slab.panelId);
       continue;
@@ -556,12 +557,14 @@ export function exportStructuralIfc4Step(
     const profile = step.add('IFCARBITRARYCLOSEDPROFILEDEF', '.AREA.', '$', step.polyline(boundary));
     addProduct({
       type: 'IFCSLAB',
-      subtype: '.FLOOR.',
+      subtype: panel.deckReview?.use === 'ROOF' ? '.ROOF.' : '.FLOOR.',
       id: slab.panelId,
       floorId: slab.floorId,
       baseMm: [0, 0, top * 1000 - slab.thicknessMm],
       body: extrude(profile, slab.thicknessMm),
       properties: {
+        ...(panel.deckReview ? { DeckReviewReference: panel.deckReview.reference, SurfaceFloorId: panel.deckReview.surfaceFloorId,
+          StructuralTopMm: panel.deckReview.structuralTopMm, FinishedFloorMm: panel.deckReview.finishedFloorMm } : {}),
         PhysicalMemberId: slab.physicalMemberId,
         ScheduleGroupMark: slab.scheduleGroupMark,
         ThicknessMm: slab.thicknessMm,

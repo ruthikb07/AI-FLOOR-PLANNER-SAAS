@@ -76,6 +76,7 @@ export interface SeismicReviewedInputs {
 }
 
 export interface ReviewedStructuralInputs {
+  readonly rectangularDeckReviews?: readonly import('../assembly/reviewed-decks.js').RectangularDeckReview[];
   readonly concreteGrade: ConcreteGrade;
   readonly steelGrade: SteelGrade;
   readonly ductileDetailingIS13920: boolean;
@@ -379,17 +380,17 @@ export async function assembleLoadedAnalyticalFrameModel(
       continue;
     }
 
-    const isTopRoof = panel.floorLevel === maxFloorLevel && hasLowerFloor;
+    const isTopRoof = panel.deckReview ? panel.deckReview.use === 'ROOF' : panel.floorLevel === maxFloorLevel && hasLowerFloor;
     const intensities = {
       DL: (panel.thicknessMm / 1000) * IS875_RCC_UNIT_WEIGHT_KN_M3,
       SDL: inputs.floorFinishKnM2,
-      LL: isTopRoof ? inputs.roofLiveLoadKnM2 : lookupIS875OccupancyLiveLoadKnM2(
+      LL: panel.deckReview?.uniformLiveLoadKnM2 ?? (isTopRoof ? inputs.roofLiveLoadKnM2 : lookupIS875OccupancyLiveLoadKnM2(
         panel.roomType, undefined, inputs.occupancyLiveLoadOverridesKnM2,
-      ),
+      )),
     };
     const physicalSlab = physicalSlabsById.get(panel.id);
     const elevation = physicalSlab?.topElevationMm ?? system.storeys.find(s => s.id === panel.floorId)?.elevationMm;
-    const candidates = physicalSlab ? beamIndicesByFloor.get(panel.floorId) ?? [] : panel.supportingBeamElementIndices;
+    const candidates = panel.deckReview ? panel.supportingBeamElementIndices : physicalSlab ? beamIndicesByFloor.get(panel.floorId) ?? [] : panel.supportingBeamElementIndices;
     const resolved = resolveRectangularSlabTransfer(system, panel, elevation, candidates, overlappingSlabs.has(panel.id));
     const loadCaseIds = ['DL', 'SDL', 'LL'] as const;
     const area = resolved.kind !== 'UNRESOLVED' && panel.boundsMm

@@ -1,0 +1,1076 @@
+{
+  "status": "MESH_REPLAY_COMPLETE_GRAVITY_UNRESOLVED",
+  "buildings": {
+    "original": {
+      "architectureSha256": "8444eca9316dce57584ad0dfc9ed86a76b022889ae294586a371bdb1e60e89cd",
+      "archiveFileSha256": {
+        "snapshot": "148675f86456bd741434ef3544dada76df4e8bd1447a641732df3ce7403a599c",
+        "architecture": "8176d770869046098c88c672858116df55fd549b40c8d7f5636974540b85bdc5",
+        "summary": "e0cdedb54f8a6566947a4bbbb08702cb88ae9ac8814065f67276f89697acffd9"
+      },
+      "structuralRevision": 1,
+      "frameNodes": 422,
+      "additionalMeshNodes": 56,
+      "historicalUnresolvedSlabPaths": 647,
+      "historicalUnassignedSlabLoadsKn": {
+        "DL": 12350.186250000006,
+        "SDL": 3941.218800000005,
+        "LL": 7271.098000000004
+      },
+      "appliedCoupledSlabLoadsKn": null,
+      "coupledSupportReactionsKn": null,
+      "floors": [
+        {
+          "supportingFloorId": "floor_stilt_00",
+          "frameTopMm": 3150,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 1856.2387500000002,
+              "applied": 0,
+              "unassigned": 1856.2387500000002
+            },
+            "SDL": {
+              "expected": 593.9964000000001,
+              "applied": 0,
+              "unassigned": 593.9964000000001
+            },
+            "LL": {
+              "expected": 1338.48,
+              "applied": 0,
+              "unassigned": 1338.48
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_typical_01",
+          "deckAreaM2": 704.92925,
+          "openingAreaM2": 75.07075,
+          "meshedAreaM2": 6.80925,
+          "regionCount": 5,
+          "meshCount": 3,
+          "quadrilaterals": 3,
+          "methodCounts": {
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_stilt_00_1",
+            "BM_floor_stilt_00_10",
+            "BM_floor_stilt_00_11",
+            "BM_floor_stilt_00_12",
+            "BM_floor_stilt_00_13",
+            "BM_floor_stilt_00_14",
+            "BM_floor_stilt_00_15",
+            "BM_floor_stilt_00_16",
+            "BM_floor_stilt_00_17",
+            "BM_floor_stilt_00_18",
+            "BM_floor_stilt_00_19",
+            "BM_floor_stilt_00_2",
+            "BM_floor_stilt_00_20",
+            "BM_floor_stilt_00_21",
+            "BM_floor_stilt_00_22",
+            "BM_floor_stilt_00_23",
+            "BM_floor_stilt_00_24",
+            "BM_floor_stilt_00_27",
+            "BM_floor_stilt_00_29",
+            "BM_floor_stilt_00_3",
+            "BM_floor_stilt_00_30",
+            "BM_floor_stilt_00_31",
+            "BM_floor_stilt_00_32",
+            "BM_floor_stilt_00_33",
+            "BM_floor_stilt_00_34",
+            "BM_floor_stilt_00_35",
+            "BM_floor_stilt_00_36",
+            "BM_floor_stilt_00_37",
+            "BM_floor_stilt_00_38",
+            "BM_floor_stilt_00_39",
+            "BM_floor_stilt_00_4",
+            "BM_floor_stilt_00_40",
+            "BM_floor_stilt_00_41",
+            "BM_floor_stilt_00_42",
+            "BM_floor_stilt_00_43",
+            "BM_floor_stilt_00_44",
+            "BM_floor_stilt_00_45",
+            "BM_floor_stilt_00_46",
+            "BM_floor_stilt_00_47",
+            "BM_floor_stilt_00_48",
+            "BM_floor_stilt_00_49",
+            "BM_floor_stilt_00_5",
+            "BM_floor_stilt_00_50",
+            "BM_floor_stilt_00_51",
+            "BM_floor_stilt_00_52",
+            "BM_floor_stilt_00_53",
+            "BM_floor_stilt_00_6",
+            "BM_floor_stilt_00_7",
+            "BM_floor_stilt_00_8",
+            "BM_floor_stilt_00_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_stilt_00_18",
+            "BM_floor_stilt_00_27",
+            "BM_floor_stilt_00_30",
+            "BM_floor_stilt_00_52"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 2,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_typical_01:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_typical_01:deck:2",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_typical_01::apt-room:core_stair_1:stair",
+            "floor_typical_01::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 67.2
+        },
+        {
+          "supportingFloorId": "floor_typical_01",
+          "frameTopMm": 6300,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2143.33875,
+              "applied": 0,
+              "unassigned": 2143.33875
+            },
+            "SDL": {
+              "expected": 682.9163999999997,
+              "applied": 0,
+              "unassigned": 682.9163999999997
+            },
+            "LL": {
+              "expected": 1292.2639999999994,
+              "applied": 0,
+              "unassigned": 1292.2639999999994
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_level_02",
+          "deckAreaM2": 704.92925,
+          "openingAreaM2": 75.07075,
+          "meshedAreaM2": 6.80925,
+          "regionCount": 5,
+          "meshCount": 3,
+          "quadrilaterals": 3,
+          "methodCounts": {
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_typical_01_1",
+            "BM_floor_typical_01_10",
+            "BM_floor_typical_01_11",
+            "BM_floor_typical_01_12",
+            "BM_floor_typical_01_13",
+            "BM_floor_typical_01_14",
+            "BM_floor_typical_01_15",
+            "BM_floor_typical_01_16",
+            "BM_floor_typical_01_17",
+            "BM_floor_typical_01_18",
+            "BM_floor_typical_01_19",
+            "BM_floor_typical_01_2",
+            "BM_floor_typical_01_20",
+            "BM_floor_typical_01_21",
+            "BM_floor_typical_01_22",
+            "BM_floor_typical_01_23",
+            "BM_floor_typical_01_24",
+            "BM_floor_typical_01_27",
+            "BM_floor_typical_01_29",
+            "BM_floor_typical_01_3",
+            "BM_floor_typical_01_30",
+            "BM_floor_typical_01_31",
+            "BM_floor_typical_01_32",
+            "BM_floor_typical_01_33",
+            "BM_floor_typical_01_34",
+            "BM_floor_typical_01_35",
+            "BM_floor_typical_01_36",
+            "BM_floor_typical_01_37",
+            "BM_floor_typical_01_38",
+            "BM_floor_typical_01_39",
+            "BM_floor_typical_01_4",
+            "BM_floor_typical_01_40",
+            "BM_floor_typical_01_41",
+            "BM_floor_typical_01_42",
+            "BM_floor_typical_01_43",
+            "BM_floor_typical_01_44",
+            "BM_floor_typical_01_45",
+            "BM_floor_typical_01_46",
+            "BM_floor_typical_01_47",
+            "BM_floor_typical_01_48",
+            "BM_floor_typical_01_49",
+            "BM_floor_typical_01_5",
+            "BM_floor_typical_01_50",
+            "BM_floor_typical_01_51",
+            "BM_floor_typical_01_52",
+            "BM_floor_typical_01_53",
+            "BM_floor_typical_01_6",
+            "BM_floor_typical_01_7",
+            "BM_floor_typical_01_8",
+            "BM_floor_typical_01_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_typical_01_18",
+            "BM_floor_typical_01_27",
+            "BM_floor_typical_01_30",
+            "BM_floor_typical_01_52"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 2,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_level_02:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_level_02:deck:2",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_level_02::apt-room:core_stair_1:stair",
+            "floor_level_02::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 56.0
+        },
+        {
+          "supportingFloorId": "floor_level_02",
+          "frameTopMm": 9450,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2141.8275000000003,
+              "applied": 0,
+              "unassigned": 2141.8275000000003
+            },
+            "SDL": {
+              "expected": 682.9163999999997,
+              "applied": 0,
+              "unassigned": 682.9163999999997
+            },
+            "LL": {
+              "expected": 1289.3219999999997,
+              "applied": 0,
+              "unassigned": 1289.3219999999997
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_level_03",
+          "deckAreaM2": 704.92925,
+          "openingAreaM2": 75.07075,
+          "meshedAreaM2": 6.80925,
+          "regionCount": 5,
+          "meshCount": 3,
+          "quadrilaterals": 3,
+          "methodCounts": {
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_level_02_1",
+            "BM_floor_level_02_10",
+            "BM_floor_level_02_11",
+            "BM_floor_level_02_12",
+            "BM_floor_level_02_13",
+            "BM_floor_level_02_14",
+            "BM_floor_level_02_15",
+            "BM_floor_level_02_16",
+            "BM_floor_level_02_17",
+            "BM_floor_level_02_18",
+            "BM_floor_level_02_19",
+            "BM_floor_level_02_2",
+            "BM_floor_level_02_20",
+            "BM_floor_level_02_21",
+            "BM_floor_level_02_22",
+            "BM_floor_level_02_23",
+            "BM_floor_level_02_24",
+            "BM_floor_level_02_27",
+            "BM_floor_level_02_29",
+            "BM_floor_level_02_3",
+            "BM_floor_level_02_30",
+            "BM_floor_level_02_31",
+            "BM_floor_level_02_32",
+            "BM_floor_level_02_33",
+            "BM_floor_level_02_34",
+            "BM_floor_level_02_35",
+            "BM_floor_level_02_36",
+            "BM_floor_level_02_37",
+            "BM_floor_level_02_38",
+            "BM_floor_level_02_39",
+            "BM_floor_level_02_4",
+            "BM_floor_level_02_40",
+            "BM_floor_level_02_41",
+            "BM_floor_level_02_42",
+            "BM_floor_level_02_43",
+            "BM_floor_level_02_44",
+            "BM_floor_level_02_45",
+            "BM_floor_level_02_46",
+            "BM_floor_level_02_47",
+            "BM_floor_level_02_48",
+            "BM_floor_level_02_49",
+            "BM_floor_level_02_5",
+            "BM_floor_level_02_50",
+            "BM_floor_level_02_51",
+            "BM_floor_level_02_52",
+            "BM_floor_level_02_53",
+            "BM_floor_level_02_6",
+            "BM_floor_level_02_7",
+            "BM_floor_level_02_8",
+            "BM_floor_level_02_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_level_02_18",
+            "BM_floor_level_02_27",
+            "BM_floor_level_02_30",
+            "BM_floor_level_02_52"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 2,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_level_03:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_level_03:deck:2",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_level_03::apt-room:core_stair_1:stair",
+            "floor_level_03::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 55.4
+        },
+        {
+          "supportingFloorId": "floor_level_03",
+          "frameTopMm": 12600,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2143.33875,
+              "applied": 0,
+              "unassigned": 2143.33875
+            },
+            "SDL": {
+              "expected": 682.9163999999997,
+              "applied": 0,
+              "unassigned": 682.9163999999997
+            },
+            "LL": {
+              "expected": 1292.2639999999994,
+              "applied": 0,
+              "unassigned": 1292.2639999999994
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_level_04",
+          "deckAreaM2": 704.92925,
+          "openingAreaM2": 75.07075,
+          "meshedAreaM2": 6.80925,
+          "regionCount": 5,
+          "meshCount": 3,
+          "quadrilaterals": 3,
+          "methodCounts": {
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_level_03_1",
+            "BM_floor_level_03_10",
+            "BM_floor_level_03_11",
+            "BM_floor_level_03_12",
+            "BM_floor_level_03_13",
+            "BM_floor_level_03_14",
+            "BM_floor_level_03_15",
+            "BM_floor_level_03_16",
+            "BM_floor_level_03_17",
+            "BM_floor_level_03_18",
+            "BM_floor_level_03_19",
+            "BM_floor_level_03_2",
+            "BM_floor_level_03_20",
+            "BM_floor_level_03_21",
+            "BM_floor_level_03_22",
+            "BM_floor_level_03_23",
+            "BM_floor_level_03_24",
+            "BM_floor_level_03_27",
+            "BM_floor_level_03_29",
+            "BM_floor_level_03_3",
+            "BM_floor_level_03_30",
+            "BM_floor_level_03_31",
+            "BM_floor_level_03_32",
+            "BM_floor_level_03_33",
+            "BM_floor_level_03_34",
+            "BM_floor_level_03_35",
+            "BM_floor_level_03_36",
+            "BM_floor_level_03_37",
+            "BM_floor_level_03_38",
+            "BM_floor_level_03_39",
+            "BM_floor_level_03_4",
+            "BM_floor_level_03_40",
+            "BM_floor_level_03_41",
+            "BM_floor_level_03_42",
+            "BM_floor_level_03_43",
+            "BM_floor_level_03_44",
+            "BM_floor_level_03_45",
+            "BM_floor_level_03_46",
+            "BM_floor_level_03_47",
+            "BM_floor_level_03_48",
+            "BM_floor_level_03_49",
+            "BM_floor_level_03_5",
+            "BM_floor_level_03_50",
+            "BM_floor_level_03_51",
+            "BM_floor_level_03_52",
+            "BM_floor_level_03_53",
+            "BM_floor_level_03_6",
+            "BM_floor_level_03_7",
+            "BM_floor_level_03_8",
+            "BM_floor_level_03_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_level_03_18",
+            "BM_floor_level_03_27",
+            "BM_floor_level_03_30",
+            "BM_floor_level_03_52"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 2,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_level_04:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_level_04:deck:2",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_level_04::apt-room:core_stair_1:stair",
+            "floor_level_04::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 58.0
+        },
+        {
+          "supportingFloorId": "floor_level_04",
+          "frameTopMm": 15750,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2141.8275000000003,
+              "applied": 0,
+              "unassigned": 2141.8275000000003
+            },
+            "SDL": {
+              "expected": 682.9163999999997,
+              "applied": 0,
+              "unassigned": 682.9163999999997
+            },
+            "LL": {
+              "expected": 1289.3219999999997,
+              "applied": 0,
+              "unassigned": 1289.3219999999997
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_terrace_05",
+          "deckAreaM2": 714.6005,
+          "openingAreaM2": 65.3995,
+          "meshedAreaM2": 16.4805,
+          "regionCount": 6,
+          "meshCount": 4,
+          "quadrilaterals": 7,
+          "methodCounts": {
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 3
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_level_04_1",
+            "BM_floor_level_04_10",
+            "BM_floor_level_04_11",
+            "BM_floor_level_04_12",
+            "BM_floor_level_04_13",
+            "BM_floor_level_04_14",
+            "BM_floor_level_04_15",
+            "BM_floor_level_04_16",
+            "BM_floor_level_04_17",
+            "BM_floor_level_04_18",
+            "BM_floor_level_04_19",
+            "BM_floor_level_04_2",
+            "BM_floor_level_04_20",
+            "BM_floor_level_04_21",
+            "BM_floor_level_04_22",
+            "BM_floor_level_04_23",
+            "BM_floor_level_04_24",
+            "BM_floor_level_04_25",
+            "BM_floor_level_04_26",
+            "BM_floor_level_04_27",
+            "BM_floor_level_04_28",
+            "BM_floor_level_04_29",
+            "BM_floor_level_04_3",
+            "BM_floor_level_04_30",
+            "BM_floor_level_04_31",
+            "BM_floor_level_04_32",
+            "BM_floor_level_04_33",
+            "BM_floor_level_04_34",
+            "BM_floor_level_04_35",
+            "BM_floor_level_04_36",
+            "BM_floor_level_04_37",
+            "BM_floor_level_04_38",
+            "BM_floor_level_04_39",
+            "BM_floor_level_04_4",
+            "BM_floor_level_04_40",
+            "BM_floor_level_04_41",
+            "BM_floor_level_04_42",
+            "BM_floor_level_04_43",
+            "BM_floor_level_04_44",
+            "BM_floor_level_04_45",
+            "BM_floor_level_04_46",
+            "BM_floor_level_04_47",
+            "BM_floor_level_04_48",
+            "BM_floor_level_04_49",
+            "BM_floor_level_04_5",
+            "BM_floor_level_04_50",
+            "BM_floor_level_04_51",
+            "BM_floor_level_04_52",
+            "BM_floor_level_04_53",
+            "BM_floor_level_04_6",
+            "BM_floor_level_04_7",
+            "BM_floor_level_04_8",
+            "BM_floor_level_04_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [
+            "BM_floor_level_04_26",
+            "BM_floor_level_04_28"
+          ],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_level_04_18",
+            "BM_floor_level_04_25",
+            "BM_floor_level_04_27",
+            "BM_floor_level_04_30",
+            "BM_floor_level_04_35",
+            "BM_floor_level_04_36",
+            "BM_floor_level_04_52"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 3,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_terrace_05:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_terrace_05:deck:2",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_terrace_05::terrace__stair_mumty_1:stair",
+            "floor_terrace_05::terrace__stair_mumty_2:stair"
+          ],
+          "elapsedMs": 68.8
+        },
+        {
+          "supportingFloorId": "floor_terrace_05",
+          "frameTopMm": 18750,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 1923.6150000000002,
+              "applied": 0,
+              "unassigned": 1923.6150000000002
+            },
+            "SDL": {
+              "expected": 615.5568000000001,
+              "applied": 0,
+              "unassigned": 615.5568000000001
+            },
+            "LL": {
+              "expected": 769.446,
+              "applied": 0,
+              "unassigned": 769.446
+            }
+          },
+          "status": "SURFACE_OWNERSHIP_REVIEW_REQUIRED",
+          "elapsedMs": 0.0
+        }
+      ]
+    },
+    "second": {
+      "architectureSha256": "a5bbe93eb95dec6372be76a5fbbc0345bd24ccc3ee75f44d3f5886fcbe856e8a",
+      "archiveFileSha256": {
+        "snapshot": "40778ad49c26cefee0c01753a10359eaee3d95f7be36fb9c13982088f5d709ae",
+        "architecture": "3d8c266bfe6a8b39834b54b5187d551138ebd28172b396931135c868b49c9fb4",
+        "summary": "bc7bbe3d81c5b6bbbe1889e543288d9032826e29644c13e1d6cc440a59fedc32"
+      },
+      "structuralRevision": 1,
+      "frameNodes": 294,
+      "additionalMeshNodes": 51,
+      "historicalUnresolvedSlabPaths": 335,
+      "historicalUnassignedSlabLoadsKn": {
+        "DL": 7490.787499999996,
+        "SDL": 2369.715600000001,
+        "LL": 4364.259499999998
+      },
+      "appliedCoupledSlabLoadsKn": null,
+      "coupledSupportReactionsKn": null,
+      "floors": [
+        {
+          "supportingFloorId": "floor_stilt_00",
+          "frameTopMm": 3150,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 1575.0937499999998,
+              "applied": 0,
+              "unassigned": 1575.0937499999998
+            },
+            "SDL": {
+              "expected": 504.0300000000001,
+              "applied": 0,
+              "unassigned": 504.0300000000001
+            },
+            "LL": {
+              "expected": 1141.4675000000007,
+              "applied": 0,
+              "unassigned": 1141.4675000000007
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_typical_01",
+          "deckAreaM2": 662.27325,
+          "openingAreaM2": 191.72675,
+          "meshedAreaM2": 9.86925,
+          "regionCount": 6,
+          "meshCount": 4,
+          "quadrilaterals": 6,
+          "methodCounts": {
+            "BOUNDARY_FITTED_QUADS": 1,
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_stilt_00_1",
+            "BM_floor_stilt_00_10",
+            "BM_floor_stilt_00_11",
+            "BM_floor_stilt_00_12",
+            "BM_floor_stilt_00_13",
+            "BM_floor_stilt_00_14",
+            "BM_floor_stilt_00_15",
+            "BM_floor_stilt_00_16",
+            "BM_floor_stilt_00_17",
+            "BM_floor_stilt_00_18",
+            "BM_floor_stilt_00_19",
+            "BM_floor_stilt_00_2",
+            "BM_floor_stilt_00_20",
+            "BM_floor_stilt_00_21",
+            "BM_floor_stilt_00_23",
+            "BM_floor_stilt_00_24",
+            "BM_floor_stilt_00_25",
+            "BM_floor_stilt_00_27",
+            "BM_floor_stilt_00_28",
+            "BM_floor_stilt_00_29",
+            "BM_floor_stilt_00_3",
+            "BM_floor_stilt_00_30",
+            "BM_floor_stilt_00_31",
+            "BM_floor_stilt_00_32",
+            "BM_floor_stilt_00_33",
+            "BM_floor_stilt_00_34",
+            "BM_floor_stilt_00_35",
+            "BM_floor_stilt_00_36",
+            "BM_floor_stilt_00_37",
+            "BM_floor_stilt_00_38",
+            "BM_floor_stilt_00_39",
+            "BM_floor_stilt_00_4",
+            "BM_floor_stilt_00_40",
+            "BM_floor_stilt_00_41",
+            "BM_floor_stilt_00_42",
+            "BM_floor_stilt_00_43",
+            "BM_floor_stilt_00_44",
+            "BM_floor_stilt_00_45",
+            "BM_floor_stilt_00_46",
+            "BM_floor_stilt_00_47",
+            "BM_floor_stilt_00_48",
+            "BM_floor_stilt_00_49",
+            "BM_floor_stilt_00_5",
+            "BM_floor_stilt_00_50",
+            "BM_floor_stilt_00_51",
+            "BM_floor_stilt_00_52",
+            "BM_floor_stilt_00_53",
+            "BM_floor_stilt_00_54",
+            "BM_floor_stilt_00_55",
+            "BM_floor_stilt_00_56",
+            "BM_floor_stilt_00_57",
+            "BM_floor_stilt_00_58",
+            "BM_floor_stilt_00_59",
+            "BM_floor_stilt_00_6",
+            "BM_floor_stilt_00_60",
+            "BM_floor_stilt_00_61",
+            "BM_floor_stilt_00_62",
+            "BM_floor_stilt_00_63",
+            "BM_floor_stilt_00_64",
+            "BM_floor_stilt_00_65",
+            "BM_floor_stilt_00_66",
+            "BM_floor_stilt_00_67",
+            "BM_floor_stilt_00_68",
+            "BM_floor_stilt_00_7",
+            "BM_floor_stilt_00_8",
+            "BM_floor_stilt_00_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_stilt_00_16",
+            "BM_floor_stilt_00_23",
+            "BM_floor_stilt_00_27",
+            "BM_floor_stilt_00_48",
+            "BM_floor_stilt_00_61"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 3,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_typical_01:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_typical_01:deck:6",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_typical_01::apt-room:core_stair_1:stair",
+            "floor_typical_01::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 50.2
+        },
+        {
+          "supportingFloorId": "floor_typical_01",
+          "frameTopMm": 6300,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2106.3212499999995,
+              "applied": 0,
+              "unassigned": 2106.3212499999995
+            },
+            "SDL": {
+              "expected": 659.8428000000001,
+              "applied": 0,
+              "unassigned": 659.8428000000001
+            },
+            "LL": {
+              "expected": 1272.0960000000002,
+              "applied": 0,
+              "unassigned": 1272.0960000000002
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_level_02",
+          "deckAreaM2": 662.27325,
+          "openingAreaM2": 191.72675,
+          "meshedAreaM2": 9.86925,
+          "regionCount": 6,
+          "meshCount": 4,
+          "quadrilaterals": 6,
+          "methodCounts": {
+            "BOUNDARY_FITTED_QUADS": 1,
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 2
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_typical_01_1",
+            "BM_floor_typical_01_10",
+            "BM_floor_typical_01_11",
+            "BM_floor_typical_01_12",
+            "BM_floor_typical_01_13",
+            "BM_floor_typical_01_14",
+            "BM_floor_typical_01_15",
+            "BM_floor_typical_01_16",
+            "BM_floor_typical_01_17",
+            "BM_floor_typical_01_18",
+            "BM_floor_typical_01_19",
+            "BM_floor_typical_01_2",
+            "BM_floor_typical_01_20",
+            "BM_floor_typical_01_21",
+            "BM_floor_typical_01_23",
+            "BM_floor_typical_01_24",
+            "BM_floor_typical_01_25",
+            "BM_floor_typical_01_27",
+            "BM_floor_typical_01_28",
+            "BM_floor_typical_01_29",
+            "BM_floor_typical_01_3",
+            "BM_floor_typical_01_30",
+            "BM_floor_typical_01_31",
+            "BM_floor_typical_01_32",
+            "BM_floor_typical_01_33",
+            "BM_floor_typical_01_34",
+            "BM_floor_typical_01_35",
+            "BM_floor_typical_01_36",
+            "BM_floor_typical_01_37",
+            "BM_floor_typical_01_38",
+            "BM_floor_typical_01_39",
+            "BM_floor_typical_01_4",
+            "BM_floor_typical_01_40",
+            "BM_floor_typical_01_41",
+            "BM_floor_typical_01_42",
+            "BM_floor_typical_01_43",
+            "BM_floor_typical_01_44",
+            "BM_floor_typical_01_45",
+            "BM_floor_typical_01_46",
+            "BM_floor_typical_01_47",
+            "BM_floor_typical_01_48",
+            "BM_floor_typical_01_49",
+            "BM_floor_typical_01_5",
+            "BM_floor_typical_01_50",
+            "BM_floor_typical_01_51",
+            "BM_floor_typical_01_52",
+            "BM_floor_typical_01_53",
+            "BM_floor_typical_01_54",
+            "BM_floor_typical_01_55",
+            "BM_floor_typical_01_56",
+            "BM_floor_typical_01_57",
+            "BM_floor_typical_01_58",
+            "BM_floor_typical_01_59",
+            "BM_floor_typical_01_6",
+            "BM_floor_typical_01_60",
+            "BM_floor_typical_01_61",
+            "BM_floor_typical_01_62",
+            "BM_floor_typical_01_63",
+            "BM_floor_typical_01_64",
+            "BM_floor_typical_01_65",
+            "BM_floor_typical_01_66",
+            "BM_floor_typical_01_67",
+            "BM_floor_typical_01_68",
+            "BM_floor_typical_01_7",
+            "BM_floor_typical_01_8",
+            "BM_floor_typical_01_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_typical_01_16",
+            "BM_floor_typical_01_23",
+            "BM_floor_typical_01_27",
+            "BM_floor_typical_01_48",
+            "BM_floor_typical_01_61"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 3,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_level_02:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_level_02:deck:6",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_level_02::apt-room:core_stair_1:stair",
+            "floor_level_02::apt-room:core_stair_2:stair"
+          ],
+          "elapsedMs": 43.3
+        },
+        {
+          "supportingFloorId": "floor_level_02",
+          "frameTopMm": 9450,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 2103.1224999999995,
+              "applied": 0,
+              "unassigned": 2103.1224999999995
+            },
+            "SDL": {
+              "expected": 659.8428000000001,
+              "applied": 0,
+              "unassigned": 659.8428000000001
+            },
+            "LL": {
+              "expected": 1268.1960000000001,
+              "applied": 0,
+              "unassigned": 1268.1960000000001
+            }
+          },
+          "status": "BEARING_AND_LOAD_TRANSFER_UNVERIFIED",
+          "surfaceFloorId": "floor_terrace_03",
+          "deckAreaM2": 671.9445,
+          "openingAreaM2": 182.0555,
+          "meshedAreaM2": 19.5405,
+          "regionCount": 7,
+          "meshCount": 5,
+          "quadrilaterals": 10,
+          "methodCounts": {
+            "BOUNDARY_FITTED_QUADS": 1,
+            "RECTANGULAR_GRID": 1,
+            "BALANCED_GRID": 3
+          },
+          "bearingCandidateMemberIds": [
+            "BM_floor_level_02_1",
+            "BM_floor_level_02_10",
+            "BM_floor_level_02_11",
+            "BM_floor_level_02_12",
+            "BM_floor_level_02_13",
+            "BM_floor_level_02_14",
+            "BM_floor_level_02_15",
+            "BM_floor_level_02_16",
+            "BM_floor_level_02_17",
+            "BM_floor_level_02_18",
+            "BM_floor_level_02_19",
+            "BM_floor_level_02_2",
+            "BM_floor_level_02_20",
+            "BM_floor_level_02_21",
+            "BM_floor_level_02_22",
+            "BM_floor_level_02_23",
+            "BM_floor_level_02_24",
+            "BM_floor_level_02_25",
+            "BM_floor_level_02_26",
+            "BM_floor_level_02_27",
+            "BM_floor_level_02_28",
+            "BM_floor_level_02_29",
+            "BM_floor_level_02_3",
+            "BM_floor_level_02_30",
+            "BM_floor_level_02_31",
+            "BM_floor_level_02_32",
+            "BM_floor_level_02_33",
+            "BM_floor_level_02_34",
+            "BM_floor_level_02_35",
+            "BM_floor_level_02_36",
+            "BM_floor_level_02_37",
+            "BM_floor_level_02_38",
+            "BM_floor_level_02_39",
+            "BM_floor_level_02_4",
+            "BM_floor_level_02_40",
+            "BM_floor_level_02_41",
+            "BM_floor_level_02_42",
+            "BM_floor_level_02_43",
+            "BM_floor_level_02_44",
+            "BM_floor_level_02_45",
+            "BM_floor_level_02_46",
+            "BM_floor_level_02_47",
+            "BM_floor_level_02_48",
+            "BM_floor_level_02_49",
+            "BM_floor_level_02_5",
+            "BM_floor_level_02_50",
+            "BM_floor_level_02_51",
+            "BM_floor_level_02_52",
+            "BM_floor_level_02_53",
+            "BM_floor_level_02_54",
+            "BM_floor_level_02_55",
+            "BM_floor_level_02_56",
+            "BM_floor_level_02_57",
+            "BM_floor_level_02_58",
+            "BM_floor_level_02_59",
+            "BM_floor_level_02_6",
+            "BM_floor_level_02_60",
+            "BM_floor_level_02_61",
+            "BM_floor_level_02_62",
+            "BM_floor_level_02_63",
+            "BM_floor_level_02_64",
+            "BM_floor_level_02_65",
+            "BM_floor_level_02_66",
+            "BM_floor_level_02_67",
+            "BM_floor_level_02_68",
+            "BM_floor_level_02_7",
+            "BM_floor_level_02_8",
+            "BM_floor_level_02_9"
+          ],
+          "verifiedBearingAreaM2": 0,
+          "sharedAnalyticalElementIds": [
+            "BM_floor_level_02_19",
+            "BM_floor_level_02_22"
+          ],
+          "unmatchedAnalyticalElementIds": [
+            "BM_floor_level_02_16",
+            "BM_floor_level_02_18",
+            "BM_floor_level_02_20",
+            "BM_floor_level_02_23",
+            "BM_floor_level_02_26",
+            "BM_floor_level_02_27",
+            "BM_floor_level_02_48",
+            "BM_floor_level_02_61"
+          ],
+          "directedBoundaryInterfaceCounts": {
+            "NONCONFORMING_INTERFACE": 4,
+            "CONTINUITY_REVIEW_REQUIRED": 2
+          },
+          "unmeshedRegions": [
+            {
+              "regionId": "floor_terrace_03:deck:1",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            },
+            {
+              "regionId": "floor_terrace_03:deck:7",
+              "status": "MESH_REVIEW_REQUIRED",
+              "reason": "Quad exceeds aspect ratio 10 or scaled corner Jacobian below 0.25"
+            }
+          ],
+          "unverifiedStairIds": [
+            "floor_terrace_03::terrace__stair_mumty_1:stair",
+            "floor_terrace_03::terrace__stair_mumty_2:stair"
+          ],
+          "elapsedMs": 52.5
+        },
+        {
+          "supportingFloorId": "floor_terrace_03",
+          "frameTopMm": 12450,
+          "historicalSlabLoadsKn": {
+            "DL": {
+              "expected": 1706.25,
+              "applied": 0,
+              "unassigned": 1706.25
+            },
+            "SDL": {
+              "expected": 546.0000000000001,
+              "applied": 0,
+              "unassigned": 546.0000000000001
+            },
+            "LL": {
+              "expected": 682.5,
+              "applied": 0,
+              "unassigned": 682.5
+            }
+          },
+          "status": "SURFACE_OWNERSHIP_REVIEW_REQUIRED",
+          "elapsedMs": 0.0
+        }
+      ]
+    }
+  }
+}

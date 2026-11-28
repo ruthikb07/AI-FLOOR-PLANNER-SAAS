@@ -27,3 +27,9 @@ Scope limits include flexible raft and pile groups, full modal and native latera
 ## Milestone 6A continuation
 
 The active geometry checkpoint and remaining gravity-transfer defects are recorded in [the structural topology ledger](../structural/MILESTONE_6A_STRUCTURAL_TOPOLOGY.md). Both archived apartment sizing gates remain blocked.
+
+## Production deck continuation
+
+The reviewed full-level rectangular branch transfers gravity to connected frame edges. Archived apartments still require reviewed deck surfaces, stair supports and irregular slab transfer. [Current integration evidence](../structural/PRODUCTION_DECK_INTEGRATION_VERIFICATION.md).
+
+The automatic deck proposals quantify mesh coverage and unresolved interfaces in both exact archives. Verified bearing area is still zero in this replay. The sizing gate remains active. [Milestone acceptance](../structural/MILESTONE_6A_3_4_ACCEPTANCE.md)

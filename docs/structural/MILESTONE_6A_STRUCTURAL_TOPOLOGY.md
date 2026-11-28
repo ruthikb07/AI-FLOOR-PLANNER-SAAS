@@ -19,3 +19,15 @@ Use the pinned Python worker environment. Run the following from the repository 
 ## Next engineering dependency
 
 Resolve which approved architectural surface is carried at each structural level, including setbacks at the next storey, terraces and stair landing geometry. The archived models place beam tops one storey height above each floor datum. A storey's plan extruded to that elevation is currently a candidate coverage assumption. Compare this against the approved deck at every transition. Establish connected beam ends, continuity, edge bearing widths, column and reviewed wall supports, and classify remaining unsupported regions. Only then select a load transfer method and replace room-based slab assembly. Coupled plate/frame force and moment benchmarks, stair transfer, final reactions, drift, foundation and reinforcement acceptance remain open.
+
+## Production deck continuation
+
+The production evaluator now accepts reviewed full-level rectangles before assembling loads. See [production verification](PRODUCTION_DECK_INTEGRATION_VERIFICATION.md) and [level ownership](DECK_LEVEL_AND_STAIR_OWNERSHIP.md). The original diagnostic replay remains preserved.
+
+## Plate and frame mesh handoff
+
+A saved evaluation can now check a proposed quadrilateral mesh against a registered deck region, including openings and the actual beam nodes. The [coupling verification record](COUPLED_SLAB_FRAME_VERIFICATION.md) documents the endpoint, numerical tolerances, tested cases and remaining engineering gates.
+
+## Milestone 6A.3–6A.4 continuation
+
+The [acceptance record](MILESTONE_6A_3_4_ACCEPTANCE.md) tracks the automatic geometry and alignment previews, independent synthetic numerical evidence and actual apartment closure gates.

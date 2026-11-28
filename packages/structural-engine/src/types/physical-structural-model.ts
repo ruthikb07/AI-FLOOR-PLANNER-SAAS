@@ -121,6 +121,7 @@ export interface PhysicalBeam {
 }
 
 export interface PhysicalSlab {
+  readonly deckReview?: import('../assembly/reviewed-decks.js').RectangularDeckReview;
   readonly kind: 'PHYSICAL_SLAB';
   readonly physicalMemberId: string;
   readonly slabMark: string;

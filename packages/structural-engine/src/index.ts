@@ -9,6 +9,7 @@ export * from './solver/awatif-structural-solver.js';
 export * from './solver/pynite-structural-solver.js';
 export * from './dynamics/modal-and-seismic.js';
 export * from './assembly/canonical-frame-assembler.js';
+export * from './assembly/reviewed-decks.js';
 export * from './assembly/structural-project-adapter.js';
 export * from './loads/indian-load-assembler.js';
 export * from './codes/indian-code-rules.js';
@@ -23,3 +24,5 @@ export type {
   StructuralWorkerRequest,
   StructuralWorkerResponse,
 } from './worker/structural-solver.worker.js';
+
+export type { AutomaticDeckMeshRegion, PhysicalDeckMeshProposal, PhysicalDeckMeshReceipt } from './types/physical-deck-mesh.js';

@@ -56,7 +56,7 @@ def edge_bearings(cell, bearings):
     return contacts
 
 
-def coordinate_deck(floor, beams):
+def coordinate_deck(floor, beams, *, supporting_floor=None, registered_surface=False):
     outline = polygon(floor["boundary"])
     sources = [(f"void-{i}", v) for i, v in enumerate(floor.get("voidBoundaries") or [])]
     sources.extend((room["id"], room.get("boundary")) for room in floor.get("rooms", [])
@@ -64,14 +64,42 @@ def coordinate_deck(floor, beams):
     sources.extend((flight["id"], flight.get("boundary")) for flight in floor.get("stairs", []))
     holes = [(key, polygon(boundary)) for key, boundary in sources]
     void = unary_union([shape for _, shape in holes]).intersection(outline)
+    stair_parts = []
+    retained = []
+    if registered_surface:
+        for stair in floor.get("canonicalStaircases") or []:
+            envelope = polygon(stair["polygon"])
+            floor_landing = polygon(stair["floorLanding"]) if stair.get("floorLanding") else None
+            other_voids = [polygon(boundary) for boundary in floor.get("voidBoundaries") or []]
+            other_voids.extend(polygon(room["boundary"]) for room in floor.get("rooms", [])
+                               if room["type"] in OPEN_SPACE_TYPES - {"staircase"})
+            if floor_landing is not None:
+                if not envelope.covers(floor_landing) or not outline.covers(floor_landing):
+                    raise ValueError("Floor landing outside staircase or floor outline")
+                if unary_union(other_voids).intersection(floor_landing).area > AREA_TOL_MM2:
+                    raise ValueError("Landing conflicts with an independent floor void")
+                retained.append(floor_landing)
+            rise = floor["floorHeight"]
+            counts = stair.get("flightRiserCounts")
+            mid = (floor["elevationMm"] + rise * counts[0] / sum(counts)
+                   if counts and len(counts) == 2 and min(counts) > 0 and sum(counts) == stair["riserCount"] else None)
+            stair_parts.append({"id": stair["id"], "baseMm": floor["elevationMm"], "midMm": mid,
+                                "topMm": floor["elevationMm"] + rise,
+                                "componentsMm": {k: rings(polygon(stair[k])) for k in
+                                                 ("floorLanding", "midLanding", "flight1", "flight2") if stair.get(k)},
+                                "supportStatus": "FLIGHT_AND_LANDING_BEARINGS_UNVERIFIED"})
+            void = void.union(envelope.intersection(outline))
+        void = void.difference(unary_union(retained))
     deck = outline.difference(void)
-    elevation = float(floor["elevationMm"]) + float(floor["floorHeight"])
+    supporting_floor = supporting_floor or floor
+    elevation = (float(floor["elevationMm"]) if registered_surface else
+                 float(supporting_floor["elevationMm"]) + float(supporting_floor["floorHeight"]))
     if not math.isfinite(elevation):
         raise ValueError("Invalid storey deck elevation")
     bearings = []
     cuts = [deck.boundary]
     for beam in beams:
-        if beam["floorId"] != floor["id"] or beam["topElevationMm"] != elevation:
+        if beam["floorId"] != supporting_floor["id"] or beam["topElevationMm"] != elevation:
             continue
         axis = LineString([xy(beam["startPointMm"]), xy(beam["endPointMm"])])
         width = float(beam["widthMm"])
@@ -92,7 +120,8 @@ def coordinate_deck(floor, beams):
     overlap = abs(sum(cell.area for cell in cells) - union.area)
     if max(gap, overlap, abs(outline.area - void.area - union.area)) > AREA_TOL_MM2:
         raise ValueError("Deck coverage does not reconcile")
-    return {"floorId": floor["id"], "elevationMm": elevation,
+    return {"floorId": floor["id"], "supportingFloorId": supporting_floor["id"], "elevationMm": elevation,
+            "retainedLandingAreaMm2": unary_union(retained).area, "stairComponents": stair_parts,
             "bearingLines": [{"memberId": beam["physicalMemberId"], "axisMm": list(axis.coords),
                               "faceRingsMm": rings(face), "analyticalElementIds": beam["analyticalElementIds"]}
                              for beam, axis, face in bearings], "footprintAreaMm2": outline.area, "openingAreaMm2": void.area,

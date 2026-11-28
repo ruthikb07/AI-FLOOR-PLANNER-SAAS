@@ -1,3 +1,5 @@
+import { RegisteredDeckView } from './RegisteredDeckView';
+import { FramingAlignmentPreview } from './FramingAlignmentPreview';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
 import {
@@ -15,6 +17,7 @@ import {
   type StructuralRegenerationSummary,
   type OptimizationObjectiveMode,
   type ReviewedStructuralInputs,
+  isRectangularDeckReview,
   type StructuralOptimizationSummary,
   type StructuralSolverBackend,
 } from '@ai-floor-planner/structural-engine';
@@ -220,6 +223,10 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     const resFloor = building.floors.find((f) => f.floorUse === 'RESIDENTIAL');
     return resFloor?.id || building.floors[0]?.id || '';
   });
+  const [deckReviews, setDeckReviews] = useState<ReviewedStructuralInputs['rectangularDeckReviews']>();
+  const [deckImportError, setDeckImportError] = useState('');
+  const [showRegisteredDeck, setShowRegisteredDeck] = useState(false);
+  const [inspectedSlab, setInspectedSlab] = useState('');
   const [selectedPhysicalMemberId, setSelectedPhysicalMemberId] = useState<string | null>(null);
 
   // Awatif C++/WASM Live Evaluation State
@@ -296,6 +303,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
     () => ({
       concreteGrade,
       steelGrade,
+      rectangularDeckReviews: deckReviews,
       ductileDetailingIS13920: seismicZone !== 'II',
       floorFinishKnM2: 1.2,
       masonryUnitWeightKnM3: 19.0,
@@ -332,6 +340,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
       concreteGrade,
       steelGrade,
       seismicZone,
+      deckReviews,
       windEnabled,
       hasGeotechnicalInputs,
       appliedSbc,
@@ -942,8 +951,9 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
             {system.physicalModel.slabs
               .filter((sl) => sl.floorId === floorId)
               .map((sl) => (
-                <g key={sl.physicalMemberId}>
-                  <rect
+                <g key={sl.physicalMemberId} onClick={() => setInspectedSlab(sl.physicalMemberId)}>
+                  {sl.exchangeBoundary ? <polygon points={sl.exchangeBoundary.map(p => p.x + ',' + p.y).join(' ')}
+                    fill={sl.deckReview ? '#195b68' : '#27374b'} stroke="#8196a8" strokeWidth={35} /> : <rect
                     x={sl.boundsMm.minX}
                     y={sl.boundsMm.minY}
                     width={sl.boundsMm.maxX - sl.boundsMm.minX}
@@ -952,7 +962,7 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
                     stroke="#334155"
                     strokeWidth={35}
                     strokeDasharray="180 120"
-                  />
+                  />}
                 </g>
               ))}
 
@@ -2094,6 +2104,47 @@ export const StructuralAnalysisPanel: React.FC<StructuralAnalysisPanelProps> = (
               )}
             </div>
             {renderStudioPlanView()}
+            <button type="button" aria-expanded={showRegisteredDeck} onClick={() => setShowRegisteredDeck(!showRegisteredDeck)}>
+              {showRegisteredDeck ? 'Hide registered floor geometry' : 'Inspect registered floor geometry'}
+            </button>
+            {showRegisteredDeck && evaluationId && <RegisteredDeckView key={evaluationId} building={building} evaluationId={evaluationId} floorId={studioFloorId} />}
+            {activeSnap && evaluationId && studioViewKind !== 'FOUNDATION_PLAN' &&
+              <FramingAlignmentPreview key={JSON.stringify([evaluationId, studioFloorId])} building={building}
+                evaluationId={evaluationId} floorId={studioFloorId} beams={activeSnap.system.physicalModel.beams} />}
+            <label className="block text-sm">Inspect slab
+              <select className="ml-2 bg-slate-900" value={inspectedSlab} onChange={e => setInspectedSlab(e.target.value)}>
+                <option value="">Select a physical slab</option>
+                {activeSnap?.system.physicalModel.slabs.filter(s => s.floorId === studioFloorId).map(s =>
+                  <option key={s.physicalMemberId} value={s.physicalMemberId}>{s.slabMark} · {s.roomName}</option>)}
+              </select>
+            </label>
+            {(() => {
+              const slab = activeSnap?.system.physicalModel.slabs.find(s => s.floorId === studioFloorId && s.physicalMemberId === inspectedSlab);
+              if (!slab) return null;
+              const load = activeSnap?.loadTakeoff.loadSourceAudit?.find(r => r.sourceId === slab.physicalMemberId);
+              const forces = load?.gravityTransfer;
+              return <div className="text-sm space-y-1" data-testid="physical-deck-inspector">
+                <p>{slab.deckReview?.reference ?? 'Legacy slab geometry'} · {slab.areaM2} m²</p>
+                <p>Top {slab.topElevationMm} mm · Soffit {slab.topElevationMm - slab.thicknessMm} mm</p>
+                <p>{load?.transferMethod ?? 'Transfer record unavailable'} · {load?.receivingElementIds.join(', ') || 'No receiving elements'}</p>
+                {forces && <p>{(['DL', 'SDL', 'LL'] as const).map(k => k + ' ' + (forces.assignedForceByCaseKn[k] ?? 0).toFixed(2) +
+                  ' kN applied / ' + ((forces.forceByCaseKn[k] ?? 0) - (forces.assignedForceByCaseKn[k] ?? 0)).toFixed(2) + ' kN unassigned').join(' · ')}</p>}
+                {forces?.blocker && <p>{forces.blocker}</p>}
+              </div>;
+            })()}
+            <label className="block text-sm">Import reviewed rectangular decks (JSON)
+              <input type="file" accept=".json,application/json" className="block" onChange={async e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const reviews: unknown = JSON.parse(await file.text());
+                  if (!Array.isArray(reviews) || !reviews.every(isRectangularDeckReview)) throw new Error('Invalid deck review file.');
+                  setDeckReviews(reviews);
+                  setDeckImportError('');
+                } catch (error) { setDeckImportError(String(error)); }
+              }} />
+            </label>
+            {deckImportError && <p role="alert">{deckImportError}</p>}
             <div className="text-[11px] font-mono text-slate-400 flex flex-wrap gap-4">
               <span>• Green: PASSED</span>
               <span>• Red: DESIGN_FAILED</span>

@@ -1,0 +1,296 @@
+{
+  "original": {
+    "architectureSha256": "8444eca9316dce57584ad0dfc9ed86a76b022889ae294586a371bdb1e60e89cd",
+    "structuralRevision": 1,
+    "unresolvedSlabPaths": 647,
+    "slabUnassignedKn": {
+      "DL": 12350.186250000006,
+      "SDL": 3941.218800000005,
+      "LL": 7271.098000000004
+    },
+    "floors": [
+      {
+        "floorId": "floor_stilt_00",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 101,
+        "unresolved": 101,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 1856.2387500000002,
+            "applied": 0,
+            "unassigned": 1856.2387500000002
+          },
+          "SDL": {
+            "expected": 593.9964000000001,
+            "applied": 0,
+            "unassigned": 593.9964000000001
+          },
+          "LL": {
+            "expected": 1338.48,
+            "applied": 0,
+            "unassigned": 1338.48
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_typical_01",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 110,
+        "unresolved": 110,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2143.33875,
+            "applied": 0,
+            "unassigned": 2143.33875
+          },
+          "SDL": {
+            "expected": 682.9163999999997,
+            "applied": 0,
+            "unassigned": 682.9163999999997
+          },
+          "LL": {
+            "expected": 1292.2639999999994,
+            "applied": 0,
+            "unassigned": 1292.2639999999994
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_level_02",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 110,
+        "unresolved": 110,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2141.8275000000003,
+            "applied": 0,
+            "unassigned": 2141.8275000000003
+          },
+          "SDL": {
+            "expected": 682.9163999999997,
+            "applied": 0,
+            "unassigned": 682.9163999999997
+          },
+          "LL": {
+            "expected": 1289.3219999999997,
+            "applied": 0,
+            "unassigned": 1289.3219999999997
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_level_03",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 110,
+        "unresolved": 110,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2143.33875,
+            "applied": 0,
+            "unassigned": 2143.33875
+          },
+          "SDL": {
+            "expected": 682.9163999999997,
+            "applied": 0,
+            "unassigned": 682.9163999999997
+          },
+          "LL": {
+            "expected": 1292.2639999999994,
+            "applied": 0,
+            "unassigned": 1292.2639999999994
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_level_04",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 110,
+        "unresolved": 110,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2141.8275000000003,
+            "applied": 0,
+            "unassigned": 2141.8275000000003
+          },
+          "SDL": {
+            "expected": 682.9163999999997,
+            "applied": 0,
+            "unassigned": 682.9163999999997
+          },
+          "LL": {
+            "expected": 1289.3219999999997,
+            "applied": 0,
+            "unassigned": 1289.3219999999997
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_terrace_05",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 106,
+        "unresolved": 106,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 1923.6150000000002,
+            "applied": 0,
+            "unassigned": 1923.6150000000002
+          },
+          "SDL": {
+            "expected": 615.5568000000001,
+            "applied": 0,
+            "unassigned": 615.5568000000001
+          },
+          "LL": {
+            "expected": 769.446,
+            "applied": 0,
+            "unassigned": 769.446
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      }
+    ]
+  },
+  "second": {
+    "architectureSha256": "a5bbe93eb95dec6372be76a5fbbc0345bd24ccc3ee75f44d3f5886fcbe856e8a",
+    "structuralRevision": 1,
+    "unresolvedSlabPaths": 335,
+    "slabUnassignedKn": {
+      "DL": 7490.787499999996,
+      "SDL": 2369.715600000001,
+      "LL": 4364.259499999998
+    },
+    "floors": [
+      {
+        "floorId": "floor_stilt_00",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 78,
+        "unresolved": 78,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 1575.0937499999998,
+            "applied": 0,
+            "unassigned": 1575.0937499999998
+          },
+          "SDL": {
+            "expected": 504.0300000000001,
+            "applied": 0,
+            "unassigned": 504.0300000000001
+          },
+          "LL": {
+            "expected": 1141.4675000000007,
+            "applied": 0,
+            "unassigned": 1141.4675000000007
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_typical_01",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 85,
+        "unresolved": 85,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2106.3212499999995,
+            "applied": 0,
+            "unassigned": 2106.3212499999995
+          },
+          "SDL": {
+            "expected": 659.8428000000001,
+            "applied": 0,
+            "unassigned": 659.8428000000001
+          },
+          "LL": {
+            "expected": 1272.0960000000002,
+            "applied": 0,
+            "unassigned": 1272.0960000000002
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_level_02",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 85,
+        "unresolved": 85,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 2103.1224999999995,
+            "applied": 0,
+            "unassigned": 2103.1224999999995
+          },
+          "SDL": {
+            "expected": 659.8428000000001,
+            "applied": 0,
+            "unassigned": 659.8428000000001
+          },
+          "LL": {
+            "expected": 1268.1960000000001,
+            "applied": 0,
+            "unassigned": 1268.1960000000001
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      },
+      {
+        "floorId": "floor_terrace_03",
+        "reviewedDeckAreaM2": null,
+        "geometryBasis": "LEGACY_NO_RECTANGULAR_DECK_REVIEW",
+        "slabSourceCount": 87,
+        "unresolved": 87,
+        "slabLoadsKn": {
+          "DL": {
+            "expected": 1706.25,
+            "applied": 0,
+            "unassigned": 1706.25
+          },
+          "SDL": {
+            "expected": 546.0000000000001,
+            "applied": 0,
+            "unassigned": 546.0000000000001
+          },
+          "LL": {
+            "expected": 682.5,
+            "applied": 0,
+            "unassigned": 682.5
+          }
+        },
+        "transferMethods": [
+          "UNRESOLVED_SLAB_SUPPORT"
+        ]
+      }
+    ]
+  }
+}
