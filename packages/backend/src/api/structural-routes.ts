@@ -344,6 +344,30 @@ export async function handleStructuralRoute(
       return true;
     }
 
+    if (body.selection !== undefined) {
+      const selection = body.selection;
+      if (!isRecord(selection) || !['CONVENTIONAL_FRAME','COUPLED_GRAVITY'].includes(String(selection.analysisMethod)) ||
+          typeof selection.evaluationId !== 'string' || typeof selection.resultId !== 'string' || selection.resultChecksum !== selection.resultId ||
+          ['evaluationId','resultId','architectureSha256'].some(key => body[key] !== undefined && body[key] !== selection[key])) {
+        sendJson(response,409,{error:{code:'INVALID_RESULT_SELECTION',message:'Use the exact selected evaluation reference.'}});
+        return true;
+      }
+      if (selection.analysisMethod === 'CONVENTIONAL_FRAME') {
+        const saved = await readEvaluation(selection.evaluationId,'assistant');
+        if (!saved || selection.resultId !== selection.evaluationId || body.resultId !== undefined ||
+            selection.projectId !== saved.snapshot.system.projectId || selection.structuralRevision !== saved.snapshot.system.structuralRevision ||
+            selection.architectureSha256 !== saved.snapshot.system.sourceArchitecturalSha256 ||
+            (saved.solverBackends !== undefined && selection.solverIdentity !== saved.solverBackends) ||
+            (action === 'optimize' && (!isRecord(body.building) || canonicalBuildingHash(body.building as unknown as Building) !== selection.architectureSha256))) {
+          sendJson(response,409,{error:{code:'INVALID_RESULT_SELECTION',message:'Conventional evaluation reference does not match the saved result.'}});
+          return true;
+        }
+        response.setHeader('X-Structural-Evaluation-Id',selection.evaluationId);
+        Object.assign(body,{evaluationId:selection.evaluationId});
+      } else {
+        Object.assign(body,{evaluationId:selection.evaluationId,resultId:selection.resultId,architectureSha256:selection.architectureSha256});
+      }
+    }
     if (body.resultId !== undefined) {
       if (typeof body.resultId !== 'string' || typeof body.evaluationId !== 'string') {
         sendJson(response,400,{error:{code:'INVALID_COUPLED_REFERENCE',message:'Supply parent and result identifiers.'}});
@@ -354,9 +378,26 @@ export async function handleStructuralRoute(
       if (!parent || !isRecord(receipt) || receipt.evaluationId !== body.evaluationId ||
           receipt.architectureSha256 !== body.architectureSha256 ||
           receipt.architectureSha256 !== parent.snapshot.system.sourceArchitecturalSha256 ||
-          receipt.structuralRevision !== parent.snapshot.system.structuralRevision) {
+          receipt.structuralRevision !== parent.snapshot.system.structuralRevision ||
+          (isRecord(body.selection) && (body.selection.projectId !== parent.snapshot.system.projectId ||
+            body.selection.structuralRevision !== receipt.structuralRevision || (receipt.solverIdentity !== undefined && body.selection.solverIdentity !== receipt.solverIdentity)))) {
         sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
-      } else if (action === 'coupled-gravity' || action === 'evaluation' || action === 'design' || (action === 'drawings' && format === 'json')) {
+      } else if (action === 'case') {
+        const envelope = receipt.envelope;
+        const cases = isRecord(envelope) && (body.kind === 'loadCase' ? envelope.loadCaseResults : envelope.combinationResults);
+        if (!isRecord(cases) || typeof body.caseId !== 'string' || !Object.hasOwn(cases,body.caseId)) {
+          sendJson(response,404,{error:{code:'STRUCTURAL_CASE_NOT_FOUND',message:'Case unavailable in this coupled evaluation.'}});
+        } else sendJson(response,200,{evaluationId:body.evaluationId,resultId:body.resultId,result:cases[body.caseId]});
+      } else if (action === 'design') {
+        const frame = receipt.frameDesign;
+        const foundation = receipt.foundation;
+        const memberId = body.memberId;
+        const groups = [isRecord(frame) && frame.beams,isRecord(frame) && frame.columns,isRecord(foundation) && foundation.footings];
+        const record = groups.filter(Array.isArray).flat().find(item => isRecord(item) &&
+          typeof memberId === 'string' && (item.physicalMemberId === memberId || item.footingId === memberId));
+        if (!record) sendJson(response,404,{error:{code:'STRUCTURAL_MEMBER_NOT_FOUND',message:'Member design unavailable in this coupled evaluation.'}});
+        else sendJson(response,200,{evaluationId:body.evaluationId,resultId:body.resultId,record});
+      } else if (action === 'coupled-gravity' || action === 'evaluation' || (action === 'drawings' && format === 'json')) {
         if (action === 'drawings') response.setHeader('Content-Disposition',`attachment; filename="coupled-gravity-${body.resultId}.json"`);
         sendJson(response,200,{...receipt,resultId:body.resultId});
       } else {
@@ -432,7 +473,8 @@ export async function handleStructuralRoute(
           return true;
         }
         const blocker=coupledDesignBlocker(saved,solved.envelope);
-        const receipt = {evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
+        const receipt = {evaluationId:body.evaluationId,projectId:system.projectId,
+          solverIdentity:results[0]!.diagnostics.executionBackend,architectureSha256:system.sourceArchitecturalSha256,
           structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
           slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope,
           stairLoadTransfers:loadTakeoff.loadSourceAudit?.filter(source=>source.category==='STAIRCASE_FLIGHT'),
@@ -807,7 +849,7 @@ export async function handleStructuralRoute(
 
       if (format === 'json') {
         const jsonReport = exportStructuralEngineeringJsonReport(snapshot, name, inputs, evaluation.regeneration);
-        const buf = Buffer.from(jsonReport, 'utf-8');
+        const buf = Buffer.from(body.selection ? JSON.stringify({...JSON.parse(jsonReport),selection:body.selection}) : jsonReport, 'utf-8');
         response.writeHead(200, {
           'Content-Type': 'application/json; charset=utf-8',
           'Content-Length': String(buf.length),

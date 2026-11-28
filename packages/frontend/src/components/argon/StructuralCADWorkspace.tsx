@@ -1,3 +1,5 @@
+import type { StructuralEvaluationSelection } from '@ai-floor-planner/structural-engine';
+import { canonicalBuildingHash } from '@ai-floor-planner/core';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import type { EditorContextValue } from '../../stores/editor-store';
 import { apartmentFloorOutline, architecturalSlabCutouts, containsPolygon } from '@ai-floor-planner/geometry-engine';
@@ -43,8 +45,18 @@ function gridLabelX(i: number): string {
 }
 
 export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = ({ editor }) => {
-  const { building } = editor;
-  const [viewMode, setViewMode] = useState<StructuralCADViewMode>('FOUNDATION_COLUMNS');
+  const digest = useMemo(()=>canonicalBuildingHash(editor.building),[editor.building]);
+  return <RevisionCADWorkspace key={digest} building={editor.building} digest={digest}/>;
+};
+
+const RevisionCADWorkspace: React.FC<{building:EditorContextValue['building'];digest:string}> = ({building,digest}) => {
+  const [savedCoupled] = useState(()=>{
+    try { return Boolean(localStorage.getItem(JSON.stringify(['rh-selected-gravity',building.projectId,digest]))); }
+    catch { return false; }
+  });
+  const [selection,setSelection] = useState<StructuralEvaluationSelection>();
+  const [coupledActive,setCoupledActive] = useState(savedCoupled);
+  const [viewMode, setViewMode] = useState<StructuralCADViewMode>(savedCoupled ? 'STRUCTURAL_ANALYSIS' : 'FOUNDATION_COLUMNS');
   const [floorSelection, setFloorSelection] = useState<{ buildingId: string; floorId: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [busy, setBusy] = useState<boolean>(false);
@@ -70,7 +82,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
     setBusy(false);
     setStatusMessage('');
     return () => next.abort();
-  }, [building]);
+  }, [building,coupledActive]);
   useEffect(() => () => {
     if (previewModal) URL.revokeObjectURL(previewModal.url);
   }, [previewModal]);
@@ -140,6 +152,18 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
       format === 'structural-drawings-pdf' ? 'Preparing structural drawings…' : 'Generating structural report…',
     );
     try {
+      if (selection && format === 'structural-report-json') {
+        const response = await fetch('/api/v1/structural/drawings',{method:'POST',signal,
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({selection,format:'json'})});
+        if (!response.ok) throw new Error('Selected engineering report unavailable.');
+        const blob = await response.blob();
+        if (signal.aborted) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href=url; link.download=`structural-${selection.resultId}.json`; link.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        return;
+      }
       const artifact = await requestVerifiedExport(
         building,
         format,
@@ -195,6 +219,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
               key={mode}
               type="button"
               data-testid={testId}
+              disabled={coupledActive && mode !== 'STRUCTURAL_ANALYSIS'}
               onClick={() => setViewMode(mode)}
               className={`rounded px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
                 viewMode === mode
@@ -212,7 +237,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || coupledActive}
             onClick={() => void exportStructuralArtifact('structural-drawings-pdf', 'preview')}
             className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-[#F8FAFC] hover:bg-slate-700 disabled:opacity-50 cursor-pointer"
           >
@@ -221,7 +246,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || coupledActive}
             onClick={() => void exportStructuralArtifact('structural-drawings-pdf', 'download')}
             className="flex items-center gap-1.5 rounded-lg border border-indigo-400/60 bg-indigo-500/20 px-3 py-1.5 text-xs font-semibold text-indigo-100 hover:bg-indigo-500/30 disabled:opacity-50 cursor-pointer"
           >
@@ -230,7 +255,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || coupledActive}
             onClick={() => void exportStructuralArtifact('structural-report-pdf', 'download')}
             className="flex items-center gap-1.5 rounded-lg border border-amber-400/70 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/30 disabled:opacity-50 cursor-pointer"
           >
@@ -239,7 +264,7 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || (coupledActive && !selection)}
             onClick={() => void exportStructuralArtifact('structural-report-json', 'download')}
             className="flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50 cursor-pointer"
           >
@@ -252,6 +277,8 @@ export const StructuralCADWorkspace: React.FC<{ editor: EditorContextValue }> = 
       {viewMode === 'STRUCTURAL_ANALYSIS' ? (
         <div className="flex-1 min-h-0 overflow-hidden">
           <StructuralAnalysisPanel
+            onCoupledChange={setCoupledActive}
+            onSelectionChange={setSelection}
             building={building}
             reportBusy={busy}
             initialSelectedCoordinate={selectedCadHint}

@@ -352,6 +352,23 @@ export interface PlateSolveResultRecord {
   readonly centerShearsKnPerM: readonly [number, number];
 }
 
+export interface CoupledEvaluationSelection {
+  readonly projectId: string;
+  readonly architectureSha256: string;
+  readonly structuralRevision: number;
+  readonly evaluationId: string;
+  readonly resultId: string;
+  readonly analysisMethod: 'COUPLED_GRAVITY';
+  readonly solverIdentity: string;
+  readonly resultChecksum: string;
+  readonly capabilities: readonly ('evaluation' | 'case' | 'design' | 'json')[];
+}
+
+export type StructuralEvaluationSelection = CoupledEvaluationSelection | (Omit<CoupledEvaluationSelection,'analysisMethod'|'capabilities'> & {
+  readonly analysisMethod:'CONVENTIONAL_FRAME';
+  readonly capabilities:readonly string[];
+});
+
 export interface AnalyticalSolveEnvelope {
   readonly modelId: string;
   readonly method: 'LINEAR_STATIC_FRAME' | 'SHELL_FEM' | 'P_DELTA';

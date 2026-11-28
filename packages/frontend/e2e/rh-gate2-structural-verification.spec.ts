@@ -46,8 +46,29 @@ test('reviews the occupied floor and roof and reopens the coupled 45 kN syntheti
   await expect(live).toContainText('45.000',{timeout:30000});
   await expect(page.getByText(/Coupled frame check pending/)).toBeVisible();
   await expect(page.getByText(/Coupled foundation check pending/)).toBeVisible();
+  await page.getByText('Nodal displacements and member forces',{exact:true}).click();
+  await page.getByLabel('Force component').selectOption('shearVzKn');
+  await expect(page.getByRole('img',{name:'Local shear Vz (kN)'})).toBeVisible();
+  await expect(page.getByLabel('Displacement node')).toBeVisible();
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download this coupled gravity result'}).click();
+  const download = await downloadEvent;
+  const report = JSON.parse(await readFile((await download.path())!,'utf8'));
+  const reference = {evaluationId:report.evaluationId,resultId:report.resultId,architectureSha256:report.architectureSha256};
+  const readback = await request.post(base+'/api/v1/structural/evaluation',{data:reference});
+  expect(readback.ok()).toBe(true);
+  expect(await readback.json()).toEqual(report);
+  await expect(page.getByRole('button',{name:'Preview Drawings'})).toBeDisabled();
+  await expect(page.getByTestId('structural-analysis-panel')).toHaveCount(0);
+  await page.getByRole('button',{name:'Switch to conventional evaluation'}).click();
   await page.getByRole('button',{name:'Reopen saved gravity result'}).click();
   await expect(live).toContainText('45.000');
+  await page.getByTestId('nav-library').click();
+  await page.getByTestId('nav-structural_cad').click();
+  await expect(live).toContainText('45.000');
+  await expect(page.getByTestId('coupled-analysis-panel')).toContainText(report.resultId);
+  await expect(page.getByRole('button',{name:'Preview Drawings'})).toBeDisabled();
+
 });
 
 test.use({

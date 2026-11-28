@@ -1,4 +1,4 @@
-import { CoupledGravityResult } from './CoupledGravityResult';
+import { CoupledGravityResult, type GravityReceipt } from './CoupledGravityResult';
 import { canonicalBuildingHash } from '@ai-floor-planner/core';
 import { useEffect, useState } from 'react';
 import type { Building } from '@ai-floor-planner/core';
@@ -20,7 +20,7 @@ function path(rings: readonly Ring[]) {
   return rings.map(ring => 'M' + ring.map(p => p.join(',')).join(' L') + ' Z').join(' ');
 }
 
-export function RegisteredDeckView({ building, evaluationId, floorId }: { building: Building; evaluationId: string; floorId: string }) {
+export function RegisteredDeckView({ building, evaluationId, floorId, onSelect }: { building: Building; evaluationId: string; floorId: string; onSelect:(receipt:GravityReceipt)=>void }) {
   const [decks, setDecks] = useState<readonly StoreyDeck[]>();
   const [error, setError] = useState('');
   const [showMesh, setShowMesh] = useState(false);
@@ -41,7 +41,7 @@ export function RegisteredDeckView({ building, evaluationId, floorId }: { buildi
   if (!decks) return <p>Loading registered floor geometry…</p>;
   const deck = decks.find(d => d.supportingFloorId === floorId);
   if (!deck || deck.status === 'SURFACE_OWNERSHIP_REVIEW_REQUIRED') return <p>This structural elevation requires a reviewed surface owner.</p>;
-  if (deck.status === 'ANALYZED_REVIEWED_DECK') return <CoupledGravityResult key={evaluationId} evaluationId={evaluationId} digest={canonicalBuildingHash(building)} />;
+  if (deck.status === 'ANALYZED_REVIEWED_DECK') return <CoupledGravityResult key={evaluationId} evaluationId={evaluationId} digest={canonicalBuildingHash(building)} onSelect={onSelect} />;
   if (deck.status === 'DECK_GEOMETRY_REVIEW_REQUIRED') return <p role="alert">{deck.reason}</p>;
   const regions = deck.regions ?? [];
   const points = regions.flatMap(r => r.ringsMm.flatMap(ring => [...ring]));

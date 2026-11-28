@@ -234,11 +234,29 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
       }
     }
     const selected = {evaluationId:qualified.evaluationId,architectureSha256:digest,resultId:assessed.resultId};
-    for (const action of ['evaluation','design','drawings']) {
+    for (const action of ['evaluation','drawings']) {
       const selectedResponse = await post(action,{...selected,format:'json'});
       expect(selectedResponse.status).toBe(200);
       expect(await selectedResponse.json()).toEqual(assessed);
     }
+    const selection = {...selected,projectId:qualified.snapshot.system.projectId,structuralRevision:qualified.snapshot.system.structuralRevision,
+      analysisMethod:'COUPLED_GRAVITY',solverIdentity:live.diagnostics.executionBackend,resultChecksum:selected.resultId};
+    expect(await (await post('evaluation',{selection})).json()).toEqual(assessed);
+    for (const mismatch of [{projectId:'other'},{resultChecksum:'bad'},{structuralRevision:-1},{resultId:undefined}]) {
+      expect((await post('evaluation',{evaluationId:selected.evaluationId,selection:{...selection,...mismatch}})).status).toBe(409);
+    }
+    const conventionalCases = qualified.snapshot.solveEnvelope;
+    const conventional = {...selection,analysisMethod:'CONVENTIONAL_FRAME',resultId:selected.evaluationId,resultChecksum:selected.evaluationId,
+      solverIdentity:[...new Set([...Object.values(conventionalCases.loadCaseResults),...Object.values(conventionalCases.combinationResults)]
+        .map(result=>result.diagnostics.executionBackend))].sort().join(', ')};
+    expect((await post('evaluation',{selection:conventional})).status).toBe(200);
+    expect((await post('evaluation',{selection:{...conventional,resultId:selected.resultId,resultChecksum:selected.resultId}})).status).toBe(409);
+    const column = assessed.frameDesign.columns[0]!;
+    expect(await (await post('design',{...selected,memberId:column.physicalMemberId})).json()).toEqual({
+      evaluationId:selected.evaluationId,resultId:selected.resultId,record:column});
+    expect((await post('design',{...selected,memberId:'absent'})).status).toBe(404);
+    expect(await (await post('case',{...selected,kind:'loadCase',caseId:'LL'})).json()).toEqual({
+      evaluationId:selected.evaluationId,resultId:selected.resultId,result:live});
     for (const action of ['optimize','drawings']) {
       expect((await post(action,{...selected,format:'dxf'})).status).toBe(422);
     }

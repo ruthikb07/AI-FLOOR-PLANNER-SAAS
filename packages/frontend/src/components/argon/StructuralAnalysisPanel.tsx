@@ -1,3 +1,5 @@
+import type { StructuralEvaluationSelection } from '@ai-floor-planner/structural-engine';
+import { gravitySelection, SelectedGravityResult, type GravityReceipt } from './CoupledGravityResult';
 import { RegisteredDeckView } from './RegisteredDeckView';
 import { FramingAlignmentPreview } from './FramingAlignmentPreview';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -41,6 +43,8 @@ import {
 } from 'lucide-react';
 
 interface StructuralAnalysisPanelProps {
+  readonly onSelectionChange?: (selection:StructuralEvaluationSelection | undefined)=>void;
+  readonly onCoupledChange?: (active:boolean)=>void;
   readonly building: Building;
   readonly onDownloadReportPdf?: () => void;
   readonly reportBusy?: boolean;
@@ -202,27 +206,40 @@ export function StructuralAnalysisPanel(props: StructuralAnalysisPanelProps) {
 
 const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { engineeringDigest: string }> = ({
   engineeringDigest,
+  onCoupledChange,
+  onSelectionChange,
   building,
   onDownloadReportPdf,
   reportBusy = false,
   initialSelectedCoordinate = null,
 }) => {
 
-  const [seismicZone, setSeismicZone] = useState<SeismicZoneCode>('III');
-  const [concreteGrade, setConcreteGrade] = useState<ConcreteGradeCode>('M25');
-  const [steelGrade, setSteelGrade] = useState<SteelGradeCode>('Fe500');
-  const [sbcRaw, setSbcRaw] = useState('');
-  const [foundationDepthM, setFoundationDepthM] = useState('');
-  const [soilUnitWeight, setSoilUnitWeight] = useState('');
-  const [settlementLimit, setSettlementLimit] = useState('');
-  const [subgradeModulusRaw, setSubgradeModulusRaw] = useState('');
-  const [bearingBasis, setBearingBasis] = useState<'' | 'NET' | 'GROSS'>('');
-  const [groundwaterDepth, setGroundwaterDepth] = useState('');
-  const [geotechReference, setGeotechReference] = useState('');
-  const [foundationPref, setFoundationPref] = useState<FoundationSystemPreference>('AUTO');
-  const [preferredSolverBackend, setPreferredSolverBackend] = useState<StructuralSolverBackend>('AWATIF_CPP_WASM');
-  const [sectionCapacityBackend, setSectionCapacityBackend] = useState<SectionCapacityBackend>('RH_IS456_ANALYTICAL');
-  const [windEnabled, setWindEnabled] = useState<boolean>(true);
+  const storageKey = JSON.stringify(['rh-selected-gravity',building.projectId,engineeringDigest]);
+  const [restoredInputs] = useState(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const inputs = raw && JSON.parse(raw).inputs;
+      return typeof inputs === 'string' ? JSON.parse(inputs) as
+        [ReviewedStructuralInputs,FoundationSystemPreference,StructuralSolverBackend,SectionCapacityBackend] : undefined;
+    } catch { return undefined; }
+  });
+  const originalInputs = restoredInputs?.[0];
+  const originalSoil = originalInputs?.geotechnical;
+  const [seismicZone, setSeismicZone] = useState<SeismicZoneCode>(originalInputs?.seismic?.zone ?? 'III');
+  const [concreteGrade, setConcreteGrade] = useState<ConcreteGradeCode>(originalInputs?.concreteGrade ?? 'M25');
+  const [steelGrade, setSteelGrade] = useState<SteelGradeCode>(originalInputs?.steelGrade ?? 'Fe500');
+  const [sbcRaw, setSbcRaw] = useState(String(originalSoil?.safeBearingCapacityKPa ?? ''));
+  const [foundationDepthM, setFoundationDepthM] = useState(String(originalSoil?.foundationDepthBelowGroundM ?? ''));
+  const [soilUnitWeight, setSoilUnitWeight] = useState(String(originalSoil?.soilUnitWeightKnM3 ?? ''));
+  const [settlementLimit, setSettlementLimit] = useState(String(originalSoil?.allowableSettlementMm ?? ''));
+  const [subgradeModulusRaw, setSubgradeModulusRaw] = useState(String(originalSoil?.subgradeModulusKnM3 ?? ''));
+  const [bearingBasis, setBearingBasis] = useState<'' | 'NET' | 'GROSS'>(originalSoil?.bearingCapacityBasis ?? '');
+  const [groundwaterDepth, setGroundwaterDepth] = useState(String(originalSoil?.waterTableDepthBelowGroundM ?? ''));
+  const [geotechReference, setGeotechReference] = useState(String(originalSoil?.reportReference ?? ''));
+  const [foundationPref, setFoundationPref] = useState<FoundationSystemPreference>(restoredInputs?.[1] ?? 'AUTO');
+  const [preferredSolverBackend, setPreferredSolverBackend] = useState<StructuralSolverBackend>(restoredInputs?.[2] ?? 'AWATIF_CPP_WASM');
+  const [sectionCapacityBackend, setSectionCapacityBackend] = useState<SectionCapacityBackend>(restoredInputs?.[3] ?? 'RH_IS456_ANALYTICAL');
+  const [windEnabled, setWindEnabled] = useState<boolean>(originalInputs ? Boolean(originalInputs.wind) : true);
   const [activeSubTab, setActiveSubTab] = useState<ScheduleSubTab>('COLUMNS');
 
   // Gate 9 Studio View State
@@ -231,8 +248,8 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
     const resFloor = building.floors.find((f) => f.floorUse === 'RESIDENTIAL');
     return resFloor?.id || building.floors[0]?.id || '';
   });
-  const [deckReviews, setDeckReviews] = useState<ReviewedStructuralInputs['rectangularDeckReviews']>();
-  const [stairReviews, setStairReviews] = useState<ReviewedStructuralInputs['stairBearingReviews']>();
+  const [deckReviews, setDeckReviews] = useState<ReviewedStructuralInputs['rectangularDeckReviews']>(originalInputs?.rectangularDeckReviews);
+  const [stairReviews, setStairReviews] = useState<ReviewedStructuralInputs['stairBearingReviews']>(originalInputs?.stairBearingReviews);
   const [deckImportError, setDeckImportError] = useState('');
   const [showRegisteredDeck, setShowRegisteredDeck] = useState(false);
   const [inspectedSlab, setInspectedSlab] = useState('');
@@ -376,8 +393,48 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
     [building, reviewedInputs, foundationPref, preferredSolverBackend, sectionCapacityBackend],
   );
 
+  const inputSignature = JSON.stringify([reviewedInputs,foundationPref,preferredSolverBackend,sectionCapacityBackend]);
+  const [coupledReceipt,setCoupledReceipt] = useState<{inputs:string;result:GravityReceipt}>();
+  const [restoreError,setRestoreError] = useState('');
+  const [restoring,setRestoring] = useState(Boolean(restoredInputs));
+  const selectedGravity = coupledReceipt?.inputs === inputSignature ? coupledReceipt.result : undefined;
+  function selectGravity(result:GravityReceipt) {
+    const selection = gravitySelection(building.projectId,result);
+    try { localStorage.setItem(storageKey,JSON.stringify({selection,inputs:inputSignature})); } catch { /* Storage unavailable. */ }
+    setCoupledReceipt({inputs:inputSignature,result});
+  }
+  function switchToConventional() {
+    try { localStorage.removeItem(storageKey); } catch { /* Storage unavailable. */ }
+    setRestoreError(''); setCoupledReceipt(undefined);
+  }
+  useEffect(()=>{
+    const controller = new AbortController();
+    setRestoreError(''); setRestoring(false); setCoupledReceipt(undefined);
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.inputs !== inputSignature) {
+        setRestoreError('The saved coupled result uses different engineering inputs. Its results have been invalidated for this configuration.');
+        return;
+      }
+      setRestoring(true);
+      requestStructural<GravityReceipt>('evaluation',{selection:saved.selection},controller.signal)
+        .then(result=>{ if (!controller.signal.aborted) setCoupledReceipt({inputs:inputSignature,result}); })
+        .catch(error=>{ if (!controller.signal.aborted) setRestoreError(String(error)); })
+        .finally(()=>{ if (!controller.signal.aborted) setRestoring(false); });
+    } catch (error) { setRestoreError(String(error)); }
+    return ()=>controller.abort();
+  },[storageKey,inputSignature]);
+  useEffect(()=>{
+    onCoupledChange?.(Boolean(selectedGravity || restoring || restoreError));
+    return ()=>onCoupledChange?.(false);
+  },[selectedGravity,restoring,restoreError,onCoupledChange]);
+  const conventionalSuspended = Boolean(selectedGravity || restoring || restoreError);
   // Strict stale-result invalidation whenever geometry or reviewed inputs change
   useEffect(() => {
+    if (conventionalSuspended) return;
+    if (analysis?.request === analysisRequest && analysisRetry === 0) return;
     const abort = new AbortController();
     setFeaBusy(true);
     setFeaError('');
@@ -412,7 +469,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       window.clearTimeout(delay);
       abort.abort();
     };
-  }, [analysisRequest, analysisRetry]);
+  }, [analysisRequest, analysisRetry, conventionalSuspended]);
 
   const activeAnalysis = analysis?.request === analysisRequest ? analysis : null;
   const activeOptimization = optimization?.request === analysisRequest ? optimization : null;
@@ -422,6 +479,17 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
   const activeOverrides = optResult ?? regeneration?.overrides;
   const activeSnap = optResult?.after ?? activeAnalysis?.snapshot;
   const evaluationId = activeOptimization?.evaluationId ?? activeAnalysis?.evaluationId;
+  const selection = useMemo<StructuralEvaluationSelection | undefined>(()=>{
+    if (selectedGravity) return gravitySelection(building.projectId,selectedGravity);
+    if (!evaluationId || !activeSnap) return undefined;
+    const envelope = activeSnap.solveEnvelope;
+    const solverIdentity = [...new Set([...Object.values(envelope.loadCaseResults),...Object.values(envelope.combinationResults)]
+      .map(result=>result.diagnostics.executionBackend))].sort().join(', ') || 'UNAVAILABLE';
+    return {projectId:activeSnap.system.projectId,architectureSha256:engineeringDigest,structuralRevision:activeSnap.system.structuralRevision,
+      evaluationId,resultId:evaluationId,resultChecksum:evaluationId,analysisMethod:'CONVENTIONAL_FRAME',solverIdentity,
+      capabilities:['evaluation','case','design','assistant','optimize','dxf','ifc','pdf','bbs_csv','json']};
+  },[activeSnap,evaluationId,engineeringDigest,selectedGravity,building.projectId]);
+  useEffect(()=>{onSelectionChange?.(selection);},[onSelectionChange,selection]);
   const caseId = activeSnap?.solveEnvelope.combinationResults[selectedComboId]
     ? selectedComboId
     : Object.keys(activeSnap?.solveEnvelope.combinationResults ?? {})[0];
@@ -492,9 +560,9 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
   }, [activeSnap, initialSelectedCoordinate]);
 
   useEffect(() => {
-    if (activeSubTab !== 'DIAGRAMS' || !evaluationId || !caseId) return;
+    if (selectedGravity || activeSubTab !== 'DIAGRAMS' || !evaluationId || !caseId) return;
     const abort = new AbortController();
-    requestStructural<{ result: SingleCaseSolveResult }>('case', { evaluationId, caseId }, abort.signal)
+    requestStructural<{ result: SingleCaseSolveResult }>('case', { selection, caseId }, abort.signal)
       .then(({ result }) => {
         if (!abort.signal.aborted) setCaseDetail({ evaluationId, caseId, result });
       })
@@ -504,7 +572,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
         }
       });
     return () => abort.abort();
-  }, [activeSubTab, evaluationId, caseId]);
+  }, [activeSubTab, evaluationId, caseId, selectedGravity, selection]);
 
   // Distinct Gate 9 Lifecycle Statuses: ANALYZED | DESIGN_FAILED | UNSUPPORTED_REQUIRED_CHECK | DESIGN_CHECKS_PASSED
   const lifecycleBadge = useMemo(() => {
@@ -596,7 +664,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
         evaluationId: string;
         optimization: StructuralOptimizationSummary;
       }>('optimize', {
-        ...analysisRequest,
+        selection, ...analysisRequest,
         foundationPreference: activeOverrides?.foundationPreferenceApplied ?? analysisRequest.foundationPreference,
         mode: optMode,
         maxIterations: 6,
@@ -630,7 +698,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
         previewOnly: boolean;
         optimization: StructuralOptimizationSummary;
       }>('optimize', {
-        ...analysisRequest,
+        selection, ...analysisRequest,
         foundationPreference: activeOverrides?.foundationPreferenceApplied ?? analysisRequest.foundationPreference,
         mode: optMode,
         targetPhysicalMemberIds: [selectedPhysicalMemberId],
@@ -676,7 +744,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       const res = await fetch('/api/v1/structural/drawings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evaluationId, format }),
+        body: JSON.stringify({ selection, format }),
       });
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
@@ -692,7 +760,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
             : format === 'json'
               ? 'structural_report.json'
               : `structural.${format}`;
-      triggerDownload(blob, `${safeName}_${ext}`);
+      triggerDownload(blob, `${safeName}_${evaluationId}_${ext}`);
       setExportStatus(`Downloaded ${safeName}_${ext}`);
     } catch (err) {
       setExportStatus(err instanceof Error ? err.message : 'Download failed');
@@ -733,7 +801,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
         answer: string;
         interpretation?: string;
         aiTelemetry: { source: string };
-      }>('assistant', { evaluationId, query: assistantQuery, useAi });
+      }>('assistant', { selection, query: assistantQuery, useAi });
       setAssistantReply({
         evaluationId,
         text: data.answer + (data.interpretation ? '\n\nGemini interpretation\n' + data.interpretation : ''),
@@ -1371,6 +1439,13 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       </svg>
     );
   };
+
+  if (restoring || restoreError) return <section><p>{restoreError || 'Restoring saved coupled evaluation…'}</p>
+    {restoreError && <button onClick={switchToConventional}>Switch to conventional evaluation</button>}</section>;
+  if (selectedGravity) return <div data-testid="coupled-analysis-panel" className="h-full overflow-auto p-4">
+    <SelectedGravityResult receipt={selectedGravity} projectId={building.projectId}/>
+    <button type="button" onClick={switchToConventional}>Switch to conventional evaluation</button>
+  </div>;
 
   return (
     <div
@@ -2125,7 +2200,7 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
             <button type="button" aria-expanded={showRegisteredDeck} onClick={() => setShowRegisteredDeck(!showRegisteredDeck)}>
               {showRegisteredDeck ? 'Hide registered floor geometry' : 'Inspect registered floor geometry'}
             </button>
-            {showRegisteredDeck && evaluationId && <RegisteredDeckView key={evaluationId} building={building} evaluationId={evaluationId} floorId={studioFloorId} />}
+            {showRegisteredDeck && evaluationId && <RegisteredDeckView onSelect={selectGravity} key={evaluationId} building={building} evaluationId={evaluationId} floorId={studioFloorId} />}
             {activeSnap && evaluationId && studioViewKind !== 'FOUNDATION_PLAN' &&
               <FramingAlignmentPreview key={JSON.stringify([evaluationId, studioFloorId])} building={building}
                 evaluationId={evaluationId} floorId={studioFloorId} beams={activeSnap.system.physicalModel.beams} />}
