@@ -72,7 +72,7 @@ it('rebuilds stiffness and dead load for deficient physical beams in a synthetic
   }
 },60_000);
 
-it.each(['longitudinal','links','column'])('rechecks deficient %s reinforcement within the fixed concrete footprint',async(kind)=>{
+it.each(['longitudinal','links','column','combined'])('rechecks deficient %s reinforcement within the fixed concrete footprint',async(kind)=>{
   const fixture = new URL('../../../../docs/structural/6a-evidence/',import.meta.url);
   const building:Building = JSON.parse(await readFile(new URL('synthetic-two-storey-building.json',fixture),'utf8'));
   const {fixtureInputs}:{fixtureInputs:ReviewedStructuralInputs} = JSON.parse(await readFile(new URL('synthetic-two-storey-coupled.json',fixture),'utf8'));
@@ -83,9 +83,9 @@ it.each(['longitudinal','links','column'])('rechecks deficient %s reinforcement 
   vi.stubEnv('RH_LOCAL_PROJECTS_DIR',store);
   try {
     const system=synthesizeCanonicalStructuralSystem(building);
-    const targets=system.memberMetadata.filter(m=>kind==='column' ? m.category==='COLUMN' : m.category==='BEAM' && m.clearSpanOrHeightMm>3000);
-    const sectionOverrides=Object.fromEntries(targets.map(m=>[m.elementId,kind==='column' ? {widthMm:m.widthMm,depthMm:m.depthMm} : {widthMm:250,depthMm:350}]));
-    const rebarOverrides=Object.fromEntries(targets.map(m=>[m.elementId,kind==='column' ? {barDiaMm:12,barCount:4} : kind==='links' ? {barDiaMm:16,barCount:2,providedLinkSpacingMm:450} : {barDiaMm:8,barCount:2}]));
+    const targets=system.memberMetadata.filter(m=>((kind==='column' || kind==='combined') && m.category==='COLUMN') || (kind!=='column' && m.category==='BEAM' && m.clearSpanOrHeightMm>3000));
+    const sectionOverrides=Object.fromEntries(targets.map(m=>[m.elementId,m.category==='COLUMN' ? {widthMm:m.widthMm,depthMm:m.depthMm} : {widthMm:250,depthMm:350}]));
+    const rebarOverrides=Object.fromEntries(targets.map(m=>[m.elementId,m.category==='COLUMN' ? {barDiaMm:12,barCount:4} : (kind==='links' || (kind==='combined' && m.floorId==='stilt')) ? {barDiaMm:16,barCount:2,providedLinkSpacingMm:450} : {barDiaMm:8,barCount:2}]));
     const snapshot=await new StructuralAnalysisEngine().analyzeReviewedBuilding(building,inputs,{synthesisOptions:{sectionOverrides,rebarOverrides}});
     const parent={snapshot,inputs,name:building.name,rebarOverrides,analysisOptions:{sectionOverrides}};
     const evaluationId=await saveEvaluation(parent);
@@ -95,20 +95,27 @@ it.each(['longitudinal','links','column'])('rechecks deficient %s reinforcement 
     const result=await compareCoupledBeamDepths(building,parent,before,id,350,signal);
     expect(result.status,JSON.stringify(result.trials)).toBe('PRELIMINARY_GRAVITY_CANDIDATE');
     const trial=result.trials[result.receipt!.trial.selectedIndex]!;
-    expect(trial.alternative).toBe(kind==='column' ? 'COLUMN_PERIMETER_CAGE' : kind==='links' ? 'TRANSVERSE_LINKS' : 'LONGITUDINAL_BARS');
+    expect(trial.alternative).toBe(kind==='combined' ? 'COORDINATED_REINFORCEMENT' : kind==='column' ? 'COLUMN_PERIMETER_CAGE' : kind==='links' ? 'TRANSVERSE_LINKS' : 'LONGITUDINAL_BARS');
+    if(kind==='combined'){
+      const rules=trial.changes.flatMap(change=>change.failedChecks);
+      expect(rules).toContain('IS456-BEAM-FLEXURE');
+      expect(rules).toContain('IS456-BEAM-SHEAR-TORSION');
+      expect(trial.changes.some(change=>change.reinforcement?.providedLinkSpacingMm)).toBe(true);
+      expect(result.trials.filter(candidate=>candidate.qualified)).toHaveLength(1);
+    }
     expect(trial.addedBeamVolumeM3).toBe(0);
     expect(trial.changes.every(c=>c.trialDepthMm===c.previousDepthMm && c.previousWidthMm===c.trialWidthMm)).toBe(true);
     const revised=result.receipt!.frameDesign;
     if (revised.status!=='PRELIMINARY_COUPLED_FRAME_CANDIDATES') throw Error(revised.reason);
     for(const change of trial.changes){
-      if(kind==='column'){
+      if(revised.columns.some(c=>c.physicalMemberId===change.physicalMemberId)){
         const column=revised.columns.find(c=>c.physicalMemberId===change.physicalMemberId)!;
         expect(column.status).toBe('PASSED');
         expect(column.longitudinalBars.barCount).toBeGreaterThan(4);
         continue;
       }
       const beam=revised.beams.find(b=>b.physicalMemberId===change.physicalMemberId)!;
-      if(kind==='links') expect(beam.stirrups.spacingMidZoneMm).toBeLessThan(450);
+      if(change.reinforcement?.providedLinkSpacingMm) expect(beam.stirrups.spacingMidZoneMm).toBeLessThan(450);
       expect(beam.status).toBe('PASSED');
       expect(beam.barLayout?.top.length).toBe(change.reinforcement?.barCount);
       expect(beam.topBarsSupport.barDiaMm).toBe(change.reinforcement?.barDiaMm);

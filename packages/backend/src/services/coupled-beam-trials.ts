@@ -28,7 +28,7 @@ export async function compareCoupledBeamDepths(building:Building,parent:SavedEva
   let best: {revised:SavedEvaluation;evaluated:GravityReceipt;index:number;score:number} | undefined;
   const seen = new Set<string>();
   const reinforcement:Record<string,RebarOverrideSpec>={...parent.rebarOverrides};
-  const canTryBars=failed.length>0 && failed.every(member=>{
+  const barOptions=failed.map(member=>{
     const required=Math.max(member.astTopRequiredMm2,member.astBottomRequiredMm2);
     const diameterChoices=[12,16,20,25].map(dia=>{
       const area=Math.PI*dia*dia/4;
@@ -41,6 +41,7 @@ export async function compareCoupledBeamDepths(building:Building,parent:SavedEva
     reinforcement[member.physicalMemberId]={...reinforcement[member.physicalMemberId],barDiaMm:best.dia,barCount:best.count};
     return true;
   });
+  const canTryBars=barOptions.length>0 && barOptions.every(Boolean);
   const revisedLinks:Record<string,RebarOverrideSpec>={...parent.rebarOverrides};
   const canTryLinks=failed.length>0 && failed.every(member=>{
     const provided=parent.rebarOverrides?.[member.physicalMemberId]?.providedLinkSpacingMm;
@@ -53,11 +54,30 @@ export async function compareCoupledBeamDepths(building:Building,parent:SavedEva
   });
   const columnRefit={...parent.rebarOverrides};
   for(const column of failedColumns) delete columnRefit[column.physicalMemberId];
+  const coordinated:Record<string,RebarOverrideSpec>={...columnRefit};
+  const coordinatedMethods=new Set<string>();
+  if(failedColumns.length) coordinatedMethods.add('COLUMN_CAGE');
+  for (const member of failed) {
+    const id=member.physicalMemberId;
+    const failedRules=member.ruleChecks.filter(rule=>rule.status==='FAILED');
+    if (failedRules.some(rule=>rule.ruleId==='IS456-BEAM-FLEXURE') && reinforcement[id]!==parent.rebarOverrides?.[id]) {
+      coordinated[id]={...coordinated[id],...reinforcement[id]};
+      coordinatedMethods.add('BEAM_BARS');
+    }
+    const spacing=member.maxUniformLinkSpacingMm && Math.floor(member.maxUniformLinkSpacingMm);
+    if (failedRules.some(rule=>rule.ruleId==='IS456-BEAM-SHEAR-TORSION') && spacing &&
+        member.nominalShearStressMPa<=member.maxShearLimitTauCMaxMPa && spacing>member.stirrups.barDiaMm &&
+        spacing<(parent.rebarOverrides?.[id]?.providedLinkSpacingMm ?? 0)) {
+      coordinated[id]={...coordinated[id],providedLinkSpacingMm:spacing};
+      coordinatedMethods.add('BEAM_LINKS');
+    }
+  }
   const alternatives = failed.length ? ['MID_DEPTH','MAX_DEPTH'] : [];
   if(failedColumns.some(column=>parent.rebarOverrides?.[column.physicalMemberId])) alternatives.push('COLUMN_PERIMETER_CAGE');
   if (failed.length && maxWidthMm && failed.every(member=>maxWidthMm>=member.widthMm)) alternatives.push('WIDER_WEB','WIDER_AND_DEEPER');
   if (canTryBars) alternatives.unshift('LONGITUDINAL_BARS');
   if (canTryLinks) alternatives.unshift('TRANSVERSE_LINKS');
+  if(coordinatedMethods.size>1) alternatives.push('COORDINATED_REINFORCEMENT');
   for (const alternative of alternatives) {
     signal.throwIfAborted();
     const sectionOverrides = Object.fromEntries(system.memberMetadata.map(member=>{
@@ -70,8 +90,8 @@ export async function compareCoupledBeamDepths(building:Building,parent:SavedEva
       }
       return [member.elementId,{widthMm,depthMm,concreteGrade:member.concreteGrade}];
     }));
-    if (alternative!=='LONGITUDINAL_BARS' && alternative!=='TRANSVERSE_LINKS' && alternative!=='COLUMN_PERIMETER_CAGE' && failed.every(member=>sectionOverrides[member.physicalMemberId]!.widthMm===member.widthMm && sectionOverrides[member.physicalMemberId]!.depthMm===member.depthMm)) continue;
-    const rebarOverrides=alternative==='LONGITUDINAL_BARS' ? reinforcement : alternative==='TRANSVERSE_LINKS' ? revisedLinks : alternative==='COLUMN_PERIMETER_CAGE' ? columnRefit : parent.rebarOverrides;
+    if (alternative!=='LONGITUDINAL_BARS' && alternative!=='TRANSVERSE_LINKS' && alternative!=='COLUMN_PERIMETER_CAGE' && alternative!=='COORDINATED_REINFORCEMENT' && failed.every(member=>sectionOverrides[member.physicalMemberId]!.widthMm===member.widthMm && sectionOverrides[member.physicalMemberId]!.depthMm===member.depthMm)) continue;
+    const rebarOverrides=alternative==='COORDINATED_REINFORCEMENT' ? coordinated : alternative==='LONGITUDINAL_BARS' ? reinforcement : alternative==='TRANSVERSE_LINKS' ? revisedLinks : alternative==='COLUMN_PERIMETER_CAGE' ? columnRefit : parent.rebarOverrides;
     const key = JSON.stringify([sectionOverrides,rebarOverrides]);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -91,7 +111,7 @@ export async function compareCoupledBeamDepths(building:Building,parent:SavedEva
       reinforcement:rebarOverrides?.[member.physicalMemberId],
       failedChecks:member.ruleChecks.filter(check=>check.status!=='PASSED').map(check=>check.ruleId),
       trialDepthMm:sectionOverrides[member.physicalMemberId]!.depthMm}));
-    if(alternative==='COLUMN_PERIMETER_CAGE' && frame.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES'){
+    if((alternative==='COLUMN_PERIMETER_CAGE' || alternative==='COORDINATED_REINFORCEMENT') && frame.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES'){
       for(const prior of failedColumns){
         const next=frame.columns.find(column=>column.physicalMemberId===prior.physicalMemberId);
         if(next) changes.push({physicalMemberId:prior.physicalMemberId,previousDepthMm:prior.depthMm,trialDepthMm:next.depthMm,

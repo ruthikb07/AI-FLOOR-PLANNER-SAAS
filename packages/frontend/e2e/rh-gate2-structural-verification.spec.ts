@@ -49,7 +49,7 @@ for (const fixed of [false,true]) test(`compares coupled beam ${fixed?'reinforce
   await page.getByLabel('Maximum permitted beam depth').fill(fixed?'350':'550');
   if (!fixed) await page.getByLabel('Maximum permitted beam width').fill('350');
   const optimized = page.waitForResponse(response=>response.url().endsWith('/structural/optimize'));
-  await page.getByRole('button',{name:'Reanalyze beam section candidates'}).click();
+  await page.getByRole('button',{name:'Reanalyze frame candidates'}).click();
   const response = await optimized;
   expect(response.ok()).toBe(true);
   const result = await response.json();

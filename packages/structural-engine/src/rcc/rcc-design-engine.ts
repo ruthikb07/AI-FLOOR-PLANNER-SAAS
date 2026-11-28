@@ -18,6 +18,7 @@
  * 4. Assigns consolidated `scheduleGroupMark` (`B-G1`, `C-G1`, `S-G1`) to identical physical member designs.
  */
 
+import { buildColumnPerimeterBarCoordinates } from './column-perimeter-layout.js';
 import type { AnalyticalSolveEnvelope } from '../types/solver-types.js';
 import {
   CONCRETE_FCK_MPA,
@@ -1113,12 +1114,9 @@ function designSinglePhysicalColumn(
   const candidates: { barCount: number; dia: number; area: number; spacingFeasible: boolean }[] = [];
 
   const checkColumnBarFeasibility = (count: number, dia: number): boolean => {
-    // IS 456 Cl. 26.5.3.1(g): max center-to-center spacing along perimeter <= 300 mm, min clear spacing >= 40 mm
-    const corePerim = 2 * Math.max(60, b - 2 * clearCoverMm) + 2 * Math.max(60, D - 2 * clearCoverMm);
-    const avgPitch = corePerim / count;
-    const clearBetween = avgPitch - dia;
-    if (count === 4 && Math.max(b, D) - 2 * clearCoverMm > 300) return false;
-    return clearBetween >= Math.max(dia, 35) && avgPitch <= 310;
+    return buildColumnPerimeterBarCoordinates({
+      widthMm: b, depthMm: D, clearCoverMm, barDiaMm: dia, totalBarCount: count,
+    }).spacingCompliantIS456;
   };
 
   if (rebarOverride?.barDiaMm && rebarOverride?.barCount) {
@@ -1142,7 +1140,7 @@ function designSinglePhysicalColumn(
     }
     candidates.sort((x, y) => x.area - y.area);
     if (candidates.length === 0) {
-      candidates.push({ barCount: 4, dia: 16, area: 4 * barAreaMm2(16), spacingFeasible: b >= 200 });
+      candidates.push({ barCount: 4, dia: 16, area: 4 * barAreaMm2(16), spacingFeasible: checkColumnBarFeasibility(4, 16) });
     }
   }
 

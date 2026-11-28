@@ -1,3 +1,4 @@
+import {buildColumnPerimeterBarCoordinates} from '../rcc/column-perimeter-layout.js';
 import {expect,it} from 'vitest';
 import {rectangularBeamBarLayout,selectBeamBars} from '../rcc/rcc-design-engine.js';
 
@@ -11,4 +12,15 @@ it('counts occupied rows and locates the steel centroid independently on both fa
   expect(cage.top.map(p=>p.yMm)).toEqual([309,309,309,268,268]);
   expect(rectangularBeamBarLayout(200,170,25,8,16,5)).toBeUndefined();
   expect(rectangularBeamBarLayout(105,350,25,8,16,2)).toBeUndefined();
+});
+
+it('checks actual pitches on rectangular column faces including the longest gap',()=>{
+  const dimensions={widthMm:200,depthMm:740,clearCoverMm:40,barDiaMm:16,tieDiaMm:8};
+  const six=buildColumnPerimeterBarCoordinates({...dimensions,totalBarCount:6});
+  expect(six.maxCenterPitchMm).toBe(314);
+  expect(six.spacingCompliantIS456).toBe(false);
+  const eight=buildColumnPerimeterBarCoordinates({...dimensions,totalBarCount:8});
+  expect(eight.maxCenterPitchMm).toBeCloseTo(628/3,2);
+  expect(eight.spacingCompliantIS456).toBe(true);
+  expect(buildColumnPerimeterBarCoordinates({...dimensions,totalBarCount:7}).spacingCompliantIS456).toBe(false);
 });

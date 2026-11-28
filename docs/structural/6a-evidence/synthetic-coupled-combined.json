@@ -1,0 +1,468 @@
+{
+  "fixture": "Synthetic two-storey gravity frame",
+  "scope": "PRELIMINARY_GRAVITY_FRAME_AND_PADS",
+  "alternative": "COORDINATED_REINFORCEMENT",
+  "beforeOverrides": {
+    "COL_C1_L0": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C1_L1": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C1_L2": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C2_L0": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C2_L1": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C2_L2": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C3_L0": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C3_L1": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C3_L2": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C4_L0": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C4_L1": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "COL_C4_L2": {
+      "barDiaMm": 12,
+      "barCount": 4
+    },
+    "BM_stilt_1": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    },
+    "BM_stilt_4": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    },
+    "BM_upper_1": {
+      "barDiaMm": 8,
+      "barCount": 2
+    },
+    "BM_upper_4": {
+      "barDiaMm": 8,
+      "barCount": 2
+    }
+  },
+  "afterChanges": [
+    {
+      "physicalMemberId": "BM_stilt_1",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_stilt_4",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_upper_1",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 12,
+        "barCount": 2
+      },
+      "failedChecks": [
+        "IS456-BEAM-FLEXURE"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_upper_4",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 12,
+        "barCount": 2
+      },
+      "failedChecks": [
+        "IS456-BEAM-FLEXURE"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "COL_C1_L0",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C1_L1",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C1_L2",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C2_L0",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C2_L1",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C2_L2",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C3_L0",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C3_L1",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C3_L2",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C4_L0",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C4_L1",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    },
+    {
+      "physicalMemberId": "COL_C4_L2",
+      "previousDepthMm": 450,
+      "trialDepthMm": 450,
+      "previousWidthMm": 450,
+      "trialWidthMm": 450,
+      "failedChecks": [
+        "IS456-COL-BIAXIAL-PM"
+      ],
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 10
+      }
+    }
+  ],
+  "peakFrameUtilization": 0.584,
+  "bearingGeometryReviews": [],
+  "frameSteelKg": 1031.1,
+  "addedBeamVolumeM3": 0,
+  "padChecksPassed": true,
+  "checkedMembers": [
+    {
+      "id": "BM_stilt_1",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    },
+    {
+      "id": "BM_stilt_4",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    },
+    {
+      "id": "BM_upper_1",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 230,
+        "spacingMidZoneMm": 230,
+        "hingeZoneLengthMm": 622,
+        "label": "2L-T8@230/230 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 39,
+            "yMm": 39
+          },
+          {
+            "xMm": 211,
+            "yMm": 39
+          }
+        ],
+        "top": [
+          {
+            "xMm": 39,
+            "yMm": 311
+          },
+          {
+            "xMm": 211,
+            "yMm": 311
+          }
+        ],
+        "centroidMm": 39,
+        "effectiveDepthMm": 311
+      }
+    },
+    {
+      "id": "BM_upper_4",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 230,
+        "spacingMidZoneMm": 230,
+        "hingeZoneLengthMm": 622,
+        "label": "2L-T8@230/230 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 39,
+            "yMm": 39
+          },
+          {
+            "xMm": 211,
+            "yMm": 39
+          }
+        ],
+        "top": [
+          {
+            "xMm": 39,
+            "yMm": 311
+          },
+          {
+            "xMm": 211,
+            "yMm": 311
+          }
+        ],
+        "centroidMm": 39,
+        "effectiveDepthMm": 311
+      }
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ]
+}
