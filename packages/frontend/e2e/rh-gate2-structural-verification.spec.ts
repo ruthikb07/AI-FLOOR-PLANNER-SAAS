@@ -7,6 +7,59 @@ const base = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
 const screenshotsDir = process.env.RH_STRUCTURAL_EVIDENCE_DIR;
 
+test('compares coupled beam sections and downloads the selected revised frame schedule',async({page,request})=>{
+  test.setTimeout(120_000);
+  const fixtureDir = path.resolve(import.meta.dirname,'../../../docs/structural/6a-evidence');
+  const building = JSON.parse(await readFile(path.join(fixtureDir,'synthetic-two-storey-building.json'),'utf8'));
+  const verification = JSON.parse(await readFile(path.join(fixtureDir,'synthetic-depth-trial.json'),'utf8'));
+  // Seed only the deliberately deficient parent in this run's isolated backend store.
+  const store = process.env.RH_TEST_RUN_PROJECT_STORE;
+  if (!store) throw new Error('An isolated project store is required for the structural browser fixture.');
+  const previousStore = process.env.RH_LOCAL_PROJECTS_DIR;
+  process.env.RH_LOCAL_PROJECTS_DIR=store;
+  let parentId:string;
+  try {
+    const {StructuralAnalysisEngine} = await import('../../backend/src/services/structural-analysis-engine.js');
+    const {saveEvaluation} = await import('../../backend/src/services/structural-evaluation-store.js');
+    const snapshot = await new StructuralAnalysisEngine().analyzeReviewedBuilding(building,verification.inputs,{
+      synthesisOptions:{sectionOverrides:verification.sectionOverrides}});
+    parentId = await saveEvaluation({snapshot,inputs:verification.inputs,name:building.name,analysisOptions:{sectionOverrides:verification.sectionOverrides}});
+  } finally {
+    if (previousStore===undefined) delete process.env.RH_LOCAL_PROJECTS_DIR;
+    else process.env.RH_LOCAL_PROJECTS_DIR=previousStore;
+  }
+  const coupled = await request.post(base+'/api/v1/structural/coupled-gravity',{data:{evaluationId:parentId,
+    architectureSha256:verification.inputs.rectangularDeckReviews[0].architectureSha256}});
+  expect(coupled.ok()).toBe(true);
+  const parent = await coupled.json();
+  const saved = await request.post(base+'/api/v1/local-projects',{data:{projectId:building.projectId,name:building.name,building}});
+  expect(saved.ok()).toBe(true);
+  await page.addInitScript(()=>sessionStorage.setItem('rh_welcome_dismissed','true'));
+  await page.goto(base);
+  await page.getByTestId('nav-library').click();
+  await page.getByTestId('open-disk-project-'+building.projectId).first().click();
+  await page.getByTestId('nav-structural_cad').click();
+  await page.getByTestId('struct-tab-analysis').click();
+  await page.getByText('Open a saved coupled evaluation',{exact:true}).click();
+  await page.getByLabel('Evaluation ID / result ID').fill(parentId+'/'+parent.resultId);
+  await page.getByRole('button',{name:'Open coupled evaluation'}).click();
+  await page.getByLabel('Maximum permitted beam depth').fill('550');
+  await page.getByLabel('Maximum permitted beam width').fill('350');
+  const optimized = page.waitForResponse(response=>response.url().endsWith('/structural/optimize'));
+  await page.getByRole('button',{name:'Reanalyze beam section candidates'}).click();
+  const response = await optimized;
+  expect(response.ok()).toBe(true);
+  const result = await response.json();
+  expect(result.trials.filter((item:{qualified:boolean})=>item.qualified)).toHaveLength(4);
+  await page.getByRole('button',{name:'Select revised gravity evaluation'}).click();
+  await expect(page.getByTestId('coupled-analysis-panel')).toContainText(result.receipt.resultId);
+  const download = page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download preliminary frame BBS'}).click();
+  const csv = await readFile((await (await download).path())!,'utf8');
+  expect(csv).toContain(result.receipt.resultId);
+  expect(csv).toContain('TOTAL_RECONCILED');
+});
+
 test('reviews the occupied floor and roof and reopens the coupled 45 kN synthetic gravity result', async ({page,request}) => {
   test.setTimeout(120_000);
   const building = JSON.parse(await readFile(path.resolve(import.meta.dirname,

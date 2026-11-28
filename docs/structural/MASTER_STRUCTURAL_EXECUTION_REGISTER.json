@@ -5,7 +5,8 @@
     "status": "PARTIAL",
     "verified": "The synthetic two-storey production Chromium workflow reopened the same coupled result after leaving Structural CAD, graphed local shear, exposed nodal displacement selection, disabled conventional drawing preview and compared downloaded JSON with the server-held receipt. Three physical-deck HTTP regressions and four CAD workspace tests passed.",
     "coupledBeamTrial": "Synthetic four-beam depth change from 150 to 350 mm. Rebuilt gravity frame and pad checks pass for scoped trial. Added dead reaction agrees with the independent 18.4 kN section-volume calculation. See 6a-evidence/synthetic-depth-trial.json. Preliminary coupled beam and column BBS excludes slabs, stairs and foundations.",
-    "pending": "Audit remaining conventional and external-to-studio consumers and all invalidation scenarios. Extend coupled optimization beyond beam-depth trials, complete monolithic and irregular slab mechanics, lateral design, detailing, schedules and CAD/BIM export. Actual apartment engineering inputs and approval remain outstanding.",
+    "beamSectionComparison": "Synthetic gravity fixture compared depth, width and combined changes through coupled reanalysis. Evidence: 6a-evidence/synthetic-frame-comparison.json. Safe rejection tested with 151 mm depth cap. Two upper beams at 0.749 exceeded the singly reinforced flexural limit and the implemented doubly reinforced section depth-ratio limit.",
+    "pending": "Audit remaining conventional and external-to-studio consumers and all invalidation scenarios. Extend coupled optimization beyond beam width and depth, complete monolithic and irregular slab mechanics, lateral design, detailing, schedules and CAD/BIM export. Actual apartment engineering inputs and approval remain outstanding.",
     "performanceSeconds": [446.8043, 31.6222, 33.7785],
     "performanceScope": "Three local grid runs exited successfully. Cold baseline and revised runs partially overlapped."
   },

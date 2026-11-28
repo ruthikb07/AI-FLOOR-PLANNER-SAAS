@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AnalyticalSolveEnvelope, CoupledEvaluationSelection, SingleCaseSolveResult } from '@ai-floor-planner/structural-engine';
 
 export interface GravityReceipt {
-  trial?:{parentResultId:string;scope:string;changes:{physicalMemberId:string;previousDepthMm:number;trialDepthMm:number}[]};
+  trial?:{parentResultId:string;scope:string;changes:{physicalMemberId:string;previousWidthMm?:number;trialWidthMm?:number;previousDepthMm:number;trialDepthMm:number}[]};
   projectId?:string;
   solverIdentity?:string;
   evaluationId: string;
@@ -100,6 +100,8 @@ function CoupledCaseView({result}:{result:SingleCaseSolveResult}) {
 
 export function SelectedGravityResult({receipt,building,onSelect}:{receipt:GravityReceipt;building:Building;onSelect:(result:GravityReceipt)=>void}) {
   const projectId = building.projectId;
+  const [widthLimit,setWidthLimit] = useState('');
+  const [objective,setObjective] = useState('MIN_CONCRETE');
   const [depthLimit,setDepthLimit] = useState('');
   const [trialBusy,setTrialBusy] = useState(false);
   const [trialStatus,setTrialStatus] = useState('');
@@ -114,7 +116,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
     try {
       const response = await fetch('/api/v1/structural/optimize',{method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:gravitySelection(projectId,receipt),
-          mode:'COUPLED_BEAM_DEPTH_TRIAL',building,maxDepthMm:Number(depthLimit)})});
+          mode:'COUPLED_BEAM_DEPTH_TRIAL',building,objective,maxWidthMm:widthLimit ? Number(widthLimit) : undefined,maxDepthMm:Number(depthLimit)})});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message ?? 'Coupled trial failed.');
       if (!controller.signal.aborted) {
@@ -162,7 +164,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
   }
   return <section>
       <h3>Coupled gravity evaluation</h3>
-      <p>Result <code>{receipt.resultId}</code></p>
+      <p>Saved evaluation reference <code>{receipt.evaluationId}/{receipt.resultId}</code></p>
       <p>Solver {selected?.result.diagnostics.executionBackend}</p>
       <label>Case or combination <select value={selected?.key ?? ''} onChange={event=>setCaseKey(event.target.value)}>
         {cases.map(item=><option key={item.key}>{item.key}</option>)}</select></label>
@@ -200,14 +202,19 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
       {exportError && <p role="alert">{exportError}</p>}
       {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' &&
         receipt.frameDesign.beams.some(member=>member.status==='FAILED') && receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' &&
-        <section><h4>Coupled beam depth trials</h4>
+        <section><h4>Coupled beam section trials</h4>
           <label>Maximum permitted beam depth (mm) <input type="number" min="1" value={depthLimit}
             onChange={event=>{setDepthLimit(event.target.value);setCandidate(undefined);}} disabled={trialBusy}/></label>
-          <button type="button" disabled={trialBusy || Number(depthLimit)<=0} onClick={compareDepths}>Reanalyze beam depth candidates</button>
+          <label>Maximum permitted beam width (mm, optional) <input type="number" min="1" value={widthLimit}
+            disabled={trialBusy} onChange={event=>{setWidthLimit(event.target.value);setCandidate(undefined);}}/></label>
+          <label>Compare qualifying sections by <select value={objective} disabled={trialBusy}
+            onChange={event=>{setObjective(event.target.value);setCandidate(undefined);}}>
+            <option value="MIN_CONCRETE">Added beam concrete</option><option value="MIN_FRAME_STEEL">Frame cut steel</option></select></label>
+          <button type="button" disabled={trialBusy || Number(depthLimit)<=0} onClick={compareDepths}>Reanalyze beam section candidates</button>
           {trialBusy && <button onClick={()=>{trialController.current?.abort();setTrialBusy(false);}}>Cancel trials</button>}
           {trialStatus && <p role="status">{trialStatus}</p>}
           {candidate?.trial && <><ul>{candidate.trial.changes.map(change=><li key={change.physicalMemberId}>
-            {change.physicalMemberId}: {change.previousDepthMm} to {change.trialDepthMm} mm</li>)}</ul>
+            {change.physicalMemberId}: {change.previousWidthMm} × {change.previousDepthMm} to {change.trialWidthMm} × {change.trialDepthMm} mm</li>)}</ul>
             <button onClick={()=>onSelect(candidate)}>Select revised gravity evaluation</button></>}
         </section>}
       <p>Whole-building drawing, reinforcement, quantity, assistant and optimization services are unavailable for this coupled result.</p>

@@ -383,7 +383,9 @@ export async function handleStructuralRoute(
         sendJson(response,409,{error:{code:'COUPLED_RESULT_MISMATCH',message:'Saved result does not match this evaluation.'}});
       } else if (action === 'optimize' && body.mode === 'COUPLED_BEAM_DEPTH_TRIAL') {
         if (validateBuildingSchema(body.building).length || typeof body.maxDepthMm !== 'number' ||
-            !Number.isSafeInteger(body.maxDepthMm) || body.maxDepthMm<=0) {
+            !Number.isSafeInteger(body.maxDepthMm) || body.maxDepthMm<=0 ||
+            (body.maxWidthMm!==undefined && (typeof body.maxWidthMm!=='number' || !Number.isSafeInteger(body.maxWidthMm) || body.maxWidthMm<=0)) ||
+            (body.objective!==undefined && body.objective!=='MIN_CONCRETE' && body.objective!=='MIN_FRAME_STEEL')) {
           throw new CoupledScopeError('COUPLED_TRIAL_INPUT','Supply the source building and a positive maximum beam depth in millimetres.');
         }
         const controller = new AbortController();
@@ -392,7 +394,7 @@ export async function handleStructuralRoute(
         try {
           const result = await compareCoupledBeamDepths(body.building as Building,parent,
             {...receipt,evaluationId:body.evaluationId} as Awaited<ReturnType<typeof solveReviewedGravity>>,
-            body.resultId,body.maxDepthMm,controller.signal);
+            body.resultId,body.maxDepthMm,controller.signal,body.objective,body.maxWidthMm);
           if (!controller.signal.aborted) sendJson(response,200,result);
         } finally { response.off('close',cancel); }
       } else if (action === 'case') {

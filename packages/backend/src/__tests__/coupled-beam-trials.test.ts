@@ -31,22 +31,36 @@ it('rebuilds stiffness and dead load for deficient physical beams in a synthetic
     expect(before.frameDesign.status).toBe('PRELIMINARY_COUPLED_FRAME_CANDIDATES');
     if (before.frameDesign.status!=='PRELIMINARY_COUPLED_FRAME_CANDIDATES') throw new Error(before.frameDesign.reason);
     const deficient = before.frameDesign.beams.filter(member=>member.status==='FAILED');
-    expect(deficient.length).toBeGreaterThan(0);
+    expect(deficient.length).toBe(4);
+    const subunit = deficient.filter(member=>member.maxUtilization<1);
+    expect(subunit).toHaveLength(2);
+    for (const beam of subunit) {
+      expect(beam.ruleChecks.filter(check=>check.status==='FAILED').map(check=>check.ruleId)).toEqual(['IS456-BEAM-FLEXURE']);
+      expect(beam.topBarsSupport.clearSpacingFeasible).toBe(true);
+      expect(beam.demandHoggingMuKnM).toBeGreaterThan(beam.muLimKnM);
+    }
     const parentResultId = await saveCoupledReceipt(evaluationId,before);
-    const result = await compareCoupledBeamDepths(building,parent,before,parentResultId,550,signal);
+    const result = await compareCoupledBeamDepths(building,parent,before,parentResultId,550,signal,'MIN_CONCRETE',350);
     expect(result.status,JSON.stringify(result.trials)).toBe('PRELIMINARY_GRAVITY_CANDIDATE');
+    expect(result.trials.length).toBe(4);
+    const rejected = await compareCoupledBeamDepths(building,parent,before,parentResultId,151,signal);
+    expect(rejected.status).toBe('NO_QUALIFYING_GRAVITY_CANDIDATE');
+    expect(rejected.receipt).toBeUndefined();
     const after = result.receipt!;
     expect(after.trial.parentResultId).toBe(parentResultId);
     expect(after.structuralRevision).toBe(before.structuralRevision+1);
     expect(after.architectureSha256).toBe(before.architectureSha256);
     const dl = (receipt:typeof before)=>receipt.envelope.loadCaseResults.DL!.reactions.reduce((sum,r)=>sum+r.reactionKnM[2],0);
+    expect(dl(after)-dl(before)).toBeCloseTo(4*4*0.15*0.12*25,6);
+    const historical = await compareCoupledBeamDepths(building,parent,before,parentResultId,550,signal);
+    expect(historical.receipt).toBeDefined();
     // Four 4 m spans gain 200 mm depth across a 230 mm web at 25 kN/m³.
-    expect(dl(after)-dl(before)).toBeCloseTo(4*4*0.2*0.23*25,6);
+    expect(dl(historical.receipt!)-dl(before)).toBeCloseTo(4*4*0.2*0.23*25,6);
     const revised = await loadCoupledReceipt(after.evaluationId,after.resultId);
     expect(revised).toMatchObject({evaluationId:after.evaluationId,trial:after.trial});
     const evidence = process.env.RH_COUPLED_TRIAL_EVIDENCE;
     if (evidence) await writeFile(evidence,JSON.stringify({fixture:'Synthetic two-storey gravity-only deficient beams',inputs,sectionOverrides,maxDepthMm:550,before: {
-      failed: deficient.map(b=>({id:b.physicalMemberId,depthMm:b.depthMm,utilization:b.maxUtilization})),deadReactionKn:dl(before)},
+      failed: deficient.map(b=>({id:b.physicalMemberId,depthMm:b.depthMm,utilization:b.maxUtilization,failedRules:b.ruleChecks.filter(r=>r.status!=='PASSED'),topBars:b.topBarsSupport,bottomBars:b.bottomBarsMidspan})),deadReactionKn:dl(before)},
       after:{scope:after.trial.scope,deadReactionKn:dl(after),trials:result.trials}},null,2)+'\n');
   } finally {
     shutdownSharedPythonStructuralWorker();

@@ -1,0 +1,535 @@
+{
+  "fixture": "Synthetic two-storey gravity-only deficient beams",
+  "inputs": {
+    "seismic": {
+      "enabled": false
+    },
+    "wind": {
+      "enabled": false
+    },
+    "floorFinishKnM2": 1,
+    "rectangularDeckReviews": [
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7959338fcce5e4651b76af2c0bc8360976475821c939a39984b4caa1833bc6f3",
+        "reference": "Synthetic depth-trial fixture stilt",
+        "supportingFloorId": "stilt",
+        "surfaceFloorId": "upper",
+        "use": "OCCUPIED",
+        "structuralTopMm": 3100,
+        "finishedFloorMm": 3100,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 3,
+        "minimumBearingWidthMm": 75
+      },
+      {
+        "schema": "RH_RECTANGULAR_DECK_V1",
+        "boundaryCondition": "SIMPLY_SUPPORTED_FULL_LEVEL",
+        "architectureSha256": "7959338fcce5e4651b76af2c0bc8360976475821c939a39984b4caa1833bc6f3",
+        "reference": "Synthetic depth-trial fixture upper",
+        "supportingFloorId": "upper",
+        "surfaceFloorId": "upper",
+        "use": "ROOF",
+        "structuralTopMm": 5900,
+        "finishedFloorMm": 5900,
+        "thicknessMm": 160,
+        "uniformLiveLoadKnM2": 1.5,
+        "minimumBearingWidthMm": 75
+      }
+    ],
+    "geotechnical": {
+      "safeBearingCapacityKPa": 200,
+      "foundationDepthBelowGroundM": 1.5,
+      "soilUnitWeightKnM3": 18,
+      "allowableSettlementMm": 25,
+      "waterTableDepthBelowGroundM": 3,
+      "subgradeModulusKnM3": 24000,
+      "reportReference": "SYNTHETIC verification soil only",
+      "bearingCapacityBasis": "GROSS"
+    },
+    "concreteGrade": "M25",
+    "steelGrade": "Fe500",
+    "ductileDetailingIS13920": false
+  },
+  "sectionOverrides": {
+    "BM_stilt_1": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_stilt_4": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_upper_1": {
+      "widthMm": 230,
+      "depthMm": 150
+    },
+    "BM_upper_4": {
+      "widthMm": 230,
+      "depthMm": 150
+    }
+  },
+  "maxDepthMm": 550,
+  "before": {
+    "failed": [
+      {
+        "id": "BM_stilt_1",
+        "depthMm": 150,
+        "utilization": 1.382,
+        "failedRules": [
+          {
+            "ruleId": "IS456-BEAM-FLEXURE",
+            "standard": "IS 456",
+            "clause": "Cl. 38.1, 26.3.2 & 26.5.1.1",
+            "title": "Beam Limit-State Flexural Capacity & Bar Spacing Feasibility",
+            "applicability": "BEAM (230x150 mm)",
+            "inputs": {
+              "compressionBarDepthMm": 41,
+              "effectiveDepthMm": 109,
+              "compressionDepthRatio": 0.3761467889908257,
+              "hoggingSectionLimitExceeded": 1,
+              "Me_hog_kNm": 11.67,
+              "Me_sag_kNm": 2.9,
+              "Mu_lim_kNm": 9.07
+            },
+            "calculation": "Ast_top=324mm² vs prov 339mm²; Ast_bot=344mm² vs prov 402mm²",
+            "units": "mm²",
+            "limit": "<= 1380 mm² (4% bD) & Demand <= Provided",
+            "actual": "Top 3-T12 (2 layers) (339 mm²), Bot 2-T16 (402 mm²)",
+            "utilizationRatio": 0.954,
+            "status": "FAILED",
+            "evidence": "Governing combination: ULS_15_DL_LL at x=4.00m (BM_stilt_1/child/7)",
+            "edition": "2000 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-BEAM-DEFLECTION",
+            "standard": "IS 456",
+            "clause": "Cl. 23.2.1",
+            "title": "Chord-Relative Serviceability Deflection & Span-to-Depth Limit",
+            "applicability": "BEAM",
+            "inputs": {
+              "spanMm": 4000,
+              "slsChordDeflMm": 1.53
+            },
+            "calculation": "delta_SLS_rel = 1.53 mm <= L/250 = 16.00 mm",
+            "units": "mm",
+            "limit": 16,
+            "actual": 1.53,
+            "utilizationRatio": 0.096,
+            "status": "FAILED",
+            "evidence": "kt=0.87, L/d=36.7 vs allow 22.6",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ],
+        "topBars": {
+          "barCount": 3,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 339.3,
+          "clearSpacingFeasible": true,
+          "label": "3-T12 (2 layers) (339 mm²)"
+        },
+        "bottomBars": {
+          "barCount": 2,
+          "barDiaMm": 16,
+          "layers": 1,
+          "areaProvidedMm2": 402.1,
+          "clearSpacingFeasible": true,
+          "label": "2-T16 (402 mm²)"
+        }
+      },
+      {
+        "id": "BM_stilt_4",
+        "depthMm": 150,
+        "utilization": 1.382,
+        "failedRules": [
+          {
+            "ruleId": "IS456-BEAM-FLEXURE",
+            "standard": "IS 456",
+            "clause": "Cl. 38.1, 26.3.2 & 26.5.1.1",
+            "title": "Beam Limit-State Flexural Capacity & Bar Spacing Feasibility",
+            "applicability": "BEAM (230x150 mm)",
+            "inputs": {
+              "compressionBarDepthMm": 41,
+              "effectiveDepthMm": 109,
+              "compressionDepthRatio": 0.3761467889908257,
+              "hoggingSectionLimitExceeded": 1,
+              "Me_hog_kNm": 11.67,
+              "Me_sag_kNm": 2.9,
+              "Mu_lim_kNm": 9.07
+            },
+            "calculation": "Ast_top=324mm² vs prov 339mm²; Ast_bot=344mm² vs prov 402mm²",
+            "units": "mm²",
+            "limit": "<= 1380 mm² (4% bD) & Demand <= Provided",
+            "actual": "Top 3-T12 (2 layers) (339 mm²), Bot 2-T16 (402 mm²)",
+            "utilizationRatio": 0.954,
+            "status": "FAILED",
+            "evidence": "Governing combination: ULS_15_DL_LL at x=4.00m (BM_stilt_4/child/7)",
+            "edition": "2000 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-BEAM-DEFLECTION",
+            "standard": "IS 456",
+            "clause": "Cl. 23.2.1",
+            "title": "Chord-Relative Serviceability Deflection & Span-to-Depth Limit",
+            "applicability": "BEAM",
+            "inputs": {
+              "spanMm": 4000,
+              "slsChordDeflMm": 1.53
+            },
+            "calculation": "delta_SLS_rel = 1.53 mm <= L/250 = 16.00 mm",
+            "units": "mm",
+            "limit": 16,
+            "actual": 1.53,
+            "utilizationRatio": 0.096,
+            "status": "FAILED",
+            "evidence": "kt=0.87, L/d=36.7 vs allow 22.6",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ],
+        "topBars": {
+          "barCount": 3,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 339.3,
+          "clearSpacingFeasible": true,
+          "label": "3-T12 (2 layers) (339 mm²)"
+        },
+        "bottomBars": {
+          "barCount": 2,
+          "barDiaMm": 16,
+          "layers": 1,
+          "areaProvidedMm2": 402.1,
+          "clearSpacingFeasible": true,
+          "label": "2-T16 (402 mm²)"
+        }
+      },
+      {
+        "id": "BM_upper_1",
+        "depthMm": 150,
+        "utilization": 0.749,
+        "failedRules": [
+          {
+            "ruleId": "IS456-BEAM-FLEXURE",
+            "standard": "IS 456",
+            "clause": "Cl. 38.1, 26.3.2 & 26.5.1.1",
+            "title": "Beam Limit-State Flexural Capacity & Bar Spacing Feasibility",
+            "applicability": "BEAM (230x150 mm)",
+            "inputs": {
+              "compressionBarDepthMm": 41,
+              "effectiveDepthMm": 109,
+              "compressionDepthRatio": 0.3761467889908257,
+              "hoggingSectionLimitExceeded": 1,
+              "Me_hog_kNm": 9.61,
+              "Me_sag_kNm": 2.41,
+              "Mu_lim_kNm": 9.07
+            },
+            "calculation": "Ast_top=254mm² vs prov 339mm²; Ast_bot=72mm² vs prov 226mm²",
+            "units": "mm²",
+            "limit": "<= 1380 mm² (4% bD) & Demand <= Provided",
+            "actual": "Top 3-T12 (2 layers) (339 mm²), Bot 2-T12 (2 layers) (226 mm²)",
+            "utilizationRatio": 0.749,
+            "status": "FAILED",
+            "evidence": "Governing combination: ULS_15_DL_LL at x=4.00m (BM_upper_1/child/7)",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ],
+        "topBars": {
+          "barCount": 3,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 339.3,
+          "clearSpacingFeasible": true,
+          "label": "3-T12 (2 layers) (339 mm²)"
+        },
+        "bottomBars": {
+          "barCount": 2,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 226.2,
+          "clearSpacingFeasible": true,
+          "label": "2-T12 (2 layers) (226 mm²)"
+        }
+      },
+      {
+        "id": "BM_upper_4",
+        "depthMm": 150,
+        "utilization": 0.749,
+        "failedRules": [
+          {
+            "ruleId": "IS456-BEAM-FLEXURE",
+            "standard": "IS 456",
+            "clause": "Cl. 38.1, 26.3.2 & 26.5.1.1",
+            "title": "Beam Limit-State Flexural Capacity & Bar Spacing Feasibility",
+            "applicability": "BEAM (230x150 mm)",
+            "inputs": {
+              "compressionBarDepthMm": 41,
+              "effectiveDepthMm": 109,
+              "compressionDepthRatio": 0.3761467889908257,
+              "hoggingSectionLimitExceeded": 1,
+              "Me_hog_kNm": 9.61,
+              "Me_sag_kNm": 2.41,
+              "Mu_lim_kNm": 9.07
+            },
+            "calculation": "Ast_top=254mm² vs prov 339mm²; Ast_bot=72mm² vs prov 226mm²",
+            "units": "mm²",
+            "limit": "<= 1380 mm² (4% bD) & Demand <= Provided",
+            "actual": "Top 3-T12 (2 layers) (339 mm²), Bot 2-T12 (2 layers) (226 mm²)",
+            "utilizationRatio": 0.749,
+            "status": "FAILED",
+            "evidence": "Governing combination: ULS_15_DL_LL at x=0.00m (BM_upper_4/child/0)",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ],
+        "topBars": {
+          "barCount": 3,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 339.3,
+          "clearSpacingFeasible": true,
+          "label": "3-T12 (2 layers) (339 mm²)"
+        },
+        "bottomBars": {
+          "barCount": 2,
+          "barDiaMm": 12,
+          "layers": 2,
+          "areaProvidedMm2": 226.2,
+          "clearSpacingFeasible": true,
+          "label": "2-T12 (2 layers) (226 mm²)"
+        }
+      }
+    ],
+    "deadReactionKn": 285.91249999999485
+  },
+  "after": {
+    "scope": "PRELIMINARY_GRAVITY_FRAME_AND_PADS",
+    "deadReactionKn": 293.11249999999234,
+    "trials": [
+      {
+        "alternative": "MID_DEPTH",
+        "addedBeamVolumeM3": 0.736,
+        "frameSteelKg": 976.11,
+        "changes": [
+          {
+            "physicalMemberId": "BM_stilt_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_stilt_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 350
+          }
+        ],
+        "qualified": true,
+        "peakFrameUtilization": 0.663,
+        "failedMembers": [],
+        "failedPadChecks": [],
+        "padChecksPassed": true,
+        "foundationStatus": "PRELIMINARY_GRAVITY_PAD_CHECK",
+        "compressionOnly": true
+      },
+      {
+        "alternative": "MAX_DEPTH",
+        "addedBeamVolumeM3": 1.472,
+        "frameSteelKg": 978.69,
+        "changes": [
+          {
+            "physicalMemberId": "BM_stilt_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 550
+          },
+          {
+            "physicalMemberId": "BM_stilt_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 550
+          },
+          {
+            "physicalMemberId": "BM_upper_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 550
+          },
+          {
+            "physicalMemberId": "BM_upper_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 230,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 550
+          }
+        ],
+        "qualified": true,
+        "peakFrameUtilization": 0.88,
+        "failedMembers": [],
+        "failedPadChecks": [],
+        "padChecksPassed": true,
+        "foundationStatus": "PRELIMINARY_GRAVITY_PAD_CHECK",
+        "compressionOnly": true
+      },
+      {
+        "alternative": "WIDER_WEB",
+        "addedBeamVolumeM3": 0.288,
+        "frameSteelKg": 1083.39,
+        "changes": [
+          {
+            "physicalMemberId": "BM_stilt_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 150
+          },
+          {
+            "physicalMemberId": "BM_stilt_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 150
+          },
+          {
+            "physicalMemberId": "BM_upper_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 150
+          },
+          {
+            "physicalMemberId": "BM_upper_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 150
+          }
+        ],
+        "qualified": true,
+        "peakFrameUtilization": 0.875,
+        "failedMembers": [],
+        "failedPadChecks": [],
+        "padChecksPassed": true,
+        "foundationStatus": "PRELIMINARY_GRAVITY_PAD_CHECK",
+        "compressionOnly": true
+      },
+      {
+        "alternative": "WIDER_AND_DEEPER",
+        "addedBeamVolumeM3": 1.408,
+        "frameSteelKg": 1005.89,
+        "changes": [
+          {
+            "physicalMemberId": "BM_stilt_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_stilt_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE",
+              "IS456-BEAM-DEFLECTION"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_1",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 350
+          },
+          {
+            "physicalMemberId": "BM_upper_4",
+            "previousDepthMm": 150,
+            "previousWidthMm": 230,
+            "trialWidthMm": 350,
+            "failedChecks": [
+              "IS456-BEAM-FLEXURE"
+            ],
+            "trialDepthMm": 350
+          }
+        ],
+        "qualified": true,
+        "peakFrameUtilization": 0.813,
+        "failedMembers": [],
+        "failedPadChecks": [],
+        "padChecksPassed": true,
+        "foundationStatus": "PRELIMINARY_GRAVITY_PAD_CHECK",
+        "compressionOnly": true
+      }
+    ]
+  }
+}

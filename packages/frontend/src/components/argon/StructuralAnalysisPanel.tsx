@@ -398,6 +398,23 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
   const [restoreError,setRestoreError] = useState('');
   const [restoring,setRestoring] = useState(Boolean(restoredInputs));
   const selectedGravity = coupledReceipt?.inputs === inputSignature ? coupledReceipt.result : undefined;
+  const [savedReference,setSavedReference] = useState('');
+  const [referenceError,setReferenceError] = useState('');
+  const referenceRequest = React.useRef<AbortController>();
+  useEffect(()=>()=>referenceRequest.current?.abort(),[inputSignature,engineeringDigest]);
+  async function openGravityReference() {
+    referenceRequest.current?.abort();
+    const controller = new AbortController();
+    referenceRequest.current=controller;
+    const [evaluationId,resultId] = savedReference.trim().split('/');
+    try {
+      if (![evaluationId,resultId].every(id=>id && /^[0-9a-f]{64}$/.test(id))) throw new Error('Enter the parent evaluation ID and coupled result ID separated by a slash.');
+      const result = await requestStructural<GravityReceipt>('evaluation',{evaluationId,resultId,architectureSha256:engineeringDigest},controller.signal);
+      if (result.evaluationId!==evaluationId || result.resultId!==resultId || result.projectId!==building.projectId ||
+          result.architectureSha256!==engineeringDigest) throw new Error('The saved reference belongs to a different project or revision.');
+      if (!controller.signal.aborted) selectGravity(result);
+    } catch(error) { if (!controller.signal.aborted) setReferenceError(String(error)); }
+  }
   function selectGravity(result:GravityReceipt) {
     const selection = gravitySelection(building.projectId,result);
     try { localStorage.setItem(storageKey,JSON.stringify({selection,inputs:inputSignature})); } catch { /* Storage unavailable. */ }
@@ -1452,6 +1469,12 @@ const RevisionStructuralPanel: React.FC<StructuralAnalysisPanelProps & { enginee
       data-testid="structural-analysis-panel"
       className="flex flex-col gap-4 bg-[#0B101B] text-[#F8FAFC] p-4 sm:p-5 overflow-auto h-full"
     >
+      <details><summary>Open a saved coupled evaluation</summary>
+        <p>Opens the archived analysis and its original reviewed inputs for this project revision.</p>
+        <label>Evaluation ID / result ID <input value={savedReference} onChange={event=>setSavedReference(event.target.value)}/></label>
+        <button type="button" onClick={openGravityReference}>Open coupled evaluation</button>
+        {referenceError && <p role="alert">{referenceError}</p>}
+      </details>
       <EngineeringInputReview key={engineeringDigest} building={building} digest={engineeringDigest}
         onStair={review => setStairReviews(previous => [...(previous ?? []).filter(item => item.waistId !== review.waistId), review])}
         onDeck={deck => setDeckReviews(previous => [...(previous ?? []).filter(item => item.supportingFloorId !== deck.supportingFloorId), deck])}

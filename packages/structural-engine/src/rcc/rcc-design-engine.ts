@@ -943,6 +943,8 @@ function designSinglePhysicalBeam(
       title: 'Beam Limit-State Flexural Capacity & Bar Spacing Feasibility',
       applicability: `${meta.category} (${meta.widthMm}x${meta.depthMm} mm)`,
       inputs: {
+        compressionBarDepthMm:dPrime,effectiveDepthMm:dEff,
+        compressionDepthRatio:dPrime/dEff,hoggingSectionLimitExceeded: Number(hogFlex.sectionCapacityExceeded),
         Me_hog_kNm: Number(meHogging.toFixed(2)),
         Me_sag_kNm: Number(meSagging.toFixed(2)),
         Mu_lim_kNm: Number(hogFlex.muLimKnM.toFixed(2)),
