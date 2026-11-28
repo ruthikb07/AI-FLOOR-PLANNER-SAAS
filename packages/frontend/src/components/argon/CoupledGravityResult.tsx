@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AnalyticalSolveEnvelope, CoupledEvaluationSelection, SingleCaseSolveResult } from '@ai-floor-planner/structural-engine';
 
 export interface GravityReceipt {
-  trial?:{parentResultId:string;scope:string;changes:{physicalMemberId:string;previousWidthMm?:number;trialWidthMm?:number;previousDepthMm:number;trialDepthMm:number}[]};
+  trial?:{parentResultId:string;scope:string;changes:{physicalMemberId:string;reinforcement?:{barDiaMm?:number;barCount?:number};previousWidthMm?:number;trialWidthMm?:number;previousDepthMm:number;trialDepthMm:number}[]};
   projectId?:string;
   solverIdentity?:string;
   evaluationId: string;
@@ -104,6 +104,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
   const [objective,setObjective] = useState('MIN_CONCRETE');
   const [depthLimit,setDepthLimit] = useState('');
   const [trialBusy,setTrialBusy] = useState(false);
+  const [bearingIssues,setBearingIssues] = useState<string[]>([]);
   const [trialStatus,setTrialStatus] = useState('');
   const [candidate,setCandidate] = useState<GravityReceipt>();
   const trialController = useRef<AbortController>();
@@ -112,7 +113,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
     trialController.current?.abort();
     const controller = new AbortController();
     trialController.current=controller;
-    setCandidate(undefined); setTrialStatus(''); setTrialBusy(true);
+    setCandidate(undefined); setBearingIssues([]); setTrialStatus(''); setTrialBusy(true);
     try {
       const response = await fetch('/api/v1/structural/optimize',{method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json'},body:JSON.stringify({selection:gravitySelection(projectId,receipt),
@@ -120,6 +121,10 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message ?? 'Coupled trial failed.');
       if (!controller.signal.aborted) {
+        const issues=new Set<string>();
+        for (const trial of data.trials ?? []) for (const issue of trial.bearingGeometryReviews ?? [])
+          issues.add(`${issue.physicalMemberId} at ${issue.panelId}: ${issue.beamDepthMm} mm beam, ${issue.slabThicknessMm} mm slab. A bearing detail is required.`);
+        setBearingIssues([...issues]);
         setCandidate(data.receipt);
         setTrialStatus(data.receipt ? 'A revised gravity frame and pad candidate is available for review.' : 'No trial satisfied the gravity frame and pad checks.');
       }
@@ -201,7 +206,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
           <button type="button" onClick={()=>download('frame_bbs_csv')}>Download preliminary frame BBS</button></p>}
       {exportError && <p role="alert">{exportError}</p>}
       {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' &&
-        receipt.frameDesign.beams.some(member=>member.status==='FAILED') && receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' &&
+        [...receipt.frameDesign.beams,...receipt.frameDesign.columns].some(member=>member.status==='FAILED') && receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' &&
         <section><h4>Coupled beam section trials</h4>
           <label>Maximum permitted beam depth (mm) <input type="number" min="1" value={depthLimit}
             onChange={event=>{setDepthLimit(event.target.value);setCandidate(undefined);}} disabled={trialBusy}/></label>
@@ -213,8 +218,10 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
           <button type="button" disabled={trialBusy || Number(depthLimit)<=0} onClick={compareDepths}>Reanalyze beam section candidates</button>
           {trialBusy && <button onClick={()=>{trialController.current?.abort();setTrialBusy(false);}}>Cancel trials</button>}
           {trialStatus && <p role="status">{trialStatus}</p>}
+          {bearingIssues.length>0 && <details><summary>Trials requiring bearing details</summary>
+            <ul>{bearingIssues.map(issue=><li key={issue}>{issue}</li>)}</ul></details>}
           {candidate?.trial && <><ul>{candidate.trial.changes.map(change=><li key={change.physicalMemberId}>
-            {change.physicalMemberId}: {change.previousWidthMm} × {change.previousDepthMm} to {change.trialWidthMm} × {change.trialDepthMm} mm</li>)}</ul>
+            {change.physicalMemberId}: {change.previousWidthMm} × {change.previousDepthMm} to {change.trialWidthMm} × {change.trialDepthMm} mm{change.reinforcement && ` · ${change.reinforcement.barCount} bars of ${change.reinforcement.barDiaMm} mm (beam face or column perimeter)`}</li>)}</ul>
             <button onClick={()=>onSelect(candidate)}>Select revised gravity evaluation</button></>}
         </section>}
       <p>Whole-building drawing, reinforcement, quantity, assistant and optimization services are unavailable for this coupled result.</p>

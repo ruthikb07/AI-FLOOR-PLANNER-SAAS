@@ -9,6 +9,7 @@ import type { FullStructuralEvaluationSnapshot, ReviewedStructuralInputs, Struct
 import { resolveLocalProjectsRoot } from './local-project-store.js';
 
 export interface SavedEvaluation {
+  readonly rebarOverrides?:import('@ai-floor-planner/structural-engine').FrameSynthesisOptions['rebarOverrides'];
   readonly solverBackends?: string;
   readonly snapshot: FullStructuralEvaluationSnapshot;
   readonly inputs: ReviewedStructuralInputs;

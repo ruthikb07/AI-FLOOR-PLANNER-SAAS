@@ -259,7 +259,7 @@ export function buildCanonicalPhysicalReinforcementRecords(
     const dBot = bm.bottomBarsMidspan.barDiaMm;
     const totalTop = bm.topBarsSupport.barCount;
     // At least 2 corner hanger/continuous top bars run full span; additional hogging bars are curtailed!
-    const topContCount = Math.min(totalTop, Math.max(2, Math.ceil(totalTop * 0.5)));
+    const topContCount = bm.barLayout ? totalTop : Math.min(totalTop, Math.max(2, Math.ceil(totalTop * 0.5)));
     const topExtraCount = Math.max(0, totalTop - topContCount);
 
     // Continuous top bar anchored Ld into both end columns with 90° standard bend (2*2d = 4d bend deduction)

@@ -1,6 +1,16 @@
 {
   "baseline": "1fa7861a56909bbff7af74b4e2e0709c4db1a136",
   "scope": "Working recovery register. Null fields identify outstanding investigation.",
+  "reinforcementOptimization": {
+    "status": "PRELIMINARY_GRAVITY_FRAME_ONLY",
+    "corrections": ["Automatic beam bar selection compares unrounded areas and counts occupied layers.", "Explicit symmetric beam cage trials use cross-section coordinates and centroid depths in coupled flexure, and carry the selected continuous bars into the frame schedule.", "Simple bearings with beam depth at or below the slab thickness require a reviewed structural detail before trial selection."],
+    "benchmarks": ["beam-bar-layout.test.ts: five T16 bars on a 200 mm section have three and two bars in the two rows; centroid 57.4 mm.", "coupled-beam-trials.test.ts: failed explicit 2-T8 cages are reanalyzed and corrected without changing 250 by 350 mm sections."],
+    "evidenceFiles": ["6a-evidence/synthetic-coupled-longitudinal.json", "6a-evidence/synthetic-coupled-links.json", "6a-evidence/synthetic-coupled-column.json"],
+    "productionBrowser": "Two Chromium cases compare concrete section and longitudinal steel alternatives and exercise revision-bound preliminary BBS download.",
+    "nextTask": "Verify independently the column perimeter bar coordinates, tie support, unsupported bar lengths and joint anchorage before admitting a cage as constructible.",
+    "references": ["https://www.services.bis.gov.in/tmp/SR456.pdf", "https://services.bis.gov.in/tmp/CED19013804_03062024_1.pdf", "https://archive.nptel.ac.in/content/storage2/courses/105105104/pdf/m6l14.pdf"],
+    "limits": "The spacing assumption uses the existing 25 mm clear-distance model. The bearing depth screen is a method applicability check. Automatic asymmetric face designs still use an assumed centroid. Uniform provided-link spacing can be reduced for deficient shear detailing. A deficient rectangular column perimeter arrangement can be refitted using the existing analytical capacity provider. Anchorage, joint congestion, variable aggregate sizes, seismic qualification, independent tie-leg search and professional review remain open."
+  },
   "selectedCoupledResultCheckpoint": {
     "status": "PARTIAL",
     "verified": "The synthetic two-storey production Chromium workflow reopened the same coupled result after leaving Structural CAD, graphed local shear, exposed nodal displacement selection, disabled conventional drawing preview and compared downloaded JSON with the server-held receipt. Three physical-deck HTTP regressions and four CAD workspace tests passed.",

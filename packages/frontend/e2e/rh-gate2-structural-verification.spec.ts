@@ -7,7 +7,7 @@ const base = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
 const screenshotsDir = process.env.RH_STRUCTURAL_EVIDENCE_DIR;
 
-test('compares coupled beam sections and downloads the selected revised frame schedule',async({page,request})=>{
+for (const fixed of [false,true]) test(`compares coupled beam ${fixed?'reinforcement':'sections'} and downloads the selected revised frame schedule`,async({page,request})=>{
   test.setTimeout(120_000);
   const fixtureDir = path.resolve(import.meta.dirname,'../../../docs/structural/6a-evidence');
   const building = JSON.parse(await readFile(path.join(fixtureDir,'synthetic-two-storey-building.json'),'utf8'));
@@ -21,9 +21,12 @@ test('compares coupled beam sections and downloads the selected revised frame sc
   try {
     const {StructuralAnalysisEngine} = await import('../../backend/src/services/structural-analysis-engine.js');
     const {saveEvaluation} = await import('../../backend/src/services/structural-evaluation-store.js');
+    const ids=Object.keys(verification.sectionOverrides);
+    const sectionOverrides=fixed ? Object.fromEntries(ids.map(id=>[id,{widthMm:250,depthMm:350}])) : verification.sectionOverrides;
+    const rebarOverrides=fixed ? Object.fromEntries(ids.map(id=>[id,{barDiaMm:8,barCount:2}])) : undefined;
     const snapshot = await new StructuralAnalysisEngine().analyzeReviewedBuilding(building,verification.inputs,{
-      synthesisOptions:{sectionOverrides:verification.sectionOverrides}});
-    parentId = await saveEvaluation({snapshot,inputs:verification.inputs,name:building.name,analysisOptions:{sectionOverrides:verification.sectionOverrides}});
+      synthesisOptions:{sectionOverrides,rebarOverrides}});
+    parentId = await saveEvaluation({snapshot,inputs:verification.inputs,name:building.name,rebarOverrides,analysisOptions:{sectionOverrides}});
   } finally {
     if (previousStore===undefined) delete process.env.RH_LOCAL_PROJECTS_DIR;
     else process.env.RH_LOCAL_PROJECTS_DIR=previousStore;
@@ -43,14 +46,15 @@ test('compares coupled beam sections and downloads the selected revised frame sc
   await page.getByText('Open a saved coupled evaluation',{exact:true}).click();
   await page.getByLabel('Evaluation ID / result ID').fill(parentId+'/'+parent.resultId);
   await page.getByRole('button',{name:'Open coupled evaluation'}).click();
-  await page.getByLabel('Maximum permitted beam depth').fill('550');
-  await page.getByLabel('Maximum permitted beam width').fill('350');
+  await page.getByLabel('Maximum permitted beam depth').fill(fixed?'350':'550');
+  if (!fixed) await page.getByLabel('Maximum permitted beam width').fill('350');
   const optimized = page.waitForResponse(response=>response.url().endsWith('/structural/optimize'));
   await page.getByRole('button',{name:'Reanalyze beam section candidates'}).click();
   const response = await optimized;
   expect(response.ok()).toBe(true);
   const result = await response.json();
-  expect(result.trials.filter((item:{qualified:boolean})=>item.qualified)).toHaveLength(4);
+  if(fixed) expect(result.trials[result.receipt.trial.selectedIndex]).toMatchObject({alternative:'LONGITUDINAL_BARS',addedBeamVolumeM3:0,qualified:true});
+  else expect(result.trials.filter((item:{qualified:boolean})=>item.qualified)).toHaveLength(3);
   await page.getByRole('button',{name:'Select revised gravity evaluation'}).click();
   await expect(page.getByTestId('coupled-analysis-panel')).toContainText(result.receipt.resultId);
   const download = page.waitForEvent('download');

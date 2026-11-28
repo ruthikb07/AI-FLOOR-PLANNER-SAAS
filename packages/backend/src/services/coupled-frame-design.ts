@@ -45,7 +45,7 @@ export function coupledFrameCandidates(saved:SavedEvaluation, envelope:Analytica
     return {...member,elementIndex:chain[0]!.index,analyticalElementIndices:chain.map(e=>e.index),
       analyticalElementIds:chain.map(e=>e.id)};
   });
-  const checked=runFrameRccDesign({...system,...registry,memberMetadata},saved.inputs,envelope);
+  const checked=runFrameRccDesign({...system,...registry,memberMetadata},saved.inputs,envelope,saved.rebarOverrides ?? saved.regeneration?.overrides.rebarOverridesApplied);
   const schedule = generateFrameCandidateSchedule(system,checked);
   return {schedule,status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES' as const,method:'RH_IS456_ANALYTICAL' as const,...checked};
 }

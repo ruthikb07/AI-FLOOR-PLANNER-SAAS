@@ -200,6 +200,8 @@ export interface RebarOverrideSpec {
   readonly barDiaMm?: number;
   readonly barCount?: number;
   readonly stirrupSpacingMm?: number;
+  /** Actual uniform vertical link spacing for a provided-cage check (mm). */
+  readonly providedLinkSpacingMm?:number;
 }
 
 export interface FrameSynthesisOptions {

@@ -1,0 +1,244 @@
+{
+  "fixture": "Synthetic two-storey gravity frame",
+  "scope": "PRELIMINARY_GRAVITY_FRAME_AND_PADS",
+  "alternative": "TRANSVERSE_LINKS",
+  "beforeOverrides": {
+    "BM_stilt_1": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    },
+    "BM_stilt_4": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    },
+    "BM_upper_1": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    },
+    "BM_upper_4": {
+      "barDiaMm": 16,
+      "barCount": 2,
+      "providedLinkSpacingMm": 450
+    }
+  },
+  "afterChanges": [
+    {
+      "physicalMemberId": "BM_stilt_1",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_stilt_4",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_upper_1",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    },
+    {
+      "physicalMemberId": "BM_upper_4",
+      "previousDepthMm": 350,
+      "previousWidthMm": 250,
+      "trialWidthMm": 250,
+      "reinforcement": {
+        "barDiaMm": 16,
+        "barCount": 2,
+        "providedLinkSpacingMm": 231
+      },
+      "failedChecks": [
+        "IS456-BEAM-SHEAR-TORSION"
+      ],
+      "trialDepthMm": 350
+    }
+  ],
+  "peakFrameUtilization": 0.491,
+  "bearingGeometryReviews": [],
+  "frameSteelKg": 1035.17,
+  "addedBeamVolumeM3": 0,
+  "padChecksPassed": true,
+  "checkedMembers": [
+    {
+      "id": "BM_stilt_1",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    },
+    {
+      "id": "BM_stilt_4",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    },
+    {
+      "id": "BM_upper_1",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    },
+    {
+      "id": "BM_upper_4",
+      "status": "PASSED",
+      "governingComboId": "ULS_15_DL_LL",
+      "links": {
+        "legs": 2,
+        "barDiaMm": 8,
+        "spacingHingeZoneMm": 231,
+        "spacingMidZoneMm": 231,
+        "hingeZoneLengthMm": 618,
+        "label": "2L-T8@231/231 mm"
+      },
+      "barLayout": {
+        "bottom": [
+          {
+            "xMm": 41,
+            "yMm": 41
+          },
+          {
+            "xMm": 209,
+            "yMm": 41
+          }
+        ],
+        "top": [
+          {
+            "xMm": 41,
+            "yMm": 309
+          },
+          {
+            "xMm": 209,
+            "yMm": 309
+          }
+        ],
+        "centroidMm": 41,
+        "effectiveDepthMm": 309
+      }
+    }
+  ]
+}

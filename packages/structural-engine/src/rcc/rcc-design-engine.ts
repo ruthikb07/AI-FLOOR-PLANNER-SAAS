@@ -78,6 +78,7 @@ export interface BeamRccDesignResult {
   readonly category: MemberDesignMetadata['category'];
   readonly widthMm: number;
   readonly depthMm: number;
+  readonly barLayout?: ReturnType<typeof rectangularBeamBarLayout>;
   readonly effectiveDepthMm: number;
   readonly clearCoverMm: number;
   readonly clearSpanMm: number;
@@ -102,6 +103,7 @@ export interface BeamRccDesignResult {
   readonly bottomBarsMidspan: RebarArrangement;
   readonly stirrups: StirrupArrangement;
   readonly developmentLengthMm: number;
+  readonly maxUniformLinkSpacingMm?:number;
   readonly nominalShearStressMPa: number;
   readonly concreteShearCapacityTauCMPa: number;
   readonly maxShearLimitTauCMaxMPa: number;
@@ -248,6 +250,24 @@ export function hysdSteelDesignStressMPa(strainSigned: number, fy: number): numb
   return sign * fyd * (0.8 + 0.2 * (2 * t - t * t));
 }
 
+/** Symmetric beam faces with equal-diameter bars. Coordinates are measured from the left and bottom concrete faces. */
+export function rectangularBeamBarLayout(widthMm:number,depthMm:number,coverMm:number,linkDiaMm:number,barDiaMm:number,count:number) {
+  if (![widthMm,depthMm,coverMm,linkDiaMm,barDiaMm,count].every(v=>Number.isFinite(v) && v>0) ||
+      !Number.isSafeInteger(count) || count<2) return undefined;
+  const offset=coverMm+linkDiaMm+barDiaMm/2;
+  const pitch=barDiaMm+Math.max(25,barDiaMm);
+  const perLayer=Math.floor((widthMm-2*offset)/pitch)+1;
+  if (perLayer<2 || count>2*perLayer) return undefined;
+  const bottom:{xMm:number;yMm:number}[]=[];
+  for (let first=0;first<count;first+=perLayer) {
+    const n=Math.min(perLayer,count-first),yMm=offset+(first===0 ? 0 : pitch);
+    if (depthMm-2*yMm<pitch) return undefined;
+    for(let j=0;j<n;j++) bottom.push({xMm:n===1 ? widthMm/2 : offset+j*(widthMm-2*offset)/(n-1),yMm});
+  }
+  const centroidMm=bottom.reduce((sum,point)=>sum+point.yMm,0)/count;
+  return {bottom,top:bottom.map(point=>({...point,yMm:depthMm-point.yMm})),centroidMm,effectiveDepthMm:depthMm-centroidMm};
+}
+
 export function selectBeamBars(
   astReqMm2: number,
   widthMm: number,
@@ -277,31 +297,18 @@ export function selectBeamBars(
   }
 
   let best: RebarArrangement | null = null;
+  let leastArea = Infinity;
   for (const dia of STANDARD_BEAM_DIAS) {
-    const minClear = Math.max(dia, 25); // IS 456 Cl. 26.3.2: horizontal clear distance >= max(barDia, d_agg+5 = 25mm)
-    const minPitch = dia + minClear;
-    const maxPerLayer = Math.floor((usableWidth + minClear) / minPitch);
+    const minClear = Math.max(dia, 25);
+    const maxPerLayer = Math.floor((usableWidth + minClear) / (dia + minClear));
     if (maxPerLayer < 2) continue;
-
-    for (let layers = 1; layers <= 2; layers++) {
-      const maxCount = maxPerLayer * layers;
-      for (let n = minBars; n <= maxCount; n++) {
-        const area = n * barAreaMm2(dia);
-        if (area >= astReqMm2) {
-          if (!best || area < best.areaProvidedMm2) {
-            best = {
-              barCount: n,
-              barDiaMm: dia,
-              layers,
-              areaProvidedMm2: Number(area.toFixed(1)),
-              clearSpacingFeasible: true,
-              label: `${n}-T${dia}${layers > 1 ? ' (2 layers)' : ''} (${Math.round(area)} mm²)`,
-            };
-          }
-          break;
-        }
-      }
-    }
+    const n = Math.max(minBars,Math.ceil(astReqMm2/barAreaMm2(dia)));
+    const layers = Math.ceil(n/maxPerLayer);
+    const area = n*barAreaMm2(dia);
+    if (layers>2 || area>=leastArea) continue;
+    leastArea=area;
+    best={barCount:n,barDiaMm:dia,layers,areaProvidedMm2:Number(area.toFixed(1)),clearSpacingFeasible:true,
+      label:`${n}-T${dia}${layers>1 ? ' (2 layers)' : ''} (${Math.round(area)} mm²)`};
   }
 
   if (best) return best;
@@ -315,7 +322,7 @@ export function selectBeamBars(
     barDiaMm: dia,
     layers: 2,
     areaProvidedMm2: Number(area.toFixed(1)),
-    clearSpacingFeasible: usableWidth >= 75,
+    clearSpacingFeasible: usableWidth >= 2 * dia + 25,
     label: `${n}-T${dia} (2 layers) (${Math.round(area)} mm²)`,
   };
 }
@@ -646,11 +653,6 @@ function designSinglePhysicalBeam(
   rebarOverride?: RebarOverrideSpec,
 ): BeamRccDesignResult {
   const clearCoverMm = meta.category === 'PLINTH_BEAM' ? 35 : 25;
-  const stirrupDia = 8;
-  const assumedMainDia = rebarOverride?.barDiaMm ?? 16;
-  const dEff = Math.max(80, meta.depthMm - clearCoverMm - stirrupDia - assumedMainDia / 2);
-  const dPrime = clearCoverMm + stirrupDia + assumedMainDia / 2;
-
   const childIndices =
     meta.analyticalElementIndices && meta.analyticalElementIndices.length > 0
       ? meta.analyticalElementIndices
@@ -784,6 +786,16 @@ function designSinglePhysicalBeam(
       ? maxShearVu + 1.6 * (maxTorsionTu / (meta.widthMm / 1000))
       : maxShearVu;
 
+  const assumedMainDia = rebarOverride?.barDiaMm ?? 16;
+  const explicitBars = Boolean(rebarOverride?.barDiaMm && rebarOverride?.barCount);
+  const layoutAt = (link:number)=>explicitBars ? rectangularBeamBarLayout(meta.widthMm,meta.depthMm,clearCoverMm,link,assumedMainDia,rebarOverride!.barCount!) : undefined;
+  const initialLayout=layoutAt(8);
+  const initialDepth=initialLayout?.effectiveDepthMm ?? Math.max(80,meta.depthMm-clearCoverMm-8-assumedMainDia/2);
+  const stirrupDia=explicitBars && veKn*1000/(meta.widthMm*initialDepth)>2 ? 10 : 8;
+  const barLayout=stirrupDia===8 ? initialLayout : layoutAt(stirrupDia);
+  const dPrime=barLayout?.centroidMm ?? clearCoverMm+stirrupDia+assumedMainDia/2;
+  const dEff=barLayout?.effectiveDepthMm ?? Math.max(80,meta.depthMm-dPrime);
+  const layoutFits=!explicitBars || Boolean(barLayout);
   const hogFlex = computeBeamFlexuralSteelMm2({
     meKnM: meHogging,
     widthMm: meta.widthMm,
@@ -843,19 +855,26 @@ function designSinglePhysicalBeam(
   const stirrupLegs = meta.widthMm >= 350 || tauV > 2.2 ? 4 : 2;
   const stBarDia = tauV > 2.0 ? 10 : 8;
   const asvMm2 = stirrupLegs * barAreaMm2(stBarDia);
-  const svMinShear = (asvMm2 * 0.87 * fy) / (0.4 * meta.widthMm);
-  const svStrength = vusN > 1 ? (asvMm2 * 0.87 * fy * dEff) / vusN : 300;
+  const providedSpacing=rebarOverride?.providedLinkSpacingMm;
+  if (providedSpacing !== undefined && (!Number.isFinite(providedSpacing) || providedSpacing <= 0)) {
+    throw new RangeError("Provided link spacing must be a finite positive distance in millimetres.");
+  }
+  const linkFy=Math.min(fy,415);
+  const svMinShear = (asvMm2 * 0.87 * (providedSpacing!==undefined ? linkFy : fy)) / (0.4 * meta.widthMm);
+  const svStrength = vusN > 1 ? (asvMm2 * 0.87 * (providedSpacing!==undefined ? linkFy : fy) * dEff) / vusN : 300;
   const svMidRaw = Math.min(0.75 * dEff, 300, svMinShear, svStrength);
-  const spacingMidMm = rebarOverride?.stirrupSpacingMm
+  const spacingMidMm = providedSpacing ?? (rebarOverride?.stirrupSpacingMm
     ? Math.max(65, Math.min(svMidRaw, rebarOverride.stirrupSpacingMm))
-    : Math.max(75, Math.floor(svMidRaw / 10) * 10);
+    : Math.max(75, Math.floor(svMidRaw / 10) * 10));
 
   const minMainDia = Math.min(topBars.barDiaMm, bottomBars.barDiaMm);
-  const spacingHingeMm = ductileIS13920
+  const spacingHingeMm = providedSpacing ?? (ductileIS13920
     ? Math.max(65, Math.min(spacingMidMm, Math.floor(Math.min(dEff / 4, 8 * minMainDia, 100) / 5) * 5))
-    : spacingMidMm;
+    : spacingMidMm);
 
-  const vCapProvidedN = tauC * meta.widthMm * dEff + (asvMm2 * 0.87 * fy * dEff) / spacingHingeMm;
+  const uniformLimit=Math.min(svMidRaw,ductileIS13920 ? Math.min(dEff/4,8*minMainDia,100) : Infinity);
+  const linksFit=providedSpacing===undefined || (Number.isFinite(providedSpacing) && providedSpacing>stBarDia && providedSpacing<=uniformLimit);
+  const vCapProvidedN = tauC * meta.widthMm * dEff + (asvMm2 * 0.87 * (providedSpacing!==undefined ? linkFy : fy) * dEff) / spacingHingeMm;
   const utilShear = Math.max(tauV / tauCMax, (veKn * 1000) / Math.max(1, vCapProvidedN));
 
   const allowDeflMm =
@@ -897,7 +916,7 @@ function designSinglePhysicalBeam(
   );
 
   const passed =
-    !isDeepBeamUnsupported &&
+    linksFit && layoutFits && !isDeepBeamUnsupported &&
     utilFlexure <= 1.0 &&
     tauV <= tauCMax &&
     utilShear <= 1.0 &&
@@ -955,7 +974,7 @@ function designSinglePhysicalBeam(
       actual: `Top ${topBars.label}, Bot ${bottomBars.label}`,
       utilizationRatio: Number(utilFlexure.toFixed(3)),
       status:
-        utilFlexure <= 1.0 &&
+        layoutFits && utilFlexure <= 1.0 &&
         topBars.clearSpacingFeasible &&
         bottomBars.clearSpacingFeasible &&
         !hogFlex.sectionCapacityExceeded &&
@@ -980,7 +999,7 @@ function designSinglePhysicalBeam(
       limit: tauCMax,
       actual: Number(tauV.toFixed(3)),
       utilizationRatio: Number(utilShear.toFixed(3)),
-      status: tauV <= tauCMax && utilShear <= 1.0 ? 'PASSED' : 'FAILED',
+      status: linksFit && tauV <= tauCMax && utilShear <= 1.0 ? 'PASSED' : 'FAILED',
       evidence: `${stirrupLegs}L-T${stBarDia}@${spacingHingeMm}/${spacingMidMm} mm c/c`,
     }),
     createRuleEvaluation({
@@ -1014,6 +1033,7 @@ function designSinglePhysicalBeam(
     category: meta.category,
     widthMm: meta.widthMm,
     depthMm: meta.depthMm,
+    barLayout,
     effectiveDepthMm: dEff,
     clearCoverMm,
     clearSpanMm: meta.clearSpanOrHeightMm,
@@ -1045,6 +1065,7 @@ function designSinglePhysicalBeam(
       label: `${stirrupLegs}L-T${stBarDia}@${spacingHingeMm}/${spacingMidMm} mm`,
     },
     developmentLengthMm: ldMm,
+    maxUniformLinkSpacingMm:uniformLimit,
     nominalShearStressMPa: Number(tauV.toFixed(3)),
     concreteShearCapacityTauCMPa: Number(tauC.toFixed(3)),
     maxShearLimitTauCMaxMPa: tauCMax,
