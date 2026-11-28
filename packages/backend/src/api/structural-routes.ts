@@ -442,6 +442,10 @@ export async function handleStructuralRoute(
             }).finally(() => response.off('close', cancel));
           if (result === undefined || response.destroyed) return true;
           if (!result.ok) {
+            if (floorReviews.length) {
+              sendJson(response, 422, { error: { code: 'INVALID_INTERFACE_REVIEW', floorId: floor.id, message: result.message } });
+              return true;
+            }
             if (automatic) {
               decks.push({ supportingFloorId: floor.id, status: 'DECK_GEOMETRY_REVIEW_REQUIRED', reason: result.message });
               continue;
