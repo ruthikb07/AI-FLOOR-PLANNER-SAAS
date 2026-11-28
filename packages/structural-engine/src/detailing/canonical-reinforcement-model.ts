@@ -17,7 +17,8 @@ import type { CompleteRccDesignSummary } from '../rcc/rcc-design-engine.js';
 import {
   buildColumnPerimeterBarCoordinates,
   type ColumnPerimeterBarLayout,
-} from '../rcc/section-capacity-provider.js';
+  columnCrossTiePairs,
+} from '../rcc/column-perimeter-layout.js';
 
 export const STEEL_DENSITY_KG_PER_M3 = 7850;
 
@@ -60,7 +61,11 @@ export interface ColumnPhysicalReinforcementRecord {
     /** Exact sum `bottomZoneTieCount + midZoneTieCount + topZoneTieCount` with zero boundary duplication. */
     readonly totalTieSets: number;
     readonly cutLengthPerSetMm: number;
-    readonly lateralRestraintCompliantIS13920: boolean;
+    readonly legsAlongWidth:number;
+    readonly legsAlongDepth:number;
+    readonly crossTies: readonly (ReturnType<typeof columnCrossTiePairs>[number] & {cutLengthMm:number})[];
+    readonly outerHoopCutLengthMm:number;
+    readonly confinementReview: 'HOOK_ANCHORAGE_AND_CONFINEMENT_REVIEW_REQUIRED';
   };
 }
 
@@ -204,10 +209,10 @@ export function buildCanonicalPhysicalReinforcementRecords(
     const hookExt = Math.max(10 * tieDia, 75);
     // Outer closed hoop centreline perimeter = 2*(coreW + coreD) + 2*hookExt - (3*2d + 2*3d? Standard IS 2502 5 bends: three 90° bends = 6d, two 135° hooks = 6d => 12d deduction)
     const outerHoopMm = 2 * (coreW + coreD) + 2 * hookExt - 12 * tieDia;
-    const extraCrossTies = Math.max(0, col.lateralTies.legs - 2);
-    const avgCoreDim = 0.5 * (coreW + coreD);
-    const crossTieMm = extraCrossTies * (avgCoreDim + 2 * hookExt - 6 * tieDia);
-    const cutPerSetMm = Math.max(400, Math.round(outerHoopMm + crossTieMm));
+    const crossTies=columnCrossTiePairs(layout).map(pair=>({...pair,
+      cutLengthMm:Math.round(pair.straightMm+2*hookExt-6*tieDia)}));
+    const outerHoopCutLengthMm=Math.round(outerHoopMm);
+    const cutPerSetMm=outerHoopCutLengthMm+crossTies.reduce((sum,tie)=>sum+tie.cutLengthMm,0);
 
     const zones = computeNonOverlappingThreeZoneCounts({
       totalLengthMm: col.clearHeightMm,
@@ -248,8 +253,10 @@ export function buildCanonicalPhysicalReinforcementRecords(
         topZoneTieCount: zones.rightEndCount,
         totalTieSets: zones.totalCount,
         cutLengthPerSetMm: cutPerSetMm,
-        lateralRestraintCompliantIS13920:
-          layout.maxUnrestrainedSpacingMm <= 150 || col.lateralTies.legs >= 4,
+        legsAlongWidth:2+layout.intermediateBarsPerDepthFace,
+        legsAlongDepth:2+layout.intermediateBarsPerWidthFace,
+        crossTies, outerHoopCutLengthMm,
+        confinementReview: 'HOOK_ANCHORAGE_AND_CONFINEMENT_REVIEW_REQUIRED',
       },
     };
   });

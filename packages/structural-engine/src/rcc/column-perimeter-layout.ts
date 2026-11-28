@@ -153,3 +153,19 @@ export function buildColumnPerimeterBarCoordinates(params: {
     bars,
   };
 }
+
+/** One proposed straight cross-tie between each opposing pair of intermediate bars. */
+export function columnCrossTiePairs(layout:ColumnPerimeterBarLayout) {
+  const pairs:{axis:"WIDTH"|"DEPTH";firstBarIndex:number;secondBarIndex:number;straightMm:number}[]=[];
+  for(const bar of layout.bars){
+    const acrossWidth=bar.locationRole==="LEFT_FACE";
+    if(!acrossWidth && bar.locationRole!=="BOTTOM_FACE") continue;
+    const opposite=layout.bars.find(other=>acrossWidth
+      ? other.locationRole==="RIGHT_FACE" && other.yMm===bar.yMm
+      : other.locationRole==="TOP_FACE" && other.xMm===bar.xMm);
+    if(!opposite) throw new Error("Unpaired intermediate column bar in symmetric cage");
+    pairs.push({axis:acrossWidth?"WIDTH":"DEPTH",firstBarIndex:bar.barIndex,secondBarIndex:opposite.barIndex,
+      straightMm:(acrossWidth?layout.widthMm:layout.depthMm)-2*layout.clearCoverMm-layout.tieDiaMm});
+  }
+  return pairs;
+}

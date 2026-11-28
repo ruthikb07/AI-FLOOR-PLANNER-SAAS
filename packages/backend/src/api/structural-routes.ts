@@ -1,3 +1,4 @@
+import {coupledFrameSectionsDxf} from '../cad/coupled-frame-sections.js';
 /**
  * Backend HTTP Routes for RH Planner's Embedded Awatif v3.4.0 Structural Engineering Engine,
  * RCC/Foundation Design, Protected Localized Global-Reanalysis Optimizer, CAD/BIM Drawings,
@@ -334,7 +335,7 @@ export async function handleStructuralRoute(
     }
     const format = typeof body.format === 'string' ? body.format.toLowerCase() : 'dxf';
     const query = typeof body.query === 'string' ? body.query.trim() : '';
-    if (action === 'drawings' && !['dxf', 'ifc', 'pdf', 'bbs_csv', 'csv', 'json', 'frame_bbs_csv'].includes(format)) {
+    if (action === 'drawings' && !['dxf', 'ifc', 'pdf', 'bbs_csv', 'csv', 'json', 'frame_bbs_csv','frame_sections_dxf'].includes(format)) {
       sendJson(response, 400, { error: { code: 'UNSUPPORTED_FORMAT', message: "Use 'dxf', 'ifc', 'pdf', 'bbs_csv', or 'json'." } });
       return true;
     }
@@ -412,12 +413,23 @@ export async function handleStructuralRoute(
           typeof memberId === 'string' && (item.physicalMemberId === memberId || item.footingId === memberId));
         if (!record) sendJson(response,404,{error:{code:'STRUCTURAL_MEMBER_NOT_FOUND',message:'Member design unavailable in this coupled evaluation.'}});
         else sendJson(response,200,{evaluationId:body.evaluationId,resultId:body.resultId,record});
-      } else if (action === 'drawings' && format === 'frame_bbs_csv') {
+      } else if (action === 'drawings' && (format === 'frame_bbs_csv' || format==='frame_sections_dxf')) {
         const schedule = isRecord(receipt.frameDesign) && receipt.frameDesign.schedule;
         if (!isRecord(schedule) || schedule.scope !== 'PRELIMINARY_GRAVITY_FRAME_ONLY' ||
             !Array.isArray(schedule.bbsEntries) || !isRecord(schedule.quantities) ||
             !isRecord(schedule.quantities.massReconciliationAudit) || schedule.quantities.massReconciliationAudit.isReconciled !== true) {
           sendJson(response,422,{error:{code:'COUPLED_FRAME_SCHEDULE_UNAVAILABLE',message:'Reconciled coupled frame reinforcement records are required.'}});
+          return true;
+        }
+        if(format==='frame_sections_dxf'){
+          const frame=receipt.frameDesign;
+          if(!isRecord(frame) || !Array.isArray(frame.beams) || !isRecord(schedule.reinforcement) || !Array.isArray(schedule.reinforcement.columns)){
+            sendJson(response,422,{error:{code:'COUPLED_SECTION_GEOMETRY_REQUIRED',message:'Saved frame section coordinates required.'}});
+            return true;
+          }
+          const drawing=coupledFrameSectionsDxf(schedule as ReturnType<typeof generateFrameCandidateSchedule>,frame.beams,body.resultId,parent.snapshot.system.structuralRevision);
+          response.writeHead(200,{'Content-Type':'application/dxf','Content-Disposition':`attachment; filename="preliminary-sections-${body.resultId}.dxf"`});
+          response.end(drawing);
           return true;
         }
         const csv = exportStructuralBbsCsv(schedule as ReturnType<typeof generateFrameCandidateSchedule>,{
@@ -434,7 +446,7 @@ export async function handleStructuralRoute(
       }
       return true;
     }
-    if (format === 'frame_bbs_csv' && action === 'drawings') {
+    if ((format === 'frame_bbs_csv' || format==='frame_sections_dxf') && action === 'drawings') {
       sendJson(response,422,{error:{code:'COUPLED_REFERENCE_REQUIRED',message:'Select a saved coupled gravity result for the frame-only schedule.'}});
       return true;
     }

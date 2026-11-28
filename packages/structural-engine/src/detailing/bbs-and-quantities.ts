@@ -26,6 +26,7 @@ export type IS2502ShapeCode =
   | 'SHAPE_21_U_BAR_ANCHORED'
   | 'SHAPE_11_L_HOOK_DOWEL'
   | 'SHAPE_51_SEISMIC_STIRRUP_135'
+  | 'PRELIMINARY_CROSS_TIE_135'
   | 'SHAPE_41_CRANKED_SLAB_BAR';
 
 export interface BarBendingScheduleEntry {
@@ -226,10 +227,19 @@ function frameBarSpecs(canonicalFrameReinf: ReturnType<typeof buildCanonicalPhys
       barDiaMm: col.ties.tieDiaMm,
       spacingMm: col.ties.spacingEndZoneMm,
       barsPerMember: col.ties.totalTieSets,
-      netLengthMm: col.ties.cutLengthPerSetMm,
+      netLengthMm: col.ties.outerHoopCutLengthMm,
       lapLengthMm: 0,
-      cuttingLengthMm: col.ties.cutLengthPerSetMm,
+      cuttingLengthMm: col.ties.outerHoopCutLengthMm,
     });
+    for(const axis of ['WIDTH','DEPTH'] as const){
+      const ties=col.ties.crossTies.filter(pair=>pair.axis===axis);
+      if(!ties.length) continue;
+      const length=ties[0]!.cutLengthMm;
+      rawSpecs.push({prefix:'CX-'+axis,physicalMemberId:col.physicalMemberId,scheduleGroupMark:col.scheduleGroupMark,
+        memberCategory:'COLUMN',floorId:col.floorId,description:'Preliminary cross-tie along column '+axis.toLowerCase(),
+        shapeCode:'PRELIMINARY_CROSS_TIE_135',barDiaMm:col.ties.tieDiaMm,spacingMm:col.ties.spacingEndZoneMm,
+        barsPerMember:col.ties.totalTieSets*ties.length,netLengthMm:length,lapLengthMm:0,cuttingLengthMm:length});
+    }
   }
 
   return rawSpecs;

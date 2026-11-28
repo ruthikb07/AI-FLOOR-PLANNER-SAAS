@@ -1283,6 +1283,8 @@ function designSinglePhysicalColumn(
   const ptExceeded = pt > 4.0 || pt < 0.8;
 
   const tieDia = ev.cand.dia > 24 ? 10 : 8;
+  const tieLayout=buildColumnPerimeterBarCoordinates({widthMm:b,depthMm:D,clearCoverMm,tieDiaMm:tieDia,
+    barDiaMm:ev.cand.dia,totalBarCount:ev.cand.barCount});
   const pitchNormal = Math.min(Math.min(b, D), 16 * ev.cand.dia, 300);
   const spacingMidMm = Math.max(100, Math.floor(pitchNormal / 10) * 10);
   const loLengthMm = Math.max(D, b, Math.ceil(L / 6), 450);
@@ -1406,7 +1408,7 @@ function designSinglePhysicalColumn(
     },
     steelPercentagePt: Number(pt.toFixed(2)),
     lateralTies: {
-      legs: Math.max(b, D) >= 450 ? 4 : 2,
+      legs: 2 + Math.min(tieLayout.intermediateBarsPerDepthFace,tieLayout.intermediateBarsPerWidthFace),
       barDiaMm: tieDia,
       spacingHingeZoneMm: spacingHingeMm,
       spacingMidZoneMm: spacingMidMm,

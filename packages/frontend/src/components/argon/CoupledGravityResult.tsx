@@ -153,7 +153,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
   const cases = [...Object.entries(receipt.envelope.loadCaseResults).map(([id,result])=>({key:'case/'+id,result})),
     ...Object.entries(receipt.envelope.combinationResults).map(([id,result])=>({key:'combination/'+id,result}))];
   const selected = cases.find(item=>item.key===caseKey) ?? cases[0];
-  async function download(format:'json'|'frame_bbs_csv') {
+  async function download(format:'json'|'frame_bbs_csv'|'frame_sections_dxf') {
         try {
         const response = await fetch('/api/v1/structural/drawings',{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({selection:gravitySelection(projectId,receipt),format})});
@@ -162,7 +162,7 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href=url;
-        link.download=`coupled-gravity-${receipt.resultId}.${format==='json' ? 'json' : 'csv'}`;
+        link.download=`coupled-gravity-${receipt.resultId}.${format==='json' ? 'json' : format==='frame_sections_dxf' ? 'dxf' : 'csv'}`;
         link.click();
         setTimeout(()=>URL.revokeObjectURL(url),1000);
         } catch (error) { setExportError(String(error)); }
@@ -203,7 +203,8 @@ export function SelectedGravityResult({receipt,building,onSelect}:{receipt:Gravi
       <button type="button" onClick={()=>download('json')}>Download this coupled gravity result</button>
       {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' && receipt.frameDesign.schedule?.quantities.massReconciliationAudit.isReconciled &&
         <p>Preliminary beam and column cut steel {receipt.frameDesign.schedule.quantities.massReconciliationAudit.totalCutSteelMassKg} kg.
-          <button type="button" onClick={()=>download('frame_bbs_csv')}>Download preliminary frame BBS</button></p>}
+          <button type="button" onClick={()=>download('frame_bbs_csv')}>Download preliminary frame BBS</button>
+          <button type="button" onClick={()=>download('frame_sections_dxf')}>Download longitudinal bar sections (DXF)</button></p>}
       {exportError && <p role="alert">{exportError}</p>}
       {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' &&
         [...receipt.frameDesign.beams,...receipt.frameDesign.columns].some(member=>member.status==='FAILED') && receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' &&

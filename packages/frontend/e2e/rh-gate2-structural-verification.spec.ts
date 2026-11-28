@@ -7,7 +7,8 @@ const base = process.env.RH_CINEMATIC_URL ?? 'http://127.0.0.1:4177';
 const chrome = process.env.RH_CINEMATIC_CHROME;
 const screenshotsDir = process.env.RH_STRUCTURAL_EVIDENCE_DIR;
 
-for (const fixed of [false,true]) test(`compares coupled beam ${fixed?'reinforcement':'sections'} and downloads the selected revised frame schedule`,async({page,request})=>{
+for (const scenario of ['sections','longitudinal','links','column','combined'] as const) test(`compares coupled beam and column candidates for ${scenario} and downloads the selected revised frame schedule`,async({page,request})=>{
+  const fixed=scenario!=='sections';
   test.setTimeout(120_000);
   const fixtureDir = path.resolve(import.meta.dirname,'../../../docs/structural/6a-evidence');
   const building = JSON.parse(await readFile(path.join(fixtureDir,'synthetic-two-storey-building.json'),'utf8'));
@@ -21,9 +22,10 @@ for (const fixed of [false,true]) test(`compares coupled beam ${fixed?'reinforce
   try {
     const {StructuralAnalysisEngine} = await import('../../backend/src/services/structural-analysis-engine.js');
     const {saveEvaluation} = await import('../../backend/src/services/structural-evaluation-store.js');
-    const ids=Object.keys(verification.sectionOverrides);
-    const sectionOverrides=fixed ? Object.fromEntries(ids.map(id=>[id,{widthMm:250,depthMm:350}])) : verification.sectionOverrides;
-    const rebarOverrides=fixed ? Object.fromEntries(ids.map(id=>[id,{barDiaMm:8,barCount:2}])) : undefined;
+    const benchmark=fixed ? JSON.parse(await readFile(path.join(fixtureDir,`synthetic-coupled-${scenario}.json`),'utf8')) : undefined;
+    const sectionOverrides=fixed ? Object.fromEntries(benchmark.afterChanges.map((member:{physicalMemberId:string;previousWidthMm:number;previousDepthMm:number})=>
+      [member.physicalMemberId,{widthMm:member.previousWidthMm,depthMm:member.previousDepthMm}])) : verification.sectionOverrides;
+    const rebarOverrides=benchmark?.beforeOverrides;
     const snapshot = await new StructuralAnalysisEngine().analyzeReviewedBuilding(building,verification.inputs,{
       synthesisOptions:{sectionOverrides,rebarOverrides}});
     parentId = await saveEvaluation({snapshot,inputs:verification.inputs,name:building.name,rebarOverrides,analysisOptions:{sectionOverrides}});
@@ -53,14 +55,24 @@ for (const fixed of [false,true]) test(`compares coupled beam ${fixed?'reinforce
   const response = await optimized;
   expect(response.ok()).toBe(true);
   const result = await response.json();
-  if(fixed) expect(result.trials[result.receipt.trial.selectedIndex]).toMatchObject({alternative:'LONGITUDINAL_BARS',addedBeamVolumeM3:0,qualified:true});
+  if(fixed) expect(result.trials[result.receipt.trial.selectedIndex]).toMatchObject({alternative:{longitudinal:'LONGITUDINAL_BARS',links:'TRANSVERSE_LINKS',column:'COLUMN_PERIMETER_CAGE',combined:'COORDINATED_REINFORCEMENT'}[scenario],addedBeamVolumeM3:0,qualified:true});
   else expect(result.trials.filter((item:{qualified:boolean})=>item.qualified)).toHaveLength(3);
+  if(scenario==='links' || scenario==='combined') await expect(page.getByText(/links at \d+ mm/).first()).toBeVisible();
   await page.getByRole('button',{name:'Select revised gravity evaluation'}).click();
   await expect(page.getByTestId('coupled-analysis-panel')).toContainText(result.receipt.resultId);
   const download = page.waitForEvent('download');
   await page.getByRole('button',{name:'Download preliminary frame BBS'}).click();
   const csv = await readFile((await (await download).path())!,'utf8');
   expect(csv).toContain(result.receipt.resultId);
+  if(scenario==='column' || scenario==='combined') expect(csv).toContain('PRELIMINARY_CROSS_TIE_135');
+  if(scenario==='combined'){
+    const nextDownload=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Download longitudinal bar sections (DXF)'}).click();
+    const dxf=await readFile((await (await nextDownload).path())!,'utf8');
+    expect(dxf).toContain(result.receipt.resultId);
+    expect(dxf).toContain('LONGITUDINAL-STEEL');
+    expect(dxf).toContain('CIRCLE');
+  }
   expect(csv).toContain('TOTAL_RECONCILED');
 });
 

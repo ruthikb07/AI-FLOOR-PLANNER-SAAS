@@ -1,3 +1,5 @@
+import * as acad from '@node-projects/acad-ts';
+import {coupledFrameSectionsDxf} from '../cad/coupled-frame-sections.js';
 import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -107,6 +109,21 @@ it.each(['longitudinal','links','column','combined'])('rechecks deficient %s rei
     expect(trial.changes.every(c=>c.trialDepthMm===c.previousDepthMm && c.previousWidthMm===c.trialWidthMm)).toBe(true);
     const revised=result.receipt!.frameDesign;
     if (revised.status!=='PRELIMINARY_COUPLED_FRAME_CANDIDATES') throw Error(revised.reason);
+    const drawing=new acad.DxfReader(coupledFrameSectionsDxf(revised.schedule,revised.beams,result.receipt!.resultId,result.receipt!.structuralRevision)).read();
+    const circles=[...drawing.entities!].filter(entity=>entity instanceof acad.Circle);
+    const columnBars=revised.schedule.reinforcement.columns.flatMap(column=>column.layout.bars);
+    const beamBarCount=revised.beams.reduce((sum,beam)=>sum+(beam.barLayout?.top.length ?? 0)+(beam.barLayout?.bottom.length ?? 0),0);
+    expect(circles.length).toBe(columnBars.length+beamBarCount);
+    expect(drawing.header?.insUnits).toBe(acad.UnitsType.Millimeters);
+    expect(circles[0]?.radius).toBe(columnBars[0]!.diaMm/2);
+    expect(circles[0]?.center.x).toBeCloseTo(columnBars[0]!.xMm,6);
+    for(const column of revised.schedule.reinforcement.columns){
+      const ties=column.ties;
+      expect(ties.outerHoopCutLengthMm+ties.crossTies.reduce((sum,pair)=>sum+pair.cutLengthMm,0)).toBe(ties.cutLengthPerSetMm);
+      const marks=revised.schedule.bbsEntries.filter(entry=>entry.shapeCode==='PRELIMINARY_CROSS_TIE_135' && entry.physicalMemberIds.includes(column.physicalMemberId));
+      expect(marks.reduce((sum,entry)=>sum+entry.barsPerMember,0)).toBe(ties.totalTieSets*ties.crossTies.length);
+      expect(ties.crossTies.length*2+4).toBe(column.layout.uniqueBarCount);
+    }
     for(const change of trial.changes){
       if(revised.columns.some(c=>c.physicalMemberId===change.physicalMemberId)){
         const column=revised.columns.find(c=>c.physicalMemberId===change.physicalMemberId)!;
@@ -126,6 +143,8 @@ it.each(['longitudinal','links','column','combined'])('rechecks deficient %s rei
       beforeOverrides:rebarOverrides,afterChanges:trial.changes,peakFrameUtilization:trial.peakFrameUtilization,
       bearingGeometryReviews:trial.bearingGeometryReviews,frameSteelKg:trial.frameSteelKg,addedBeamVolumeM3:trial.addedBeamVolumeM3,
       padChecksPassed:trial.padChecksPassed,
+      crossTieMarks:revised.schedule.bbsEntries.filter(entry=>entry.shapeCode==='PRELIMINARY_CROSS_TIE_135').map(entry=>({
+        mark:entry.barMark,members:entry.physicalMemberIds,countPerMember:entry.barsPerMember,cutLengthMm:entry.cuttingLengthMm})),
       checkedMembers:trial.changes.map(change=>kind==='column' ? revised.columns.find(c=>c.physicalMemberId===change.physicalMemberId) :
         revised.beams.find(b=>b.physicalMemberId===change.physicalMemberId)).map(member=>member && ({
           id:member.physicalMemberId,status:member.status,governingComboId:member.governingComboId,
