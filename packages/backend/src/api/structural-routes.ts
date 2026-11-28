@@ -44,6 +44,8 @@ import {
 } from '@ai-floor-planner/structural-engine';
 import { StructuralAnalysisEngine } from '../services/structural-analysis-engine.js';
 import { StructuralDrawingsService } from '../services/structural-drawings-service.js';
+import { checkCoupledGravityFoundations, coupledDesignBlocker } from '../services/coupled-foundation.js';
+import { coupledFrameCandidates, type CoupledFrameRegistry } from '../services/coupled-frame-design.js';
 import { RequestBodyTooLarge, isRecord } from './http-input.js';
 
 const engine = new StructuralAnalysisEngine();
@@ -395,10 +397,10 @@ export async function handleStructuralRoute(
         const cancel = () => controller.abort();
         response.once('close',cancel);
         const solved = await getSharedPythonStructuralWorker().request<PythonWorkerResponseBase & {
-          envelope?:AnalyticalSolveEnvelope; slabLoadLedger?:unknown;
+          envelope?:AnalyticalSolveEnvelope; slabLoadLedger?:unknown; frameRegistry?:CoupledFrameRegistry;
         }>({action:'reviewed_rectangular_gravity', model:analyticalModel,decks},undefined,controller.signal)
           .finally(()=>response.off('close',cancel));
-        if (!solved.ok || !solved.envelope) {
+        if (!solved.ok || !solved.envelope || !solved.frameRegistry) {
           sendJson(response,422,{error:{code:'COUPLED_SOLVE_FAILED',message:solved.message}});
           return true;
         }
@@ -407,9 +409,12 @@ export async function handleStructuralRoute(
           sendJson(response,422,{error:{code:'COUPLED_EQUILIBRIUM_FAILED',message:'Coupled gravity forces or moments failed equilibrium.'}});
           return true;
         }
+        const blocker=coupledDesignBlocker(saved,solved.envelope);
         const receipt = {evaluationId:body.evaluationId,architectureSha256:system.sourceArchitecturalSha256,
           structuralRevision:system.structuralRevision,scope:'ELASTIC_GRAVITY_COMPRESSION_ONLY_BEARINGS',
-          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope};
+          slabLoadLedger:solved.slabLoadLedger,envelope:solved.envelope,
+          frameDesign:coupledFrameCandidates(saved,solved.envelope,solved.frameRegistry,blocker),
+          foundation:checkCoupledGravityFoundations(saved,solved.envelope,blocker)};
         const resultId = await saveCoupledReceipt(String(body.evaluationId),receipt);
         sendJson(response,200,{...receipt,resultId});
         return true;

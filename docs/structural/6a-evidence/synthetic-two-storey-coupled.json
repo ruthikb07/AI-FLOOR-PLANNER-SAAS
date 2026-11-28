@@ -44,6 +44,8 @@
       "foundationDepthBelowGroundM": 1.5,
       "soilUnitWeightKnM3": 18,
       "allowableSettlementMm": 25,
+      "waterTableDepthBelowGroundM": 3,
+      "subgradeModulusKnM3": 24000,
       "reportReference": "SYNTHETIC verification soil only",
       "bearingCapacityBasis": "GROSS"
     }
@@ -90,6 +92,714 @@
       "expectedM": 0.0000020740740740740742
     }
   ],
+  "coupledFoundation": {
+    "status": "PRELIMINARY_GRAVITY_PAD_CHECK",
+    "scope": "ISOLATED_GRAVITY_ONLY",
+    "reportReference": "SYNTHETIC verification soil only",
+    "method": "PYNITE_PLATE_QUAD",
+    "checksPassed": true,
+    "footings": [
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C1",
+          "footingId": "F_C1",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C1"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            0
+          ],
+          "centerXMm": 0,
+          "centerYMm": 0,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C1",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C1"
+        ],
+        "centerXMm": 0,
+        "centerYMm": 0,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C1 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C1",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C2",
+          "footingId": "F_C2",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C2"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            1
+          ],
+          "centerXMm": 4000,
+          "centerYMm": 0,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C2",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C2"
+        ],
+        "centerXMm": 4000,
+        "centerYMm": 0,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C2 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C2",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C3",
+          "footingId": "F_C3",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C3"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            2
+          ],
+          "centerXMm": 0,
+          "centerYMm": 2500,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C3",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C3"
+        ],
+        "centerXMm": 0,
+        "centerYMm": 2500,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C3 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C3",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      },
+      {
+        "physicalFoundation": {
+          "kind": "PHYSICAL_FOUNDATION",
+          "physicalMemberId": "F_C4",
+          "footingId": "F_C4",
+          "typology": "ISOLATED",
+          "supportedStackIds": [
+            "C4"
+          ],
+          "supportedAnalyticalBaseNodeIndices": [
+            3
+          ],
+          "centerXMm": 4000,
+          "centerYMm": 2500,
+          "baseElevationMm": -1500,
+          "lengthXMm": 1100,
+          "widthYMm": 1100,
+          "thicknessMm": 350,
+          "concreteGrade": "M25",
+          "steelGrade": "Fe500",
+          "scheduleGroupMark": "F-G1"
+        },
+        "footingId": "F_C4",
+        "scheduleGroupMark": "F-G1",
+        "typology": "ISOLATED",
+        "analysisFormulation": "RIGID_CONVENTIONAL_EQUILIBRIUM",
+        "supportedStackIds": [
+          "C4"
+        ],
+        "centerXMm": 4000,
+        "centerYMm": 2500,
+        "lengthXMm": 1100,
+        "widthYMm": 1100,
+        "thicknessMm": 350,
+        "effectiveDepthMm": 288,
+        "pccThicknessMm": 100,
+        "excavationDepthM": 1.6,
+        "concreteGrade": "M25",
+        "steelGrade": "Fe500",
+        "governingSlsComboId": "SLS_10_DL_LL",
+        "governingUlsComboId": "ULS_15_DL_LL",
+        "serviceLoadPKn": 102.1,
+        "serviceMomentMxKnM": 0.23,
+        "serviceMomentMyKnM": 0.58,
+        "factoredLoadPuKn": 153.1,
+        "maxSoilPressureKPa": 90.44,
+        "minSoilPressureKPa": 83.15,
+        "grossMaxSoilPressureKPa": 117.44,
+        "allowableBearingPressureKPa": 200,
+        "effectiveBearingAreaM2": 1.19,
+        "eccentricityRatioMax": 0.005,
+        "slidingFos": 99,
+        "overturningFos": 99,
+        "estimatedSettlementMm": 3.77,
+        "allowableSettlementMm": 25,
+        "settlementUtilization": 0.151,
+        "oneWayShearStressMPa": 0.017,
+        "oneWayShearCapacityMPa": 0.314,
+        "punchingShearStressMPa": 0.099,
+        "punchingShearCapacityMPa": 1.25,
+        "bottomMeshXLabel": "T12@220 mm c/c",
+        "bottomMeshYLabel": "T12@220 mm c/c",
+        "starterDowelEmbedmentMm": 622,
+        "bearingUtilization": 0.452,
+        "punchingUtilization": 0.079,
+        "oneWayShearUtilization": 0.053,
+        "flexureUtilization": 0.817,
+        "maxUtilization": 0.817,
+        "status": "PASSED",
+        "ruleChecks": [
+          {
+            "ruleId": "IS1904-FOOTING-BEARING-SETTLEMENT",
+            "standard": "IS 1904",
+            "clause": "Cl. 7.1, 14.1..14.3 & IS 8009 Pt 1",
+            "title": "Serviceability Net Soil Bearing, Stability & Elastic Settlement Check",
+            "applicability": "Isolated Footing F_C4 (1100x1100x350 mm)",
+            "inputs": {
+              "P_sls_kN": 102.1,
+              "q_net_max_kPa": 90.44,
+              "SBC_kPa": 200,
+              "settlement_mm": 3.77
+            },
+            "calculation": "q_net = 90.4 <= 200 kPa, s_i = 3.8 <= 25 mm",
+            "units": "kPa",
+            "limit": 200,
+            "actual": 90.44,
+            "utilizationRatio": 0.452,
+            "status": "PASSED",
+            "evidence": "Gov SLS: SLS_10_DL_LL · Geotech ref: SYNTHETIC verification soil only",
+            "edition": "1986 (Reaffirmed 2021)"
+          },
+          {
+            "ruleId": "IS456-FOOTING-PUNCHING-ONEWAY",
+            "standard": "IS 456",
+            "clause": "Cl. 34.2.4 & 31.6.3.1",
+            "title": "ULS One-Way & Two-Way Punching Shear Check",
+            "applicability": "Isolated Footing F_C4",
+            "inputs": {
+              "Pu_kN": 153.1,
+              "tau_punch_MPa": 0.099,
+              "tau_punch_cap_MPa": 1.25,
+              "tau_1way_MPa": 0.017
+            },
+            "calculation": "Punching 0.10 <= 1.25 MPa; 1-way 0.02 <= 0.31 MPa",
+            "units": "MPa",
+            "limit": 1.25,
+            "actual": 0.099,
+            "utilizationRatio": 0.079,
+            "status": "PASSED",
+            "evidence": "Gov ULS: ULS_15_DL_LL · Bottom mesh X: T12@220, Y: T12@220",
+            "edition": "2000 (Reaffirmed 2021)"
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "coupledFrame": {
+    "beams": [
+      {
+        "id": "PB_PLINTH_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 5.61,
+        "children": [
+          "PB_PLINTH_1"
+        ],
+        "utilization": 0.669,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 3.23,
+        "children": [
+          "PB_PLINTH_2"
+        ],
+        "utilization": 0.608,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 3.23,
+        "children": [
+          "PB_PLINTH_3"
+        ],
+        "utilization": 0.608,
+        "status": "PASSED"
+      },
+      {
+        "id": "PB_PLINTH_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 5.61,
+        "children": [
+          "PB_PLINTH_4"
+        ],
+        "utilization": 0.669,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 27.58,
+        "children": [
+          "BM_stilt_1/child/0",
+          "BM_stilt_1/child/1",
+          "BM_stilt_1/child/2",
+          "BM_stilt_1/child/3",
+          "BM_stilt_1/child/4",
+          "BM_stilt_1/child/5",
+          "BM_stilt_1/child/6",
+          "BM_stilt_1/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 11.96,
+        "children": [
+          "BM_stilt_2/child/0",
+          "BM_stilt_2/child/1",
+          "BM_stilt_2/child/2",
+          "BM_stilt_2/child/3",
+          "BM_stilt_2/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 11.96,
+        "children": [
+          "BM_stilt_3/child/0",
+          "BM_stilt_3/child/1",
+          "BM_stilt_3/child/2",
+          "BM_stilt_3/child/3",
+          "BM_stilt_3/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_stilt_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 27.58,
+        "children": [
+          "BM_stilt_4/child/0",
+          "BM_stilt_4/child/1",
+          "BM_stilt_4/child/2",
+          "BM_stilt_4/child/3",
+          "BM_stilt_4/child/4",
+          "BM_stilt_4/child/5",
+          "BM_stilt_4/child/6",
+          "BM_stilt_4/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_1",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 32.66,
+        "children": [
+          "BM_upper_1/child/0",
+          "BM_upper_1/child/1",
+          "BM_upper_1/child/2",
+          "BM_upper_1/child/3",
+          "BM_upper_1/child/4",
+          "BM_upper_1/child/5",
+          "BM_upper_1/child/6",
+          "BM_upper_1/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_2",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 15.84,
+        "children": [
+          "BM_upper_2/child/0",
+          "BM_upper_2/child/1",
+          "BM_upper_2/child/2",
+          "BM_upper_2/child/3",
+          "BM_upper_2/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_3",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 15.84,
+        "children": [
+          "BM_upper_3/child/0",
+          "BM_upper_3/child/1",
+          "BM_upper_3/child/2",
+          "BM_upper_3/child/3",
+          "BM_upper_3/child/4"
+        ],
+        "utilization": 0.693,
+        "status": "PASSED"
+      },
+      {
+        "id": "BM_upper_4",
+        "combo": "ULS_15_DL_LL",
+        "demandShearKn": 32.66,
+        "children": [
+          "BM_upper_4/child/0",
+          "BM_upper_4/child/1",
+          "BM_upper_4/child/2",
+          "BM_upper_4/child/3",
+          "BM_upper_4/child/4",
+          "BM_upper_4/child/5",
+          "BM_upper_4/child/6",
+          "BM_upper_4/child/7"
+        ],
+        "utilization": 0.754,
+        "status": "PASSED"
+      }
+    ],
+    "columns": [
+      {
+        "id": "COL_C1_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C1_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C1_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C2_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C3_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L0",
+        "puKn": 153.08,
+        "utilization": 0.052,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L1",
+        "puKn": 132.85,
+        "utilization": 0.045,
+        "status": "PASSED"
+      },
+      {
+        "id": "COL_C4_L2",
+        "puKn": 48.5,
+        "utilization": 0.18,
+        "status": "PASSED"
+      }
+    ]
+  },
   "slabLoadLedger": [
     {
       "physicalSlabId": "DECK:stilt:upper",

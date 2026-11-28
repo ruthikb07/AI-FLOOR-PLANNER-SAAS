@@ -55,12 +55,15 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
       finishedFloorMm:i?5900:3100,thicknessMm:160,uniformLiveLoadKnM2:i?1.5:3,minimumBearingWidthMm:75}));
     const fixtureInputs = {seismic:{enabled:false},wind:{enabled:false},floorFinishKnM2:1,rectangularDeckReviews,
       geotechnical:{safeBearingCapacityKPa:200,foundationDepthBelowGroundM:1.5,soilUnitWeightKnM3:18,
-        allowableSettlementMm:25,reportReference:'SYNTHETIC verification soil only',bearingCapacityBasis:'GROSS'}};
+        allowableSettlementMm:25,waterTableDepthBelowGroundM:3,subgradeModulusKnM3:24000,
+        reportReference:'SYNTHETIC verification soil only',bearingCapacityBasis:'GROSS'}};
     const reviewed = await post('analyze',{building,reviewedInputs:fixtureInputs});
     const qualified = await reviewed.json() as { evaluationId:string; error?:unknown; snapshot:StructuralEvaluationSummary };
     expect(reviewed.status,JSON.stringify(qualified.error)).toBe(200);
     const coupled = await post('coupled-gravity',{evaluationId:qualified.evaluationId,architectureSha256:digest});
     const assessed = await coupled.json() as {error?:unknown;resultId:string;envelope:AnalyticalSolveEnvelope;
+      foundation:{status:string;reason?:string;footings:{serviceLoadPKn:number;factoredLoadPuKn:number}[]};
+      frameDesign:{status:string;reason?:string;beams:StructuralEvaluationSummary['rccDesign']['beams'];columns:StructuralEvaluationSummary['rccDesign']['columns']};
       slabLoadLedger:{forceKn:Record<string,number>;bearingTransfer:Record<string,{verticalResidualKn:number;momentResidualKnM:number[];minimumBearingReactionKn:number;requiresHoldDown:boolean}>}[]};
     expect(coupled.status,JSON.stringify(assessed.error)).toBe(200);
     expect(assessed.slabLoadLedger.map((item:{forceKn:unknown})=>item.forceKn)).toEqual([
@@ -75,6 +78,23 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     expect(live.diagnostics.executionBackend).toBe('PYNITE_PLATE_QUAD');
     expect(live.reactions.reduce((sum,r)=>sum+r.reactionKnM[2]!,0)).toBeCloseTo(45,6);
     expect(live.equilibrium.isEquilibrated).toBe(true);
+    expect(assessed.foundation.status,assessed.foundation.reason).toBe('PRELIMINARY_GRAVITY_PAD_CHECK');
+    expect(assessed.foundation.footings).toHaveLength(4);
+    const service=assessed.envelope.combinationResults.SLS_10_DL_LL!;
+    const ultimate=assessed.envelope.combinationResults.ULS_15_DL_LL!;
+    expect(assessed.frameDesign.status,assessed.frameDesign.reason).toBe('PRELIMINARY_COUPLED_FRAME_CANDIDATES');
+    expect(assessed.frameDesign.columns.map(c=>c.physicalMemberId).sort()).toEqual(
+      qualified.snapshot.system.physicalModel.columns.map(c=>c.physicalMemberId).sort());
+    expect(assessed.frameDesign.beams.length).toBe(qualified.snapshot.rccDesign.beams.length);
+    expect(assessed.frameDesign.beams.some(beam=>beam.analyticalElementIds.some(id=>id.includes('/child/')))).toBe(true);
+    for (const beam of assessed.frameDesign.beams) {
+      const stations=ultimate.memberForces.filter(member=>beam.analyticalElementIds.includes(member.elementId)).flatMap(member=>member.stations);
+      expect(beam.demandShearVuKn).toBeCloseTo(Math.max(...stations.flatMap(s=>[Math.abs(s.shearVyKn),Math.abs(s.shearVzKn)])),1);
+    }
+    for (const footing of assessed.foundation.footings) {
+      expect(footing.serviceLoadPKn).toBeCloseTo(service.equilibrium.reactionForceSumKn[2]/4,1);
+      expect(footing.factoredLoadPuKn).toBeCloseTo(ultimate.equilibrium.reactionForceSumKn[2]/4,1);
+    }
     // Each of the four identical columns carries a quarter of the load above
     // its storey in this doubly symmetric, uniformly loaded verification frame.
     const shorteningChecks = [];
@@ -112,7 +132,11 @@ it('checks a shared plate edge against the saved frame and rejects a coincident 
     if (output) {
       const baseline=qualified.snapshot;
       await writeFile(output,JSON.stringify({scope:'Synthetic two-storey rectangular verification building',
-        architectureSha256:digest,fixtureInputs,shorteningChecks,slabLoadLedger:assessed.slabLoadLedger,
+        architectureSha256:digest,fixtureInputs,shorteningChecks,coupledFoundation:assessed.foundation,
+        coupledFrame:{beams:assessed.frameDesign.beams.map(b=>({id:b.physicalMemberId,combo:b.governingComboId,
+          demandShearKn:b.demandShearVuKn,children:b.analyticalElementIds,utilization:b.maxUtilization,status:b.status})),
+          columns:assessed.frameDesign.columns.map(c=>({id:c.physicalMemberId,puKn:c.demandPuKn,utilization:c.maxUtilization,status:c.status}))},
+        slabLoadLedger:assessed.slabLoadLedger,
         coupledCases:Object.fromEntries(Object.entries(assessed.envelope.loadCaseResults).map(([id,r])=>
           [id,{equilibrium:r.equilibrium,backend:r.diagnostics.executionBackend}])),
         conventionalDesign:{lifecycle:baseline.designLifecycleStatus,foundation:baseline.foundationDesign.status,

@@ -1607,10 +1607,12 @@ def dispatch_request(req: dict[str, Any]) -> dict[str, Any]:
         elif action == "reviewed_rectangular_gravity":
             from reviewed_rectangular_coupling import assemble_rectangular_decks
             coupled, ledger = assemble_rectangular_decks(req["model"],req["decks"])
+            coupled["model"] = subdivide(coupled["model"])
             res = run_pynite_solve(coupled)
             if res["ok"]:
                 from reviewed_rectangular_coupling import verify_slab_transfer
                 res["slabLoadLedger"] = verify_slab_transfer(coupled,ledger,res["envelope"])
+                res["frameRegistry"] = {"nodes":coupled["model"]["nodes"], "elements":coupled["model"]["elements"]}
         elif action == "pynite_solve":
             _validate_installed_commit("PyNiteFEA", "3.2.1", PYNITE_COMMIT_SHA)
             res = run_pynite_solve(req)

@@ -513,12 +513,12 @@ export function evaluateColumnUniaxialMomentCapacity(params: ColumnSectionInputs
   };
 }
 
-export function runCompleteRccDesign(
+export function runFrameRccDesign(
   system: SynthesizedStructuralSystem,
   inputs: ReviewedStructuralInputs,
   solveEnvelope: AnalyticalSolveEnvelope,
   rebarOverrides?: Readonly<Record<string, RebarOverrideSpec>>,
-): CompleteRccDesignSummary {
+): Pick<CompleteRccDesignSummary, 'beams' | 'columns'> {
   const ulsCombos = Object.entries(solveEnvelope.combinationResults).filter(([id]) =>
     id.startsWith('ULS_'),
   );
@@ -585,6 +585,16 @@ export function runCompleteRccDesign(
     return { ...col, scheduleGroupMark: grp };
   });
 
+  return {beams, columns};
+}
+
+export function runCompleteRccDesign(
+  system: SynthesizedStructuralSystem,
+  inputs: ReviewedStructuralInputs,
+  solveEnvelope: AnalyticalSolveEnvelope,
+  rebarOverrides?: Readonly<Record<string, RebarOverrideSpec>>,
+): CompleteRccDesignSummary {
+  const {beams, columns} = runFrameRccDesign(system, inputs, solveEnvelope, rebarOverrides);
   const maxFloorLevel = Math.max(0, ...system.slabPanels.map((p) => p.floorLevel));
   const slabGroupIds = new Map<string, string>();
   const slabs = system.slabPanels.map((panel) => {

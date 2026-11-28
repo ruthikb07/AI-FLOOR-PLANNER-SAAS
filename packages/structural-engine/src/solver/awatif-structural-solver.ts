@@ -1279,6 +1279,7 @@ export class AwatifStructuralSolver implements StructuralSolver {
 
     return {
       appliedForceSumKn: [fxApp, fyApp, fzApp],
+      appliedMomentAboutOriginKnM: [mxApp, myApp, mzApp],
       reactionForceSumKn: [fxRxn, fyRxn, fzRxn],
       forceResidualKn: fRes,
       momentResidualAboutOriginKnM: mRes,

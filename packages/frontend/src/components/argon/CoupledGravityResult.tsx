@@ -9,6 +9,15 @@ interface GravityReceipt {
   resultId: string;
   slabLoadLedger: { physicalSlabId:string; areaM2:number; quads:number; forceKn:Record<string,number>; bearingTransfer:Record<string,{requiresHoldDown:boolean}> }[];
   envelope: AnalyticalSolveEnvelope;
+  frameDesign?: {status:'INPUT_OR_METHOD_REVIEW_REQUIRED';reason:string} | {
+    status:'PRELIMINARY_COUPLED_FRAME_CANDIDATES';
+    beams:{physicalMemberId:string;maxUtilization:number;status:string}[];
+    columns:{physicalMemberId:string;maxUtilization:number;status:string}[];
+  };
+  foundation?: {status:'INPUT_OR_METHOD_REVIEW_REQUIRED';reason:string} | {
+    status:'PRELIMINARY_GRAVITY_PAD_CHECK'; reportReference:string; checksPassed:boolean;
+    footings:{footingId:string;serviceLoadPKn:number;factoredLoadPuKn:number;grossMaxSoilPressureKPa:number;status:string}[];
+  };
 }
 
 export function CoupledGravityResult({ evaluationId, digest }: { evaluationId:string; digest:string }) {
@@ -48,7 +57,21 @@ export function CoupledGravityResult({ evaluationId, digest }: { evaluationId:st
       <table><caption>Base reactions and largest force residual</caption><thead><tr><th>Case</th><th>Vertical reaction (kN)</th><th>Residual (kN)</th></tr></thead>
         <tbody>{Object.entries(receipt.envelope.loadCaseResults).map(([key,r])=><tr key={key}><th>{key}</th>
           <td>{r.reactions.reduce((sum,n)=>sum+n.reactionKnM[2],0).toFixed(3)}</td><td>{r.equilibrium.maxForceResidualKn.toExponential(2)}</td></tr>)}</tbody></table>
-      <p>Member sizing and foundation design retain their saved evaluation provenance.</p>
+      {receipt.foundation?.status==='INPUT_OR_METHOD_REVIEW_REQUIRED' && <p>Coupled foundation check pending. {receipt.foundation.reason}</p>}
+      {receipt.foundation?.status==='PRELIMINARY_GRAVITY_PAD_CHECK' && <table>
+        <caption>Preliminary isolated pads under coupled gravity reactions · {receipt.foundation.reportReference}</caption>
+        <thead><tr><th>Pad</th><th>Service (kN)</th><th>Ultimate (kN)</th><th>Maximum gross pressure (kPa)</th><th>Pad checks</th></tr></thead>
+        <tbody>{receipt.foundation.footings.map(f=><tr key={f.footingId}><th>{f.footingId}</th>
+          <td>{f.serviceLoadPKn}</td><td>{f.factoredLoadPuKn}</td><td>{f.grossMaxSoilPressureKPa}</td><td>{f.status}</td></tr>)}</tbody>
+      </table>}
+      {receipt.frameDesign?.status==='INPUT_OR_METHOD_REVIEW_REQUIRED' && <p>Coupled frame check pending. {receipt.frameDesign.reason}</p>}
+      {receipt.frameDesign?.status==='PRELIMINARY_COUPLED_FRAME_CANDIDATES' && <details>
+        <summary>Preliminary gravity RCC checks · {receipt.frameDesign.beams.length} beams and {receipt.frameDesign.columns.length} columns</summary>
+        <table><thead><tr><th>Physical member</th><th>Utilization</th><th>Member checks</th></tr></thead>
+        <tbody>{[...receipt.frameDesign.beams,...receipt.frameDesign.columns].map(member=><tr key={member.physicalMemberId}>
+          <th>{member.physicalMemberId}</th><td>{member.maxUtilization}</td><td>{member.status}</td></tr>)}</tbody></table>
+      </details>}
+      <p>Exported schedules use the saved conventional evaluation.</p>
     </>}
   </section>;
 }
